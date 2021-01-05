@@ -9,6 +9,16 @@ jobs:
 before_install:
   - chmod +x gradlew
 
+after_success:
+  - wget https://github.com/sormuras/bach/raw/master/install-jdk.sh && . ./install-jdk.sh -F 11
+#  - ~/bin/install-jdk.sh --install openjdk11 --target $JAVA_HOME
+  - if [ -n "$SONAR_TOKEN" ]; then ./gradlew sonarqube; fi
+
+addons:
+  sonarcloud:
+    organization: "gear4jtest" # the key of the org you chose at step #3
+    token: $SONAR_TOKEN  # Set in the settings page of your repository, as a secure variable
+
 before_cache:
 - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
 - rm -fr $HOME/.gradle/caches/*/plugin-resolution/

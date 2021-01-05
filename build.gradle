@@ -1,9 +1,16 @@
+plugins {
+    id "org.sonarqube" version "3.0"
+    id "com.jfrog.bintray" version "1.8.5"
+    id "com.jfrog.artifactory" version "4.18.3"
+    id "me.champeau.gradle.jmh" version "0.4.8"
+    id 'org.asciidoctor.convert' version '1.6.0'
+    id 'idea'
+}
+
 ext {
     releaseVersion = '1.0.0'
 }
 
-apply plugin: 'idea'
-apply plugin: 'java'
 apply from: "${rootDir}/libraries.gradle"
 
 allprojects {
@@ -19,17 +26,19 @@ allprojects {
     }
 }
 
+artifactoryPublish.skip = true // apply to all projects except the root
+
 ext {
-    coreProjects = subprojects.findAll {
-        p -> !p.name.contains("documentation") && !p.name.endsWith("-bom")
-    }
+    coreProjects = subprojects
 }
 
 configure(project.coreProjects) {
     apply plugin: 'java'
     apply plugin: 'maven'
     apply plugin: 'maven-publish'
-    apply plugin: 'jacoco'
+    apply plugin: 'com.jfrog.bintray'
+    apply plugin: 'com.jfrog.artifactory'
+    apply plugin: 'me.champeau.gradle.jmh'
     
     dependencies {
         compile(libraries.slf4j)
@@ -47,19 +56,64 @@ configure(project.coreProjects) {
         options.encoding = 'UTF-8'
         options.compilerArgs += ["-Xlint:unchecked", "-parameters"]
     }
+    
+    jacocoTestReport {
+        reports {
+            xml.enabled true
+        }
+    }
+    
+    afterEvaluate {
+        jar {
+            inputs.property('moduleName', moduleName)
+            manifest.attributes(
+                    'Automatic-Module-Name': moduleName
+            )
+        }
+    }
 }
 
-def allTestCoverageFile = "$buildDir/jacoco/allTestCoverage.exec"
+def allTestCoverageFile = "${rootProject.projectDir}/build/reports/jacoco/report.xml"
 
 task jacocoMergeTest(type: JacocoMerge) {
     destinationFile = file(allTestCoverageFile)
     executionData = project.fileTree(dir: '.', include: '**/build/jacoco/test.exec')
 }
 
-task jacocoMerge(dependsOn: ['jacocoMergeTest']) {
-    // used to run the other merge tasks
+sonarqube {
+    properties {
+        property "sonar.projectName", "gear4jtest"
+        property "sonar.projectKey", "gear4jtest_gear4jtest"
+        property "sonar.links.homepage", "https://github.com/gear4jtest/gear4jtest"
+        property "sonar.links.ci", "https://travis-ci.org/gear4jtest/gear4jtest"
+        property "sonar.links.scm", "https://github.com/gear4jtest/gear4jtest"
+        property "sonar.links.issue", "https://github.com/gear4jtest/gear4jtest/issues"
+        property "sonar.language", "java"
+        property "sonar.coverage.jacoco.xmlReportPaths", allTestCoverageFile
+    }
 }
 
-test {
-    dependsOn(subprojects.test) // required by cobertura to aggregate report
+task jacocoRootTestReport(type: JacocoReport) {
+
+    coreProjects.each { dependsOn("${it.name}:test") }
+    coreProjects.each { dependsOn("${it.name}:jacocoTestReport") }
+
+    additionalSourceDirs.from = coreProjects.sourceSets.main.allSource.srcDirs
+    sourceDirectories.from = coreProjects.sourceSets.main.allSource.srcDirs
+    classDirectories.from = coreProjects.sourceSets.main.output
+    executionData.setFrom project.fileTree(dir: '.', include: '**/build/jacoco/test.exec')
+
+    onlyIf {
+        true
+    }
+
+    reports {
+        xml.enabled true
+        xml.destination file(allTestCoverageFile)
+        html.enabled true
+        csv.enabled false
+    }
 }
+
+tasks.check.dependsOn tasks.jacocoRootTestReport
+tasks.jacocoRootTestReport.dependsOn tasks.test
