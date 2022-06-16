@@ -1,0 +1,63 @@
+package io.github.gear4j;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.Test;
+
+import io.github.gear4j.steps.Step1;
+import io.github.gear4j.steps.Step2;
+import io.github.gear4j.steps.Step3;
+import io.github.gear4j.steps.Step4;
+import io.github.gear4j.steps.Step5;
+import io.github.gear4jtest.core.builder.ChainBuilder;
+import io.github.gear4jtest.core.builder.StepBuilder;
+import io.github.gear4jtest.core.model.Chain;
+import io.github.gear4jtest.core.service.ChainExecutorService;
+
+public class SomeClassTest {
+
+//	@Test
+//	public void test() {
+//		// Given
+//		Chain<String, Void> pipe = ChainBuilder.<String>newChain()
+//				.add(new Step1())
+//				.add(new Step2())
+//				.add(new Step3())
+//				.add(new Step4("a").new Step4Map())
+//				.build();
+//		
+//		// When
+//		Object result = new ChainExecutorService().execute(pipe, "");
+//		
+//		// Then
+//		assertThat(result).isNull();
+//	}
+	
+	@Test
+	public void testa() {
+		// Given
+		Chain<String, String> pipe = 
+				ChainBuilder.<String>newChain()
+					.branches()
+						.branch()
+							.step(StepBuilder.newStep(Step1.class).operation(() -> new Step1()))
+							.step(StepBuilder.newStep(Step2.class).operation(() -> new Step2()))
+							.step(StepBuilder.newStep(Step3.class).operation(() -> new Step3()))
+							.step(StepBuilder.newStep(Step4.Step4Map.class).operation(() -> new Step4("a").new Step4Map()).returns("", Void.class))
+							.branches()
+								.branch()
+									.step(StepBuilder.newStep(Step5.class).operation(() -> new Step5()))
+								.done()
+							.doneBranchBranches()
+						.done()
+					.doneChainBranches()
+				.build();
+		
+		// When
+		Object result = new ChainExecutorService().execute(pipe, "");
+		
+		// Then
+		assertThat(result).isNotNull().isEqualTo("");
+	}
+	
+}

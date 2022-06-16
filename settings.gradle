@@ -1,2 +1,2 @@
 rootProject.name = 'gear4jtest'
-include 'test-module'
+include 'gear4jtest-core'
