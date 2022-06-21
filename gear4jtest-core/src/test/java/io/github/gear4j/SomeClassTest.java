@@ -9,8 +9,6 @@ import io.github.gear4j.steps.Step2;
 import io.github.gear4j.steps.Step3;
 import io.github.gear4j.steps.Step4;
 import io.github.gear4j.steps.Step5;
-import io.github.gear4jtest.core.builder.ChainBuilder;
-import io.github.gear4jtest.core.builder.StepBuilder;
 import io.github.gear4jtest.core.model.Chain;
 import io.github.gear4jtest.core.service.ChainExecutorService;
 
@@ -33,20 +31,58 @@ public class SomeClassTest {
 //		assertThat(result).isNull();
 //	}
 	
+//	@Test
+//	public void testa() {
+//		// Given
+//		Chain<String, String> pipe = 
+//				Chain.<String>newChain()
+//					.branches()
+//						.branch()
+//							.step(StepBuilder.newStep(Step1.class).operation(() -> new Step1()))
+//							.step(StepBuilder.newStep(Step2.class).operation(() -> new Step2()))
+//							.step(StepBuilder.newStep(Step3.class).operation(() -> new Step3()))
+//							.step(StepBuilder.newStep(Step4.Step4Map.class).operation(() -> new Step4("a").new Step4Map()).returns("", Void.class))
+//							.branches()
+//								.branch()
+//									.step(StepBuilder.newStep(Step5.class).operation(() -> new Step5()))
+//								.done()
+//							.doneBranchBranches()
+//						.done()
+//					.doneChainBranches()
+//				.build();
+//		
+//		// When
+//		Object result = new ChainExecutorService().execute(pipe, "");
+//		
+//		// Then
+//		assertThat(result).isNotNull().isEqualTo("");
+//	}
+	
+	
 	@Test
-	public void testa() {
+	public void testb() {
 		// Given
 		Chain<String, String> pipe = 
-				ChainBuilder.<String>newChain()
+				Chain.<String>newChain()
 					.branches()
 						.branch()
-							.step(StepBuilder.newStep(Step1.class).operation(() -> new Step1()))
-							.step(StepBuilder.newStep(Step2.class).operation(() -> new Step2()))
-							.step(StepBuilder.newStep(Step3.class).operation(() -> new Step3()))
-							.step(StepBuilder.newStep(Step4.Step4Map.class).operation(() -> new Step4("a").new Step4Map()).returns("", Void.class))
+							.step()
+								.operation(() -> new Step1())
+							.done()
+							.step()
+								.operation(() -> new Step2())
+							.done()
+							.step()
+								.operation(() -> new Step3())
+							.done()
+							.step()
+								.operation(() -> new Step4("a").new Step4Map())
+							.done()
 							.branches()
 								.branch()
-									.step(StepBuilder.newStep(Step5.class).operation(() -> new Step5()))
+									.step()
+										.operation(() -> new Step5())
+									.done()
 								.done()
 							.doneBranchBranches()
 						.done()
