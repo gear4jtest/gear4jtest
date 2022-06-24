@@ -2,29 +2,29 @@ package io.github.gear4jtest.core.model;
 
 import java.util.function.Consumer;
 
-public class Chain<BEGIN, IN> {
+public class Chain<IN, OUT> {
 
-	private Branches<BEGIN, IN, ?> branches;
+	private Branches<IN, IN, ?> branches;
 	
 	private Chain() {
 	}
 	
-	public static <A> Builder<A, A> newChain() {
+	public static <A> Builder<A, ?> newChain() {
 		return new Builder<>();
 	}
 	
-	public static class Builder<BEGIN, IN> {
+	public static class Builder<IN, OUT> {
 
-		private Chain<BEGIN, IN> managedInstance = new Chain<>(); 
+		private Chain<IN, OUT> managedInstance = new Chain<>(); 
 		
 		private Builder() { }
 		
-		public Branches.Builder<BEGIN, IN, IN> branches() {
-			Consumer<Branches<BEGIN, IN, IN>> callback = obj -> managedInstance.branches = obj;
-			return Branches.<BEGIN, IN>newBranches(this, callback);
+		public Branches.Builder<IN, IN, ?> branches() {
+			Consumer<Branches<IN, IN, ?>> callback = obj -> managedInstance.branches = obj;
+			return Branches.<IN>newBranches(this, callback);
 		}
 		
-		public Chain<BEGIN, IN> build() {
+		public Chain<IN, OUT> build() {
 			return managedInstance;
 		}
 

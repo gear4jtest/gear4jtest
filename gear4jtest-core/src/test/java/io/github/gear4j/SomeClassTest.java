@@ -57,12 +57,36 @@ public class SomeClassTest {
 //		// Then
 //		assertThat(result).isNotNull().isEqualTo("");
 //	}
+	
+
+	@Test
+	public void test_simple_builder() {
+		// Given
+		//@formatter:off
+		Chain<String, Integer> pipe = 
+				Chain.<String>newChain()
+					.branches()
+						.branch()
+							.step()
+								.operation(() -> new Step1())
+							.done()
+						.done()
+					.doneChainBranches()
+				.build();
+		//@formatter:on
+
+		// When
+		Object result = new ChainExecutorService().execute(pipe, "");
+
+		// Then
+		assertThat(result).isNotNull().isEqualTo("");
+	}
 
 	@Test
 	public void testb() {
 		// Given
 		//@formatter:off
-		Chain<String, Void> pipe = 
+//		Chain<String, Void> pipe = 
 				Chain.<String>newChain()
 					.branches()
 						.branch()
@@ -96,6 +120,8 @@ public class SomeClassTest {
 							.step()
 								.operation(() -> new Step1())
 							.done()
+							.branches()
+							.doneBranchBranches()
 						.done()
 					.doneChainBranches()
 				.build();
