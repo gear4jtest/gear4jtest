@@ -3,51 +3,47 @@ package io.github.gear4jtest.core.model;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import io.github.gear4jtest.core.model.Branch.BranchBuilder;
+public class Stepa<BEGIN, BRANCHESIN, STEPIN, OUT> {
 
-public class Stepa<BEGIN, IN, OUT> {
-
-	private Supplier<Step<IN, OUT>> step;
-	
-	public Stepa(Supplier<Step<IN, OUT>> step) {
-		this.step = step;
-	}
+	private Supplier<Step<STEPIN, OUT>> step;
 	
 	private Stepa() {
 	}
 
-	public static <BEGIN, IN> StepBuilder<BEGIN, IN, ?> newStep(BranchBuilder<BEGIN, IN> parentBuilder, Consumer<Stepa<BEGIN, IN, ?>> callback) {
-		return new StepBuilder<>(parentBuilder, callback);
+	public static <CHAININ, BRANCHESIN, STEPIN> Builder<CHAININ, BRANCHESIN, STEPIN, ?> newStep(
+			Branch.Builder<CHAININ, BRANCHESIN, STEPIN> parentBuilder, 
+			Consumer<Stepa<CHAININ, BRANCHESIN, STEPIN, ?>> callback) {
+		return new Builder<>(parentBuilder, callback);
 	}
 	
-	public static class StepBuilder<BEGIN, IN, OUT> {
+	public static class Builder<CHAININ, BRANCHESIN, STEPIN, OUT> {
 
-		private Stepa<BEGIN, IN, OUT> stepa = new Stepa<>();
+		private Stepa<CHAININ, BRANCHESIN, STEPIN, OUT> managedInstance = new Stepa<>();
 		
-		private Consumer<Stepa<BEGIN, IN, ?>> callback;
+		private Consumer<Stepa<CHAININ, BRANCHESIN, STEPIN, ?>> callback;
 		
-		private BranchBuilder<BEGIN, IN> parentBuilder;
+		private Branch.Builder<CHAININ, BRANCHESIN, STEPIN> parentBuilder;
 		
-		private StepBuilder(BranchBuilder<BEGIN, IN> parentBuilder, Consumer<Stepa<BEGIN, IN, ?>> callback) {
+		private Builder(Branch.Builder<CHAININ, BRANCHESIN, STEPIN> parentBuilder, Consumer<Stepa<CHAININ, BRANCHESIN, STEPIN, ?>> callback) {
 			this.parentBuilder = parentBuilder;
 		}
 
-		public <A> StepBuilder<BEGIN, IN, A> operation(Supplier<Step<IN, A>> step) {
-			stepa.step = (Supplier) step;
-			return (StepBuilder<BEGIN, IN, A>) this;
+		public <A> Builder<CHAININ, BRANCHESIN, STEPIN, A> operation(Supplier<Step<STEPIN, A>> step) {
+			managedInstance.step = (Supplier) step;
+			return (Builder<CHAININ, BRANCHESIN, STEPIN, A>) this;
 		}
 		
-		public <A> StepBuilder<BEGIN, IN, A> returns(String expression, Class<A> clazz) {
-			return (StepBuilder<BEGIN, IN, A>) this;
+		public <A> Builder<CHAININ, BRANCHESIN, STEPIN, A> returns(String expression, Class<A> clazz) {
+			return (Builder<CHAININ, BRANCHESIN, STEPIN, A>) this;
 		}
 		
-		public <A> BranchBuilder<BEGIN, OUT> done() {
-			callback.accept(stepa);
-			return (BranchBuilder<BEGIN, OUT>) parentBuilder;
+		public <A> Branch.Builder<CHAININ, BRANCHESIN, OUT> done() {
+			callback.accept(managedInstance);
+			return (Branch.Builder<CHAININ, BRANCHESIN, OUT>) parentBuilder;
 		}
 
-		public Stepa<BEGIN, IN, OUT> build() {
-			return stepa;
+		public Stepa<CHAININ, BRANCHESIN, STEPIN, OUT> build() {
+			return managedInstance;
 		}
 		
 	}

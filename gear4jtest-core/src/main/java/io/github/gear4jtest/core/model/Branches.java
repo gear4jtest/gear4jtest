@@ -4,53 +4,57 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class Branches<BEGIN, IN> implements Element {
+public class Branches<CHAININ, BRANCHESIN, IN> implements Element {
 
-	private List<Branch<BEGIN, IN>> branches;
+	private List<Branch<CHAININ, BRANCHESIN, ?>> branches;
 	
 	private Branches() {
 		this.branches = new ArrayList<>();
 	}
 
-	public static <A, B> BranchesBuilder<A, B> newBranches(Branch.BranchBuilder<A, B> branchBuilder, Consumer<Branches<A, B>> callback) {
-		return new BranchesBuilder<>(branchBuilder, null, null);
+	public static <A, B, C> Builder<A, B, C> newBranches(Branch.Builder<A, ?, C> branchBuilder, Consumer<Branches<A, B, C>> callback) {
+		return new Builder<>(branchBuilder, null, null);
 	}
 
-	public static <A, B> BranchesBuilder<A, B> newBranches(Chain.Builder<A, B> chainBuilder, Consumer<Branches<A, B>> callback) {
-		return new BranchesBuilder<>(null, chainBuilder, null);
+	public static <A, B> Builder<A, B, B> newBranches(Chain.Builder<A, B> chainBuilder, Consumer<Branches<A, B, B>> callback) {
+		return new Builder<>(null, chainBuilder, null);
 	}
 	
-	public static class BranchesBuilder<BEGIN, INOUT> {
+	public static class Builder<CHAININ, BRANCHESIN, IN> {
 
-		private Branches<BEGIN, INOUT> managedInstance = new Branches<>();
+		private Branches<CHAININ, BRANCHESIN, IN> managedInstance = new Branches<>();
 		
-		private Consumer<Branches<BEGIN, INOUT>> callback;
-		private Branch.BranchBuilder<BEGIN, INOUT> branchBuilder;
-		private Chain.Builder<BEGIN, INOUT> chainBuilder;
+		private Consumer<Branches<CHAININ, BRANCHESIN, IN>> callback;
+		private Branch.Builder<CHAININ, ?, IN> branchBuilder;
+		private Chain.Builder<CHAININ, IN> chainBuilder;
 		
-		private BranchesBuilder(Branch.BranchBuilder<BEGIN, INOUT> parentBuilder, Chain.Builder<BEGIN, INOUT> chainBuilder, Consumer<Branches<BEGIN, INOUT>> callback) {
+		private Builder(Branch.Builder<CHAININ, ?, IN> parentBuilder, Chain.Builder<CHAININ, IN> chainBuilder, Consumer<Branches<CHAININ, BRANCHESIN, IN>> callback) {
 			this.branchBuilder = parentBuilder;
 			this.chainBuilder = chainBuilder;
 			this.callback = callback;
 		}
 
-		public Branch.BranchBuilder<BEGIN, INOUT> branch() {
-			Consumer<Branch<BEGIN, INOUT>> callback = obj -> managedInstance.branches.add(obj);
-			return Branch.<BEGIN, INOUT>newBranch(this, callback);
+		public Branch.Builder<CHAININ, BRANCHESIN, IN> branch() {
+			Consumer<Branch<CHAININ, BRANCHESIN, IN>> callback = obj -> managedInstance.branches.add(obj);
+			return Branch.<CHAININ, BRANCHESIN, IN>newBranch(this, callback);
+		}
+		
+		public <A> Builder<CHAININ, BRANCHESIN, A> returns(String expression, Class<A> clazz) {
+			return (Builder<CHAININ, BRANCHESIN, A>) this;
 		}
 
-		public Branches<BEGIN, INOUT> build() {
+		public Branches<CHAININ, BRANCHESIN, IN> build() {
 			return managedInstance;
 		}
 		
-		public Chain.Builder<BEGIN, INOUT> doneChainBranches() {
+		public Chain.Builder<CHAININ, IN> doneChainBranches() {
 			callback.accept(managedInstance);
 			return chainBuilder;
 		}
 		
-		public Branch.BranchBuilder<BEGIN, INOUT> doneBranchBranches() {
+		public Branch.Builder<CHAININ, BRANCHESIN, IN> doneBranchBranches() {
 			callback.accept(managedInstance);
-			return branchBuilder;
+			return (Branch.Builder<CHAININ, BRANCHESIN, IN>) branchBuilder;
 		}
 		
 	}

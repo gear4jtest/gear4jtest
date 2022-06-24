@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import io.github.gear4jtest.core.model.Stepa.StepBuilder;
-
-public class Branch<BEGIN, IN> {
+public class Branch<BEGIN, IN, OUT> {
 
 	private final List<Object> steps;
 	
@@ -14,39 +12,39 @@ public class Branch<BEGIN, IN> {
 		this.steps = new ArrayList<>();
 	}
 	
-	public static <A, B> BranchBuilder<A, B> newBranch(Branches.BranchesBuilder<A, B> parentBuilder, Consumer<Branch<A, B>> callback) {
-		return new BranchBuilder<>(parentBuilder, callback);
+	public static <A, B, C> Builder<A, B, C> newBranch(Branches.Builder<A, B, C> parentBuilder, Consumer<Branch<A, B, C>> callback) {
+		return new Builder<>(parentBuilder, callback);
 	}
 	
-	public static class BranchBuilder<BEGIN, IN> {
+	public static class Builder<BEGIN, IN, OUT> {
 
-		private Branch<BEGIN, IN> managedInstance = new Branch<>();
+		private Branch<BEGIN, IN, OUT> managedInstance = new Branch<>();
 
-		private Consumer<Branch<BEGIN, IN>> callback;
+		private Consumer<Branch<BEGIN, IN, OUT>> callback;
 		
-		private Branches.BranchesBuilder<BEGIN, IN> parentBuilder;
+		private Branches.Builder<BEGIN, IN, OUT> parentBuilder;
 
-		private BranchBuilder(Branches.BranchesBuilder<BEGIN, IN> parentBuilder, Consumer<Branch<BEGIN, IN>> callback) {
+		private Builder(Branches.Builder<BEGIN, IN, OUT> parentBuilder, Consumer<Branch<BEGIN, IN, OUT>> callback) {
 			this.parentBuilder = parentBuilder;
 		}
 		
-		public StepBuilder<BEGIN, IN, ?> step() {
-			Consumer<Stepa<BEGIN, IN, ?>> callback = obj -> managedInstance.steps.add(obj);
-			return Stepa.<BEGIN, IN>newStep(this, callback);
+		public Stepa.Builder<BEGIN, IN, OUT, ?> step() {
+			Consumer<Stepa<BEGIN, IN, OUT, ?>> callback = obj -> managedInstance.steps.add(obj);
+			return Stepa.<BEGIN, IN, OUT>newStep(this, callback);
 		}
 		
-		public Branches.BranchesBuilder<BEGIN, IN> branches() {
-			Consumer<Branches<BEGIN, IN>> callback = obj -> managedInstance.steps.add(obj);
-			return Branches.<BEGIN, IN>newBranches(this, callback);
+		public Branches.Builder<BEGIN, OUT, OUT> branches() {
+			Consumer<Branches<BEGIN, OUT, OUT>> callback = obj -> managedInstance.steps.add(obj);
+			return Branches.<BEGIN, OUT, OUT>newBranches(this, callback);
 		}
 
-		public <A> BranchBuilder<BEGIN, A> returns(String expression, Class<A> clazz) {
-			return (BranchBuilder<BEGIN, A>) this;
+		public <A> Builder<BEGIN, IN, A> returns(String expression, Class<A> clazz) {
+			return (Builder<BEGIN, IN, A>) this;
 		}
 		
-		public Branches.BranchesBuilder<BEGIN, IN> done() {
+		public Branches.Builder<BEGIN, IN, IN> done() {
 			callback.accept(managedInstance);
-			return parentBuilder;
+			return (Branches.Builder<BEGIN, IN, IN>) parentBuilder;
 		}
 		
 	}

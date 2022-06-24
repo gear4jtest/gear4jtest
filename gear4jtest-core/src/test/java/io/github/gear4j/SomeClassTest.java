@@ -30,7 +30,7 @@ public class SomeClassTest {
 //		// Then
 //		assertThat(result).isNull();
 //	}
-	
+
 //	@Test
 //	public void testa() {
 //		// Given
@@ -57,12 +57,12 @@ public class SomeClassTest {
 //		// Then
 //		assertThat(result).isNotNull().isEqualTo("");
 //	}
-	
-	
+
 	@Test
 	public void testb() {
 		// Given
-		Chain<String, String> pipe = 
+		//@formatter:off
+		Chain<String, Void> pipe = 
 				Chain.<String>newChain()
 					.branches()
 						.branch()
@@ -82,18 +82,30 @@ public class SomeClassTest {
 								.branch()
 									.step()
 										.operation(() -> new Step5())
+										.returns("", String.class)
 									.done()
 								.done()
+								.branch()
+									.step()
+										.operation(() -> new Step5())
+										.returns("", String.class)
+									.done()
+								.done()
+								.returns("", String.class)
 							.doneBranchBranches()
+							.step()
+								.operation(() -> new Step1())
+							.done()
 						.done()
 					.doneChainBranches()
 				.build();
-		
+		//@formatter:on
+
 		// When
 		Object result = new ChainExecutorService().execute(pipe, "");
-		
+
 		// Then
 		assertThat(result).isNotNull().isEqualTo("");
 	}
-	
+
 }
