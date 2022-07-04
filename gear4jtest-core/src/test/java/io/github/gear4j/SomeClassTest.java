@@ -9,7 +9,9 @@ import io.github.gear4j.steps.Step2;
 import io.github.gear4j.steps.Step3;
 import io.github.gear4j.steps.Step4;
 import io.github.gear4j.steps.Step5;
+import io.github.gear4jtest.core.model.Branches;
 import io.github.gear4jtest.core.model.Chain;
+import io.github.gear4jtest.core.model.test.BranchesChain;
 import io.github.gear4jtest.core.service.ChainExecutorService;
 
 public class SomeClassTest {
@@ -57,21 +59,38 @@ public class SomeClassTest {
 //		// Then
 //		assertThat(result).isNotNull().isEqualTo("");
 //	}
-	
+
+	@Test
+	public void test_builder() {
+		// Given
+		//@formatter:off
+//		Chain<String, Integer> pipe = 
+				Chain.<String>newChain()
+					.branches()
+						.branch()
+						.done()
+					.done()
+				.build();
+		//@formatter:on
+
+		// When
+		Object result = new ChainExecutorService().execute(pipe, "");
+
+		// Then
+		assertThat(result).isNotNull().isEqualTo("");
+	}
 
 	@Test
 	public void test_simple_builder() {
 		// Given
 		//@formatter:off
-		Chain<String, Integer> pipe = 
+//		Chain<String, Integer> pipe = 
 				Chain.<String>newChain()
 					.branches()
 						.branch()
-							.step()
-								.operation(() -> new Step1())
-							.done()
+						.returns("", Void.class)
 						.done()
-					.doneChainBranches()
+					.done()
 				.build();
 		//@formatter:on
 
@@ -86,7 +105,7 @@ public class SomeClassTest {
 	public void testb() {
 		// Given
 		//@formatter:off
-//		Chain<String, Void> pipe = 
+		Chain<String, Integer> pipe = 
 				Chain.<String>newChain()
 					.branches()
 						.branch()
@@ -116,14 +135,67 @@ public class SomeClassTest {
 									.done()
 								.done()
 								.returns("", String.class)
-							.doneBranchBranches()
+							.done()
 							.step()
 								.operation(() -> new Step1())
 							.done()
 							.branches()
-							.doneBranchBranches()
+							.done()
 						.done()
-					.doneChainBranches()
+					.done()
+				.build();
+		//@formatter:on
+
+		// When
+		Object result = new ChainExecutorService().execute(pipe, "");
+
+		// Then
+		assertThat(result).isNotNull().isEqualTo("");
+	}
+	
+	@Test
+	public void testc() {
+		// Given
+		//@formatter:off
+		io.github.gear4jtest.core.model.test.Chain<String, Integer> pipe = 
+				io.github.gear4jtest.core.model.test.Chain.<String>newChain()
+					.assemble(
+							new BranchesChain<String, String>()
+								.branch()
+									.step()
+										.operation(() -> new Step1())
+									.done()
+									.step()
+										.operation(() -> new Step2())
+									.done()
+									.step()
+										.operation(() -> new Step3())
+									.done()
+									.step()
+										.operation(() -> new Step4("a").new Step4Map())
+									.done()
+									.branches()
+										.branch()
+											.step()
+												.operation(() -> new Step5())
+												.returns("", String.class)
+											.done()
+										.done()
+										.branch()
+											.step()
+												.operation(() -> new Step5())
+												.returns("", String.class)
+											.done()
+										.done()
+										.returns("", String.class)
+									.done()
+									.step()
+										.operation(() -> new Step1())
+									.done()
+									.branches()
+									.done()
+								.done()
+							.done())
 				.build();
 		//@formatter:on
 

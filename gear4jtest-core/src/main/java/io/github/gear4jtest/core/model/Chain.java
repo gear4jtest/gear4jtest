@@ -4,7 +4,7 @@ import java.util.function.Consumer;
 
 public class Chain<IN, OUT> {
 
-	private Branches<IN, IN, ?> branches;
+	private Branches branches;
 	
 	private Chain() {
 	}
@@ -15,14 +15,21 @@ public class Chain<IN, OUT> {
 	
 	public static class Builder<IN, OUT> {
 
-		private Chain<IN, OUT> managedInstance = new Chain<>(); 
+		private final Chain<IN, OUT> managedInstance; 
 		
-		private Builder() { }
+		private Builder() {
+			managedInstance = new Chain<>();
+		}
 		
-		public Branches.Builder<IN, IN, ?> branches() {
-			Consumer<Branches<IN, IN, ?>> callback = obj -> managedInstance.branches = obj;
+		public Branches.ChainBuilder<IN, IN> branches() {
+			Consumer<Branches> callback = obj -> managedInstance.branches = obj;
 			return Branches.<IN>newBranches(this, callback);
 		}
+
+//		public Branches.SimpleBuilder<IN, IN> branches() {
+//			Consumer<Branches> callback = obj -> managedInstance.branches = obj;
+//			return Branches.<IN>newBranches(this, callback);
+//		}
 		
 		public Chain<IN, OUT> build() {
 			return managedInstance;

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class Branch<CHAININ, BRANCHESIN, IN> {
+public class Branch {
 
 	private final List<Object> steps;
 	
@@ -12,39 +12,89 @@ public class Branch<CHAININ, BRANCHESIN, IN> {
 		this.steps = new ArrayList<>();
 	}
 	
-	public static <A, B> Builder<A, B, B> newBranch(Branches.Builder<A, B, ?> parentBuilder, Consumer<Branch<A, B, B>> callback) {
-		return new Builder<>(parentBuilder, callback);
+	public static <A> SimpleBuilder<A, A> newBranch(Branches.SimpleBuilder<A, ?> parentBuilder, Consumer<Branch> callback) {
+		return new SimpleBuilder<>(parentBuilder, callback);
 	}
 	
-	public static class Builder<BEGIN, BRANCHESIN, IN> {
+	public static <A, B> ChainBuilder<A, B, B> newBranch(Branches.ChainBuilder<A, B> parentBuilder, Consumer<Branch> callback) {
+		return new ChainBuilder<>(parentBuilder, callback);
+	}
+	
+	public static <A, B, C, D> Builder2<A, B, C, D, D> newBranch(Branches.Builder2<A, B, C, D> parentBuilder, Consumer<Branch> callback) {
+		return new Builder2<>(parentBuilder, callback);
+	}
+	
+	public static class SimpleBuilder<PARENT, IN> {
 
-		private Branch<BEGIN, BRANCHESIN, IN> managedInstance = new Branch<>();
+		private Branch managedInstance = new Branch();
 
-		private Consumer<Branch<BEGIN, BRANCHESIN, IN>> callback;
+		private Consumer<Branch> callback;
 		
-		private Branches.Builder<BEGIN, BRANCHESIN, ?> parentBuilder;
+		private Branches.SimpleBuilder<PARENT, ?> parentBuilder;
 
-		private Builder(Branches.Builder<BEGIN, BRANCHESIN, ?> parentBuilder, Consumer<Branch<BEGIN, BRANCHESIN, IN>> callback) {
+		private SimpleBuilder(Branches.SimpleBuilder<PARENT, ?> parentBuilder, Consumer<Branch> callback) {
 			this.parentBuilder = parentBuilder;
 		}
 		
-		public Stepa.Builder<BEGIN, BRANCHESIN, IN, ?> step() {
-			Consumer<Stepa<BEGIN, BRANCHESIN, IN, ?>> callback = obj -> managedInstance.steps.add(obj);
+		public <A> Branch.SimpleBuilder<PARENT, A> returns(String expression, Class<A> clazz) {
+			return (Branch.SimpleBuilder<PARENT, A>) this;
+		}		
+		public Branches.SimpleBuilder<PARENT, PARENT> done() {
+			callback.accept(managedInstance);
+			return (Branches.SimpleBuilder<PARENT, PARENT>) parentBuilder;
+		}
+		
+	}
+	
+	public static class ChainBuilder<BEGIN, BRANCHESIN, IN> {
+
+		private Branch managedInstance = new Branch();
+
+		private Consumer<Branch> callback;
+		
+		private Branches.ChainBuilder<BEGIN, BRANCHESIN> parentBuilder;
+
+		private ChainBuilder(Branches.ChainBuilder<BEGIN, BRANCHESIN> parentBuilder, Consumer<Branch> callback) {
+			this.parentBuilder = parentBuilder;
+		}
+		
+		public Stepa.ChainBuilder<BEGIN, BRANCHESIN, IN, ?> step() {
+			Consumer<Stepa> callback = obj -> managedInstance.steps.add(obj);
 			return Stepa.<BEGIN, BRANCHESIN, IN>newStep(this, callback);
 		}
 		
-		public Branches.Builder<BEGIN, IN, IN> branches() {
-			Consumer<Branches<BEGIN, IN, IN>> callback = obj -> managedInstance.steps.add(obj);
+		public Branches.Builder2<BEGIN, BRANCHESIN, IN, IN> branches() {
+			Consumer<Branches> callback = obj -> managedInstance.steps.add(obj);
 			return Branches.<BEGIN, BRANCHESIN, IN>newBranches(this, callback);
 		}
-
-		public <A> Builder<BEGIN, BRANCHESIN, A> returns(String expression, Class<A> clazz) {
-			return (Builder<BEGIN, BRANCHESIN, A>) this;
+		
+		public Branches.ChainBuilder<BEGIN, IN> done() {
+			callback.accept(managedInstance);
+			return (Branches.ChainBuilder<BEGIN, IN>) parentBuilder;
 		}
 		
-		public Branches.Builder<BEGIN, BRANCHESIN, IN> done() {
+	}
+	
+	public static class Builder2<BEGIN, BRANCHESIN, PARENTIN, PARENTIN2, IN> {
+
+		private Branch managedInstance = new Branch();
+
+		private Consumer<Branch> callback;
+		
+		private Branches.Builder2<BEGIN, BRANCHESIN, PARENTIN, PARENTIN2> parentBuilder;
+
+		private Builder2(Branches.Builder2<BEGIN, BRANCHESIN, PARENTIN, PARENTIN2> parentBuilder, Consumer<Branch> callback) {
+			this.parentBuilder = parentBuilder;
+		}
+		
+		public Stepa.Builder2<BEGIN, BRANCHESIN, PARENTIN, PARENTIN2, IN, ?> step() {
+			Consumer<Stepa> callback = obj -> managedInstance.steps.add(obj);
+			return Stepa.<BEGIN, BRANCHESIN, PARENTIN, PARENTIN2, IN>newStep(this, callback);
+		}
+		
+		public Branches.Builder2<BEGIN, BRANCHESIN, PARENTIN, PARENTIN2> done() {
 			callback.accept(managedInstance);
-			return (Branches.Builder<BEGIN, BRANCHESIN, IN>) parentBuilder;
+			return (Branches.Builder2<BEGIN, BRANCHESIN, PARENTIN, PARENTIN2>) parentBuilder;
 		}
 		
 	}
