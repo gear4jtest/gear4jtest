@@ -1,22 +1,22 @@
 package io.github.gear4jtest.core.model.test;
 
-public class Branches<U, S, T extends Base<S, S, V, ?>, V extends Base<S, S, ?, ?>> extends Base<U, S, T, V> {
+public class Branches<U, S, T extends Base<S, ?, ?>> extends Base<U, S, T> {
 
-	private Branch<S, S, V, ?> parent;
+	private T parent;
 
-	public Branches(Branch<U, S, V, ?> parent) {
-		this.parent = (Branch<S, S, V, ?>) parent;
+	public Branches(Branch<U, ?, ?> parent) {
+		this.parent = (T) parent;
 	}
 
-	public Branch<U, S, Branches<S, S, T, V>, ?> branch() {
+	public Branch<U, U, Branches<U, S, T>> branch() {
 		return new Branch<>(this);
 	}
 
-	public <A> Branches<A, S, T, V> returns(String expression, Class<A> clazz) {
-		return (Branches<A, S, T, V>) this;
+	public <A> Branches<A, S, T> returns(String expression, Class<A> clazz) {
+		return (Branches<A, S, T>) this;
 	}
 
-	public Branch<S, S, V, ?> done() {
+	public T done() {
 		return parent;
 	}
 

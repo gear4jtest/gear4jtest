@@ -2,14 +2,16 @@ package io.github.gear4j;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Map;
+
 import org.junit.Test;
 
 import io.github.gear4j.steps.Step1;
 import io.github.gear4j.steps.Step2;
 import io.github.gear4j.steps.Step3;
 import io.github.gear4j.steps.Step4;
+import io.github.gear4j.steps.Step4.Step4Map;
 import io.github.gear4j.steps.Step5;
-import io.github.gear4jtest.core.model.Branches;
 import io.github.gear4jtest.core.model.Chain;
 import io.github.gear4jtest.core.model.test.BranchesChain;
 import io.github.gear4jtest.core.service.ChainExecutorService;
@@ -165,6 +167,7 @@ public class SomeClassTest {
 									.step()
 										.operation(() -> new Step1())
 									.done()
+									.returns("", Integer.class)
 									.step()
 										.operation(() -> new Step2())
 									.done()
@@ -187,7 +190,6 @@ public class SomeClassTest {
 												.returns("", String.class)
 											.done()
 										.done()
-										.returns("", String.class)
 									.done()
 									.step()
 										.operation(() -> new Step1())
