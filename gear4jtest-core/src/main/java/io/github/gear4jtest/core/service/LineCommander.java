@@ -48,6 +48,7 @@ public class LineCommander {
 //	}
 
 	public Object executeElement(LineElement element, Object input) {
+		
 		return lineVisitor.visit(element, input);
 	}
 

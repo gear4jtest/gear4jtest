@@ -81,6 +81,8 @@ task jacocoMergeTest(type: JacocoMerge) {
 
 sonarqube {
     properties {
+        property "sonar.host.url", "https://sonarcloud.io"
+        property "sonar.organization", "gear4jtest"
         property "sonar.projectName", "gear4jtest"
         property "sonar.projectKey", "gear4jtest_gear4jtest"
         property "sonar.links.homepage", "https://github.com/gear4jtest/gear4jtest"
