@@ -14,20 +14,12 @@ public class Branch<IN, OUT> {
 	public List<Object> getChildren() {
 		return children;
 	}
-	
-	public static <A> Builder<A, A> newBranch() {
-		return new Builder<>();
-	}
-	
-	public static <A> Builder<A, A> newBranch(Branches.Builder<A, ?> branchesBuilder) {
-		return new Builder<>();
-	}
 
 	public static class Builder<IN, OUT> {
 
 		private final Branch<IN, OUT> managedInstance;
 		
-		private Builder() {
+		Builder() {
 			managedInstance = new Branch<>();
 		}
 		

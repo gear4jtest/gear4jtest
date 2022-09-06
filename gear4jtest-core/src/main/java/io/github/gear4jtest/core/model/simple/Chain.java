@@ -7,10 +7,6 @@ public class Chain<IN, OUT> {
 	private Chain() {
 	}
 	
-	public static <A> Builder<A, ?> newChain() {
-		return new Builder<>();
-	}
-	
 	public Branches getBranches() {
 		return branches;
 	}
@@ -19,7 +15,7 @@ public class Chain<IN, OUT> {
 
 		private final Chain<IN, OUT> managedInstance;
 		
-		private Builder() {
+		Builder() {
 			managedInstance = new Chain<>();
 		}
 		

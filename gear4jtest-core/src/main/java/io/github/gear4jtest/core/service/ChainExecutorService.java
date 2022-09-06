@@ -11,7 +11,7 @@ public class ChainExecutorService {
 	// Ici retourner un bean particulier
 	// ChainExecutionResult<IN> qui contiendrait le retour, de type IN, s'il y a eu erreur etc...
 	public <BEGIN, IN> IN execute(Chain<BEGIN, IN> chain, BEGIN object) {
-		AssemblyLine<BEGIN, IN> line = service.execute(chain);
+		AssemblyLine<BEGIN, IN> line = service.buildChain(chain);
 		return (IN) commander.command(line, object);
 	}
 	

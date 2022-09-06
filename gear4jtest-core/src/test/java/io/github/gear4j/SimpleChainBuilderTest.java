@@ -1,7 +1,6 @@
 package io.github.gear4j;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThat;
 
 import java.util.Map;
 
@@ -12,11 +11,12 @@ import io.github.gear4j.steps.Step2;
 import io.github.gear4j.steps.Step3;
 import io.github.gear4j.steps.Step4;
 import io.github.gear4j.steps.Step5;
-import io.github.gear4jtest.core.model.simple.Branch;
-import io.github.gear4jtest.core.model.simple.Branches;
 import io.github.gear4jtest.core.model.simple.Chain;
+import io.github.gear4jtest.core.model.simple.ElementBuilders;
 import io.github.gear4jtest.core.model.simple.Stepa;
 import io.github.gear4jtest.core.service.ChainExecutorService;
+
+import static io.github.gear4jtest.core.model.simple.ElementBuilders.*;
 
 public class SimpleChainBuilderTest {
 
@@ -24,16 +24,14 @@ public class SimpleChainBuilderTest {
 	public void simple_test() {
 		// Given
 		Chain<String, Integer> pipe = 
-				Chain.<String>newChain()
+				chain(String.class)
 					.assemble(
-							Branches.<String>newBranches()
-								.withBranch(
-									Branch.<String>newBranch()
+					    branches(String.class)
+						    .withBranch(
+								branch(String.class)
 									.withStep(
-											Stepa.<String>newStep()
-											.operation(() -> new Step1())
-											.build()
-											)
+										step(() -> new Step1()).build()
+									)
 								.build())
 								.returns("", Integer.class)
 							.build())
@@ -50,42 +48,42 @@ public class SimpleChainBuilderTest {
 	public void test() {
 		// Given
 		Chain<String, Integer> pipe = 
-				Chain.<String>newChain()
+				ElementBuilders.<String>chain()
 					.assemble(
-							Branches.<String>newBranches()
+							ElementBuilders.<String>branches()
 								.withBranch(
-									Branch.<String>newBranch()
+										ElementBuilders.<String>branch()
 									.withStep(
-											Stepa.<String>newStep()
+											ElementBuilders.<String>step()
 											.operation(() -> new Step1())
 											.build()
 											)
 									.withStep(
-											Stepa.<Integer>newStep()
+											ElementBuilders.<Integer>step()
 											.operation(() -> new Step2())
 											.build()
 											)
 									.withStep(
-											Stepa.<String>newStep()
+											ElementBuilders.<String>step()
 											.operation(() -> new Step3())
 											.build()
 											)
 									.withStep(
-											Stepa.<Map<String, String>>newStep()
+											ElementBuilders.<Map<String, String>>step()
 											.operation(() -> new Step4("a").new Step4Map())
 											.build()
 											)
-									.withBranches(Branches.<Void>newBranches()
-											.withBranch(Branch.<Void>newBranch()
+									.withBranches(ElementBuilders.<Void>branches()
+											.withBranch(ElementBuilders.<Void>branch()
 													.withStep(
-														Stepa.<Void>newStep()
+															ElementBuilders.<Void>step()
 														.operation(() -> new Step5())
 														.build()
 														)
 													.build())
-											.withBranch(Branch.<Void>newBranch()
+											.withBranch(ElementBuilders.<Void>branch()
 													.withStep(
-														Stepa.<Void>newStep()
+															ElementBuilders.<Void>step()
 														.operation(() -> new Step5())
 														.build()
 														)
@@ -107,20 +105,20 @@ public class SimpleChainBuilderTest {
 	public void testa() {
 		// Given
 		Chain<String, Integer> pipe = 
-				Chain.<String>newChain()
+				ElementBuilders.<String>chain()
 					.assemble(
-							Branches.<String>newBranches()
+							ElementBuilders.<String>branches()
 								.withBranch(
-									Branch.<String>newBranch()
+										ElementBuilders.<String>branch()
 									.withStep(step1())
 									.withStep(step2())
 									.withStep(step3())
 									.withStep(step4())
-									.withBranches(Branches.<Void>newBranches()
-											.withBranch(Branch.<Void>newBranch()
+									.withBranches(ElementBuilders.<Void>branches()
+											.withBranch(ElementBuilders.<Void>branch()
 													.withStep(step5())
 													.build())
-											.withBranch(Branch.<Void>newBranch()
+											.withBranch(ElementBuilders.<Void>branch()
 													.withStep(step5())
 													.build())
 											.build())
@@ -137,31 +135,31 @@ public class SimpleChainBuilderTest {
 	}
 
 	private Stepa<Void, String> step5() {
-		return Stepa.<Void>newStep()
+		return ElementBuilders.<Void>step()
 		.operation(() -> new Step5())
 		.build();
 	}
 
 	private Stepa<Map<String, String>, Void> step4() {
-		return Stepa.<Map<String, String>>newStep()
+		return ElementBuilders.<Map<String, String>>step()
 				.operation(() -> new Step4("a").new Step4Map())
 				.build();
 	}
 
 	private Stepa<String, Map<String, String>> step3() {
-		return Stepa.<String>newStep()
+		return ElementBuilders.<String>step()
 				.operation(() -> new Step3())
 				.build();
 	}
 
 	private Stepa<Integer, String> step2() {
-		return Stepa.<Integer>newStep()
+		return ElementBuilders.<Integer>step()
 				.operation(() -> new Step2())
 				.build();
 	}
 
 	private Stepa<String, Integer> step1() {
-		return Stepa.<String>newStep()
+		return ElementBuilders.<String>step()
 				.operation(() -> new Step1())
 				.build();
 	}
