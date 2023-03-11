@@ -6,10 +6,10 @@ import java.util.List;
 import io.github.gear4jtest.core.internal.Gear4jContext;
 import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.OperationModel;
-import io.github.gear4jtest.core.processor.Processor;
+import io.github.gear4jtest.core.processor.PreProcessor;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
 
-public class OperationParamsInjector implements Processor<StepLineElement> {
+public class OperationParamsInjector implements PreProcessor {
 
 	@Override
 	public void process(Object input, StepLineElement model, Gear4jContext context, ProcessorDrivingElement<StepLineElement> chain) {

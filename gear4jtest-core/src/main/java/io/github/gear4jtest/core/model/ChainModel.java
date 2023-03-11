@@ -2,9 +2,12 @@ package io.github.gear4jtest.core.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import io.github.gear4jtest.core.internal.StepLineElement;
-import io.github.gear4jtest.core.processor.BaseProcessor;
+import io.github.gear4jtest.core.model.OnError.UnsafeOnError;
+import io.github.gear4jtest.core.processor.PostProcessor;
+import io.github.gear4jtest.core.processor.PreProcessor;
 
 public class ChainModel<IN, OUT> {
 
@@ -53,21 +56,26 @@ public class ChainModel<IN, OUT> {
 	
 	public static class StepLineElementDefaultConfiguration {
 		
-		private List<ProcessorModel<StepLineElement>> preProcessors;
-		private List<ProcessorModel<StepLineElement>> postProcessors;
+		private List<Supplier<PreProcessor>> preProcessors;
+		private List<Supplier<PostProcessor>> postProcessors;
 		private List<OnError> onErrors;
 		
 		private StepLineElementDefaultConfiguration() {
 			this.preProcessors = new ArrayList<>();
 			this.postProcessors = new ArrayList<>();
+			this.onErrors = new ArrayList<>();
 		}
 		
-		public List<ProcessorModel<StepLineElement>> getPreProcessors() {
+		public List<Supplier<PreProcessor>> getPreProcessors() {
 			return preProcessors;
 		}
 		
-		public List<ProcessorModel<StepLineElement>> getPostProcessors() {
+		public List<Supplier<PostProcessor>> getPostProcessors() {
 			return postProcessors;
+		}
+		
+		public List<OnError> getOnErrors() {
+			return onErrors;
 		}
 		
 		public static class Builder {
@@ -78,18 +86,38 @@ public class ChainModel<IN, OUT> {
 				managedInstance = new StepLineElementDefaultConfiguration();
 			}
 			
-			public Builder preProcessor(ProcessorModel<StepLineElement> processor) {
-				this.managedInstance.preProcessors.add(processor);
+//			public Builder preProcessor(ProcessorModel<StepLineElement> processor) {
+//				this.managedInstance.preProcessors.add(processor);
+//				return this;
+//			}
+			
+//			public Builder preProcessors(List<ProcessorModel<StepLineElement>> processors) {
+//				this.managedInstance.preProcessors.addAll(processors);
+//				return this;
+//			}
+			
+			public Builder preProcessors(List<Supplier<PreProcessor>> processors) {
+				this.managedInstance.preProcessors.addAll(processors);
 				return this;
 			}
 
-			public Builder postProcessor(ProcessorModel<StepLineElement> processor) {
-				this.managedInstance.postProcessors.add(processor);
+//			public Builder postProcessor(ProcessorModel<StepLineElement> processor) {
+//				this.managedInstance.postProcessors.add(processor);
+//				return this;
+//			}
+			
+			public Builder postProcessors(List<Supplier<PostProcessor>> processors) {
+				this.managedInstance.postProcessors.addAll(processors);
 				return this;
 			}
 			
-			public Builder onError(OnError onError) {
+			public <T extends OnError> Builder onError(T onError) {
 				this.managedInstance.onErrors.add(onError);
+				return this;
+			}
+			
+			public Builder onError(UnsafeOnError onError) {
+//				this.managedInstance.onErrors.add(onError);
 				return this;
 			}
 			

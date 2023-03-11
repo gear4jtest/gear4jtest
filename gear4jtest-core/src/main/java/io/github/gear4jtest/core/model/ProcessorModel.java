@@ -1,28 +1,27 @@
 package io.github.gear4jtest.core.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.function.Supplier;
 
 import io.github.gear4jtest.core.internal.LineElement;
 import io.github.gear4jtest.core.processor.Processor;
 
 public class ProcessorModel<T extends LineElement> {
 
-	private Processor<T> processor;
+	private Supplier<Processor<T>> processor;
 
-	private List<OnError> onErrors;
+//	private List<OnError> onErrors;
 
 	private ProcessorModel() {
-		onErrors = new ArrayList<>();
+//		onErrors = new ArrayList<>();
 	}
 
-	public Processor<T> getProcessor() {
+	public Supplier<Processor<T>> getProcessor() {
 		return processor;
 	}
 
-	public List<OnError> getOnErrors() {
-		return onErrors;
-	}
+//	public List<OnError> getOnErrors() {
+//		return onErrors;
+//	}
 
 	public static class Builder<T extends LineElement> {
 
@@ -32,15 +31,15 @@ public class ProcessorModel<T extends LineElement> {
 			managedInstance = new ProcessorModel<>();
 		}
 
-		public Builder<T> processor(Processor<T> processor) {
+		public Builder<T> processor(Supplier<Processor<T>> processor) {
 			managedInstance.processor = processor;
 			return this;
 		}
 
-		public Builder<T> onError(OnError onError) {
-			managedInstance.onErrors.add(onError);
-			return this;
-		}
+//		public Builder<T> onError(OnError onError) {
+//			managedInstance.onErrors.add(onError);
+//			return this;
+//		}
 
 		public ProcessorModel<T> build() {
 			return managedInstance;

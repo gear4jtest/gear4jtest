@@ -1,26 +1,26 @@
 package io.github.gear4jtest.core.service;
 
-import static io.github.gear4jtest.core.model.ElementModelBuilders.branch;
-import static io.github.gear4jtest.core.model.ElementModelBuilders.branches;
-import static io.github.gear4jtest.core.model.ElementModelBuilders.chain;
-import static io.github.gear4jtest.core.model.ElementModelBuilders.chainDefaultConfiguration;
-import static io.github.gear4jtest.core.model.ElementModelBuilders.newParameter;
-import static io.github.gear4jtest.core.model.ElementModelBuilders.onError;
-import static io.github.gear4jtest.core.model.ElementModelBuilders.operation;
-import static io.github.gear4jtest.core.model.ElementModelBuilders.processor;
-import static io.github.gear4jtest.core.model.ElementModelBuilders.stepLineElementDefaultConfiguration;
+import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
 import io.github.gear4jtest.core.internal.ChainExecutorService;
+import io.github.gear4jtest.core.internal.Gear4jContext;
+import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.ChainModel;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
+import io.github.gear4jtest.core.model.ElementOnError.RuleOverridingPolicy;
+import io.github.gear4jtest.core.model.OnError;
 import io.github.gear4jtest.core.model.OperationModel;
+import io.github.gear4jtest.core.processor.PostProcessor;
+import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
+import io.github.gear4jtest.core.processor.Transformer;
 import io.github.gear4jtest.core.processor.operation.ChainContextInjector;
 import io.github.gear4jtest.core.processor.operation.OperationParamsInjector;
 import io.github.gear4jtest.core.processor.operation.OperationProcessor;
@@ -32,6 +32,7 @@ import io.github.gear4jtest.core.service.steps.Step5;
 import io.github.gear4jtest.core.service.steps.Step7;
 import io.github.gear4jtest.core.service.steps.Step8;
 
+// handle factory for step / processor... configuration
 public class SimpleChainBuilderTest {
 
 	@Test
@@ -52,10 +53,10 @@ public class SimpleChainBuilderTest {
 							.build())
 					.defaultConfiguration(chainDefaultConfiguration()
 							.stepDefaultConfiguration(stepLineElementDefaultConfiguration()
-									.preProcessor(processor(new OperationParamsInjector())
-											.onError(onError().type(IOException.class).ignore().build())
-											.build())
-									.preProcessor(processor(new ChainContextInjector()).build())
+									.preProcessors(Arrays.asList(
+											OperationParamsInjector::new,
+											ChainContextInjector::new))
+									.onError(onError().rules(Arrays.asList(rule(IOException.class).ignore().build())).build())
 									.build())
 							.build())
 					.build();
@@ -75,28 +76,55 @@ public class SimpleChainBuilderTest {
 					    branches(String.class).withBranch(
 								branch(String.class)
 									.withStep(operation(Step3::new)
-											.onError(onError().processor(OperationProcessor.class).type(RuntimeException.class).ignore().build())
-											.build())
+											.onError(preOnError(OperationParamsInjector.class)
+													.rule(chainBreakRule(Exception.class).build())
+													.rule(ignoreRule(RuntimeException.class).build())
+													.build())
+											.onError(onProcessingError(OperationProcessor.class)
+//													.rule(chainBreakRule(Exception.class).build())
+//													.rule(ignoreRule(Exception.class).build())
+													.build())
+											.onError(postOnError(TestPostProcessor.class)
+//													.rule(chainBreakRule(Exception.class).build())
+//													.rule(ignoreRule(RuntimeException.class).build())
+													.build())
+											.transformer(a -> new HashMap<>())
+											.build()
+											)
 									.withStep(operation(Step8::new).build())
 								.build())
 								.returns("", Integer.class)
 							.build())
 					.defaultConfiguration(chainDefaultConfiguration()
 							.stepDefaultConfiguration(stepLineElementDefaultConfiguration()
-									.preProcessor(processor(new OperationParamsInjector())
-											.onError(onError().type(IOException.class).ignore().build())
-											.build())
-									.preProcessor(processor(new ChainContextInjector()).build())
-									.onError(onError().processor(OperationProcessor.class).type(IOException.class).ignore().build())
+									.preProcessors(Arrays.asList(OperationParamsInjector::new))
 									.build())
 							.build())
 					.build();
 
 		// When
-		result = new ChainExecutorService().execute(newPipe, "", context);
+		result = new ChainExecutorService().execute(newPipe, "a", context);
 
 		// Then
 		assertThat(result).isNotNull().isEqualTo(5);
+	}
+	
+	public static class TestPostProcessor implements PostProcessor {
+
+		@Override
+		public void process(Object input, StepLineElement currentElement, Gear4jContext context,
+				ProcessorDrivingElement<StepLineElement> chainDriver) {
+			
+		}
+		
+	}
+	
+	private static <T> T getT(Class<T> clazz) {
+		try {
+			return clazz.newInstance();
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
 	}
 	
 	@Test

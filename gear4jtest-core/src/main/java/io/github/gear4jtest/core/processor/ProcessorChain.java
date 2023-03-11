@@ -1,33 +1,39 @@
 package io.github.gear4jtest.core.processor;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import io.github.gear4jtest.core.internal.Gear4jContext;
 import io.github.gear4jtest.core.internal.LineElement;
 import io.github.gear4jtest.core.model.OnError;
-import io.github.gear4jtest.core.processor.AbstractProcessorChain2.AbstractBaseProcessorChainElement;
+import io.github.gear4jtest.core.model.OnError.Rule;
+import io.github.gear4jtest.core.processor.AbstractProcessorChain.AbstractBaseProcessorChainElement;
 
 public class ProcessorChain<T extends LineElement> {
 
-	private AbstractProcessorChain2<T> chain;
+	private AbstractProcessorChain<T> chain;
 	
 	private Object input;
 	
 	private Gear4jContext context;
 	
 	private Object result;
+	
+	private boolean isInputProcessed;
 
-	public ProcessorChain(AbstractProcessorChain2<T> chain, Object input, Gear4jContext context) {
+	public ProcessorChain(AbstractProcessorChain<T> chain, Object input, Gear4jContext context) {
 		this.chain = chain;
 		this.input = input;
 		this.context = context;
+		this.result = input;
 	}
 
-	public Object processChain() {
+	public ProcessChainResult processChain() {
 		processProcessor(chain.getCurrentProcessor(), input, context);
 
-		return result;
+		return new ProcessChainResult(result, isInputProcessed);
 	}
 
 	public void proceed() {
@@ -37,6 +43,7 @@ public class ProcessorChain<T extends LineElement> {
 	
 	void proceed(Object result) {
 		this.result = result;
+		this.isInputProcessed = true;
 		proceed();
 	}
 
@@ -48,18 +55,20 @@ public class ProcessorChain<T extends LineElement> {
 		try {
 			currentProcessor.execute(input, context, chain.getCurrentElement(), this);
 		} catch (Exception e) {
-			List<OnError> errors = currentProcessor.getOnErrors().stream()
+			List<Rule> rules = Optional.ofNullable(currentProcessor.getOnErrors()).orElse(Collections.emptyList()).stream()
+					.map(OnError::getRules)
+					.flatMap(List::stream)
 					.filter(error -> isExceptionEligible(e, error.getType()))
 					.collect(Collectors.toList());
-			if (errors.isEmpty()) {
+			if (rules.isEmpty()) {
 				throw e;
 			}
-			for (OnError onError : errors) {
-				if (onError.isFatal()) {
+			for (Rule rule : rules) {
+				if (rule.isFatal()) {
 					throw e;
-				} else if (onError.isProcessorChainFatal()) {
+				} else if (rule.isProcessorChainFatal()) {
 					break;
-				} else if (onError.isIgnore()) {
+				} else if (rule.isIgnore()) {
 
 				}
 			}
@@ -100,6 +109,26 @@ public class ProcessorChain<T extends LineElement> {
 
 		public void proceed(Object result) {
 			chain.proceed(result);
+		}
+		
+	}
+	
+	public static class ProcessChainResult {
+		
+		private Object result;
+		private boolean processed;
+
+		public ProcessChainResult(Object result, boolean processed) {
+			this.result = result;
+			this.processed = processed;
+		}
+
+		public Object getResult() {
+			return result;
+		}
+
+		public boolean isProcessed() {
+			return processed;
 		}
 		
 	}

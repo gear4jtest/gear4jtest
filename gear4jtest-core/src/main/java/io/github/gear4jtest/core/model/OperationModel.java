@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-import io.github.gear4jtest.core.internal.StepLineElement;
+import io.github.gear4jtest.core.processor.PostProcessor;
+import io.github.gear4jtest.core.processor.PreProcessor;
+import io.github.gear4jtest.core.processor.Transformer;
 import io.github.gear4jtest.core.processor.operation.ChainContextInjector.ChainContext;
 import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.ParameterValue;
 
@@ -16,14 +18,17 @@ public class OperationModel<IN, OUT> {
 	
 	private ChainContextRetriever<?> contextRetriever;
 	
-	private List<ProcessorModel<StepLineElement>> preProcessors;
+	private List<Supplier<PreProcessor>> preProcessors;
 	
-	private List<ProcessorModel<StepLineElement>> postProcessors;
+	private List<Supplier<PostProcessor>> postProcessors;
 	
-	private List<OnError> onErrors;
+	private List<BaseOnError> onErrors;
+
+	private Transformer<IN, OUT> transformer;
 
 	private OperationModel() {
 		this.parameters = new ArrayList<>();
+		this.onErrors = new ArrayList<>();
 	}
 
 	public Supplier<Operation<IN, OUT>> getHandler() {
@@ -38,16 +43,20 @@ public class OperationModel<IN, OUT> {
 		return contextRetriever;
 	}
 
-	public List<ProcessorModel<StepLineElement>> getPreProcessors() {
+	public List<Supplier<PreProcessor>> getPreProcessors() {
 		return preProcessors;
 	}
 
-	public List<ProcessorModel<StepLineElement>> getPostProcessors() {
+	public List<Supplier<PostProcessor>> getPostProcessors() {
 		return postProcessors;
 	}
 	
-	public List<OnError> getOnErrors() {
+	public List<BaseOnError> getOnErrors() {
 		return onErrors;
+	}
+	
+	public Transformer<IN, OUT> getTransformer() {
+		return transformer;
 	}
 
 	public static class Builder<IN, OUT, OP extends Operation<IN, OUT>> {
@@ -98,23 +107,33 @@ public class OperationModel<IN, OUT> {
 //			return this;
 //		}
 		
-		public <A> Builder<IN, OUT, OP> preProcessors(List<ProcessorModel<StepLineElement>> processors) {
+		public <A> Builder<IN, OUT, OP> preProcessors(List<Supplier<PreProcessor>> processors) {
 			managedInstance.preProcessors = new ArrayList<>(processors);
 			return this;
 		}
 		
-		public <A> Builder<IN, OUT, OP> preProcessor(ProcessorModel<StepLineElement> processor) {
+		public <A> Builder<IN, OUT, OP> preProcessor(Supplier<PreProcessor> processor) {
 			managedInstance.preProcessors.add(processor);
 			return this;
 		}
 		
-		public <A> Builder<IN, OUT, OP> postProcessor(ProcessorModel<StepLineElement> processor) {
+		public <A> Builder<IN, OUT, OP> postProcessor(Supplier<PostProcessor> processor) {
 			managedInstance.postProcessors.add(processor);
 			return this;
 		}
 		
-		public Builder<IN, OUT, OP> onError(OnError onError) {
+		public Builder<IN, OUT, OP> onError(BaseOnError onError) {
 			this.managedInstance.onErrors.add(onError);
+			return this;
+		}
+		
+		public OperationModel.UnsafeOperationModel.Builder<IN, OUT, OP> onError(UnsafeOnError<?> onError) {
+			this.managedInstance.onErrors.add(onError.getOnError());
+			return new UnsafeOperationModel.Builder<>(this);
+		}
+		
+		public Builder<IN, OUT, OP> transformer(Transformer<IN, OUT> transformer) {
+			this.managedInstance.transformer = transformer;
 			return this;
 		}
 
@@ -180,6 +199,37 @@ public class OperationModel<IN, OUT> {
 	public interface ChainContextRetriever<T extends Operation<?, ?>> {
 		
 		ChainContext getParameterValue(T operation);
+		
+	}
+	
+	public static class UnsafeOperationModel<IN, OUT, OP extends Operation<IN, OUT>> {
+		
+		private OperationModel.Builder<IN, OUT, OP> operation;
+		
+		public static class Builder<IN, OUT, OP extends Operation<IN, OUT>> {
+			
+			private UnsafeOperationModel<IN, OUT, OP> managedInstance;
+			
+			public Builder(OperationModel.Builder<IN, OUT, OP> operation) {
+				this.managedInstance.operation = operation;
+			}
+			
+			public Builder<IN, OUT, OP> onError(BaseOnError onError) {
+				this.managedInstance.operation.onError(onError);
+				return this;
+			}
+			
+			public OperationModel.UnsafeOperationModel.Builder<IN, OUT, OP> onError(UnsafeOnError<?> onError) {
+				this.managedInstance.operation.onError(onError.getOnError());
+				return this;
+			}
+			
+			public OperationModel.Builder<IN, OUT, OP> transformer(Transformer<IN, OUT> transformer) {
+				this.managedInstance.operation.transformer(transformer);
+				return this.managedInstance.operation;
+			}
+			
+		}
 		
 	}
 

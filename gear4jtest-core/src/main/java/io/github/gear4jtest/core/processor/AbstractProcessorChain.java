@@ -1,63 +1,128 @@
-//package io.github.gear4jtest.core.processor;
-//
-//import java.util.List;
-//import java.util.stream.Collectors;
-//
-//import io.github.gear4jtest.core.internal.Gear4jContext;
-//import io.github.gear4jtest.core.internal.LineElement;
-//import io.github.gear4jtest.core.model.OnError;
-//import io.github.gear4jtest.core.model.ProcessorModel;
-//
-//public abstract class AbstractProcessorChain<T extends LineElement> {
-//
-//	private T currentElement;
-//	private List<ProcessorModel<T>> preProcessors;
-//	private List<ProcessorModel<T>> postProcessors;
-//
-//	abstract ProcessingProcessor<T> getElementProcessor();
-//
-//	AbstractProcessorChain(List<ProcessorModel<T>> preProcessors, List<ProcessorModel<T>> postProcessors,
-//			T currentElement) {
-//		this.preProcessors = preProcessors;
-//		this.postProcessors = postProcessors;
-//		this.currentElement = currentElement;
-//	}
-//
-//	public Object processChain(Object input, Gear4jContext context) {
-//		for (ProcessorModel<T> processor : preProcessors) {
-//			executeProcessor(processor, input, context);
-//		}
-//		Object output = getElementProcessor().process(input, currentElement);
-//		for (ProcessorModel<T> processor : postProcessors) {
-//			executeProcessor(processor, input, context);
-//		}
-//		return output;
-//	}
-//
-//	private void executeProcessor(ProcessorModel<T> processor, Object input, Gear4jContext context) {
-//		try {
-//			processor.getProcessor().process(input, currentElement, context);
-//		} catch (Exception e) {
-//			List<OnError> errors = processor.getOnErrors().stream()
-//					.filter(error -> isExceptionEligible(e, error.getClass()))
-//					.collect(Collectors.toList());
-//			if (errors.isEmpty()) {
-//				throw e;
-//			}
-//			for (OnError onError : errors) {
-//				if (onError.isFatal()) {
-//					throw e;
-//				} else if (onError.isProcessorChainFatal()) {
-//					break;
-//				} else if (onError.isIgnore()) {
-//
-//				}
-//			}
-//		}
-//	}
-//
-//	private static boolean isExceptionEligible(Exception e, Class<?> clazz) {
-//		return clazz == null || clazz.isInstance(e);
-//	}
-//
-//}
+package io.github.gear4jtest.core.processor;
+
+import java.util.List;
+import java.util.function.Supplier;
+
+import io.github.gear4jtest.core.internal.Gear4jContext;
+import io.github.gear4jtest.core.internal.LineElement;
+import io.github.gear4jtest.core.internal.ProcessorInternalModel;
+import io.github.gear4jtest.core.model.OnError;
+import io.github.gear4jtest.core.processor.ProcessorChain.BaseProcessorDrivingElement;
+import io.github.gear4jtest.core.processor.ProcessorChain.ProcessingProcessorDrivingElement;
+import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
+
+public abstract class AbstractProcessorChain<T extends LineElement> {
+
+	private T currentElement;
+
+	private AbstractBaseProcessorChainElement<T, ?> currentProcessor;
+	
+	abstract Supplier<ProcessingProcessor<T>> getElementProcessor();
+
+	AbstractProcessorChain(List<ProcessorInternalModel<T>> preProcessors, List<ProcessorInternalModel<T>> postProcessors,
+			T currentElement) {
+		this.currentElement = currentElement;
+		buildProcessorsChain(preProcessors, postProcessors);
+	}
+
+	private void buildProcessorsChain(List<ProcessorInternalModel<T>> preProcessors, List<ProcessorInternalModel<T>> postProcessors) {
+		AbstractBaseProcessorChainElement<T, ?> currentChainedProcessor = null;
+
+		for (ProcessorInternalModel<T> processor : preProcessors) {
+			AbstractBaseProcessorChainElement<T, ?> newProcessor = new ProcessorChainElement<>(processor.getOnErrors(),
+					processor.getProcessor());
+			initProcessorChain(currentChainedProcessor, newProcessor);
+			currentChainedProcessor = newProcessor;
+		}
+		AbstractBaseProcessorChainElement<T, ?> newProcessor = new ProcessingProcessorChainElement<>(null, getElementProcessor());
+		initProcessorChain(currentChainedProcessor, newProcessor);
+		currentChainedProcessor = newProcessor;
+		for (ProcessorInternalModel<T> processor : postProcessors) {
+			newProcessor = new ProcessorChainElement<>(processor.getOnErrors(), processor.getProcessor());
+			initProcessorChain(currentChainedProcessor, newProcessor);
+			currentChainedProcessor = newProcessor;
+		}
+	}
+
+	private void initProcessorChain(AbstractBaseProcessorChainElement<T, ?> currentChainedProcessor,
+			AbstractBaseProcessorChainElement<T, ?> newProcessor) {
+		if (currentChainedProcessor != null) {
+			currentChainedProcessor.setNextElement(newProcessor);
+		}
+		if (currentProcessor == null) {
+			currentProcessor = newProcessor;
+		}
+	}
+	
+	AbstractBaseProcessorChainElement<T, ?> getCurrentProcessor() {
+		return currentProcessor;
+	}
+	
+	T getCurrentElement() {
+		return currentElement;
+	}
+	
+	void setCurrentProcessor(AbstractBaseProcessorChainElement<T, ?> currentProcessor) {
+		this.currentProcessor = currentProcessor;
+	}
+
+	public static abstract class AbstractBaseProcessorChainElement<T extends LineElement, U extends BaseProcessorDrivingElement<T>> {
+
+		private Supplier<BaseProcessor<T, U>> processor;
+
+		private List<OnError> onErrors;
+
+		private AbstractBaseProcessorChainElement<T, ?> nextElement;
+
+		abstract U getDrivingElement(ProcessorChain<T> chain);
+		
+		public void execute(Object input, Gear4jContext context, T element, ProcessorChain<T> chain) {
+			processor.get().process(input, element, context, getDrivingElement(chain));
+		}
+		
+		public AbstractBaseProcessorChainElement(Supplier<BaseProcessor<T, U>> processor, List<OnError> onErrors) {
+			this.processor = processor;
+			this.onErrors = onErrors;
+		}
+
+		public List<OnError> getOnErrors() {
+			return onErrors;
+		}
+
+		public AbstractBaseProcessorChainElement<T, ?> getNextElement() {
+			return nextElement;
+		}
+
+		void setNextElement(AbstractBaseProcessorChainElement<T, ?> nextElement) {
+			this.nextElement = nextElement;
+		}
+
+	}
+
+	public static class ProcessorChainElement<T extends LineElement> extends AbstractBaseProcessorChainElement<T, ProcessorDrivingElement<T>> {
+
+		public ProcessorChainElement(List<OnError> onErrors, Supplier<Processor<T>> processor) {
+			super((Supplier) processor, onErrors);
+		}
+
+		@Override
+		ProcessorDrivingElement<T> getDrivingElement(ProcessorChain<T> chain) {
+			return new ProcessorDrivingElement<>(chain);
+		}
+
+	}
+
+	public static class ProcessingProcessorChainElement<T extends LineElement> extends AbstractBaseProcessorChainElement<T, ProcessingProcessorDrivingElement<T>> {
+
+		public ProcessingProcessorChainElement(List<OnError> onErrors, Supplier<ProcessingProcessor<T>> processor) {
+			super((Supplier) processor, onErrors);
+		}
+
+		@Override
+		ProcessingProcessorDrivingElement<T> getDrivingElement(ProcessorChain<T> chain) {
+			return new ProcessingProcessorDrivingElement<T>(chain);
+		}
+
+	}
+
+}

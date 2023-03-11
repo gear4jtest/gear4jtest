@@ -1,82 +1,96 @@
 package io.github.gear4jtest.core.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.github.gear4jtest.core.processor.BaseProcessor;
 
 public class OnError {
 
-	private Class<? extends Throwable> type;
-	
-	private Class<? extends BaseProcessor<?, ?>> processor;
-	
-	private boolean ignore;
-	
-	private boolean processorChainFatal;
+	protected Class<? extends BaseProcessor<?, ?>> processor;
 
-	private boolean fatal;
-	
-	private OnError() {
-		this.fatal = true;
+	protected List<Rule> rules;
+
+	OnError() {
+		this.rules = new ArrayList<>();
 	}
 
-	public Class<? extends Throwable> getType() {
-		return type;
-	}
-	
 	public Class<? extends BaseProcessor<?, ?>> getProcessor() {
 		return processor;
 	}
 
-	public boolean isIgnore() {
-		return ignore;
+	public List<Rule> getRules() {
+		return rules;
 	}
 
-	public boolean isProcessorChainFatal() {
-		return processorChainFatal;
-	}
-
-	public boolean isFatal() {
-		return fatal;
-	}
-	
 	public static class Builder {
 
-		private final OnError managedInstance;
+		protected final OnError managedInstance;
 
 		Builder() {
 			managedInstance = new OnError();
 		}
 
-		public OnError.Builder type(Class<? extends Throwable> clazz) {
-			managedInstance.type = clazz;
-			return this;
-		}
-		
 		public OnError.Builder processor(Class<? extends BaseProcessor<?, ?>> processor) {
 			managedInstance.processor = processor;
 			return this;
 		}
-		
-		public OnError.Builder ignore() {
-			managedInstance.ignore = true;
-			managedInstance.fatal = false;
-			managedInstance.processorChainFatal = false;
+
+		public OnError.Builder rules(List<Rule> rules) {
+			managedInstance.rules.addAll(rules);
 			return this;
 		}
-		
-		public OnError.Builder processorChainFatal(boolean processorChainFatal) {
-			managedInstance.processorChainFatal = processorChainFatal;
-			return this;
-		}
-		
-		public OnError.Builder fatal(boolean fatal) {
-			managedInstance.fatal = fatal;
-			return this;
-		}
-		
+
 		public OnError build() {
 			return managedInstance;
 		}
 
+	}
+	
+	public static class ProcessingBuilder {
+
+		protected final OnError managedInstance;
+
+		ProcessingBuilder() {
+			managedInstance = new OnError();
+		}
+		
+		public OnError.ProcessingBuilder processor(Class<? extends BaseProcessor<?, ?>> processor) {
+			managedInstance.processor = processor;
+			return this;
+		}
+
+		public UnsafeOnError.Builder ignore() {
+			managedInstance.rules.add(new Rule.Builder().ignore().build());
+			return new UnsafeOnError.Builder();
+		}
+
+		public OnError build() {
+			return managedInstance;
+		}
+
+	}
+	
+	public static class UnsafeOnError {
+		
+		public static class Builder {
+
+			public UnsafeOnError.Builder processor(Class<? extends BaseProcessor<?, ?>> processor) {
+//				managedInstance.processor = processor;
+				return this;
+			}
+
+			public UnsafeOnError.Builder rules(List<Rule> rules) {
+//				managedInstance.rules.addAll(rules);
+				return this;
+			}
+
+			public UnsafeOnError build() {
+				return new UnsafeOnError();
+			}
+
+		}
+		
 	}
 
 }

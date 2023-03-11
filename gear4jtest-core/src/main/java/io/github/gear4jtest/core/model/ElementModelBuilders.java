@@ -6,6 +6,9 @@ import java.util.function.Supplier;
 import io.github.gear4jtest.core.internal.LineElement;
 import io.github.gear4jtest.core.model.OperationModel.ParamRetriever;
 import io.github.gear4jtest.core.model.OperationModel.Parameter;
+import io.github.gear4jtest.core.processor.PostProcessor;
+import io.github.gear4jtest.core.processor.PreProcessor;
+import io.github.gear4jtest.core.processor.ProcessingProcessor;
 import io.github.gear4jtest.core.processor.Processor;
 
 public final class ElementModelBuilders {
@@ -58,13 +61,47 @@ public final class ElementModelBuilders {
 		return param;
 	}
 	
-	public static <T extends LineElement> ProcessorModel.Builder<T> processor(Processor<T> processor) {
+	public static <T extends LineElement> ProcessorModel.Builder<T> processor(Supplier<Processor<T>> processor) {
 		return new ProcessorModel.Builder<T>()
 				.processor(processor);
 	}
 	
 	public static OnError.Builder onError() {
 		return new OnError.Builder();
+	}
+	
+	public static PreProcessorOnError.Builder preOnError(Class<? extends PreProcessor> processor) {
+		return new PreProcessorOnError.Builder()
+				.processor(processor);
+	}
+	
+	public static PostProcessorOnError.Builder postOnError(Class<? extends PostProcessor> processor) {
+		return new PostProcessorOnError.Builder()
+				.processor(processor);
+	}
+	
+	public static ProcessingProcessorOnError.Builder onProcessingError(Class<? extends ProcessingProcessor<?>> processor) {
+		return new ProcessingProcessorOnError.Builder()
+				.processor(processor);
+	}
+	
+	public static Rule.Builder rule() {
+		return new Rule.Builder();
+	}
+	
+	public static Rule.Builder rule(Class<? extends Exception> clazz) {
+		return new Rule.Builder()
+				.type(clazz);
+	}
+	
+	public static IgnoreRule.Builder ignoreRule(Class<? extends Exception> clazz) {
+		return new IgnoreRule.Builder()
+				.type(clazz);
+	}
+	
+	public static ChainBreakRule.Builder chainBreakRule(Class<? extends Exception> clazz) {
+		return new ChainBreakRule.Builder()
+				.type(clazz);
 	}
 	
 }

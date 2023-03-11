@@ -5,10 +5,10 @@ import java.util.Map;
 import io.github.gear4jtest.core.internal.Gear4jContext;
 import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.OperationModel.ChainContextRetriever;
-import io.github.gear4jtest.core.processor.Processor;
+import io.github.gear4jtest.core.processor.PreProcessor;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
 
-public class ChainContextInjector implements Processor<StepLineElement> {
+public class ChainContextInjector implements PreProcessor {
 
 	@Override
 	public void process(Object input, StepLineElement model, Gear4jContext context, ProcessorDrivingElement<StepLineElement> chain) {
