@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 import io.github.gear4jtest.core.internal.Gear4jContext;
 import io.github.gear4jtest.core.internal.LineElement;
 import io.github.gear4jtest.core.internal.ProcessorInternalModel;
-import io.github.gear4jtest.core.model.OnError;
+import io.github.gear4jtest.core.model.BaseOnError;
 import io.github.gear4jtest.core.processor.ProcessorChain.BaseProcessorDrivingElement;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessingProcessorDrivingElement;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
@@ -29,6 +29,7 @@ public abstract class AbstractProcessorChain<T extends LineElement> {
 		AbstractBaseProcessorChainElement<T, ?> currentChainedProcessor = null;
 
 		for (ProcessorInternalModel<T> processor : preProcessors) {
+			Supplier<? extends Processor<LineElement>> supp;
 			AbstractBaseProcessorChainElement<T, ?> newProcessor = new ProcessorChainElement<>(processor.getOnErrors(),
 					processor.getProcessor());
 			initProcessorChain(currentChainedProcessor, newProcessor);
@@ -70,7 +71,7 @@ public abstract class AbstractProcessorChain<T extends LineElement> {
 
 		private Supplier<BaseProcessor<T, U>> processor;
 
-		private List<OnError> onErrors;
+		private List<BaseOnError> onErrors;
 
 		private AbstractBaseProcessorChainElement<T, ?> nextElement;
 
@@ -80,12 +81,12 @@ public abstract class AbstractProcessorChain<T extends LineElement> {
 			processor.get().process(input, element, context, getDrivingElement(chain));
 		}
 		
-		public AbstractBaseProcessorChainElement(Supplier<BaseProcessor<T, U>> processor, List<OnError> onErrors) {
+		public AbstractBaseProcessorChainElement(Supplier<BaseProcessor<T, U>> processor, List<BaseOnError> onErrors) {
 			this.processor = processor;
 			this.onErrors = onErrors;
 		}
 
-		public List<OnError> getOnErrors() {
+		public List<BaseOnError> getOnErrors() {	
 			return onErrors;
 		}
 
@@ -101,7 +102,7 @@ public abstract class AbstractProcessorChain<T extends LineElement> {
 
 	public static class ProcessorChainElement<T extends LineElement> extends AbstractBaseProcessorChainElement<T, ProcessorDrivingElement<T>> {
 
-		public ProcessorChainElement(List<OnError> onErrors, Supplier<Processor<T>> processor) {
+		public ProcessorChainElement(List<BaseOnError> onErrors, Supplier<? extends Processor<T>> processor) {
 			super((Supplier) processor, onErrors);
 		}
 
@@ -114,7 +115,7 @@ public abstract class AbstractProcessorChain<T extends LineElement> {
 
 	public static class ProcessingProcessorChainElement<T extends LineElement> extends AbstractBaseProcessorChainElement<T, ProcessingProcessorDrivingElement<T>> {
 
-		public ProcessingProcessorChainElement(List<OnError> onErrors, Supplier<ProcessingProcessor<T>> processor) {
+		public ProcessingProcessorChainElement(List<BaseOnError> onErrors, Supplier<ProcessingProcessor<T>> processor) {
 			super((Supplier) processor, onErrors);
 		}
 

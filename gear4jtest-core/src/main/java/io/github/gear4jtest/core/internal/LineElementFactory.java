@@ -1,5 +1,6 @@
 package io.github.gear4jtest.core.internal;
 
+import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.model.BranchModel;
 import io.github.gear4jtest.core.model.BranchesModel;
 import io.github.gear4jtest.core.model.ChainModel.StepLineElementDefaultConfiguration;
@@ -17,8 +18,8 @@ public class LineElementFactory {
 		return new BranchLineElement(branch);
 	}
 	
-	static LineElement buildLineElement(OperationModel<?, ?> step, StepLineElementDefaultConfiguration defaultConfiguration) {
-		return new StepLineElement(step, defaultConfiguration);
+	static LineElement buildLineElement(OperationModel<?, ?> step, StepLineElementDefaultConfiguration defaultConfiguration, ResourceFactory resourceFactory) {
+		return new StepLineElement(step, defaultConfiguration, resourceFactory);
 	}
 	
 }

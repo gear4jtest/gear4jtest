@@ -18,9 +18,9 @@ public class OperationModel<IN, OUT> {
 	
 	private ChainContextRetriever<?> contextRetriever;
 	
-	private List<Supplier<PreProcessor>> preProcessors;
+	private List<Class<? extends PreProcessor>> preProcessors;
 	
-	private List<Supplier<PostProcessor>> postProcessors;
+	private List<Class<? extends PostProcessor>> postProcessors;
 	
 	private List<BaseOnError> onErrors;
 
@@ -43,11 +43,11 @@ public class OperationModel<IN, OUT> {
 		return contextRetriever;
 	}
 
-	public List<Supplier<PreProcessor>> getPreProcessors() {
+	public List<Class<? extends PreProcessor>> getPreProcessors() {
 		return preProcessors;
 	}
 
-	public List<Supplier<PostProcessor>> getPostProcessors() {
+	public List<Class<? extends PostProcessor>> getPostProcessors() {
 		return postProcessors;
 	}
 	
@@ -107,17 +107,17 @@ public class OperationModel<IN, OUT> {
 //			return this;
 //		}
 		
-		public <A> Builder<IN, OUT, OP> preProcessors(List<Supplier<PreProcessor>> processors) {
+		public <A> Builder<IN, OUT, OP> preProcessors(List<Class<PreProcessor>> processors) {
 			managedInstance.preProcessors = new ArrayList<>(processors);
 			return this;
 		}
 		
-		public <A> Builder<IN, OUT, OP> preProcessor(Supplier<PreProcessor> processor) {
+		public <A> Builder<IN, OUT, OP> preProcessor(Class<PreProcessor> processor) {
 			managedInstance.preProcessors.add(processor);
 			return this;
 		}
 		
-		public <A> Builder<IN, OUT, OP> postProcessor(Supplier<PostProcessor> processor) {
+		public <A> Builder<IN, OUT, OP> postProcessor(Class<PostProcessor> processor) {
 			managedInstance.postProcessors.add(processor);
 			return this;
 		}
@@ -211,6 +211,7 @@ public class OperationModel<IN, OUT> {
 			private UnsafeOperationModel<IN, OUT, OP> managedInstance;
 			
 			public Builder(OperationModel.Builder<IN, OUT, OP> operation) {
+				this.managedInstance = new UnsafeOperationModel<>();
 				this.managedInstance.operation = operation;
 			}
 			

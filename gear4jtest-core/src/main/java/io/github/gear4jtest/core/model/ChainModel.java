@@ -2,21 +2,25 @@ package io.github.gear4jtest.core.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
-import io.github.gear4jtest.core.internal.StepLineElement;
+import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.model.OnError.UnsafeOnError;
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.PreProcessor;
 
 public class ChainModel<IN, OUT> {
 
+	private ResourceFactory resourceFactory;
 	private BranchesModel branches;
 	private ChainDefaultConfiguration chainDefaultConfiguration;
 	
 	private ChainModel() {
 	}
 	
+	public ResourceFactory getResourceFactory() {
+		return resourceFactory;
+	}
+
 	public BranchesModel getBranches() {
 		return branches;
 	}
@@ -56,8 +60,8 @@ public class ChainModel<IN, OUT> {
 	
 	public static class StepLineElementDefaultConfiguration {
 		
-		private List<Supplier<PreProcessor>> preProcessors;
-		private List<Supplier<PostProcessor>> postProcessors;
+		private List<Class<? extends PreProcessor>> preProcessors;
+		private List<Class<? extends PostProcessor>> postProcessors;
 		private List<OnError> onErrors;
 		
 		private StepLineElementDefaultConfiguration() {
@@ -66,11 +70,11 @@ public class ChainModel<IN, OUT> {
 			this.onErrors = new ArrayList<>();
 		}
 		
-		public List<Supplier<PreProcessor>> getPreProcessors() {
+		public List<Class<? extends PreProcessor>> getPreProcessors() {
 			return preProcessors;
 		}
 		
-		public List<Supplier<PostProcessor>> getPostProcessors() {
+		public List<Class<? extends PostProcessor>> getPostProcessors() {
 			return postProcessors;
 		}
 		
@@ -96,8 +100,8 @@ public class ChainModel<IN, OUT> {
 //				return this;
 //			}
 			
-			public Builder preProcessors(List<Supplier<PreProcessor>> processors) {
-				this.managedInstance.preProcessors.addAll(processors);
+			public Builder preProcessors(List<Class<? extends PreProcessor>> list) {
+				this.managedInstance.preProcessors.addAll(list);
 				return this;
 			}
 
@@ -106,7 +110,7 @@ public class ChainModel<IN, OUT> {
 //				return this;
 //			}
 			
-			public Builder postProcessors(List<Supplier<PostProcessor>> processors) {
+			public Builder postProcessors(List<Class<? extends PostProcessor>> processors) {
 				this.managedInstance.postProcessors.addAll(processors);
 				return this;
 			}
@@ -134,6 +138,11 @@ public class ChainModel<IN, OUT> {
 		
 		Builder() {
 			managedInstance = new ChainModel<>();
+		}
+		
+		public Builder<IN, OUT> resourceFactory(ResourceFactory resourceFactory) {
+			managedInstance.resourceFactory = resourceFactory;
+			return this;
 		}
 		
 		public <A> Builder<IN, A> assemble(BranchesModel<IN, A> branches) {

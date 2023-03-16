@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.OperationModel;
 import io.github.gear4jtest.core.processor.ProcessorChain;
@@ -25,7 +26,12 @@ class OperationParamsInjectorTest {
 		OperationModel<String, Integer> operationModel = operation(() -> new Step1())
 				.parameter(newParameter(Step1::getA).value("Value")).build();
 
-		StepLineElement element = new StepLineElement(operationModel, stepLineElementDefaultConfiguration().build());
+		StepLineElement element = new StepLineElement(operationModel, stepLineElementDefaultConfiguration().build(), new ResourceFactory() {
+			@Override
+			public <T> T getResource(Class<T> clazz) {
+				return null;
+			}
+		});
 		StepProcessorChain chain = new StepProcessorChain(emptyList(), emptyList(), element);
 
 		// When

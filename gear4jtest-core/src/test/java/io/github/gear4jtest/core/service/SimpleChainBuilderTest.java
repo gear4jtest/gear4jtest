@@ -10,17 +10,15 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.internal.ChainExecutorService;
 import io.github.gear4jtest.core.internal.Gear4jContext;
 import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.ChainModel;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
-import io.github.gear4jtest.core.model.ElementOnError.RuleOverridingPolicy;
-import io.github.gear4jtest.core.model.OnError;
 import io.github.gear4jtest.core.model.OperationModel;
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
-import io.github.gear4jtest.core.processor.Transformer;
 import io.github.gear4jtest.core.processor.operation.ChainContextInjector;
 import io.github.gear4jtest.core.processor.operation.OperationParamsInjector;
 import io.github.gear4jtest.core.processor.operation.OperationProcessor;
@@ -40,6 +38,7 @@ public class SimpleChainBuilderTest {
 		// Given
 		ChainModel<String, Integer> pipe = 
 				chain(String.class)
+					.resourceFactory(new TestResourceFactory())
 					.assemble(
 					    branches(String.class).withBranch(
 								branch(String.class).withStep(
@@ -54,8 +53,8 @@ public class SimpleChainBuilderTest {
 					.defaultConfiguration(chainDefaultConfiguration()
 							.stepDefaultConfiguration(stepLineElementDefaultConfiguration()
 									.preProcessors(Arrays.asList(
-											OperationParamsInjector::new,
-											ChainContextInjector::new))
+											OperationParamsInjector.class,
+											ChainContextInjector.class))
 									.onError(onError().rules(Arrays.asList(rule(IOException.class).ignore().build())).build())
 									.build())
 							.build())
@@ -72,7 +71,8 @@ public class SimpleChainBuilderTest {
 		// Given
 		ChainModel<String, Integer> newPipe = 
 				chain(String.class)
-					.assemble(
+					.resourceFactory(new TestResourceFactory())
+					.assemble(// definition as method name ?
 					    branches(String.class).withBranch(
 								branch(String.class)
 									.withStep(operation(Step3::new)
@@ -97,7 +97,7 @@ public class SimpleChainBuilderTest {
 							.build())
 					.defaultConfiguration(chainDefaultConfiguration()
 							.stepDefaultConfiguration(stepLineElementDefaultConfiguration()
-									.preProcessors(Arrays.asList(OperationParamsInjector::new))
+									.preProcessors(Arrays.asList(OperationParamsInjector.class))
 									.build())
 							.build())
 					.build();
@@ -107,6 +107,22 @@ public class SimpleChainBuilderTest {
 
 		// Then
 		assertThat(result).isNotNull().isEqualTo(5);
+	}
+	
+	public static class TestResourceFactory implements ResourceFactory {
+
+		final static Map<Class<?>, Object> BEANS;
+		static {
+			BEANS = new HashMap<>();
+			BEANS.put(OperationParamsInjector.class, new OperationParamsInjector());
+			BEANS.put(ChainContextInjector.class, new ChainContextInjector());
+		}
+		
+		@Override
+		public <T> T getResource(Class<T> clazz) {
+			return (T) BEANS.get(clazz);
+		}
+		
 	}
 	
 	public static class TestPostProcessor implements PostProcessor {

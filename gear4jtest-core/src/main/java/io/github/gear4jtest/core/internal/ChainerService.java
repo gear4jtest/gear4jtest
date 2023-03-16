@@ -9,13 +9,14 @@ import io.github.gear4jtest.core.model.OperationModel;
 import io.github.gear4jtest.core.model.ChainModel.ChainDefaultConfiguration;
 
 public class ChainerService {
-	
-	private ChainDefaultConfiguration chainDefaultConfiguration;
-	
-	ChainerService() {}
+
+	private ChainModel<?, ?> chain;
+
+	ChainerService() {
+	}
 
 	public <BEGIN, IN> AssemblyLine<BEGIN, IN> buildChain(ChainModel<BEGIN, IN> chain) {
-		this.chainDefaultConfiguration = chain.getChainDefaultConfiguration();
+		this.chain = chain;
 		LineElement startingElement = buildLineElement(chain.getBranches(), null);
 		return new AssemblyLine<>(startingElement);
 	}
@@ -39,11 +40,13 @@ public class ChainerService {
 	}
 
 	private LineElement buildLineElement(OperationModel<?, ?> stepa, LineElement parentElement) {
-		LineElement element = LineElementFactory.buildLineElement(stepa, chainDefaultConfiguration.getStepLineElementDefaultConfiguration());
+		LineElement element = LineElementFactory.buildLineElement(stepa,
+				chain.getChainDefaultConfiguration().getStepLineElementDefaultConfiguration(),
+				chain.getResourceFactory());
 		parentElement.addNextLineElement(element);
 		return element;
 	}
-	
+
 	private LineElement buildLineElement(Object object, LineElement parentElement) {
 		if (object instanceof BranchesModel) {
 			return buildLineElement((BranchesModel<?, ?>) object, parentElement);

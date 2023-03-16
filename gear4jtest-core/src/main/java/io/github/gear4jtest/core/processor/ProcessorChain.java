@@ -7,8 +7,11 @@ import java.util.stream.Collectors;
 
 import io.github.gear4jtest.core.internal.Gear4jContext;
 import io.github.gear4jtest.core.internal.LineElement;
-import io.github.gear4jtest.core.model.OnError;
-import io.github.gear4jtest.core.model.OnError.Rule;
+import io.github.gear4jtest.core.model.BaseOnError;
+import io.github.gear4jtest.core.model.BaseRule;
+import io.github.gear4jtest.core.model.ChainBreakRule;
+import io.github.gear4jtest.core.model.FatalRule;
+import io.github.gear4jtest.core.model.IgnoreRule;
 import io.github.gear4jtest.core.processor.AbstractProcessorChain.AbstractBaseProcessorChainElement;
 
 public class ProcessorChain<T extends LineElement> {
@@ -55,20 +58,20 @@ public class ProcessorChain<T extends LineElement> {
 		try {
 			currentProcessor.execute(input, context, chain.getCurrentElement(), this);
 		} catch (Exception e) {
-			List<Rule> rules = Optional.ofNullable(currentProcessor.getOnErrors()).orElse(Collections.emptyList()).stream()
-					.map(OnError::getRules)
+			List<BaseRule> rules = Optional.ofNullable(currentProcessor.getOnErrors()).orElse(Collections.emptyList()).stream()
+					.map(BaseOnError::getRules)
 					.flatMap(List::stream)
 					.filter(error -> isExceptionEligible(e, error.getType()))
 					.collect(Collectors.toList());
 			if (rules.isEmpty()) {
 				throw e;
 			}
-			for (Rule rule : rules) {
-				if (rule.isFatal()) {
+			for (BaseRule rule : rules) {
+				if (rule instanceof FatalRule) {
 					throw e;
-				} else if (rule.isProcessorChainFatal()) {
+				} else if (rule instanceof ChainBreakRule) {
 					break;
-				} else if (rule.isIgnore()) {
+				} else if (rule instanceof IgnoreRule) {
 
 				}
 			}
