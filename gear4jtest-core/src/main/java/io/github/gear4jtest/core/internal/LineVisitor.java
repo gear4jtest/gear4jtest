@@ -1,6 +1,7 @@
 package io.github.gear4jtest.core.internal;
 
 import io.github.gear4jtest.core.processor.ProcessorChain;
+import io.github.gear4jtest.core.processor.StepProcessingContext;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessChainResult;
 
 public class LineVisitor {
@@ -18,7 +19,8 @@ public class LineVisitor {
 	}
 	
 	private Object visit(StepLineElement element, Object input, Gear4jContext context) {
-		ProcessorChain<StepLineElement> chain = new ProcessorChain<StepLineElement>(element.getProcessorChain(), input, context);
+		StepProcessingContext ctx = new StepProcessingContext();
+		ProcessorChain<StepLineElement, StepProcessingContext> chain = new ProcessorChain<>(element.getProcessorChain(), input, context, element, ctx);
 		ProcessChainResult result = chain.processChain();
 		if (!result.isProcessed()) {
 			if (element.getTransformer() == null) {

@@ -1,19 +1,20 @@
 package io.github.gear4jtest.core.processor.operation;
 
-import static io.github.gear4jtest.core.model.ElementModelBuilders.newParameter;
-import static io.github.gear4jtest.core.model.ElementModelBuilders.operation;
-import static io.github.gear4jtest.core.model.ElementModelBuilders.stepLineElementDefaultConfiguration;
+import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
 import io.github.gear4jtest.core.factory.ResourceFactory;
+import io.github.gear4jtest.core.internal.ProcessorInternalModel;
 import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.OperationModel;
 import io.github.gear4jtest.core.processor.ProcessorChain;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
-import io.github.gear4jtest.core.processor.StepProcessorChain;
+import io.github.gear4jtest.core.processor.ProcessorChainTemplate;
+import io.github.gear4jtest.core.processor.StepProcessingContext;
 import io.github.gear4jtest.core.service.steps.Step1;
 
 class OperationParamsInjectorTest {
@@ -23,22 +24,28 @@ class OperationParamsInjectorTest {
 	@Test
 	void test() {
 		// Given
-		OperationModel<String, Integer> operationModel = operation(() -> new Step1())
+		OperationModel<String, Integer> operationModel = operation(Step1.class)
 				.parameter(newParameter(Step1::getA).value("Value")).build();
 
-		StepLineElement element = new StepLineElement(operationModel, stepLineElementDefaultConfiguration().build(), new ResourceFactory() {
+		ResourceFactory factory = new ResourceFactory() {
 			@Override
 			public <T> T getResource(Class<T> clazz) {
-				return null;
+				return (T) new Step1();
 			}
-		});
-		StepProcessorChain chain = new StepProcessorChain(emptyList(), emptyList(), element);
+		};
+		
+		StepLineElement element = new StepLineElement(operationModel, stepLineElementDefaultConfiguration().build(), factory);
+		ProcessorInternalModel<StepLineElement> p = new ProcessorInternalModel<>(OperationParamsInjector.class, emptyList());
+		ProcessorChainTemplate<StepLineElement, StepProcessingContext> a = new ProcessorChainTemplate<>(singletonList(p), factory);
+		StepProcessingContext ctx = new StepProcessingContext();
+		ctx.setOperation(new Step1());
+		ProcessorChain chain = new ProcessorChain<>(a, "&", null, element, ctx);
 
 		// When
-		injector.process("&", element, null, new ProcessorDrivingElement<StepLineElement>(new ProcessorChain<StepLineElement>(chain, "&", null)));
+		injector.process("&", element, ctx, new ProcessorDrivingElement<StepLineElement>(chain), null);
 
 		// Then
-		assertThat(((Step1) element.getOperation().getOperation()).getA().getValue()).isEqualTo("Value");
+		assertThat(((Step1) ctx.getOperation()).getA().getValue()).isEqualTo("Value");
 	}
 
 }

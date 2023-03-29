@@ -19,20 +19,22 @@ import io.github.gear4jtest.core.model.ElementModelBuilders;
 import io.github.gear4jtest.core.model.OperationModel;
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
+import io.github.gear4jtest.core.processor.StepProcessingContext;
 import io.github.gear4jtest.core.processor.operation.ChainContextInjector;
 import io.github.gear4jtest.core.processor.operation.OperationParamsInjector;
-import io.github.gear4jtest.core.processor.operation.OperationProcessor;
+import io.github.gear4jtest.core.processor.operation.OperationRetriever;
+import io.github.gear4jtest.core.processor.operation.OperationInvoker;
 import io.github.gear4jtest.core.service.steps.Step1;
 import io.github.gear4jtest.core.service.steps.Step2;
 import io.github.gear4jtest.core.service.steps.Step3;
-import io.github.gear4jtest.core.service.steps.Step4;
+import io.github.gear4jtest.core.service.steps.Step4.Step4Map;
 import io.github.gear4jtest.core.service.steps.Step5;
 import io.github.gear4jtest.core.service.steps.Step7;
 import io.github.gear4jtest.core.service.steps.Step8;
 
 // handle factory for step / processor... configuration
 public class SimpleChainBuilderTest {
-
+	
 	@Test
 	public void simple_test() {
 		// Given
@@ -42,7 +44,7 @@ public class SimpleChainBuilderTest {
 					.assemble(
 					    branches(String.class).withBranch(
 								branch(String.class).withStep(
-										operation(Step7::new)
+										operation(Step7.class)
 											.parameter(newParameter(Step7::getValue).value(14538))
 											.context(Step7::getChainContext)
 											.build()
@@ -75,12 +77,12 @@ public class SimpleChainBuilderTest {
 					.assemble(// definition as method name ?
 					    branches(String.class).withBranch(
 								branch(String.class)
-									.withStep(operation(Step3::new)
+									.withStep(operation(Step3.class)
 											.onError(preOnError(OperationParamsInjector.class)
 													.rule(chainBreakRule(Exception.class).build())
 													.rule(ignoreRule(RuntimeException.class).build())
 													.build())
-											.onError(onProcessingError(OperationProcessor.class)
+											.onError(onProcessingError(OperationInvoker.class)
 //													.rule(chainBreakRule(Exception.class).build())
 //													.rule(ignoreRule(Exception.class).build())
 													.build())
@@ -91,7 +93,7 @@ public class SimpleChainBuilderTest {
 											.transformer(a -> new HashMap<>())
 											.build()
 											)
-									.withStep(operation(Step8::new).build())
+									.withStep(operation(Step8.class).build())
 								.build())
 								.returns("", Integer.class)
 							.build())
@@ -116,6 +118,11 @@ public class SimpleChainBuilderTest {
 			BEANS = new HashMap<>();
 			BEANS.put(OperationParamsInjector.class, new OperationParamsInjector());
 			BEANS.put(ChainContextInjector.class, new ChainContextInjector());
+			BEANS.put(OperationRetriever.class, new OperationRetriever());
+			BEANS.put(OperationInvoker.class, new OperationInvoker());
+			BEANS.put(Step7.class, new Step7());
+			BEANS.put(Step3.class, new Step3());
+			BEANS.put(Step8.class, new Step8());
 		}
 		
 		@Override
@@ -128,10 +135,11 @@ public class SimpleChainBuilderTest {
 	public static class TestPostProcessor implements PostProcessor {
 
 		@Override
-		public void process(Object input, StepLineElement currentElement, Gear4jContext context,
-				ProcessorDrivingElement<StepLineElement> chainDriver) {
+		public void process(Object input, StepLineElement currentElement, StepProcessingContext processingContext,
+				ProcessorDrivingElement<StepLineElement> chainDriver, Gear4jContext context) {
 			
 		}
+
 		
 	}
 	
@@ -154,36 +162,36 @@ public class SimpleChainBuilderTest {
 										ElementModelBuilders.<String>branch()
 									.withStep(
 											ElementModelBuilders.<String>operation()
-											.handler(() -> new Step1())
+											.type(Step1.class)
 											.build()
 											)
 									.withStep(
 											ElementModelBuilders.<Integer>operation()
-											.handler(() -> new Step2())
+											.type(Step2.class)
 											.build()
 											)
 									.withStep(
 											ElementModelBuilders.<String>operation()
-											.handler(() -> new Step3())
+											.type(Step3.class)
 											.build()
 											)
 									.withStep(
 											ElementModelBuilders.<Map<String, String>>operation()
-											.handler(() -> new Step4("a").new Step4Map())
+											.type(Step4Map.class)
 											.build()
 											)
 									.withBranches(ElementModelBuilders.<Void>branches()
 											.withBranch(ElementModelBuilders.<Void>branch()
 													.withStep(
 															ElementModelBuilders.<Void>operation()
-														.handler(() -> new Step5())
+															.type(Step5.class)
 														.build()
 														)
 													.build())
 											.withBranch(ElementModelBuilders.<Void>branch()
 													.withStep(
 															ElementModelBuilders.<Void>operation()
-														.handler(() -> new Step5())
+															.type(Step5.class)
 														.build()
 														)
 													.build())
@@ -235,31 +243,31 @@ public class SimpleChainBuilderTest {
 
 	private OperationModel<Void, String> step5() {
 		return ElementModelBuilders.<Void>operation()
-		.handler(() -> new Step5())
+				.type(Step5.class)
 		.build();
 	}
 
 	private OperationModel<Map<String, String>, Void> step4() {
 		return ElementModelBuilders.<Map<String, String>>operation()
-				.handler(() -> new Step4("a").new Step4Map())
+				.type(Step4Map.class)
 				.build();
 	}
 
 	private OperationModel<String, Map<String, String>> step3() {
 		return ElementModelBuilders.<String>operation()
-				.handler(() -> new Step3())
+				.type(Step3.class)
 				.build();
 	}
 
 	private OperationModel<Integer, String> step2() {
 		return ElementModelBuilders.<Integer>operation()
-				.handler(() -> new Step2())
+				.type(Step2.class)
 				.build();
 	}
 
 	private OperationModel<String, Integer> step1() {
 		return ElementModelBuilders.<String>operation()
-				.handler(() -> new Step1())
+				.type(Step1.class)
 				.build();
 	}
 

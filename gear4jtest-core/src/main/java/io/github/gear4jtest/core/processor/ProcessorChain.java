@@ -12,36 +12,42 @@ import io.github.gear4jtest.core.model.BaseRule;
 import io.github.gear4jtest.core.model.ChainBreakRule;
 import io.github.gear4jtest.core.model.FatalRule;
 import io.github.gear4jtest.core.model.IgnoreRule;
-import io.github.gear4jtest.core.processor.AbstractProcessorChain.AbstractBaseProcessorChainElement;
+import io.github.gear4jtest.core.processor.ProcessorChainTemplate.AbstractBaseProcessorChainElement;
 
-public class ProcessorChain<T extends LineElement> {
+public class ProcessorChain<T extends LineElement, V extends BaseProcessingContext<T>> {
 
-	private AbstractProcessorChain<T> chain;
+	private ProcessorChainTemplate<T, V> chain;
 	
 	private Object input;
 	
 	private Gear4jContext context;
 	
+	private T currentElement;
+	
+	private V ctx;
+	
 	private Object result;
 	
 	private boolean isInputProcessed;
 
-	public ProcessorChain(AbstractProcessorChain<T> chain, Object input, Gear4jContext context) {
+	public ProcessorChain(ProcessorChainTemplate<T, V> chain, Object input, Gear4jContext context, T currentElement, V ctx) {
 		this.chain = chain;
 		this.input = input;
 		this.context = context;
 		this.result = input;
+		this.currentElement = currentElement;
+		this.ctx = ctx;
 	}
 
 	public ProcessChainResult processChain() {
-		processProcessor(chain.getCurrentProcessor(), input, context);
+		processProcessor(chain.getCurrentProcessor(), input, context, ctx);
 
 		return new ProcessChainResult(result, isInputProcessed);
 	}
 
 	public void proceed() {
 		chain.setCurrentProcessor(chain.getCurrentProcessor().getNextElement());
-		processProcessor(chain.getCurrentProcessor(), input, context);
+		processProcessor(chain.getCurrentProcessor(), input, context, ctx);
 	}
 	
 	void proceed(Object result) {
@@ -50,13 +56,13 @@ public class ProcessorChain<T extends LineElement> {
 		proceed();
 	}
 
-	private void processProcessor(AbstractBaseProcessorChainElement<T, ?> currentProcessor, Object input,
-			Gear4jContext context) {
+	private void processProcessor(AbstractBaseProcessorChainElement<T, ?, V> currentProcessor, Object input,
+			Gear4jContext context, V ctx) {
 		if (currentProcessor == null) {
 			return;
 		}
 		try {
-			currentProcessor.execute(input, context, chain.getCurrentElement(), this);
+			currentProcessor.execute(input, context, currentElement, this, ctx);
 		} catch (Exception e) {
 			List<BaseRule> rules = Optional.ofNullable(currentProcessor.getOnErrors()).orElse(Collections.emptyList()).stream()
 					.map(BaseOnError::getRules)
@@ -84,9 +90,9 @@ public class ProcessorChain<T extends LineElement> {
 	
 	public static class BaseProcessorDrivingElement<T extends LineElement> {
 		
-		protected ProcessorChain<T> chain;
+		protected ProcessorChain<T, ?> chain;
 
-		public BaseProcessorDrivingElement(ProcessorChain<T> chain) {
+		public BaseProcessorDrivingElement(ProcessorChain<T, ?> chain) {
 			this.chain = chain;
 		}
 
@@ -94,7 +100,7 @@ public class ProcessorChain<T extends LineElement> {
 	
 	public static class ProcessorDrivingElement<T extends LineElement> extends BaseProcessorDrivingElement<T> {
 
-		public ProcessorDrivingElement(ProcessorChain<T> chain) {
+		public ProcessorDrivingElement(ProcessorChain<T, ?> chain) {
 			super(chain);
 		}
 
@@ -106,7 +112,7 @@ public class ProcessorChain<T extends LineElement> {
 
 	public static class ProcessingProcessorDrivingElement<T extends LineElement> extends BaseProcessorDrivingElement<T> {
 		
-		public ProcessingProcessorDrivingElement(ProcessorChain<T> chain) {
+		public ProcessingProcessorDrivingElement(ProcessorChain<T, ?> chain) {
 			super(chain);
 		}
 

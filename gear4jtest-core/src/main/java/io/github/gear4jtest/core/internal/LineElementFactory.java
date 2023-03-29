@@ -21,5 +21,5 @@ public class LineElementFactory {
 	static LineElement buildLineElement(OperationModel<?, ?> step, StepLineElementDefaultConfiguration defaultConfiguration, ResourceFactory resourceFactory) {
 		return new StepLineElement(step, defaultConfiguration, resourceFactory);
 	}
-	
+
 }

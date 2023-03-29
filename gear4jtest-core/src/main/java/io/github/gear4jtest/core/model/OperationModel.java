@@ -2,7 +2,6 @@ package io.github.gear4jtest.core.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.PreProcessor;
@@ -12,7 +11,7 @@ import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.Par
 
 public class OperationModel<IN, OUT> {
 
-	private Supplier<Operation<IN, OUT>> handler;
+	private Class<Operation<IN, OUT>> type;
 
 	private List<Parameter<?, ?>> parameters;
 	
@@ -31,8 +30,8 @@ public class OperationModel<IN, OUT> {
 		this.onErrors = new ArrayList<>();
 	}
 
-	public Supplier<Operation<IN, OUT>> getHandler() {
-		return handler;
+	public Class<Operation<IN, OUT>> getType() {
+		return type;
 	}
 	
 	public List<Parameter<?, ?>> getParameters() {
@@ -67,8 +66,8 @@ public class OperationModel<IN, OUT> {
 			managedInstance = new OperationModel<>();
 		}
 
-		public <A, T extends Operation<IN, A>> Builder<IN, A, T> handler(Supplier<T> handler) {
-			managedInstance.handler = (Supplier) handler;
+		public <A, T extends Operation<IN, A>> Builder<IN, A, T> type(Class<T> type) {
+			managedInstance.type = (Class) type;
 			return (Builder<IN, A, T>) this;
 		}
 

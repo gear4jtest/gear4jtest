@@ -8,11 +8,12 @@ import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.OperationModel;
 import io.github.gear4jtest.core.processor.PreProcessor;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
+import io.github.gear4jtest.core.processor.StepProcessingContext;
 
 public class OperationParamsInjector implements PreProcessor {
 
 	@Override
-	public void process(Object input, StepLineElement model, Gear4jContext context, ProcessorDrivingElement<StepLineElement> chain) {
+	public void process(Object input, StepLineElement model, StepProcessingContext ctx, ProcessorDrivingElement<StepLineElement> chain, Gear4jContext context) {
 		List<OperationModel.Parameter<?, ?>> parameters = model.getParameters();
 		if (parameters == null || parameters.isEmpty()) {
 			chain.proceed();
@@ -25,7 +26,7 @@ public class OperationParamsInjector implements PreProcessor {
 		while (it.hasNext()) {
 			OperationModel.Parameter param = it.next();
 
-			param.getParamRetriever().getParameterValue(model.getOperation().getOperation()).setValue(param.getValue());
+			param.getParamRetriever().getParameterValue(ctx.getOperation()).setValue(param.getValue());
 		}
 		chain.proceed();
 	}

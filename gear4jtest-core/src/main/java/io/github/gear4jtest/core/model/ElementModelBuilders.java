@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 import io.github.gear4jtest.core.internal.LineElement;
 import io.github.gear4jtest.core.model.OperationModel.ParamRetriever;
 import io.github.gear4jtest.core.model.OperationModel.Parameter;
+import io.github.gear4jtest.core.processor.BaseProcessingContext;
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.PreProcessor;
 import io.github.gear4jtest.core.processor.ProcessingProcessor;
@@ -35,9 +36,9 @@ public final class ElementModelBuilders {
 		return new OperationModel.Builder<>();
 	}
 	
-	public static <A, B, T extends Operation<A, B>> OperationModel.Builder<A, B, T> operation(Supplier<T> step) {
+	public static <A, B, T extends Operation<A, B>> OperationModel.Builder<A, B, T> operation(Class<T> step) {
 		return new OperationModel.Builder<A, B, T>()
-				.handler(step);
+				.type(step);
 	}
 	
 	public static <A> BranchesModel.Builder<A, List<Object>> branches() {
@@ -61,7 +62,7 @@ public final class ElementModelBuilders {
 		return param;
 	}
 	
-	public static <T extends LineElement> ProcessorModel.Builder<T> processor(Supplier<Processor<T>> processor) {
+	public static <T extends LineElement, V> ProcessorModel.Builder<T> processor(Supplier<Processor<T, BaseProcessingContext<T>>> processor) {
 		return new ProcessorModel.Builder<T>()
 				.processor(processor);
 	}
@@ -80,7 +81,7 @@ public final class ElementModelBuilders {
 				.processor(processor);
 	}
 	
-	public static ProcessingProcessorOnError.Builder onProcessingError(Class<? extends ProcessingProcessor<?>> processor) {
+	public static ProcessingProcessorOnError.Builder onProcessingError(Class<? extends ProcessingProcessor<?, ?>> processor) {
 		return new ProcessingProcessorOnError.Builder()
 				.processor(processor);
 	}
