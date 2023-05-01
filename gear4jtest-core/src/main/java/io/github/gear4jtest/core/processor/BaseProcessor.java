@@ -1,6 +1,6 @@
 package io.github.gear4jtest.core.processor;
 
-import io.github.gear4jtest.core.internal.Gear4jContext;
+import io.github.gear4jtest.core.context.Gear4jContext;
 import io.github.gear4jtest.core.internal.LineElement;
 import io.github.gear4jtest.core.processor.ProcessorChain.BaseProcessorDrivingElement;
 

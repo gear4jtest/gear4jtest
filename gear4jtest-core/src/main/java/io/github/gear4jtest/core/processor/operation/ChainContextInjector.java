@@ -2,7 +2,7 @@ package io.github.gear4jtest.core.processor.operation;
 
 import java.util.Map;
 
-import io.github.gear4jtest.core.internal.Gear4jContext;
+import io.github.gear4jtest.core.context.Gear4jContext;
 import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.OperationModel.ChainContextRetriever;
 import io.github.gear4jtest.core.processor.PreProcessor;

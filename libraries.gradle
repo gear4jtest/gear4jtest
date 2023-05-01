@@ -1,11 +1,11 @@
 // Allows centralized definition of the version of artifacts to
 // use.  In that respect it serves a role similar to <dependencyManagement> in Maven
 ext {
-    junitVersion = '5.9.1'
+    junitVersion = '5.9.2'
     slf4jVersion = '1.7.26'
-    assertjVersion = '3.12.2'
+    assertjVersion = '3.24.2'
     logbackVersion = '1.2.3'
-    mockitoVersion = '2.25.1'
+    mockitoVersion = '4.6.0'
 
     libraries = [
             // compile
@@ -16,6 +16,6 @@ ext {
             assertj: "org.assertj:assertj-core:${assertjVersion}",
             logback: "ch.qos.logback:logback-classic:${logbackVersion}",
             mockito: "org.mockito:mockito-core:${mockitoVersion}",
+            mockitoJunit: "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     ]
-
 }

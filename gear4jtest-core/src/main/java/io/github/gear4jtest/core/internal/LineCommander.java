@@ -3,6 +3,8 @@ package io.github.gear4jtest.core.internal;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.github.gear4jtest.core.context.Gear4jContext;
+
 public class LineCommander {
 
 	private final LineTraverser lineTraverser;

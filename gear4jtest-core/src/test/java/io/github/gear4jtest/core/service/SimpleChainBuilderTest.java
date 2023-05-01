@@ -10,9 +10,9 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.gear4jtest.core.context.Gear4jContext;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.internal.ChainExecutorService;
-import io.github.gear4jtest.core.internal.Gear4jContext;
 import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.ChainModel;
 import io.github.gear4jtest.core.model.ElementModelBuilders;

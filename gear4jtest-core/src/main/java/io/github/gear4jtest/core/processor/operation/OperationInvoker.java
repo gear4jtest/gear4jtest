@@ -1,6 +1,6 @@
 package io.github.gear4jtest.core.processor.operation;
 
-import io.github.gear4jtest.core.internal.Gear4jContext;
+import io.github.gear4jtest.core.context.Gear4jContext;
 import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.processor.ProcessingProcessor;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessingProcessorDrivingElement;

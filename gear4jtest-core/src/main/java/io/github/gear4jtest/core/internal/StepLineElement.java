@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -22,7 +23,6 @@ import io.github.gear4jtest.core.processor.ProcessorChainTemplate;
 import io.github.gear4jtest.core.processor.StepProcessingContext;
 import io.github.gear4jtest.core.processor.Transformer;
 import io.github.gear4jtest.core.processor.operation.OperationInvoker;
-import io.github.gear4jtest.core.processor.operation.OperationRetriever;
 
 public class StepLineElement extends LineElement {
 
@@ -30,10 +30,16 @@ public class StepLineElement extends LineElement {
 	private final List<Parameter<?, ?>> parameters;
 	private final Transformer<?, ?> transformer;
 	private final ChainContextRetriever<?> chainContextRetriever;
+	private final boolean ignoreOperationFactoryException = false;
 	private final ProcessorChainTemplate<StepLineElement, StepProcessingContext> processorChain;
+	
+	// build a log context for every stepelement, so that every event will use this context to get contextualized
+//	private final BaseContext baseContext;
+	private final UUID elementUuid;
 
 	public StepLineElement(OperationModel<?, ?> step, StepLineElementDefaultConfiguration defaultConfiguration,
 			ResourceFactory resourceFactory) {
+		this.elementUuid = UUID.randomUUID();
 		this.operation = new OperationLazyInitializer(step.getType(), resourceFactory);
 		this.parameters = Collections.unmodifiableList(new ArrayList<>(step.getParameters()));
 		this.chainContextRetriever = step.getContextRetriever();
@@ -75,6 +81,10 @@ public class StepLineElement extends LineElement {
 	public Transformer getTransformer() {
 		return transformer;
 	}
+	
+	public boolean isIgnoreOperationFactoryException() {
+		return ignoreOperationFactoryException;
+	}
 
 //	private static List<Class<? extends PreProcessor>> getProcessors(List<Class<? extends PreProcessor>> stepProcessors, List<Class<? extends PreProcessor>> defaultProcessors) {
 //		return stepProcessors != null ? stepProcessors : defaultProcessors;
@@ -86,7 +96,6 @@ public class StepLineElement extends LineElement {
 
 	private static List<Class<? extends BaseProcessor<StepLineElement, ?, ?>>> buildProcessors(
 			List<Class<? extends PreProcessor>> preProcessors, List<Class<? extends PostProcessor>> postProcessors) {
-		preProcessors.add(0, OperationRetriever.class);
 		return Stream.of(preProcessors.stream(), Stream.of(OperationInvoker.class), postProcessors.stream())
 				.flatMap(Function.identity()).collect(Collectors.toList());
 	}

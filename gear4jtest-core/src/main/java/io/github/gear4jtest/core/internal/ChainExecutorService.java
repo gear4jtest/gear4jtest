@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.internal;
 
 import java.util.Map;
 
+import io.github.gear4jtest.core.context.Gear4jContext;
 import io.github.gear4jtest.core.model.ChainModel;
 
 /**

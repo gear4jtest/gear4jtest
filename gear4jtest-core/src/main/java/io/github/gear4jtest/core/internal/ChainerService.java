@@ -6,7 +6,6 @@ import io.github.gear4jtest.core.model.BranchModel;
 import io.github.gear4jtest.core.model.BranchesModel;
 import io.github.gear4jtest.core.model.ChainModel;
 import io.github.gear4jtest.core.model.OperationModel;
-import io.github.gear4jtest.core.model.ChainModel.ChainDefaultConfiguration;
 
 public class ChainerService {
 

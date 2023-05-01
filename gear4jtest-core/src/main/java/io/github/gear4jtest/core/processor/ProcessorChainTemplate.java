@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import io.github.gear4jtest.core.context.Gear4jContext;
 import io.github.gear4jtest.core.factory.ResourceFactory;
-import io.github.gear4jtest.core.internal.Gear4jContext;
 import io.github.gear4jtest.core.internal.LineElement;
 import io.github.gear4jtest.core.internal.ProcessorInternalModel;
 import io.github.gear4jtest.core.model.BaseOnError;

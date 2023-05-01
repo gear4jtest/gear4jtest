@@ -46,6 +46,7 @@ configure(project.coreProjects) {
         testImplementation(libraries.assertj)
         testImplementation(libraries.logback)
         testImplementation(libraries.mockito)
+        testImplementation(libraries.mockitoJunit)
     }
 
     tasks.withType(JavaCompile) {
