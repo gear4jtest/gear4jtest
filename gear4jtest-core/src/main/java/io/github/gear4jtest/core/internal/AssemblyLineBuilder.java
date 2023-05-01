@@ -7,15 +7,15 @@ import io.github.gear4jtest.core.model.BranchesModel;
 import io.github.gear4jtest.core.model.ChainModel;
 import io.github.gear4jtest.core.model.OperationModel;
 
-public class ChainerService {
+public class AssemblyLineBuilder<BEGIN, IN> {
 
-	private ChainModel<?, ?> chain;
+	private ChainModel<BEGIN, IN> chain;
 
-	ChainerService() {
+	AssemblyLineBuilder(ChainModel<BEGIN, IN> chain) {
+		this.chain = chain;
 	}
 
-	public <BEGIN, IN> AssemblyLine<BEGIN, IN> buildChain(ChainModel<BEGIN, IN> chain) {
-		this.chain = chain;
+	public AssemblyLine<BEGIN, IN> buildChain() {
 		LineElement startingElement = buildLineElement(chain.getBranches(), null);
 		return new AssemblyLine<>(startingElement);
 	}

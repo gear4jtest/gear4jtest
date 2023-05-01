@@ -9,6 +9,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.github.gear4jtest.core.context.StepProcessingContext;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.model.BaseOnError;
 import io.github.gear4jtest.core.model.ChainModel.StepLineElementDefaultConfiguration;
@@ -20,7 +21,6 @@ import io.github.gear4jtest.core.processor.BaseProcessor;
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.PreProcessor;
 import io.github.gear4jtest.core.processor.ProcessorChainTemplate;
-import io.github.gear4jtest.core.processor.StepProcessingContext;
 import io.github.gear4jtest.core.processor.Transformer;
 import io.github.gear4jtest.core.processor.operation.OperationInvoker;
 

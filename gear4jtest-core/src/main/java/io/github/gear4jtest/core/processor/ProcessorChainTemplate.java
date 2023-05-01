@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import io.github.gear4jtest.core.context.Gear4jContext;
+import io.github.gear4jtest.core.context.Contexts;
+import io.github.gear4jtest.core.context.LineElementContext;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.internal.LineElement;
 import io.github.gear4jtest.core.internal.ProcessorInternalModel;
@@ -13,7 +14,7 @@ import io.github.gear4jtest.core.processor.ProcessorChain.BaseProcessorDrivingEl
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessingProcessorDrivingElement;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
 
-public class ProcessorChainTemplate<T extends LineElement, V extends BaseProcessingContext<T>> {
+public class ProcessorChainTemplate<T extends LineElement, V extends LineElementContext> {
 
 	private AbstractBaseProcessorChainElement<T, ?, V> currentProcessor;
 	
@@ -64,7 +65,7 @@ public class ProcessorChainTemplate<T extends LineElement, V extends BaseProcess
 		this.currentProcessor = currentProcessor;
 	}
 
-	public static abstract class AbstractBaseProcessorChainElement<T extends LineElement, U extends BaseProcessorDrivingElement<T>, V extends BaseProcessingContext<T>> {
+	public static abstract class AbstractBaseProcessorChainElement<T extends LineElement, U extends BaseProcessorDrivingElement<T>, V extends LineElementContext> {
 
 		private Class<? extends BaseProcessor<T, U, V>> processor;
 		
@@ -76,9 +77,9 @@ public class ProcessorChainTemplate<T extends LineElement, V extends BaseProcess
 
 		abstract U getDrivingElement(ProcessorChain<T, V> chain);
 		
-		public void execute(Object input, Gear4jContext context, T element, ProcessorChain<T, V> chain, V ctx) {
+		public void execute(Object input, Contexts<V> context, T element, ProcessorChain<T, V> chain) {
 			BaseProcessor<T, U, V> proc = resourceFactory.getResource(processor);
-			proc.process(input, element, ctx, getDrivingElement(chain), context);
+			proc.process(input, element, getDrivingElement(chain), context);
 		}
 		
 		public AbstractBaseProcessorChainElement(Class<? extends BaseProcessor<T, U, V>> processor, List<BaseOnError> onErrors, ResourceFactory resourceFactory) {
@@ -101,7 +102,7 @@ public class ProcessorChainTemplate<T extends LineElement, V extends BaseProcess
 
 	}
 
-	public static class ProcessorChainElement<T extends LineElement, V extends BaseProcessingContext<T>> extends AbstractBaseProcessorChainElement<T, ProcessorDrivingElement<T>, V> {
+	public static class ProcessorChainElement<T extends LineElement, V extends LineElementContext> extends AbstractBaseProcessorChainElement<T, ProcessorDrivingElement<T>, V> {
 
 		public ProcessorChainElement(List<BaseOnError> onErrors, Class<? extends Processor<T, V>> processor, ResourceFactory resourceFactory) {
 			super(processor, onErrors, resourceFactory);
@@ -114,7 +115,7 @@ public class ProcessorChainTemplate<T extends LineElement, V extends BaseProcess
 
 	}
 
-	public static class ProcessingProcessorChainElement<T extends LineElement, U, V extends BaseProcessingContext<T>> extends AbstractBaseProcessorChainElement<T, ProcessingProcessorDrivingElement<T>, V> {
+	public static class ProcessingProcessorChainElement<T extends LineElement, U, V extends LineElementContext> extends AbstractBaseProcessorChainElement<T, ProcessingProcessorDrivingElement<T>, V> {
 
 		public ProcessingProcessorChainElement(List<BaseOnError> onErrors, Class<ProcessingProcessor<T, V>> processor, ResourceFactory resourceFactory) {
 			super(processor, onErrors, resourceFactory);

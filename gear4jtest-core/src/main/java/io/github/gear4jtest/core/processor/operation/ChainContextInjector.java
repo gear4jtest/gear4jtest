@@ -2,24 +2,24 @@ package io.github.gear4jtest.core.processor.operation;
 
 import java.util.Map;
 
-import io.github.gear4jtest.core.context.Gear4jContext;
+import io.github.gear4jtest.core.context.Contexts;
+import io.github.gear4jtest.core.context.StepProcessingContext;
 import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.OperationModel.ChainContextRetriever;
 import io.github.gear4jtest.core.processor.PreProcessor;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
-import io.github.gear4jtest.core.processor.StepProcessingContext;
 
 public class ChainContextInjector implements PreProcessor {
 
 	@Override
-	public void process(Object input, StepLineElement model, StepProcessingContext ctx, ProcessorDrivingElement<StepLineElement> chain, Gear4jContext context) {
+	public void process(Object input, StepLineElement model, ProcessorDrivingElement<StepLineElement> chain, Contexts<StepProcessingContext> context) {
 		ChainContextRetriever contextRetriever = model.getChainContextRetriever();
 		if (contextRetriever == null) {
 			chain.proceed();
 			return;
 		}
 
-		contextRetriever.getParameterValue(ctx.getOperation()).setValue(context.getChainContext());
+		contextRetriever.getParameterValue(context.getLineElementContext().getOperation()).setValue(context.getGlobalContext().getChainContext());
 		
 		chain.proceed();
 	}

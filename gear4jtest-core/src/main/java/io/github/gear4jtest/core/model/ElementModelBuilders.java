@@ -3,10 +3,10 @@ package io.github.gear4jtest.core.model;
 import java.util.List;
 import java.util.function.Supplier;
 
+import io.github.gear4jtest.core.context.LineElementContext;
 import io.github.gear4jtest.core.internal.LineElement;
 import io.github.gear4jtest.core.model.OperationModel.ParamRetriever;
 import io.github.gear4jtest.core.model.OperationModel.Parameter;
-import io.github.gear4jtest.core.processor.BaseProcessingContext;
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.PreProcessor;
 import io.github.gear4jtest.core.processor.ProcessingProcessor;
@@ -57,12 +57,12 @@ public final class ElementModelBuilders {
 		return new BranchModel.Builder<>();
 	}
 	
-	public static <A extends Operation<?, ?>, B> Parameter<A, B> newParameter(ParamRetriever<A, B> name) {
-		Parameter<A, B> param = new Parameter<>(name);
+	public static <A extends Operation<?, ?>, B> Parameter<A, B> newParameter(ParamRetriever<A, B> paramRetriever) {
+		Parameter<A, B> param = new Parameter<>(paramRetriever);
 		return param;
 	}
 	
-	public static <T extends LineElement, V> ProcessorModel.Builder<T> processor(Supplier<Processor<T, BaseProcessingContext<T>>> processor) {
+	public static <T extends LineElement, V> ProcessorModel.Builder<T> processor(Supplier<Processor<T, LineElementContext>> processor) {
 		return new ProcessorModel.Builder<T>()
 				.processor(processor);
 	}
@@ -103,6 +103,10 @@ public final class ElementModelBuilders {
 	public static ChainBreakRule.Builder chainBreakRule(Class<? extends Exception> clazz) {
 		return new ChainBreakRule.Builder()
 				.type(clazz);
+	}
+	
+	public static Queue.Builder queue() {
+		return new Queue.Builder();
 	}
 	
 }

@@ -3,7 +3,7 @@ package io.github.gear4jtest.core.internal;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.github.gear4jtest.core.context.Gear4jContext;
+import io.github.gear4jtest.core.context.Contexts;
 
 public class LineCommander {
 
@@ -15,11 +15,11 @@ public class LineCommander {
 		this.lineVisitor = new LineVisitor();
 	}
 
-	public <BEGIN, OUT> Object command(AssemblyLine<BEGIN, OUT> line, Object input, Gear4jContext context) {
+	public <BEGIN, OUT> Object command(AssemblyLine<BEGIN, OUT> line, Object input, Contexts<?> context) {
 		return command(line.getStartingElement(), input, context);
 	}
 
-	private <BEGIN, OUT> Object command(LineElement element, Object input, Gear4jContext context) {
+	private <BEGIN, OUT> Object command(LineElement element, Object input, Contexts<?> context) {
 		Object result = executeElement(element, input, context);
 
 		List<LineElement> nextElements = lineTraverser.getNextElement(element);
@@ -51,7 +51,7 @@ public class LineCommander {
 //		return results;
 //	}
 
-	public Object executeElement(LineElement element, Object input, Gear4jContext context) {
+	public Object executeElement(LineElement element, Object input, Contexts<?> context) {
 		return lineVisitor.visit(element, input, context);
 	}
 

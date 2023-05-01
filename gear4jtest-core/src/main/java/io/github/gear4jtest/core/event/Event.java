@@ -1,12 +1,12 @@
 package io.github.gear4jtest.core.event;
 
-import io.github.gear4jtest.core.processor.BaseProcessingContext;
+import io.github.gear4jtest.core.context.Contexts;
 
 public class Event {
 
     private String eventName;
-    private Object contexttualData;
-    private BaseProcessingContext<?> context;
+    private Object contextualData;
+    private Contexts<?> context;
 
 	public String getEventName() {
 		return eventName;
@@ -16,19 +16,19 @@ public class Event {
 		this.eventName = eventName;
 	}
 	
-	public Object getContexttualData() {
-		return contexttualData;
+	public Object getContextualData() {
+		return contextualData;
 	}
 
-	public void setContexttualData(Object contexttualData) {
-		this.contexttualData = contexttualData;
+	public void setContextualData(Object contextualData) {
+		this.contextualData = contextualData;
 	}
 
-	public BaseProcessingContext<?> getContext() {
+	public Contexts<?> getContext() {
 		return context;
 	}
 
-	public void setContext(BaseProcessingContext<?> ctx) {
+	public void setContext(Contexts<?> ctx) {
 		this.context = ctx;
 	}
     

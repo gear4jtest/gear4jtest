@@ -5,7 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import io.github.gear4jtest.core.context.Gear4jContext;
+import io.github.gear4jtest.core.context.Contexts;
+import io.github.gear4jtest.core.context.LineElementContext;
 import io.github.gear4jtest.core.internal.LineElement;
 import io.github.gear4jtest.core.model.BaseOnError;
 import io.github.gear4jtest.core.model.BaseRule;
@@ -14,40 +15,37 @@ import io.github.gear4jtest.core.model.FatalRule;
 import io.github.gear4jtest.core.model.IgnoreRule;
 import io.github.gear4jtest.core.processor.ProcessorChainTemplate.AbstractBaseProcessorChainElement;
 
-public class ProcessorChain<T extends LineElement, V extends BaseProcessingContext<T>> {
+public class ProcessorChain<T extends LineElement, V extends LineElementContext> {
 
 	private ProcessorChainTemplate<T, V> chain;
 	
 	private Object input;
 	
-	private Gear4jContext context;
+	private Contexts<V> context;
 	
 	private T currentElement;
-	
-	private V ctx;
 	
 	private Object result;
 	
 	private boolean isInputProcessed;
 
-	public ProcessorChain(ProcessorChainTemplate<T, V> chain, Object input, Gear4jContext context, T currentElement, V ctx) {
+	public ProcessorChain(ProcessorChainTemplate<T, V> chain, Object input, Contexts<V> context, T currentElement) {
 		this.chain = chain;
 		this.input = input;
 		this.context = context;
 		this.result = input;
 		this.currentElement = currentElement;
-		this.ctx = ctx;
 	}
 
 	public ProcessChainResult processChain() {
-		processProcessor(chain.getCurrentProcessor(), input, context, ctx);
+		processProcessor(chain.getCurrentProcessor(), input, context);
 
 		return new ProcessChainResult(result, isInputProcessed);
 	}
 
 	public void proceed() {
 		chain.setCurrentProcessor(chain.getCurrentProcessor().getNextElement());
-		processProcessor(chain.getCurrentProcessor(), input, context, ctx);
+		processProcessor(chain.getCurrentProcessor(), input, context);
 	}
 	
 	void proceed(Object result) {
@@ -57,12 +55,12 @@ public class ProcessorChain<T extends LineElement, V extends BaseProcessingConte
 	}
 
 	private void processProcessor(AbstractBaseProcessorChainElement<T, ?, V> currentProcessor, Object input,
-			Gear4jContext context, V ctx) {
+			Contexts<V> context) {
 		if (currentProcessor == null) {
 			return;
 		}
 		try {
-			currentProcessor.execute(input, context, currentElement, this, ctx);
+			currentProcessor.execute(input, context, currentElement, this);
 		} catch (Exception e) {
 			List<BaseRule> rules = Optional.ofNullable(currentProcessor.getOnErrors()).orElse(Collections.emptyList()).stream()
 					.map(BaseOnError::getRules)

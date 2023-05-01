@@ -2,7 +2,6 @@ package io.github.gear4jtest.core.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.PreProcessor;
@@ -158,6 +157,7 @@ public class OperationModel<IN, OUT> {
 //		private Function<InterpretationContext, T> valueFunction;
 		private String expression;
 		private String evaluator;
+		private String name;
 
 		public Parameter(ParamRetriever<OP, T> paramRetriever) {
 			this.paramRetriever = paramRetriever;
@@ -182,6 +182,10 @@ public class OperationModel<IN, OUT> {
 			return value;
 		}
 
+		public String getName() {
+			return name;
+		}
+
 		public String getEvaluator() {
 			return evaluator;
 		}
@@ -192,6 +196,11 @@ public class OperationModel<IN, OUT> {
 		
 		public Parameter<OP, T> value(T value) {
 			this.value = value;
+			return this;
+		}
+		
+		public Parameter<OP, T> name(String name) {
+			this.name = name;
 			return this;
 		}
 		
