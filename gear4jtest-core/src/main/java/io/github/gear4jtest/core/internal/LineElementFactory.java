@@ -10,16 +10,16 @@ public class LineElementFactory {
 
 	private LineElementFactory() {}
 	
-	static LineElement buildLineElement(BranchesModel<?, ?> branches) {
-		return new BranchesLineElement(branches);
+	static LineElement buildLineElement(BranchesModel<?, ?> branches, AssemblyLine line) {
+		return new BranchesLineElement(branches, line);
 	}
 	
-	static LineElement buildLineElement(BranchModel<?, ?> branch) {
-		return new BranchLineElement(branch);
+	static LineElement buildLineElement(BranchModel<?, ?> branch, AssemblyLine line) {
+		return new BranchLineElement(branch, line);
 	}
 	
-	static LineElement buildLineElement(OperationModel<?, ?> step, StepLineElementDefaultConfiguration defaultConfiguration, ResourceFactory resourceFactory) {
-		return new StepLineElement(step, defaultConfiguration, resourceFactory);
+	static LineElement buildLineElement(OperationModel<?, ?> step, StepLineElementDefaultConfiguration defaultConfiguration, ResourceFactory resourceFactory, AssemblyLine line) {
+		return new StepLineElement(step, defaultConfiguration, resourceFactory, line);
 	}
 
 }

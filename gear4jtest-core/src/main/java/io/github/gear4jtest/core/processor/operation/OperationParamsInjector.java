@@ -1,50 +1,39 @@
 package io.github.gear4jtest.core.processor.operation;
 
+import static io.github.gear4jtest.core.internal.ServiceRegistry.getEventPublisher;
+
 import java.util.Iterator;
 import java.util.List;
 
-import io.github.gear4jtest.core.context.Contexts;
 import io.github.gear4jtest.core.context.StepProcessingContext;
+import io.github.gear4jtest.core.event.builders.ParameterInjectionEventBuilder;
+import io.github.gear4jtest.core.internal.Item;
 import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.OperationModel;
 import io.github.gear4jtest.core.processor.PreProcessor;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
+import io.github.gear4jtest.core.processor.ProcessorResult;
 
 public class OperationParamsInjector implements PreProcessor {
 
 	@Override
-	public void process(Object input, StepLineElement model, ProcessorDrivingElement<StepLineElement> chain, Contexts<StepProcessingContext> context) {
+	public ProcessorResult process(Item input, StepLineElement model, ProcessorDrivingElement<StepLineElement> chain, StepProcessingContext context) {
 		List<OperationModel.Parameter<?, ?>> parameters = model.getParameters();
 		if (parameters == null || parameters.isEmpty()) {
-			chain.proceed();
-			return;
+			return chain.proceed();
 		}
+//		throw new RuntimeException();
 
 		Iterator<OperationModel.Parameter<?, ?>> it = parameters.iterator();
-//		throw new RuntimeException();
 
 		while (it.hasNext()) {
 			OperationModel.Parameter param = it.next();
 
-			param.getParamRetriever().getParameterValue(context.getLineElementContext().getOperation())
-					.setValue(param.getValue());
+			param.getParamRetriever().getParameterValue(context.getOperation()).setValue(param.getValue());
 
-			ParameterInjectionEventData data = new ParameterInjectionEventData(param.getName(), param.getValue());
-			context.getGlobalContext().getEventTriggerService().triggerEvent("PARAMETER_INJECTION", data, context);
+			getEventPublisher(model.getLine().getId()).publishEvent(ParameterInjectionEventBuilder.class, input, model, param.getName(), param.getValue());
 		}
-		chain.proceed();
-	}
-
-	public static class ParameterInjectionEventData {
-
-		private String name;
-		private Object value;
-
-		public ParameterInjectionEventData(String name, Object value) {
-			this.name = name;
-			this.value = value;
-		}
-
+		return chain.proceed();
 	}
 
 	public static class ParameterValue<T> {

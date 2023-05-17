@@ -1,8 +1,8 @@
 package io.github.gear4jtest.core.event;
 
 @FunctionalInterface
-public interface EventListener {
+public interface EventListener<T extends Event> {
 
-	void handleEvent(Event e);
+	void handleEvent(T e);
 	
 }

@@ -10,18 +10,19 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.gear4jtest.core.context.Contexts;
 import io.github.gear4jtest.core.context.StepProcessingContext;
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.internal.ChainExecutorService;
+import io.github.gear4jtest.core.internal.Item;
 import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.ChainModel;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
 import io.github.gear4jtest.core.model.OperationModel;
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
+import io.github.gear4jtest.core.processor.ProcessorResult;
 import io.github.gear4jtest.core.processor.operation.ChainContextInjector;
 import io.github.gear4jtest.core.processor.operation.OperationInvoker;
 import io.github.gear4jtest.core.processor.operation.OperationParamsInjector;
@@ -46,6 +47,11 @@ public class SimpleChainBuilderTest {
 								.withStep(operation(Step7.class)
 										.parameter(newParameter(Step7::getValue).name("whatever").value(14538))
 										.context(Step7::getChainContext)
+										.onError(
+												preOnError(OperationParamsInjector.class)
+													.rule(ignoreRule(RuntimeException.class).build())
+												.build())
+										.transformer(a -> "")
 										.build())
 								.build())
 						.returns("", Integer.class).build())
@@ -55,8 +61,8 @@ public class SimpleChainBuilderTest {
 							.stepDefaultConfiguration(
 									stepLineElementDefaultConfiguration()
 										.preProcessors(Arrays.asList(OperationParamsInjector.class, ChainContextInjector.class))
-										.onError(onError().rules(Arrays.asList(rule(IOException.class).ignore().build()))
-										.build())
+										.onError(onError().rules(Arrays.asList(rule(IOException.class).ignore().build())).build())
+										.onError(onError().processor(OperationParamsInjector.class).rules(Arrays.asList(rule(RuntimeException.class).ignore().build())).build())
 								.build())
 							.build())
 				.build();
@@ -141,9 +147,9 @@ public class SimpleChainBuilderTest {
 	public static class TestPostProcessor implements PostProcessor {
 
 		@Override
-		public void process(Object input, StepLineElement currentElement,
-				ProcessorDrivingElement<StepLineElement> chainDriver, Contexts<StepProcessingContext> context) {
-
+		public ProcessorResult process(Item input, StepLineElement currentElement,
+				ProcessorDrivingElement<StepLineElement> chainDriver, StepProcessingContext context) {
+			return ProcessorResult.succeeded(this.getClass());
 		}
 
 	}

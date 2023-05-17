@@ -2,39 +2,30 @@ package io.github.gear4jtest.core.event;
 
 import java.util.List;
 
-import io.github.gear4jtest.core.context.Contexts;
+import io.github.gear4jtest.core.factory.ResourceFactory;
+import io.github.gear4jtest.core.internal.Item;
+import io.github.gear4jtest.core.internal.LineElement;
 
 public class EventTriggerService {
 
 	private final List<EventQueue> eventQueues;
+	private final ResourceFactory resourceFactory;
 
-	public EventTriggerService(List<EventQueue> eventQueues) {
+	public EventTriggerService(List<EventQueue> eventQueues, ResourceFactory resourceFactory) {
 		this.eventQueues = eventQueues;
+		this.resourceFactory = resourceFactory;
 	}
 
-	public void triggerEvent(String eventName, Contexts<?> ctx) {
-		triggerEvent(eventName, null, ctx);
-	}
-
-	public void triggerEvent(String eventName, Object contextualData, Contexts<?> ctx) {
+	public void publishEvent(Class<? extends EventBuilder<?>> eventBuilderClass, Item item, LineElement element, Object... additionalObjects) {
 		if (eventQueues == null) {
 			return;
 		}
 		
-		Contexts<?> ctxs = ctx.clone();
+		Event e = resourceFactory.getResource(eventBuilderClass).buildEvent(item, element, additionalObjects);
 		
-		Event event = buildEvent(eventName, contextualData, ctxs);
 		for (EventQueue eventQueue : eventQueues) {
-			eventQueue.pushEvent(event);
+			eventQueue.pushEvent(e);
 		}
-	}
-
-	private static Event buildEvent(String eventName, Object contextualData, Contexts<?> ctx) {
-		Event event = new Event();
-		event.setEventName(eventName);
-		event.setContextualData(contextualData);
-		event.setContext(ctx);
-		return event;
 	}
 
 }

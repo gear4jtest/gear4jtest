@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import io.github.gear4jtest.core.context.Contexts;
 import io.github.gear4jtest.core.context.LineElementContext;
 import io.github.gear4jtest.core.factory.ResourceFactory;
+import io.github.gear4jtest.core.internal.Item;
 import io.github.gear4jtest.core.internal.LineElement;
 import io.github.gear4jtest.core.internal.ProcessorInternalModel;
 import io.github.gear4jtest.core.model.BaseOnError;
@@ -77,15 +77,19 @@ public class ProcessorChainTemplate<T extends LineElement, V extends LineElement
 
 		abstract U getDrivingElement(ProcessorChain<T, V> chain);
 		
-		public void execute(Object input, Contexts<V> context, T element, ProcessorChain<T, V> chain) {
-			BaseProcessor<T, U, V> proc = resourceFactory.getResource(processor);
-			proc.process(input, element, getDrivingElement(chain), context);
-		}
-		
 		public AbstractBaseProcessorChainElement(Class<? extends BaseProcessor<T, U, V>> processor, List<BaseOnError> onErrors, ResourceFactory resourceFactory) {
 			this.processor = processor;
 			this.onErrors = onErrors;
 			this.resourceFactory = resourceFactory;
+		}
+		
+		public ProcessorResult execute(Item input, V context, T element, ProcessorChain<T, V> chain) {
+			BaseProcessor<T, U, V> proc = resourceFactory.getResource(processor);
+			return proc.process(input, element, getDrivingElement(chain), context);
+		}
+		
+		public Class<? extends BaseProcessor<T, U, V>> getProcessor() {
+			return processor;
 		}
 
 		public List<BaseOnError> getOnErrors() {	

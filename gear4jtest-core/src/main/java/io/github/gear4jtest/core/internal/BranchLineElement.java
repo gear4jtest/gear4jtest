@@ -4,8 +4,8 @@ import io.github.gear4jtest.core.model.BranchModel;
 
 public class BranchLineElement extends LineElement {
 
-	public BranchLineElement(BranchModel branch) {
-		
+	public BranchLineElement(BranchModel branch, AssemblyLine line) {
+		super(line);
 	}
 	
 }

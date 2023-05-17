@@ -9,9 +9,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import io.github.gear4jtest.core.context.Contexts;
 import io.github.gear4jtest.core.context.StepProcessingContext;
 import io.github.gear4jtest.core.factory.ResourceFactory;
+import io.github.gear4jtest.core.internal.Item;
 import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.OperationModel;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
@@ -34,13 +34,11 @@ class OperationParamsInjectorTest {
 		OperationModel<String, Integer> operationModel = operation(Step1.class)
 				.parameter(newParameter(Step1::getA).value("Value")).build();
 
-		StepLineElement element = new StepLineElement(operationModel, stepLineElementDefaultConfiguration().build(), resourceFactory);
+		StepLineElement element = new StepLineElement(operationModel, stepLineElementDefaultConfiguration().build(), resourceFactory, null);
 		StepProcessingContext ctx = new StepProcessingContext(new Step1());
-		Contexts<StepProcessingContext> ctxs = new Contexts<>();
-		ctxs.setLineElementContext(ctx);
 		
 		// When
-		injector.process("&", element, chain, ctxs);
+		injector.process(new Item("&"), element, chain, ctx);
 
 		// Then
 		assertThat(((Step1) ctx.getOperation()).getA().getValue()).isEqualTo("Value");
@@ -53,13 +51,11 @@ class OperationParamsInjectorTest {
 		// Given
 		OperationModel<String, Integer> operationModel = operation(Step1.class).build();
 
-		StepLineElement element = new StepLineElement(operationModel, stepLineElementDefaultConfiguration().build(), resourceFactory);
+		StepLineElement element = new StepLineElement(operationModel, stepLineElementDefaultConfiguration().build(), resourceFactory, null);
 		StepProcessingContext ctx = new StepProcessingContext(new Step1());
-		Contexts<StepProcessingContext> ctxs = new Contexts<>();
-		ctxs.setLineElementContext(ctx);
 		
 		// When
-		injector.process("&", element, chain, ctxs);
+		injector.process(new Item("&"), element, chain, ctx);
 
 		// Then
 		assertThat(((Step1) ctx.getOperation()).getA().getValue()).isNull();

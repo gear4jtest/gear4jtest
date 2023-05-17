@@ -2,13 +2,13 @@ package io.github.gear4jtest.core.internal;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
-import io.github.gear4jtest.core.context.Contexts;
-import io.github.gear4jtest.core.context.Gear4jContext;
-import io.github.gear4jtest.core.context.ItemContext;
+import io.github.gear4jtest.core.context.AssemblyLineExecution;
 import io.github.gear4jtest.core.event.EventQueue;
 import io.github.gear4jtest.core.event.EventQueueService;
 import io.github.gear4jtest.core.event.EventTriggerService;
+import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.model.ChainModel;
 import io.github.gear4jtest.core.model.Queue;
 
@@ -19,11 +19,9 @@ import io.github.gear4jtest.core.model.Queue;
  *
  */
 public class ChainExecutorService {
-	
-	private final LineCommander commander;
-	
-	public ChainExecutorService() {
-		this.commander = new LineCommander();
+
+	public <BEGIN, IN> IN execute(ChainModel<BEGIN, IN> chain, BEGIN object) {
+		return execute(chain, object, null);
 	}
 	
 	/**
@@ -38,23 +36,17 @@ public class ChainExecutorService {
 	// Ici retourner un bean particulier
 	// ChainExecutionResult<IN> qui contiendrait le retour, de type IN, s'il y a eu erreur etc...
 	public <BEGIN, IN> IN execute(ChainModel<BEGIN, IN> chain, BEGIN object, Map<String, Object> context) {
-		AssemblyLine<BEGIN, IN> line = new AssemblyLineBuilder<>(chain).buildChain();
+		AssemblyLine<BEGIN, IN> line = new AssemblyLineBuilder<>(chain, context).buildAssemblyLine();
+		AssemblyLineExecution execution = new AssemblyLineExecution(context);
 		
-		EventTriggerService eventTriggerService = initializeQueues(chain.getQueues());
-		Contexts<?> ctxs = initializeContexts(context, eventTriggerService);
-		return (IN) commander.command(line, object, ctxs);
+		initializeQueues(chain.getQueues(), line.getId(), chain.getResourceFactory());
+		return line.execute(object, execution);
 	}
 	
-	private static EventTriggerService initializeQueues(List<Queue> queues) {
+	private static void initializeQueues(List<Queue> queues, UUID lineId, ResourceFactory resourceFactory) {
 		List<EventQueue> eventQueues = new EventQueueService(queues).initializeQueues();
-		return new EventTriggerService(eventQueues);
+		EventTriggerService service = new EventTriggerService(eventQueues, resourceFactory);
+		ServiceRegistry.pushEventTriggerService(lineId, service);
 	}
-	
-	private static Contexts<?> initializeContexts(Map<String, Object> context, EventTriggerService eventTriggerService) {
-		Contexts<?> ctxs = new Contexts<>();
-		ctxs.setGlobalContext(new Gear4jContext(context, eventTriggerService));
-		ctxs.setItemContext(new ItemContext());
-		return ctxs;
-	}
-	
+
 }

@@ -1,10 +1,10 @@
 package io.github.gear4jtest.core.internal;
 
-import io.github.gear4jtest.core.context.Contexts;
 import io.github.gear4jtest.core.context.StepProcessingContext;
+import io.github.gear4jtest.core.context.StepProcessorChainExecution;
 import io.github.gear4jtest.core.model.Operation;
 import io.github.gear4jtest.core.processor.ProcessorChain;
-import io.github.gear4jtest.core.processor.ProcessorChain.ProcessChainResult;
+import io.github.gear4jtest.core.processor.ProcessorChainResult;
 
 public class LineVisitor {
 	
@@ -12,38 +12,36 @@ public class LineVisitor {
 		
 	}
 	
-	private Object visit(BranchesLineElement element, Object input, Contexts context) {
+	private Item visit(BranchesLineElement element, Item input) {
 		return input;
 	}
 	
-	private Object visit(BranchLineElement element, Object input, Contexts context) {
+	private Item visit(BranchLineElement element, Item input) {
 		return input;
 	}
 	
-	private Object visit(StepLineElement element, Object input, Contexts<StepProcessingContext> context) {
-		StepProcessingContext ctx;
+	private Item visit(StepLineElement element, Item input) {
 		try {
 			Operation<?, ?> operation = element.getOperation().getOperation();
 			if (operation == null) {
 				throw buildRuntimeException();
 			}
-			ctx = new StepProcessingContext(operation);
-			context.setLineElementContext(ctx);
-			ProcessorChain<StepLineElement, StepProcessingContext> chain = new ProcessorChain<>(element.getProcessorChain(), input, context, element);
-			ProcessChainResult result = chain.processChain();
+			StepProcessorChainExecution stepProcessorChainExecution = input.getExecution().createStepProcessorChainExecution(operation);
+			ProcessorChain<StepLineElement, StepProcessingContext> chain = new ProcessorChain<>(element.getProcessorChain(), input, stepProcessorChainExecution, element);
+			ProcessorChainResult result = chain.processChain();
 			if (!result.isProcessed()) {
 				if (element.getTransformer() == null) {
 					throw new IllegalStateException("No transformer specified whereas input has not been processed");
 				} else {
-					return element.getTransformer().tranform(input);
+					return input.withItem(element.getTransformer().tranform(input));
 				}
 			}
-			return result.getResult();
+			return input.withItem(result.getResult());
 		} catch (Exception e) {
 			if (element.getTransformer() == null || !element.isIgnoreOperationFactoryException()) {
 				throw buildRuntimeException(e);
 			} else {
-				return element.getTransformer().tranform(input);
+				return input.withItem(element.getTransformer().tranform(input));
 			}
 		}
 	}
@@ -56,13 +54,13 @@ public class LineVisitor {
 		return new RuntimeException("Cannot retrieve exception", e);
 	}
 	
-	public Object visit(Object element, Object input, Contexts context) {
+	public Item visit(Object element, Item input) {
 		if (element instanceof BranchesLineElement) {
-			return visit((BranchesLineElement) element, input, context);
+			return visit((BranchesLineElement) element, input);
 		} else if (element instanceof BranchLineElement) {
-			return visit((BranchLineElement) element, input, context);
+			return visit((BranchLineElement) element, input);
 		} else if (element instanceof StepLineElement) {
-			return visit((StepLineElement) element, input, context);
+			return visit((StepLineElement) element, input);
 		}
 		return null;
 	}

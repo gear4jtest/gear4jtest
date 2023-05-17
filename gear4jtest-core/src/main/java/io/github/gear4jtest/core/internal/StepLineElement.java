@@ -38,7 +38,8 @@ public class StepLineElement extends LineElement {
 	private final UUID elementUuid;
 
 	public StepLineElement(OperationModel<?, ?> step, StepLineElementDefaultConfiguration defaultConfiguration,
-			ResourceFactory resourceFactory) {
+			ResourceFactory resourceFactory, AssemblyLine line) {
+		super(line);
 		this.elementUuid = UUID.randomUUID();
 		this.operation = new OperationLazyInitializer(step.getType(), resourceFactory);
 		this.parameters = Collections.unmodifiableList(new ArrayList<>(step.getParameters()));
