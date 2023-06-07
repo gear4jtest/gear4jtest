@@ -41,6 +41,7 @@ configure(project.coreProjects) {
     
     dependencies {
         implementation(libraries.slf4j)
+        implementation(libraries.cglib)
 
         testImplementation(libraries.junit)
         testImplementation(libraries.assertj)

@@ -2,11 +2,11 @@ package io.github.gear4jtest.core.service.steps;
 
 import io.github.gear4jtest.core.model.Operation;
 import io.github.gear4jtest.core.processor.operation.ChainContextInjector.ChainContext;
-import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.ParameterValue;
+import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.Parameter;
 
 public class Step6 implements Operation<String, String> {
 
-	protected final ParameterValue<Integer> value = ParameterValue.of();
+	protected final Parameter<Integer> value = Parameter.of();
 	
 	protected final ChainContext chainContext = ChainContext.of();
 	
@@ -15,7 +15,7 @@ public class Step6 implements Operation<String, String> {
 		return "b";
 	}
 	
-	public ParameterValue<Integer> getValue() {
+	public Parameter<Integer> getValue() {
 		return value;
 	}
 

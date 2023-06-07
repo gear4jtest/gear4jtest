@@ -13,7 +13,7 @@ public class ChainModel<IN, OUT> {
 	private ResourceFactory resourceFactory;
 	private BranchesModel branches;
 	private ChainDefaultConfiguration chainDefaultConfiguration;
-	private List<Queue> queues;
+	private EventHandling eventHandling;
 
 	private ChainModel() {
 	}
@@ -30,8 +30,8 @@ public class ChainModel<IN, OUT> {
 		return chainDefaultConfiguration;
 	}
 
-	public List<Queue> getQueues() {
-		return queues;
+	public EventHandling getEventHandling() {
+		return eventHandling;
 	}
 
 	public static class ChainDefaultConfiguration {
@@ -155,12 +155,9 @@ public class ChainModel<IN, OUT> {
 			managedInstance.branches = branches;
 			return (Builder<IN, A>) this;
 		}
-
-		public Builder<IN, OUT> queue(Queue queue) {
-			if (managedInstance.queues == null) {
-				managedInstance.queues = new ArrayList<>();
-			}
-			managedInstance.queues.add(queue);
+		
+		public Builder<IN, OUT> eventHandling(EventHandling eventHandling) {
+			managedInstance.eventHandling = eventHandling;
 			return this;
 		}
 

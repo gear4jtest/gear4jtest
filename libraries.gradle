@@ -10,6 +10,7 @@ ext {
     libraries = [
             // compile
             slf4j: "org.slf4j:slf4j-api:${slf4jVersion}",
+            cglib: "cglib:cglib:3.3.0",
 
             // testCompile
             junit: "org.junit.jupiter:junit-jupiter:${junitVersion}",

@@ -2,28 +2,29 @@ package io.github.gear4jtest.core.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.PreProcessor;
+import io.github.gear4jtest.core.processor.Processor;
 import io.github.gear4jtest.core.processor.Transformer;
-import io.github.gear4jtest.core.processor.operation.ChainContextInjector.ChainContext;
-import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.ParameterValue;
+import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.Parameter;
 
 public class OperationModel<IN, OUT> {
 
 	private Class<Operation<IN, OUT>> type;
 
-	private List<Parameter<?, ?>> parameters;
-	
-	private ChainContextRetriever<?> contextRetriever;
-	
+	private List<ParameterModel<?, ?>> parameters;
+
 	private List<Class<? extends PreProcessor>> preProcessors;
-	
+
 	private List<Class<? extends PostProcessor>> postProcessors;
-	
+
 	private List<BaseOnError> onErrors;
 
 	private Transformer<IN, OUT> transformer;
+
+	private Map<Class<? extends Processor>, Object> processorModels;
 
 	private OperationModel() {
 		this.parameters = new ArrayList<>();
@@ -33,13 +34,9 @@ public class OperationModel<IN, OUT> {
 	public Class<Operation<IN, OUT>> getType() {
 		return type;
 	}
-	
-	public List<Parameter<?, ?>> getParameters() {
+
+	public List<ParameterModel<?, ?>> getParameters() {
 		return parameters;
-	}
-	
-	public ChainContextRetriever<?> getContextRetriever() {
-		return contextRetriever;
 	}
 
 	public List<Class<? extends PreProcessor>> getPreProcessors() {
@@ -49,13 +46,17 @@ public class OperationModel<IN, OUT> {
 	public List<Class<? extends PostProcessor>> getPostProcessors() {
 		return postProcessors;
 	}
-	
+
 	public List<BaseOnError> getOnErrors() {
 		return onErrors;
 	}
-	
+
 	public Transformer<IN, OUT> getTransformer() {
 		return transformer;
+	}
+
+	public Map<Class<? extends Processor>, Object> getProcessorModels() {
+		return processorModels;
 	}
 
 	public static class Builder<IN, OUT, OP extends Operation<IN, OUT>> {
@@ -85,17 +86,17 @@ public class OperationModel<IN, OUT> {
 //			managedInstance.parameters.add(new Parameter("", value, evaluator));
 //			return this;
 //		}
-		
-		public <A> Builder<IN, OUT, OP> parameter(Parameter<OP, A> parameter) {
+
+		public <A> Builder<IN, OUT, OP> parameter(ParameterModel<OP, A> parameter) {
 			managedInstance.parameters.add(parameter);
 			return this;
 		}
-		
-		public <A> Builder<IN, OUT, OP> context(ChainContextRetriever<OP> contextRetriever) {
-			managedInstance.contextRetriever = contextRetriever;
+
+		public <A> Builder<IN, OUT, OP> processorModel(Class<? extends Processor<A>> processor, A model) {
+			managedInstance.processorModels.put(processor, model);
 			return this;
 		}
-		
+
 //		public <A, B> Parameter<B> newParameter(ParamRetriever<A, B> name) {
 //			Parameter<B> param = new Parameter<>(name);
 //			return param;
@@ -105,32 +106,32 @@ public class OperationModel<IN, OUT> {
 //			managedInstance.parameters.add(new Parameter(name, value));
 //			return this;
 //		}
-		
-		public <A> Builder<IN, OUT, OP> preProcessors(List<Class<PreProcessor>> processors) {
+
+		public <A> Builder<IN, OUT, OP> preProcessors(List<Class<PreProcessor<?>>> processors) {
 			managedInstance.preProcessors = new ArrayList<>(processors);
 			return this;
 		}
-		
-		public <A> Builder<IN, OUT, OP> preProcessor(Class<PreProcessor> processor) {
+
+		public <A> Builder<IN, OUT, OP> preProcessor(Class<PreProcessor<?>> processor) {
 			managedInstance.preProcessors.add(processor);
 			return this;
 		}
-		
-		public <A> Builder<IN, OUT, OP> postProcessor(Class<PostProcessor> processor) {
+
+		public <A> Builder<IN, OUT, OP> postProcessor(Class<PostProcessor<?>> processor) {
 			managedInstance.postProcessors.add(processor);
 			return this;
 		}
-		
+
 		public Builder<IN, OUT, OP> onError(BaseOnError onError) {
 			this.managedInstance.onErrors.add(onError);
 			return this;
 		}
-		
+
 		public OperationModel.UnsafeOperationModel.Builder<IN, OUT, OP> onError(UnsafeOnError<?> onError) {
 			this.managedInstance.onErrors.add(onError.getOnError());
 			return new UnsafeOperationModel.Builder<>(this);
 		}
-		
+
 		public Builder<IN, OUT, OP> transformer(Transformer<IN, OUT> transformer) {
 			this.managedInstance.transformer = transformer;
 			return this;
@@ -139,17 +140,17 @@ public class OperationModel<IN, OUT> {
 		public OperationModel<IN, OUT> build() {
 			return managedInstance;
 		}
-		
+
 	}
 
 	@FunctionalInterface
 	public interface ParamRetriever<T extends Operation<?, ?>, U> {
-		
-		ParameterValue<U> getParameterValue(T operation);
-		
+
+		Parameter<U> getParameterValue(T operation);
+
 	}
 
-	public static class Parameter<OP extends Operation<?, ?>, T> {
+	public static class ParameterModel<OP extends Operation<?, ?>, T> {
 
 		private ParamRetriever<OP, T> paramRetriever;
 		private T value;
@@ -157,18 +158,17 @@ public class OperationModel<IN, OUT> {
 //		private Function<InterpretationContext, T> valueFunction;
 		private String expression;
 		private String evaluator;
-		private String name;
 
-		public Parameter(ParamRetriever<OP, T> paramRetriever) {
+		public ParameterModel(ParamRetriever<OP, T> paramRetriever) {
 			this.paramRetriever = paramRetriever;
 		}
 
-		public Parameter(ParamRetriever<OP, T> paramRetriever, T value) {
+		public ParameterModel(ParamRetriever<OP, T> paramRetriever, T value) {
 			this.paramRetriever = paramRetriever;
 			this.value = value;
 		}
-		
-		public Parameter(ParamRetriever<OP, T> paramRetriever, String expression, String evaluator) {
+
+		public ParameterModel(ParamRetriever<OP, T> paramRetriever, String expression, String evaluator) {
 			this.paramRetriever = paramRetriever;
 			this.expression = expression;
 			this.evaluator = evaluator;
@@ -177,72 +177,56 @@ public class OperationModel<IN, OUT> {
 		public ParamRetriever<?, ?> getParamRetriever() {
 			return paramRetriever;
 		}
-		
+
 		public T getValue() {
 			return value;
-		}
-
-		public String getName() {
-			return name;
 		}
 
 		public String getEvaluator() {
 			return evaluator;
 		}
-		
+
 		public String getExpression() {
 			return expression;
 		}
-		
-		public Parameter<OP, T> value(T value) {
+
+		public ParameterModel<OP, T> value(T value) {
 			this.value = value;
 			return this;
 		}
-		
-		public Parameter<OP, T> name(String name) {
-			this.name = name;
-			return this;
-		}
-		
+
 	}
-	
-	@FunctionalInterface
-	public interface ChainContextRetriever<T extends Operation<?, ?>> {
-		
-		ChainContext getParameterValue(T operation);
-		
-	}
-	
+
 	public static class UnsafeOperationModel<IN, OUT, OP extends Operation<IN, OUT>> {
-		
+
 		private OperationModel.Builder<IN, OUT, OP> operation;
-		
+
 		public static class Builder<IN, OUT, OP extends Operation<IN, OUT>> {
-			
+
 			private UnsafeOperationModel<IN, OUT, OP> managedInstance;
-			
+
 			public Builder(OperationModel.Builder<IN, OUT, OP> operation) {
 				this.managedInstance = new UnsafeOperationModel<>();
 				this.managedInstance.operation = operation;
 			}
-			
+
 			public Builder<IN, OUT, OP> onError(BaseOnError onError) {
 				this.managedInstance.operation.onError(onError);
 				return this;
 			}
-			
+
 			public OperationModel.UnsafeOperationModel.Builder<IN, OUT, OP> onError(UnsafeOnError<?> onError) {
 				this.managedInstance.operation.onError(onError.getOnError());
 				return this;
 			}
-			
+
 			public OperationModel.Builder<IN, OUT, OP> transformer(Transformer<IN, OUT> transformer) {
 				this.managedInstance.operation.transformer(transformer);
 				return this.managedInstance.operation;
 			}
-			
+
 		}
-		
+
 	}
 
 }

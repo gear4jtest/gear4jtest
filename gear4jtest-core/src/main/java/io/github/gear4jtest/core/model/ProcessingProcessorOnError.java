@@ -16,7 +16,7 @@ public class ProcessingProcessorOnError extends BaseOnError {
 			managedInstance = new ProcessingProcessorOnError();
 		}
 
-		public ProcessingProcessorOnError.Builder processor(Class<? extends ProcessingProcessor<?, ?>> processor) {
+		public ProcessingProcessorOnError.Builder processor(Class<? extends ProcessingProcessor> processor) {
 			managedInstance.processor = processor;
 			return this;
 		}

@@ -1,13 +1,13 @@
 package io.github.gear4jtest.core.service.steps;
 
 import io.github.gear4jtest.core.model.Operation;
-import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.ParameterValue;
+import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.Parameter;
 
 public class Step2 implements Operation<Integer, String> {
 
-	private ParameterValue<String> string;
+	private Parameter<String> string;
 	
-	public ParameterValue<String> getA() {
+	public Parameter<String> getA() {
 		return string;
 	}
 	

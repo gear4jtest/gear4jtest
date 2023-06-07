@@ -1,9 +1,18 @@
 package io.github.gear4jtest.core.context;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+
+import io.github.gear4jtest.core.event.EventTriggerService;
+import io.github.gear4jtest.core.internal.ServiceRegistry;
 
 public class AssemblyLineExecution {
+
+	private UUID id;
 
 	private LocalDateTime startTime = null;
 
@@ -13,18 +22,28 @@ public class AssemblyLineExecution {
 
 	private LocalDateTime lastUpdateTime = null;
 
+	private List<ItemExecution> itemExecutions;
+
 	private Map<String, Object> context;
-	
-	public AssemblyLineExecution(Map<String, Object> context) {
+
+	public AssemblyLineExecution(Map<String, Object> context, UUID id) {
+		this.id = id;
 		this.context = context;
+		this.itemExecutions = new ArrayList<>();
 	}
 
 	public ItemExecution createItemExecution() {
-		return new ItemExecution(this);
+		return createItemExecution(new HashMap<>());
 	}
-	
+
 	public ItemExecution createItemExecution(Map<String, Object> context) {
-		return new ItemExecution(this, context);
+		ItemExecution itemExecution = new ItemExecution(this, context);
+		itemExecutions.add(itemExecution);
+		return itemExecution;
+	}
+
+	public UUID getId() {
+		return id;
 	}
 
 	public LocalDateTime getStartTime() {
@@ -65,6 +84,10 @@ public class AssemblyLineExecution {
 
 	public void setContext(Map<String, Object> context) {
 		this.context = context;
+	}
+
+	public EventTriggerService getEventTriggerService() {
+		return ServiceRegistry.getEventPublisher(id);
 	}
 
 }

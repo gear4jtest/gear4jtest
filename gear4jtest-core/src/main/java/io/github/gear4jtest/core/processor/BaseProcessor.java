@@ -1,13 +1,12 @@
 package io.github.gear4jtest.core.processor;
 
-import io.github.gear4jtest.core.context.LineElementContext;
+import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.internal.Item;
-import io.github.gear4jtest.core.internal.LineElement;
-import io.github.gear4jtest.core.processor.ProcessorChain.BaseProcessorDrivingElement;
+import io.github.gear4jtest.core.processor.ProcessorChain.BaseProcessorDriver;
 
 @FunctionalInterface
-public interface BaseProcessor<T extends LineElement, U extends BaseProcessorDrivingElement<T>, V extends LineElementContext> {
+public interface BaseProcessor<T, U extends BaseProcessorDriver> {
 	
-	ProcessorResult process(Item input, T currentElement, U chainDriver, V context);
+	ProcessorResult process(Item input, T processorModel, U chainDriver, StepExecution context);
 
 }

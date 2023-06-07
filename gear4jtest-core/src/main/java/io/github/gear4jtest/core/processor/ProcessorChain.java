@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import io.github.gear4jtest.core.context.LineElementContext;
+import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.internal.Item;
-import io.github.gear4jtest.core.internal.LineElement;
+import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.BaseOnError;
 import io.github.gear4jtest.core.model.BaseRule;
 import io.github.gear4jtest.core.model.ChainBreakRule;
@@ -15,21 +15,21 @@ import io.github.gear4jtest.core.model.FatalRule;
 import io.github.gear4jtest.core.model.IgnoreRule;
 import io.github.gear4jtest.core.processor.ProcessorChainTemplate.AbstractBaseProcessorChainElement;
 
-public class ProcessorChain<T extends LineElement, V extends LineElementContext> {
+public class ProcessorChain {
 
-	private ProcessorChainTemplate<T, V> chain;
+	private ProcessorChainTemplate chain;
 
 	private Item input;
 
-	private V context;
+	private StepExecution context;
 
-	private T currentElement;
+	private StepLineElement currentElement;
 
 	private Object result;
 
 	private boolean isInputProcessed;
 
-	public ProcessorChain(ProcessorChainTemplate<T, V> chain, Item input, V context, T currentElement) {
+	public ProcessorChain(ProcessorChainTemplate chain, Item input, StepExecution context, StepLineElement currentElement) {
 		this.chain = chain;
 		this.input = input;
 		this.context = context;
@@ -39,7 +39,7 @@ public class ProcessorChain<T extends LineElement, V extends LineElementContext>
 
 	public ProcessorChainResult processChain() {
 		ProcessorChainResult.Builder processorChainResultBuilder = new ProcessorChainResult.Builder();
-		AbstractBaseProcessorChainElement<T, ?, V> currentProcessor = chain.getCurrentProcessor();
+		AbstractBaseProcessorChainElement<?, ?> currentProcessor = chain.getCurrentProcessor();
 		ProcessorResult processorResult = processProcessor(chain.getCurrentProcessor(), input, context);
 		processorChainResultBuilder.processorResult(processorResult);
 		while ((currentProcessor = chain.getCurrentProcessor().getNextElement()) != null) {
@@ -65,8 +65,8 @@ public class ProcessorChain<T extends LineElement, V extends LineElementContext>
 		return proceed();
 	}
 
-	private ProcessorResult processProcessor(AbstractBaseProcessorChainElement<T, ?, V> currentProcessor, Item input,
-			V context) {
+	private ProcessorResult processProcessor(AbstractBaseProcessorChainElement<?, ?> currentProcessor, Item input,
+			StepExecution context) {
 		ProcessorResult result = null;
 		try {
 			result = currentProcessor.execute(input, context, currentElement, this);
@@ -96,19 +96,19 @@ public class ProcessorChain<T extends LineElement, V extends LineElementContext>
 		return clazz == null || clazz.isInstance(e);
 	}
 
-	public static class BaseProcessorDrivingElement<T extends LineElement> {
+	public static class BaseProcessorDriver {
 
-		protected ProcessorChain<T, ?> chain;
+		protected ProcessorChain chain;
 
-		public BaseProcessorDrivingElement(ProcessorChain<T, ?> chain) {
+		public BaseProcessorDriver(ProcessorChain chain) {
 			this.chain = chain;
 		}
 
 	}
 
-	public static class ProcessorDrivingElement<T extends LineElement> extends BaseProcessorDrivingElement<T> {
+	public static class ProcessorDriver extends BaseProcessorDriver {
 
-		public ProcessorDrivingElement(ProcessorChain<T, ?> chain) {
+		public ProcessorDriver(ProcessorChain chain) {
 			super(chain);
 		}
 
@@ -118,10 +118,9 @@ public class ProcessorChain<T extends LineElement, V extends LineElementContext>
 
 	}
 
-	public static class ProcessingProcessorDrivingElement<T extends LineElement>
-			extends BaseProcessorDrivingElement<T> {
+	public static class ProcessingProcessorDriver extends BaseProcessorDriver {
 
-		public ProcessingProcessorDrivingElement(ProcessorChain<T, ?> chain) {
+		public ProcessingProcessorDriver(ProcessorChain chain) {
 			super(chain);
 		}
 

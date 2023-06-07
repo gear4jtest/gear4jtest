@@ -11,23 +11,22 @@ import io.github.gear4jtest.core.context.ItemExecution;
 public class AssemblyLineOrchestrator {
 
 	private final LineTraverser lineTraverser;
-	private final LineVisitor lineVisitor;
 
 	private final AssemblyLineExecution execution;
 
 	AssemblyLineOrchestrator(AssemblyLineExecution execution) {
 		this.lineTraverser = new LineTraverser();
-		this.lineVisitor = new LineVisitor();
-		
 		this.execution = execution;
 	}
 
-	public <BEGIN, OUT> Item command(AssemblyLine<BEGIN, OUT> line, Object input) {
-		return command(line.getStartingElement(), new Item(input, execution.createItemExecution()));
+	// Make this class only works with Item => this method should get an Item as parameter, not a simple Object
+	public <BEGIN, OUT> Item command(AssemblyLine<BEGIN, OUT> line, Item input) {
+		return command(line.getStartingElement(), input);
 	}
 
 	private <BEGIN, OUT> Item command(LineElement element, Item input) {
-		Item result = lineVisitor.visit(element, input);
+//		Item result = lineVisitor.visit(element, input);
+		Item result = element.execute(input);
 
 		List<LineElement> nextElements = lineTraverser.getNextElement(element);
 		if (nextElements.isEmpty()) {

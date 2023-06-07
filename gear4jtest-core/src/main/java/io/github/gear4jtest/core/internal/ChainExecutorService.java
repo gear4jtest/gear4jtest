@@ -37,9 +37,9 @@ public class ChainExecutorService {
 	// ChainExecutionResult<IN> qui contiendrait le retour, de type IN, s'il y a eu erreur etc...
 	public <BEGIN, IN> IN execute(ChainModel<BEGIN, IN> chain, BEGIN object, Map<String, Object> context) {
 		AssemblyLine<BEGIN, IN> line = new AssemblyLineBuilder<>(chain, context).buildAssemblyLine();
-		AssemblyLineExecution execution = new AssemblyLineExecution(context);
+		AssemblyLineExecution execution = new AssemblyLineExecution(context, UUID.randomUUID());
 		
-		initializeQueues(chain.getQueues(), line.getId(), chain.getResourceFactory());
+		initializeQueues(chain.getEventHandling().getQueues(), line.getId(), chain.getResourceFactory());
 		return line.execute(object, execution);
 	}
 	

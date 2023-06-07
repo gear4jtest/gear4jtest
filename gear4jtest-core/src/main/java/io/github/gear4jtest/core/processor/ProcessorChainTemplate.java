@@ -4,36 +4,36 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import io.github.gear4jtest.core.context.LineElementContext;
+import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.internal.Item;
-import io.github.gear4jtest.core.internal.LineElement;
 import io.github.gear4jtest.core.internal.ProcessorInternalModel;
+import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.BaseOnError;
-import io.github.gear4jtest.core.processor.ProcessorChain.BaseProcessorDrivingElement;
-import io.github.gear4jtest.core.processor.ProcessorChain.ProcessingProcessorDrivingElement;
-import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDrivingElement;
+import io.github.gear4jtest.core.processor.ProcessorChain.BaseProcessorDriver;
+import io.github.gear4jtest.core.processor.ProcessorChain.ProcessingProcessorDriver;
+import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDriver;
 
-public class ProcessorChainTemplate<T extends LineElement, V extends LineElementContext> {
+public class ProcessorChainTemplate {
 
-	private AbstractBaseProcessorChainElement<T, ?, V> currentProcessor;
+	private AbstractBaseProcessorChainElement<?, ?> currentProcessor;
 	
 	private ResourceFactory resourceFactory;
 
-	public ProcessorChainTemplate(List<ProcessorInternalModel<T>> processors, ResourceFactory resourceFactory) {
+	public ProcessorChainTemplate(List<ProcessorInternalModel> processors, ResourceFactory resourceFactory) {
 		this.resourceFactory = resourceFactory;
 		buildProcessorsChain(processors);
 	}
 
-	private void buildProcessorsChain(List<ProcessorInternalModel<T>> processors) {
-		List<AbstractBaseProcessorChainElement<T, ? extends BaseProcessorDrivingElement<T>, V>> elements = buildElements(processors);
+	private void buildProcessorsChain(List<ProcessorInternalModel> processors) {
+		List<AbstractBaseProcessorChainElement<?, ? extends BaseProcessorDriver>> elements = buildElements(processors);
 		
-		Optional<AbstractBaseProcessorChainElement<T, ? extends BaseProcessorDrivingElement<T>, V>> firstElement = elements.stream().findFirst();
+		Optional<AbstractBaseProcessorChainElement<?, ? extends BaseProcessorDriver>> firstElement = elements.stream().findFirst();
 		if (firstElement.isPresent()) {
 			currentProcessor = firstElement.get();
 			
-			AbstractBaseProcessorChainElement<T, ? extends BaseProcessorDrivingElement<T>, V> formerChainedProcessor = null;
-			for (AbstractBaseProcessorChainElement<T, ? extends BaseProcessorDrivingElement<T>, V> element : elements) {
+			AbstractBaseProcessorChainElement<?, ? extends BaseProcessorDriver> formerChainedProcessor = null;
+			for (AbstractBaseProcessorChainElement<?, ? extends BaseProcessorDriver> element : elements) {
 				if (formerChainedProcessor != null) {
 					formerChainedProcessor.setNextElement(element);
 				}
@@ -42,53 +42,53 @@ public class ProcessorChainTemplate<T extends LineElement, V extends LineElement
 		}
 	}
 	
-	private List<AbstractBaseProcessorChainElement<T, ? extends BaseProcessorDrivingElement<T>, V>> buildElements(List<ProcessorInternalModel<T>> processors) {
+	private List<AbstractBaseProcessorChainElement<?, ? extends BaseProcessorDriver>> buildElements(List<ProcessorInternalModel> processors) {
 		return processors.stream()
 			.map(this::buildElement)
 			.collect(Collectors.toList());
 	}
 	
-	private AbstractBaseProcessorChainElement<T, ? extends BaseProcessorDrivingElement<T>, V> buildElement(ProcessorInternalModel<?> processor) {
+	private AbstractBaseProcessorChainElement<?, ? extends BaseProcessorDriver> buildElement(ProcessorInternalModel processor) {
 		if (ProcessingProcessor.class.isAssignableFrom(processor.getProcessor())) {
-			return new ProcessingProcessorChainElement<>(processor.getOnErrors(), (Class<ProcessingProcessor<T, V>>) processor.getProcessor(), resourceFactory);
+			return new ProcessingProcessorChainElement(processor.getOnErrors(), (Class<ProcessingProcessor>) processor.getProcessor(), resourceFactory);
 		} else if (Processor.class.isAssignableFrom(processor.getProcessor())) {
-			return new ProcessorChainElement(processor.getOnErrors(), (Class<Processor<T, ?>>) processor.getProcessor(), resourceFactory);
+			return new ProcessorChainElement(processor.getOnErrors(), (Class<Processor>) processor.getProcessor(), resourceFactory);
 		}
 		return null;
 	}
 	
-	AbstractBaseProcessorChainElement<T, ?, V> getCurrentProcessor() {
+	AbstractBaseProcessorChainElement<?, ?> getCurrentProcessor() {
 		return currentProcessor;
 	}
 	
-	void setCurrentProcessor(AbstractBaseProcessorChainElement<T, ?, V> currentProcessor) {
+	void setCurrentProcessor(AbstractBaseProcessorChainElement<?, ?> currentProcessor) {
 		this.currentProcessor = currentProcessor;
 	}
 
-	public static abstract class AbstractBaseProcessorChainElement<T extends LineElement, U extends BaseProcessorDrivingElement<T>, V extends LineElementContext> {
+	public static abstract class AbstractBaseProcessorChainElement<T, U extends BaseProcessorDriver> {
 
-		private Class<? extends BaseProcessor<T, U, V>> processor;
+		private Class<? extends BaseProcessor<T, U>> processor;
 		
 		private ResourceFactory resourceFactory;
 
 		private List<BaseOnError> onErrors;
 
-		private AbstractBaseProcessorChainElement<T, ? extends BaseProcessorDrivingElement<T>, V> nextElement;
+		private AbstractBaseProcessorChainElement<?, ? extends BaseProcessorDriver> nextElement;
 
-		abstract U getDrivingElement(ProcessorChain<T, V> chain);
+		abstract U getDrivingElement(ProcessorChain chain);
 		
-		public AbstractBaseProcessorChainElement(Class<? extends BaseProcessor<T, U, V>> processor, List<BaseOnError> onErrors, ResourceFactory resourceFactory) {
+		public AbstractBaseProcessorChainElement(Class<? extends BaseProcessor<T, U>> processor, List<BaseOnError> onErrors, ResourceFactory resourceFactory) {
 			this.processor = processor;
 			this.onErrors = onErrors;
 			this.resourceFactory = resourceFactory;
 		}
 		
-		public ProcessorResult execute(Item input, V context, T element, ProcessorChain<T, V> chain) {
-			BaseProcessor<T, U, V> proc = resourceFactory.getResource(processor);
-			return proc.process(input, element, getDrivingElement(chain), context);
+		public ProcessorResult execute(Item input, StepExecution context, StepLineElement element, ProcessorChain chain) {
+			BaseProcessor<T, U> proc = resourceFactory.getResource(processor);
+			return proc.process(input, (T) element.getProcessorModels(processor), getDrivingElement(chain), context);
 		}
 		
-		public Class<? extends BaseProcessor<T, U, V>> getProcessor() {
+		public Class<? extends BaseProcessor<T, U>> getProcessor() {
 			return processor;
 		}
 
@@ -96,38 +96,38 @@ public class ProcessorChainTemplate<T extends LineElement, V extends LineElement
 			return onErrors;
 		}
 
-		public AbstractBaseProcessorChainElement<T, ? extends BaseProcessorDrivingElement<T>, V> getNextElement() {
+		public AbstractBaseProcessorChainElement<?, ? extends BaseProcessorDriver> getNextElement() {
 			return nextElement;
 		}
 
-		void setNextElement(AbstractBaseProcessorChainElement<T, ? extends BaseProcessorDrivingElement<T>, V> nextElement) {
+		void setNextElement(AbstractBaseProcessorChainElement<?, ? extends BaseProcessorDriver> nextElement) {
 			this.nextElement = nextElement;
 		}
 
 	}
 
-	public static class ProcessorChainElement<T extends LineElement, V extends LineElementContext> extends AbstractBaseProcessorChainElement<T, ProcessorDrivingElement<T>, V> {
+	public static class ProcessorChainElement<T> extends AbstractBaseProcessorChainElement<T, ProcessorDriver> {
 
-		public ProcessorChainElement(List<BaseOnError> onErrors, Class<? extends Processor<T, V>> processor, ResourceFactory resourceFactory) {
+		public ProcessorChainElement(List<BaseOnError> onErrors, Class<? extends Processor<T>> processor, ResourceFactory resourceFactory) {
 			super(processor, onErrors, resourceFactory);
 		}
 
 		@Override
-		ProcessorDrivingElement<T> getDrivingElement(ProcessorChain<T, V> chain) {
-			return new ProcessorDrivingElement<>(chain);
+		ProcessorDriver getDrivingElement(ProcessorChain chain) {
+			return new ProcessorDriver(chain);
 		}
 
 	}
 
-	public static class ProcessingProcessorChainElement<T extends LineElement, U, V extends LineElementContext> extends AbstractBaseProcessorChainElement<T, ProcessingProcessorDrivingElement<T>, V> {
+	public static class ProcessingProcessorChainElement<T> extends AbstractBaseProcessorChainElement<Void, ProcessingProcessorDriver> {
 
-		public ProcessingProcessorChainElement(List<BaseOnError> onErrors, Class<ProcessingProcessor<T, V>> processor, ResourceFactory resourceFactory) {
+		public ProcessingProcessorChainElement(List<BaseOnError> onErrors, Class<ProcessingProcessor> processor, ResourceFactory resourceFactory) {
 			super(processor, onErrors, resourceFactory);
 		}
 
 		@Override
-		ProcessingProcessorDrivingElement<T> getDrivingElement(ProcessorChain<T, V> chain) {
-			return new ProcessingProcessorDrivingElement<T>(chain);
+		ProcessingProcessorDriver getDrivingElement(ProcessorChain chain) {
+			return new ProcessingProcessorDriver(chain);
 		}
 
 	}

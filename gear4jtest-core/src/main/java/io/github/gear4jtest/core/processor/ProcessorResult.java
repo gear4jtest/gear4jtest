@@ -2,40 +2,40 @@ package io.github.gear4jtest.core.processor;
 
 public class ProcessorResult {
 
-	private Class<? extends BaseProcessor<?, ?, ?>> clazz;
+	private Class<? extends BaseProcessor<?, ?>> clazz;
 
 	private Result result;
 
 	private Throwable throwable;
 
-	private ProcessorResult(Class<? extends BaseProcessor<?, ?, ?>> clazz, Result result) {
+	private ProcessorResult(Class<? extends BaseProcessor<?, ?>> clazz, Result result) {
 		this(clazz, result, null);
 	}
 	
-	private ProcessorResult(Class<? extends BaseProcessor<?, ?, ?>> clazz, Result result, Throwable throwable) {
+	private ProcessorResult(Class<? extends BaseProcessor<?, ?>> clazz, Result result, Throwable throwable) {
 		this.clazz = clazz;
 		this.result = result;
 		this.throwable = throwable;
 	}
 
-	public static ProcessorResult succeeded(Class<? extends BaseProcessor<?, ?, ?>> clazz) {
+	public static ProcessorResult succeeded(Class<? extends BaseProcessor<?, ?>> clazz) {
 		return new ProcessorResult(clazz, Result.SUCCESS);
 	}
 
-	public static ProcessorResult failed(Class<? extends BaseProcessor<?, ?, ?>> clazz, Throwable throwable) {
+	public static ProcessorResult failed(Class<? extends BaseProcessor<?, ?>> clazz, Throwable throwable) {
 		return new ProcessorResult(clazz, Result.FAILED, throwable);
 	}
 
-	public static ProcessorResult passedWithWarnings(Class<? extends BaseProcessor<?, ?, ?>> clazz,
+	public static ProcessorResult passedWithWarnings(Class<? extends BaseProcessor<?, ?>> clazz,
 			Throwable throwable) {
 		return new ProcessorResult(clazz, Result.PASSED_WITH_WARNINGS, throwable);
 	}
 
-	public static ProcessorResult passedAndBreak(Class<? extends BaseProcessor<?, ?, ?>> clazz, Throwable throwable) {
+	public static ProcessorResult passedAndBreak(Class<? extends BaseProcessor<?, ?>> clazz, Throwable throwable) {
 		return new ProcessorResult(clazz, Result.PASSED_AND_BREAK, throwable);
 	}
 
-	public Class<? extends BaseProcessor<?, ?, ?>> getClazz() {
+	public Class<? extends BaseProcessor<?, ?>> getClazz() {
 		return clazz;
 	}
 

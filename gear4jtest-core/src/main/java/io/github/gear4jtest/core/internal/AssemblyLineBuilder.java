@@ -6,6 +6,8 @@ import java.util.Optional;
 import io.github.gear4jtest.core.model.BranchModel;
 import io.github.gear4jtest.core.model.BranchesModel;
 import io.github.gear4jtest.core.model.ChainModel;
+import io.github.gear4jtest.core.model.ChainModel.StepLineElementDefaultConfiguration;
+import io.github.gear4jtest.core.model.EventHandling.EventConfiguration;
 import io.github.gear4jtest.core.model.OperationModel;
 
 public class AssemblyLineBuilder<BEGIN, IN> {
@@ -24,15 +26,17 @@ public class AssemblyLineBuilder<BEGIN, IN> {
 		return new AssemblyLine<>(startingElement, context);
 	}
 
-	private LineElement buildLineElement(BranchesModel<?, ?> branches, LineElement parentElement, AssemblyLine<BEGIN, IN> line) {
-		LineElement element = LineElementFactory.buildLineElement(branches, line);
+	private LineElement buildLineElement(BranchesModel<?, ?> branches, LineElement parentElement,
+			AssemblyLine<BEGIN, IN> line) {
+		LineElement element = LineElementFactory.buildLineElement(branches);
 		branches.getBranches().forEach(branch -> buildLineElement(branch, element, line));
 		Optional.ofNullable(parentElement).ifPresent(parentElem -> parentElem.addNextLineElement(element));
 		return element;
 	}
 
-	private LineElement buildLineElement(BranchModel<?, ?> branch, LineElement parentElement, AssemblyLine<BEGIN, IN> line) {
-		LineElement element = LineElementFactory.buildLineElement(branch, line);
+	private LineElement buildLineElement(BranchModel<?, ?> branch, LineElement parentElement,
+			AssemblyLine<BEGIN, IN> line) {
+		LineElement element = LineElementFactory.buildLineElement(branch);
 		parentElement.addNextLineElement(element);
 		LineElement parent = element;
 		for (Object child : branch.getChildren()) {
@@ -42,10 +46,11 @@ public class AssemblyLineBuilder<BEGIN, IN> {
 		return element;
 	}
 
-	private LineElement buildLineElement(OperationModel<?, ?> stepa, LineElement parentElement, AssemblyLine<BEGIN, IN> line) {
-		LineElement element = LineElementFactory.buildLineElement(stepa,
-				chain.getChainDefaultConfiguration().getStepLineElementDefaultConfiguration(),
-				chain.getResourceFactory(), line);
+	private LineElement buildLineElement(OperationModel<?, ?> stepa, LineElement parentElement,
+			AssemblyLine<BEGIN, IN> line) {
+		StepConfiguration configuration = new StepConfiguration(chain.getEventHandling().getGlobalEventConfiguration(),
+				chain.getChainDefaultConfiguration().getStepLineElementDefaultConfiguration());
+		LineElement element = LineElementFactory.buildLineElement(stepa, configuration, chain.getResourceFactory());
 		parentElement.addNextLineElement(element);
 		return element;
 	}
@@ -60,6 +65,28 @@ public class AssemblyLineBuilder<BEGIN, IN> {
 		} else {
 			throw new IllegalArgumentException();
 		}
+	}
+
+	static class StepConfiguration {
+
+		private EventConfiguration eventConfiguration;
+
+		private StepLineElementDefaultConfiguration stepLineElementDefaultConfiguration;
+
+		public StepConfiguration(EventConfiguration eventConfiguration,
+				StepLineElementDefaultConfiguration stepLineElementDefaultConfiguration) {
+			this.eventConfiguration = eventConfiguration;
+			this.stepLineElementDefaultConfiguration = stepLineElementDefaultConfiguration;
+		}
+
+		public EventConfiguration getEventConfiguration() {
+			return eventConfiguration;
+		}
+
+		public StepLineElementDefaultConfiguration getStepLineElementDefaultConfiguration() {
+			return stepLineElementDefaultConfiguration;
+		}
+
 	}
 
 }

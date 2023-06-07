@@ -1,24 +1,29 @@
 package io.github.gear4jtest.core.event;
 
+import java.util.UUID;
+
 public class Event {
 
-    private String eventName;
-    private Object contextualData;
+	private final UUID id;
+	private final UUID item;
+	private final String name;
 
-	public String getEventName() {
-		return eventName;
-	}
-	
-	public void setEventName(String eventName) {
-		this.eventName = eventName;
-	}
-	
-	public Object getContextualData() {
-		return contextualData;
+	public Event(String name, UUID item) {
+		this.id = UUID.randomUUID();
+		this.item = item;
+		this.name = name;
 	}
 
-	public void setContextualData(Object contextualData) {
-		this.contextualData = contextualData;
+	public UUID getId() {
+		return id;
 	}
-    
+
+	public UUID getItem() {
+		return item;
+	}
+
+	public String getName() {
+		return name;
+	}
+
 }

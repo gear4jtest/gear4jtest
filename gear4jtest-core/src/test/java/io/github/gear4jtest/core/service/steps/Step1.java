@@ -4,15 +4,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.github.gear4jtest.core.model.Operation;
-import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.ParameterValue;
+import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.Parameter;
 
 public class Step1 implements Operation<String, Integer> {
 
-	private ParameterValue<String> string = ParameterValue.of();
+	private Parameter<String> string = Parameter.of();
 
 	private final Map<String, Object> chainContext = new HashMap<>();
 
-	public ParameterValue<String> getA() {
+	public Parameter<String> getA() {
 		return string;
 	}
 	
