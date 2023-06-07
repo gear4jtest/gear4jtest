@@ -68,7 +68,7 @@ public class ProcessorChainResult {
 		private void computeResult() {
 			this.managedInstance.processorResults.stream()
 					.map(ProcessorResult::getResult)
-					.sorted(Comparator.comparing(result -> result.getPriority()))
+					.sorted(Comparator.comparing(Result::getPriority))
 					.findFirst()
 					.ifPresent(result -> this.managedInstance.result = result);
 		}

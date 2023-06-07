@@ -5,8 +5,10 @@ import java.util.List;
 
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.model.OnError.UnsafeOnError;
+import io.github.gear4jtest.core.processor.Invoker;
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.PreProcessor;
+import io.github.gear4jtest.core.processor.operation.OperationInvoker;
 
 public class ChainModel<IN, OUT> {
 
@@ -68,11 +70,13 @@ public class ChainModel<IN, OUT> {
 
 		private List<Class<? extends PreProcessor>> preProcessors;
 		private List<Class<? extends PostProcessor>> postProcessors;
+		private Class<? extends Invoker> invoker;
 		private List<OnError> onErrors;
 
 		private StepLineElementDefaultConfiguration() {
 			this.preProcessors = new ArrayList<>();
 			this.postProcessors = new ArrayList<>();
+			this.invoker = OperationInvoker.class;
 			this.onErrors = new ArrayList<>();
 		}
 
@@ -82,6 +86,10 @@ public class ChainModel<IN, OUT> {
 
 		public List<Class<? extends PostProcessor>> getPostProcessors() {
 			return postProcessors;
+		}
+
+		public Class<? extends Invoker> getInvoker() {
+			return invoker;
 		}
 
 		public List<OnError> getOnErrors() {
@@ -108,6 +116,11 @@ public class ChainModel<IN, OUT> {
 
 			public Builder preProcessors(List<Class<? extends PreProcessor>> list) {
 				this.managedInstance.preProcessors.addAll(list);
+				return this;
+			}
+
+			public Builder invoker(Class<? extends Invoker> invoker) {
+				this.managedInstance.invoker = invoker;
 				return this;
 			}
 

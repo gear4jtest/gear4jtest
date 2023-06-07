@@ -71,20 +71,20 @@ public class AssemblyLineBuilder<BEGIN, IN> {
 
 		private EventConfiguration eventConfiguration;
 
-		private StepLineElementDefaultConfiguration stepLineElementDefaultConfiguration;
+		private StepLineElementDefaultConfiguration stepDefaultConfiguration;
 
 		public StepConfiguration(EventConfiguration eventConfiguration,
-				StepLineElementDefaultConfiguration stepLineElementDefaultConfiguration) {
+				StepLineElementDefaultConfiguration stepDefaultConfiguration) {
 			this.eventConfiguration = eventConfiguration;
-			this.stepLineElementDefaultConfiguration = stepLineElementDefaultConfiguration;
+			this.stepDefaultConfiguration = stepDefaultConfiguration;
 		}
 
 		public EventConfiguration getEventConfiguration() {
 			return eventConfiguration;
 		}
 
-		public StepLineElementDefaultConfiguration getStepLineElementDefaultConfiguration() {
-			return stepLineElementDefaultConfiguration;
+		public StepLineElementDefaultConfiguration getStepDefaultConfiguration() {
+			return stepDefaultConfiguration;
 		}
 
 	}

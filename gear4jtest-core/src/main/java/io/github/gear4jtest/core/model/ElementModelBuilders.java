@@ -9,7 +9,7 @@ import io.github.gear4jtest.core.model.OperationModel.ParamRetriever;
 import io.github.gear4jtest.core.model.OperationModel.ParameterModel;
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.PreProcessor;
-import io.github.gear4jtest.core.processor.ProcessingProcessor;
+import io.github.gear4jtest.core.processor.Invoker;
 import io.github.gear4jtest.core.processor.Processor;
 
 public final class ElementModelBuilders {
@@ -79,7 +79,7 @@ public final class ElementModelBuilders {
 		return new PostProcessorOnError.Builder().processor(processor);
 	}
 
-	public static ProcessingProcessorOnError.Builder onProcessingError(Class<? extends ProcessingProcessor> processor) {
+	public static ProcessingProcessorOnError.Builder onProcessingError(Class<? extends Invoker> processor) {
 		return new ProcessingProcessorOnError.Builder().processor(processor);
 	}
 

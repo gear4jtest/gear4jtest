@@ -2,7 +2,7 @@ package io.github.gear4jtest.core.processor;
 
 public class ProcessorResult {
 
-	private Class<? extends BaseProcessor<?, ?>> clazz;
+	private Class<? extends BaseProcessor<?, ?>> processor;
 
 	private Result result;
 
@@ -13,7 +13,7 @@ public class ProcessorResult {
 	}
 	
 	private ProcessorResult(Class<? extends BaseProcessor<?, ?>> clazz, Result result, Throwable throwable) {
-		this.clazz = clazz;
+		this.processor = clazz;
 		this.result = result;
 		this.throwable = throwable;
 	}
@@ -35,8 +35,8 @@ public class ProcessorResult {
 		return new ProcessorResult(clazz, Result.PASSED_AND_BREAK, throwable);
 	}
 
-	public Class<? extends BaseProcessor<?, ?>> getClazz() {
-		return clazz;
+	public Class<? extends BaseProcessor<?, ?>> getProcessor() {
+		return processor;
 	}
 
 	public Result getResult() {
