@@ -1,5 +1,6 @@
 package io.github.gear4jtest.core.internal;
 
+import io.github.gear4jtest.core.context.ItemExecution;
 import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.model.Operation;
 import io.github.gear4jtest.core.processor.ProcessorChain;
@@ -15,14 +16,14 @@ public class StepLineElementExecutor {
 		this.stepLineElementOperationInitiator = new StepLineElementOperationInitiator(stepLineElement);
 	}
 
-	public Item execute(Item input) {
+	// Should itemexecution contains item ?
+	public Item execute(Item input, ItemExecution execution) {
 		try {
 			Operation<?, ?> operation = stepLineElementOperationInitiator.initiate();
 
-			StepExecution stepProcessorChainExecution = input.getExecution().createStepProcessorChainExecution(operation);
+			StepExecution stepProcessorChainExecution = execution.createStepProcessorChainExecution(operation);
 			
-			ProcessorChain chain = new ProcessorChain(this.stepLineElement.getProcessorChain(), input, stepProcessorChainExecution,
-					this.stepLineElement);
+			ProcessorChain chain = new ProcessorChain(this.stepLineElement.getProcessorChain(), input, stepProcessorChainExecution);
 			ProcessorChainResult result = chain.processChain();
 			if (!result.isProcessed()) {
 				if (this.stepLineElement.getTransformer() == null) {

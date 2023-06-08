@@ -1,8 +1,5 @@
 package io.github.gear4jtest.core.internal;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import io.github.gear4jtest.core.context.ItemExecution;
@@ -11,7 +8,6 @@ import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.internal.AssemblyLineBuilder.StepConfiguration;
 import io.github.gear4jtest.core.model.OperationModel;
-import io.github.gear4jtest.core.model.OperationModel.ParameterModel;
 import io.github.gear4jtest.core.processor.Processor;
 import io.github.gear4jtest.core.processor.ProcessorChainTemplate;
 import io.github.gear4jtest.core.processor.Transformer;
@@ -27,7 +23,7 @@ public class StepLineElement extends LineElement {
 
 	private final Map<Class<? extends Processor>, Object> processorModels;
 
-	private final List<ParameterModel<?, ?>> parameters;
+//	private final List<ParameterModel<?, ?>> parameters;
 
 	// build a log context for every stepelement, so that every event will use this
 	// context to get contextualized
@@ -36,12 +32,12 @@ public class StepLineElement extends LineElement {
 	public StepLineElement(OperationModel<?, ?> step, StepConfiguration configuration, ResourceFactory resourceFactory) {
 		super();
 		this.clazz = step.getType();
-		this.parameters = Collections.unmodifiableList(new ArrayList<>(step.getParameters()));
+//		this.parameters = Collections.unmodifiableList(new ArrayList<>(step.getParameters()));
 		this.transformer = step.getTransformer();
 		this.processorModels = step.getProcessorModels();
 
-		this.resourceFactory = resourceFactory;
 		this.configuration = configuration;
+		this.resourceFactory = resourceFactory;
 
 //		List<ProcessorInternalModel> elements = buildProcessors(
 //				getProcessors(step.getPreProcessors(),
@@ -60,8 +56,8 @@ public class StepLineElement extends LineElement {
 	}
 
 	@Override
-	public Item execute(Item input) {
-		return new StepLineElementExecutor(this).execute(input);
+	public Item execute(Item input, ItemExecution itemExecution) {
+		return new StepLineElementExecutor(this).execute(input, itemExecution);
 	}
 
 //	private static List<Class<? extends PreProcessor>> getProcessors(List<Class<? extends PreProcessor>> stepProcessors,
@@ -91,9 +87,9 @@ public class StepLineElement extends LineElement {
 //		return new ProcessorInternalModel(processor, onErrors);
 //	}
 
-	public List<ParameterModel<?, ?>> getParameters() {
-		return parameters;
-	}
+//	public List<ParameterModel<?, ?>> getParameters() {
+//		return parameters;
+//	}
 
 	public ProcessorChainTemplate getProcessorChain() {
 		return processorChain;

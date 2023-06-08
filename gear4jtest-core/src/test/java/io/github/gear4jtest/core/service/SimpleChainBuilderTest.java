@@ -4,10 +4,8 @@ import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -21,12 +19,12 @@ import io.github.gear4jtest.core.internal.Item;
 import io.github.gear4jtest.core.model.ChainModel;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
 import io.github.gear4jtest.core.model.OperationModel;
-import io.github.gear4jtest.core.model.OperationModel.ParameterModel;
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDriver;
 import io.github.gear4jtest.core.processor.ProcessorResult;
 import io.github.gear4jtest.core.processor.operation.OperationInvoker;
 import io.github.gear4jtest.core.processor.operation.OperationParamsInjector;
+import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.Parameters;
 import io.github.gear4jtest.core.service.steps.Step1;
 import io.github.gear4jtest.core.service.steps.Step2;
 import io.github.gear4jtest.core.service.steps.Step3;
@@ -40,20 +38,18 @@ public class SimpleChainBuilderTest {
 
 	@Test
 	public void simple_test() {
-		List<ParameterModel<?, ?>> parameters = new ArrayList<>();
-		parameters.add(newParameter(Step7::getValue).value(14538));
 		// Given
 		ChainModel<String, Integer> pipe = chain(String.class)
 				.resourceFactory(new TestResourceFactory())
 				.assemble(branches(String.class)
 						.withBranch(branch(String.class)
 								.withStep(operation(Step7.class)
-										.processorModel(OperationParamsInjector.class, parameters)
-										.parameter(newParameter(Step7::getValue).value(14538))
+										.processorModel(OperationParamsInjector.class, Parameters.newBuilder().withParameter(newParameter(Step7::getValue).value(14538)).build())
 										.onError(
 												preOnError(OperationParamsInjector.class)
 													.rule(ignoreRule(RuntimeException.class).build())
 												.build())
+										.onError(globalOnError().rule(chainBreakRule(Exception.class).build()).build())
 										.transformer(a -> "")
 										.build())
 								.build())
@@ -68,8 +64,9 @@ public class SimpleChainBuilderTest {
 									stepLineElementDefaultConfiguration()
 										// makes it optional to  define preInvokers / chain
 										.preProcessors(Arrays.asList(OperationParamsInjector.class))
-										.onError(onError().rules(Arrays.asList(rule(IOException.class).ignore().build())).build())
-										.onError(onError().processor(OperationParamsInjector.class).rules(Arrays.asList(rule(RuntimeException.class).ignore().build())).build())
+										.onError(globalOnError().rule(chainBreakRule(Exception.class).build()).build())
+										.onError(preOnError(OperationParamsInjector.class).rule(ignoreRule(RuntimeException.class).build()).build())
+										.transformer(a -> "")
 								.build())
 							.build())
 				.build();

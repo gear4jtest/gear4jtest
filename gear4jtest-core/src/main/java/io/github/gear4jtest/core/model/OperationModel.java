@@ -87,10 +87,10 @@ public class OperationModel<IN, OUT> {
 //			return this;
 //		}
 
-		public <A> Builder<IN, OUT, OP> parameter(ParameterModel<OP, A> parameter) {
-			managedInstance.parameters.add(parameter);
-			return this;
-		}
+//		public <A> Builder<IN, OUT, OP> parameter(ParameterModel<OP, A> parameter) {
+//			managedInstance.parameters.add(parameter);
+//			return this;
+//		}
 
 		public <A> Builder<IN, OUT, OP> processorModel(Class<? extends Processor<A>> processor, A model) {
 			managedInstance.processorModels.put(processor, model);

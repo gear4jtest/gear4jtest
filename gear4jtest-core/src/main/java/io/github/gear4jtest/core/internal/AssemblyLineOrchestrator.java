@@ -2,7 +2,6 @@ package io.github.gear4jtest.core.internal;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import io.github.gear4jtest.core.context.AssemblyLineExecution;
@@ -20,13 +19,13 @@ public class AssemblyLineOrchestrator {
 	}
 
 	// Make this class only works with Item => this method should get an Item as parameter, not a simple Object
-	public <BEGIN, OUT> Item command(AssemblyLine<BEGIN, OUT> line, Item input) {
-		return command(line.getStartingElement(), input);
+	public <BEGIN, OUT> Item command(AssemblyLine<BEGIN, OUT> line, Object input) {
+		return command(line.getStartingElement(), new Item(input), execution.createItemExecution());
 	}
 
-	private <BEGIN, OUT> Item command(LineElement element, Item input) {
+	private <BEGIN, OUT> Item command(LineElement element, Item input, ItemExecution itemExecution) {
 //		Item result = lineVisitor.visit(element, input);
-		Item result = element.execute(input);
+		Item result = element.execute(input, itemExecution);
 
 		List<LineElement> nextElements = lineTraverser.getNextElement(element);
 		if (nextElements.isEmpty()) {
@@ -35,7 +34,7 @@ public class AssemblyLineOrchestrator {
 
 		List<Item> returns = new ArrayList<>(nextElements.size());
 		for (LineElement child : nextElements) {
-			Item ret = command(child, result);
+			Item ret = command(child, result, itemExecution);
 			returns.add(ret);
 		}
 		return aggregateResults(returns);
@@ -45,10 +44,7 @@ public class AssemblyLineOrchestrator {
 		if (returns.size() == 1) {
 			return returns.get(0);
 		} else {
-			return new Item(returns.stream().map(Item::getItem).collect(Collectors.toList()),
-					execution.createItemExecution(returns.stream().map(Item::getExecution)
-							.map(ItemExecution::getContext).flatMap(map -> map.entrySet().stream())
-							.collect(Collectors.toMap(Entry::getKey, Entry::getValue))));
+			return new Item(returns.stream().map(Item::getItem).collect(Collectors.toList()));
 		}
 	}
 

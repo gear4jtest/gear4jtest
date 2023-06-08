@@ -14,6 +14,10 @@ public class BaseOnError {
 	BaseOnError() {
 		this.rules = new ArrayList<>();
 	}
+	
+	public boolean isGlobal() {
+		return this.processor == null;
+	}
 
 	public Class<? extends BaseProcessor<?, ?>> getProcessor() {
 		return processor;

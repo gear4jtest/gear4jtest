@@ -26,8 +26,8 @@ public class AssemblyLineExecution {
 
 	private Map<String, Object> context;
 
-	public AssemblyLineExecution(Map<String, Object> context, UUID id) {
-		this.id = id;
+	public AssemblyLineExecution(Map<String, Object> context) {
+		this.id = UUID.randomUUID();
 		this.context = context;
 		this.itemExecutions = new ArrayList<>();
 	}

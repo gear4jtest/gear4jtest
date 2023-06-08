@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.github.gear4jtest.core.factory.ResourceFactory;
-import io.github.gear4jtest.core.model.OnError.UnsafeOnError;
 import io.github.gear4jtest.core.processor.Invoker;
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.PreProcessor;
+import io.github.gear4jtest.core.processor.Transformer;
 import io.github.gear4jtest.core.processor.operation.OperationInvoker;
 
 public class ChainModel<IN, OUT> {
@@ -71,7 +71,8 @@ public class ChainModel<IN, OUT> {
 		private List<Class<? extends PreProcessor>> preProcessors;
 		private List<Class<? extends PostProcessor>> postProcessors;
 		private Class<? extends Invoker> invoker;
-		private List<OnError> onErrors;
+		private List<BaseOnError> onErrors;
+		private Transformer transformer;
 
 		private StepLineElementDefaultConfiguration() {
 			this.preProcessors = new ArrayList<>();
@@ -92,7 +93,7 @@ public class ChainModel<IN, OUT> {
 			return invoker;
 		}
 
-		public List<OnError> getOnErrors() {
+		public List<BaseOnError> getOnErrors() {
 			return onErrors;
 		}
 
@@ -134,19 +135,66 @@ public class ChainModel<IN, OUT> {
 				return this;
 			}
 
-			public <T extends OnError> Builder onError(T onError) {
+//			public <T extends OnError> Builder onError(T onError) {
+//				this.managedInstance.onErrors.add(onError);
+//				return this;
+//			}
+
+//			public Builder onError(UnsafeOnError onError) {
+////				this.managedInstance.onErrors.add(onError);
+//				return this;
+//			}
+
+			public Builder transformer(Transformer transformer) {
+				this.managedInstance.transformer = transformer;
+				return this;
+			}
+			
+			public Builder onError(BaseOnError onError) {
 				this.managedInstance.onErrors.add(onError);
 				return this;
 			}
 
-			public Builder onError(UnsafeOnError onError) {
-//				this.managedInstance.onErrors.add(onError);
-				return this;
+			public UnsafeStepLineElementDefaultConfiguration.Builder onError(UnsafeOnError<?> onError) {
+				this.managedInstance.onErrors.add(onError.getOnError());
+				return new UnsafeStepLineElementDefaultConfiguration.Builder(this);
 			}
 
 			public StepLineElementDefaultConfiguration build() {
 				return managedInstance;
 			}
+		}
+
+	}
+	
+	public static class UnsafeStepLineElementDefaultConfiguration {
+
+		private StepLineElementDefaultConfiguration.Builder configurationBuilder;
+
+		public static class Builder {
+
+			private UnsafeStepLineElementDefaultConfiguration managedInstance;
+
+			public Builder(StepLineElementDefaultConfiguration.Builder configuration) {
+				this.managedInstance = new UnsafeStepLineElementDefaultConfiguration();
+				this.managedInstance.configurationBuilder = configuration;
+			}
+
+			public Builder onError(BaseOnError onError) {
+				this.managedInstance.configurationBuilder.onError(onError);
+				return this;
+			}
+
+			public UnsafeStepLineElementDefaultConfiguration.Builder onError(UnsafeOnError<?> onError) {
+				this.managedInstance.configurationBuilder.onError(onError.getOnError());
+				return this;
+			}
+
+			public StepLineElementDefaultConfiguration.Builder transformer(Transformer transformer) {
+				this.managedInstance.configurationBuilder.transformer(transformer);
+				return this.managedInstance.configurationBuilder;
+			}
+
 		}
 
 	}

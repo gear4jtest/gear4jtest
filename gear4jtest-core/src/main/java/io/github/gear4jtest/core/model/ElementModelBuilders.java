@@ -7,9 +7,9 @@ import io.github.gear4jtest.core.internal.LineElement;
 import io.github.gear4jtest.core.model.EventHandling.EventConfiguration;
 import io.github.gear4jtest.core.model.OperationModel.ParamRetriever;
 import io.github.gear4jtest.core.model.OperationModel.ParameterModel;
+import io.github.gear4jtest.core.processor.Invoker;
 import io.github.gear4jtest.core.processor.PostProcessor;
 import io.github.gear4jtest.core.processor.PreProcessor;
-import io.github.gear4jtest.core.processor.Invoker;
 import io.github.gear4jtest.core.processor.Processor;
 
 public final class ElementModelBuilders {
@@ -81,6 +81,10 @@ public final class ElementModelBuilders {
 
 	public static ProcessingProcessorOnError.Builder onProcessingError(Class<? extends Invoker> processor) {
 		return new ProcessingProcessorOnError.Builder().processor(processor);
+	}
+
+	public static GlobalOnError.Builder globalOnError() {
+		return new GlobalOnError.Builder();
 	}
 
 	public static Rule.Builder rule() {

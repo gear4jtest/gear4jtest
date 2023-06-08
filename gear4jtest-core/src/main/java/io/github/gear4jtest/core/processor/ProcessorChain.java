@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 
 import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.internal.Item;
-import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.BaseOnError;
 import io.github.gear4jtest.core.model.BaseRule;
 import io.github.gear4jtest.core.model.ChainBreakRule;
@@ -23,18 +22,15 @@ public class ProcessorChain {
 
 	private StepExecution context;
 
-	private StepLineElement currentElement;
-
 	private Object result;
 
 	private boolean isInputProcessed;
 
-	public ProcessorChain(ProcessorChainTemplate chain, Item input, StepExecution context, StepLineElement currentElement) {
+	public ProcessorChain(ProcessorChainTemplate chain, Item input, StepExecution context) {
 		this.chain = chain;
 		this.input = input;
 		this.context = context;
 		this.result = input;
-		this.currentElement = currentElement;
 	}
 
 	public ProcessorChainResult processChain() {
@@ -83,7 +79,7 @@ public class ProcessorChain {
 			StepExecution context) {
 		ProcessorResult result = null;
 		try {
-			result = currentProcessor.execute(input, context, currentElement, this);
+			result = currentProcessor.execute(input, context, this);
 		} catch (Exception e) {
 			List<BaseRule> rules = Optional.ofNullable(currentProcessor.getOnErrors()).orElse(Collections.emptyList()).stream()
 					.map(BaseOnError::getRules).flatMap(List::stream)

@@ -22,7 +22,7 @@ public class AssemblyLine<INPUT, OUTPUT> {
 	}
 	
 	public OUTPUT execute(INPUT input, AssemblyLineExecution execution) {
-		Item item = new AssemblyLineOrchestrator(execution).command(this, new Item(input, execution.createItemExecution()));
+		Item item = new AssemblyLineOrchestrator(execution).command(this, input);
 		return (OUTPUT) item.getItem();
 	}
 

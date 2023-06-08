@@ -17,8 +17,8 @@ public class BranchesLineElement extends LineElement {
 	}
 
 	@Override
-	public Item execute(Item item) {
-		BranchesExecution branchesExecution = item.getExecution().createBranchesExecution();
+	public Item execute(Item item, ItemExecution itemExecution) {
+		BranchesExecution branchesExecution = itemExecution.createBranchesExecution();
 		return item;
 	}
 	
