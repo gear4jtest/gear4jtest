@@ -1,7 +1,9 @@
 package io.github.gear4jtest.core.processor;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import io.github.gear4jtest.core.context.StepExecution;
@@ -32,15 +34,15 @@ public class ProcessorChainTemplate {
 			ResourceFactory resourceFactory) {
 		this.resourceFactory = resourceFactory;
 		StepLineElementDefaultConfiguration localConfiguration = ElementModelBuilders
-				.stepLineElementDefaultConfiguration().preProcessors(model.getPreProcessors())
-				.postProcessors(model.getPostProcessors())
+				.stepLineElementDefaultConfiguration().preProcessors(Optional.ofNullable(model.getPreProcessors()).orElse(Collections.emptyList()))
+				.postProcessors(Optional.ofNullable(model.getPostProcessors()).orElse(Collections.emptyList()))
 //				.onError(model.getOnErrors().get(0))
 				.build();
 
-		List<Class<? extends PreProcessor>> preProcessors = localConfiguration.getPreProcessors() == null
+		List<Class<? extends PreProcessor>> preProcessors = localConfiguration.getPreProcessors() == null || localConfiguration.getPreProcessors().isEmpty()
 				? globalConfiguration.getPreProcessors()
 				: localConfiguration.getPreProcessors();
-		List<Class<? extends PostProcessor>> postProcessors = localConfiguration.getPostProcessors() == null
+		List<Class<? extends PostProcessor>> postProcessors = localConfiguration.getPostProcessors() == null || localConfiguration.getPostProcessors().isEmpty()
 				? globalConfiguration.getPostProcessors()
 				: localConfiguration.getPostProcessors();
 

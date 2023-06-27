@@ -1,29 +1,26 @@
 package io.github.gear4jtest.core.internal;
 
-import java.util.Map;
 import java.util.UUID;
 
 import io.github.gear4jtest.core.context.AssemblyLineExecution;
+import io.github.gear4jtest.core.context.ItemExecution;
+import io.github.gear4jtest.core.event.builders.AssemblyLineCreationEventBuilder;
+import io.github.gear4jtest.core.event.builders.AssemblyLineCreationEventBuilder.AssemblyLineData;
 
 public class AssemblyLine<INPUT, OUTPUT> {
 
 	private final UUID id;
 	private final LineElement startingElement;
-	private final Map<String, Object> context;
 
-	public AssemblyLine(Map<String, Object> context) {
-		this(null, context);
-	}
-
-	public AssemblyLine(LineElement startingElement, Map<String, Object> context) {
+	public AssemblyLine(LineElement startingElement) {
 		this.id = UUID.randomUUID();
 		this.startingElement = startingElement;
-		this.context = context;
 	}
 	
-	public OUTPUT execute(INPUT input, AssemblyLineExecution execution) {
-		Item item = new AssemblyLineOrchestrator(execution).command(this, input);
-		return (OUTPUT) item.getItem();
+	OUTPUT execute(INPUT input, AssemblyLineExecution execution) {
+		execution.getEventTriggerService().publishEvent(new AssemblyLineCreationEventBuilder().buildEvent(id, new AssemblyLineData(this)));
+		ItemExecution item = new AssemblyLineOrchestrator(execution).orchestrate(this, input);
+		return (OUTPUT) item.getItem().getItem();
 	}
 
 	public UUID getId() {
@@ -32,10 +29,6 @@ public class AssemblyLine<INPUT, OUTPUT> {
 
 	public LineElement getStartingElement() {
 		return startingElement;
-	}
-
-	public Map<String, Object> getContext() {
-		return context;
 	}
 
 }

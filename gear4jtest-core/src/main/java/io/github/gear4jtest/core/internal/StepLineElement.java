@@ -4,7 +4,6 @@ import java.util.Map;
 
 import io.github.gear4jtest.core.context.ItemExecution;
 import io.github.gear4jtest.core.context.LineElementExecution;
-import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.internal.AssemblyLineBuilder.StepConfiguration;
 import io.github.gear4jtest.core.model.OperationModel;
@@ -23,73 +22,26 @@ public class StepLineElement extends LineElement {
 
 	private final Map<Class<? extends Processor>, Object> processorModels;
 
-//	private final List<ParameterModel<?, ?>> parameters;
-
-	// build a log context for every stepelement, so that every event will use this
-	// context to get contextualized
-//	private final BaseContext baseContext;
-
 	public StepLineElement(OperationModel<?, ?> step, StepConfiguration configuration, ResourceFactory resourceFactory) {
 		super();
 		this.clazz = step.getType();
-//		this.parameters = Collections.unmodifiableList(new ArrayList<>(step.getParameters()));
 		this.transformer = step.getTransformer();
 		this.processorModels = step.getProcessorModels();
 
 		this.configuration = configuration;
 		this.resourceFactory = resourceFactory;
-
-//		List<ProcessorInternalModel> elements = buildProcessors(
-//				getProcessors(step.getPreProcessors(),
-//						configuration.getStepDefaultConfiguration().getPreProcessors()),
-//				getPostProcessors(step.getPostProcessors(),
-//						configuration.getStepDefaultConfiguration().getPostProcessors()))
-//				.stream().map(processor -> buildInternalModel(processor, step)).collect(Collectors.toList());
-
-//		this.processorChain = new ProcessorChainTemplate(elements, resourceFactory);
 		this.processorChain = new ProcessorChainTemplate(step, configuration.getStepDefaultConfiguration(), resourceFactory);
 	}
 
+//	@Override
+//	public LineElementExecution createLineElementExecution(ItemExecution itemExecution) {
+//		return new StepExecution(itemExecution, this, null);
+//	}
+
 	@Override
-	public LineElementExecution createLineElementExecution(ItemExecution itemExecution) {
-		return new StepExecution(itemExecution, null);
+	public LineElementExecution execute(ItemExecution itemExecution) {
+		return new StepLineElementExecutor(this).execute(itemExecution);
 	}
-
-	@Override
-	public Item execute(Item input, ItemExecution itemExecution) {
-		return new StepLineElementExecutor(this).execute(input, itemExecution);
-	}
-
-//	private static List<Class<? extends PreProcessor>> getProcessors(List<Class<? extends PreProcessor>> stepProcessors,
-//			List<Class<? extends PreProcessor>> defaultProcessors) {
-//		return stepProcessors != null ? stepProcessors : defaultProcessors;
-//	}
-//
-//	private static List<Class<? extends PostProcessor>> getPostProcessors(
-//			List<Class<? extends PostProcessor>> stepProcessors,
-//			List<Class<? extends PostProcessor>> defaultProcessors) {
-//		return stepProcessors != null ? stepProcessors : defaultProcessors;
-//	}
-//
-//	private static List<Class<? extends BaseProcessor>> buildProcessors(
-//			List<Class<? extends PreProcessor>> preProcessors, List<Class<? extends PostProcessor>> postProcessors) {
-//		List<Class<? extends BaseProcessor>> processors = new ArrayList<>();
-//		processors.addAll(preProcessors);
-//		processors.add(OperationInvoker.class);
-//		processors.addAll(postProcessors);
-//		return processors;
-//	}
-//
-//	private static <T extends BaseProcessor<?, ?>> ProcessorInternalModel buildInternalModel(Class<T> processor,
-//			OperationModel<?, ?> step) {
-//		List<BaseOnError> onErrors = Optional.ofNullable(step.getOnErrors()).orElse(Collections.emptyList()).stream()
-//				.filter(oe -> oe.getProcessor().equals(processor)).collect(Collectors.toList());
-//		return new ProcessorInternalModel(processor, onErrors);
-//	}
-
-//	public List<ParameterModel<?, ?>> getParameters() {
-//		return parameters;
-//	}
 
 	public ProcessorChainTemplate getProcessorChain() {
 		return processorChain;

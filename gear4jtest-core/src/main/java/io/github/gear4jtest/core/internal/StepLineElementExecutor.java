@@ -1,6 +1,7 @@
 package io.github.gear4jtest.core.internal;
 
 import io.github.gear4jtest.core.context.ItemExecution;
+import io.github.gear4jtest.core.context.LineElementExecution;
 import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.model.Operation;
 import io.github.gear4jtest.core.processor.ProcessorChain;
@@ -17,29 +18,34 @@ public class StepLineElementExecutor {
 	}
 
 	// Should itemexecution contains item ?
-	public Item execute(Item input, ItemExecution execution) {
+	public LineElementExecution execute(ItemExecution execution) {
+		StepExecution stepProcessorChainExecution = null;
 		try {
 			Operation<?, ?> operation = stepLineElementOperationInitiator.initiate();
 
-			StepExecution stepProcessorChainExecution = execution.createStepProcessorChainExecution(operation);
-			
-			ProcessorChain chain = new ProcessorChain(this.stepLineElement.getProcessorChain(), input, stepProcessorChainExecution);
+			stepProcessorChainExecution = execution.createStepProcessorChainExecution(stepLineElement, operation);
+
+			ProcessorChain chain = new ProcessorChain(this.stepLineElement.getProcessorChain(), execution.getItem(),
+					stepProcessorChainExecution);
 			ProcessorChainResult result = chain.processChain();
 			if (!result.isProcessed()) {
 				if (this.stepLineElement.getTransformer() == null) {
 					throw new IllegalStateException("No transformer specified whereas input has not been processed");
 				} else {
-					return input.withItem(this.stepLineElement.getTransformer().tranform(input));
+					execution.updateItem(this.stepLineElement.getTransformer().tranform(execution.getItem().getItem()));
 				}
+			} else {
+				execution.updateItem(result.getOutput());
 			}
-			return input.withItem(result.getResult());
 		} catch (Exception e) {
-			if (this.stepLineElement.getTransformer() == null || !this.stepLineElement.isIgnoreOperationFactoryException()) {
+			if (this.stepLineElement.getTransformer() == null
+					|| !this.stepLineElement.isIgnoreOperationFactoryException()) {
 				throw buildRuntimeException(e);
 			} else {
-				return input.withItem(this.stepLineElement.getTransformer().tranform(input));
+				execution.updateItem(this.stepLineElement.getTransformer().tranform(execution.getItem().getItem()));
 			}
 		}
+		return stepProcessorChainExecution;
 	}
 
 	private static RuntimeException buildRuntimeException() {

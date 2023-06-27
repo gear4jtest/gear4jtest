@@ -6,6 +6,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import io.github.gear4jtest.core.context.StepExecution;
+import io.github.gear4jtest.core.event.builders.OperationProcessorEventBuilder;
+import io.github.gear4jtest.core.event.builders.OperationProcessorEventBuilder.OperationProcessorData;
 import io.github.gear4jtest.core.internal.Item;
 import io.github.gear4jtest.core.model.BaseOnError;
 import io.github.gear4jtest.core.model.BaseRule;
@@ -30,12 +32,12 @@ public class ProcessorChain {
 		this.chain = chain;
 		this.input = input;
 		this.context = context;
-		this.result = input;
+		this.result = input.getItem();
 	}
 
 	public ProcessorChainResult processChain() {
 		ProcessorChainResult.Builder processorChainResultBuilder = new ProcessorChainResult.Builder();
-		
+
 		for (AbstractBaseProcessorChainElement processor : chain.getProcessors()) {
 			ProcessorResult processorResult = processProcessor(processor, input, context);
 			processorChainResultBuilder.processorResult(processorResult);
@@ -80,11 +82,11 @@ public class ProcessorChain {
 		ProcessorResult result = null;
 		try {
 			result = currentProcessor.execute(input, context, this);
+			context.getEventTriggerService().publishEvent(new OperationProcessorEventBuilder().buildEvent(context.getId(), new OperationProcessorData(result)));
 		} catch (Exception e) {
-			List<BaseRule> rules = Optional.ofNullable(currentProcessor.getOnErrors()).orElse(Collections.emptyList()).stream()
-					.map(BaseOnError::getRules).flatMap(List::stream)
-					.filter(error -> isExceptionEligible(e, error.getType()))
-					.collect(Collectors.toList());
+			List<BaseRule> rules = Optional.ofNullable(currentProcessor.getOnErrors()).orElse(Collections.emptyList())
+					.stream().map(BaseOnError::getRules).flatMap(List::stream)
+					.filter(error -> isExceptionEligible(e, error.getType())).collect(Collectors.toList());
 			if (rules.isEmpty()) {
 				result = ProcessorResult.failed(currentProcessor.getProcessor(), e);
 			} else if (rules.size() > 1) {

@@ -6,45 +6,46 @@ import java.util.stream.Collectors;
 
 import io.github.gear4jtest.core.context.AssemblyLineExecution;
 import io.github.gear4jtest.core.context.ItemExecution;
+import io.github.gear4jtest.core.context.LineElementExecution;
+import io.github.gear4jtest.core.event.builders.LineElementEventBuilder;
+import io.github.gear4jtest.core.event.builders.LineElementEventBuilder.LineElementExecutionData;
 
 public class AssemblyLineOrchestrator {
-
-	private final LineTraverser lineTraverser;
 
 	private final AssemblyLineExecution execution;
 
 	AssemblyLineOrchestrator(AssemblyLineExecution execution) {
-		this.lineTraverser = new LineTraverser();
 		this.execution = execution;
 	}
 
-	// Make this class only works with Item => this method should get an Item as parameter, not a simple Object
-	public <BEGIN, OUT> Item command(AssemblyLine<BEGIN, OUT> line, Object input) {
-		return command(line.getStartingElement(), new Item(input), execution.createItemExecution());
+	public <BEGIN, OUT> ItemExecution orchestrate(AssemblyLine<BEGIN, OUT> line, Object input) {
+		return orchestrate(line.getStartingElement(), execution.createItemExecution(input));
 	}
 
-	private <BEGIN, OUT> Item command(LineElement element, Item input, ItemExecution itemExecution) {
+	private <BEGIN, OUT> ItemExecution orchestrate(LineElement element, ItemExecution itemExecution) {
 //		Item result = lineVisitor.visit(element, input);
-		Item result = element.execute(input, itemExecution);
-
-		List<LineElement> nextElements = lineTraverser.getNextElement(element);
+		
+		LineElementExecution result = element.execute(itemExecution);
+		itemExecution.getEventTriggerService().publishEvent(new LineElementEventBuilder().buildEvent(element.getId(), new LineElementExecutionData(result)));
+		
+		List<LineElement> nextElements = element.getNextLineElements();
 		if (nextElements.isEmpty()) {
-			return result;
+			return itemExecution;
 		}
 
-		List<Item> returns = new ArrayList<>(nextElements.size());
+		List<ItemExecution> returns = new ArrayList<>(nextElements.size());
 		for (LineElement child : nextElements) {
-			Item ret = command(child, result, itemExecution);
+			ItemExecution ret = orchestrate(child, itemExecution);
 			returns.add(ret);
 		}
 		return aggregateResults(returns);
 	}
 
-	private Item aggregateResults(List<Item> returns) {
+	private ItemExecution aggregateResults(List<ItemExecution> returns) {
 		if (returns.size() == 1) {
 			return returns.get(0);
 		} else {
-			return new Item(returns.stream().map(Item::getItem).collect(Collectors.toList()));
+			return execution.createItemExecution(returns.stream().map(ItemExecution::getItem).collect(Collectors.toList()));
 		}
 	}
 

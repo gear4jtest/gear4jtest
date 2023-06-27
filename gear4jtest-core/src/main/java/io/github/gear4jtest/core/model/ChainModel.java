@@ -135,16 +135,6 @@ public class ChainModel<IN, OUT> {
 				return this;
 			}
 
-//			public <T extends OnError> Builder onError(T onError) {
-//				this.managedInstance.onErrors.add(onError);
-//				return this;
-//			}
-
-//			public Builder onError(UnsafeOnError onError) {
-////				this.managedInstance.onErrors.add(onError);
-//				return this;
-//			}
-
 			public Builder transformer(Transformer transformer) {
 				this.managedInstance.transformer = transformer;
 				return this;

@@ -5,7 +5,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import io.github.gear4jtest.core.event.EventQueueService.ParallelConfiguration;
+import io.github.gear4jtest.core.event.EventQueueInitializer.ParallelConfiguration;
 
 public class EventQueue implements Runnable {
 

@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import io.github.gear4jtest.core.event.EventQueueInitializer.ParallelConfiguration;
 import io.github.gear4jtest.core.model.Queue;
 
 public class EventQueueService {
@@ -30,30 +31,30 @@ public class EventQueueService {
 				queue.isParallelExecution(), queue.getInitialThreadNumber(), queue.getMaxThreadNumber()));
 	}
 
-	public static class ParallelConfiguration {
-
-		private boolean parallelExecution;
-		private Integer initialThreadNumber;
-		private Integer maxThreadNumber;
-
-		public ParallelConfiguration(boolean parallelExecution, Integer initialThreadNumber, Integer maxThreadNumber) {
-			this.parallelExecution = parallelExecution;
-			this.initialThreadNumber = initialThreadNumber;
-			this.maxThreadNumber = maxThreadNumber;
-		}
-
-		public boolean isParallelExecution() {
-			return parallelExecution;
-		}
-
-		public Integer getInitialThreadNumber() {
-			return initialThreadNumber;
-		}
-
-		public Integer getMaxThreadNumber() {
-			return maxThreadNumber;
-		}
-
-	}
+//	public static class ParallelConfiguration {
+//
+//		private boolean parallelExecution;
+//		private Integer initialThreadNumber;
+//		private Integer maxThreadNumber;
+//
+//		public ParallelConfiguration(boolean parallelExecution, Integer initialThreadNumber, Integer maxThreadNumber) {
+//			this.parallelExecution = parallelExecution;
+//			this.initialThreadNumber = initialThreadNumber;
+//			this.maxThreadNumber = maxThreadNumber;
+//		}
+//
+//		public boolean isParallelExecution() {
+//			return parallelExecution;
+//		}
+//
+//		public Integer getInitialThreadNumber() {
+//			return initialThreadNumber;
+//		}
+//
+//		public Integer getMaxThreadNumber() {
+//			return maxThreadNumber;
+//		}
+//
+//	}
 
 }

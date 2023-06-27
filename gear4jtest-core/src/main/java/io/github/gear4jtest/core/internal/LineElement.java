@@ -14,8 +14,8 @@ public abstract class LineElement {
 //	private final LineElement parentElement; // Should this be stored here as the only use is to contextualize events so that it is tied to parent ?
 
 	// Should these methods be parts of interfaces ? LineExecutor, LineModel... ?
-	public abstract Item execute(Item item, ItemExecution itemExecution);
-	public abstract LineElementExecution createLineElementExecution(ItemExecution itemExecution);
+	public abstract LineElementExecution execute(ItemExecution itemExecution);
+//	public abstract LineElementExecution createLineElementExecution(ItemExecution itemExecution);
 //  public abstract Model getLineModel();
 
 	public LineElement(/*LineElement parentElement*/) {

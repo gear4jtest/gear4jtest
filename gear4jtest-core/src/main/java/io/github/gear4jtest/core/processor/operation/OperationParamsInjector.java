@@ -5,6 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import io.github.gear4jtest.core.context.StepExecution;
+import io.github.gear4jtest.core.event.builders.ParameterInjectionEventBuilder;
+import io.github.gear4jtest.core.event.builders.ParameterInjectionEventBuilder.ParameterContextualData;
 import io.github.gear4jtest.core.internal.Item;
 import io.github.gear4jtest.core.model.OperationModel;
 import io.github.gear4jtest.core.model.OperationModel.ParameterModel;
@@ -26,8 +28,14 @@ public class OperationParamsInjector implements PreProcessor<Parameters> {
 
 			}
 			parameterValue.setValue(param.getValue());
+			
+			context.getEventTriggerService().publishEvent(new ParameterInjectionEventBuilder().buildEvent(context.getId(), buildParameterContextualData(param.getValue())));
 		}
 		return chain.proceed();
+	}
+	
+	private ParameterContextualData buildParameterContextualData(Object parameterValue) {
+		return new ParameterContextualData("" /*get parameter name */, parameterValue);
 	}
 
 	// instance method => runtime processor chain eligibility. Make eligibility goes before processing, at processor chain building

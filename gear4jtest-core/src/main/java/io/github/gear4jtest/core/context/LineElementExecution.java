@@ -4,10 +4,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.github.gear4jtest.core.event.EventTriggerService;
+import io.github.gear4jtest.core.internal.Item;
 
 public class LineElementExecution {
 
 	private ItemExecution itemExecution;
+	
+	private Item item;
 
 	private Map<String, Object> context;
 

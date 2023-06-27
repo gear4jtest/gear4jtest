@@ -5,6 +5,7 @@ plugins {
     id "me.champeau.gradle.jmh" version "0.5.3"
     id 'org.asciidoctor.convert' version '1.6.0'
     id 'idea'
+    id 'io.freefair.aspectj' version '8.0.1'
 }
 
 ext {
@@ -38,10 +39,16 @@ configure(project.coreProjects) {
     apply plugin: 'com.jfrog.bintray'
     apply plugin: 'com.jfrog.artifactory'
     apply plugin: 'me.champeau.gradle.jmh'
+    apply plugin: 'io.freefair.aspectj'
+    
     
     dependencies {
         implementation(libraries.slf4j)
         implementation(libraries.cglib)
+        implementation(libraries.aspectjrt)
+//        implementation(libraries.aspectjweaver)
+        
+        //compileOnly(libraries.mojo)
 
         testImplementation(libraries.junit)
         testImplementation(libraries.assertj)
@@ -57,10 +64,14 @@ configure(project.coreProjects) {
         options.encoding = 'UTF-8'
         options.compilerArgs += ["-Xlint:unchecked", "-parameters"]
     }
-    
+
+    test {
+        useJUnitPlatform()
+    }
+
     jacocoTestReport {
         reports {
-            xml.enabled true
+            xml.required = true
         }
     }
     
@@ -76,10 +87,10 @@ configure(project.coreProjects) {
 
 def allTestCoverageFile = "${rootProject.projectDir}/build/reports/jacoco/report.xml"
 
-task jacocoMergeTest(type: JacocoMerge) {
-    destinationFile = file(allTestCoverageFile)
-    executionData = project.fileTree(dir: '.', include: '**/build/jacoco/test.exec')
-}
+//task jacocoMergeTest(type: JacocoReport) {
+//    destinationFile = file(allTestCoverageFile)
+//    executionData = project.fileTree(dir: '.', include: '**/build/jacoco/test.exec')
+//}
 
 sonarqube {
     properties {
@@ -111,10 +122,10 @@ task jacocoRootTestReport(type: JacocoReport) {
     }
 
     reports {
-        xml.enabled true
+        xml.required = true
         xml.destination file(allTestCoverageFile)
-        html.enabled true
-        csv.enabled false
+        html.required = true
+        csv.required = false
     }
 }
 

@@ -16,7 +16,7 @@ public class OperationInvoker implements Invoker {
 
 	@Override
 	public ProcessorResult process(Item input, Void processorModel, InvokerDriver chainDriver, StepExecution context) {
-		Object result = context.getOperation().execute(input.getItem());
+		Object result = context.getOperation().execute(input.getItem(), context);
 		return chainDriver.proceed(result);
 	}
 

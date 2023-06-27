@@ -8,11 +8,13 @@ import java.util.Map;
 import java.util.UUID;
 
 import io.github.gear4jtest.core.event.EventTriggerService;
-import io.github.gear4jtest.core.internal.ServiceRegistry;
 
 public class AssemblyLineExecution {
 
 	private UUID id;
+	
+	//TODO(all): make this execution be linked with an instance of the assembly line (useful for batch restarting)...
+//	private AssemblyLine line;
 
 	private LocalDateTime startTime = null;
 
@@ -25,19 +27,21 @@ public class AssemblyLineExecution {
 	private List<ItemExecution> itemExecutions;
 
 	private Map<String, Object> context;
+	
+	private EventTriggerService eventTriggerService;
 
 	public AssemblyLineExecution(Map<String, Object> context) {
 		this.id = UUID.randomUUID();
-		this.context = context;
 		this.itemExecutions = new ArrayList<>();
+		this.context = context;
 	}
 
-	public ItemExecution createItemExecution() {
-		return createItemExecution(new HashMap<>());
+	public ItemExecution createItemExecution(Object input) {
+		return createItemExecution(input, new HashMap<>());
 	}
 
-	public ItemExecution createItemExecution(Map<String, Object> context) {
-		ItemExecution itemExecution = new ItemExecution(this, context);
+	public ItemExecution createItemExecution(Object input, Map<String, Object> context) {
+		ItemExecution itemExecution = new ItemExecution(this, input, context);
 		itemExecutions.add(itemExecution);
 		return itemExecution;
 	}
@@ -85,9 +89,14 @@ public class AssemblyLineExecution {
 	public void setContext(Map<String, Object> context) {
 		this.context = context;
 	}
+	
+	public void registerEventTriggerService(EventTriggerService service) {
+		this.eventTriggerService = service;
+	}
 
 	public EventTriggerService getEventTriggerService() {
-		return ServiceRegistry.getEventPublisher(id);
+//		return ServiceRegistry.getEventPublisher(id);
+		return eventTriggerService;
 	}
 
 }

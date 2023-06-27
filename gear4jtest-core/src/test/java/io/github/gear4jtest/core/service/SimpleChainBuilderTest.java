@@ -3,7 +3,6 @@ package io.github.gear4jtest.core.service;
 import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -95,20 +94,23 @@ public class SimpleChainBuilderTest {
 													.rule(chainBreakRule(Exception.class).build())
 													.rule(ignoreRule(RuntimeException.class).build())
 											.build())
-						.onError(onProcessingError(OperationInvoker.class)
-//													.rule(chainBreakRule(Exception.class).build())
-//													.rule(ignoreRule(Exception.class).build())
-								.build())
-						.onError(postOnError(TestPostProcessor.class)
-//													.rule(chainBreakRule(Exception.class).build())
-//													.rule(ignoreRule(RuntimeException.class).build())
-								.build())
-						.transformer(a -> new HashMap<>()).build()).withStep(operation(Step8.class).build()).build())
+										.onError(onProcessingError(OperationInvoker.class)
+				//													.rule(chainBreakRule(Exception.class).build())
+				//													.rule(ignoreRule(Exception.class).build())
+												.build())
+										.onError(postOnError(TestPostProcessor.class)
+				//													.rule(chainBreakRule(Exception.class).build())
+				//													.rule(ignoreRule(RuntimeException.class).build())
+												.build())
+										.transformer(a -> new HashMap<>()).build())
+									.withStep(operation(Step8.class).build()).build())
 						.returns("", Integer.class).build())
-//				.queue(queue().eventListener(new TestEventListener()).build())
+				.eventHandling(eventHandling()
+						.queue(queue().eventListener(new TestEventListener()).build())
+						.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+						.build())
 				.defaultConfiguration(
-						chainDefaultConfiguration().stepDefaultConfiguration(stepLineElementDefaultConfiguration()
-								.preProcessors(Arrays.asList(OperationParamsInjector.class)).build()).build())
+						chainDefaultConfiguration().stepDefaultConfiguration(stepLineElementDefaultConfiguration().build()).build())
 				.build();
 
 		// When

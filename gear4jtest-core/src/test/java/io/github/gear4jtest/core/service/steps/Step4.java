@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.service.steps;
 
 import java.util.Map;
 
+import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.model.Operation;
 
 public class Step4 {
@@ -15,7 +16,7 @@ public class Step4 {
 	public class Step4Map implements Operation<Map<String, String>, Void> {
 
 		@Override
-		public Void execute(Map<String, String> object) {
+		public Void execute(Map<String, String> object, StepExecution context) {
 			System.out.println(whatever);
 			return null;
 		}
@@ -25,7 +26,7 @@ public class Step4 {
 	public class Step4Integer implements Operation<Integer, Void> {
 
 		@Override
-		public Void execute(Integer object) {
+		public Void execute(Integer object, StepExecution context) {
 			return null;
 		}
 		

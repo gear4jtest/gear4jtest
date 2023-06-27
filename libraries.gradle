@@ -1,7 +1,7 @@
 // Allows centralized definition of the version of artifacts to
 // use.  In that respect it serves a role similar to <dependencyManagement> in Maven
 ext {
-    junitVersion = '5.9.2'
+    junitVersion = '5.9.3'
     slf4jVersion = '1.7.26'
     assertjVersion = '3.24.2'
     logbackVersion = '1.2.3'
@@ -11,6 +11,9 @@ ext {
             // compile
             slf4j: "org.slf4j:slf4j-api:${slf4jVersion}",
             cglib: "cglib:cglib:3.3.0",
+            aspectjrt: "org.aspectj:aspectjrt:1.9.8.RC3",
+            aspectjweaver: "org.aspectj:aspectjweaver:1.8.9",
+            mojo: "org.codehaus.mojo:aspectj-maven-plugin:1.14.0",
 
             // testCompile
             junit: "org.junit.jupiter:junit-jupiter:${junitVersion}",

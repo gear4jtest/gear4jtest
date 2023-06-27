@@ -11,15 +11,15 @@ public class BranchesLineElement extends LineElement {
 		super();
 	}
 
-	@Override
-	public LineElementExecution createLineElementExecution(ItemExecution itemExecution) {
-		return null;
-	}
+//	@Override
+//	public LineElementExecution createLineElementExecution(ItemExecution itemExecution) {
+//		return null;
+//	}
 
 	@Override
-	public Item execute(Item item, ItemExecution itemExecution) {
+	public LineElementExecution execute(ItemExecution itemExecution) {
 		BranchesExecution branchesExecution = itemExecution.createBranchesExecution();
-		return item;
+		return branchesExecution;
 	}
 	
 }

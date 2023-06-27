@@ -1,6 +1,7 @@
 package io.github.gear4jtest.core.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +30,7 @@ public class OperationModel<IN, OUT> {
 	private OperationModel() {
 		this.parameters = new ArrayList<>();
 		this.onErrors = new ArrayList<>();
+		this.processorModels = new HashMap<>();
 	}
 
 	public Class<Operation<IN, OUT>> getType() {

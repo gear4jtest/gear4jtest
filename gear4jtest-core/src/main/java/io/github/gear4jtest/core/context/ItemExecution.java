@@ -6,10 +6,13 @@ import java.util.List;
 import java.util.Map;
 
 import io.github.gear4jtest.core.event.EventTriggerService;
-import io.github.gear4jtest.core.internal.LineElement;
+import io.github.gear4jtest.core.internal.Item;
+import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.Operation;
 
 public class ItemExecution {
+
+	private Item item;
 
 	private AssemblyLineExecution assemblyLineExecution;
 
@@ -17,14 +20,15 @@ public class ItemExecution {
 
 	private Map<String, Object> context;
 
-	ItemExecution(AssemblyLineExecution assemblyLineExecution, Map<String, Object> context) {
+	ItemExecution(AssemblyLineExecution assemblyLineExecution, Object input, Map<String, Object> context) {
 		this.assemblyLineExecution = assemblyLineExecution;
+		this.item = new Item(input);
 		this.context = new HashMap<>();
 		this.lineElementExecutions = new ArrayList<>();
 	}
 
-	public StepExecution createStepProcessorChainExecution(Operation<?, ?> operation) {
-		StepExecution lineElementExecution = new StepExecution(this, operation);
+	public StepExecution createStepProcessorChainExecution(StepLineElement element, Operation<?, ?> operation) {
+		StepExecution lineElementExecution = new StepExecution(this, element, operation);
 		lineElementExecutions.add(lineElementExecution);
 		return lineElementExecution;
 	}
@@ -41,15 +45,15 @@ public class ItemExecution {
 		return lineElementExecution;
 	}
 
-	public LineElementExecution createLineElementExecution(LineElement lineElement) {
-		LineElementExecution lineElementExecution = lineElement.createLineElementExecution(this);
-		lineElementExecutions.add(lineElementExecution);
-		return lineElementExecution;
-	}
+//	public LineElementExecution createLineElementExecution(LineElement lineElement) {
+//		LineElementExecution lineElementExecution = lineElement.createLineElementExecution(this);
+//		lineElementExecutions.add(lineElementExecution);
+//		return lineElementExecution;
+//	}
 
 	@Override
 	public ItemExecution clone() {
-		return new ItemExecution(assemblyLineExecution, new HashMap<>(context));
+		return new ItemExecution(assemblyLineExecution, item, new HashMap<>(context));
 	}
 
 	public AssemblyLineExecution getAssemblyLineExecution() {
@@ -70,6 +74,14 @@ public class ItemExecution {
 
 	public EventTriggerService getEventTriggerService() {
 		return assemblyLineExecution.getEventTriggerService();
+	}
+
+	public Item getItem() {
+		return item;
+	}
+	
+	public void updateItem(Object newItem) {
+		item = item.withItem(newItem);
 	}
 
 }

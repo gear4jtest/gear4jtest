@@ -2,14 +2,12 @@ package io.github.gear4jtest.core.event;
 
 import java.util.List;
 
-import io.github.gear4jtest.core.factory.ResourceFactory;
-
 public class EventTriggerService {
 
 	private final List<EventQueue> eventQueues;
 //	private final ResourceFactory resourceFactory;
 
-	public EventTriggerService(List<EventQueue> eventQueues, ResourceFactory resourceFactory) {
+	public EventTriggerService(List<EventQueue> eventQueues) {
 		this.eventQueues = eventQueues;
 //		this.resourceFactory = resourceFactory;
 	}
