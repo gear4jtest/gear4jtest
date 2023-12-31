@@ -13,15 +13,15 @@ import io.github.gear4jtest.core.model.BaseOnError;
 import io.github.gear4jtest.core.model.ChainModel.StepLineElementDefaultConfiguration;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
 import io.github.gear4jtest.core.model.OperationModel;
-import io.github.gear4jtest.core.processor.ProcessorChain.BaseProcessorDriver;
-import io.github.gear4jtest.core.processor.ProcessorChain.InvokerDriver;
-import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDriver;
+import io.github.gear4jtest.core.model.refactor.OperationConfigurationDefinition;
+import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
 
 public class ProcessorChainTemplate {
 
 //	private AbstractBaseProcessorChainElement<?, ?> currentProcessor;
 
-	private List<AbstractBaseProcessorChainElement<?, ? extends BaseProcessorDriver>> processors;
+	private List<AbstractBaseProcessorChainElement<?, ?>> preProcessors;
+	private List<AbstractBaseProcessorChainElement<?, ?>> postProcessors;
 
 	private ResourceFactory resourceFactory;
 
@@ -30,32 +30,76 @@ public class ProcessorChainTemplate {
 //		buildProcessorsChain(processors);
 //	}
 
-	public ProcessorChainTemplate(OperationModel<?, ?> model, StepLineElementDefaultConfiguration globalConfiguration,
+	public ProcessorChainTemplate(OperationModel<?, ?> model, OperationConfigurationDefinition globalConfiguration,
 			ResourceFactory resourceFactory) {
 		this.resourceFactory = resourceFactory;
 		StepLineElementDefaultConfiguration localConfiguration = ElementModelBuilders
-				.stepLineElementDefaultConfiguration().preProcessors(Optional.ofNullable(model.getPreProcessors()).orElse(Collections.emptyList()))
+				.stepLineElementDefaultConfiguration()
+				.preProcessors(Optional.ofNullable(model.getPreProcessors()).orElse(Collections.emptyList()))
 				.postProcessors(Optional.ofNullable(model.getPostProcessors()).orElse(Collections.emptyList()))
 //				.onError(model.getOnErrors().get(0))
 				.build();
 
-		List<Class<? extends PreProcessor>> preProcessors = localConfiguration.getPreProcessors() == null || localConfiguration.getPreProcessors().isEmpty()
-				? globalConfiguration.getPreProcessors()
-				: localConfiguration.getPreProcessors();
-		List<Class<? extends PostProcessor>> postProcessors = localConfiguration.getPostProcessors() == null || localConfiguration.getPostProcessors().isEmpty()
-				? globalConfiguration.getPostProcessors()
-				: localConfiguration.getPostProcessors();
+		List<Class<? extends ProcessingOperationProcessor>> preProcessors = localConfiguration
+				.getPreProcessors() == null || localConfiguration.getPreProcessors().isEmpty()
+						? globalConfiguration.getPreProcessors()
+						: localConfiguration.getPreProcessors();
+		List<Class<? extends ProcessingOperationProcessor>> postProcessors = localConfiguration
+				.getPostProcessors() == null || localConfiguration.getPostProcessors().isEmpty()
+						? globalConfiguration.getPostProcessors()
+						: localConfiguration.getPostProcessors();
 
-		processors = new ArrayList<>();
-		processors.addAll(preProcessors.stream().map(p -> buildElement(p, model.getProcessorModels().get(p), getOnErrors(p, model, globalConfiguration)))
-				.collect(Collectors.toList()));
-		processors.add(buildInvoker(globalConfiguration.getInvoker(), getOnErrors(globalConfiguration.getInvoker(), model, globalConfiguration)));
-		processors.addAll(postProcessors.stream().map(p -> buildElement(p, model.getProcessorModels().get(p), getOnErrors(p, model, globalConfiguration)))
-				.collect(Collectors.toList()));
+		this.preProcessors = preProcessors.stream().map(
+				p -> buildElement(p, model.getProcessorModels().get(p), getOnErrors(p, model, globalConfiguration)))
+				.collect(Collectors.toList());
+		this.postProcessors = postProcessors.stream().map(
+				p -> buildElement(p, model.getProcessorModels().get(p), getOnErrors(p, model, globalConfiguration)))
+				.collect(Collectors.toList());
+	}
+	
+	public ProcessorChainTemplate(ProcessingOperationDefinition<?, ?> model, OperationConfigurationDefinition globalConfiguration,
+			ResourceFactory resourceFactory) {
+		this.resourceFactory = resourceFactory;
+		StepLineElementDefaultConfiguration localConfiguration = ElementModelBuilders
+				.stepLineElementDefaultConfiguration()
+				.preProcessors(Optional.ofNullable(model.getPreProcessors()).orElse(Collections.emptyList()))
+				.postProcessors(Optional.ofNullable(model.getPostProcessors()).orElse(Collections.emptyList()))
+//				.onError(model.getOnErrors().get(0))
+				.build();
+
+		List<Class<? extends ProcessingOperationProcessor>> preProcessors = localConfiguration
+				.getPreProcessors() == null || localConfiguration.getPreProcessors().isEmpty()
+						? Optional.ofNullable(globalConfiguration).map(OperationConfigurationDefinition::getPreProcessors).orElse(Collections.emptyList())
+						: localConfiguration.getPreProcessors();
+		List<Class<? extends ProcessingOperationProcessor>> postProcessors = localConfiguration
+				.getPostProcessors() == null || localConfiguration.getPostProcessors().isEmpty()
+						? Optional.ofNullable(globalConfiguration).map(OperationConfigurationDefinition::getPostProcessors).orElse(Collections.emptyList())
+						: localConfiguration.getPostProcessors();
+
+		this.preProcessors = preProcessors.stream().map(
+				p -> buildElement(p, model.getProcessorModels().get(p), getOnErrors(p, model, globalConfiguration)))
+				.collect(Collectors.toList());
+		this.postProcessors = postProcessors.stream().map(
+				p -> buildElement(p, model.getProcessorModels().get(p), getOnErrors(p, model, globalConfiguration)))
+				.collect(Collectors.toList());
 	}
 
 	private static List<BaseOnError> getOnErrors(Class<? extends BaseProcessor> processor, OperationModel<?, ?> model,
-			StepLineElementDefaultConfiguration globalConfiguration) {
+			OperationConfigurationDefinition globalConfiguration) {
+		List<BaseOnError> errors = new ArrayList<>();
+		List<BaseOnError> globalErrors = globalConfiguration.getOnErrors().stream()
+				.filter(boe -> boe.isGlobal() || processor.isAssignableFrom(boe.getProcessor()))
+				.collect(Collectors.toList());
+		List<BaseOnError> localErrors = model.getOnErrors().stream()
+				.filter(boe -> boe.isGlobal() || processor.isAssignableFrom(boe.getProcessor()))
+				.collect(Collectors.toList());
+		errors.addAll(globalErrors);
+		errors.addAll(localErrors);
+		return errors;
+	}
+
+	private static List<BaseOnError> getOnErrors(Class<? extends BaseProcessor> processor, ProcessingOperationDefinition<?, ?> model,
+			OperationConfigurationDefinition globalConfiguration) {
 		List<BaseOnError> errors = new ArrayList<>();
 		List<BaseOnError> globalErrors = globalConfiguration.getOnErrors().stream()
 				.filter(boe -> boe.isGlobal() || processor.isAssignableFrom(boe.getProcessor()))
@@ -103,17 +147,9 @@ public class ProcessorChainTemplate {
 //		return null;
 //	}
 
-	public List<AbstractBaseProcessorChainElement<?, ? extends BaseProcessorDriver>> getProcessors() {
-		return processors;
-	}
-
-	private AbstractBaseProcessorChainElement<?, ProcessorDriver> buildElement(Class<? extends Processor> processor,
-			Object model, List<BaseOnError> errors) {
+	private AbstractBaseProcessorChainElement<?, ?> buildElement(
+			Class<? extends ProcessingOperationProcessor> processor, Object model, List<BaseOnError> errors) {
 		return new ProcessorChainElement(errors, processor, resourceFactory, model);
-	}
-
-	private AbstractBaseProcessorChainElement<?, InvokerDriver> buildInvoker(Class<? extends Invoker> processor, List<BaseOnError> errors) {
-		return new ProcessingProcessorChainElement(errors, processor, resourceFactory);
 	}
 
 //	AbstractBaseProcessorChainElement<?, ?> getCurrentProcessor() {
@@ -124,7 +160,15 @@ public class ProcessorChainTemplate {
 //		this.currentProcessor = currentProcessor;
 //	}
 
-	public static abstract class AbstractBaseProcessorChainElement<T, U extends BaseProcessorDriver> {
+	public List<AbstractBaseProcessorChainElement<?, ?>> getPreProcessors() {
+		return preProcessors;
+	}
+
+	public List<AbstractBaseProcessorChainElement<?, ?>> getPostProcessors() {
+		return postProcessors;
+	}
+
+	public static abstract class AbstractBaseProcessorChainElement<T, U> {
 
 		protected Class<? extends BaseProcessor<T, U>> processor;
 
@@ -134,10 +178,6 @@ public class ProcessorChainTemplate {
 
 		private List<BaseOnError> onErrors;
 
-		private AbstractBaseProcessorChainElement<?, ? extends BaseProcessorDriver> nextElement;
-
-		abstract U getDrivingElement(ProcessorChain chain);
-
 		public AbstractBaseProcessorChainElement(Class<? extends BaseProcessor<T, U>> processor,
 				List<BaseOnError> onErrors, ResourceFactory resourceFactory, Object model) {
 			this.processor = processor;
@@ -146,9 +186,9 @@ public class ProcessorChainTemplate {
 			this.model = (T) model;
 		}
 
-		public ProcessorResult execute(Item input, StepExecution context, ProcessorChain chain) {
+		public void execute(Item input, U context, ProcessorChain chain) {
 			BaseProcessor<T, U> proc = resourceFactory.getResource(processor);
-			return proc.process(input, model, getDrivingElement(chain), context);
+			proc.process(input, model, context);
 		}
 
 		public Class<? extends BaseProcessor<T, U>> getProcessor() {
@@ -159,41 +199,14 @@ public class ProcessorChainTemplate {
 			return onErrors;
 		}
 
-		public AbstractBaseProcessorChainElement<?, ? extends BaseProcessorDriver> getNextElement() {
-			return nextElement;
-		}
-
-		void setNextElement(AbstractBaseProcessorChainElement<?, ? extends BaseProcessorDriver> nextElement) {
-			this.nextElement = nextElement;
-		}
-
 	}
 
-	public static class ProcessorChainElement<T> extends AbstractBaseProcessorChainElement<T, ProcessorDriver> {
+	public static class ProcessorChainElement<T> extends AbstractBaseProcessorChainElement<T, StepExecution> {
 
-		public ProcessorChainElement(List<BaseOnError> onErrors, Class<? extends Processor<T>> processor,
-				ResourceFactory resourceFactory, Object model) {
+		public ProcessorChainElement(List<BaseOnError> onErrors,
+				Class<? extends ProcessingOperationProcessor<T>> processor, ResourceFactory resourceFactory,
+				Object model) {
 			super(processor, onErrors, resourceFactory, model);
-		}
-
-		@Override
-		ProcessorDriver getDrivingElement(ProcessorChain chain) {
-			return new ProcessorDriver(chain, (Class<? extends Processor<T>>) processor);
-		}
-
-	}
-
-	public static class ProcessingProcessorChainElement<T>
-			extends AbstractBaseProcessorChainElement<Void, InvokerDriver> {
-
-		public ProcessingProcessorChainElement(List<BaseOnError> onErrors, Class<Invoker> processor,
-				ResourceFactory resourceFactory) {
-			super(processor, onErrors, resourceFactory, (Void) null);
-		}
-
-		@Override
-		InvokerDriver getDrivingElement(ProcessorChain chain) {
-			return new InvokerDriver(chain, (Class<Invoker>) processor);
 		}
 
 	}

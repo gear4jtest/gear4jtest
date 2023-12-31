@@ -2,11 +2,15 @@ package io.github.gear4jtest.core.context;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import io.github.gear4jtest.core.event.EventTriggerService;
+import io.github.gear4jtest.core.internal.ContainerLineElement;
 import io.github.gear4jtest.core.internal.Item;
+import io.github.gear4jtest.core.internal.IteratorLineElement;
+import io.github.gear4jtest.core.internal.SignalLineElement;
 import io.github.gear4jtest.core.internal.StepLineElement;
 import io.github.gear4jtest.core.model.Operation;
 
@@ -19,6 +23,10 @@ public class ItemExecution {
 	private List<LineElementExecution> lineElementExecutions;
 
 	private Map<String, Object> context;
+	
+	private Iterator<?> it;
+	
+	private boolean shouldStop = false;
 
 	ItemExecution(AssemblyLineExecution assemblyLineExecution, Object input, Map<String, Object> context) {
 		this.assemblyLineExecution = assemblyLineExecution;
@@ -29,6 +37,24 @@ public class ItemExecution {
 
 	public StepExecution createStepProcessorChainExecution(StepLineElement element, Operation<?, ?> operation) {
 		StepExecution lineElementExecution = new StepExecution(this, element, operation);
+		lineElementExecutions.add(lineElementExecution);
+		return lineElementExecution;
+	}
+
+	public SignalExecution createSignalExecution(SignalLineElement element) {
+		SignalExecution lineElementExecution = new SignalExecution(this, element);
+		lineElementExecutions.add(lineElementExecution);
+		return lineElementExecution;
+	}
+
+	public IteratorExecution createIteratorExecution(IteratorLineElement element) {
+		IteratorExecution lineElementExecution = new IteratorExecution(this, element);
+		lineElementExecutions.add(lineElementExecution);
+		return lineElementExecution;
+	}
+
+	public ContainerExecution createContainerExecution(ContainerLineElement element) {
+		ContainerExecution lineElementExecution = new ContainerExecution(this, element);
 		lineElementExecutions.add(lineElementExecution);
 		return lineElementExecution;
 	}
@@ -82,6 +108,14 @@ public class ItemExecution {
 	
 	public void updateItem(Object newItem) {
 		item = item.withItem(newItem);
+	}
+
+	public boolean shouldStop() {
+		return shouldStop;
+	}
+
+	public void shouldStop(boolean shouldStop) {
+		this.shouldStop = shouldStop;
 	}
 
 }

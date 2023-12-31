@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 
 import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.event.Event;
-import io.github.gear4jtest.core.event.EventTriggerService;
+import io.github.gear4jtest.core.event.SimpleEventTriggerService;
 import io.github.gear4jtest.core.event.builders.ParameterInjectionEventBuilder;
 import io.github.gear4jtest.core.event.builders.ParameterInjectionEventBuilder.ParameterContextualData;
 import io.github.gear4jtest.core.internal.AssemblyLineBuilder.StepConfiguration;
@@ -40,19 +40,19 @@ public class OperationParametersInitializer {
 		for (Field field : fields) {
 			if (field.get(operation) == null) {
 				Parameter parameter = Parameter.of();
-				if (configuration.getEventConfiguration().isEventOnParameterChanged()) {
-					Enhancer enhancer = new Enhancer();
-					enhancer.setSuperclass(Parameter.class);
-					enhancer.setCallback(new ParameterChangedFireEventInterceptor(field.getName(), execution.getEventTriggerService(), element));
-					Parameter proxiedParameter = (Parameter) enhancer.create();
-					field.setAccessible(true);
-					field.set(proxiedParameter, operation);
-					field.setAccessible(false);
-				} else {
-					field.setAccessible(true);
-					field.set(parameter, operation);
-					field.setAccessible(false);
-				}
+//				if (configuration.getEventConfiguration().isEventOnParameterChanged()) {
+//					Enhancer enhancer = new Enhancer();
+//					enhancer.setSuperclass(Parameter.class);
+//					enhancer.setCallback(new ParameterChangedFireEventInterceptor(field.getName(), execution.getEventTriggerService(), element));
+//					Parameter proxiedParameter = (Parameter) enhancer.create();
+//					field.setAccessible(true);
+//					field.set(proxiedParameter, operation);
+//					field.setAccessible(false);
+//				} else {
+//					field.setAccessible(true);
+//					field.set(parameter, operation);
+//					field.setAccessible(false);
+//				}
 			}
 		}
 		return operation;
@@ -61,11 +61,11 @@ public class OperationParametersInitializer {
 	public static abstract class AbstractEventPublisherMethodInterceptor implements MethodInterceptor {
 
 		private final String methodName;
-		private final EventTriggerService eventTriggerService;
+		private final SimpleEventTriggerService eventTriggerService;
 
 		abstract Event buildEvent(Object obj, Method method, Object[] args, MethodProxy proxy);
 		
-		public AbstractEventPublisherMethodInterceptor(String methodName, EventTriggerService eventTriggerService) {
+		public AbstractEventPublisherMethodInterceptor(String methodName, SimpleEventTriggerService eventTriggerService) {
 			this.methodName = methodName;
 			this.eventTriggerService = eventTriggerService;
 		}
@@ -88,7 +88,7 @@ public class OperationParametersInitializer {
 		private final String parameterName;
 		private final LineElement element;
 		
-		public ParameterChangedFireEventInterceptor(String parameterName, EventTriggerService eventTriggerService, LineElement element) {
+		public ParameterChangedFireEventInterceptor(String parameterName, SimpleEventTriggerService eventTriggerService, LineElement element) {
 			super(METHOD_NAME, eventTriggerService);
 			this.parameterName = parameterName;
 			this.element = element;

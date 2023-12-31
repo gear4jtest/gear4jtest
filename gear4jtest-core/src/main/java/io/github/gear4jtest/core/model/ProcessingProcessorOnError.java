@@ -1,7 +1,5 @@
 package io.github.gear4jtest.core.model;
 
-import io.github.gear4jtest.core.processor.Invoker;
-
 public class ProcessingProcessorOnError extends BaseOnError {
 
 	ProcessingProcessorOnError() {
@@ -14,11 +12,6 @@ public class ProcessingProcessorOnError extends BaseOnError {
 
 		Builder() {
 			managedInstance = new ProcessingProcessorOnError();
-		}
-
-		public ProcessingProcessorOnError.Builder processor(Class<? extends Invoker> processor) {
-			managedInstance.processor = processor;
-			return this;
 		}
 
 		public UnsafeOnError.Builder<ProcessingProcessorOnError> rule(ChainBreakRule rule) {

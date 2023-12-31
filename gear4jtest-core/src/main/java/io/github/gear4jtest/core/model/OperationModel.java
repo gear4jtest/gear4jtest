@@ -4,28 +4,28 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-import io.github.gear4jtest.core.processor.PostProcessor;
-import io.github.gear4jtest.core.processor.PreProcessor;
-import io.github.gear4jtest.core.processor.Processor;
+import io.github.gear4jtest.core.processor.ProcessingOperationProcessor;
 import io.github.gear4jtest.core.processor.Transformer;
 import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.Parameter;
 
-public class OperationModel<IN, OUT> {
+public class OperationModel<IN, OUT> extends BaseLineModel<IN, OUT> {
 
 	private Class<Operation<IN, OUT>> type;
 
 	private List<ParameterModel<?, ?>> parameters;
 
-	private List<Class<? extends PreProcessor>> preProcessors;
+	private List<Class<? extends ProcessingOperationProcessor>> preProcessors;
 
-	private List<Class<? extends PostProcessor>> postProcessors;
+	private List<Class<? extends ProcessingOperationProcessor>> postProcessors;
 
 	private List<BaseOnError> onErrors;
 
 	private Transformer<IN, OUT> transformer;
 
-	private Map<Class<? extends Processor>, Object> processorModels;
+	private Map<Class<? extends ProcessingOperationProcessor>, Object> processorModels;
 
 	private OperationModel() {
 		this.parameters = new ArrayList<>();
@@ -41,11 +41,11 @@ public class OperationModel<IN, OUT> {
 		return parameters;
 	}
 
-	public List<Class<? extends PreProcessor>> getPreProcessors() {
+	public List<Class<? extends ProcessingOperationProcessor>> getPreProcessors() {
 		return preProcessors;
 	}
 
-	public List<Class<? extends PostProcessor>> getPostProcessors() {
+	public List<Class<? extends ProcessingOperationProcessor>> getPostProcessors() {
 		return postProcessors;
 	}
 
@@ -57,7 +57,7 @@ public class OperationModel<IN, OUT> {
 		return transformer;
 	}
 
-	public Map<Class<? extends Processor>, Object> getProcessorModels() {
+	public Map<Class<? extends ProcessingOperationProcessor>, Object> getProcessorModels() {
 		return processorModels;
 	}
 
@@ -94,7 +94,7 @@ public class OperationModel<IN, OUT> {
 //			return this;
 //		}
 
-		public <A> Builder<IN, OUT, OP> processorModel(Class<? extends Processor<A>> processor, A model) {
+		public <A> Builder<IN, OUT, OP> processorModel(Class<? extends ProcessingOperationProcessor<A>> processor, A model) {
 			managedInstance.processorModels.put(processor, model);
 			return this;
 		}
@@ -109,17 +109,17 @@ public class OperationModel<IN, OUT> {
 //			return this;
 //		}
 
-		public <A> Builder<IN, OUT, OP> preProcessors(List<Class<PreProcessor<?>>> processors) {
+		public <A> Builder<IN, OUT, OP> preProcessors(List<Class<ProcessingOperationProcessor<?>>> processors) {
 			managedInstance.preProcessors = new ArrayList<>(processors);
 			return this;
 		}
 
-		public <A> Builder<IN, OUT, OP> preProcessor(Class<PreProcessor<?>> processor) {
+		public <A> Builder<IN, OUT, OP> preProcessor(Class<ProcessingOperationProcessor<?>> processor) {
 			managedInstance.preProcessors.add(processor);
 			return this;
 		}
 
-		public <A> Builder<IN, OUT, OP> postProcessor(Class<PostProcessor<?>> processor) {
+		public <A> Builder<IN, OUT, OP> postProcessor(Class<ProcessingOperationProcessor<?>> processor) {
 			managedInstance.postProcessors.add(processor);
 			return this;
 		}
@@ -152,49 +152,86 @@ public class OperationModel<IN, OUT> {
 
 	}
 
-	public static class ParameterModel<OP extends Operation<?, ?>, T> {
+	public static abstract class ParameterModel<OP extends Operation<?, ?>, T> {
 
 		private ParamRetriever<OP, T> paramRetriever;
-		private T value;
-//		private Supplier<T> valueSupplier;
-//		private Function<InterpretationContext, T> valueFunction;
-		private String expression;
-		private String evaluator;
 
-		public ParameterModel(ParamRetriever<OP, T> paramRetriever) {
+		public abstract T getValue(Object item);
+		
+		private ParameterModel(ParamRetriever<OP, T> paramRetriever) {
 			this.paramRetriever = paramRetriever;
-		}
-
-		public ParameterModel(ParamRetriever<OP, T> paramRetriever, T value) {
-			this.paramRetriever = paramRetriever;
-			this.value = value;
-		}
-
-		public ParameterModel(ParamRetriever<OP, T> paramRetriever, String expression, String evaluator) {
-			this.paramRetriever = paramRetriever;
-			this.expression = expression;
-			this.evaluator = evaluator;
 		}
 
 		public ParamRetriever<?, ?> getParamRetriever() {
 			return paramRetriever;
 		}
 
-		public T getValue() {
+	}
+
+	public static class ValueParameterModel<OP extends Operation<?, ?>, T> extends ParameterModel<OP, T> {
+
+		private T value;
+
+		public ValueParameterModel(ParamRetriever<OP, T> paramRetriever, T value) {
+			super(paramRetriever);
+			this.value = value;
+		}
+
+		@Override
+		public T getValue(Object item) {
 			return value;
 		}
 
-		public String getEvaluator() {
-			return evaluator;
-		}
+	}
 
-		public String getExpression() {
-			return expression;
-		}
+	public static class SupplierParameterModel<OP extends Operation<?, ?>, T> extends ParameterModel<OP, T> {
 
-		public ParameterModel<OP, T> value(T value) {
+		private Supplier<T> value;
+
+		public SupplierParameterModel(ParamRetriever<OP, T> paramRetriever, Supplier<T> value) {
+			super(paramRetriever);
 			this.value = value;
-			return this;
+		}
+
+		@Override
+		public T getValue(Object item) {
+			return value.get();
+		}
+
+	}
+
+	public static class InterpretationContextParameterModel<OP extends Operation<?, ?>, T>
+			extends ParameterModel<OP, T> {
+
+		private Function<InterpretationContext, T> value;
+
+		public InterpretationContextParameterModel(ParamRetriever<OP, T> paramRetriever,
+				Function<InterpretationContext, T> value) {
+			super(paramRetriever);
+			this.value = value;
+		}
+		
+		private InterpretationContext buildContext(Object item) {
+			return new InterpretationContext(item);
+		}
+
+		@Override
+		public T getValue(Object item) {
+			return value.apply(buildContext(item));
+		}
+
+		public static class InterpretationContext {
+
+			private Object item;
+
+			public InterpretationContext(Object item) {
+				this.item = item;
+			}
+
+			public Object getItem() {
+				return item;
+			}
+
 		}
 
 	}

@@ -3,11 +3,11 @@ package io.github.gear4jtest.core.model;
 import java.util.function.Supplier;
 
 import io.github.gear4jtest.core.internal.LineElement;
-import io.github.gear4jtest.core.processor.Processor;
+import io.github.gear4jtest.core.processor.ProcessingOperationProcessor;
 
 public class ProcessorModel<T extends LineElement> {
 
-	private Supplier<Processor> processor;
+	private Supplier<ProcessingOperationProcessor> processor;
 
 //	private List<OnError> onErrors;
 
@@ -15,7 +15,7 @@ public class ProcessorModel<T extends LineElement> {
 //		onErrors = new ArrayList<>();
 	}
 
-	public Supplier<Processor> getProcessor() {
+	public Supplier<ProcessingOperationProcessor> getProcessor() {
 		return processor;
 	}
 
@@ -31,7 +31,7 @@ public class ProcessorModel<T extends LineElement> {
 			managedInstance = new ProcessorModel<>();
 		}
 
-		public Builder<T> processor(Supplier<Processor> processor) {
+		public Builder<T> processor(Supplier<ProcessingOperationProcessor> processor) {
 			managedInstance.processor = processor;
 			return this;
 		}

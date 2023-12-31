@@ -4,18 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.github.gear4jtest.core.factory.ResourceFactory;
-import io.github.gear4jtest.core.processor.Invoker;
-import io.github.gear4jtest.core.processor.PostProcessor;
-import io.github.gear4jtest.core.processor.PreProcessor;
+import io.github.gear4jtest.core.processor.ProcessingOperationProcessor;
 import io.github.gear4jtest.core.processor.Transformer;
-import io.github.gear4jtest.core.processor.operation.OperationInvoker;
 
 public class ChainModel<IN, OUT> {
 
 	private ResourceFactory resourceFactory;
-	private BranchesModel branches;
+	private BaseLineModel startingElement;
 	private ChainDefaultConfiguration chainDefaultConfiguration;
-	private EventHandling eventHandling;
+	private EventHandlingDefinition eventHandling;
 
 	private ChainModel() {
 	}
@@ -24,15 +21,15 @@ public class ChainModel<IN, OUT> {
 		return resourceFactory;
 	}
 
-	public BranchesModel getBranches() {
-		return branches;
+	public BaseLineModel<IN, OUT> getStartingElement() {
+		return startingElement;
 	}
 
 	public ChainDefaultConfiguration getChainDefaultConfiguration() {
 		return chainDefaultConfiguration;
 	}
 
-	public EventHandling getEventHandling() {
+	public EventHandlingDefinition getEventHandling() {
 		return eventHandling;
 	}
 
@@ -68,29 +65,23 @@ public class ChainModel<IN, OUT> {
 
 	public static class StepLineElementDefaultConfiguration {
 
-		private List<Class<? extends PreProcessor>> preProcessors;
-		private List<Class<? extends PostProcessor>> postProcessors;
-		private Class<? extends Invoker> invoker;
+		private List<Class<? extends ProcessingOperationProcessor>> preProcessors;
+		private List<Class<? extends ProcessingOperationProcessor>> postProcessors;
 		private List<BaseOnError> onErrors;
 		private Transformer transformer;
 
 		private StepLineElementDefaultConfiguration() {
 			this.preProcessors = new ArrayList<>();
 			this.postProcessors = new ArrayList<>();
-			this.invoker = OperationInvoker.class;
 			this.onErrors = new ArrayList<>();
 		}
 
-		public List<Class<? extends PreProcessor>> getPreProcessors() {
+		public List<Class<? extends ProcessingOperationProcessor>> getPreProcessors() {
 			return preProcessors;
 		}
 
-		public List<Class<? extends PostProcessor>> getPostProcessors() {
+		public List<Class<? extends ProcessingOperationProcessor>> getPostProcessors() {
 			return postProcessors;
-		}
-
-		public Class<? extends Invoker> getInvoker() {
-			return invoker;
 		}
 
 		public List<BaseOnError> getOnErrors() {
@@ -115,13 +106,8 @@ public class ChainModel<IN, OUT> {
 //				return this;
 //			}
 
-			public Builder preProcessors(List<Class<? extends PreProcessor>> list) {
+			public Builder preProcessors(List<Class<? extends ProcessingOperationProcessor>> list) {
 				this.managedInstance.preProcessors.addAll(list);
-				return this;
-			}
-
-			public Builder invoker(Class<? extends Invoker> invoker) {
-				this.managedInstance.invoker = invoker;
 				return this;
 			}
 
@@ -130,7 +116,7 @@ public class ChainModel<IN, OUT> {
 //				return this;
 //			}
 
-			public Builder postProcessors(List<Class<? extends PostProcessor>> processors) {
+			public Builder postProcessors(List<Class<? extends ProcessingOperationProcessor>> processors) {
 				this.managedInstance.postProcessors.addAll(processors);
 				return this;
 			}
@@ -202,12 +188,12 @@ public class ChainModel<IN, OUT> {
 			return this;
 		}
 
-		public <A> Builder<IN, A> assemble(BranchesModel<IN, A> branches) {
-			managedInstance.branches = branches;
-			return (Builder<IN, A>) this;
+		public <BEGIN, END> Builder<BEGIN, END> assemble(BaseLineModel<BEGIN, END> startingElement) {
+			managedInstance.startingElement = startingElement;
+			return (Builder<BEGIN, END>) this;
 		}
 		
-		public Builder<IN, OUT> eventHandling(EventHandling eventHandling) {
+		public Builder<IN, OUT> eventHandling(EventHandlingDefinition eventHandling) {
 			managedInstance.eventHandling = eventHandling;
 			return this;
 		}

@@ -18,13 +18,15 @@ public class AssemblyLineOrchestrator {
 		this.execution = execution;
 	}
 
-	public <BEGIN, OUT> ItemExecution orchestrate(AssemblyLine<BEGIN, OUT> line, Object input) {
-		return orchestrate(line.getStartingElement(), execution.createItemExecution(input));
+	public <BEGIN, OUT> AssemblyLineExecution orchestrate(AssemblyLine<BEGIN, OUT> line, Object input) {
+		orchestrate(line.getStartingElement(), execution.createItemExecution(input));
+		return execution;
 	}
 
-	private <BEGIN, OUT> ItemExecution orchestrate(LineElement element, ItemExecution itemExecution) {
-//		Item result = lineVisitor.visit(element, input);
-		
+	public <BEGIN, OUT> ItemExecution orchestrate(LineElement element, ItemExecution itemExecution) {
+		if (itemExecution.shouldStop()) {
+			return itemExecution;
+		}
 		LineElementExecution result = element.execute(itemExecution);
 		itemExecution.getEventTriggerService().publishEvent(new LineElementEventBuilder().buildEvent(element.getId(), new LineElementExecutionData(result)));
 		

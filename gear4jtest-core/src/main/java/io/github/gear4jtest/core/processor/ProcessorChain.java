@@ -38,7 +38,15 @@ public class ProcessorChain {
 	public ProcessorChainResult processChain() {
 		ProcessorChainResult.Builder processorChainResultBuilder = new ProcessorChainResult.Builder();
 
-		for (AbstractBaseProcessorChainElement processor : chain.getProcessors()) {
+		for (AbstractBaseProcessorChainElement processor : chain.getPreProcessors()) {
+			ProcessorResult processorResult = processProcessor(processor, input, context);
+			processorChainResultBuilder.processorResult(processorResult);
+		}
+		
+        this.result = context.getOperation().execute(input.getItem(), context);
+		this.isInputProcessed = true;
+
+		for (AbstractBaseProcessorChainElement processor : chain.getPostProcessors()) {
 			ProcessorResult processorResult = processProcessor(processor, input, context);
 			processorChainResultBuilder.processorResult(processorResult);
 		}
@@ -66,22 +74,12 @@ public class ProcessorChain {
 //		return processorChainResultBuilder.build();
 //	}
 
-	public ProcessorResult proceed(Class<? extends BaseProcessor<?, ?>> processor) {
-//		processProcessor(chain.getCurrentProcessor(), input, context);
-		return ProcessorResult.succeeded(processor);
-	}
-
-	ProcessorResult proceed(Object result, Class<? extends Invoker> processor) {
-		this.result = result;
-		this.isInputProcessed = true;
-		return proceed(processor);
-	}
-
-	private ProcessorResult processProcessor(AbstractBaseProcessorChainElement<?, ?> currentProcessor, Item input,
+	private ProcessorResult processProcessor(AbstractBaseProcessorChainElement<?, StepExecution> currentProcessor, Item input,
 			StepExecution context) {
 		ProcessorResult result = null;
 		try {
-			result = currentProcessor.execute(input, context, this);
+			currentProcessor.execute(input, context, this);
+			result = ProcessorResult.succeeded(currentProcessor.processor);
 			context.getEventTriggerService().publishEvent(new OperationProcessorEventBuilder().buildEvent(context.getId(), new OperationProcessorData(result)));
 		} catch (Exception e) {
 			List<BaseRule> rules = Optional.ofNullable(currentProcessor.getOnErrors()).orElse(Collections.emptyList())
@@ -107,42 +105,6 @@ public class ProcessorChain {
 
 	private static boolean isExceptionEligible(Exception e, Class<?> clazz) {
 		return clazz == null || clazz.isInstance(e);
-	}
-
-	public static class BaseProcessorDriver {
-
-		protected ProcessorChain chain;
-		protected Class<? extends BaseProcessor<?, ?>> processor;
-
-		public BaseProcessorDriver(ProcessorChain chain, Class<? extends BaseProcessor<?, ?>> processor) {
-			this.chain = chain;
-			this.processor = processor;
-		}
-
-	}
-
-	public static class ProcessorDriver extends BaseProcessorDriver {
-
-		public ProcessorDriver(ProcessorChain chain, Class<? extends Processor<?>> processor) {
-			super(chain, processor);
-		}
-
-		public ProcessorResult proceed() {
-			return chain.proceed(processor);
-		}
-
-	}
-
-	public static class InvokerDriver extends BaseProcessorDriver {
-
-		public InvokerDriver(ProcessorChain chain, Class<? extends Invoker> processor) {
-			super(chain, processor);
-		}
-
-		public ProcessorResult proceed(Object result) {
-			return chain.proceed(result, (Class<? extends Invoker>) processor);
-		}
-
 	}
 
 }

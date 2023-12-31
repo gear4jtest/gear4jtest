@@ -16,7 +16,7 @@ public class Step1 implements Operation<String, Integer> {
 	public Parameter<String> getA() {
 		return string;
 	}
-	
+
 	private String b;
 	
 	public String getB() {

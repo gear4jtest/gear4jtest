@@ -1,6 +1,6 @@
 package io.github.gear4jtest.core.model;
 
-import io.github.gear4jtest.core.processor.PostProcessor;
+import io.github.gear4jtest.core.processor.ProcessingOperationProcessor;
 
 public class PostProcessorOnError extends BaseOnError {
 
@@ -16,7 +16,7 @@ public class PostProcessorOnError extends BaseOnError {
 			managedInstance = new PostProcessorOnError();
 		}
 
-		public PostProcessorOnError.Builder processor(Class<? extends PostProcessor<?>> processor) {
+		public PostProcessorOnError.Builder processor(Class<? extends ProcessingOperationProcessor<?>> processor) {
 			managedInstance.processor = processor;
 			return this;
 		}

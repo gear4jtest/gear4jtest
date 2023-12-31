@@ -1,12 +1,10 @@
 package io.github.gear4jtest.core.processor;
 
-import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.internal.Item;
-import io.github.gear4jtest.core.processor.ProcessorChain.BaseProcessorDriver;
 
 @FunctionalInterface
-public interface BaseProcessor<T, U extends BaseProcessorDriver> {
+public interface BaseProcessor<T, U> {
 	
-	ProcessorResult process(Item input, T processorModel, U chainDriver, StepExecution context);
+	void process(Item input, T operatorModel, U context);
 
 }

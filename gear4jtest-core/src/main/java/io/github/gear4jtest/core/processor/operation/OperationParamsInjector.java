@@ -10,15 +10,13 @@ import io.github.gear4jtest.core.event.builders.ParameterInjectionEventBuilder.P
 import io.github.gear4jtest.core.internal.Item;
 import io.github.gear4jtest.core.model.OperationModel;
 import io.github.gear4jtest.core.model.OperationModel.ParameterModel;
-import io.github.gear4jtest.core.processor.PreProcessor;
-import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDriver;
-import io.github.gear4jtest.core.processor.ProcessorResult;
+import io.github.gear4jtest.core.processor.ProcessingOperationProcessor;
 import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.Parameters;
 
-public class OperationParamsInjector implements PreProcessor<Parameters> {
+public class OperationParamsInjector implements ProcessingOperationProcessor<Parameters> {
 
 	@Override
-	public ProcessorResult process(Item input, Parameters model, ProcessorDriver chain, StepExecution context) {
+	public void process(Item input, Parameters model, StepExecution context) {
 		Iterator<ParameterModel<?, ?>> it = model.getParameters().iterator();
 		while (it.hasNext()) {
 			OperationModel.ParameterModel param = it.next();
@@ -27,11 +25,11 @@ public class OperationParamsInjector implements PreProcessor<Parameters> {
 			if (parameterValue == null) {
 
 			}
-			parameterValue.setValue(param.getValue());
+			Object value = param.getValue(input.getItem());
+			parameterValue.setValue(value);
 			
-			context.getEventTriggerService().publishEvent(new ParameterInjectionEventBuilder().buildEvent(context.getId(), buildParameterContextualData(param.getValue())));
+			context.getEventTriggerService().publishEvent(new ParameterInjectionEventBuilder().buildEvent(context.getId(), buildParameterContextualData(value)));
 		}
-		return chain.proceed();
 	}
 	
 	private ParameterContextualData buildParameterContextualData(Object parameterValue) {

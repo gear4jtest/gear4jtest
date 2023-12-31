@@ -3,12 +3,12 @@ package io.github.gear4jtest.core.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EventHandling {
+public class EventHandlingDefinition {
 
 	private List<Queue> queues;
 	private EventConfiguration globalEventConfiguration;
 
-	public EventHandling() {
+	public EventHandlingDefinition() {
 		this.queues = new ArrayList<>();
 	}
 
@@ -22,10 +22,10 @@ public class EventHandling {
 
 	public static class Builder {
 
-		private final EventHandling managedInstance;
+		private final EventHandlingDefinition managedInstance;
 
 		Builder() {
-			managedInstance = new EventHandling();
+			managedInstance = new EventHandlingDefinition();
 		}
 
 		public Builder queue(Queue queue) {
@@ -41,7 +41,7 @@ public class EventHandling {
 			return this;
 		}
 
-		public EventHandling build() {
+		public EventHandlingDefinition build() {
 			return managedInstance;
 		}
 

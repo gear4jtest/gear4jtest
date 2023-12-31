@@ -10,7 +10,7 @@ public class BaseOnError {
 	protected Class<? extends BaseProcessor<?, ?>> processor;
 
 	protected List<BaseRule> rules;
-
+	
 	BaseOnError() {
 		this.rules = new ArrayList<>();
 	}

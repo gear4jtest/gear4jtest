@@ -1,14 +1,17 @@
 package io.github.gear4jtest.core.event;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import io.github.gear4jtest.core.context.AssemblyLineExecution;
 import io.github.gear4jtest.core.internal.Initializer;
-import io.github.gear4jtest.core.model.ChainModel;
+import io.github.gear4jtest.core.model.EventHandlingDefinition;
 import io.github.gear4jtest.core.model.Queue;
+import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
+import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition.Configuration;
 
 public class EventQueueInitializer implements Initializer {
 	
@@ -19,11 +22,14 @@ public class EventQueueInitializer implements Initializer {
 //	}
 
 	@Override
-	public void initialize(ChainModel model, AssemblyLineExecution execution) {
-		List<Queue> queues = model.getEventHandling().getQueues();
-		if (queues == null) {
+	public void initialize(AssemblyLineDefinition assemblyLine, AssemblyLineExecution execution) {
+		Optional<List<Queue>> queuesOpt = Optional.ofNullable(assemblyLine.getConfiguration())
+				.map(Configuration::getEventHandlingDefinition)
+				.map(EventHandlingDefinition::getQueues);
+		if (!queuesOpt.isPresent()) {
 			return;
 		}
+		List<Queue> queues = queuesOpt.get();
 		List<EventQueue> eventQueues = queues.stream().map(EventQueueInitializer::buildQueue).collect(Collectors.toList());
 		ExecutorService service = Executors.newFixedThreadPool(queues.size());
 		eventQueues.forEach(service::execute);
@@ -32,7 +38,7 @@ public class EventQueueInitializer implements Initializer {
 	}
 
 	private void registerEventTriggerService(List<EventQueue> queues, AssemblyLineExecution execution) {
-		execution.registerEventTriggerService(new EventTriggerService(queues));
+		execution.registerEventTriggerService(new SimpleEventTriggerService(queues));
 	}
 
 	private static EventQueue buildQueue(Queue queue) {

@@ -3,7 +3,8 @@ package io.github.gear4jtest.core.internal;
 import java.util.Map;
 
 import io.github.gear4jtest.core.context.AssemblyLineExecution;
-import io.github.gear4jtest.core.model.ChainModel;
+import io.github.gear4jtest.core.factory.ResourceFactory;
+import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
 
 /**
  * Entry class for Gear4j chains execution.
@@ -13,8 +14,17 @@ import io.github.gear4jtest.core.model.ChainModel;
  */
 public class ChainExecutorService {
 
-	public <BEGIN, IN> IN execute(ChainModel<BEGIN, IN> chain, BEGIN object) {
-		return execute(chain, object, null);
+	public <BEGIN, IN> IN executeAndUnwrap(AssemblyLineDefinition<BEGIN, IN> assemblyLine, BEGIN input, Map<String, Object> context, ResourceFactory resourceFactory) throws AssemblyLineException {
+		AssemblyLineExecution execution = execute(assemblyLine, input, context, resourceFactory);
+		
+		if (!execution.getThrowables().isEmpty()) {
+			throw new AssemblyLineException(execution.getThrowables());
+		}
+		return (IN) execution.getItemExecution().getItem().getItem();
+	}
+	
+	public <BEGIN, IN> IN executeAndUnwrap(AssemblyLineDefinition<BEGIN, IN> assemblyLine, BEGIN input, ResourceFactory resourceFactory) throws AssemblyLineException {
+		return executeAndUnwrap(assemblyLine, input, null, resourceFactory);
 	}
 	
 	/**
@@ -22,13 +32,14 @@ public class ChainExecutorService {
 	 * 
 	 * @param <BEGIN>
 	 * @param <IN>
-	 * @param chain
+	 * @param assemblyLine
 	 * @param input
 	 * @return
 	 */
 	// Ici retourner un bean particulier
 	// ChainExecutionResult<IN> qui contiendrait le retour, de type IN, s'il y a eu erreur etc...
-	public <BEGIN, IN> IN execute(ChainModel<BEGIN, IN> chain, BEGIN input, Map<String, Object> context) {
+	// line parameters + context ?
+	public <BEGIN, IN> AssemblyLineExecution execute(AssemblyLineDefinition<BEGIN, IN> assemblyLine, BEGIN input, Map<String, Object> context, ResourceFactory resourceFactory) {
 		// 1 validation
 		// 2 line building
 		// 3 execution retrieving / building
@@ -44,10 +55,10 @@ public class ChainExecutorService {
 		
 		// Initialization
 		// TODO(all): initialize method in AssemblyLine class ?
-		new AssemblyLineInitializer(chain, execution).initialize();
+		new AssemblyLineInitializer(assemblyLine, execution).initialize();
 		
 		// Assembly line building
-		AssemblyLine<BEGIN, IN> line = new AssemblyLineBuilder<>(chain).buildAssemblyLine();
+		AssemblyLine<BEGIN, IN> line = new AssemblyLineBuilder<>(assemblyLine, resourceFactory).buildAssemblyLine();
 		
 //		initializeQueues(chain.getEventHandling().getQueues(), line.getId(), chain.getResourceFactory());
 		return line.execute(input, execution);
@@ -58,5 +69,9 @@ public class ChainExecutorService {
 //		EventTriggerService service = new EventTriggerService(eventQueues, resourceFactory);
 //		ServiceRegistry.pushEventTriggerService(lineId, service);
 //	}
+
+	public <BEGIN, IN> AssemblyLineExecution execute(AssemblyLineDefinition<BEGIN, IN> chain, BEGIN object, ResourceFactory resourceFactory) throws AssemblyLineException {
+		return execute(chain, object, null, resourceFactory);
+	}
 
 }

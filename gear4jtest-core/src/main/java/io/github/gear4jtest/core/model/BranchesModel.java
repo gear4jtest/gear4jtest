@@ -3,7 +3,7 @@ package io.github.gear4jtest.core.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BranchesModel<IN, OUT> {
+public class BranchesModel<IN, OUT> extends BaseLineModel<IN, OUT> {
 	
 	private List<BranchModel> branches;
 
