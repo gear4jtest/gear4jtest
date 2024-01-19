@@ -10,9 +10,10 @@ import io.github.gear4jtest.core.event.EventTriggerService;
 import io.github.gear4jtest.core.internal.ContainerLineElement;
 import io.github.gear4jtest.core.internal.Item;
 import io.github.gear4jtest.core.internal.IteratorLineElement;
+import io.github.gear4jtest.core.internal.LineElement;
+import io.github.gear4jtest.core.internal.LineLineElement;
 import io.github.gear4jtest.core.internal.SignalLineElement;
 import io.github.gear4jtest.core.internal.StepLineElement;
-import io.github.gear4jtest.core.model.Operation;
 
 public class ItemExecution {
 
@@ -35,8 +36,30 @@ public class ItemExecution {
 		this.lineElementExecutions = new ArrayList<>();
 	}
 
-	public StepExecution createStepProcessorChainExecution(StepLineElement element, Operation<?, ?> operation) {
-		StepExecution lineElementExecution = new StepExecution(this, element, operation);
+	public LineElementExecution createExecution(LineElement element) {
+		LineElementExecution lineElementExecution = buildExecution(element);
+		lineElementExecutions.add(lineElementExecution);
+		return lineElementExecution;
+	}
+
+	private LineElementExecution buildExecution(LineElement element) {
+		if (element instanceof StepLineElement) {
+			return new StepExecution(this, (StepLineElement) element);
+		} else if (element instanceof SignalLineElement) {
+			return new SignalExecution(this, (SignalLineElement) element);
+		} else if (element instanceof IteratorLineElement) {
+			return new IteratorExecution(this, (IteratorLineElement) element);
+		} else if (element instanceof ContainerLineElement) {
+			return new ContainerExecution(this, (ContainerLineElement) element);
+		} else if (element instanceof LineLineElement) {
+			return new LineExecution(this, (LineLineElement) element);
+		} else {
+			throw new IllegalArgumentException();
+		}
+	}
+
+	public StepExecution createStepProcessorChainExecution(StepLineElement element) {
+		StepExecution lineElementExecution = new StepExecution(this, element);
 		lineElementExecutions.add(lineElementExecution);
 		return lineElementExecution;
 	}
@@ -105,7 +128,7 @@ public class ItemExecution {
 	public Item getItem() {
 		return item;
 	}
-	
+
 	public void updateItem(Object newItem) {
 		item = item.withItem(newItem);
 	}

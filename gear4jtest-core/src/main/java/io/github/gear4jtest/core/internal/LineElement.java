@@ -7,14 +7,14 @@ import java.util.UUID;
 import io.github.gear4jtest.core.context.ItemExecution;
 import io.github.gear4jtest.core.context.LineElementExecution;
 
-public abstract class LineElement {
+public abstract class LineElement<T> {
 
 	private final UUID id;
 	private final List<LineElement> nextLineElements;
 //	private final LineElement parentElement; // Should this be stored here as the only use is to contextualize events so that it is tied to parent ?
 
 	// Should these methods be parts of interfaces ? LineExecutor, LineModel... ?
-	public abstract LineElementExecution execute(ItemExecution itemExecution);
+	public abstract LineElementExecution execute(T execution);
 //	public abstract LineElementExecution createLineElementExecution(ItemExecution itemExecution);
 //  public abstract Model getLineModel();
 

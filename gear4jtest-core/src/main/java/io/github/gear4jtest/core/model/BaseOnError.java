@@ -7,7 +7,7 @@ import io.github.gear4jtest.core.processor.BaseProcessor;
 
 public class BaseOnError {
 
-	protected Class<? extends BaseProcessor<?, ?>> processor;
+	protected Class<? extends BaseProcessor<?, ?, ?>> processor;
 
 	protected List<BaseRule> rules;
 	
@@ -19,7 +19,7 @@ public class BaseOnError {
 		return this.processor == null;
 	}
 
-	public Class<? extends BaseProcessor<?, ?>> getProcessor() {
+	public Class<? extends BaseProcessor<?, ?, ?>> getProcessor() {
 		return processor;
 	}
 

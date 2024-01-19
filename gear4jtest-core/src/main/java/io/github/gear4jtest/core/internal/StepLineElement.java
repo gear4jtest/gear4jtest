@@ -1,16 +1,15 @@
 package io.github.gear4jtest.core.internal;
 
-import io.github.gear4jtest.core.context.ItemExecution;
 import io.github.gear4jtest.core.context.LineElementExecution;
+import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.internal.AssemblyLineBuilder.StepConfiguration;
-import io.github.gear4jtest.core.model.OperationModel;
 import io.github.gear4jtest.core.model.refactor.ProcessingOperationDataModel;
 import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
 import io.github.gear4jtest.core.processor.ProcessorChainTemplate;
 import io.github.gear4jtest.core.processor.Transformer;
 
-public class StepLineElement extends LineElement {
+public class StepLineElement extends LineElement<StepExecution> {
 
 	private final Class<?> clazz;
 	private final ResourceFactory resourceFactory;
@@ -22,16 +21,16 @@ public class StepLineElement extends LineElement {
 //	private final Map<Class<? extends ProcessingOperationProcessor>, Object> processorModels;
 	private final ProcessingOperationDataModel processingOperationDataModel;
 
-	public StepLineElement(OperationModel<?, ?> step, StepConfiguration configuration, ResourceFactory resourceFactory) {
-		super();
-		this.clazz = step.getType();
-		this.transformer = step.getTransformer();
-		this.processingOperationDataModel = null;
-
-		this.configuration = configuration;
-		this.resourceFactory = resourceFactory;
-		this.processorChain = new ProcessorChainTemplate(step, configuration.getStepDefaultConfiguration(), resourceFactory);
-	}
+//	public StepLineElement(OperationModel<?, ?> step, StepConfiguration configuration, ResourceFactory resourceFactory) {
+//		super();
+//		this.clazz = step.getType();
+//		this.transformer = step.getTransformer();
+//		this.processingOperationDataModel = null;
+//
+//		this.configuration = configuration;
+//		this.resourceFactory = resourceFactory;
+//		this.processorChain = new ProcessorChainTemplate(step, configuration.getStepDefaultConfiguration(), resourceFactory);
+//	}
 	
 	public StepLineElement(ProcessingOperationDefinition<?, ?> step, StepConfiguration configuration, ResourceFactory resourceFactory) {
 		super();
@@ -50,7 +49,7 @@ public class StepLineElement extends LineElement {
 //	}
 
 	@Override
-	public LineElementExecution execute(ItemExecution itemExecution) {
+	public LineElementExecution execute(StepExecution itemExecution) {
 		return new StepLineElementExecutor(this).execute(itemExecution);
 	}
 

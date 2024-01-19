@@ -5,7 +5,6 @@ import java.util.List;
 
 import io.github.gear4jtest.core.context.AssemblyLineExecution;
 import io.github.gear4jtest.core.event.EventQueueInitializer;
-import io.github.gear4jtest.core.model.ChainModel;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
 
 public class AssemblyLineInitializer {

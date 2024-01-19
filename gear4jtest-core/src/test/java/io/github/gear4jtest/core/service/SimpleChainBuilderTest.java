@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.service;
 import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
 import static org.assertj.core.api.Assertions.*;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -20,22 +21,24 @@ import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.internal.AssemblyLineException;
 import io.github.gear4jtest.core.internal.ChainExecutorService;
 import io.github.gear4jtest.core.internal.Item;
-import io.github.gear4jtest.core.model.ChainModel;
-import io.github.gear4jtest.core.model.ElementModelBuilders;
-import io.github.gear4jtest.core.model.OperationModel;
+import io.github.gear4jtest.core.model.Operation;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
+import io.github.gear4jtest.core.model.refactor.Container1Definition.Container1DFunction;
+import io.github.gear4jtest.core.model.refactor.ContainerDefinition;
 import io.github.gear4jtest.core.model.refactor.LineDefinition;
+import io.github.gear4jtest.core.model.refactor.ProcessingOperationDataModel;
+import io.github.gear4jtest.core.processor.CustomProcessingOperationProcessor;
 import io.github.gear4jtest.core.processor.ProcessingOperationProcessor;
 import io.github.gear4jtest.core.processor.operation.OperationParamsInjector;
-import io.github.gear4jtest.core.service.steps.Step1;
 import io.github.gear4jtest.core.service.steps.Step10;
-import io.github.gear4jtest.core.service.steps.Step2;
+import io.github.gear4jtest.core.service.steps.Step11;
 import io.github.gear4jtest.core.service.steps.Step3;
-import io.github.gear4jtest.core.service.steps.Step4.Step4Map;
-import io.github.gear4jtest.core.service.steps.Step5;
 import io.github.gear4jtest.core.service.steps.Step7;
 import io.github.gear4jtest.core.service.steps.Step8;
 import io.github.gear4jtest.core.service.steps.Step9;
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.MethodProxy;
 
 // handle factory for step / processor... configuration
 public class SimpleChainBuilderTest {
@@ -138,7 +141,9 @@ public class SimpleChainBuilderTest {
 		AssemblyLineDefinition<String, Object> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
 				.definition(mainLine)
 				.configuration(configuration()
-						.stepDefaultConfiguration(operationConfiguration().build())
+						.stepDefaultConfiguration(operationConfiguration()
+								.preProcessors(Arrays.asList(OperationParamsInjector.class))
+								.build())
 						.eventHandlingDefinition(eventHandling()
 								.queue(queue().eventListener(new TestEventListener()).build())
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
@@ -242,7 +247,9 @@ public class SimpleChainBuilderTest {
 	public void shouldReturnObjectWhenUsingStopSignalActivated() throws AssemblyLineException {
 		// Given
 		LineDefinition<String, Object> mainLine = line(startingPointt(String.class))
-				.operator(processingOperation(Step3.class).build())
+				.operator(processingOperation(Step3.class)
+						.additionalModel(null, null)
+						.build())
 				.operator(stopSignal(typeMap(String.class, String.class))
 						.condition(ctx -> ctx.getItem().containsKey("b")).build())
 				.operator(processingOperation(Step8.class).build())
@@ -254,6 +261,169 @@ public class SimpleChainBuilderTest {
 
 		// When
 		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
+
+		// Then
+		assertThat(result).isNotNull()
+			.isExactlyInstanceOf(HashMap.class)
+			.asInstanceOf(InstanceOfAssertFactories.MAP)
+			.containsEntry("b", "b");
+	}
+
+	@Test
+	public void test_processor_chain() throws AssemblyLineException {
+		// Given
+		LineDefinition<String, String> mainLine = line(startingPointt(String.class))
+				.operator(processingOperation(Step11.class)
+							.parameter(Step11::getParam, "a")
+							.build())
+				.build();
+
+		AssemblyLineDefinition<String, String> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+				.definition(mainLine)
+				.configuration(configuration()
+						.stepDefaultConfiguration(operationConfiguration()
+								.preProcessors(Arrays.asList(OperationParamsInjector.class))
+								.build())
+						.eventHandlingDefinition(eventHandling()
+								.queue(queue().eventListener(new TestEventListener()).build())
+								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+								.build())
+						.build())
+				.build();
+
+		// When
+		String result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
+
+		// Then
+		assertThat(result).isNotNull()
+			.isEqualTo("a");
+	}
+
+	@Test
+	public void test_simple_container() throws AssemblyLineException {
+		// Given
+		LineDefinition<String, String> subLine = line(startingPointt(String.class))
+				.operator(processingOperation(Step11.class)
+							.parameter(Step11::getParam, "b")
+							.build())
+				.build();
+
+		ContainerDefinition<String, String> container = container(String.class).withSubLine(subLine).returns(Container1DFunction.identity());
+		
+		LineDefinition<String, String> mainLine = line(startingPointt(String.class))
+				.operator(processingOperation(Step11.class)
+							.parameter(Step11::getParam, "a")
+							.build())
+				.operator(container)
+				.build();
+
+		AssemblyLineDefinition<String, String> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+				.definition(mainLine)
+				.configuration(configuration()
+						.stepDefaultConfiguration(operationConfiguration()
+								.preProcessors(Arrays.asList(OperationParamsInjector.class))
+								.build())
+						.eventHandlingDefinition(eventHandling()
+								.queue(queue().eventListener(new TestEventListener()).build())
+								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+								.build())
+						.build())
+				.build();
+
+		// When
+		String result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
+
+		// Then
+		assertThat(result).isNotNull()
+			.isEqualTo("b");
+	}
+
+	@Test
+	public void test_container_two_sublines() throws AssemblyLineException {
+		// Given
+		LineDefinition<String, String> subLine = line(startingPointt(String.class))
+				.operator(processingOperation(Step11.class)
+							.parameter(Step11::getParam, "b")
+							.build())
+				.build();
+
+		LineDefinition<String, String> subLine2 = line(startingPointt(String.class))
+				.operator(processingOperation(Step11.class)
+							.parameter(Step11::getParam, "c")
+							.build())
+				.build();
+
+		ContainerDefinition<String, List<String>> container = container(String.class)
+				.withSubLine(subLine).withSubLine(subLine2).returns((a, b) -> Arrays.asList(a, b));
+		
+		LineDefinition<String, List<String>> mainLine = line(startingPointt(String.class))
+				.operator(processingOperation(Step11.class)
+							.parameter(Step11::getParam, "a")
+							.build())
+				.operator(container)
+				.build();
+
+		AssemblyLineDefinition<String, List<String>> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+				.definition(mainLine)
+				.configuration(configuration()
+						.stepDefaultConfiguration(operationConfiguration()
+								.preProcessors(Arrays.asList(OperationParamsInjector.class))
+								.build())
+						.eventHandlingDefinition(eventHandling()
+								.queue(queue().eventListener(new TestEventListener()).build())
+								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+								.build())
+						.build())
+				.build();
+
+		// When
+		List<String> result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
+
+		// Then
+		assertThat(result)
+			.isNotNull()
+			.hasSize(2)
+			.containsExactly("b", "c");
+	}
+	
+	private class ProcessingOperationProxy implements MethodInterceptor {
+	    private Operation originalOperation;
+	    public ProcessingOperationProxy(Operation operation) {
+	        this.originalOperation = operation;
+	    }
+	 
+	    public Object intercept(Object object, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
+	        if ("execute".equals(method.getName())) {
+	        	throw new IllegalAccessException("Operation method execution is not allowed");
+	        }
+	        return method.invoke(originalOperation, args);
+	    }
+	}
+
+	@Test
+	public void testcglib() throws AssemblyLineException {
+		// Given
+//		LineDefinition<String, Object> mainLine = line(startingPointt(String.class))
+//				.operator(processingOperation(Step3.class).build())
+//				.operator(stopSignal(typeMap(String.class, String.class))
+//						.condition(ctx -> ctx.getItem().containsKey("b")).build())
+//				.operator(processingOperation(Step8.class).build())
+//				.build();
+
+		ResourceFactory resourceFactory = new TestResourceFactory();
+		Enhancer enhancer = new Enhancer();
+		enhancer.setSuperclass(Step3.class);
+		enhancer.setCallback(new ProcessingOperationProxy(resourceFactory.getResource(Step3.class)));
+		Step3 proxy = (Step3) enhancer.create();
+		proxy.getParam();
+		proxy.execute("", null);
+		
+		AssemblyLineDefinition<String, Object> assemblyLine = (AssemblyLineDefinition<String, Object>) asssemblyLineDefinition("my-basic-assembly-line")
+//				.definition(mainLine)
+				.build();
+
+		// When
+		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", resourceFactory);
 
 		// Then
 		assertThat(result).isNotNull()
@@ -468,6 +638,7 @@ public class SimpleChainBuilderTest {
 			BEANS.put(Step8.class, new Step8());
 			BEANS.put(Step9.class, new Step9());
 			BEANS.put(Step10.class, new Step10());
+			BEANS.put(Step11.class, new Step11());
 		}
 
 		@Override
@@ -486,10 +657,23 @@ public class SimpleChainBuilderTest {
 
 	}	
 	
-	public static class TestPostProcessor implements ProcessingOperationProcessor<Void> {
+	public static class TestPostProcessor implements ProcessingOperationProcessor {
 
 		@Override
-		public void process(Item input, Void model, StepExecution context) {
+		public void process(Item input, ProcessingOperationDataModel model, Void customModel, StepExecution context) {
+		}
+
+	}	
+
+	public static class ProcessorModel {
+		
+	}
+
+	public static class CustomPreProcessor implements CustomProcessingOperationProcessor<ProcessorModel> {
+
+		@Override
+		public void process(Item input, ProcessingOperationDataModel model, ProcessorModel customModel, StepExecution context) {
+			
 		}
 
 	}
@@ -502,72 +686,72 @@ public class SimpleChainBuilderTest {
 		}
 	}
 
-	@Test
-	public void test() {
-		// Given
-		ChainModel<String, Integer> pipe = ElementModelBuilders.<String>chain()
-				.assemble(ElementModelBuilders.<String>branches().withBranch(ElementModelBuilders.<String>branch()
-						.withStep(ElementModelBuilders.<String>operation().type(Step1.class).build())
-						.withStep(ElementModelBuilders.<Integer>operation().type(Step2.class).build())
-						.withStep(ElementModelBuilders.<String>operation().type(Step3.class).build())
-						.withStep(ElementModelBuilders.<Map<String, String>>operation().type(Step4Map.class).build())
-						.withBranches(ElementModelBuilders.<Void>branches()
-								.withBranch(ElementModelBuilders.<Void>branch()
-										.withStep(ElementModelBuilders.<Void>operation().type(Step5.class).build())
-										.build())
-								.withBranch(ElementModelBuilders.<Void>branch()
-										.withStep(ElementModelBuilders.<Void>operation().type(Step5.class).build())
-										.build())
-								.build())
-						.build()).returns("", Integer.class).build())
-				.build();
+//	@Test
+//	public void test() {
+//		// Given
+//		ChainModel<String, Integer> pipe = ElementModelBuilders.<String>chain()
+//				.assemble(ElementModelBuilders.<String>branches().withBranch(ElementModelBuilders.<String>branch()
+//						.withStep(ElementModelBuilders.<String>operation().type(Step1.class).build())
+//						.withStep(ElementModelBuilders.<Integer>operation().type(Step2.class).build())
+//						.withStep(ElementModelBuilders.<String>operation().type(Step3.class).build())
+//						.withStep(ElementModelBuilders.<Map<String, String>>operation().type(Step4Map.class).build())
+//						.withBranches(ElementModelBuilders.<Void>branches()
+//								.withBranch(ElementModelBuilders.<Void>branch()
+//										.withStep(ElementModelBuilders.<Void>operation().type(Step5.class).build())
+//										.build())
+//								.withBranch(ElementModelBuilders.<Void>branch()
+//										.withStep(ElementModelBuilders.<Void>operation().type(Step5.class).build())
+//										.build())
+//								.build())
+//						.build()).returns("", Integer.class).build())
+//				.build();
+//
+//		// When
+////		Object result = new ChainExecutorService().execute(pipe, "");
+//
+//		// Then
+////		assertThat(result).isNotNull().isEqualTo("");
+//	}
 
-		// When
-//		Object result = new ChainExecutorService().execute(pipe, "");
-
-		// Then
-//		assertThat(result).isNotNull().isEqualTo("");
-	}
-
-	@Test
-	public void testa() {
-		// Given
-		ChainModel<String, Integer> pipe = ElementModelBuilders.<String>chain()
-				.assemble(ElementModelBuilders.<String>branches().withBranch(ElementModelBuilders.<String>branch()
-						.withStep(step1()).withStep(step2()).withStep(step3()).withStep(step4())
-						.withBranches(ElementModelBuilders.<Void>branches()
-								.withBranch(ElementModelBuilders.<Void>branch().withStep(step5()).build())
-								.withBranch(ElementModelBuilders.<Void>branch().withStep(step5()).build()).build())
-						.build()).returns("", Integer.class).build())
-				.build();
-
-		// When
-//		Object result = new ChainExecutorService().execute(pipe, "");
-
-		// Then
-//		assertThat(result).isNotNull().isEqualTo("");
-	}
-
-	private OperationModel<Void, String> step5() {
-		return ElementModelBuilders.<Void>operation().type(Step5.class).build();
-	}
-
-	private OperationModel<Map<String, String>, Void> step4() {
-		return ElementModelBuilders.<Map<String, String>>operation().type(Step4Map.class).build();
-	}
-
-	private OperationModel<String, Map<String, String>> step3() {
-		return ElementModelBuilders.<String>operation().type(Step3.class).build();
-	}
-
-	private OperationModel<Integer, String> step2() {
-		return ElementModelBuilders.<Integer>operation().type(Step2.class).build();
-	}
-
-	private OperationModel<String, Integer> step1() {
-		return ElementModelBuilders.<String>operation().type(Step1.class).build();
-	}
-
+//	@Test
+//	public void testa() {
+//		// Given
+//		ChainModel<String, Integer> pipe = ElementModelBuilders.<String>chain()
+//				.assemble(ElementModelBuilders.<String>branches().withBranch(ElementModelBuilders.<String>branch()
+//						.withStep(step1()).withStep(step2()).withStep(step3()).withStep(step4())
+//						.withBranches(ElementModelBuilders.<Void>branches()
+//								.withBranch(ElementModelBuilders.<Void>branch().withStep(step5()).build())
+//								.withBranch(ElementModelBuilders.<Void>branch().withStep(step5()).build()).build())
+//						.build()).returns("", Integer.class).build())
+//				.build();
+//
+//		// When
+////		Object result = new ChainExecutorService().execute(pipe, "");
+//
+//		// Then
+////		assertThat(result).isNotNull().isEqualTo("");
+//	}
+//
+//	private OperationModel<Void, String> step5() {
+//		return ElementModelBuilders.<Void>operation().type(Step5.class).build();
+//	}
+//
+//	private OperationModel<Map<String, String>, Void> step4() {
+//		return ElementModelBuilders.<Map<String, String>>operation().type(Step4Map.class).build();
+//	}
+//
+//	private OperationModel<String, Map<String, String>> step3() {
+//		return ElementModelBuilders.<String>operation().type(Step3.class).build();
+//	}
+//
+//	private OperationModel<Integer, String> step2() {
+//		return ElementModelBuilders.<Integer>operation().type(Step2.class).build();
+//	}
+//
+//	private OperationModel<String, Integer> step1() {
+//		return ElementModelBuilders.<String>operation().type(Step1.class).build();
+//	}
+//
 //	@Test
 //	public void testa() {
 //		// Given
@@ -646,4 +830,31 @@ public class SimpleChainBuilderTest {
 ////		assertThat(result).isNotNull().isEqualTo("");
 //	}
 
+//	@Test
+//	void test() {
+////		Function<String, String> a = string -> "inon";
+////		BiFunction<String, Integer, String> c = (x, y) -> x;
+////		ContainerFunction b = string -> "inon";
+//		Container1DFunction<String, String> a = string -> string;
+//		apply(a);
+//	}
+//
+//	private void apply(ContainerFunction func) {
+//		System.out.print(func.apply("WHATEVER THE FUCK"));
+//	}
+//
+//	@FunctionalInterface
+//	interface ContainerFunction {
+//		Object apply(Object... objects);
+//	}
+//
+//	@FunctionalInterface
+//	interface Container1DFunction<A, B> extends ContainerFunction {
+//		B applya(A a);
+//		
+//		default Object apply(Object... objects) {
+//			assert objects != null && objects.length == 1;
+//			return applya((A) objects[0]);
+//		}
+//	}
 }

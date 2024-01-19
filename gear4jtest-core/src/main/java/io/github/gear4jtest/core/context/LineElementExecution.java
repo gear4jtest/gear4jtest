@@ -7,7 +7,7 @@ import io.github.gear4jtest.core.event.EventTriggerService;
 
 public class LineElementExecution {
 
-	private ItemExecution itemExecution;
+	private final ItemExecution itemExecution;
 	
 	private Object result;
 
@@ -47,7 +47,7 @@ public class LineElementExecution {
 		itemExecution.getAssemblyLineExecution().registerThrowable(throwable);
 	}
 
-	void setResult(Object result) {
+	public void setResult(Object result) {
 		this.result = result;
 	}
 

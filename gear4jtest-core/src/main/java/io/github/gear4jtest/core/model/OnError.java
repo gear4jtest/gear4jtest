@@ -7,7 +7,7 @@ import io.github.gear4jtest.core.processor.BaseProcessor;
 
 public class OnError {
 
-	protected Class<? extends BaseProcessor<?, ?>> processor;
+	protected Class<? extends BaseProcessor<?, ?, ?>> processor;
 
 	protected List<Rule> rules;
 
@@ -15,7 +15,7 @@ public class OnError {
 		this.rules = new ArrayList<>();
 	}
 
-	public Class<? extends BaseProcessor<?, ?>> getProcessor() {
+	public Class<? extends BaseProcessor<?, ?, ?>> getProcessor() {
 		return processor;
 	}
 
@@ -31,7 +31,7 @@ public class OnError {
 			managedInstance = new OnError();
 		}
 
-		public OnError.Builder processor(Class<? extends BaseProcessor<?, ?>> processor) {
+		public OnError.Builder processor(Class<? extends BaseProcessor<?, ?, ?>> processor) {
 			managedInstance.processor = processor;
 			return this;
 		}
@@ -55,7 +55,7 @@ public class OnError {
 			managedInstance = new OnError();
 		}
 		
-		public OnError.ProcessingBuilder processor(Class<? extends BaseProcessor<?, ?>> processor) {
+		public OnError.ProcessingBuilder processor(Class<? extends BaseProcessor<?, ?, ?>> processor) {
 			managedInstance.processor = processor;
 			return this;
 		}
@@ -75,7 +75,7 @@ public class OnError {
 		
 		public static class Builder {
 
-			public UnsafeOnError.Builder processor(Class<? extends BaseProcessor<?, ?>> processor) {
+			public UnsafeOnError.Builder processor(Class<? extends BaseProcessor<?, ?, ?>> processor) {
 //				managedInstance.processor = processor;
 				return this;
 			}

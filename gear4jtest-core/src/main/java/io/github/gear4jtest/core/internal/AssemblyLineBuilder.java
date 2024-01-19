@@ -8,7 +8,10 @@ import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.model.EventHandlingDefinition;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition.Configuration;
+import io.github.gear4jtest.core.model.refactor.Container1Definition;
+import io.github.gear4jtest.core.model.refactor.Container2Definition;
 import io.github.gear4jtest.core.model.refactor.ContainerDefinition;
+import io.github.gear4jtest.core.model.refactor.FormerContainerDefinition;
 import io.github.gear4jtest.core.model.refactor.IteratorDefinition;
 import io.github.gear4jtest.core.model.refactor.LineDefinition;
 import io.github.gear4jtest.core.model.refactor.OperationConfigurationDefinition;
@@ -87,7 +90,29 @@ public class AssemblyLineBuilder<BEGIN, IN> {
 		return element;
 	}
 
-	private LineElement buildLineElement(ContainerDefinition<?, ?> container, LineElement parentElement) {
+	private LineElement buildLineElement(FormerContainerDefinition<?, ?> container, LineElement parentElement) {
+		List<LineElement> rootElements = new ArrayList<>(container.getChildren().size());
+		for (LineDefinition<?, ?> line : container.getChildren()) {
+			LineElement elem = buildLineElement(line);
+			rootElements.add(elem);
+		}
+		LineElement element = LineElementFactory.buildLineElement(container, rootElements);
+		Optional.ofNullable(parentElement).ifPresent(parentElem -> parentElem.addNextLineElement(element));
+		return element;
+	}
+
+	private LineElement buildLineElement(Container1Definition<?, ?, ?> container, LineElement parentElement) {
+		List<LineElement> rootElements = new ArrayList<>(container.getChildren().size());
+		for (LineDefinition<?, ?> line : container.getChildren()) {
+			LineElement elem = buildLineElement(line);
+			rootElements.add(elem);
+		}
+		LineElement element = LineElementFactory.buildLineElement(container, rootElements);
+		Optional.ofNullable(parentElement).ifPresent(parentElem -> parentElem.addNextLineElement(element));
+		return element;
+	}
+
+	private LineElement buildLineElement(Container2Definition<?, ?, ?, ?> container, LineElement parentElement) {
 		List<LineElement> rootElements = new ArrayList<>(container.getChildren().size());
 		for (LineDefinition<?, ?> line : container.getChildren()) {
 			LineElement elem = buildLineElement(line);
@@ -101,6 +126,17 @@ public class AssemblyLineBuilder<BEGIN, IN> {
 	private LineElement buildLineElement(IteratorDefinition<?> iterator, LineElement parentElement) {
 		LineElement lineElement = buildLineElement(iterator.getElement(), null);
 		LineElement element = LineElementFactory.buildLineElement(iterator, lineElement);
+		Optional.ofNullable(parentElement).ifPresent(parentElem -> parentElem.addNextLineElement(element));
+		return element;
+	}
+
+	private LineElement buildLineElement(ContainerDefinition<?, ?> container, LineElement parentElement) {
+		List<LineElement> rootElements = new ArrayList<>(container.getSubLines().size());
+		for (LineDefinition<?, ?> line : container.getSubLines()) {
+			LineElement elem = buildLineElement(line);
+			rootElements.add(elem);
+		}
+		LineElement element = LineElementFactory.buildLineElement(container, rootElements);
 		Optional.ofNullable(parentElement).ifPresent(parentElem -> parentElem.addNextLineElement(element));
 		return element;
 	}
@@ -139,10 +175,16 @@ public class AssemblyLineBuilder<BEGIN, IN> {
 			return buildLineElement((ProcessingOperationDefinition<?, ?>) object, parentElement);
 		} else if (object instanceof SignalDefiinition) {
 			return buildLineElement((SignalDefiinition<?>) object, parentElement);
-		} else if (object instanceof ContainerDefinition) {
-			return buildLineElement((ContainerDefinition<?, ?>) object, parentElement);
+		} else if (object instanceof FormerContainerDefinition) {
+			return buildLineElement((FormerContainerDefinition<?, ?>) object, parentElement);
 		} else if (object instanceof IteratorDefinition<?>) {
 			return buildLineElement((IteratorDefinition<?>) object, parentElement);
+		} else if (object instanceof Container1Definition<?, ?, ?>) {
+			return buildLineElement((Container1Definition<?, ?, ?>) object, parentElement);
+		} else if (object instanceof Container2Definition<?, ?, ?, ?>) {
+			return buildLineElement((Container2Definition<?, ?, ?, ?>) object, parentElement);
+		} else if (object instanceof ContainerDefinition<?, ?>) {
+			return buildLineElement((ContainerDefinition<?, ?>) object, parentElement);
 		} else {
 			throw new IllegalArgumentException();
 		}

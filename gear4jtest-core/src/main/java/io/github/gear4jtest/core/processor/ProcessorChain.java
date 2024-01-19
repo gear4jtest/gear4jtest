@@ -1,5 +1,6 @@
 package io.github.gear4jtest.core.processor;
 
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -14,40 +15,50 @@ import io.github.gear4jtest.core.model.BaseRule;
 import io.github.gear4jtest.core.model.ChainBreakRule;
 import io.github.gear4jtest.core.model.FatalRule;
 import io.github.gear4jtest.core.model.IgnoreRule;
+import io.github.gear4jtest.core.model.Operation;
 import io.github.gear4jtest.core.processor.ProcessorChainTemplate.AbstractBaseProcessorChainElement;
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.MethodProxy;
 
 public class ProcessorChain {
 
 	private ProcessorChainTemplate chain;
+	
+	private Operation operation;
 
 	private Item input;
 
-	private StepExecution context;
+	private StepExecution execution;
 
 	private Object result;
 
 	private boolean isInputProcessed;
 
-	public ProcessorChain(ProcessorChainTemplate chain, Item input, StepExecution context) {
+	public ProcessorChain(ProcessorChainTemplate chain, Item input, StepExecution execution, Operation<?, ?> operation) {
 		this.chain = chain;
 		this.input = input;
-		this.context = context;
+		this.execution = execution;
 		this.result = input.getItem();
+		this.operation = operation;
 	}
 
 	public ProcessorChainResult processChain() {
 		ProcessorChainResult.Builder processorChainResultBuilder = new ProcessorChainResult.Builder();
 
+		Operation<?, ?> proxy = buildProxy(operation);
+		execution.withOperation(proxy);
+		
 		for (AbstractBaseProcessorChainElement processor : chain.getPreProcessors()) {
-			ProcessorResult processorResult = processProcessor(processor, input, context);
+			ProcessorResult processorResult = processProcessor(processor, input, execution);
 			processorChainResultBuilder.processorResult(processorResult);
 		}
 		
-        this.result = context.getOperation().execute(input.getItem(), context);
+        this.result = operation.execute(input.getItem(), execution);
 		this.isInputProcessed = true;
 
 		for (AbstractBaseProcessorChainElement processor : chain.getPostProcessors()) {
-			ProcessorResult processorResult = processProcessor(processor, input, context);
+			ProcessorResult processorResult = processProcessor(processor, input, execution);
 			processorChainResultBuilder.processorResult(processorResult);
 		}
 
@@ -55,6 +66,13 @@ public class ProcessorChain {
 		processorChainResultBuilder.processed(isInputProcessed);
 
 		return processorChainResultBuilder.build();
+	}
+
+	private Operation<?, ?> buildProxy(Operation<?, ?> operation) {
+		Enhancer enhancer = new Enhancer();
+		enhancer.setSuperclass(operation.getClass());
+		enhancer.setCallback(new ProcessingOperationProxy(operation));
+		return (Operation<?, ?>) enhancer.create();
 	}
 
 //	public ProcessorChainResult processChain() {
@@ -74,11 +92,11 @@ public class ProcessorChain {
 //		return processorChainResultBuilder.build();
 //	}
 
-	private ProcessorResult processProcessor(AbstractBaseProcessorChainElement<?, StepExecution> currentProcessor, Item input,
+	private ProcessorResult processProcessor(AbstractBaseProcessorChainElement<?, ?, StepExecution> currentProcessor, Item input,
 			StepExecution context) {
 		ProcessorResult result = null;
 		try {
-			currentProcessor.execute(input, context, this);
+			currentProcessor.execute(input, context);
 			result = ProcessorResult.succeeded(currentProcessor.processor);
 			context.getEventTriggerService().publishEvent(new OperationProcessorEventBuilder().buildEvent(context.getId(), new OperationProcessorData(result)));
 		} catch (Exception e) {
@@ -105,6 +123,20 @@ public class ProcessorChain {
 
 	private static boolean isExceptionEligible(Exception e, Class<?> clazz) {
 		return clazz == null || clazz.isInstance(e);
+	}
+
+	private class ProcessingOperationProxy implements MethodInterceptor {
+	    private Operation<?, ?> originalOperation;
+	    public ProcessingOperationProxy(Operation operation) {
+	        this.originalOperation = operation;
+	    }
+	 
+	    public Object intercept(Object object, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
+	        if ("execute".equals(method.getName())) {
+	        	throw new IllegalAccessException("Operation method execution is not allowed");
+	        }
+	        return method.invoke(originalOperation, args);
+	    }
 	}
 
 }

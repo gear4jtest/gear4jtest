@@ -1,12 +1,11 @@
 package io.github.gear4jtest.core.internal;
 
-import io.github.gear4jtest.core.context.ItemExecution;
 import io.github.gear4jtest.core.context.LineElementExecution;
 import io.github.gear4jtest.core.context.SignalExecution;
 import io.github.gear4jtest.core.model.refactor.SignalDefiinition;
 import io.github.gear4jtest.core.model.refactor.SignalDefiinition.SignalInterpretationContext;
 
-public class SignalLineElement extends LineElement {
+public class SignalLineElement extends LineElement<SignalExecution> {
 
 	private final SignalDefiinition<?> signal;
 
@@ -16,24 +15,22 @@ public class SignalLineElement extends LineElement {
 	}
 
 	@Override
-	public LineElementExecution execute(ItemExecution itemExecution) {
-		SignalExecution signalExecution = itemExecution.createSignalExecution(this);
-
+	public LineElementExecution execute(SignalExecution execution) {
 		boolean shouldSignalBeFired = signal.getCondition()
-				.test(new SignalInterpretationContext(itemExecution.getItem().getItem(), itemExecution));
+				.test(new SignalInterpretationContext(execution.getItemExecution().getItem().getItem(), execution.getItemExecution()));
 
 		if (shouldSignalBeFired) {
 			switch (signal.getSignalType()) {
 			case STOP:
-				itemExecution.shouldStop(true);
+				execution.getItemExecution().shouldStop(true);
 				break;
 			case FATAL:
-				itemExecution.shouldStop(true);
-				signalExecution.registerThrowable(new RuntimeException());
+				execution.getItemExecution().shouldStop(true);
+				execution.registerThrowable(new RuntimeException());
 				break;
 			}
 		}
-		return signalExecution;
+		return execution;
 	}
 
 }

@@ -8,18 +8,18 @@ import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.event.builders.ParameterInjectionEventBuilder;
 import io.github.gear4jtest.core.event.builders.ParameterInjectionEventBuilder.ParameterContextualData;
 import io.github.gear4jtest.core.internal.Item;
-import io.github.gear4jtest.core.model.OperationModel;
-import io.github.gear4jtest.core.model.OperationModel.ParameterModel;
+import io.github.gear4jtest.core.model.refactor.ProcessingOperationDataModel;
+import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition.ParameterModel;
 import io.github.gear4jtest.core.processor.ProcessingOperationProcessor;
-import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.Parameters;
 
-public class OperationParamsInjector implements ProcessingOperationProcessor<Parameters> {
+public class OperationParamsInjector implements ProcessingOperationProcessor {
 
 	@Override
-	public void process(Item input, Parameters model, StepExecution context) {
+	// see how we can improve the processor mechanism by avoiding this ugly Void parameter (may be see UserModelBasedBaseProcessor)
+	public void process(Item input, ProcessingOperationDataModel model, Void a, StepExecution context) {
 		Iterator<ParameterModel<?, ?>> it = model.getParameters().iterator();
 		while (it.hasNext()) {
-			OperationModel.ParameterModel param = it.next();
+			ParameterModel<?, ?> param = it.next();
 
 			Parameter parameterValue = param.getParamRetriever().getParameterValue(context.getOperation());
 			if (parameterValue == null) {
@@ -38,8 +38,8 @@ public class OperationParamsInjector implements ProcessingOperationProcessor<Par
 
 	// instance method => runtime processor chain eligibility. Make eligibility goes before processing, at processor chain building
 	@Override
-	public boolean isApplicable(Parameters model) {
-		return model != null && model.hasParameters();
+	public boolean isApplicable(ProcessingOperationDataModel model) {
+		return model != null/* && model.hasParameters()*/;
 	}
 
 	public static class Parameters {
@@ -90,9 +90,10 @@ public class OperationParamsInjector implements ProcessingOperationProcessor<Par
 			this.value = value;
 		}
 
-		public static <T> Parameter<T> of(T value) {
-			return new Parameter<T>(value);
-		}
+		// default parameter value : to be removed
+//		public static <T> Parameter<T> of(T value) {
+//			return new Parameter<T>(value);
+//		}
 
 		public static <T> Parameter<T> of() {
 			return new Parameter<>();

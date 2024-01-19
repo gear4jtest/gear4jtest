@@ -3,15 +3,18 @@ package io.github.gear4jtest.core.model.refactor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collector;
 
+import io.github.gear4jtest.core.context.ItemExecution;
 import io.github.gear4jtest.core.model.refactor.IteratorDefinition.ListAccumulator;
 import io.github.gear4jtest.core.model.refactor.IteratorDefinition.SetAccumulator;
 
 public class LineDefinition<X, Y> {
 	private StartingPointDefinition<X> startingPoint;
 	private List<OperationDefinition<?, ?>> lineOperators;
+	private BiPredicate<X, ItemExecution> condition;
 
 	public LineDefinition(StartingPointDefinition<X> startingPoint) {
 		this.startingPoint = startingPoint;
@@ -24,6 +27,10 @@ public class LineDefinition<X, Y> {
 
 	public StartingPointDefinition<X> getStartingPoint() {
 		return startingPoint;
+	}
+
+	public BiPredicate<X, ItemExecution> getCondition() {
+		return condition;
 	}
 
 	public static class Builder<IN, OUT> {
@@ -86,6 +93,11 @@ public class LineDefinition<X, Y> {
 					.build();
 			managedInstance.lineOperators.add(operator);
 			return (Builder<IN, C>) this;
+		}
+
+		public Builder<IN, OUT> condition(BiPredicate<IN, ItemExecution> condition) {
+			managedInstance.condition = condition;
+			return this;
 		}
 
 		public LineDefinition<IN, OUT> build() {

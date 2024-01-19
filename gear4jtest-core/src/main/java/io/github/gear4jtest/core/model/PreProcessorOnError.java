@@ -16,7 +16,7 @@ public class PreProcessorOnError extends BaseOnError {
 			managedInstance = new PreProcessorOnError();
 		}
 
-		public PreProcessorOnError.Builder processor(Class<? extends ProcessingOperationProcessor<?>> processor) {
+		public PreProcessorOnError.Builder processor(Class<? extends ProcessingOperationProcessor> processor) {
 			managedInstance.processor = processor;
 			return this;
 		}

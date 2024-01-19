@@ -27,7 +27,9 @@ public class AssemblyLineOrchestrator {
 		if (itemExecution.shouldStop()) {
 			return itemExecution;
 		}
-		LineElementExecution result = element.execute(itemExecution);
+		LineElementExecution execution = itemExecution.createExecution(element);
+		LineElementExecution result = element.execute(execution);
+		itemExecution.updateItem(result.getResult());
 		itemExecution.getEventTriggerService().publishEvent(new LineElementEventBuilder().buildEvent(element.getId(), new LineElementExecutionData(result)));
 		
 		List<LineElement> nextElements = element.getNextLineElements();

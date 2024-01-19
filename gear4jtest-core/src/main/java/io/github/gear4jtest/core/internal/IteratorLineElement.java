@@ -11,7 +11,7 @@ import io.github.gear4jtest.core.context.LineElementExecution;
 import io.github.gear4jtest.core.model.refactor.IteratorDefinition;
 import io.github.gear4jtest.core.model.refactor.IteratorDefinition.Accumulator;
 
-public class IteratorLineElement extends LineElement {
+public class IteratorLineElement extends LineElement<IteratorExecution> {
 
 	private final Function<Object, Iterable<?>> func;
 	private final Accumulator accumulator;
@@ -27,24 +27,23 @@ public class IteratorLineElement extends LineElement {
 	}
 
 	@Override
-	public LineElementExecution execute(ItemExecution itemExecution) {
-		IteratorExecution iteratorProcessorChainExecution = itemExecution.createIteratorExecution(this);
-		Iterable<?> iterable = func.apply(itemExecution.getItem().getItem());
+	public LineElementExecution execute(IteratorExecution execution) {
+		Iterable<?> iterable = func.apply(execution.getItemExecution().getItem().getItem());
 		
 		Collection<Object> collection = new ArrayList<>();
 		
 		for (Object element : iterable) {
-			ItemExecution newItemExecution = iteratorProcessorChainExecution.createItemExecution(element);
-			ItemExecution resultExecution = new AssemblyLineOrchestrator(itemExecution.getAssemblyLineExecution())
+			ItemExecution newItemExecution = execution.createItemExecution(element);
+			ItemExecution resultExecution = new AssemblyLineOrchestrator(execution.getItemExecution().getAssemblyLineExecution())
 					.orchestrate(nestedElement, newItemExecution);
-			iteratorProcessorChainExecution.registerExecution(resultExecution);
+			execution.registerExecution(resultExecution);
 			
 			accumulateIfNecessary(resultExecution, collection);
 		}
 		
 		Object finalItem = collector == null ? null : collection.stream().collect(collector);
-		itemExecution.updateItem(collector == null ? null : finalItem);
-		return iteratorProcessorChainExecution;
+		execution.getItemExecution().updateItem(finalItem);
+		return execution;
 	}
 
 	private void accumulateIfNecessary(ItemExecution execution, Collection<Object> collection) {

@@ -29,7 +29,7 @@ public class ElementOnError extends OnError {
 			return this;
 		}
 		
-		public ElementOnError.Builder processor(Class<? extends BaseProcessor<?, ?>> processor) {
+		public ElementOnError.Builder processor(Class<? extends BaseProcessor<?, ?, ?>> processor) {
 			managedInstance.processor = processor;
 			return this;
 		}

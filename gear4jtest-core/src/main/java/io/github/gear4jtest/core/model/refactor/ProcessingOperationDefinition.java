@@ -11,6 +11,7 @@ import io.github.gear4jtest.core.model.BaseOnError;
 import io.github.gear4jtest.core.model.Operation;
 import io.github.gear4jtest.core.model.UnsafeOnError;
 import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition.InterpretationContextParameterModel.InterpretationContext;
+import io.github.gear4jtest.core.processor.CustomProcessingOperationProcessor;
 import io.github.gear4jtest.core.processor.ProcessingOperationProcessor;
 import io.github.gear4jtest.core.processor.Transformer;
 import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.Parameter;
@@ -25,18 +26,21 @@ public class ProcessingOperationDefinition<IN, OUT> extends OperationDefinition<
 
 	private List<Class<? extends ProcessingOperationProcessor>> postProcessors;
 
+	private Map<Object, CustomProcessingOperationProcessor<?>> customProcessorModels;
+
 	private List<BaseOnError> onErrors;
 
 	private Transformer<IN, OUT> transformer;
 
-	private Map<Class<? extends ProcessingOperationProcessor>, Object> processorModels;
+//	private Map<Class<? extends ProcessingOperationProcessor>, Object> processorModels;
 	
 	private OperationConfigurationDefinition operationConfiguration;
 	
 	private ProcessingOperationDefinition() {
 		this.parameters = new ArrayList<>();
 		this.onErrors = new ArrayList<>();
-		this.processorModels = new HashMap<>();
+		this.customProcessorModels = new HashMap<>();
+//		this.processorModels = new HashMap<>();
 	}
 
 	public Class<Operation<IN, OUT>> getType() {
@@ -62,10 +66,10 @@ public class ProcessingOperationDefinition<IN, OUT> extends OperationDefinition<
 	public Transformer<IN, OUT> getTransformer() {
 		return transformer;
 	}
-
-	public Map<Class<? extends ProcessingOperationProcessor>, Object> getProcessorModels() {
-		return processorModels;
-	}
+//
+//	public Map<Class<? extends ProcessingOperationProcessor>, Object> getProcessorModels() {
+//		return processorModels;
+//	}
 
 	public OperationConfigurationDefinition getOperationConfiguration() {
 		return operationConfiguration;
@@ -121,6 +125,11 @@ public class ProcessingOperationDefinition<IN, OUT> extends OperationDefinition<
 
 		public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever, Function<InterpretationContext, A> value) {
 			managedInstance.parameters.add(new InterpretationContextParameterModel<>(retriever, value));
+			return this;
+		}
+
+		public <T> Builder<IN, OUT, OP> additionalModel(T model, CustomProcessingOperationProcessor<T> processor) {
+			managedInstance.customProcessorModels.put(model, processor);
 			return this;
 		}
 
