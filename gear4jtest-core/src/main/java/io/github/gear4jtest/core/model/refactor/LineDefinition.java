@@ -7,14 +7,14 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collector;
 
-import io.github.gear4jtest.core.context.ItemExecution;
+import io.github.gear4jtest.core.context.LineOperatorExecution;
 import io.github.gear4jtest.core.model.refactor.IteratorDefinition.ListAccumulator;
 import io.github.gear4jtest.core.model.refactor.IteratorDefinition.SetAccumulator;
 
 public class LineDefinition<X, Y> {
 	private StartingPointDefinition<X> startingPoint;
 	private List<OperationDefinition<?, ?>> lineOperators;
-	private BiPredicate<X, ItemExecution> condition;
+	private BiPredicate<X, LineOperatorExecution> condition;
 
 	public LineDefinition(StartingPointDefinition<X> startingPoint) {
 		this.startingPoint = startingPoint;
@@ -29,7 +29,7 @@ public class LineDefinition<X, Y> {
 		return startingPoint;
 	}
 
-	public BiPredicate<X, ItemExecution> getCondition() {
+	public BiPredicate<X, LineOperatorExecution> getCondition() {
 		return condition;
 	}
 
@@ -95,7 +95,7 @@ public class LineDefinition<X, Y> {
 			return (Builder<IN, C>) this;
 		}
 
-		public Builder<IN, OUT> condition(BiPredicate<IN, ItemExecution> condition) {
+		public Builder<IN, OUT> condition(BiPredicate<IN, LineOperatorExecution> condition) {
 			managedInstance.condition = condition;
 			return this;
 		}

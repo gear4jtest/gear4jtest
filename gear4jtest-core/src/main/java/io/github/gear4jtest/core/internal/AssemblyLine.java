@@ -9,9 +9,9 @@ import io.github.gear4jtest.core.event.builders.AssemblyLineCreationEventBuilder
 public class AssemblyLine<INPUT, OUTPUT> {
 
 	private final UUID id;
-	private final LineElement startingElement;
+	private final LineOperator startingElement;
 
-	public AssemblyLine(LineElement startingElement) {
+	public AssemblyLine(LineOperator startingElement) {
 		this.id = UUID.randomUUID();
 		this.startingElement = startingElement;
 	}
@@ -32,7 +32,7 @@ public class AssemblyLine<INPUT, OUTPUT> {
 		return id;
 	}
 
-	public LineElement getStartingElement() {
+	public LineOperator getStartingElement() {
 		return startingElement;
 	}
 

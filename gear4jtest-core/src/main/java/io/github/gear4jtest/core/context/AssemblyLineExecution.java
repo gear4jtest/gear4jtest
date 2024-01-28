@@ -2,7 +2,6 @@ package io.github.gear4jtest.core.context;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -10,6 +9,13 @@ import java.util.UUID;
 import io.github.gear4jtest.core.event.EventTriggerService;
 import io.github.gear4jtest.core.event.NoOpEventTriggerService;
 import io.github.gear4jtest.core.event.SimpleEventTriggerService;
+import io.github.gear4jtest.core.internal.AssemblyLineOperator;
+import io.github.gear4jtest.core.internal.ContainerLineElement;
+import io.github.gear4jtest.core.internal.Item;
+import io.github.gear4jtest.core.internal.IteratorLineElement;
+import io.github.gear4jtest.core.internal.LineOperator;
+import io.github.gear4jtest.core.internal.SignalLineElement;
+import io.github.gear4jtest.core.internal.StepLineElement;
 
 public class AssemblyLineExecution {
 
@@ -26,7 +32,9 @@ public class AssemblyLineExecution {
 
 	private LocalDateTime lastUpdateTime = null;
 
-	private ItemExecution itemExecution;
+	private Item item;
+
+	private LineOperatorExecution mainLineExecution;
 
 	private Map<String, Object> context;
 	
@@ -34,20 +42,49 @@ public class AssemblyLineExecution {
 	
 	private List<Throwable> throwables = new ArrayList<>();
 
-	public AssemblyLineExecution(Map<String, Object> context) {
+	public AssemblyLineExecution(Map<String, Object> context, Object input) {
 		this.id = UUID.randomUUID();
+		this.item = new Item(input);
 		this.context = context;
 		this.eventTriggerService = new NoOpEventTriggerService();
 	}
 
-	public ItemExecution createItemExecution(Object input) {
-		return createItemExecution(input, new HashMap<>());
+//	public ItemExecution createItemExecution(Object input) {
+//		return createItemExecution(input, new HashMap<>());
+//	}
+//
+//	public ItemExecution createItemExecution(Object input, Map<String, Object> context) {
+//		LineOperatorExecution itemExecution = new LineOperatorExecution(this, input, context);
+//		this.mainLineExecution = itemExecution;
+//		return itemExecution;
+//	}
+
+	public LineOperatorExecution createLineExecution(LineOperator element, Object input) {
+		LineOperatorExecution itemExecution = new LineOperatorExecution(element, null, this);
+		this.mainLineExecution = itemExecution;
+		return itemExecution;
 	}
 
-	public ItemExecution createItemExecution(Object input, Map<String, Object> context) {
-		ItemExecution itemExecution = new ItemExecution(this, input, context);
-		this.itemExecution = itemExecution;
-		return itemExecution;
+	public <A extends AssemblyLineOperatorExecution> A createExecution(AssemblyLineOperator<A> element, ExecutionContainer<?> parentLineOperatorExecution) {
+		A lineElementExecution = buildExecution(element, parentLineOperatorExecution);
+		parentLineOperatorExecution.getExecutions().add(lineElementExecution);
+		return lineElementExecution;
+	}
+
+	private <A extends AssemblyLineOperatorExecution> A buildExecution(AssemblyLineOperator<A> element, ExecutionContainer<?> parentOperatorExecution) {
+		if (element instanceof StepLineElement) {
+			return (A) new StepExecution((StepLineElement) element, parentOperatorExecution, this);
+		} else if (element instanceof SignalLineElement) {
+			return (A) new SignalExecution((SignalLineElement) element, parentOperatorExecution, this);
+		} else if (element instanceof IteratorLineElement) {
+			return (A) new IteratorExecution((IteratorLineElement) element, parentOperatorExecution, this);
+		} else if (element instanceof ContainerLineElement) {
+			return (A) new ContainerExecution((ContainerLineElement) element, parentOperatorExecution, this);
+		} else if (element instanceof LineOperator) {
+			return (A) new LineOperatorExecution((LineOperator) element, parentOperatorExecution, this);
+		} else {
+			throw new IllegalArgumentException();
+		}
 	}
 
 	public UUID getId() {
@@ -94,8 +131,8 @@ public class AssemblyLineExecution {
 		this.context = context;
 	}
 
-	public ItemExecution getItemExecution() {
-		return itemExecution;
+	public LineOperatorExecution getMainLineExecution() {
+		return mainLineExecution;
 	}
 
 	public void registerEventTriggerService(SimpleEventTriggerService service) {
@@ -113,6 +150,10 @@ public class AssemblyLineExecution {
 
 	public void registerThrowable(Throwable throwable) {
 		this.throwables.add(throwable);
+	}
+
+	public Item getItem() {
+		return item;
 	}
 
 }

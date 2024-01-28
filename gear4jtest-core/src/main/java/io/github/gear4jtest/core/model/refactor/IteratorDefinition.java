@@ -7,10 +7,12 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
+import io.github.gear4jtest.core.model.ElementModelBuilders;
+
 public class IteratorDefinition<IN> extends OperationDefinition<IN, IN> {
 
 	private Function<?, ? extends Iterable<?>> func;
-	private OperationDefinition<?, ?> element;
+	private LineDefinition<?, ?> element;
 	private Accumulator accumulator;
 	private Collector collector;
 
@@ -21,7 +23,7 @@ public class IteratorDefinition<IN> extends OperationDefinition<IN, IN> {
 		return func;
 	}
 
-	public OperationDefinition<?, ?> getElement() {
+	public LineDefinition<?, ?> getElement() {
 		return element;
 	}
 
@@ -46,8 +48,8 @@ public class IteratorDefinition<IN> extends OperationDefinition<IN, IN> {
 			return this;
 		}
 
-		public Builder<IN> nestedElement(OperationDefinition<?, ?> element) {
-			managedInstance.element = element;
+		public Builder<IN> nestedElement(OperationDefinition element) {
+			managedInstance.element = ElementModelBuilders.line(ElementModelBuilders.startingPointt(Object.class)).operator(element).build();
 			return this;
 		}
 

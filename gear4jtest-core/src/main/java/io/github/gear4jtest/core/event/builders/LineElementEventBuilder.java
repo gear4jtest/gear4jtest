@@ -2,7 +2,8 @@ package io.github.gear4jtest.core.event.builders;
 
 import java.util.UUID;
 
-import io.github.gear4jtest.core.context.LineElementExecution;
+import io.github.gear4jtest.core.context.AssemblyLineOperatorExecution;
+import io.github.gear4jtest.core.context.LineOperatorExecution;
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventBuilder;
 import io.github.gear4jtest.core.event.builders.LineElementEventBuilder.LineElementExecutionData;
@@ -24,23 +25,23 @@ public class LineElementEventBuilder implements EventBuilder<LineElementExecutio
 
 	public class LineElementExecutionEvent extends Event {
 
-		private LineElementExecution processorResult;
+		private AssemblyLineOperatorExecution processorResult;
 
 		public LineElementExecutionEvent(LineElementExecutionData data, UUID uuid) {
 			super(LineElementEventBuilder.this.eventName(), uuid);
 			this.processorResult = data.processorResult;
 		}
 
-		public LineElementExecution getProcessorResult() {
+		public AssemblyLineOperatorExecution getProcessorResult() {
 			return processorResult;
 		}
 
 	}
 
 	public static class LineElementExecutionData {
-		private LineElementExecution processorResult;
+		private AssemblyLineOperatorExecution processorResult;
 
-		public LineElementExecutionData(LineElementExecution parameter) {
+		public LineElementExecutionData(AssemblyLineOperatorExecution parameter) {
 			this.processorResult = parameter;
 		}
 

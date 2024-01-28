@@ -1,6 +1,5 @@
 package io.github.gear4jtest.core.internal;
 
-import io.github.gear4jtest.core.context.LineElementExecution;
 import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.internal.AssemblyLineBuilder.StepConfiguration;
@@ -9,7 +8,7 @@ import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
 import io.github.gear4jtest.core.processor.ProcessorChainTemplate;
 import io.github.gear4jtest.core.processor.Transformer;
 
-public class StepLineElement extends LineElement<StepExecution> {
+public class StepLineElement extends AssemblyLineOperator<StepExecution> {
 
 	private final Class<?> clazz;
 	private final ResourceFactory resourceFactory;
@@ -49,7 +48,7 @@ public class StepLineElement extends LineElement<StepExecution> {
 //	}
 
 	@Override
-	public LineElementExecution execute(StepExecution itemExecution) {
+	public StepExecution execute(StepExecution itemExecution) {
 		return new StepLineElementExecutor(this).execute(itemExecution);
 	}
 

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiPredicate;
 
-import io.github.gear4jtest.core.context.ItemExecution;
+import io.github.gear4jtest.core.context.AssemblyLineOperatorExecution;
 import io.github.gear4jtest.core.model.refactor.ContainerDefinition.ContainerFunction;
 
 public class Container1Definition<IN, OUT, A> extends OperationDefinition<IN, OUT> {
@@ -33,7 +33,7 @@ public class Container1Definition<IN, OUT, A> extends OperationDefinition<IN, OU
 			managedInstance.subLines.add(startingElement);
 		}
 
-		public Builder(LineDefinition<OUT, A> startingElement, BiPredicate<IN, ItemExecution> condition) {
+		public Builder(LineDefinition<OUT, A> startingElement, BiPredicate<IN, AssemblyLineOperatorExecution> condition) {
 			managedInstance = new Container1Definition<>();
 			managedInstance.subLines.add(startingElement);
 		}

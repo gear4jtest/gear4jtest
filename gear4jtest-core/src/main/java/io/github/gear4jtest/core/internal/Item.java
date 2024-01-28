@@ -8,8 +8,8 @@ public class Item {
 		this.item = item;
 	}
 
-	public Item withItem(Object item) {
-		return new Item(item);
+	public void updateItem(Object item) {
+		this.item = item;
 	}
 
 	public Object getItem() {

@@ -9,6 +9,7 @@ import io.github.gear4jtest.core.model.refactor.Container2Definition;
 import io.github.gear4jtest.core.model.refactor.ContainerDefinition;
 import io.github.gear4jtest.core.model.refactor.FormerContainerDefinition;
 import io.github.gear4jtest.core.model.refactor.IteratorDefinition;
+import io.github.gear4jtest.core.model.refactor.LineDefinition;
 import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
 import io.github.gear4jtest.core.model.refactor.SignalDefiinition;
 
@@ -38,32 +39,24 @@ public class LineElementFactory {
 //		return new IteratorLineElement(container.getFunc(), element);
 //	}
 
-	static LineElement buildLineElement(ProcessingOperationDefinition<?, ?> step, StepConfiguration configuration,
+	static AssemblyLineOperator buildLineElement(LineDefinition<?, ?> lineDefinition, AssemblyLineOperator firstElement) {
+		return new LineOperator(firstElement, lineDefinition);
+	}
+
+	static AssemblyLineOperator buildLineElement(ProcessingOperationDefinition<?, ?> step, StepConfiguration configuration,
 			ResourceFactory resourceFactory) {
 		return new StepLineElement(step, configuration, resourceFactory);
 	}
 
-	static LineElement buildLineElement(SignalDefiinition<?> signal) {
+	static AssemblyLineOperator buildLineElement(SignalDefiinition<?> signal) {
 		return new SignalLineElement(signal);
 	}
 
-	static LineElement buildLineElement(FormerContainerDefinition<?, ?> container, List<LineElement> rootElements) {
+	static AssemblyLineOperator buildLineElement(ContainerDefinition<?, ?> container, List<LineOperator> rootElements) {
 		return new ContainerLineElement(container, rootElements);
 	}
 
-	static LineElement buildLineElement(Container1Definition<?, ?, ?> container, List<LineElement> rootElements) {
-		return new ContainerLineElement(container, rootElements);
-	}
-
-	static LineElement buildLineElement(Container2Definition<?, ?, ?, ?> container, List<LineElement> rootElements) {
-		return new ContainerLineElement(container, rootElements);
-	}
-
-	static LineElement buildLineElement(ContainerDefinition<?, ?> container, List<LineElement> rootElements) {
-		return new ContainerLineElement(container, rootElements);
-	}
-
-	static LineElement buildLineElement(IteratorDefinition<?> iterator, LineElement lineElement) {
+	static AssemblyLineOperator buildLineElement(IteratorDefinition<?> iterator, LineOperator lineElement) {
 		return new IteratorLineElement(iterator, lineElement);
 	}
 

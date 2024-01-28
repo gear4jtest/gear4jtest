@@ -5,52 +5,68 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import io.github.gear4jtest.core.context.AssemblyLineExecution;
-import io.github.gear4jtest.core.context.ItemExecution;
-import io.github.gear4jtest.core.context.LineElementExecution;
+import io.github.gear4jtest.core.context.AssemblyLineOperatorExecution;
+import io.github.gear4jtest.core.context.ExecutionContainer;
+import io.github.gear4jtest.core.context.LineOperatorExecution;
 import io.github.gear4jtest.core.event.builders.LineElementEventBuilder;
 import io.github.gear4jtest.core.event.builders.LineElementEventBuilder.LineElementExecutionData;
 
 public class AssemblyLineOrchestrator {
 
-	private final AssemblyLineExecution execution;
+	private final AssemblyLineExecution assemblyLineExecution;
 
 	AssemblyLineOrchestrator(AssemblyLineExecution execution) {
-		this.execution = execution;
+		this.assemblyLineExecution = execution;
 	}
 
 	public <BEGIN, OUT> AssemblyLineExecution orchestrate(AssemblyLine<BEGIN, OUT> line, Object input) {
-		orchestrate(line.getStartingElement(), execution.createItemExecution(input));
-		return execution;
+		LineOperatorExecution rootLineExecution = assemblyLineExecution.createLineExecution(line.getStartingElement(), input);
+		orchestrate(line.getStartingElement(), rootLineExecution, rootLineExecution);
+		return assemblyLineExecution;
 	}
 
-	public <BEGIN, OUT> ItemExecution orchestrate(LineElement element, ItemExecution itemExecution) {
-		if (itemExecution.shouldStop()) {
-			return itemExecution;
-		}
-		LineElementExecution execution = itemExecution.createExecution(element);
-		LineElementExecution result = element.execute(execution);
-		itemExecution.updateItem(result.getResult());
-		itemExecution.getEventTriggerService().publishEvent(new LineElementEventBuilder().buildEvent(element.getId(), new LineElementExecutionData(result)));
+	public <A extends AssemblyLineOperatorExecution> ExecutionContainer<?> orchestrate(AssemblyLineOperator<A> element, A execution, ExecutionContainer<?> lineExecution) {
+		A result = element.execute(execution);
+		lineExecution.getItem().updateItem(result.getItem().getItem());
+		lineExecution.getEventTriggerService().publishEvent(new LineElementEventBuilder().buildEvent(element.getId(), new LineElementExecutionData(result)));
 		
-		List<LineElement> nextElements = element.getNextLineElements();
+		List<AssemblyLineOperator> nextElements = element.getNextLineElements();
 		if (nextElements.isEmpty()) {
-			return itemExecution;
+			return lineExecution;
 		}
 
-		List<ItemExecution> returns = new ArrayList<>(nextElements.size());
-		for (LineElement child : nextElements) {
-			ItemExecution ret = orchestrate(child, itemExecution);
+		List<AssemblyLineOperatorExecution> returns = new ArrayList<>(nextElements.size());
+		for (AssemblyLineOperator child : nextElements) {
+			AssemblyLineOperatorExecution ret = orchestrate(child, lineExecution);
 			returns.add(ret);
 		}
-		return aggregateResults(returns);
+		return aggregateResults(returns, lineExecution);
 	}
 
-	private ItemExecution aggregateResults(List<ItemExecution> returns) {
-		if (returns.size() == 1) {
-			return returns.get(0);
-		} else {
-			return execution.createItemExecution(returns.stream().map(ItemExecution::getItem).collect(Collectors.toList()));
+	public <A extends AssemblyLineOperatorExecution> ExecutionContainer<?> orchestrate(AssemblyLineOperator<A> element, ExecutionContainer<?> lineExecution) {
+		if (lineExecution.shouldStop()) {
+			return lineExecution;
 		}
+		A execution = assemblyLineExecution.createExecution(element, lineExecution);
+		return orchestrate(element, execution, lineExecution);
+	}
+
+	public <A extends AssemblyLineOperatorExecution> ExecutionContainer<?> orchestrate(AssemblyLineOperator<A> element, ExecutionContainer<?> lineExecution, Item newInput) {
+		if (lineExecution.shouldStop()) {
+			return lineExecution;
+		}
+		A execution = assemblyLineExecution.createExecution(element, lineExecution);
+		execution.getItem().updateItem(newInput.getItem());
+		return orchestrate(element, execution, lineExecution);
+	}
+
+	private ExecutionContainer<?> aggregateResults(List<AssemblyLineOperatorExecution> returns, ExecutionContainer<?> lineExecution) {
+		if (returns.size() == 1) {
+			lineExecution.getItem().updateItem(returns.get(0).getItem().getItem());
+		} else {
+			lineExecution.getItem().updateItem(returns.stream().map(AssemblyLineOperatorExecution::getItem).map(Item::getItem).collect(Collectors.toList()));
+		}
+		return lineExecution;
 	}
 
 //	public List<Object> executeElements(List<LineElement> elements) {

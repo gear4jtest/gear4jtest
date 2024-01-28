@@ -20,7 +20,7 @@ public class ChainExecutorService {
 		if (!execution.getThrowables().isEmpty()) {
 			throw new AssemblyLineException(execution.getThrowables());
 		}
-		return (IN) execution.getItemExecution().getItem().getItem();
+		return (IN) execution.getMainLineExecution().getItem().getItem();
 	}
 	
 	public <BEGIN, IN> IN executeAndUnwrap(AssemblyLineDefinition<BEGIN, IN> assemblyLine, BEGIN input, ResourceFactory resourceFactory) throws AssemblyLineException {
@@ -51,7 +51,7 @@ public class ChainExecutorService {
 
 		// Execution building
 		//TODO(all): externalize execution creation when batch management
-		AssemblyLineExecution execution = new AssemblyLineExecution(context);
+		AssemblyLineExecution execution = new AssemblyLineExecution(context, input);
 		
 		// Initialization
 		// TODO(all): initialize method in AssemblyLine class ?

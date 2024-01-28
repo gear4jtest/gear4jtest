@@ -23,7 +23,7 @@ public class OperationParametersInitializer {
 	private final StepConfiguration configuration;
 	private final Operation<?, ?> operation;
 	private final StepExecution execution;
-	private final LineElement element;
+	private final AssemblyLineOperator element;
 
 	public OperationParametersInitializer(StepLineElement stepLineElement, Operation<?, ?> operation, StepExecution execution) {
 		this.configuration = stepLineElement.getConfiguration();
@@ -86,9 +86,9 @@ public class OperationParametersInitializer {
 		private static final String METHOD_NAME = "setValue";
 		
 		private final String parameterName;
-		private final LineElement element;
+		private final AssemblyLineOperator element;
 		
-		public ParameterChangedFireEventInterceptor(String parameterName, SimpleEventTriggerService eventTriggerService, LineElement element) {
+		public ParameterChangedFireEventInterceptor(String parameterName, SimpleEventTriggerService eventTriggerService, AssemblyLineOperator element) {
 			super(METHOD_NAME, eventTriggerService);
 			this.parameterName = parameterName;
 			this.element = element;

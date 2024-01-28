@@ -2,10 +2,10 @@ package io.github.gear4jtest.core.model;
 
 import java.util.function.Supplier;
 
-import io.github.gear4jtest.core.internal.LineElement;
+import io.github.gear4jtest.core.internal.AssemblyLineOperator;
 import io.github.gear4jtest.core.processor.ProcessingOperationProcessor;
 
-public class ProcessorModel<T extends LineElement> {
+public class ProcessorModel<T extends AssemblyLineOperator> {
 
 	private Supplier<ProcessingOperationProcessor> processor;
 
@@ -23,7 +23,7 @@ public class ProcessorModel<T extends LineElement> {
 //		return onErrors;
 //	}
 
-	public static class Builder<T extends LineElement> {
+	public static class Builder<T extends AssemblyLineOperator> {
 
 		private final ProcessorModel<T> managedInstance;
 

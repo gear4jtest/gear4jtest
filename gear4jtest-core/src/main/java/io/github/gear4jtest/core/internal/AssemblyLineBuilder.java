@@ -30,21 +30,21 @@ public class AssemblyLineBuilder<BEGIN, IN> {
 	}
 
 	public AssemblyLine<BEGIN, IN> buildAssemblyLine() {
-		LineElement startingElement = buildLineElement(assemblyLine.getLineDefinition());
+		LineOperator startingElement = (LineOperator) buildLineElement(assemblyLine.getLineDefinition());
 		return new AssemblyLine<>(startingElement);
 	}
 
-	public LineElement buildLineElement(LineDefinition<?, ?> lineDefinition) {
-		LineElement root = null;
-		LineElement parent = null;
+	public AssemblyLineOperator buildLineElement(LineDefinition<?, ?> lineDefinition) {
+		AssemblyLineOperator root = null;
+		AssemblyLineOperator parent = null;
 		for (OperationDefinition<?, ?> operator : lineDefinition.getLineOperators()) {
-			LineElement elem = buildLineElement(operator, parent);
+			AssemblyLineOperator elem = buildLineElement(operator, parent);
 			parent = elem;
 			if (root == null) {
 				root = parent;
 			}
 		}
-		return root;
+		return LineElementFactory.buildLineElement(lineDefinition, root);
 	}
 
 //	private LineElement buildLineElement(BranchesModel<?, ?> branches, LineElement parentElement) {
@@ -75,68 +75,35 @@ public class AssemblyLineBuilder<BEGIN, IN> {
 //		return element;
 //	}
 
-	private LineElement buildLineElement(ProcessingOperationDefinition<?, ?> stepa, LineElement parentElement) {
+	private AssemblyLineOperator buildLineElement(ProcessingOperationDefinition<?, ?> stepa, AssemblyLineOperator parentElement) {
 		StepConfiguration configuration = new StepConfiguration(
 				Optional.ofNullable(assemblyLine.getConfiguration()).map(Configuration::getEventHandlingDefinition).orElse(null),
 				Optional.ofNullable(assemblyLine.getConfiguration()).map(Configuration::getOperationDefaultConfiguration).orElse(null));
-		LineElement element = LineElementFactory.buildLineElement(stepa, configuration, resourceFactory);
+		AssemblyLineOperator element = LineElementFactory.buildLineElement(stepa, configuration, resourceFactory);
 		Optional.ofNullable(parentElement).ifPresent(parentElem -> parentElem.addNextLineElement(element));
 		return element;
 	}
 	
-	private LineElement buildLineElement(SignalDefiinition<?> signal, LineElement parentElement) {
-		LineElement element = LineElementFactory.buildLineElement(signal);
+	private AssemblyLineOperator buildLineElement(SignalDefiinition<?> signal, AssemblyLineOperator parentElement) {
+		AssemblyLineOperator element = LineElementFactory.buildLineElement(signal);
 		Optional.ofNullable(parentElement).ifPresent(parentElem -> parentElem.addNextLineElement(element));
 		return element;
 	}
 
-	private LineElement buildLineElement(FormerContainerDefinition<?, ?> container, LineElement parentElement) {
-		List<LineElement> rootElements = new ArrayList<>(container.getChildren().size());
-		for (LineDefinition<?, ?> line : container.getChildren()) {
-			LineElement elem = buildLineElement(line);
-			rootElements.add(elem);
-		}
-		LineElement element = LineElementFactory.buildLineElement(container, rootElements);
+	private AssemblyLineOperator buildLineElement(IteratorDefinition<?> iterator, AssemblyLineOperator parentElement) {
+		LineOperator lineElement = (LineOperator) buildLineElement(iterator.getElement());
+		AssemblyLineOperator element = LineElementFactory.buildLineElement(iterator, lineElement);
 		Optional.ofNullable(parentElement).ifPresent(parentElem -> parentElem.addNextLineElement(element));
 		return element;
 	}
 
-	private LineElement buildLineElement(Container1Definition<?, ?, ?> container, LineElement parentElement) {
-		List<LineElement> rootElements = new ArrayList<>(container.getChildren().size());
-		for (LineDefinition<?, ?> line : container.getChildren()) {
-			LineElement elem = buildLineElement(line);
-			rootElements.add(elem);
-		}
-		LineElement element = LineElementFactory.buildLineElement(container, rootElements);
-		Optional.ofNullable(parentElement).ifPresent(parentElem -> parentElem.addNextLineElement(element));
-		return element;
-	}
-
-	private LineElement buildLineElement(Container2Definition<?, ?, ?, ?> container, LineElement parentElement) {
-		List<LineElement> rootElements = new ArrayList<>(container.getChildren().size());
-		for (LineDefinition<?, ?> line : container.getChildren()) {
-			LineElement elem = buildLineElement(line);
-			rootElements.add(elem);
-		}
-		LineElement element = LineElementFactory.buildLineElement(container, rootElements);
-		Optional.ofNullable(parentElement).ifPresent(parentElem -> parentElem.addNextLineElement(element));
-		return element;
-	}
-
-	private LineElement buildLineElement(IteratorDefinition<?> iterator, LineElement parentElement) {
-		LineElement lineElement = buildLineElement(iterator.getElement(), null);
-		LineElement element = LineElementFactory.buildLineElement(iterator, lineElement);
-		Optional.ofNullable(parentElement).ifPresent(parentElem -> parentElem.addNextLineElement(element));
-		return element;
-	}
-
-	private LineElement buildLineElement(ContainerDefinition<?, ?> container, LineElement parentElement) {
-		List<LineElement> rootElements = new ArrayList<>(container.getSubLines().size());
+	private AssemblyLineOperator buildLineElement(ContainerDefinition<?, ?> container, AssemblyLineOperator parentElement) {
+		List<LineOperator> rootElements = new ArrayList<>(container.getSubLines().size());
 		for (LineDefinition<?, ?> line : container.getSubLines()) {
-			LineElement elem = buildLineElement(line);
+			LineOperator elem = (LineOperator) buildLineElement(line);
 			rootElements.add(elem);
 		}
-		LineElement element = LineElementFactory.buildLineElement(container, rootElements);
+		AssemblyLineOperator element = LineElementFactory.buildLineElement(container, rootElements);
 		Optional.ofNullable(parentElement).ifPresent(parentElem -> parentElem.addNextLineElement(element));
 		return element;
 	}
@@ -170,7 +137,7 @@ public class AssemblyLineBuilder<BEGIN, IN> {
 //		}
 //	}
 
-	private LineElement buildLineElement(OperationDefinition<?, ?> object, LineElement parentElement) {
+	private AssemblyLineOperator buildLineElement(OperationDefinition<?, ?> object, AssemblyLineOperator parentElement) {
 		if (object instanceof ProcessingOperationDefinition) {
 			return buildLineElement((ProcessingOperationDefinition<?, ?>) object, parentElement);
 		} else if (object instanceof SignalDefiinition) {

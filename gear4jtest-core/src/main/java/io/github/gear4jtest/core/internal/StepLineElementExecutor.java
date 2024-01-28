@@ -1,6 +1,5 @@
 package io.github.gear4jtest.core.internal;
 
-import io.github.gear4jtest.core.context.LineElementExecution;
 import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.model.Operation;
 import io.github.gear4jtest.core.processor.ProcessorChain;
@@ -17,29 +16,28 @@ public class StepLineElementExecutor {
 	}
 
 	// Should itemexecution contains item ?
-	public LineElementExecution execute(StepExecution execution) {
+	public StepExecution execute(StepExecution execution) {
 		try {
 			Operation<?, ?> operation = stepLineElementOperationInitiator.initiate();
 
 			execution.withOperation(operation);
-			ProcessorChain chain = new ProcessorChain(this.stepLineElement.getProcessorChain(), execution.getItemExecution().getItem(),
-					execution, operation);
+			ProcessorChain chain = new ProcessorChain(this.stepLineElement.getProcessorChain(), execution.getItem(), execution, operation);
 			ProcessorChainResult result = chain.processChain();
 			if (!result.isProcessed()) {
 				if (this.stepLineElement.getTransformer() == null) {
 					throw new IllegalStateException("No transformer specified whereas input has not been processed");
 				} else {
-					execution.setResult(this.stepLineElement.getTransformer().tranform(execution.getItemExecution().getItem().getItem()));
+					execution.getItem().updateItem(this.stepLineElement.getTransformer().tranform(execution.getItem().getItem()));
 				}
 			} else {
-				execution.setResult(result.getOutput());
+				execution.getItem().updateItem(result.getOutput());
 			}
 		} catch (Exception e) {
 			if (this.stepLineElement.getTransformer() == null
 					|| !this.stepLineElement.isIgnoreOperationFactoryException()) {
 				throw buildRuntimeException(e);
 			} else {
-				execution.setResult(this.stepLineElement.getTransformer().tranform(execution.getItemExecution().getItem().getItem()));
+				execution.getItem().updateItem(this.stepLineElement.getTransformer().tranform(execution.getItem().getItem()));
 			}
 		}
 		return execution;

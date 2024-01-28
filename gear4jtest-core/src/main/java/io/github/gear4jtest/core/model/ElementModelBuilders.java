@@ -3,7 +3,7 @@ package io.github.gear4jtest.core.model;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import io.github.gear4jtest.core.internal.LineElement;
+import io.github.gear4jtest.core.internal.AssemblyLineOperator;
 import io.github.gear4jtest.core.model.EventHandlingDefinition.EventConfiguration;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition.Configuration;
@@ -84,7 +84,7 @@ public final class ElementModelBuilders {
 //		return new InterpretationContextParameterModel<>(paramRetriever, value);
 //	}
 
-	public static <T extends LineElement, V> ProcessorModel.Builder<T> processor(Supplier<ProcessingOperationProcessor> processor) {
+	public static <T extends AssemblyLineOperator, V> ProcessorModel.Builder<T> processor(Supplier<ProcessingOperationProcessor> processor) {
 		return new ProcessorModel.Builder<T>().processor(processor);
 	}
 

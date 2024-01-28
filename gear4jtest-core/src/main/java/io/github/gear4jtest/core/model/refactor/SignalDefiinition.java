@@ -2,7 +2,7 @@ package io.github.gear4jtest.core.model.refactor;
 
 import java.util.function.Predicate;
 
-import io.github.gear4jtest.core.context.ItemExecution;
+import io.github.gear4jtest.core.context.AssemblyLineOperatorExecution;
 
 public class SignalDefiinition<IN> extends IdentityOperationDefinition<IN> {
 
@@ -44,9 +44,9 @@ public class SignalDefiinition<IN> extends IdentityOperationDefinition<IN> {
 
 	public static class SignalInterpretationContext<T> {
 		private T item;
-		private ItemExecution itemExecution;
+		private AssemblyLineOperatorExecution itemExecution;
 
-		public SignalInterpretationContext(T item, ItemExecution itemExecution) {
+		public SignalInterpretationContext(T item, AssemblyLineOperatorExecution itemExecution) {
 			this.item = item;
 			this.itemExecution = itemExecution;
 		}
@@ -55,7 +55,7 @@ public class SignalDefiinition<IN> extends IdentityOperationDefinition<IN> {
 			return item;
 		}
 
-		public ItemExecution getItemExecution() {
+		public AssemblyLineOperatorExecution getItemExecution() {
 			return itemExecution;
 		}
 
