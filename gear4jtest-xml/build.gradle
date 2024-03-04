@@ -1,0 +1,23 @@
+plugins {
+    id 'de.qaware.gradle.plugin.xsd2java' version '2.1.0'
+}
+
+dependencies {
+    implementation project(':gear4jtest-core')
+    implementation group: 'com.squareup', name: 'javapoet', version: '1.13.0'
+}
+
+xsd2java {
+    schemas {
+        assemblyLine {
+            schemaDirPath 'src/main/resources'
+            packageName 'io.test.gear4jtest.xml.generated'
+        }
+    }
+
+    extension true
+    arguments ['-verbose']
+    outputDir new File("${project.buildDir}/generated-sources/xsd2java")
+}
+
+ext.moduleName = 'io.test.gear4jtest.xml'

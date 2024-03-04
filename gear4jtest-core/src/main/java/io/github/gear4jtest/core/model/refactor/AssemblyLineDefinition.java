@@ -2,7 +2,7 @@ package io.github.gear4jtest.core.model.refactor;
 
 import io.github.gear4jtest.core.model.EventHandlingDefinition;
 
-public class AssemblyLineDefinition<IN, OUT> {
+public class AssemblyLineDefinition<IN, OUT> implements Whatever<IN, OUT> {
 
 	private String id;
 	private String description;
@@ -11,7 +11,7 @@ public class AssemblyLineDefinition<IN, OUT> {
 
 	private Configuration configuration;
 
-	private AssemblyLineDefinition() {
+	public AssemblyLineDefinition() {
 	}
 
 	public String getId() {

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="line">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="operators">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:choice minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="operation">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element type="xs:string" name="type" nillable="false" />
+                      <xs:element name="parameters">
+                        <xs:complexType>
+                          <xs:sequence>
+                            <xs:element name="parameter" minOccurs="0" maxOccurs="unbounded">
+                              <xs:complexType>
+                                <xs:sequence>
+                                  <xs:element type="xs:string" name="retriever"/>
+                                  <xs:element type="xs:string" name="value" />
+                                </xs:sequence>
+                              </xs:complexType>
+                            </xs:element>
+                          </xs:sequence>
+                        </xs:complexType>
+                      </xs:element>
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+
+                <xs:element name="container">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="sub-line" minOccurs="0" maxOccurs="unbounded">
+                        <xs:complexType>
+                          <xs:sequence>
+                            <xs:element ref="line" />
+                          </xs:sequence>
+                        </xs:complexType>
+                      </xs:element>
+                      <xs:element name="returns">
+                        <xs:complexType>
+                          <xs:sequence>
+                            <xs:element name="expression" minOccurs="1" maxOccurs="1" type="xs:string" />
+                            <xs:element name="java-type" type="xs:string" />
+                          </xs:sequence>
+                        </xs:complexType>
+                      </xs:element>
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+              </xs:choice>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute type="xs:string" name="starting-point" />
+      <xs:attribute type="xs:string" name="name" use="required" />
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="assembly-line">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="definition">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element ref="line" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="configuration">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="step-default-configuration">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="pre-processors">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="processor" maxOccurs="unbounded" minOccurs="0">
+                            <xs:simpleType>
+                              <xs:restriction base="xs:string">
+                                <xs:enumeration value="com.myorg.processor.MyProcessor"/>
+                                <xs:enumeration value="com.myorg.processor.MyProcessor2"/>
+                              </xs:restriction>
+                            </xs:simpleType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="post-processors">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="processor" maxOccurs="unbounded" minOccurs="0">
+                            <xs:simpleType>
+                              <xs:restriction base="xs:string">
+                                <xs:enumeration value="com.myorg.processor.MyProcessor"/>
+                                <xs:enumeration value="com.myorg.processor.MyProcessor2"/>
+                              </xs:restriction>
+                            </xs:simpleType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="event-handling-definition">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="queue">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element type="xs:string" name="event-listener"/>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="global-event-configuration">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element type="xs:string" name="event-on-parameter-changed"/>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute type="xs:string" name="name" use="required" />
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

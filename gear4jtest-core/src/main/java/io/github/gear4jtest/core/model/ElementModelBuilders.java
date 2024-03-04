@@ -1,5 +1,9 @@
 package io.github.gear4jtest.core.model;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -200,11 +204,19 @@ public final class ElementModelBuilders {
 		return new ContainerBaseDefinition.Builder<>();
 	}
 
+	public static <T> ContainerBaseDefinition.Builder<T, T> container(TypeReference<T> clazz) {
+		return new ContainerBaseDefinition.Builder<>();
+	}
+
 	public static <T> FormerContainerDefinition.Builder<T, T> containerr() {
 		return new FormerContainerDefinition.Builder<>();
 	}
 
 	public static <T> StartingPointDefinition<T> startingPointt(Class<T> clazz) {
+		return new StartingPointDefinition<>(clazz);
+	}
+
+	public static <T> StartingPointDefinition<T> startingPointt(TypeReference<T> clazz) {
 		return new StartingPointDefinition<>(clazz);
 	}
 
@@ -235,15 +247,36 @@ public final class ElementModelBuilders {
 	}
 
 	public static class MapType<U, V> extends Type<Map> {
-		
+
 		private Class<U> classA;
 		private Class<V> classB;
-		
+
 		public MapType(Class<U> classA, Class<V> classB) {
 			super(Map.class);
 			this.classA = classA;
 			this.classB = classB;
 		}
-		
+
+	}
+
+	public static abstract class TypeReference<T> {
+		protected final java.lang.reflect.Type _type;
+		public TypeReference() {
+			java.lang.reflect.Type superClass = getClass().getGenericSuperclass();
+			if (superClass instanceof Class<?>) { // sanity check, should never happen
+				throw new IllegalArgumentException("Internal error: TypeReference constructed without actual type information");
+			}
+			/* 22-Dec-2008, tatu: Not sure if this case is safe -- I suspect
+			 *   it is possible to make it fail?
+			 *   But let's deal with specific
+			 *   case when we know an actual use case, and thereby suitable
+			 *   workarounds for valid case(s) and/or error to throw
+			 *   on invalid one(s).
+			 */
+			_type = ((ParameterizedType) superClass).getActualTypeArguments()[0];
+			System.out.println(this.getClass());
+//			ParameterizedType type = this.getClass();
+//			java.lang.reflect.Type[] argumentsTypes = type.getActualTypeArguments();
+		}
 	}
 }

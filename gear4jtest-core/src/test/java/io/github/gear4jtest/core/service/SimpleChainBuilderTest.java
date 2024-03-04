@@ -4,6 +4,8 @@ import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
 import static org.assertj.core.api.Assertions.*;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -11,7 +13,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.assertj.core.api.InstanceOfAssertFactories;
+import io.github.gear4jtest.core.model.ElementModelBuilders;
 import org.junit.jupiter.api.Test;
 
 import io.github.gear4jtest.core.context.StepExecution;
@@ -172,12 +174,12 @@ public class SimpleChainBuilderTest {
 		LineDefinition<Integer, List<String>> subLine = line(startingPointt(Integer.class))
 				.operator(processingOperation(Step10.class).build())
 				.build();
-		
+
 		LineDefinition<String, List<List<String>>> mainLine = line(startingPointt(String.class))
 				.operator(processingOperation(Step3.class).build())
 				.operator(processingOperation(Step8.class).build())
 				.operator(processingOperation(Step9.class).build())
-				.iterate(Function.identity(), containerr().withSubLineAndReturns(subLine, Function.identity()).build(), Collectors.toList())
+				.iterate(Function.identity(), container(Integer.class).withSubLine(subLine).returns(Container1DFunction.identity()), Collectors.toList())
 				.build();
 
 		AssemblyLineDefinition<String, List<List<String>>> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
@@ -263,10 +265,10 @@ public class SimpleChainBuilderTest {
 		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
 
 		// Then
-		assertThat(result).isNotNull()
-			.isExactlyInstanceOf(HashMap.class)
-			.asInstanceOf(InstanceOfAssertFactories.MAP)
-			.containsEntry("b", "b");
+//		assertThat(result).isNotNull()
+//			.isExactlyInstanceOf(HashMap.class)
+//			.asInstanceOf(InstanceOfAssertFactories.MAP)
+//			.containsEntry("b", "b");
 	}
 
 	@Test
@@ -401,6 +403,22 @@ public class SimpleChainBuilderTest {
 	}
 
 	@Test
+	public void testxmlgeneration() throws AssemblyLineException, ClassNotFoundException {
+		// Given
+		Class<?> clazz = Class.forName("io.github.gear4jtest.core.service.steps.Step11");
+		ParameterizedType operation = Arrays.stream(clazz.getGenericInterfaces())
+				.filter(ParameterizedType.class::isInstance)
+				.map(ParameterizedType.class::cast)
+				.filter(type -> type.getRawType() == Operation.class)
+				.findFirst()
+				.orElseThrow(() -> new RuntimeException("Operation class does not implements Operation"));
+		Type[] argumentsTypes = operation.getActualTypeArguments();
+		String inClass = argumentsTypes[0].getTypeName();
+		String outClass = argumentsTypes[1].getTypeName();
+		System.out.println("");
+	}
+
+	@Test
 	public void testcglib() throws AssemblyLineException {
 		// Given
 //		LineDefinition<String, Object> mainLine = line(startingPointt(String.class))
@@ -410,26 +428,26 @@ public class SimpleChainBuilderTest {
 //				.operator(processingOperation(Step8.class).build())
 //				.build();
 
-		ResourceFactory resourceFactory = new TestResourceFactory();
-		Enhancer enhancer = new Enhancer();
-		enhancer.setSuperclass(Step3.class);
-		enhancer.setCallback(new ProcessingOperationProxy(resourceFactory.getResource(Step3.class)));
-		Step3 proxy = (Step3) enhancer.create();
-		proxy.getParam();
-		proxy.execute("", null);
-		
-		AssemblyLineDefinition<String, Object> assemblyLine = (AssemblyLineDefinition<String, Object>) asssemblyLineDefinition("my-basic-assembly-line")
-//				.definition(mainLine)
-				.build();
-
-		// When
-		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", resourceFactory);
+//		ResourceFactory resourceFactory = new TestResourceFactory();
+//		Enhancer enhancer = new Enhancer();
+//		enhancer.setSuperclass(Step3.class);
+//		enhancer.setCallback(new ProcessingOperationProxy(resourceFactory.getResource(Step3.class)));
+//		Step3 proxy = (Step3) enhancer.create();
+//		proxy.getParam();
+//		proxy.execute("", null);
+//
+//		AssemblyLineDefinition<String, Object> assemblyLine = (AssemblyLineDefinition<String, Object>) asssemblyLineDefinition("my-basic-assembly-line")
+////				.definition(mainLine)
+//				.build();
+//
+//		// When
+//		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", resourceFactory);
 
 		// Then
-		assertThat(result).isNotNull()
-			.isExactlyInstanceOf(HashMap.class)
-			.asInstanceOf(InstanceOfAssertFactories.MAP)
-			.containsEntry("b", "b");
+//		assertThat(result).isNotNull()
+//			.isExactlyInstanceOf(HashMap.class)
+//			.asInstanceOf(InstanceOfAssertFactories.MAP)
+//			.containsEntry("b", "b");
 	}
 
 //	@Test

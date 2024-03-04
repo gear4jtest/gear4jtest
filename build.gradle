@@ -1,3 +1,5 @@
+import java.util.stream.Collectors
+
 plugins {
     id "org.sonarqube" version "3.0"
     id "com.jfrog.bintray" version "1.8.5"
@@ -6,6 +8,7 @@ plugins {
     id 'org.asciidoctor.convert' version '1.6.0'
     id 'idea'
     id 'io.freefair.aspectj' version '8.0.1'
+    id 'jacoco-report-aggregation'
 }
 
 ext {
@@ -22,15 +25,22 @@ allprojects {
     description = 'Gear4jTest'
 
     repositories {
-        jcenter()
         mavenCentral()
+    }
+
+    jacoco {
+        toolVersion = "0.8.8"
     }
 }
 
-artifactoryPublish.skip = true // apply to all projects except the root
+//artifactoryPublish.skip = true // apply to all projects except the root
 
 ext {
     coreProjects = subprojects
+}
+
+dependencies {
+    coreProjects.each { jacocoAggregation project(":${it.name}") }
 }
 
 configure(project.coreProjects) {
@@ -38,16 +48,38 @@ configure(project.coreProjects) {
     apply plugin: 'maven-publish'
     apply plugin: 'com.jfrog.bintray'
     apply plugin: 'com.jfrog.artifactory'
+
+    dependencies {
+        testImplementation(libraries.junit)
+        testImplementation(libraries.assertj)
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+
+    jacocoTestReport {
+        reports {
+            xml.required = true
+        }
+    }
+}
+
+configure(project.coreProjects.stream().filter { !it.name.contains("gradle") }.collect(Collectors.toList())) {
+    apply plugin: 'java-library'
     apply plugin: 'me.champeau.gradle.jmh'
     apply plugin: 'io.freefair.aspectj'
-    
-    
+    apply from: "${rootDir}/publishing.gradle"
+
     dependencies {
         implementation(libraries.slf4j)
+        implementation(libraries.log4jApi)
+        implementation(libraries.log4jCore)
         implementation(libraries.cglib)
         implementation(libraries.aspectjrt)
+//        implementation(libraries.google)
 //        implementation(libraries.aspectjweaver)
-        
+
         //compileOnly(libraries.mojo)
 
         testImplementation(libraries.junit)
@@ -65,16 +97,6 @@ configure(project.coreProjects) {
         options.compilerArgs += ["-Xlint:unchecked", "-parameters"]
     }
 
-    test {
-        useJUnitPlatform()
-    }
-
-    jacocoTestReport {
-        reports {
-            xml.required = true
-        }
-    }
-    
     afterEvaluate {
         jar {
             inputs.property('moduleName', moduleName)
@@ -85,12 +107,11 @@ configure(project.coreProjects) {
     }
 }
 
-def allTestCoverageFile = "${rootProject.projectDir}/build/reports/jacoco/report.xml"
+configure(project.coreProjects.stream().filter { it.name.contains("gradle") }.collect(Collectors.toList())) {
+    apply plugin: 'groovy-gradle-plugin'
+}
 
-//task jacocoMergeTest(type: JacocoReport) {
-//    destinationFile = file(allTestCoverageFile)
-//    executionData = project.fileTree(dir: '.', include: '**/build/jacoco/test.exec')
-//}
+def allTestCoverageFile = "${rootProject.projectDir}/build/reports/jacoco/report.xml"
 
 sonarqube {
     properties {

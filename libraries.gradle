@@ -10,10 +10,14 @@ ext {
     libraries = [
             // compile
             slf4j: "org.slf4j:slf4j-api:${slf4jVersion}",
+            log4jApi: "org.apache.logging.log4j:log4j-api:2.22.1",
+            log4jCore: "org.apache.logging.log4j:log4j-core:2.22.1",
             cglib: "cglib:cglib:3.3.0",
             aspectjrt: "org.aspectj:aspectjrt:1.9.8.RC3",
             aspectjweaver: "org.aspectj:aspectjweaver:1.8.9",
             mojo: "org.codehaus.mojo:aspectj-maven-plugin:1.14.0",
+            google: "com.google.guava:guava:33.0.0-jre",
+
 
             // testCompile
             junit: "org.junit.jupiter:junit-jupiter:${junitVersion}",
