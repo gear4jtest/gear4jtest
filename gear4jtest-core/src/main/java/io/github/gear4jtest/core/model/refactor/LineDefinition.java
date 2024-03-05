@@ -13,16 +13,16 @@ import io.github.gear4jtest.core.model.refactor.IteratorDefinition.SetAccumulato
 
 public class LineDefinition<X, Y> {
 	private StartingPointDefinition<X> startingPoint;
-	private List<OperationDefinition<?, ?>> lineOperators;
+	private List<OperationDefinition<?, ?>> operators;
 	private BiPredicate<X, LineOperatorExecution> condition;
 
 	public LineDefinition(StartingPointDefinition<X> startingPoint) {
 		this.startingPoint = startingPoint;
-		this.lineOperators = new ArrayList<>();
+		this.operators = new ArrayList<>();
 	}
 
-	public List<OperationDefinition<?, ?>> getLineOperators() {
-		return lineOperators;
+	public List<OperationDefinition<?, ?>> getOperators() {
+		return operators;
 	}
 
 	public StartingPointDefinition<X> getStartingPoint() {
@@ -41,13 +41,17 @@ public class LineDefinition<X, Y> {
 			managedInstance = new LineDefinition<>(startingPoint);
 		}
 
+		public Builder() {
+			managedInstance = new LineDefinition<>(null);
+		}
+
 		public <A> Builder<IN, A> operator(OperationDefinition<OUT, A> operator) {
-			managedInstance.lineOperators.add(operator);
+			managedInstance.operators.add(operator);
 			return (Builder<IN, A>) this;
 		}
 
 		public UnpredictableLineDefinition.Builder<IN, OUT> operator(StopSignalDefiinition<OUT> operator) {
-			managedInstance.lineOperators.add(operator);
+			managedInstance.operators.add(operator);
 			return new UnpredictableLineDefinition.Builder<IN, OUT>(this);
 		}
 
@@ -57,7 +61,7 @@ public class LineDefinition<X, Y> {
 					.iterableFunction(iterableFunction)
 					.nestedElement(nestedElement)
 					.build();
-			managedInstance.lineOperators.add(operator);
+			managedInstance.operators.add(operator);
 			return (Builder<IN, Void>) this;
 		}
 
@@ -68,7 +72,7 @@ public class LineDefinition<X, Y> {
 					.nestedElement(nestedElement)
 					.accumulator(accumulator)
 					.build();
-			managedInstance.lineOperators.add(operator);
+			managedInstance.operators.add(operator);
 			return (Builder<IN, List<B>>) this;
 		}
 		
@@ -80,7 +84,7 @@ public class LineDefinition<X, Y> {
 					.nestedElement(nestedElement)
 					.accumulator(accumulator)
 					.build();
-			managedInstance.lineOperators.add(operator);
+			managedInstance.operators.add(operator);
 			return (Builder<IN, Set<B>>) this;
 		}
 
@@ -91,7 +95,7 @@ public class LineDefinition<X, Y> {
 					.nestedElement(nestedElement)
 					.collector(collector)
 					.build();
-			managedInstance.lineOperators.add(operator);
+			managedInstance.operators.add(operator);
 			return (Builder<IN, C>) this;
 		}
 

@@ -1,6 +1,6 @@
 <assembly-line>
     <definition>
-        <line starting-point="java.lang.String">
+        <line>
             <operators>
                 <operation>
                     <type>com.myorg.operation.Step11</type>

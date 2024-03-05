@@ -203,6 +203,38 @@ public class SimpleChainBuilderTest {
 	}
 
 	@Test
+	public void testIterationRefined() throws AssemblyLineException {
+		// Given
+		LineDefinition<Integer, List<String>> subLine = line(processingOperation(Step10.class).build())
+				.build();
+
+		LineDefinition<String, List<List<String>>> mainLine = line(processingOperation(Step3.class).build())
+				.operator(processingOperation(Step8.class).build())
+				.operator(processingOperation(Step9.class).build())
+				.iterate(Function.identity(), container(subLine).returns(Container1DFunction.identity()), Collectors.toList())
+				.build();
+
+		AssemblyLineDefinition<String, List<List<String>>> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+				.definition(mainLine)
+				.configuration(configuration()
+						.stepDefaultConfiguration(operationConfiguration().build())
+						.eventHandlingDefinition(eventHandling()
+								.queue(queue().eventListener(new TestEventListener()).build())
+								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+								.build())
+						.build())
+				.build();
+
+		// When
+		List<List<String>> result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
+
+		// Then
+		assertThat(result).isNotNull()
+				.hasSize(1)
+				.contains(Arrays.asList(""));
+	}
+
+	@Test
 	public void shouldThrowExceptionWhenFatalSignal() {
 		// Given
 		LineDefinition<String, Map<String, String>> mainLine = line(startingPointt(String.class))

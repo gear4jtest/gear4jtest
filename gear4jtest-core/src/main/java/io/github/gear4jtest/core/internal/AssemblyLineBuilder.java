@@ -37,7 +37,7 @@ public class AssemblyLineBuilder<BEGIN, IN> {
 	public AssemblyLineOperator buildLineElement(LineDefinition<?, ?> lineDefinition) {
 		AssemblyLineOperator root = null;
 		AssemblyLineOperator parent = null;
-		for (OperationDefinition<?, ?> operator : lineDefinition.getLineOperators()) {
+		for (OperationDefinition<?, ?> operator : lineDefinition.getOperators()) {
 			AssemblyLineOperator elem = buildLineElement(operator, parent);
 			parent = elem;
 			if (root == null) {

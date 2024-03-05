@@ -2,6 +2,7 @@ package io.test.gear4test.xml.generator;
 
 import com.squareup.javapoet.*;
 import io.github.gear4jtest.core.model.Operation;
+import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
 import io.github.gear4jtest.core.model.refactor.ContainerDefinition;
 import io.github.gear4jtest.core.model.refactor.LineDefinition;
 import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
@@ -22,6 +23,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -79,22 +82,22 @@ public class AssemblyLineGenerator {
     }
 
     private static TypeSpec buildAssemblyLine(String name, Line line) {
-        Specs mainLineSpecs = buildLine(line, getTypeName(line.getStartingPoint()));
+        Specs mainLineSpecs = buildLine(line);
 
         TypeSpec.Builder assemblyLineClass = TypeSpec.classBuilder(name)
                 .addModifiers(Modifier.PUBLIC);
 
         CodeBlock.Builder codeBuilder = CodeBlock.builder();
-        codeBuilder.add("return asssemblyLineDefinition($S))\n", name);
+        codeBuilder.add("return asssemblyLineDefinition($S)\n", name);
         codeBuilder.add("        .definition(MainLine.mainLine())\n");
         codeBuilder.add("        .build();");
 
+        ClassName pod = ClassName.get(AssemblyLineDefinition.class.getPackage().getName(), AssemblyLineDefinition.class.getSimpleName());
+        ParameterizedTypeName ptn = ParameterizedTypeName.get(pod, mainLineSpecs.inType, mainLineSpecs.outType);
+
         MethodSpec methodSpec = MethodSpec.methodBuilder("assemblyLine")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .returns(mainLineSpecs.typeSpec.get(0).methodSpecs.stream()
-                            .filter(methodSpec1 -> methodSpec1.name.equals("mainLine"))
-                            .map(methodSpec1 -> methodSpec1.returnType)
-                            .findFirst().get())
+                .returns(ptn)
                 .addCode(codeBuilder.build())
                 .build();
         assemblyLineClass.addMethod(methodSpec);
@@ -102,31 +105,36 @@ public class AssemblyLineGenerator {
         return assemblyLineClass.build();
     }
 
-    private static Specs buildLine(Line line, TypeName inputType) {
+    private static Specs buildLine(Line line) {
         TypeSpec.Builder lineClass = TypeSpec.classBuilder(line.getName())
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL);
 
         StringBuilder stringOperators = new StringBuilder();
 
-        inputType = Optional.ofNullable(getTypeName(line.getStartingPoint())).orElse(inputType);
-        TypeName chainedInputType = inputType;
+        String firstOperator = null;
+        TypeName inType = null;
+        TypeName outType = null;
         for (Object element : line.getOperators().getOperationOrContainer()) {
-            Specs specs = buildElement(element, chainedInputType);
+            Specs specs = buildElement(element);
 
             lineClass.addMethods(specs.methodSpec);
             lineClass.addTypes(specs.typeSpec);
+            outType = specs.outType;
 
-            stringOperators.append("        .operator(");
-            stringOperators.append(specs.methodSpec.get(0).name);
-            stringOperators.append("())\n");
-
-            chainedInputType = specs.returnType;
+            if (firstOperator == null) {
+                firstOperator = specs.methodSpec.get(0).name + "()";
+                inType = specs.inType;
+            } else {
+                stringOperators.append("        .operator(");
+                stringOperators.append(specs.methodSpec.get(0).name);
+                stringOperators.append("())\n");
+            }
         }
 
         ClassName pod = ClassName.get(LineDefinition.class.getPackage().getName(), LineDefinition.class.getSimpleName());
-        ParameterizedTypeName ptn = ParameterizedTypeName.get(pod, inputType, chainedInputType);
+        ParameterizedTypeName ptn = ParameterizedTypeName.get(pod, inType, outType);
         CodeBlock.Builder codeBuilder = CodeBlock.builder();
-        codeBuilder.add("return line(startingPointt($T.class))\n", inputType);
+        codeBuilder.add("return line($L)\n", firstOperator);
         codeBuilder.add(stringOperators.toString());
         codeBuilder.add("        .build();");
         MethodSpec methodSpec = MethodSpec.methodBuilder("mainLine")
@@ -135,15 +143,15 @@ public class AssemblyLineGenerator {
                 .addCode(codeBuilder.build())
                 .build();
         lineClass.addMethod(methodSpec);
-        return new Specs(Arrays.asList(lineClass.build()), Arrays.asList(), chainedInputType);
+        return new Specs(Arrays.asList(lineClass.build()), Arrays.asList(), inType, outType);
     }
 
-    private static Specs buildElement(Object element, TypeName returnType) {
+    private static Specs buildElement(Object element) {
         try {
             if (element instanceof Line.Operators.Operation) {
                 return buildElement((Line.Operators.Operation) element);
             } else if (element instanceof Line.Operators.Container) {
-                return buildElement((Line.Operators.Container) element, returnType);
+                return buildElement((Line.Operators.Container) element);
             }
         } catch (ClassNotFoundException e) {
             LOGGER.error("Error", e);
@@ -174,35 +182,41 @@ public class AssemblyLineGenerator {
                 .returns(ptn)
                 .addCode(codeBuilder.build())
                 .build();
-        return new Specs(Arrays.asList(), Arrays.asList(methodSpec), getTypeName(argumentsTypes[1].getTypeName()));
+        return new Specs(Arrays.asList(), Arrays.asList(methodSpec), getTypeName(argumentsTypes[0].getTypeName()), getTypeName(argumentsTypes[1].getTypeName()));
     }
 
-    private static Specs buildElement(Line.Operators.Container container, TypeName returnType) throws ClassNotFoundException {
+    private static Specs buildElement(Line.Operators.Container container) throws ClassNotFoundException {
         List<Specs> list = container.getSubLine().stream()
                 .map(Line.Operators.Container.SubLine::getLine)
-                .map(line -> buildLine(line, returnType))
+                .map(AssemblyLineGenerator::buildLine)
                 .collect(Collectors.toList());
+
+        TypeName inType = list.stream().map(Specs::getInType).findFirst().orElse(getTypeName("java.lang.Void"));
 
         String containerReturnType = Optional.ofNullable(container.getReturns()).map(Line.Operators.Container.Returns::getJavaType).orElse("java.lang.Void");
         ClassName pod = ClassName.get(ContainerDefinition.class.getPackage().getName(), ContainerDefinition.class.getSimpleName());
         TypeName containerReturnTypeName = getTypeName(containerReturnType);
-        ParameterizedTypeName ptn = ParameterizedTypeName.get(pod, returnType, containerReturnTypeName);
+        ParameterizedTypeName ptn = ParameterizedTypeName.get(pod, inType, containerReturnTypeName);
 
         CodeBlock.Builder codeBuilder = CodeBlock.builder();
-        codeBuilder.add("return container($L.class)\n", returnType);
-        list.stream().map(Specs::getTypeSpec).flatMap(List::stream).forEach(type -> codeBuilder.add("        .withSubLine($L.mainLine())\n", type.name));
+        Specs firstSpecs = list.get(0);
+        codeBuilder.add("return container($L.mainLine())\n", firstSpecs.typeSpec.get(0).name);
+        list.stream().skip(1).map(Specs::getTypeSpec).flatMap(List::stream).forEach(type -> {
+            codeBuilder.add("        .withSubLine($L.mainLine())\n", type.name);
+        });
         if (container.getReturns() != null) {
-            codeBuilder.add("        .returns($L)\n", container.getReturns().getExpression());
+            codeBuilder.add("        .returns($L);\n", container.getReturns().getExpression());
+        } else {
+            codeBuilder.add(";\n");
         }
-        codeBuilder.add("        .build();");
 
-        MethodSpec containerMethod = MethodSpec.methodBuilder("container")
+        MethodSpec containerMethod = MethodSpec.methodBuilder("containerDefinition")
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
                 .returns(ptn)
                 .addCode(codeBuilder.build())
                 .build();
 
-        return new Specs(list.stream().map(Specs::getTypeSpec).flatMap(List::stream).collect(Collectors.toList()), Arrays.asList(containerMethod), containerReturnTypeName);
+        return new Specs(list.stream().map(Specs::getTypeSpec).flatMap(List::stream).collect(Collectors.toList()), Arrays.asList(containerMethod), inType, containerReturnTypeName);
     }
 
     private static TypeName getTypeName(String typeString) {
@@ -226,12 +240,14 @@ public class AssemblyLineGenerator {
     private static class Specs {
         private List<TypeSpec> typeSpec;
         private List<MethodSpec> methodSpec;
-        private TypeName returnType;
+        private TypeName inType;
+        private TypeName outType;
 
-        public Specs(List<TypeSpec> typeSpec, List<MethodSpec> methodSpec, TypeName returnType) {
+        public Specs(List<TypeSpec> typeSpec, List<MethodSpec> methodSpec, TypeName inType, TypeName outType) {
             this.typeSpec = typeSpec;
             this.methodSpec = methodSpec;
-            this.returnType = returnType;
+            this.inType = inType;
+            this.outType = outType;
         }
 
         public List<TypeSpec> getTypeSpec() {
@@ -242,8 +258,12 @@ public class AssemblyLineGenerator {
             return methodSpec;
         }
 
-        public TypeName getReturnType() {
-            return returnType;
+        public TypeName getInType() {
+            return inType;
+        }
+
+        public TypeName getOutType() {
+            return outType;
         }
     }
 }

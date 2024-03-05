@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <assembly-line name="MyInsaneAssemblyLine">
     <definition>
-        <line starting-point="java.lang.String" name="MainLine">
+        <line name="MainLine">
             <operators>
                 <operation>
                     <type>com.myorg.operation.Step11</type>
@@ -14,7 +14,7 @@
                 </operation>
                 <container>
                     <sub-line>
-                        <line starting-point="java.lang.String" name="ContainerFirstSubLine">
+                        <line name="ContainerFirstSubLine">
                             <operators>
                                 <operation>
                                     <type>com.myorg.operation.Step11</type>
@@ -29,7 +29,7 @@
                         </line>
                     </sub-line>
                     <sub-line>
-                        <line starting-point="java.lang.String" name="ContainerSecondSubLine">
+                        <line name="ContainerSecondSubLine">
                             <operators>
                                 <operation>
                                     <type>com.myorg.operation.Step11</type>
@@ -44,7 +44,7 @@
                         </line>
                     </sub-line>
                     <returns>
-                        <expression>(a, b) -> Arrays.asList(a, b)</expression>
+                        <expression>(a, b) -> java.util.Arrays.asList(a, b)</expression>
                         <java-type>java.util.List&lt;java.lang.String&gt;</java-type>
                     </returns>
                 </container>

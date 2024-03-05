@@ -9,19 +9,11 @@ import java.util.function.Supplier;
 
 import io.github.gear4jtest.core.internal.AssemblyLineOperator;
 import io.github.gear4jtest.core.model.EventHandlingDefinition.EventConfiguration;
-import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
+import io.github.gear4jtest.core.model.refactor.*;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition.Configuration;
-import io.github.gear4jtest.core.model.refactor.ContainerBaseDefinition;
-import io.github.gear4jtest.core.model.refactor.FormerContainerDefinition;
 import io.github.gear4jtest.core.model.refactor.IteratorDefinition.ListAccumulator;
 import io.github.gear4jtest.core.model.refactor.IteratorDefinition.SetAccumulator;
-import io.github.gear4jtest.core.model.refactor.LineDefinition;
-import io.github.gear4jtest.core.model.refactor.OperationConfigurationDefinition;
-import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
-import io.github.gear4jtest.core.model.refactor.SignalDefiinition;
 import io.github.gear4jtest.core.model.refactor.SignalDefiinition.SignalType;
-import io.github.gear4jtest.core.model.refactor.StartingPointDefinition;
-import io.github.gear4jtest.core.model.refactor.StopSignalDefiinition;
 import io.github.gear4jtest.core.processor.ProcessingOperationProcessor;
 
 public final class ElementModelBuilders {
@@ -168,6 +160,10 @@ public final class ElementModelBuilders {
 		return new LineDefinition.Builder<>(startingPoint);
 	}
 
+	public static <IN, OUT> LineDefinition.Builder<IN, OUT> line(OperationDefinition<IN, OUT> firstOperator) {
+		return new LineDefinition.Builder<IN, IN>().operator(firstOperator);
+	}
+
 	public static <A, B, T extends Operation<A, B>> ProcessingOperationDefinition.Builder<A, B, T> processingOperation(Class<T> step) {
 		return new ProcessingOperationDefinition.Builder<A, B, T>().type(step);
 	}
@@ -206,6 +202,10 @@ public final class ElementModelBuilders {
 
 	public static <T> ContainerBaseDefinition.Builder<T, T> container(TypeReference<T> clazz) {
 		return new ContainerBaseDefinition.Builder<>();
+	}
+
+	public static <IN, OUT> Container1Definition.Builder<IN, IN, OUT> container(LineDefinition<IN, OUT> initialLine) {
+		return new ContainerBaseDefinition.Builder<IN, IN>().withSubLine(initialLine);
 	}
 
 	public static <T> FormerContainerDefinition.Builder<T, T> containerr() {
