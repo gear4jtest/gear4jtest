@@ -17,12 +17,6 @@ public class UnpredictableLineDefinition<X, Y> {
 			return (Builder<IN, A>) this;
 		}
 
-		public <A, B> Builder<IN, B> iterate(Function<OUT, ? extends Iterable<A>> iterableFunction,
-				OperationDefinition<A, B> nestedElement) {
-			managedInstance.iterate(iterableFunction, nestedElement);
-			return (Builder<IN, B>) this;
-		}
-
 		public LineDefinition<IN, Object> build() {
 			return (LineDefinition<IN, Object>) managedInstance.build();
 		}

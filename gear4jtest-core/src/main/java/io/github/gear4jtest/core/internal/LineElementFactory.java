@@ -1,17 +1,10 @@
 package io.github.gear4jtest.core.internal;
 
-import java.util.List;
-
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.internal.AssemblyLineBuilder.StepConfiguration;
-import io.github.gear4jtest.core.model.refactor.Container1Definition;
-import io.github.gear4jtest.core.model.refactor.Container2Definition;
-import io.github.gear4jtest.core.model.refactor.ContainerDefinition;
-import io.github.gear4jtest.core.model.refactor.FormerContainerDefinition;
-import io.github.gear4jtest.core.model.refactor.IteratorDefinition;
-import io.github.gear4jtest.core.model.refactor.LineDefinition;
-import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
-import io.github.gear4jtest.core.model.refactor.SignalDefiinition;
+import io.github.gear4jtest.core.model.refactor.*;
+
+import java.util.List;
 
 public class LineElementFactory {
 
@@ -52,11 +45,11 @@ public class LineElementFactory {
 		return new SignalLineElement(signal);
 	}
 
-	static AssemblyLineOperator buildLineElement(ContainerDefinition<?, ?> container, List<LineOperator> rootElements) {
+	static AssemblyLineOperator buildLineElement(ContainerBaseDefinition<?, ?> container, List<LineOperator> rootElements) {
 		return new ContainerLineElement(container, rootElements);
 	}
 
-	static AssemblyLineOperator buildLineElement(IteratorDefinition<?> iterator, LineOperator lineElement) {
+	static AssemblyLineOperator buildLineElement(IteratorDefinition<?, ?> iterator, LineOperator lineElement) {
 		return new IteratorLineElement(iterator, lineElement);
 	}
 

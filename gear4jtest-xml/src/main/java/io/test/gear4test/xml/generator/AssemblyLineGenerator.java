@@ -3,7 +3,7 @@ package io.test.gear4test.xml.generator;
 import com.squareup.javapoet.*;
 import io.github.gear4jtest.core.model.Operation;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
-import io.github.gear4jtest.core.model.refactor.ContainerDefinition;
+import io.github.gear4jtest.core.model.refactor.ContainerBaseDefinition;
 import io.github.gear4jtest.core.model.refactor.LineDefinition;
 import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
 import io.test.gear4jtest.xml.generated.AssemblyLine;
@@ -23,9 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -194,7 +191,7 @@ public class AssemblyLineGenerator {
         TypeName inType = list.stream().map(Specs::getInType).findFirst().orElse(getTypeName("java.lang.Void"));
 
         String containerReturnType = Optional.ofNullable(container.getReturns()).map(Line.Operators.Container.Returns::getJavaType).orElse("java.lang.Void");
-        ClassName pod = ClassName.get(ContainerDefinition.class.getPackage().getName(), ContainerDefinition.class.getSimpleName());
+        ClassName pod = ClassName.get(ContainerBaseDefinition.class.getPackage().getName(), ContainerBaseDefinition.class.getSimpleName());
         TypeName containerReturnTypeName = getTypeName(containerReturnType);
         ParameterizedTypeName ptn = ParameterizedTypeName.get(pod, inType, containerReturnTypeName);
 

@@ -157,7 +157,7 @@ public final class ElementModelBuilders {
 	}
 
 	public static <START> LineDefinition.Builder<START, START> line(StartingPointDefinition<START> startingPoint) {
-		return new LineDefinition.Builder<>(startingPoint);
+		return new LineDefinition.Builder<>();
 	}
 
 	public static <IN, OUT> LineDefinition.Builder<IN, OUT> line(OperationDefinition<IN, OUT> firstOperator) {

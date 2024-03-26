@@ -2,54 +2,35 @@ package io.github.gear4jtest.core.model.refactor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiPredicate;
 
-import io.github.gear4jtest.core.context.AssemblyLineOperatorExecution;
-import io.github.gear4jtest.core.model.refactor.ContainerDefinition.ContainerFunction;
-
-public class Container1Definition<IN, OUT, A> extends OperationDefinition<IN, OUT> {
-
-	private List<LineDefinition<?, ?>> subLines;
-	private Container1DFunction<?, ?> func;
+public class Container1Definition<IN, OUT, A> extends ContainerBaseDefinition<IN, OUT> {
 
 	private Container1Definition() {
-		this.subLines = new ArrayList<>();
-	}
-
-	public List<LineDefinition<?, ?>> getChildren() {
-		return subLines;
-	}
-	
-	public Container1DFunction<?, ?> getFunc() {
-		return func;
+		super(new ArrayList<>(1), null);
 	}
 
 	public static class Builder<IN, OUT, A> {
 
 		private final Container1Definition<IN, OUT, A> managedInstance;
 
-		public Builder(LineDefinition<OUT, A> startingElement) {
+		public Builder(LineDefinition<OUT, A> lineDefinition) {
 			managedInstance = new Container1Definition<>();
-			managedInstance.subLines.add(startingElement);
+			managedInstance.subLines.add(lineDefinition);
 		}
 
-		public Builder(LineDefinition<OUT, A> startingElement, BiPredicate<IN, AssemblyLineOperatorExecution> condition) {
-			managedInstance = new Container1Definition<>();
-			managedInstance.subLines.add(startingElement);
+		public <START, B> Container2Definition.Builder<IN, OUT, A, B> withSubLine(LineDefinition<START, B> lineDefinition) {
+			return new Container2Definition.Builder<>(managedInstance.getSubLines(), lineDefinition);
 		}
 
-		public <START, B> Container2Definition.Builder<IN, OUT, A, B> withSubLine(LineDefinition<START, B> startingElement) {
-			return new Container2Definition.Builder<IN, OUT, A, B>(managedInstance.getChildren(), startingElement);
-		}
-
-		public <C> ContainerDefinition<IN, C> returns(Container1DFunction<A, C> func) {
+		public <C> ContainerBaseDefinition<IN, C> returns(Container1DFunction<A, C> func) {
 			managedInstance.func = func;
-			return new ContainerDefinition<IN, C>(managedInstance.subLines, managedInstance.func);
-//			return (Container1Definition<IN, C, A>) managedInstance;
+			return (ContainerBaseDefinition<IN, C>) this.managedInstance;
+//			return new ContainerDefinition<>(managedInstance.subLines, managedInstance.func);
 		}
 
-		public ContainerDefinition<IN, Void> build() {
-			return new ContainerDefinition<IN, Void>(managedInstance.subLines, managedInstance.func);
+		public ContainerBaseDefinition<IN, Void> build() {
+			return (ContainerBaseDefinition<IN, Void>) this.managedInstance;
+//			return new ContainerDefinition<IN, Void>(managedInstance.subLines, managedInstance.func);
 //			return (Container1Definition<IN, Void, A>) managedInstance;
 		}
 

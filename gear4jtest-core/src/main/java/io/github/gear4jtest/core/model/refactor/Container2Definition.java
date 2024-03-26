@@ -3,24 +3,11 @@ package io.github.gear4jtest.core.model.refactor;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.github.gear4jtest.core.model.refactor.ContainerDefinition.ContainerFunction;
-
-public class Container2Definition<IN, OUT, A, B> extends OperationDefinition<IN, OUT> {
-
-	private List<LineDefinition<?, ?>> subLines;
-	private Container2DFunction<?, ?, ?> func;
+public class Container2Definition<IN, OUT, A, B> extends ContainerBaseDefinition<IN, OUT> {
 
 	private Container2Definition(List<LineDefinition<?, ?>> subLines) {
-		this.subLines = new ArrayList<>();
-		this.subLines.addAll(subLines);
-	}
-
-	public List<LineDefinition<?, ?>> getChildren() {
-		return subLines;
-	}
-	
-	public Container2DFunction<?, ?, ?> getFunc() {
-		return func;
+		super(new ArrayList<>(2), null);
+		this.subLines.add(subLines.get(0));
 	}
 
 	public static class Builder<IN, OUT, A, B> {
@@ -38,15 +25,15 @@ public class Container2Definition<IN, OUT, A, B> extends OperationDefinition<IN,
 //			return (Builder<START, Void>) this;
 //		}
 
-		public <C> ContainerDefinition<IN, C> returns(Container2DFunction<A, B, C> func) {
+		public <C> ContainerBaseDefinition<IN, C> returns(Container2DFunction<A, B, C> func) {
 			managedInstance.func = func;
-			return new ContainerDefinition<IN, C>(managedInstance.subLines, managedInstance.func);
-//			return (Container2Definition<IN, C, A, B>) managedInstance;
+			return (ContainerBaseDefinition<IN, C>) this.managedInstance;
+//			return new ContainerDefinition<>(managedInstance.subLines, managedInstance.func);
 		}
 
-		public ContainerDefinition<IN, Void> build() {
-			return new ContainerDefinition<IN, Void>(managedInstance.subLines, managedInstance.func);
-//			return (Container2Definition<IN, Void, A, B>) managedInstance;
+		public ContainerBaseDefinition<IN, Void> build() {
+			return (ContainerBaseDefinition<IN, Void>) this.managedInstance;
+//			return new ContainerDefinition<>(managedInstance.subLines, managedInstance.func);
 		}
 
 	}

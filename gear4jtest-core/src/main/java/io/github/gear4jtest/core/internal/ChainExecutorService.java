@@ -1,6 +1,7 @@
 package io.github.gear4jtest.core.internal;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 import io.github.gear4jtest.core.context.AssemblyLineExecution;
 import io.github.gear4jtest.core.factory.ResourceFactory;
@@ -24,9 +25,10 @@ public class ChainExecutorService {
 	}
 	
 	public <BEGIN, IN> IN executeAndUnwrap(AssemblyLineDefinition<BEGIN, IN> assemblyLine, BEGIN input, ResourceFactory resourceFactory) throws AssemblyLineException {
+		Supplier<String> supplier = () -> "fizjef";
 		return executeAndUnwrap(assemblyLine, input, null, resourceFactory);
 	}
-	
+
 	/**
 	 * Executes a single Gear4j chain, with the given input object.
 	 * 

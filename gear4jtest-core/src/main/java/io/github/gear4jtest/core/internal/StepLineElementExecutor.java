@@ -4,8 +4,11 @@ import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.model.Operation;
 import io.github.gear4jtest.core.processor.ProcessorChain;
 import io.github.gear4jtest.core.processor.ProcessorChainResult;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class StepLineElementExecutor {
+	private static final Logger LOGGER = LogManager.getLogger("StepLineElementExecutor");
 
 	private final StepLineElement stepLineElement;
 	private final StepLineElementOperationInitiator stepLineElementOperationInitiator;
@@ -33,6 +36,7 @@ public class StepLineElementExecutor {
 				execution.getItem().updateItem(result.getOutput());
 			}
 		} catch (Exception e) {
+			LOGGER.error("Error while executing operation", e);
 			if (this.stepLineElement.getTransformer() == null
 					|| !this.stepLineElement.isIgnoreOperationFactoryException()) {
 				throw buildRuntimeException(e);

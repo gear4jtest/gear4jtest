@@ -17,7 +17,7 @@ public class IteratorLineElement extends AssemblyLineOperator<IteratorExecution>
 	private final Collector collector;
 	private final LineOperator nestedElement;
 
-	public IteratorLineElement(IteratorDefinition<?> iterator, LineOperator lineElement) {
+	public IteratorLineElement(IteratorDefinition<?, ?> iterator, LineOperator lineElement) {
 		super();
 		this.func = (Function<Object, Iterable<?>>) iterator.getFunc();
 		this.accumulator = iterator.getAccumulator();

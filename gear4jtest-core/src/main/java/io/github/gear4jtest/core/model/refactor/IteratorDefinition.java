@@ -9,7 +9,7 @@ import java.util.stream.Collector;
 
 import io.github.gear4jtest.core.model.ElementModelBuilders;
 
-public class IteratorDefinition<IN> extends OperationDefinition<IN, IN> {
+public class IteratorDefinition<IN, OUT> extends OperationDefinition<IN, OUT> {
 
 	private Function<?, ? extends Iterable<?>> func;
 	private LineDefinition<?, ?> element;
@@ -35,35 +35,35 @@ public class IteratorDefinition<IN> extends OperationDefinition<IN, IN> {
 		return collector;
 	}
 
-	public static class Builder<IN> {
+	public static class Builder<IN, OUT> {
 
-		private final IteratorDefinition<IN> managedInstance;
+		private final IteratorDefinition<IN, OUT> managedInstance;
 
 		public Builder() {
 			managedInstance = new IteratorDefinition<>();
 		}
 
-		public Builder<IN> iterableFunction(Function<?, ? extends Iterable<?>> func) {
+		public <A> Builder<IN, A> iterableFunction(Function<IN, ? extends Iterable<A>> func) {
 			managedInstance.func = func;
-			return this;
+			return (Builder<IN, A>) this;
 		}
 
-		public Builder<IN> nestedElement(OperationDefinition element) {
-			managedInstance.element = ElementModelBuilders.line(ElementModelBuilders.startingPointt(Object.class)).operator(element).build();
-			return this;
+		public <A> Builder<IN, A> nestedElement(OperationDefinition<OUT, A> element) {
+			managedInstance.element = ElementModelBuilders.line(element).build();
+			return (Builder<IN, A>) this;
 		}
 
-		public Builder<IN> accumulator(Accumulator accumulator) {
+		public Builder<IN, OUT> accumulator(Accumulator accumulator) {
 			managedInstance.accumulator = accumulator;
 			return this;
 		}
 
-		public Builder<IN> collector(Collector collector) {
+		public <C> Builder<IN, C> collector(Collector<OUT, ?, C> collector) {
 			managedInstance.collector = collector;
-			return this;
+			return (Builder<IN, C>) this;
 		}
 
-		public IteratorDefinition<IN> build() {
+		public IteratorDefinition<IN, OUT> build() {
 			return managedInstance;
 		}
 

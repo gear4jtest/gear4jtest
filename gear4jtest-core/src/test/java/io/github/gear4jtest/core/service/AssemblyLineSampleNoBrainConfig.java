@@ -1,16 +1,16 @@
 package io.github.gear4jtest.core.service;
 
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
-import io.github.gear4jtest.core.model.refactor.ContainerDefinition;
+import io.github.gear4jtest.core.model.refactor.ContainerBaseDefinition;
 import io.github.gear4jtest.core.model.refactor.LineDefinition;
 import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
 import io.github.gear4jtest.core.processor.operation.OperationParamsInjector;
 import io.github.gear4jtest.core.service.steps.Step11;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 
 import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
-import static io.github.gear4jtest.core.model.ElementModelBuilders.eventConfiguration;
 
 public class AssemblyLineSampleNoBrainConfig {
 
@@ -38,7 +38,7 @@ public class AssemblyLineSampleNoBrainConfig {
                 .build();
     }
 
-    private static ContainerDefinition<String, List<String>> container1() {
+    private static ContainerBaseDefinition<String, List<String>> container1() {
         return container(String.class)
                 .withSubLine(line1()).withSubLine(line2()).returns((a, b) -> Arrays.asList(a, b));
     }

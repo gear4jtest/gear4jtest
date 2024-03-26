@@ -77,7 +77,7 @@ configure(project.coreProjects.stream().filter { !it.name.contains("gradle") }.c
         implementation(libraries.log4jCore)
         implementation(libraries.cglib)
         implementation(libraries.aspectjrt)
-//        implementation(libraries.google)
+        implementation(libraries.google)
 //        implementation(libraries.aspectjweaver)
 
         //compileOnly(libraries.mojo)
@@ -104,6 +104,10 @@ configure(project.coreProjects.stream().filter { !it.name.contains("gradle") }.c
                     'Automatic-Module-Name': moduleName
             )
         }
+    }
+
+    test {
+        systemProperty "jdk.internal.lambda.dumpProxyClasses", "/tmp/proxies/"
     }
 }
 

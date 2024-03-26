@@ -4,7 +4,7 @@ import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
 
 import com.myorg.operation.Step11;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
-import io.github.gear4jtest.core.model.refactor.ContainerDefinition;
+import io.github.gear4jtest.core.model.refactor.ContainerBaseDefinition;
 import io.github.gear4jtest.core.model.refactor.LineDefinition;
 import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
 import java.util.List;
@@ -23,7 +23,7 @@ public class MyInsaneAssemblyLine {
                     .build();
         }
 
-        private static ContainerDefinition<String, List<String>> containerDefinition() {
+        private static ContainerBaseDefinition<String, List<String>> containerDefinition() {
             return container(ContainerFirstSubLine.mainLine())
                     .withSubLine(ContainerSecondSubLine.mainLine())
                     .returns((a, b) -> java.util.Arrays.asList(a, b));

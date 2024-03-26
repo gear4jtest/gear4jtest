@@ -1,7 +1,7 @@
 package io.github.gear4jtest.core.service;
 
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
-import io.github.gear4jtest.core.model.refactor.ContainerDefinition;
+import io.github.gear4jtest.core.model.refactor.ContainerBaseDefinition;
 import io.github.gear4jtest.core.model.refactor.LineDefinition;
 import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
 import io.github.gear4jtest.core.processor.operation.OperationParamsInjector;
@@ -43,7 +43,7 @@ public class AssemblyLineSampleRefinedConfig {
                     .build();
         }
 
-        private static ContainerDefinition<String, List<String>> containerr() {
+        private static ContainerBaseDefinition<String, List<String>> containerr() {
             return container(String.class)
                     .withSubLine(SubLine1.mainLine()).withSubLine(SubLine2.mainLine()).returns(Arrays::asList);
         }

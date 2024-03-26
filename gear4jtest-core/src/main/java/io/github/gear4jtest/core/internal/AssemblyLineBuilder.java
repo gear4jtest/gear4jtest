@@ -1,23 +1,13 @@
 package io.github.gear4jtest.core.internal;
 
+import io.github.gear4jtest.core.factory.ResourceFactory;
+import io.github.gear4jtest.core.model.EventHandlingDefinition;
+import io.github.gear4jtest.core.model.refactor.*;
+import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition.Configuration;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import io.github.gear4jtest.core.factory.ResourceFactory;
-import io.github.gear4jtest.core.model.EventHandlingDefinition;
-import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
-import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition.Configuration;
-import io.github.gear4jtest.core.model.refactor.Container1Definition;
-import io.github.gear4jtest.core.model.refactor.Container2Definition;
-import io.github.gear4jtest.core.model.refactor.ContainerDefinition;
-import io.github.gear4jtest.core.model.refactor.FormerContainerDefinition;
-import io.github.gear4jtest.core.model.refactor.IteratorDefinition;
-import io.github.gear4jtest.core.model.refactor.LineDefinition;
-import io.github.gear4jtest.core.model.refactor.OperationConfigurationDefinition;
-import io.github.gear4jtest.core.model.refactor.OperationDefinition;
-import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
-import io.github.gear4jtest.core.model.refactor.SignalDefiinition;
 
 public class AssemblyLineBuilder<BEGIN, IN> {
 
@@ -90,14 +80,14 @@ public class AssemblyLineBuilder<BEGIN, IN> {
 		return element;
 	}
 
-	private AssemblyLineOperator buildLineElement(IteratorDefinition<?> iterator, AssemblyLineOperator parentElement) {
+	private AssemblyLineOperator buildLineElement(IteratorDefinition<?, ?> iterator, AssemblyLineOperator parentElement) {
 		LineOperator lineElement = (LineOperator) buildLineElement(iterator.getElement());
 		AssemblyLineOperator element = LineElementFactory.buildLineElement(iterator, lineElement);
 		Optional.ofNullable(parentElement).ifPresent(parentElem -> parentElem.addNextLineElement(element));
 		return element;
 	}
 
-	private AssemblyLineOperator buildLineElement(ContainerDefinition<?, ?> container, AssemblyLineOperator parentElement) {
+	private AssemblyLineOperator buildLineElement(ContainerBaseDefinition<?, ?> container, AssemblyLineOperator parentElement) {
 		List<LineOperator> rootElements = new ArrayList<>(container.getSubLines().size());
 		for (LineDefinition<?, ?> line : container.getSubLines()) {
 			LineOperator elem = (LineOperator) buildLineElement(line);
@@ -144,14 +134,14 @@ public class AssemblyLineBuilder<BEGIN, IN> {
 			return buildLineElement((SignalDefiinition<?>) object, parentElement);
 		} else if (object instanceof FormerContainerDefinition) {
 			return buildLineElement((FormerContainerDefinition<?, ?>) object, parentElement);
-		} else if (object instanceof IteratorDefinition<?>) {
-			return buildLineElement((IteratorDefinition<?>) object, parentElement);
+		} else if (object instanceof IteratorDefinition<?, ?>) {
+			return buildLineElement((IteratorDefinition<?, ?>) object, parentElement);
 		} else if (object instanceof Container1Definition<?, ?, ?>) {
 			return buildLineElement((Container1Definition<?, ?, ?>) object, parentElement);
 		} else if (object instanceof Container2Definition<?, ?, ?, ?>) {
 			return buildLineElement((Container2Definition<?, ?, ?, ?>) object, parentElement);
-		} else if (object instanceof ContainerDefinition<?, ?>) {
-			return buildLineElement((ContainerDefinition<?, ?>) object, parentElement);
+		} else if (object instanceof ContainerBaseDefinition<?, ?>) {
+			return buildLineElement((ContainerBaseDefinition<?, ?>) object, parentElement);
 		} else {
 			throw new IllegalArgumentException();
 		}

@@ -1,18 +1,17 @@
 package io.github.gear4jtest.core.internal;
 
-import java.util.List;
-
 import io.github.gear4jtest.core.context.AssemblyLineOperatorExecution;
 import io.github.gear4jtest.core.context.ContainerExecution;
-import io.github.gear4jtest.core.context.LineOperatorExecution;
-import io.github.gear4jtest.core.model.refactor.ContainerDefinition;
+import io.github.gear4jtest.core.model.refactor.ContainerBaseDefinition;
+
+import java.util.List;
 
 public class ContainerLineElement extends AssemblyLineOperator<ContainerExecution> {
 
-	private final ContainerDefinition<?, ?> containerDefinition;
+	private final ContainerBaseDefinition<?, ?> containerDefinition;
 	private final List<LineOperator> childrenElements;
 
-	public ContainerLineElement(ContainerDefinition<?, ?> containerDefinition, List<LineOperator> childrenElements) {
+	public ContainerLineElement(ContainerBaseDefinition<?, ?> containerDefinition, List<LineOperator> childrenElements) {
 		super();
 		this.childrenElements = childrenElements;
 		this.containerDefinition = containerDefinition;
@@ -36,8 +35,8 @@ public class ContainerLineElement extends AssemblyLineOperator<ContainerExecutio
 				.map(AssemblyLineOperatorExecution::getItem)
 				.map(Item::getItem)
 				.toArray();
-		if (containerDefinition.getFunction() != null) {
-			return containerDefinition.getFunction().apply(returnedObjects);
+		if (containerDefinition.getFunc() != null) {
+			return containerDefinition.getFunc().apply(returnedObjects);
 		} else {
 			return null;
 		}
