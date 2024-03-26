@@ -1,2 +1,4 @@
 rootProject.name = 'gear4jtest'
 include 'gear4jtest-core'
+include 'gear4jtest-xml'
+include 'gear4jtest-gradle-xml2java'

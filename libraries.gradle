@@ -1,21 +1,29 @@
 // Allows centralized definition of the version of artifacts to
 // use.  In that respect it serves a role similar to <dependencyManagement> in Maven
 ext {
-    junitVersion = '4.12'
+    junitVersion = '5.9.3'
     slf4jVersion = '1.7.26'
-    assertjVersion = '3.12.2'
+    assertjVersion = '3.24.2'
     logbackVersion = '1.2.3'
-    mockitoVersion = '2.25.1'
+    mockitoVersion = '4.6.0'
 
     libraries = [
             // compile
             slf4j: "org.slf4j:slf4j-api:${slf4jVersion}",
+            log4jApi: "org.apache.logging.log4j:log4j-api:2.22.1",
+            log4jCore: "org.apache.logging.log4j:log4j-core:2.22.1",
+            cglib: "cglib:cglib:3.3.0",
+            aspectjrt: "org.aspectj:aspectjrt:1.9.8.RC3",
+            aspectjweaver: "org.aspectj:aspectjweaver:1.8.9",
+            mojo: "org.codehaus.mojo:aspectj-maven-plugin:1.14.0",
+            google: "com.google.guava:guava:33.0.0-jre",
+
 
             // testCompile
-            junit: "junit:junit:${junitVersion}",
+            junit: "org.junit.jupiter:junit-jupiter:${junitVersion}",
             assertj: "org.assertj:assertj-core:${assertjVersion}",
             logback: "ch.qos.logback:logback-classic:${logbackVersion}",
             mockito: "org.mockito:mockito-core:${mockitoVersion}",
+            mockitoJunit: "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     ]
-
 }

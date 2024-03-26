@@ -1,0 +1,20 @@
+dependencies {
+    implementation project(':gear4jtest-core')
+    implementation project(':gear4jtest-xml')
+    implementation group: "com.squareup", name: "javapoet", version: "1.13.0"
+
+    testImplementation(gradleTestKit())
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: "5.5.2"
+    testImplementation group: "org.assertj",       name: "assertj-core",  version: "3.14.0"
+}
+
+gradlePlugin {
+    plugins {
+        create("gear4jXmlAssemblyLineGenerator") {
+            id = "io.test.gear4jtest.xml2java"
+            implementationClass = "io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPlugin"
+        }
+    }
+}
+
+ext.moduleName = 'io.test.gear4jtest.xml2java'
