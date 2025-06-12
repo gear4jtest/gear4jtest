@@ -39,7 +39,7 @@ public class AssemblyLineOperatorExecution {
 		this.item = new Item(Optional.ofNullable(parentOperatorExecution)
 				.map(AssemblyLineOperatorExecution::getItem)
 				.map(Item::getItem)
-				.orElse(Optional.ofNullable(assemblyLineExecution.getItem()).map(Item::getItem).orElse(new Item(null))));
+				.orElse(Optional.ofNullable(assemblyLineExecution.getItem()).map(Item::getItem).orElse(null)));
 		this.context = new HashMap<>();
 		this.processed = false;
 		this.assemblyLineExecution = assemblyLineExecution;

@@ -1,9 +1,6 @@
 package io.github.gear4jtest.core.model;
 
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -164,6 +161,10 @@ public final class ElementModelBuilders {
 		return new LineDefinition.Builder<IN, IN>().operator(firstOperator);
 	}
 
+	public static LineDefinition.EmptyLineBuilder line() {
+		return new LineDefinition.EmptyLineBuilder();
+	}
+
 	public static <A, B, T extends Operation<A, B>> ProcessingOperationDefinition.Builder<A, B, T> processingOperation(Class<T> step) {
 		return new ProcessingOperationDefinition.Builder<A, B, T>().type(step);
 	}
@@ -183,6 +184,11 @@ public final class ElementModelBuilders {
 
 	public static <U, V> StopSignalDefiinition.Builder<Map<U, V>> stopSignal(MapType<U, V> clazz) {
 		return new StopSignalDefiinition.Builder<Map<U, V>>()
+				.type(SignalType.STOP);
+	}
+
+	public static <T> StopSignalDefiinition.Builder<T> stopSignal(TypeReference<T> type) {
+		return new StopSignalDefiinition.Builder<T>()
 				.type(SignalType.STOP);
 	}
 

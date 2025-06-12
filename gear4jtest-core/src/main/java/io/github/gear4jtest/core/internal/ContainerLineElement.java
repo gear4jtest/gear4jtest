@@ -20,11 +20,12 @@ public class ContainerLineElement extends AssemblyLineOperator<ContainerExecutio
 	@Override
 	public ContainerExecution execute(ContainerExecution execution) {
 		Object input = execution.getItem().getItem();
+		AssemblyLineOrchestrator orchestrator = new AssemblyLineOrchestrator(execution.getAssemblyLineExecution());
 		for (LineOperator element : childrenElements) {
 			Object newObject = deepClone(input);
 //			LineOperatorExecution newItemExecution = execution.getAssemblyLineExecution().createExecution(element, execution);
 //			newItemExecution.getItem().updateItem(newObject);
-			new AssemblyLineOrchestrator(execution.getAssemblyLineExecution()).orchestrate(element, execution, new Item(newObject));
+			orchestrator.orchestrate(element, execution);
 		}
 		execution.getItem().updateItem(returns(execution.getExecutions()));
 		return execution;
@@ -41,7 +42,7 @@ public class ContainerLineElement extends AssemblyLineOperator<ContainerExecutio
 			return null;
 		}
 	}
-	
+
 	private Object deepClone(Object object) {
 		return object;
 	}

@@ -25,6 +25,12 @@ public class AssemblyLineOrchestrator {
 		return assemblyLineExecution;
 	}
 
+//	public <BEGIN, OUT> AssemblyLineExecution orchestrate(LineOperator lineOperator, ExecutionContainer<?> parentExecution, Object input) {
+//		LineOperatorExecution rootLineExecution = assemblyLineExecution.createLineExecution(lineOperator, input);
+//		orchestrate(lineOperator, rootLineExecution, rootLineExecution);
+//		return assemblyLineExecution;
+//	}
+
 	public <A extends AssemblyLineOperatorExecution> ExecutionContainer<?> orchestrate(AssemblyLineOperator<A> element, A execution, ExecutionContainer<?> lineExecution) {
 		A result = element.execute(execution);
 		lineExecution.getItem().updateItem(result.getItem().getItem());
@@ -44,11 +50,12 @@ public class AssemblyLineOrchestrator {
 	}
 
 	public <A extends AssemblyLineOperatorExecution> ExecutionContainer<?> orchestrate(AssemblyLineOperator<A> element, ExecutionContainer<?> lineExecution) {
-		if (lineExecution.shouldStop()) {
-			return lineExecution;
-		}
-		A execution = assemblyLineExecution.createExecution(element, lineExecution);
-		return orchestrate(element, execution, lineExecution);
+//		if (lineExecution.shouldStop()) {
+//			return lineExecution;
+//		}
+//		A execution = assemblyLineExecution.createExecution(element, lineExecution);
+//		return orchestrate(element, execution, lineExecution);
+		return orchestrate(element, lineExecution, lineExecution.getItem());
 	}
 
 	public <A extends AssemblyLineOperatorExecution> ExecutionContainer<?> orchestrate(AssemblyLineOperator<A> element, ExecutionContainer<?> lineExecution, Item newInput) {

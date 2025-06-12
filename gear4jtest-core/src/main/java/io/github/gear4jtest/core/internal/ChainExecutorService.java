@@ -1,11 +1,10 @@
 package io.github.gear4jtest.core.internal;
 
-import java.util.Map;
-import java.util.function.Supplier;
-
 import io.github.gear4jtest.core.context.AssemblyLineExecution;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
+
+import java.util.Map;
 
 /**
  * Entry class for Gear4j chains execution.
@@ -25,7 +24,6 @@ public class ChainExecutorService {
 	}
 	
 	public <BEGIN, IN> IN executeAndUnwrap(AssemblyLineDefinition<BEGIN, IN> assemblyLine, BEGIN input, ResourceFactory resourceFactory) throws AssemblyLineException {
-		Supplier<String> supplier = () -> "fizjef";
 		return executeAndUnwrap(assemblyLine, input, null, resourceFactory);
 	}
 

@@ -613,6 +613,57 @@ public class SimpleChainBuilderTest {
 			.containsExactly("b", "c");
 	}
 
+
+	@Test
+	public void test_line_with_signal_first() throws AssemblyLineException {
+		// Given
+		LineDefinition<String, Object> mainLine = line()
+				.operator(stopSignal(new TypeReference<String>() {}).condition(a -> a.getItem() == null).build())
+				.operator(processingOperation(Step11.class)
+						.parameter(Step11::getParam, "a")
+						.build())
+				.operator(processingOperation(Step13.class).build())
+				.condition((input, execution) -> input != null && !input.isEmpty())
+				.build();
+
+		AssemblyLineDefinition<String, Object> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+				.definition(mainLine)
+				.configuration(configuration()
+						.stepDefaultConfiguration(operationConfiguration()
+								.preProcessors(Arrays.asList(OperationParamsInjector.class))
+								.build())
+						.eventHandlingDefinition(eventHandling()
+								.queue(queue().eventListener(new TestEventListener()).build())
+								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+								.build())
+						.build())
+				.build();
+
+		// When
+		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
+
+		// Then
+		assertThat(result)
+				.isNotNull()
+				.isInstanceOf(List.class)
+				.asList()
+				.containsExactly("a");
+
+		// When
+		result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "", new TestResourceFactory());
+
+		// Then
+		assertThat(result)
+				.isNull();
+
+		// When
+		result = new ChainExecutorService().executeAndUnwrap(assemblyLine, null, new TestResourceFactory());
+
+		// Then
+		assertThat(result)
+				.isNull();
+	}
+
 	private class ProcessingOperationProxy implements MethodInterceptor {
 	    private Operation originalOperation;
 	    public ProcessingOperationProxy(Operation operation) {
@@ -867,6 +918,7 @@ public class SimpleChainBuilderTest {
 			BEANS.put(Step10.class, new Step10());
 			BEANS.put(Step11.class, new Step11());
 			BEANS.put(Step12.class, new Step12());
+			BEANS.put(Step13.class, new Step13());
 		}
 
 		@Override

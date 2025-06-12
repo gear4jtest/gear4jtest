@@ -22,6 +22,19 @@ public class LineDefinition<X, Y> extends OperationDefinition<X, Y> {
 		return condition;
 	}
 
+	public static class EmptyLineBuilder {
+		public EmptyLineBuilder() {
+		}
+
+		public <IN, OUT> Builder<IN, OUT> operator(OperationDefinition<IN, OUT> operator) {
+			return new Builder<IN, IN>().operator(operator);
+		}
+
+		public <IN> UnpredictableLineDefinition.Builder<IN, IN> operator(StopSignalDefiinition<IN> operator) {
+			return new Builder<IN, IN>().operator(operator);
+		}
+	}
+
 	public static class Builder<IN, OUT> {
 
 		private final LineDefinition<IN, OUT> managedInstance;

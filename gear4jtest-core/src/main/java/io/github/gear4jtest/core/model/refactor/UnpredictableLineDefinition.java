@@ -1,5 +1,8 @@
 package io.github.gear4jtest.core.model.refactor;
 
+import io.github.gear4jtest.core.context.LineOperatorExecution;
+
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 public class UnpredictableLineDefinition<X, Y> {
@@ -15,6 +18,11 @@ public class UnpredictableLineDefinition<X, Y> {
 		public <A> Builder<IN, A> operator(OperationDefinition<OUT, A> operator) {
 			managedInstance.operator(operator);
 			return (Builder<IN, A>) this;
+		}
+
+		public Builder<IN, OUT> condition(BiPredicate<IN, LineOperatorExecution> condition) {
+			managedInstance.condition(condition);
+			return this;
 		}
 
 		public LineDefinition<IN, Object> build() {

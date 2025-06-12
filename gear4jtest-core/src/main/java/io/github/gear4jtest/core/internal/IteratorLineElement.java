@@ -32,9 +32,10 @@ public class IteratorLineElement extends AssemblyLineOperator<IteratorExecution>
 		Collection<Object> collection = new ArrayList<>();
 		
 		for (Object element : iterable) {
-			LineOperatorExecution newItemExecution = execution.getAssemblyLineExecution().createExecution(nestedElement, execution.getParentOperatorExecution());
-			newItemExecution.getItem().updateItem(element);
-			LineOperatorExecution resultExecution = (LineOperatorExecution) new AssemblyLineOrchestrator(execution.getAssemblyLineExecution()).orchestrate(nestedElement, newItemExecution, new Item(element));
+//			LineOperatorExecution newItemExecution = execution.getAssemblyLineExecution().createExecution(nestedElement, execution.getParentOperatorExecution());
+//			newItemExecution.getItem().updateItem(element);
+			LineOperatorExecution resultExecution = (LineOperatorExecution) new AssemblyLineOrchestrator(execution.getAssemblyLineExecution())
+					.orchestrate(nestedElement, execution, new Item(element));
 			accumulateIfNecessary(resultExecution, collection);
 		}
 		
