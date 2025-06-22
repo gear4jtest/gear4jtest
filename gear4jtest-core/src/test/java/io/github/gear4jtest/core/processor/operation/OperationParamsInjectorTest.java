@@ -25,7 +25,7 @@
 //import io.github.gear4jtest.core.model.Operation;
 //import io.github.gear4jtest.core.model.OperationModel;
 //import io.github.gear4jtest.core.processor.ProcessorChain.ProcessorDriver;
-//import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.Parameter;
+//import io.github.gear4jtest.core.model.refactor.OperationParamsInjector.Parameter;
 //
 //@ExtendWith(MockitoExtension.class)
 //class OperationParamsInjectorTest {

@@ -5,22 +5,24 @@ import java.util.List;
 
 public class Container2Definition<IN, OUT, A, B> extends ContainerBaseDefinition<IN, OUT> {
 
-	private Container2Definition(List<LineDefinition<?, ?>> subLines) {
+	private Container2Definition(List<Branch<IN>> subLines) {
 		super(new ArrayList<>(2), null);
-		this.subLines.add(subLines.get(0));
+		this.pipelines.add(subLines.get(0));
 	}
 
 	public static class Builder<IN, OUT, A, B> {
 
 		private final Container2Definition<IN, OUT, A, B> managedInstance;
 
-		public Builder(List<LineDefinition<?, ?>> subLines, LineDefinition<?, ?> newLine) {
-			managedInstance = new Container2Definition<>(subLines);
-			managedInstance.subLines.add(newLine);
+		public Builder(ContainerBaseDefinition<IN, OUT> parentDefinition, Branch<IN> newLine) {
+			managedInstance = new Container2Definition<>(parentDefinition.pipelines);
+			managedInstance.pipelines.add(newLine);
+			managedInstance.executorService = parentDefinition.executorService;
+			managedInstance.isParallel = parentDefinition.isParallel;
 		}
 
 		// To be continued
-//		public <START> Builder<START, Void> withSubLine(LineDefinition<START, ?> startingElement) {
+//		public <START> Builder<START, Void> withSubLine(OperationDefinition<START, ?> startingElement) {
 //			managedInstance.subLines.add(startingElement);
 //			return (Builder<START, Void>) this;
 //		}
@@ -41,7 +43,7 @@ public class Container2Definition<IN, OUT, A, B> extends ContainerBaseDefinition
 	@FunctionalInterface
 	public interface Container2DFunction<A, B, C> extends ContainerFunction {
 		C applya(A a, B b);
-		
+
 		default Object apply(Object... objects) {
 			assert objects != null && objects.length == 2;
 			return applya((A) objects[0], (B) objects[1]);

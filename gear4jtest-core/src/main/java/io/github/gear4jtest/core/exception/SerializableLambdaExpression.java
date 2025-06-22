@@ -1,7 +1,5 @@
 package io.github.gear4jtest.core.exception;
 
-import io.github.gear4jtest.core.model.refactor.Whatever;
-
 import java.io.Serializable;
 
 public class SerializableLambdaExpression {

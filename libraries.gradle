@@ -17,6 +17,7 @@ ext {
             aspectjweaver: "org.aspectj:aspectjweaver:1.8.9",
             mojo: "org.codehaus.mojo:aspectj-maven-plugin:1.14.0",
             google: "com.google.guava:guava:33.0.0-jre",
+            jackson: "com.fasterxml.jackson.core:jackson-databind:2.19.0",
 
 
             // testCompile
@@ -24,6 +25,7 @@ ext {
             assertj: "org.assertj:assertj-core:${assertjVersion}",
             logback: "ch.qos.logback:logback-classic:${logbackVersion}",
             mockito: "org.mockito:mockito-core:${mockitoVersion}",
-            mockitoJunit: "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+            mockitoJunit: "org.mockito:mockito-junit-jupiter:${mockitoVersion}",
+            postgresql: "org.postgresql:postgresql:42.7.7"
     ]
 }

@@ -1,78 +1,44 @@
 package io.github.gear4jtest.core.model.refactor;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import io.github.gear4jtest.core.model.BaseOnError;
 import io.github.gear4jtest.core.model.Operation;
-import io.github.gear4jtest.core.model.UnsafeOnError;
-import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition.InterpretationContextParameterModel.InterpretationContext;
-import io.github.gear4jtest.core.processor.CustomProcessingOperationProcessor;
-import io.github.gear4jtest.core.processor.ProcessingOperationProcessor;
-import io.github.gear4jtest.core.processor.Transformer;
-import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.Parameter;
+import org.checkerframework.checker.units.qual.A;
 
-public class ProcessingOperationDefinition<IN, OUT> extends OperationDefinition<IN, OUT> {
+public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDefinition<IN, OUT> {
 
 	private Class<Operation<IN, OUT>> type;
 
 	private List<ParameterModel<?, ?>> parameters;
-
-	private List<Class<? extends ProcessingOperationProcessor>> preProcessors;
-
-	private List<Class<? extends ProcessingOperationProcessor>> postProcessors;
-
-	private Map<Object, CustomProcessingOperationProcessor<?>> customProcessorModels;
-
-	private List<BaseOnError> onErrors;
-
-	private Transformer<IN, OUT> transformer;
-
-//	private Map<Class<? extends ProcessingOperationProcessor>, Object> processorModels;
 	
 	private OperationConfigurationDefinition operationConfiguration;
 	
 	private ProcessingOperationDefinition() {
+		super("");
 		this.parameters = new ArrayList<>();
 		this.onErrors = new ArrayList<>();
-		this.customProcessorModels = new HashMap<>();
-//		this.processorModels = new HashMap<>();
-	}
-
-	public Class<Operation<IN, OUT>> getType() {
-		return type;
 	}
 
 	public List<ParameterModel<?, ?>> getParameters() {
 		return parameters;
 	}
 
-	public List<Class<? extends ProcessingOperationProcessor>> getPreProcessors() {
-		return preProcessors;
-	}
-
-	public List<Class<? extends ProcessingOperationProcessor>> getPostProcessors() {
-		return postProcessors;
-	}
-
-	public List<BaseOnError> getOnErrors() {
-		return onErrors;
-	}
-
-	public Transformer<IN, OUT> getTransformer() {
-		return transformer;
-	}
-//
-//	public Map<Class<? extends ProcessingOperationProcessor>, Object> getProcessorModels() {
-//		return processorModels;
-//	}
-
 	public OperationConfigurationDefinition getOperationConfiguration() {
 		return operationConfiguration;
+	}
+
+	@Override
+	public void initialize(IN input, ExecutionContext context, OperationExecution operationExecution) {
+		var operation = context.getResourceFactory().getResource(type);
+		operationExecution.setOperation(operation);
+	}
+
+	@Override
+	public OUT execute(IN input, ExecutionContext context, OperationExecution operationExecution) throws Exception {
+		return ((Operation<IN, OUT>) operationExecution.getOperation()).execute(input, null);
 	}
 
 	public static class Builder<IN, OUT, OP extends io.github.gear4jtest.core.model.Operation<IN, OUT>> {
@@ -88,89 +54,53 @@ public class ProcessingOperationDefinition<IN, OUT> extends OperationDefinition<
 			return (Builder<IN, A, T>) this;
 		}
 
-//				public Builder<IN, OUT> parameter(String name, String evaluator, String value) {
-//					managedInstance.parameters.add(new Parameter(name, value, evaluator));
-//					return this;
-//				}
-
-//				public <A> Builder<IN, OUT> parameter(ParamRetriever<A> name, String evaluator, String value) {
-//					managedInstance.parameters.add(new Parameter("", value, evaluator));
-//					return this;
-//				}
-		//
-//				public <A> Builder<IN, OUT> parameter(ParamRetriever<A> name, String value) {
-//					managedInstance.parameters.add(new Parameter("", value, evaluator));
-//					return this;
-//				}
-
-//				public <A> Builder<IN, OUT, OP> parameter(ParameterModel<OP, A> parameter) {
-//					managedInstance.parameters.add(parameter);
-//					return this;
-//				}
-
-//		public <A> Builder<IN, OUT, OP> processorModel(Class<? extends ProcessingOperationProcessor<A>> processor, A model) {
-//			managedInstance.processorModels.put(processor, model);
-//			return this;
-//		}
+		public Builder<IN, OUT, OP> id(String id) {
+			managedInstance.id = id;
+			return this;
+		}
 
 		public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever, A value) {
+			addParameterInjectorIfNecessary();
 			managedInstance.parameters.add(new ValueParameterModel<>(retriever, value));
 			return this;
 		}
 
 		public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever, Supplier<A> value) {
+			addParameterInjectorIfNecessary();
 			managedInstance.parameters.add(new SupplierParameterModel<>(retriever, value));
 			return this;
 		}
 
-		public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever, Function<InterpretationContext, A> value) {
+		public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever, Function<InterpretationContextParameterModel.InterpretationContext, A> value) {
+			addParameterInjectorIfNecessary();
 			managedInstance.parameters.add(new InterpretationContextParameterModel<>(retriever, value));
 			return this;
 		}
 
-		public <T> Builder<IN, OUT, OP> additionalModel(T model, CustomProcessingOperationProcessor<T> processor) {
-			managedInstance.customProcessorModels.put(model, processor);
-			return this;
+		private void addParameterInjectorIfNecessary() {
+			if (managedInstance.processors.stream().noneMatch(p -> p instanceof OperationParamsInjector)) {
+				managedInstance.processors.add(new OperationParamsInjector());
+			}
 		}
 
-//				public <A, B> Parameter<B> newParameter(ParamRetriever<A, B> name) {
-//					Parameter<B> param = new Parameter<>(name);
-//					return param;
-//				}
-
-//				public Builder<IN, OUT> parameter(String name, Object value) {
-//					managedInstance.parameters.add(new Parameter(name, value));
-//					return this;
-//				}
-
-		public <A> Builder<IN, OUT, OP> preProcessors(List<Class<ProcessingOperationProcessor>> processors) {
-			managedInstance.preProcessors = new ArrayList<>(processors);
-			return this;
-		}
-
-		public <A> Builder<IN, OUT, OP> preProcessor(Class<ProcessingOperationProcessor> processor) {
-			managedInstance.preProcessors.add(processor);
-			return this;
-		}
-
-		public <A> Builder<IN, OUT, OP> postProcessor(Class<ProcessingOperationProcessor> processor) {
-			managedInstance.postProcessors.add(processor);
-			return this;
-		}
-
-		public Builder<IN, OUT, OP> onError(BaseOnError onError) {
+		public Builder<IN, OUT, OP> onError(BaseError.SafeError<IN> onError) {
 			this.managedInstance.onErrors.add(onError);
 			return this;
 		}
 
-		public UnsafeOperation.Builder<IN, OUT, OP> onError(UnsafeOnError<?> onError) {
-			this.managedInstance.onErrors.add(onError.getOnError());
+		public UnsafeOperation.Builder<IN, OUT, OP> onError(BaseError.UnSafeError<IN> onError) {
+			this.managedInstance.onErrors.add(onError);
 			return new UnsafeOperation.Builder<>(this);
 		}
 
 		public Builder<IN, OUT, OP> transformer(Transformer<IN, OUT> transformer) {
-			this.managedInstance.transformer = transformer;
+			this.managedInstance.skipTransformer = transformer;
 			return this;
+		}
+
+		public UnsafeOperation.Builder<IN, OUT, OP> conditional(Condition<IN> condition) {
+			this.managedInstance.conditions.add(condition);
+			return new UnsafeOperation.Builder<>(this);
 		}
 
 		public ProcessingOperationDefinition<IN, OUT> build() {
@@ -182,7 +112,7 @@ public class ProcessingOperationDefinition<IN, OUT> extends OperationDefinition<
 	@FunctionalInterface
 	public interface ParamRetriever<T extends Operation<?, ?>, U> {
 
-		Parameter<U> getParameterValue(T operation);
+		OperationParamsInjector.Parameter<U> getParameterValue(T operation);
 
 	}
 
@@ -283,13 +213,53 @@ public class ProcessingOperationDefinition<IN, OUT> extends OperationDefinition<
 				this.managedInstance.operation = operation;
 			}
 
-			public Builder<IN, OUT, OP> onError(BaseOnError onError) {
+			public Builder<IN, OUT, OP> onError(BaseError.SafeError<IN> onError) {
 				this.managedInstance.operation.onError(onError);
 				return this;
 			}
 
-			public UnsafeOperation.Builder<IN, OUT, OP> onError(UnsafeOnError<?> onError) {
-				this.managedInstance.operation.onError(onError.getOnError());
+			public UnsafeOperation.Builder<IN, OUT, OP> onError(BaseError.UnSafeError<IN> onError) {
+				this.managedInstance.operation.onError(onError);
+				return this;
+			}
+
+			public UnsafeOperation.Builder<IN, OUT, OP> conditional(Condition<IN> condition) {
+				this.managedInstance.operation.conditional(condition);
+				return this;
+			}
+
+			public SafeOperation.Builder<IN, OUT, OP> transformer(Transformer<IN, OUT> transformer) {
+				this.managedInstance.operation.transformer(transformer);
+				return new SafeOperation.Builder<>(this.managedInstance.operation);
+			}
+		}
+	}
+
+	public static class SafeOperation<IN, OUT, OP extends io.github.gear4jtest.core.model.Operation<IN, OUT>> {
+
+		private ProcessingOperationDefinition.Builder<IN, OUT, OP> operation;
+
+		public static class Builder<IN, OUT, OP extends io.github.gear4jtest.core.model.Operation<IN, OUT>> {
+
+			private SafeOperation<IN, OUT, OP> managedInstance;
+
+			public Builder(ProcessingOperationDefinition.Builder<IN, OUT, OP> operation) {
+				this.managedInstance = new SafeOperation<>();
+				this.managedInstance.operation = operation;
+			}
+
+			public Builder<IN, OUT, OP> onError(BaseError.SafeError<IN> onError) {
+				this.managedInstance.operation.onError(onError);
+				return this;
+			}
+
+			public Builder<IN, OUT, OP> onError(BaseError.UnSafeError<IN> onError) {
+				this.managedInstance.operation.onError(onError);
+				return this;
+			}
+
+			public Builder<IN, OUT, OP> conditional(Condition<IN> condition) {
+				this.managedInstance.operation.conditional(condition);
 				return this;
 			}
 
@@ -298,8 +268,9 @@ public class ProcessingOperationDefinition<IN, OUT> extends OperationDefinition<
 				return this.managedInstance.operation;
 			}
 
+			public ProcessingOperationDefinition<IN, OUT> build() {
+				return this.managedInstance.operation.build();
+			}
 		}
-
 	}
-
 }

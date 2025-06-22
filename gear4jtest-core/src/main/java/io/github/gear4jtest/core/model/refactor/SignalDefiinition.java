@@ -2,13 +2,15 @@ package io.github.gear4jtest.core.model.refactor;
 
 import java.util.function.Predicate;
 
-import io.github.gear4jtest.core.context.AssemblyLineOperatorExecution;
-
-public class SignalDefiinition<IN> extends IdentityOperationDefinition<IN> {
+public class SignalDefiinition<IN> extends AbstractOperationDefinition<IN, IN> {
 
 	protected SignalType signalType;
 
 	protected Predicate<SignalInterpretationContext<IN>> condition;
+
+	public SignalDefiinition() {
+		super("");
+	}
 
 	public SignalType getSignalType() {
 		return signalType;
@@ -16,6 +18,15 @@ public class SignalDefiinition<IN> extends IdentityOperationDefinition<IN> {
 
 	public Predicate<SignalInterpretationContext<IN>> getCondition() {
 		return condition;
+	}
+
+	@Override
+	public IN execute(IN input, ExecutionContext context, OperationExecution operationExecution) throws Exception {
+		switch(signalType) {
+			case FATAL -> operationExecution.getReport().setStatus(OperationExecution.OperationReport.Status.FAILED);
+			case STOP -> operationExecution.getReport().setStatus(OperationExecution.OperationReport.Status.STOPPED);
+		}
+		return input;
 	}
 
 	public static class Builder<IN> {
@@ -44,9 +55,9 @@ public class SignalDefiinition<IN> extends IdentityOperationDefinition<IN> {
 
 	public static class SignalInterpretationContext<T> {
 		private T item;
-		private AssemblyLineOperatorExecution itemExecution;
+		private ExecutionContext itemExecution;
 
-		public SignalInterpretationContext(T item, AssemblyLineOperatorExecution itemExecution) {
+		public SignalInterpretationContext(T item, ExecutionContext itemExecution) {
 			this.item = item;
 			this.itemExecution = itemExecution;
 		}
@@ -55,14 +66,9 @@ public class SignalDefiinition<IN> extends IdentityOperationDefinition<IN> {
 			return item;
 		}
 
-		public AssemblyLineOperatorExecution getItemExecution() {
+		public ExecutionContext getItemExecution() {
 			return itemExecution;
 		}
 
 	}
-
-	public enum SignalType {
-		STOP, FATAL;
-	}
-
 }

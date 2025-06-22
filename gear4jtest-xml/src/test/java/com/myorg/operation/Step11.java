@@ -2,7 +2,7 @@ package com.myorg.operation;
 
 import io.github.gear4jtest.core.context.StepExecution;
 import io.github.gear4jtest.core.model.Operation;
-import io.github.gear4jtest.core.processor.operation.OperationParamsInjector.Parameter;
+import io.github.gear4jtest.core.model.refactor.OperationParamsInjector.Parameter;
 
 public class Step11 implements Operation<String, String> {
 

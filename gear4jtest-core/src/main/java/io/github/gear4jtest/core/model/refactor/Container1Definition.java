@@ -1,7 +1,6 @@
 package io.github.gear4jtest.core.model.refactor;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class Container1Definition<IN, OUT, A> extends ContainerBaseDefinition<IN, OUT> {
 
@@ -13,13 +12,21 @@ public class Container1Definition<IN, OUT, A> extends ContainerBaseDefinition<IN
 
 		private final Container1Definition<IN, OUT, A> managedInstance;
 
-		public Builder(LineDefinition<OUT, A> lineDefinition) {
+		public Builder(ContainerBaseDefinition<IN, OUT> parentDefinition, Branch<IN> branch) {
 			managedInstance = new Container1Definition<>();
-			managedInstance.subLines.add(lineDefinition);
+			managedInstance.pipelines.add(branch);
+			managedInstance.executorService = parentDefinition.executorService;
+			managedInstance.isParallel = parentDefinition.isParallel;
 		}
 
-		public <START, B> Container2Definition.Builder<IN, OUT, A, B> withSubLine(LineDefinition<START, B> lineDefinition) {
-			return new Container2Definition.Builder<>(managedInstance.getSubLines(), lineDefinition);
+		public <B> Container2Definition.Builder<IN, OUT, A, B> withSubLine(AbstractOperationDefinition<IN, B> operationDefinition) {
+			var branch = new Branch.Builder<IN>().withOperation(operationDefinition).build();
+			return new Container2Definition.Builder<>(managedInstance, branch);
+		}
+
+		public <B> Container2Definition.Builder<IN, OUT, A, B> withSubLine(AbstractOperationDefinition<IN, B> operationDefinition, Condition<IN> condition) {
+			var branch = new Branch.Builder<IN>().withCondition(condition).withOperation(operationDefinition).build();
+			return new Container2Definition.Builder<>(managedInstance, branch);
 		}
 
 		public <C> ContainerBaseDefinition<IN, C> returns(Container1DFunction<A, C> func) {
@@ -35,7 +42,7 @@ public class Container1Definition<IN, OUT, A> extends ContainerBaseDefinition<IN
 		}
 
 	}
-	
+
 	@FunctionalInterface
 	public interface Container1DFunction<A, B> extends ContainerFunction {
 		B applya(A a);
@@ -44,10 +51,10 @@ public class Container1Definition<IN, OUT, A> extends ContainerBaseDefinition<IN
 			return t -> t;
 		}
 
-		default Object apply(Object... objects) {
+		default B apply(Object... objects) {
 			assert objects != null && objects.length == 1;
 			return applya((A) objects[0]);
 		}
 	}
-	
+
 }

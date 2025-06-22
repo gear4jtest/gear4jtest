@@ -7,24 +7,20 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
-import io.github.gear4jtest.core.model.ElementModelBuilders;
+public class IteratorDefinition<IN, OUT> extends AbstractOperationDefinition<IN, OUT> {
 
-public class IteratorDefinition<IN, OUT> extends OperationDefinition<IN, OUT> {
-
-	private Function<?, ? extends Iterable<?>> func;
-	private LineDefinition<?, ?> element;
+	private Function<IN, ? extends Iterable<?>> func;
+	private AssemblyLineDefinition assemblyLineDefinition;
+	private AbstractOperationDefinition operation;
 	private Accumulator accumulator;
 	private Collector collector;
 
-	private IteratorDefinition() {
+	private IteratorDefinition(String id) {
+		super(id);
 	}
 
-	public Function<?, ? extends Iterable<?>> getFunc() {
+	public Function<IN, ? extends Iterable<?>> getFunc() {
 		return func;
-	}
-
-	public LineDefinition<?, ?> getElement() {
-		return element;
 	}
 
 	public Accumulator getAccumulator() {
@@ -35,12 +31,51 @@ public class IteratorDefinition<IN, OUT> extends OperationDefinition<IN, OUT> {
 		return collector;
 	}
 
+	@Override
+	public OUT execute(IN input, ExecutionContext context, OperationExecution operationExecution) throws Exception {
+		Iterable<?> collection = null;
+		if (func != null) {
+			collection = func.apply(input);
+		} else {
+			collection = (Iterable<?>) input;
+		}
+		Collection<Object> results = new ArrayList<>();
+		for (Object element: collection) {
+			var result = operation.run(element, context);
+
+			operationExecution.getReport().addSubOperationReport(result.getReport());
+
+			if (result.getReport().getStatus() == OperationExecution.OperationReport.Status.FAILED) {
+				return null;
+			}
+
+			results.add(result.getResult());
+		}
+
+//		if (accumulator != null) {
+//			Collection<?> acc = accumulator.getCollectionSupplier().getSupplier().get();
+//			results.forEach(r -> {
+//				if (r.isSuccess()) {
+//					acc.add(r.getResult());
+//				} else {
+//					report.addError(r.getError());
+//				}
+//			});
+		if (collector != null) {
+			return (OUT) results.stream().collect(collector);
+		} else {
+			return (OUT) results;
+		}
+//		}
+//		return new ExecutionResult<>((OUT) results, true, null, report);
+	}
+
 	public static class Builder<IN, OUT> {
 
 		private final IteratorDefinition<IN, OUT> managedInstance;
 
-		public Builder() {
-			managedInstance = new IteratorDefinition<>();
+		public Builder(String id) {
+			managedInstance = new IteratorDefinition<>(id);
 		}
 
 		public <A> Builder<IN, A> iterableFunction(Function<IN, ? extends Iterable<A>> func) {
@@ -48,8 +83,13 @@ public class IteratorDefinition<IN, OUT> extends OperationDefinition<IN, OUT> {
 			return (Builder<IN, A>) this;
 		}
 
-		public <A> Builder<IN, A> nestedElement(OperationDefinition<OUT, A> element) {
-			managedInstance.element = ElementModelBuilders.line(element).build();
+		public <A> Builder<IN, A> pipeline(AssemblyLineDefinition<OUT, A> assemblyLineDefinition) {
+			managedInstance.assemblyLineDefinition = assemblyLineDefinition;
+			return (Builder<IN, A>) this;
+		}
+
+		public <A> Builder<IN, A> operation(AbstractOperationDefinition<OUT, A> assemblyLineDefinition) {
+			managedInstance.operation = assemblyLineDefinition;
 			return (Builder<IN, A>) this;
 		}
 

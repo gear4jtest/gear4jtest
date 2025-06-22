@@ -1,160 +1,532 @@
 package io.github.gear4jtest.core.service;
 
-import io.github.gear4jtest.core.context.StepExecution;
-import io.github.gear4jtest.core.event.Event;
-import io.github.gear4jtest.core.event.EventListener;
-import io.github.gear4jtest.core.factory.ResourceFactory;
-import io.github.gear4jtest.core.internal.AssemblyLineException;
-import io.github.gear4jtest.core.internal.ChainExecutorService;
-import io.github.gear4jtest.core.internal.Item;
-import io.github.gear4jtest.core.model.Operation;
-import io.github.gear4jtest.core.model.refactor.*;
-import io.github.gear4jtest.core.model.refactor.Container1Definition.Container1DFunction;
-import io.github.gear4jtest.core.processor.CustomProcessingOperationProcessor;
-import io.github.gear4jtest.core.processor.ProcessingOperationProcessor;
-import io.github.gear4jtest.core.processor.operation.OperationParamsInjector;
-import io.github.gear4jtest.core.service.steps.*;
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.MethodProxy;
-import org.junit.jupiter.api.Test;
-
-import java.io.*;
+import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.github.gear4jtest.core.event.Event;
+import io.github.gear4jtest.core.event.EventListener;
+import io.github.gear4jtest.core.exception.AssemblyLineException;
+import io.github.gear4jtest.core.factory.ResourceFactory;
+import io.github.gear4jtest.core.model.ElementModelBuilders;
+import io.github.gear4jtest.core.model.Operation;
+import io.github.gear4jtest.core.model.refactor.ExecutionResult;
+import io.github.gear4jtest.core.model.refactor.PersistenceConfiguration;
+import io.github.gear4jtest.core.model.refactor.SimpleEventBuss;
+import io.github.gear4jtest.core.persistence.DatabasePipelineExecutionRepository;
+import io.github.gear4jtest.core.persistence.ExecutionStatus;
+import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
+import io.github.gear4jtest.core.persistence.PipelineExecution;
+import io.github.gear4jtest.core.service.steps.Step10;
+import io.github.gear4jtest.core.service.steps.Step11;
+import io.github.gear4jtest.core.service.steps.Step12;
+import io.github.gear4jtest.core.service.steps.Step13;
+import io.github.gear4jtest.core.service.steps.Step3;
+import io.github.gear4jtest.core.service.steps.Step7;
+import io.github.gear4jtest.core.service.steps.Step8;
+import io.github.gear4jtest.core.service.steps.Step9;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.MethodProxy;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.Test;
+import org.postgresql.ds.PGSimpleDataSource;
+
 import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static io.github.gear4jtest.core.model.refactor.OperationExecution.OperationReport.Status;
+import static org.assertj.core.api.Assertions.*;
 
 // handle factory for step / processor... configuration
 public class SimpleChainBuilderTest {
 
+//	@Test
+//	public void test_refactor_chain_building() throws AssemblyLineException {
+//		// Given
+//		LineDefinition<Integer, List<String>> subLine = line(startingPointt(Integer.class))
+//				.operator(processingOperation(Step10.class).build())
+//				.build();
+//
+//		LineDefinition<String, List<Integer>> mainLine = line(startingPointt(String.class))
+//				.operator(processingOperation(Step3.class)
+//							.parameter(Step3::getParam, "a")
+//							.onError(
+//									preOnError(OperationParamsInjector.class)
+//										.rule(chainBreakRule(Exception.class).build())
+//										.rule(ignoreRule(RuntimeException.class).build())
+//									.build())
+//							.onError(
+//									onProcessingError()
+////													.rule(chainBreakRule(Exception.class).build())
+////													.rule(ignoreRule(Exception.class).build())
+//									.build())
+//							.onError(
+//									postOnError(TestPostProcessor.class)
+////													.rule(chainBreakRule(Exception.class).build())
+////													.rule(ignoreRule(RuntimeException.class).build())
+//									.build())
+//							.transformer(a -> new HashMap<>())
+//							.build())
+//				.operator(fatalSignal(typeMap(String.class, String.class))
+//						.condition(ctx -> ctx.getItem().containsKey("a")).build())
+//				.operator(processingOperation(Step8.class).build())
+//				.operator(processingOperation(Step9.class).build())
+////				.iterate(Function.identity(), containerr().withSubLineAndReturns(subLine, Function.identity()).build())
+//				.build();
+//
+//		AssemblyLineDefinition<String, List<Integer>> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+//				.definition(mainLine)
+//				.configuration(configuration()
+//						.stepDefaultConfiguration(operationConfiguration().build())
+//						.eventHandlingDefinition(eventHandling()
+//								.queue(queue().eventListener(new TestEventListener()).build())
+//								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+//								.build())
+//						.build())
+//				.build();
+//
+//		Map<String, Object> context = new HashMap<String, Object>() {
+//			{
+//				put("a", 45612);
+//			}
+//		};
+//
+//		// When
+//		List<Integer> result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", context, new TestResourceFactory());
+//
+//		// Then
+//		assertThat(result).isNotNull()
+//			.hasSize(1)
+//			.contains(5);
+//	}
+
 	@Test
-	public void test_refactor_chain_building() throws AssemblyLineException {
+	public void test_v2() throws AssemblyLineException {
 		// Given
-		LineDefinition<Integer, List<String>> subLine = line(startingPointt(Integer.class))
-				.operator(processingOperation(Step10.class).build())
-				.build();
-
-		LineDefinition<String, List<Integer>> mainLine = line(startingPointt(String.class))
-				.operator(processingOperation(Step3.class)
-							.parameter(Step3::getParam, "a")
-							.onError(
-									preOnError(OperationParamsInjector.class)
-										.rule(chainBreakRule(Exception.class).build())
-										.rule(ignoreRule(RuntimeException.class).build())
-									.build())
-							.onError(
-									onProcessingError()
-//													.rule(chainBreakRule(Exception.class).build())
-//													.rule(ignoreRule(Exception.class).build())
-									.build())
-							.onError(
-									postOnError(TestPostProcessor.class)
-//													.rule(chainBreakRule(Exception.class).build())
-//													.rule(ignoreRule(RuntimeException.class).build())
-									.build())
-							.transformer(a -> new HashMap<>())
-							.build())
-				.operator(fatalSignal(typeMap(String.class, String.class))
-						.condition(ctx -> ctx.getItem().containsKey("a")).build())
-				.operator(processingOperation(Step8.class).build())
-				.operator(processingOperation(Step9.class).build())
-//				.iterate(Function.identity(), containerr().withSubLineAndReturns(subLine, Function.identity()).build())
-				.build();
-
-		AssemblyLineDefinition<String, List<Integer>> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
-				.definition(mainLine)
+		var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
+				.then(processingOperation("step3", Step3.class)
+						.parameter(Step3::getParam, "a")
+						.onError(
+								ElementModelBuilders.<String>ignore(Exception.class)
+										.condition((input, ctx) -> ctx.getContext().containsKey("a"))
+										.action(() -> System.out.println("Error occurred!"))
+										.build())
+						.conditional((input, ctx) -> input.equals("a"))
+						.transformer((a, ctx) -> new HashMap<>())
+						.build())
+//				.then(fatalSignal(typeMap(String.class, String.class))
+//						.condition(ctx -> ctx.getItem().containsKey("a"))
+//						.build())
+				.then(processingOperation("step8", Step8.class).build())
+				.then(processingOperation("step9", Step9.class).build())
+				.then(ElementModelBuilders.<List<Integer>>iterate("iterator")
+						.iterableFunction(Function.identity())
+						.operation(processingOperation("step10", Step10.class).build())
+						.collector(Collectors.toList())
+						.build())
 				.configuration(configuration()
 						.stepDefaultConfiguration(operationConfiguration().build())
 						.eventHandlingDefinition(eventHandling()
-								.queue(queue().eventListener(new TestEventListener()).build())
+								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
 						.build())
 				.build();
 
-		Map<String, Object> context = new HashMap<String, Object>() {
+		Map<String, Object> context = new HashMap<>() {
 			{
 				put("a", 45612);
 			}
 		};
 
 		// When
-		List<Integer> result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", context, new TestResourceFactory());
+		ExecutionResult<List<List<String>>> result = assemblyLine.execute("b", context, new TestResourceFactory());
 
 		// Then
 		assertThat(result).isNotNull()
-			.hasSize(1)
-			.contains(5);
+				.extracting(ExecutionResult::getResult)
+				.isInstanceOf(List.class)
+				.asList()
+				.hasSize(1)
+				.first()
+				.isInstanceOf(List.class)
+				.asList()
+				.contains("");
 	}
 
 	@Test
-	public void test_refactor_chain_building_stop_signal() {
+	public void test_v2_event_management() throws AssemblyLineException {
 		// Given
-		LineDefinition<Integer, List<String>> subLine = line(startingPointt(Integer.class))
-				.operator(processingOperation(Step10.class).build())
-				.build();
-
-		LineDefinition<String, Object> mainLine = line(startingPointt(String.class))
-				.operator(processingOperation(Step3.class)
-							.parameter(Step3::getParam, "a")
-							.onError(
-									preOnError(OperationParamsInjector.class)
-										.rule(chainBreakRule(Exception.class).build())
-										.rule(ignoreRule(RuntimeException.class).build())
-									.build())
-							.onError(
-									onProcessingError()
-//													.rule(chainBreakRule(Exception.class).build())
-//													.rule(ignoreRule(Exception.class).build())
-									.build())
-							.onError(
-									postOnError(TestPostProcessor.class)
-//													.rule(chainBreakRule(Exception.class).build())
-//													.rule(ignoreRule(RuntimeException.class).build())
-									.build())
-							.transformer(a -> new HashMap<>())
-							.build())
-				// possible hacking by adding cast (SignalDefiinition<Map<String, String>>)...
-				.operator(stopSignal(typeMap(String.class, String.class))
-						.condition(ctx -> ctx.getItem().containsKey("a")).build())
-				.operator(processingOperation(Step8.class).build())
-				.operator(processingOperation(Step9.class).build())
-//				.iterate(Function.identity(), containerr().withSubLineAndReturns(subLine, Function.identity()).build())
-				.build();
-
-		AssemblyLineDefinition<String, Object> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
-				.definition(mainLine)
+		var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
+				.then(processingOperation("step3", Step3.class)
+						.parameter(Step3::getParam, "a")
+						.onError(
+								ElementModelBuilders.<String>ignore(Exception.class)
+										.condition((input, ctx) -> ctx.getContext().containsKey("a"))
+										.action(() -> System.out.println("Error occurred!"))
+										.build())
+						.conditional((input, ctx) -> input.equals("a"))
+						.transformer((a, ctx) -> new HashMap<>())
+						.build())
+//				.then(fatalSignal(typeMap(String.class, String.class))
+//						.condition(ctx -> ctx.getItem().containsKey("a"))
+//						.build())
+				.then(processingOperation("step8", Step8.class).build())
+				.then(processingOperation("step9", Step9.class).build())
+				.then(ElementModelBuilders.<List<Integer>>iterate("iterator")
+						.iterableFunction(Function.identity())
+						.operation(processingOperation("step10", Step10.class).build())
+						.collector(Collectors.toList())
+						.build())
 				.configuration(configuration()
-						.stepDefaultConfiguration(operationConfiguration()
-								.preProcessors(Arrays.asList(OperationParamsInjector.class))
-								.build())
+						.stepDefaultConfiguration(operationConfiguration().build())
 						.eventHandlingDefinition(eventHandling()
-								.queue(queue().eventListener(new TestEventListener()).build())
+								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
 						.build())
 				.build();
 
-		Map<String, Object> context = new HashMap<String, Object>() {
+		Map<String, Object> context = new HashMap<>() {
 			{
 				put("a", 45612);
 			}
 		};
 
 		// When
-		Object result = new ChainExecutorService().execute(assemblyLine, "b", context, new TestResourceFactory());
+		ExecutionResult<List<List<String>>> result = assemblyLine.execute("b", context, new TestResourceFactory());
+
+		// Then
+		assertThat(result).isNotNull()
+				.extracting(ExecutionResult::getResult)
+				.isInstanceOf(List.class)
+				.asList()
+				.hasSize(1)
+				.first()
+				.isInstanceOf(List.class)
+				.asList()
+				.contains("");
+	}
+
+	@Test
+	public void test_v2_with_datasource() throws AssemblyLineException, JsonProcessingException {
+		// Given
+		PGSimpleDataSource dataSource = new PGSimpleDataSource();
+		dataSource.setUser("postgres");
+		dataSource.setPassword("postgres");
+		dataSource.setUrl("jdbc:postgresql://localhost:5432/gear4jtest");
+		dataSource.setDatabaseName("gear4jtest");
+
+		var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
+				.then(processingOperation("step3", Step3.class)
+						.parameter(Step3::getParam, "a")
+						.onError(
+								ElementModelBuilders.<String>ignore(Exception.class)
+										.condition((input, ctx) -> ctx.getContext().containsKey("a"))
+										.action(() -> System.out.println("Error occurred!"))
+										.build())
+						.conditional((input, ctx) -> input.equals("a"))
+						.transformer((a, ctx) -> new HashMap<>())
+						.build())
+//				.then(fatalSignal(typeMap(String.class, String.class))
+//						.condition(ctx -> ctx.getItem().containsKey("a"))
+//						.build())
+				.then(processingOperation("step8", Step8.class).build())
+				.then(processingOperation("step9", Step9.class).build())
+				.then(ElementModelBuilders.<List<Integer>>iterate("iterator")
+						.iterableFunction(Function.identity())
+						.operation(processingOperation("step10", Step10.class).build())
+						.collector(Collectors.toList())
+						.build())
+				.configuration(configuration()
+						.stepDefaultConfiguration(operationConfiguration().build())
+						.eventHandlingDefinition(eventHandling()
+								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
+								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+								.build())
+						.persistence(persistenceConfiguration()
+								.persistenceType(PersistenceConfiguration.PersistenceType.DATABASE)
+								.dataSource(dataSource)
+								.dataSourceType(PersistenceConfiguration.DataSourceType.POSTGRESQL)
+								.storeResultObject(true)
+								.build())
+						.build())
+				.build();
+
+		Map<String, Object> context = new HashMap<>() {
+			{
+				put("a", 45612);
+			}
+		};
+
+		// When
+		ExecutionResult<List<List<String>>> result = assemblyLine.execute("b", context, new TestResourceFactory());
+
+		// Then
+		assertThat(result).isNotNull()
+				.extracting(ExecutionResult::getResult)
+				.isInstanceOf(List.class)
+				.asList()
+				.hasSize(1)
+				.first()
+				.isInstanceOf(List.class)
+				.asList()
+				.contains("");
+
+		var pipelineExecution = new DatabasePipelineExecutionRepository(dataSource).findById(result.getExecutionId());
+		assertThat(pipelineExecution)
+				.isPresent()
+				.get()
+				.extracting(
+						PipelineExecution::getId,
+						PipelineExecution::getPipelineId,
+						PipelineExecution::getInputParams,
+						PipelineExecution::getContext,
+						PipelineExecution::getResult,
+						PipelineExecution::getStatus)
+				.containsExactly(
+						result.getExecutionId(),
+						"test",
+						context,
+						Map.of(),
+						List.of(List.of("")),
+						ExecutionStatus.SUCCEEDED);
+		assertThat(pipelineExecution)
+				.isPresent()
+				.get()
+				.extracting(PipelineExecution::getOperations)
+				.asList()
+				.hasSize(4)
+				.asInstanceOf(InstanceOfAssertFactories.list(OperationExecutionRecord.class))
+				.extracting(
+						OperationExecutionRecord::getPipelineExecutionId,
+						OperationExecutionRecord::getOperationId,
+						OperationExecutionRecord::getParentOperationId,
+						OperationExecutionRecord::getStatus,
+						OperationExecutionRecord::getContext)
+				.containsExactly(
+						tuple(result.getExecutionId().toString(), "step3", null, Status.SUCCEEDED, Map.of()),
+						tuple(result.getExecutionId().toString(), "step8", null, Status.SUCCEEDED, Map.of()),
+						tuple(result.getExecutionId().toString(), "step9", null, Status.SUCCEEDED, Map.of()),
+						tuple(result.getExecutionId().toString(), "iterator", null, Status.SUCCEEDED, Map.of()));
+		var iteratorExecutionRecord = getRecordByOperationId(pipelineExecution.get().getOperations(), "iterator");
+		assertThat(iteratorExecutionRecord.getSubOperations())
+				.extracting(
+						OperationExecutionRecord::getPipelineExecutionId,
+						OperationExecutionRecord::getOperationId,
+						OperationExecutionRecord::getParentOperationId,
+						OperationExecutionRecord::getStatus,
+						OperationExecutionRecord::getContext)
+				.containsExactly(tuple(result.getExecutionId().toString(), "step10", getRecordByOperationId(pipelineExecution.get().getOperations(), "iterator").getId(), Status.SUCCEEDED, Map.of()));
+	}
+
+	private static OperationExecutionRecord getRecordByOperationId(List<OperationExecutionRecord> records, String operationId) {
+		return records.stream()
+				.filter(record -> Objects.equals(record.getOperationId(), operationId))
+				.findFirst()
+				.orElseThrow(() -> new IllegalArgumentException("No record found for operationId: " + operationId));
+	}
+
+	@Test
+	public void test_container_two_sublines() throws AssemblyLineException {
+		// Given
+		var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
+				.then(processingOperation("step11", Step11.class)
+						.parameter(Step11::getParam, "a")
+						.build())
+				.then(container(String.class)
+						.withSubLine(processingOperation("step11", Step11.class)
+								.parameter(Step11::getParam, "c")
+								.build())
+						.withSubLine(processingOperation("step11", Step11.class)
+								.parameter(Step11::getParam, "b")
+								.build())
+						.returns(Arrays::asList))
+				.configuration(configuration()
+						.stepDefaultConfiguration(operationConfiguration().build())
+						.eventHandlingDefinition(eventHandling()
+								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
+								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+								.build())
+						.build())
+				.build();
+
+		Map<String, Object> context = new HashMap<>() {
+			{
+				put("a", 45612);
+			}
+		};
+
+		// When
+		ExecutionResult<List<String>> result = assemblyLine.execute("b", context, new TestResourceFactory());
+
+		// Then
+		assertThat(result)
+				.isNotNull()
+				.extracting(ExecutionResult::getResult)
+				.isInstanceOf(List.class)
+				.asList()
+				.hasSize(2)
+				.containsExactly("c", "b");
+	}
+
+	@Test
+	public void test_container_two_paralleled_sublines() throws AssemblyLineException {
+		// Given
+		var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
+				.then(processingOperation("step11", Step11.class)
+						.parameter(Step11::getParam, "a")
+						.build())
+				.then(container(String.class, Executors.newFixedThreadPool(2))
+						.withSubLine(processingOperation("step11", Step11.class)
+								.parameter(Step11::getParam, "c")
+								.build())
+						.withSubLine(processingOperation("step11", Step11.class)
+								.parameter(Step11::getParam, "b")
+								.build())
+						.returns(Arrays::asList))
+				.configuration(configuration()
+						.stepDefaultConfiguration(operationConfiguration().build())
+						.eventHandlingDefinition(eventHandling()
+								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
+								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+								.build())
+						.build())
+				.build();
+
+		Map<String, Object> context = new HashMap<>() {
+			{
+				put("a", 45612);
+			}
+		};
+
+		// When
+		ExecutionResult<List<String>> result = assemblyLine.execute("b", context, new TestResourceFactory());
+
+		// Then
+		assertThat(result)
+				.isNotNull()
+				.extracting(ExecutionResult::getResult)
+				.isInstanceOf(List.class)
+				.asList()
+				.hasSize(2)
+				.containsExactly("c", "b");
+	}
+
+	@Test
+	public void test_container_if_else_container() throws AssemblyLineException {
+		// Given
+		var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
+				.then(processingOperation("step11", Step11.class)
+						.parameter(Step11::getParam, "a")
+						.build())
+				.then(ifElseContainer(String.class)
+						.conditionally(processingOperation("step11", Step11.class)
+								.parameter(Step11::getParam, "c")
+								.build(),
+								(input, ctx) -> input.equals("a"))
+						.conditionally(processingOperation("step11", Step11.class)
+								.parameter(Step11::getParam, "cd")
+								.build(),
+								(input, ctx) -> input.equals("a"))
+						.elseOp(processingOperation("step11", Step11.class)
+								.parameter(Step11::getParam, "b")
+								.build()))
+				.configuration(configuration()
+						.stepDefaultConfiguration(operationConfiguration().build())
+						.eventHandlingDefinition(eventHandling()
+								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
+								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+								.build())
+						.build())
+				.build();
+
+		Map<String, Object> context = new HashMap<>() {
+			{
+				put("a", 45612);
+			}
+		};
+
+		// When
+		ExecutionResult<String> result = assemblyLine.execute("b", context, new TestResourceFactory());
+
+		// Then
+		assertThat(result)
+				.isNotNull()
+				.extracting(ExecutionResult::getResult)
+				.isEqualTo("c");
+	}
+
+//	@Test
+//	public void test_refactor_chain_building_stop_signal() {
+//		// Given
+//		LineDefinition<Integer, List<String>> subLine = line(startingPointt(Integer.class))
+//				.operator(processingOperation(Step10.class).build())
+//				.build();
+//
+//		LineDefinition<String, Object> mainLine = line(startingPointt(String.class))
+//				.operator(processingOperation(Step3.class)
+//							.parameter(Step3::getParam, "a")
+//							.onError(
+//									preOnError(OperationParamsInjector.class)
+//										.rule(chainBreakRule(Exception.class).build())
+//										.rule(ignoreRule(RuntimeException.class).build())
+//									.build())
+//							.onError(
+//									onProcessingError()
+////													.rule(chainBreakRule(Exception.class).build())
+////													.rule(ignoreRule(Exception.class).build())
+//									.build())
+//							.onError(
+//									postOnError(TestPostProcessor.class)
+////													.rule(chainBreakRule(Exception.class).build())
+////													.rule(ignoreRule(RuntimeException.class).build())
+//									.build())
+//							.transformer(a -> new HashMap<>())
+//							.build())
+//				// possible hacking by adding cast (SignalDefiinition<Map<String, String>>)...
+//				.operator(stopSignal(typeMap(String.class, String.class))
+//						.condition(ctx -> ctx.getItem().containsKey("a")).build())
+//				.operator(processingOperation(Step8.class).build())
+//				.operator(processingOperation(Step9.class).build())
+////				.iterate(Function.identity(), containerr().withSubLineAndReturns(subLine, Function.identity()).build())
+//				.build();
+//
+//		AssemblyLineDefinition<String, Object> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+//				.definition(mainLine)
+//				.configuration(configuration()
+//						.stepDefaultConfiguration(operationConfiguration()
+//								.preProcessors(Arrays.asList(OperationParamsInjector.class))
+//								.build())
+//						.eventHandlingDefinition(eventHandling()
+//								.queue(queue().eventListener(new TestEventListener()).build())
+//								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+//								.build())
+//						.build())
+//				.build();
+//
+//		Map<String, Object> context = new HashMap<String, Object>() {
+//			{
+//				put("a", 45612);
+//			}
+//		};
+//
+//		// When
+//		Object result = new ChainExecutorService().execute(assemblyLine, "b", context, new TestResourceFactory());
 
 		// Then
 //		assertThat(result).isNotNull()
 //			.hasSize(1)
 //			.contains(5);
-	}
+//	}
 //
 //	@Test
 //	public void testIteration() throws AssemblyLineException {
@@ -189,219 +561,219 @@ public class SimpleChainBuilderTest {
 //			.hasSize(1)
 //			.contains(Arrays.asList(""));
 //	}
-
-	@Test
-	public void testIterationRefined() throws AssemblyLineException {
-		// Given
-		LineDefinition<Integer, List<String>> subLine = line(processingOperation(Step10.class).build())
-				.build();
-
-		OperationDefinition<List<Integer>, List<List<String>>> oper = new IteratorDefinition.Builder<List<Integer>, List<List<String>>>()
-				.iterableFunction(Function.identity())
-				.nestedElement(container(subLine).returns(Container1DFunction.identity()))
-				.collector(Collectors.toList())
-				.build();
-
-		LineDefinition<String, List<List<String>>> mainLine = line(processingOperation(Step3.class).build())
-				.operator(processingOperation(Step8.class).build())
-				.operator(processingOperation(Step9.class).build())
-//				.iterate(Function.identity(), container(subLine).returns(Container1DFunction.identity()), Collectors.toList())
-				.operator(oper)
-				.build();
-
-		AssemblyLineDefinition<String, List<List<String>>> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
-				.definition(mainLine)
-				.configuration(configuration()
-						.stepDefaultConfiguration(operationConfiguration().build())
-						.eventHandlingDefinition(eventHandling()
-								.queue(queue().eventListener(new TestEventListener()).build())
-								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
-								.build())
-						.build())
-				.build();
-
-		// When
-		List<List<String>> result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
-
-		// Then
-		assertThat(result).isNotNull()
-				.hasSize(1)
-				.contains(Arrays.asList(""));
-	}
-
-	@Test
-	public void shouldThrowExceptionWhenFatalSignal() {
-		// Given
-		LineDefinition<String, Map<String, String>> mainLine = line(startingPointt(String.class))
-				.operator(processingOperation(Step3.class).build())
-				.operator(fatalSignal(typeMap(String.class, String.class))
-						.condition(ctx -> ctx.getItem().containsKey("b")).build())
-				.build();
-
-		AssemblyLineDefinition<String, Map<String, String>> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
-				.definition(mainLine)
-				.build();
-
-		// When - Then
-		ChainExecutorService service = new ChainExecutorService();
-		assertThatExceptionOfType(AssemblyLineException.class)
-				.isThrownBy(() -> service.executeAndUnwrap(assemblyLine, "b", new TestResourceFactory()));
-	}
-
-	@Test
-	public void shouldReturnObjectWhenUsingStopSignalNotActivated() throws AssemblyLineException {
-		// Given
-		LineDefinition<String, Object> mainLine = line(startingPointt(String.class))
-				.operator(processingOperation(Step3.class).build())
-				// possible hacking by adding cast (SignalDefiinition<Map<String, String>>)...
-				.operator(stopSignal(typeMap(String.class, String.class))
-						.condition(ctx -> ctx.getItem().containsKey("a")).build())
-				.operator(processingOperation(Step8.class).build())
-				.build();
-
-		AssemblyLineDefinition<String, Object> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
-				.definition(mainLine)
-				.build();
-
-		// When
-		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
-
-		// Then
-		assertThat(result).isNotNull()
-			.isExactlyInstanceOf(Integer.class)
-			.isEqualTo(5);
-	}
-
-	@Test
-	public void shouldReturnObjectWhenUsingStopSignalActivated() throws AssemblyLineException {
-		// Given
-		LineDefinition<String, Object> mainLine = line(startingPointt(String.class))
-				.operator(processingOperation(Step3.class)
-						.additionalModel(null, null)
-						.build())
-				.operator(stopSignal(typeMap(String.class, String.class))
-						.condition(ctx -> ctx.getItem().containsKey("b")).build())
-				.operator(processingOperation(Step8.class).build())
-				.build();
-
-		AssemblyLineDefinition<String, Object> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
-				.definition(mainLine)
-				.build();
-
-		// When
-		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
-
-		// Then
-//		assertThat(result).isNotNull()
-//			.isExactlyInstanceOf(HashMap.class)
-//			.asInstanceOf(InstanceOfAssertFactories.MAP)
-//			.containsEntry("b", "b");
-	}
-
-	@Test
-	public void testGenerics() throws AssemblyLineException {
-		// Given
-		LineDefinition<Whatever<String>, Integer> mainLine = line(processingOperation(Step12.class).build())
-				.build();
-
-		AssemblyLineDefinition assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
-				.definition(mainLine)
-				.build();
-
-		Whatever<Integer> whateverString = new Whatever<>(5);
-		// When
-		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, whateverString, new TestResourceFactory());
-
-		// Then
-//		assertThat(result).isNotNull()
-//			.isExactlyInstanceOf(HashMap.class)
-//			.asInstanceOf(InstanceOfAssertFactories.MAP)
-//			.containsEntry("b", "b");
-	}
-
-	@Test
-	public void testLambdaSerDeser() throws IOException, ClassNotFoundException {
-
-//		Double i = 0.56D;
-//		SerializableLambdaExpression.getLambdaExpressionObject(i);
-//		SerializableLambdaExpressiohen.getLambdaExpressionObject(i).run();
-//		SerializableLambdaExpression.WhateverProperties properties = new SerializableLambdaExpression.WhateverProperties("a");
-//		SerializableLambdaExpression.getLambdaExpressionObject(properties).run();
-
-//		BusinessObject bo = new BusinessObject();
 //
-//		System.out.println(printPropertyName(bo::getProperty1));
-//		System.out.println(printPropertyName(bo::getProperty2));
-
-//		SerializableSupplier<String> a = () -> "jfoeizjfzoiejgiojezi jgzeijgzei";
+//	@Test
+//	public void testIterationRefined() throws AssemblyLineException {
+//		// Given
+//		LineDefinition<Integer, List<String>> subLine = line(processingOperation(Step10.class).build())
+//				.build();
+//
+//		OperationDefinition<List<Integer>, List<List<String>>> oper = new IteratorDefinition.Builder<List<Integer>, List<List<String>>>()
+//				.iterableFunction(Function.identity())
+//				.nestedElement(container(subLine).returns(Container1DFunction.identity()))
+//				.collector(Collectors.toList())
+//				.build();
+//
+//		LineDefinition<String, List<List<String>>> mainLine = line(processingOperation(Step3.class).build())
+//				.operator(processingOperation(Step8.class).build())
+//				.operator(processingOperation(Step9.class).build())
+////				.iterate(Function.identity(), container(subLine).returns(Container1DFunction.identity()), Collectors.toList())
+//				.operator(oper)
+//				.build();
+//
+//		AssemblyLineDefinition<String, List<List<String>>> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+//				.definition(mainLine)
+//				.configuration(configuration()
+//						.stepDefaultConfiguration(operationConfiguration().build())
+//						.eventHandlingDefinition(eventHandling()
+//								.queue(queue().eventListener(new TestEventListener()).build())
+//								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+//								.build())
+//						.build())
+//				.build();
+//
+//		// When
+//		List<List<String>> result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
+//
+//		// Then
+//		assertThat(result).isNotNull()
+//				.hasSize(1)
+//				.contains(Arrays.asList(""));
+//	}
+//
+//	@Test
+//	public void shouldThrowExceptionWhenFatalSignal() {
+//		// Given
+//		LineDefinition<String, Map<String, String>> mainLine = line(startingPointt(String.class))
+//				.operator(processingOperation(Step3.class).build())
+//				.operator(fatalSignal(typeMap(String.class, String.class))
+//						.condition(ctx -> ctx.getItem().containsKey("b")).build())
+//				.build();
+//
+//		AssemblyLineDefinition<String, Map<String, String>> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+//				.definition(mainLine)
+//				.build();
+//
+//		// When - Then
+//		ChainExecutorService service = new ChainExecutorService();
+//		assertThatExceptionOfType(AssemblyLineException.class)
+//				.isThrownBy(() -> service.executeAndUnwrap(assemblyLine, "b", new TestResourceFactory()));
+//	}
+//
+//	@Test
+//	public void shouldReturnObjectWhenUsingStopSignalNotActivated() throws AssemblyLineException {
+//		// Given
+//		LineDefinition<String, Object> mainLine = line(startingPointt(String.class))
+//				.operator(processingOperation(Step3.class).build())
+//				// possible hacking by adding cast (SignalDefiinition<Map<String, String>>)...
+//				.operator(stopSignal(typeMap(String.class, String.class))
+//						.condition(ctx -> ctx.getItem().containsKey("a")).build())
+//				.operator(processingOperation(Step8.class).build())
+//				.build();
+//
+//		AssemblyLineDefinition<String, Object> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+//				.definition(mainLine)
+//				.build();
+//
+//		// When
+//		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
+//
+//		// Then
+//		assertThat(result).isNotNull()
+//			.isExactlyInstanceOf(Integer.class)
+//			.isEqualTo(5);
+//	}
+//
+//	@Test
+//	public void shouldReturnObjectWhenUsingStopSignalActivated() throws AssemblyLineException {
+//		// Given
+//		LineDefinition<String, Object> mainLine = line(startingPointt(String.class))
+//				.operator(processingOperation(Step3.class)
+//						.additionalModel(null, null)
+//						.build())
+//				.operator(stopSignal(typeMap(String.class, String.class))
+//						.condition(ctx -> ctx.getItem().containsKey("b")).build())
+//				.operator(processingOperation(Step8.class).build())
+//				.build();
+//
+//		AssemblyLineDefinition<String, Object> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+//				.definition(mainLine)
+//				.build();
+//
+//		// When
+//		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
+//
+//		// Then
+////		assertThat(result).isNotNull()
+////			.isExactlyInstanceOf(HashMap.class)
+////			.asInstanceOf(InstanceOfAssertFactories.MAP)
+////			.containsEntry("b", "b");
+//	}
+//
+//	@Test
+//	public void testGenerics() throws AssemblyLineException {
+//		// Given
+//		LineDefinition<Whatever<String>, Integer> mainLine = line(processingOperation(Step12.class).build())
+//				.build();
+//
+//		AssemblyLineDefinition assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+//				.definition(mainLine)
+//				.build();
+//
+//		Whatever<Integer> whateverString = new Whatever<>(5);
+//		// When
+//		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, whateverString, new TestResourceFactory());
+//
+//		// Then
+////		assertThat(result).isNotNull()
+////			.isExactlyInstanceOf(HashMap.class)
+////			.asInstanceOf(InstanceOfAssertFactories.MAP)
+////			.containsEntry("b", "b");
+//	}
+//
+//	@Test
+//	public void testLambdaSerDeser() throws IOException, ClassNotFoundException {
+//
+////		Double i = 0.56D;
+////		SerializableLambdaExpression.getLambdaExpressionObject(i);
+////		SerializableLambdaExpressiohen.getLambdaExpressionObject(i).run();
+////		SerializableLambdaExpression.WhateverProperties properties = new SerializableLambdaExpression.WhateverProperties("a");
+////		SerializableLambdaExpression.getLambdaExpressionObject(properties).run();
+//
+////		BusinessObject bo = new BusinessObject();
+////
+////		System.out.println(printPropertyName(bo::getProperty1));
+////		System.out.println(printPropertyName(bo::getProperty2));
+//
+////		SerializableSupplier<String> a = () -> "jfoeizjfzoiejgiojezi jgzeijgzei";
+////		SerializedLambda sla = a.serialized();
+////		FileOutputStream fileOutputStream = new FileOutputStream("yourfile2.txt");
+////		ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+////		objectOutputStream.writeObject(sla);
+////		objectOutputStream.flush();
+////		objectOutputStream.close();
+//
+////		FileInputStream fileInputStream = new FileInputStream("yourfile2.txt");
+////		ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+////		SerializableSupplier<String> slaRead = (SerializableSupplier<String>) objectInputStream.readObject();
+////		objectInputStream.close();
+////
+////		String b = slaRead.get();
+////		System.out.println(b);
+//	}
+//
+//	@Test
+//	public void testLambdaSerDeser2() throws IOException, ClassNotFoundException {
+//		SerializableSupplier<Whatever2> a = () -> new Whatever2("foiezjfizje");
 //		SerializedLambda sla = a.serialized();
-//		FileOutputStream fileOutputStream = new FileOutputStream("yourfile2.txt");
-//		ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+//		FileOutputStream fileOutputStream
+//				= new FileOutputStream("yourfile2.txt");
+//		ObjectOutputStream objectOutputStream
+//				= new ObjectOutputStream(fileOutputStream);
 //		objectOutputStream.writeObject(sla);
 //		objectOutputStream.flush();
 //		objectOutputStream.close();
-
-//		FileInputStream fileInputStream = new FileInputStream("yourfile2.txt");
-//		ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
-//		SerializableSupplier<String> slaRead = (SerializableSupplier<String>) objectInputStream.readObject();
+//
+//		FileInputStream fileInputStream
+//				= new FileInputStream("yourfile2.txt");
+//		ObjectInputStream objectInputStream
+//				= new ObjectInputStream(fileInputStream);
+//		SerializableSupplier<Whatever2> slaRead = (SerializableSupplier<Whatever2>) objectInputStream.readObject();
 //		objectInputStream.close();
 //
-//		String b = slaRead.get();
+//		Whatever2 b = slaRead.get();
 //		System.out.println(b);
-	}
-
-	@Test
-	public void testLambdaSerDeser2() throws IOException, ClassNotFoundException {
-		SerializableSupplier<Whatever2> a = () -> new Whatever2("foiezjfizje");
-		SerializedLambda sla = a.serialized();
-		FileOutputStream fileOutputStream
-				= new FileOutputStream("yourfile2.txt");
-		ObjectOutputStream objectOutputStream
-				= new ObjectOutputStream(fileOutputStream);
-		objectOutputStream.writeObject(sla);
-		objectOutputStream.flush();
-		objectOutputStream.close();
-
-		FileInputStream fileInputStream
-				= new FileInputStream("yourfile2.txt");
-		ObjectInputStream objectInputStream
-				= new ObjectInputStream(fileInputStream);
-		SerializableSupplier<Whatever2> slaRead = (SerializableSupplier<Whatever2>) objectInputStream.readObject();
-		objectInputStream.close();
-
-		Whatever2 b = slaRead.get();
-		System.out.println(b);
-	}
-
-	@Test
-	public void testParameterLambda() throws AssemblyLineException {
-		// Given
-		LineDefinition<String, Object> mainLine = line(startingPointt(String.class))
-				.operator(processingOperation(Step3.class)
-						.parameter(Step3::getParam, (Supplier<String>) () -> "WhateverString")
-						.build())
-				// possible hacking by adding cast (SignalDefiinition<Map<String, String>>)...
-				.operator(stopSignal(typeMap(String.class, String.class))
-						.condition(ctx -> ctx.getItem().containsKey("a")).build())
-				.operator(processingOperation(Step8.class).build())
-				.build();
-
-		AssemblyLineDefinition<String, Object> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
-				.definition(mainLine)
-				.build();
-
-		// When
-		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
-
-		// Then
-		assertThat(result).isNotNull()
-				.isExactlyInstanceOf(Integer.class)
-				.isEqualTo(5);
-	}
-
-	private static <T> String printPropertyName(SerializableSupplier<T> getter) {
-		return getter.method().getName();
-	}
+//	}
+//
+//	@Test
+//	public void testParameterLambda() throws AssemblyLineException {
+//		// Given
+//		LineDefinition<String, Object> mainLine = line(startingPointt(String.class))
+//				.operator(processingOperation(Step3.class)
+//						.parameter(Step3::getParam, (Supplier<String>) () -> "WhateverString")
+//						.build())
+//				// possible hacking by adding cast (SignalDefiinition<Map<String, String>>)...
+//				.operator(stopSignal(typeMap(String.class, String.class))
+//						.condition(ctx -> ctx.getItem().containsKey("a")).build())
+//				.operator(processingOperation(Step8.class).build())
+//				.build();
+//
+//		AssemblyLineDefinition<String, Object> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+//				.definition(mainLine)
+//				.build();
+//
+//		// When
+//		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
+//
+//		// Then
+//		assertThat(result).isNotNull()
+//				.isExactlyInstanceOf(Integer.class)
+//				.isEqualTo(5);
+//	}
+//
+//	private static <T> String printPropertyName(SerializableSupplier<T> getter) {
+//		return getter.method().getName();
+//	}
 
 	static class BusinessObject {
 
@@ -495,174 +867,174 @@ public class SimpleChainBuilderTest {
 					'}';
 		}
 	}
-
-	@Test
-	public void test_processor_chain() throws AssemblyLineException {
-		// Given
-		LineDefinition<String, String> mainLine = line(startingPointt(String.class))
-				.operator(processingOperation(Step11.class)
-							.parameter(Step11::getParam, "a")
-							.build())
-				.build();
-
-		AssemblyLineDefinition<String, String> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
-				.definition(mainLine)
-				.configuration(configuration()
-						.stepDefaultConfiguration(operationConfiguration()
-								.preProcessors(Arrays.asList(OperationParamsInjector.class))
-								.build())
-						.eventHandlingDefinition(eventHandling()
-								.queue(queue().eventListener(new TestEventListener()).build())
-								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
-								.build())
-						.build())
-				.build();
-
-		// When
-		String result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
-
-		// Then
-		assertThat(result).isNotNull()
-			.isEqualTo("a");
-	}
-
-	@Test
-	public void test_simple_container() throws AssemblyLineException {
-		// Given
-		LineDefinition<String, String> subLine = line(startingPointt(String.class))
-				.operator(processingOperation(Step11.class)
-							.parameter(Step11::getParam, "b")
-							.build())
-				.build();
-
-		ContainerBaseDefinition<String, String> container = container(String.class).withSubLine(subLine).returns(Container1DFunction.identity());
-
-		LineDefinition<String, String> mainLine = line(startingPointt(String.class))
-				.operator(processingOperation(Step11.class)
-							.parameter(Step11::getParam, "a")
-							.build())
-				.operator(container)
-				.build();
-
-		AssemblyLineDefinition<String, String> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
-				.definition(mainLine)
-				.configuration(configuration()
-						.stepDefaultConfiguration(operationConfiguration()
-								.preProcessors(Arrays.asList(OperationParamsInjector.class))
-								.build())
-						.eventHandlingDefinition(eventHandling()
-								.queue(queue().eventListener(new TestEventListener()).build())
-								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
-								.build())
-						.build())
-				.build();
-
-		// When
-		String result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
-
-		// Then
-		assertThat(result).isNotNull()
-			.isEqualTo("b");
-	}
-
-	@Test
-	public void test_container_two_sublines() throws AssemblyLineException {
-		// Given
-		LineDefinition<String, String> subLine = line(startingPointt(String.class))
-				.operator(processingOperation(Step11.class)
-							.parameter(Step11::getParam, "b")
-							.build())
-				.build();
-
-		LineDefinition<String, String> subLine2 = line(startingPointt(String.class))
-				.operator(processingOperation(Step11.class)
-							.parameter(Step11::getParam, "c")
-							.build())
-				.build();
-
-		ContainerBaseDefinition<String, List<String>> container = container(String.class)
-				.withSubLine(subLine).withSubLine(subLine2).returns(Arrays::asList);
-
-		LineDefinition<String, List<String>> mainLine = line(startingPointt(String.class))
-				.operator(processingOperation(Step11.class)
-							.parameter(Step11::getParam, "a")
-							.build())
-				.operator(container)
-				.build();
-
-		AssemblyLineDefinition<String, List<String>> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
-				.definition(mainLine)
-				.configuration(configuration()
-						.stepDefaultConfiguration(operationConfiguration()
-								.preProcessors(Arrays.asList(OperationParamsInjector.class))
-								.build())
-						.eventHandlingDefinition(eventHandling()
-								.queue(queue().eventListener(new TestEventListener()).build())
-								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
-								.build())
-						.build())
-				.build();
-
-		// When
-		List<String> result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
-
-		// Then
-		assertThat(result)
-			.isNotNull()
-			.hasSize(2)
-			.containsExactly("b", "c");
-	}
-
-
-	@Test
-	public void test_line_with_signal_first() throws AssemblyLineException {
-		// Given
-		LineDefinition<String, Object> mainLine = line()
-				.operator(stopSignal(new TypeReference<String>() {}).condition(a -> a.getItem() == null).build())
-				.operator(processingOperation(Step11.class)
-						.parameter(Step11::getParam, "a")
-						.build())
-				.operator(processingOperation(Step13.class).build())
-				.condition((input, execution) -> input != null && !input.isEmpty())
-				.build();
-
-		AssemblyLineDefinition<String, Object> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
-				.definition(mainLine)
-				.configuration(configuration()
-						.stepDefaultConfiguration(operationConfiguration()
-								.preProcessors(Arrays.asList(OperationParamsInjector.class))
-								.build())
-						.eventHandlingDefinition(eventHandling()
-								.queue(queue().eventListener(new TestEventListener()).build())
-								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
-								.build())
-						.build())
-				.build();
-
-		// When
-		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
-
-		// Then
-		assertThat(result)
-				.isNotNull()
-				.isInstanceOf(List.class)
-				.asList()
-				.containsExactly("a");
-
-		// When
-		result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "", new TestResourceFactory());
-
-		// Then
-		assertThat(result)
-				.isNull();
-
-		// When
-		result = new ChainExecutorService().executeAndUnwrap(assemblyLine, null, new TestResourceFactory());
-
-		// Then
-		assertThat(result)
-				.isNull();
-	}
+//
+//	@Test
+//	public void test_processor_chain() throws AssemblyLineException {
+//		// Given
+//		LineDefinition<String, String> mainLine = line(startingPointt(String.class))
+//				.operator(processingOperation(Step11.class)
+//							.parameter(Step11::getParam, "a")
+//							.build())
+//				.build();
+//
+//		AssemblyLineDefinition<String, String> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+//				.definition(mainLine)
+//				.configuration(configuration()
+//						.stepDefaultConfiguration(operationConfiguration()
+//								.preProcessors(Arrays.asList(OperationParamsInjector.class))
+//								.build())
+//						.eventHandlingDefinition(eventHandling()
+//								.queue(queue().eventListener(new TestEventListener()).build())
+//								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+//								.build())
+//						.build())
+//				.build();
+//
+//		// When
+//		String result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
+//
+//		// Then
+//		assertThat(result).isNotNull()
+//			.isEqualTo("a");
+//	}
+//
+//	@Test
+//	public void test_simple_container() throws AssemblyLineException {
+//		// Given
+//		LineDefinition<String, String> subLine = line(startingPointt(String.class))
+//				.operator(processingOperation(Step11.class)
+//							.parameter(Step11::getParam, "b")
+//							.build())
+//				.build();
+//
+//		ContainerBaseDefinition<String, String> container = container(String.class).withSubLine(subLine).returns(Container1DFunction.identity());
+//
+//		LineDefinition<String, String> mainLine = line(startingPointt(String.class))
+//				.operator(processingOperation(Step11.class)
+//							.parameter(Step11::getParam, "a")
+//							.build())
+//				.operator(container)
+//				.build();
+//
+//		AssemblyLineDefinition<String, String> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+//				.definition(mainLine)
+//				.configuration(configuration()
+//						.stepDefaultConfiguration(operationConfiguration()
+//								.preProcessors(Arrays.asList(OperationParamsInjector.class))
+//								.build())
+//						.eventHandlingDefinition(eventHandling()
+//								.queue(queue().eventListener(new TestEventListener()).build())
+//								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+//								.build())
+//						.build())
+//				.build();
+//
+//		// When
+//		String result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
+//
+//		// Then
+//		assertThat(result).isNotNull()
+//			.isEqualTo("b");
+//	}
+//
+//	@Test
+//	public void test_container_two_sublines() throws AssemblyLineException {
+//		// Given
+//		LineDefinition<String, String> subLine = line(startingPointt(String.class))
+//				.operator(processingOperation(Step11.class)
+//							.parameter(Step11::getParam, "b")
+//							.build())
+//				.build();
+//
+//		LineDefinition<String, String> subLine2 = line(startingPointt(String.class))
+//				.operator(processingOperation(Step11.class)
+//							.parameter(Step11::getParam, "c")
+//							.build())
+//				.build();
+//
+//		ContainerBaseDefinition<String, List<String>> container = container(String.class)
+//				.withSubLine(subLine).withSubLine(subLine2).returns(Arrays::asList);
+//
+//		LineDefinition<String, List<String>> mainLine = line(startingPointt(String.class))
+//				.operator(processingOperation(Step11.class)
+//							.parameter(Step11::getParam, "a")
+//							.build())
+//				.operator(container)
+//				.build();
+//
+//		AssemblyLineDefinition<String, List<String>> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+//				.definition(mainLine)
+//				.configuration(configuration()
+//						.stepDefaultConfiguration(operationConfiguration()
+//								.preProcessors(Arrays.asList(OperationParamsInjector.class))
+//								.build())
+//						.eventHandlingDefinition(eventHandling()
+//								.queue(queue().eventListener(new TestEventListener()).build())
+//								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+//								.build())
+//						.build())
+//				.build();
+//
+//		// When
+//		List<String> result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
+//
+//		// Then
+//		assertThat(result)
+//			.isNotNull()
+//			.hasSize(2)
+//			.containsExactly("b", "c");
+//	}
+//
+//
+//	@Test
+//	public void test_line_with_signal_first() throws AssemblyLineException {
+//		// Given
+//		LineDefinition<String, Object> mainLine = line()
+//				.operator(stopSignal(new TypeReference<String>() {}).condition(a -> a.getItem() == null).build())
+//				.operator(processingOperation(Step11.class)
+//						.parameter(Step11::getParam, "a")
+//						.build())
+//				.operator(processingOperation(Step13.class).build())
+//				.condition((input, execution) -> input != null && !input.isEmpty())
+//				.build();
+//
+//		AssemblyLineDefinition<String, Object> assemblyLine = asssemblyLineDefinition("my-basic-assembly-line")
+//				.definition(mainLine)
+//				.configuration(configuration()
+//						.stepDefaultConfiguration(operationConfiguration()
+//								.preProcessors(Arrays.asList(OperationParamsInjector.class))
+//								.build())
+//						.eventHandlingDefinition(eventHandling()
+//								.queue(queue().eventListener(new TestEventListener()).build())
+//								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+//								.build())
+//						.build())
+//				.build();
+//
+//		// When
+//		Object result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "b", new TestResourceFactory());
+//
+//		// Then
+//		assertThat(result)
+//				.isNotNull()
+//				.isInstanceOf(List.class)
+//				.asList()
+//				.containsExactly("a");
+//
+//		// When
+//		result = new ChainExecutorService().executeAndUnwrap(assemblyLine, "", new TestResourceFactory());
+//
+//		// Then
+//		assertThat(result)
+//				.isNull();
+//
+//		// When
+//		result = new ChainExecutorService().executeAndUnwrap(assemblyLine, null, new TestResourceFactory());
+//
+//		// Then
+//		assertThat(result)
+//				.isNull();
+//	}
 
 	private class ProcessingOperationProxy implements MethodInterceptor {
 	    private Operation originalOperation;
@@ -678,8 +1050,8 @@ public class SimpleChainBuilderTest {
 	    }
 	}
 
-	@Test
-	public void testcglib() throws AssemblyLineException {
+//	@Test
+//	public void testcglib() throws AssemblyLineException {
 		// Given
 //		LineDefinition<String, Object> mainLine = line(startingPointt(String.class))
 //				.operator(processingOperation(Step3.class).build())
@@ -708,7 +1080,7 @@ public class SimpleChainBuilderTest {
 //			.isExactlyInstanceOf(HashMap.class)
 //			.asInstanceOf(InstanceOfAssertFactories.MAP)
 //			.containsEntry("b", "b");
-	}
+//	}
 
 //	@Test
 //	public void test_signal() {
@@ -909,7 +1281,7 @@ public class SimpleChainBuilderTest {
 		static {
 			BEANS = new HashMap<>();
 			// Gear4j itself should handle the initialization of its proper beans...
-			BEANS.put(OperationParamsInjector.class, new OperationParamsInjector());
+//			BEANS.put(OperationParamsInjector.class, new OperationParamsInjector());
 //			BEANS.put(OperationRetriever.class, new OperationRetriever());
 			BEANS.put(Step3.class, new Step3());
 			BEANS.put(Step7.class, new Step7());
@@ -928,7 +1300,7 @@ public class SimpleChainBuilderTest {
 
 	}
 
-	public static class TestEventListener implements EventListener {
+	public static class TestEventListener implements EventListener<Event> {
 
 		@Override
 		public void handleEvent(Event e) {
@@ -937,26 +1309,26 @@ public class SimpleChainBuilderTest {
 
 	}	
 	
-	public static class TestPostProcessor implements ProcessingOperationProcessor {
-
-		@Override
-		public void process(Item input, ProcessingOperationDataModel model, Void customModel, StepExecution context) {
-		}
-
-	}	
+//	public static class TestPostProcessor implements ProcessingOperationProcessor {
+//
+//		@Override
+//		public void process(Item input, ProcessingOperationDataModel model, Void customModel, StepExecution context) {
+//		}
+//
+//	}
 
 	public static class ProcessorModel {
 		
 	}
-
-	public static class CustomPreProcessor implements CustomProcessingOperationProcessor<ProcessorModel> {
-
-		@Override
-		public void process(Item input, ProcessingOperationDataModel model, ProcessorModel customModel, StepExecution context) {
-			
-		}
-
-	}
+//
+//	public static class CustomPreProcessor implements CustomProcessingOperationProcessor<ProcessorModel> {
+//
+//		@Override
+//		public void process(Item input, ProcessingOperationDataModel model, ProcessorModel customModel, StepExecution context) {
+//
+//		}
+//
+//	}
 
 	private static <T> T getT(Class<T> clazz) {
 		try {
