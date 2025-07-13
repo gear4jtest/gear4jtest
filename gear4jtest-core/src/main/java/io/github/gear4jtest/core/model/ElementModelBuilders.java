@@ -5,12 +5,12 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import io.github.gear4jtest.core.model.EventHandlingDefinition.EventConfiguration;
-import io.github.gear4jtest.core.model.refactor.SimpleEventBuss;
+import io.github.gear4jtest.core.model.refactor.SimpleEventBus;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition.Configuration;
 import io.github.gear4jtest.core.model.refactor.BaseError;
 import io.github.gear4jtest.core.model.refactor.ContainerBaseDefinition;
-import io.github.gear4jtest.core.model.refactor.EventBuss;
+import io.github.gear4jtest.core.model.refactor.EventBus;
 import io.github.gear4jtest.core.model.refactor.IteratorDefinition;
 import io.github.gear4jtest.core.model.refactor.IteratorDefinition.ListAccumulator;
 import io.github.gear4jtest.core.model.refactor.IteratorDefinition.SetAccumulator;
@@ -19,6 +19,7 @@ import io.github.gear4jtest.core.model.refactor.PersistenceConfiguration;
 import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
 import io.github.gear4jtest.core.model.refactor.SignalDefiinition;
 import io.github.gear4jtest.core.model.refactor.SignalType;
+import io.github.gear4jtest.core.model.refactor.Transformer;
 import io.github.gear4jtest.core.model.refactor.UnvaryingIfElseContainerDefinition;
 
 public final class ElementModelBuilders {
@@ -38,8 +39,8 @@ public final class ElementModelBuilders {
 		return new BaseError.SafeError.Builder<>(SignalType.STOP, throwableType);
 	}
 
-	public static SimpleEventBuss.Builder simpleBus(String name) {
-		return new SimpleEventBuss.Builder().id(name);
+	public static SimpleEventBus.Builder simpleBus(String name) {
+		return new SimpleEventBus.Builder().id(name);
 	}
 
 	public static EventConfiguration.Builder eventConfiguration() {
@@ -58,7 +59,7 @@ public final class ElementModelBuilders {
 		return new AssemblyLineDefinition.Builder<>(identifier);
 	}
 
-	public static <A, B, T extends Operation<A, B>> ProcessingOperationDefinition.Builder<A, B, T> processingOperation(String id, Class<T> step) {
+	public static <A, B, T extends Transformer<A, B>> ProcessingOperationDefinition.Builder<A, B, T> processingOperation(String id, Class<T> step) {
 		return new ProcessingOperationDefinition.Builder<A, B, T>().id(id).type(step);
 	}
 
@@ -100,11 +101,11 @@ public final class ElementModelBuilders {
 		return new PersistenceConfiguration.Builder();
 	}
 
-	public static <T extends EventBuss> PersistenceConfiguration.Builder customEventBus(Class<T> clazz) {
+	public static <T extends EventBus> PersistenceConfiguration.Builder customEventBus(Class<T> clazz) {
 		return new PersistenceConfiguration.Builder();
 	}
 
-	public static <T extends SimpleEventBuss> PersistenceConfiguration.Builder eventBus(Class<T> clazz) {
+	public static <T extends SimpleEventBus> PersistenceConfiguration.Builder eventBus(Class<T> clazz) {
 		return new PersistenceConfiguration.Builder();
 	}
 

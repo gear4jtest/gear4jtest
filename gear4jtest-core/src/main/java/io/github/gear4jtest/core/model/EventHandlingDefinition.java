@@ -3,18 +3,18 @@ package io.github.gear4jtest.core.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.github.gear4jtest.core.model.refactor.EventBuss;
+import io.github.gear4jtest.core.model.refactor.EventBus;
 
 public class EventHandlingDefinition {
 
-	private List<EventBuss> eventBuses;
+	private List<EventBus> eventBuses;
 	private EventConfiguration globalEventConfiguration;
 
 	public EventHandlingDefinition() {
 		this.eventBuses = new ArrayList<>();
 	}
 
-	public List<EventBuss> getEventBuses() {
+	public List<EventBus> getEventBuses() {
 		return eventBuses;
 	}
 
@@ -30,7 +30,7 @@ public class EventHandlingDefinition {
 			managedInstance = new EventHandlingDefinition();
 		}
 
-		public Builder bus(EventBuss eventBus) {
+		public Builder bus(EventBus eventBus) {
 			if (managedInstance.eventBuses == null) {
 				managedInstance.eventBuses = new ArrayList<>();
 			}

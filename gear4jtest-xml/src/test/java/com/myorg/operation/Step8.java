@@ -1,4 +1,4 @@
-package io.github.gear4jtest.core.service.steps;
+package com.myorg.operation;
 
 import java.util.Map;
 

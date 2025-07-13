@@ -11,12 +11,14 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class AssemblyLineValidator {
-    private static final Logger LOGGER =  LogManager.getLogger( "AssemblyLineValidator" );
-    private static final String XSD_FILE = "/sample-assembly-line.xsd";
+    private static final Logger LOGGER = LogManager.getLogger( "AssemblyLineValidator" );
+    private static final String XSD_FILE = "/assembly-line.xsd";
+
     /**
      * Validate a given file resource with a given schema validation resource.
-
-     * @param resourceToValidate       the resource to be validated
+     *
+     * @param resourceToValidate the resource to be validated
+     * @return a FileParserReport indicating the validation result
      */
     public static FileParserReport validate(InputStream resourceToValidate) {
         try {
@@ -35,14 +37,14 @@ public class AssemblyLineValidator {
     }
 
     public static class FileParserReport {
-        private Status status;
-        private Throwable throwable;
+        private final Status status;
+        private final Throwable throwable;
 
-        public FileParserReport(Status status) {
+        private FileParserReport(Status status) {
             this(status, null);
         }
 
-        public FileParserReport(Status status, Throwable throwable) {
+        private FileParserReport(Status status, Throwable throwable) {
             this.status = status;
             this.throwable = throwable;
         }

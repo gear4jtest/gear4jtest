@@ -19,10 +19,8 @@ import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.exception.AssemblyLineException;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
-import io.github.gear4jtest.core.model.Operation;
 import io.github.gear4jtest.core.model.refactor.ExecutionResult;
 import io.github.gear4jtest.core.model.refactor.PersistenceConfiguration;
-import io.github.gear4jtest.core.model.refactor.SimpleEventBuss;
 import io.github.gear4jtest.core.persistence.DatabasePipelineExecutionRepository;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
@@ -35,8 +33,6 @@ import io.github.gear4jtest.core.service.steps.Step3;
 import io.github.gear4jtest.core.service.steps.Step7;
 import io.github.gear4jtest.core.service.steps.Step8;
 import io.github.gear4jtest.core.service.steps.Step9;
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.MethodProxy;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
@@ -120,7 +116,7 @@ public class SimpleChainBuilderTest {
 										.action(() -> System.out.println("Error occurred!"))
 										.build())
 						.conditional((input, ctx) -> input.equals("a"))
-						.transformer((a, ctx) -> new HashMap<>())
+						.transformer((a, ctx, exec) -> new HashMap<>())
 						.build())
 //				.then(fatalSignal(typeMap(String.class, String.class))
 //						.condition(ctx -> ctx.getItem().containsKey("a"))
@@ -174,7 +170,7 @@ public class SimpleChainBuilderTest {
 										.action(() -> System.out.println("Error occurred!"))
 										.build())
 						.conditional((input, ctx) -> input.equals("a"))
-						.transformer((a, ctx) -> new HashMap<>())
+						.transformer((a, ctx, exec) -> new HashMap<>())
 						.build())
 //				.then(fatalSignal(typeMap(String.class, String.class))
 //						.condition(ctx -> ctx.getItem().containsKey("a"))
@@ -214,6 +210,8 @@ public class SimpleChainBuilderTest {
 				.isInstanceOf(List.class)
 				.asList()
 				.contains("");
+
+		assertThat(TestEventListener.COUNTER).isEqualTo(10);
 	}
 
 	@Test
@@ -234,7 +232,7 @@ public class SimpleChainBuilderTest {
 										.action(() -> System.out.println("Error occurred!"))
 										.build())
 						.conditional((input, ctx) -> input.equals("a"))
-						.transformer((a, ctx) -> new HashMap<>())
+						.transformer((a, ctx, exec) -> new HashMap<>())
 						.build())
 //				.then(fatalSignal(typeMap(String.class, String.class))
 //						.condition(ctx -> ctx.getItem().containsKey("a"))
@@ -1036,19 +1034,19 @@ public class SimpleChainBuilderTest {
 //				.isNull();
 //	}
 
-	private class ProcessingOperationProxy implements MethodInterceptor {
-	    private Operation originalOperation;
-	    public ProcessingOperationProxy(Operation operation) {
-	        this.originalOperation = operation;
-	    }
-
-	    public Object intercept(Object object, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
-	        if ("execute".equals(method.getName())) {
-	        	throw new IllegalAccessException("Operation method execution is not allowed");
-	        }
-	        return method.invoke(originalOperation, args);
-	    }
-	}
+//	private class ProcessingOperationProxy implements MethodInterceptor {
+//	    private Operation originalOperation;
+//	    public ProcessingOperationProxy(Operation operation) {
+//	        this.originalOperation = operation;
+//	    }
+//
+//	    public Object intercept(Object object, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
+//	        if ("execute".equals(method.getName())) {
+//	        	throw new IllegalAccessException("Operation method execution is not allowed");
+//	        }
+//	        return method.invoke(originalOperation, args);
+//	    }
+//	}
 
 //	@Test
 //	public void testcglib() throws AssemblyLineException {
@@ -1301,14 +1299,15 @@ public class SimpleChainBuilderTest {
 	}
 
 	public static class TestEventListener implements EventListener<Event> {
+		public static int COUNTER = 1;
 
 		@Override
 		public void handleEvent(Event e) {
 			System.out.println();
+			COUNTER++;
 		}
+	}
 
-	}	
-	
 //	public static class TestPostProcessor implements ProcessingOperationProcessor {
 //
 //		@Override

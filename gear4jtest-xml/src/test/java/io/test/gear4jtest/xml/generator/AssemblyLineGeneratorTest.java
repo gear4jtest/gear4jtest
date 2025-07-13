@@ -1,35 +1,40 @@
 package io.test.gear4jtest.xml.generator;
 
-import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.TypeSpec;
-import io.github.gear4jtest.core.model.ElementModelBuilders;
-import io.test.gear4test.xml.generator.AssemblyLineGenerator;
-import io.test.gear4test.xml.validator.AssemblyLineValidator;
-import org.junit.jupiter.api.Test;
-import org.xml.sax.SAXParseException;
-
-import javax.tools.*;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import javax.tools.Diagnostic;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
+
+import com.squareup.javapoet.JavaFile;
+import io.test.gear4test.xml.generator.XmlToJavaGeneratorV4;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AssemblyLineGeneratorTest {
 
     @Test
-    void testXsdGenerationSuccessful() throws IOException {
+    void testXsdGenerationSuccessful() throws Exception {
         // Given
-        InputStream io = getClass().getResourceAsStream("/samples/sample-assembly-line.xml");
+//        InputStream io = getClass().getResourceAsStream("/samples/sample-assembly-line.xml");
 
         // When
-        TypeSpec typeSpec = AssemblyLineGenerator.generateFlatAssemblyLines(io);
-        JavaFile javaFile = JavaFile.builder("com.myorg.assemblylines.generated", typeSpec)
-                .indent("    ")
-                .skipJavaLangImports(true)
-                .addStaticImport(ElementModelBuilders.class, "*")
-                .build();
+//        JavaFile javaFile = new XmlToJavaGenerator("com.myorg.assemblylines.generated", "Whatever")
+//                .generateFromXml(new File("src/test/resources/samples/assembly-line-iterator.xml"));
+        JavaFile javaFile = new XmlToJavaGeneratorV4("com.myorg.assemblylines.generated", "Whatever")
+                .generateFromAssemblyLine(new File("src/test/resources/samples/assembly-line-iterator.xml"));
 
         // Then
         javaFile.writeTo(new File("/tmp/a.java"));

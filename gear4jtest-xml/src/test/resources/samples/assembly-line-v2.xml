@@ -1,0 +1,35 @@
+<assembly-line-definition id="test">
+    <operators>
+        <operation>
+            <type>PROCESSING_OPERATION</type>
+            <transformer>com.myorg.operation.Step11</transformer>
+            <parameters>
+                <parameter>
+                    <retriever>getParam</retriever>
+                    <value>"a"</value>
+                </parameter>
+            </parameters>
+        </operation>
+    </operators>
+
+    <configuration>
+        <step-default-configuration>
+            <pre-processors>
+                <processor>com.myorg.processor.MyProcessor</processor>
+                <processor>com.myorg.processor.MyProcessor2</processor>
+            </pre-processors>
+            <post-processors>
+                <processor>com.myorg.processor.MyProcessor</processor>
+                <processor>com.myorg.processor.MyProcessor2</processor>
+            </post-processors>
+        </step-default-configuration>
+        <event-handling-definition>
+            <queue>
+                <event-listener>com.myorg.listener.TestEventListener</event-listener>
+            </queue>
+            <global-event-configuration>
+                <event-on-parameter-changed>true</event-on-parameter-changed>
+            </global-event-configuration>
+        </event-handling-definition>
+    </configuration>
+</assembly-line-definition>

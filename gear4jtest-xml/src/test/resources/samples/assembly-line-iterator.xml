@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="test"
+              inputType="java.lang.String">
+
+    <operations>
+        <processingOperation id="step3" type="com.myorg.operation.Step3">
+            <parameters>
+                <valueParameter retriever="Step3::getParam" value="a" valueType="java.lang.String"/>
+            </parameters>
+            <onErrors>
+                <unsafeError signalType="IGNORE" throwableType="java.lang.Exception">
+                    <condition expression="ctx.getContext().containsKey(&quot;a&quot;)"/>
+                    <action expression="System.out.println(&quot;Error occurred!&quot;)"/>
+                </unsafeError>
+            </onErrors>
+            <conditions>
+                <condition expression="input.equals(&quot;a&quot;)"/>
+            </conditions>
+            <fallbackTransformer expression="new HashMap&lt;&gt;()"/>
+        </processingOperation>
+
+        <processingOperation id="step8" type="com.myorg.operation.Step8"/>
+
+        <processingOperation id="step9" type="com.myorg.operation.Step9"/>
+
+        <iterator id="iterator" inputType="java.util.List" outputType="java.util.List">
+            <iterableFunction expression="java.util.function.Function.identity()"/>
+            <operation>
+                <processingOperation id="step10" type="com.myorg.operation.Step10" />
+            </operation>
+            <collector expression="Collectors.toList()"/>
+        </iterator>
+    </operations>
+
+    <configuration>
+        <operationDefaultConfiguration/>
+
+        <eventHandling>
+            <eventBuses>
+                <eventBus name="main">
+                    <eventListeners>
+                        <eventListener class="TestEventListener"/>
+                    </eventListeners>
+                </eventBus>
+            </eventBuses>
+            <globalEventConfiguration eventOnParameterChanged="true"/>
+        </eventHandling>
+    </configuration>
+</assemblyLine>

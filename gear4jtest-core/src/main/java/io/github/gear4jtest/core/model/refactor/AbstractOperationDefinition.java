@@ -13,7 +13,7 @@ public abstract class AbstractOperationDefinition<I, O> implements OperationDefi
     protected List<Processor> processors = new ArrayList<>();
     protected List<BaseError<I>> onErrors;
     protected List<Condition<I>> conditions = new ArrayList<>();
-    protected Transformer<I, O> skipTransformer;
+    protected Transformer<I, O> fallbackTransformer;
 
     public AbstractOperationDefinition(String id) { this.id = id; }
 
@@ -28,10 +28,9 @@ public abstract class AbstractOperationDefinition<I, O> implements OperationDefi
             initialize(input, context, operationExecution);
             for (Condition<I> condition: conditions) {
                 if (condition != null && !condition.test(input, context)) {
-                    if (skipTransformer != null) {
-                        O result = skipTransformer.transform(input, context);
+                    if (fallbackTransformer != null) {
+                        O result = fallbackTransformer.transform(input, context, operationExecution);
                         return operationExecution.complete(result);
-//                    return new ExecutionResult<>(result, true, null, report);
                     }
                     throw new RuntimeException("Operation skipped without transformer");
                 }
@@ -43,17 +42,12 @@ public abstract class AbstractOperationDefinition<I, O> implements OperationDefi
 
             O result = execute(input, context, operationExecution);
 
-//            report.addOperation(id, true, System.currentTimeMillis() - start, null);
-//            return new ExecutionResult<>(result, true, null, report);
             context.getEventManager().publishEvent(new OperationCompletedEvent(context.getPipelineId(), context.getExecutionId().toString(), id, input, result));
             return operationExecution.complete(result);
         } catch (Exception e) {
             context.getEventManager().publishEvent(new OperationErrorEvent(context.getPipelineId(), context.getExecutionId().toString(), id, input, e));
 
             return handleOnError(input, context, e, operationExecution);
-//            report.addOperation(id, false, System.currentTimeMillis() - start, e);
-//            return new ExecutionResult<>(null, false, e, report);
-//            return operationExecution.fail(e);
         }
     }
 

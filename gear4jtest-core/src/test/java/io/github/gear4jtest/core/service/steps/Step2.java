@@ -1,9 +1,10 @@
 package io.github.gear4jtest.core.service.steps;
 
-import io.github.gear4jtest.core.model.Operation;
 import io.github.gear4jtest.core.model.refactor.ExecutionContext;
+import io.github.gear4jtest.core.model.refactor.OperationExecution;
+import io.github.gear4jtest.core.model.refactor.Transformer;
 
-public class Step2 implements Operation<Integer, String> {
+public class Step2 implements Transformer<Integer, String> {
 
 //	private Parameter<String> string;
 	
@@ -13,7 +14,7 @@ public class Step2 implements Operation<Integer, String> {
 	
 	
 	@Override
-	public String execute(Integer object, ExecutionContext context) {
+	public String transform(Integer object, ExecutionContext context, OperationExecution operationExecution) {
 		return "";
 	}
 

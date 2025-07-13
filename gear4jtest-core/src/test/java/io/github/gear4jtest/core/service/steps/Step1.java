@@ -3,10 +3,11 @@ package io.github.gear4jtest.core.service.steps;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.github.gear4jtest.core.model.Operation;
 import io.github.gear4jtest.core.model.refactor.ExecutionContext;
+import io.github.gear4jtest.core.model.refactor.OperationExecution;
+import io.github.gear4jtest.core.model.refactor.Transformer;
 
-public class Step1 implements Operation<String, Integer> {
+public class Step1 implements Transformer<String, Integer> {
 
 //	private Parameter<String> string = Parameter.of();
 
@@ -23,7 +24,7 @@ public class Step1 implements Operation<String, Integer> {
 	}
 	
 	@Override
-	public Integer execute(String object, ExecutionContext context) {
+	public Integer transform(String object, ExecutionContext context, OperationExecution operationExecution) {
 		return 1;
 	}
 

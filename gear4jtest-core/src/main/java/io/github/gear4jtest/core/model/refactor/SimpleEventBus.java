@@ -8,14 +8,17 @@ import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.event.EventBusFilter;
 
-public class SimpleEventBuss implements EventBuss {
+public class SimpleEventBus implements EventBus {
+
+	private static final Event STOP_SIGNAL_EVENT = new Event(null, null, null);
+	private final Object monitor = new Object();
 
 	private final String id;
 	private final LinkedBlockingQueue<Event> eventQueue;
 	private final List<EventBusFilter> filters;
 	private final List<EventListener<?>> eventListeners;
 
-    public SimpleEventBuss(String id, List<EventBusFilter> filters, List<EventListener<?>> eventListeners) {
+    public SimpleEventBus(String id, List<EventBusFilter> filters, List<EventListener<?>> eventListeners) {
 		this.id = id;
 		this.eventQueue = new LinkedBlockingQueue<>();
         this.filters = filters;
@@ -26,23 +29,32 @@ public class SimpleEventBuss implements EventBuss {
     public void run() {
 		try {
 			Event event;
-			while ((event = eventQueue.take()) != null) {
+			while ((event = eventQueue.take()) != STOP_SIGNAL_EVENT || !eventQueue.isEmpty()) {
+				if (event == STOP_SIGNAL_EVENT) {
+					eventQueue.offer(event);
+					continue;
+				}
 				for (EventListener eventListener : eventListeners) {
 					if (eventListener.isAcceptable(event)) {
 						eventListener.handleEvent(event);
 					}
 				}
-
-				if (eventQueue.isEmpty()) {
-					synchronized(this) {
-						this.notify();
-					}
-				}
+			}
+			synchronized(monitor) {
+				monitor.notify();
 			}
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
     }
+
+	@Override
+	public void stopBus() throws InterruptedException {
+		this.eventQueue.offer(STOP_SIGNAL_EVENT);
+		synchronized(monitor) {
+			monitor.wait();
+		}
+	}
 
 	@Override
 	public void acceptEvent(Event event) {
@@ -78,8 +90,8 @@ public class SimpleEventBuss implements EventBuss {
 			return this;
 		}
 
-		public SimpleEventBuss build() {
-			return new SimpleEventBuss(id, filters, eventListeners);
+		public SimpleEventBus build() {
+			return new SimpleEventBus(id, filters, eventListeners);
 		}
 	}
 }

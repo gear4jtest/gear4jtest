@@ -5,12 +5,12 @@ import java.util.List;
 
 import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.event.EventBusFilter;
-import io.github.gear4jtest.core.model.refactor.EventBuss;
+import io.github.gear4jtest.core.model.refactor.EventBus;
 
 public class SimpleBusDefinition {
 
 	private String name;
-	private Class<? extends EventBuss> eventBusClass;
+	private Class<? extends EventBus> eventBusClass;
 	private List<EventListener> eventListeners;
 	private List<EventBusFilter> filters;
 
@@ -34,7 +34,7 @@ public class SimpleBusDefinition {
 
 		private final SimpleBusDefinition managedInstance;
 
-		Builder(String name, Class<? extends EventBuss> eventBusClass) {
+		Builder(String name, Class<? extends EventBus> eventBusClass) {
 			managedInstance = new SimpleBusDefinition();
 			managedInstance.name = name;
 			managedInstance.eventBusClass = eventBusClass;

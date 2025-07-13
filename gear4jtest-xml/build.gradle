@@ -1,23 +1,57 @@
-plugins {
-    id 'de.qaware.gradle.plugin.xsd2java' version '2.1.0'
+configurations {
+    jaxb
 }
 
 dependencies {
+    jaxb 'org.glassfish.jaxb:jaxb-xjc:4.0.2'
+    jaxb 'org.glassfish.jaxb:jaxb-runtime:4.0.2'
+    jaxb 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.0'
+
     implementation project(':gear4jtest-core')
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.0'
+    implementation 'org.glassfish.jaxb:jaxb-runtime:4.0.2'
     implementation group: 'com.squareup', name: 'javapoet', version: '1.13.0'
 }
 
-xsd2java {
-    schemas {
-        assemblyLine {
-            schemaDirPath 'src/main/resources'
-            packageName 'io.test.gear4jtest.xml.generated'
-        }
+def generatedSourcesDir = file("${buildDir}/generated/sources/jaxb")
+
+tasks.register('generateJaxb', JavaExec) {
+    group = 'build'
+    description = 'Generate Java classes from XSD schemas'
+
+    doFirst {
+        generatedSourcesDir.mkdirs()
     }
 
-    extension true
-    arguments ['-verbose']
-    outputDir new File("${project.buildDir}/generated-sources/xsd2java")
+    classpath = configurations.jaxb
+    mainClass = 'com.sun.tools.xjc.XJCFacade'
+
+    args = [
+            '-d', generatedSourcesDir.absolutePath,
+            '-p', 'io.test.gear4jtest.xml.generated',
+            '-verbose',
+            '-extension',
+            '-b', 'src/main/resources/bindings.xjb',
+            'src/main/resources/assembly-line.xsd'
+    ]
+
+    inputs.files fileTree(dir: 'src/main/resources/xsd', include: '**/*.xsd')
+    outputs.dir generatedSourcesDir
 }
+
+tasks.register('cleanGeneratedSources', Delete) {
+    delete generatedSourcesDir
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs += generatedSourcesDir
+        }
+    }
+}
+
+compileJava.dependsOn generateJaxb
+clean.dependsOn cleanGeneratedSources
 
 ext.moduleName = 'io.test.gear4jtest.xml'

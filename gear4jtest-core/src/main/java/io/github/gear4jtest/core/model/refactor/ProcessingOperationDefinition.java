@@ -5,12 +5,9 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import io.github.gear4jtest.core.model.Operation;
-import org.checkerframework.checker.units.qual.A;
-
 public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDefinition<IN, OUT> {
 
-	private Class<Operation<IN, OUT>> type;
+	private Class<Transformer<IN, OUT>> type;
 
 	private List<ParameterModel<?, ?>> parameters;
 	
@@ -38,10 +35,10 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 
 	@Override
 	public OUT execute(IN input, ExecutionContext context, OperationExecution operationExecution) throws Exception {
-		return ((Operation<IN, OUT>) operationExecution.getOperation()).execute(input, null);
+		return ((Transformer<IN, OUT>) operationExecution.getOperation()).transform(input, context, operationExecution);
 	}
 
-	public static class Builder<IN, OUT, OP extends io.github.gear4jtest.core.model.Operation<IN, OUT>> {
+	public static class Builder<IN, OUT, OP extends Transformer<IN, OUT>> {
 
 		private final ProcessingOperationDefinition<IN, OUT> managedInstance;
 
@@ -49,7 +46,7 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 			managedInstance = new ProcessingOperationDefinition<>();
 		}
 
-		public <A, T extends io.github.gear4jtest.core.model.Operation<IN, A>> Builder<IN, A, T> type(Class<T> type) {
+		public <A, T extends Transformer<IN, A>> Builder<IN, A, T> type(Class<T> type) {
 			managedInstance.type = (Class) type;
 			return (Builder<IN, A, T>) this;
 		}
@@ -93,8 +90,8 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 			return new UnsafeOperation.Builder<>(this);
 		}
 
-		public Builder<IN, OUT, OP> transformer(Transformer<IN, OUT> transformer) {
-			this.managedInstance.skipTransformer = transformer;
+		public Builder<IN, OUT, OP> fallback(Transformer<IN, OUT> transformer) {
+			this.managedInstance.fallbackTransformer = transformer;
 			return this;
 		}
 
@@ -110,13 +107,13 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 	}
 
 	@FunctionalInterface
-	public interface ParamRetriever<T extends Operation<?, ?>, U> {
+	public interface ParamRetriever<T extends Transformer<?, ?>, U> {
 
 		OperationParamsInjector.Parameter<U> getParameterValue(T operation);
 
 	}
 
-	public static abstract class ParameterModel<OP extends Operation<?, ?>, T> {
+	public static abstract class ParameterModel<OP extends Transformer<?, ?>, T> {
 
 		private ParamRetriever<OP, T> paramRetriever;
 
@@ -132,7 +129,7 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 
 	}
 
-	public static class ValueParameterModel<OP extends Operation<?, ?>, T> extends ParameterModel<OP, T> {
+	public static class ValueParameterModel<OP extends Transformer<?, ?>, T> extends ParameterModel<OP, T> {
 
 		private T value;
 
@@ -148,7 +145,7 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 
 	}
 
-	public static class SupplierParameterModel<OP extends Operation<?, ?>, T> extends ParameterModel<OP, T> {
+	public static class SupplierParameterModel<OP extends Transformer<?, ?>, T> extends ParameterModel<OP, T> {
 
 		private Supplier<T> value;
 
@@ -164,7 +161,7 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 
 	}
 
-	public static class InterpretationContextParameterModel<OP extends Operation<?, ?>, T>
+	public static class InterpretationContextParameterModel<OP extends Transformer<?, ?>, T>
 			extends ParameterModel<OP, T> {
 
 		private Function<InterpretationContext, T> value;
@@ -200,11 +197,11 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 
 	}
 
-	public static class UnsafeOperation<IN, OUT, OP extends io.github.gear4jtest.core.model.Operation<IN, OUT>> {
+	public static class UnsafeOperation<IN, OUT, OP extends Transformer<IN, OUT>> {
 
 		private ProcessingOperationDefinition.Builder<IN, OUT, OP> operation;
 
-		public static class Builder<IN, OUT, OP extends io.github.gear4jtest.core.model.Operation<IN, OUT>> {
+		public static class Builder<IN, OUT, OP extends Transformer<IN, OUT>> {
 
 			private UnsafeOperation<IN, OUT, OP> managedInstance;
 
@@ -229,17 +226,17 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 			}
 
 			public SafeOperation.Builder<IN, OUT, OP> transformer(Transformer<IN, OUT> transformer) {
-				this.managedInstance.operation.transformer(transformer);
+				this.managedInstance.operation.fallback(transformer);
 				return new SafeOperation.Builder<>(this.managedInstance.operation);
 			}
 		}
 	}
 
-	public static class SafeOperation<IN, OUT, OP extends io.github.gear4jtest.core.model.Operation<IN, OUT>> {
+	public static class SafeOperation<IN, OUT, OP extends Transformer<IN, OUT>> {
 
 		private ProcessingOperationDefinition.Builder<IN, OUT, OP> operation;
 
-		public static class Builder<IN, OUT, OP extends io.github.gear4jtest.core.model.Operation<IN, OUT>> {
+		public static class Builder<IN, OUT, OP extends Transformer<IN, OUT>> {
 
 			private SafeOperation<IN, OUT, OP> managedInstance;
 
@@ -264,7 +261,7 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 			}
 
 			public ProcessingOperationDefinition.Builder<IN, OUT, OP> transformer(Transformer<IN, OUT> transformer) {
-				this.managedInstance.operation.transformer(transformer);
+				this.managedInstance.operation.fallback(transformer);
 				return this.managedInstance.operation;
 			}
 

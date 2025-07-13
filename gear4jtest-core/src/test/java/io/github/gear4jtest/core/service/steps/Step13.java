@@ -3,13 +3,14 @@ package io.github.gear4jtest.core.service.steps;
 import java.util.Arrays;
 import java.util.List;
 
-import io.github.gear4jtest.core.model.Operation;
 import io.github.gear4jtest.core.model.refactor.ExecutionContext;
+import io.github.gear4jtest.core.model.refactor.OperationExecution;
+import io.github.gear4jtest.core.model.refactor.Transformer;
 
-public class Step13 implements Operation<String, List<String>> {
+public class Step13 implements Transformer<String, List<String>> {
 
 	@Override
-	public List<String> execute(String string, ExecutionContext context) {
+	public List<String> transform(String string, ExecutionContext context, OperationExecution operationExecution) {
 		return Arrays.asList(string);
 	}
 

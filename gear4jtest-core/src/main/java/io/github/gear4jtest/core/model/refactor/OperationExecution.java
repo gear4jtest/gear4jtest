@@ -7,10 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import io.github.gear4jtest.core.model.Operation;
-
 public class OperationExecution {
-    private Operation<?, ?> operation;
+    private Transformer<?, ?> operation;
     private OperationReport report;
 
     public OperationExecution(String id) {
@@ -37,11 +35,11 @@ public class OperationExecution {
         return new OperationResult<>(null, report);
     }
 
-    public <T extends Operation<?, ?>> T getOperation() {
+    public <T extends Transformer<?, ?>> T getOperation() {
         return (T) operation;
     }
 
-    public void setOperation(Operation<?, ?> operation) {
+    void setOperation(Transformer<?, ?> operation) {
         this.operation = operation;
     }
     public OperationReport getReport() {

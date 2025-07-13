@@ -20,8 +20,15 @@ public class Event {
 		return id;
 	}
 
+	public String getPipelineId() {
+		return pipelineId;
+	}
+
+	public String getExecutionId() {
+		return executionId;
+	}
+
 	public String getName() {
 		return type;
 	}
-
 }

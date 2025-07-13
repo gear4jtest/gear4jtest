@@ -1,15 +1,16 @@
 package com.myorg.operation;
 
-import io.github.gear4jtest.core.context.StepExecution;
-import io.github.gear4jtest.core.model.Operation;
+import io.github.gear4jtest.core.model.refactor.ExecutionContext;
+import io.github.gear4jtest.core.model.refactor.OperationExecution;
 import io.github.gear4jtest.core.model.refactor.OperationParamsInjector.Parameter;
+import io.github.gear4jtest.core.model.refactor.Transformer;
 
-public class Step11 implements Operation<String, String> {
+public class Step11 implements Transformer<String, String> {
 
 	private Parameter<String> param = Parameter.of();
 
 	@Override
-	public String execute(String object, StepExecution context) {
+	public String transform(String object, ExecutionContext context, OperationExecution operationExecution) {
 		return param.getValue();
 	}
 
