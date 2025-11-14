@@ -19,7 +19,6 @@ ext {
             google: "com.google.guava:guava:33.0.0-jre",
             jackson: "com.fasterxml.jackson.core:jackson-databind:2.19.0",
 
-
             // testCompile
             junit: "org.junit.jupiter:junit-jupiter:${junitVersion}",
             assertj: "org.assertj:assertj-core:${assertjVersion}",

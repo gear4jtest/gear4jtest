@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -17,7 +16,6 @@ import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 
-import com.squareup.javapoet.JavaFile;
 import io.test.gear4test.xml.generator.XmlToJavaGeneratorV4;
 import org.junit.jupiter.api.Test;
 
@@ -33,16 +31,13 @@ class AssemblyLineGeneratorTest {
         // When
 //        JavaFile javaFile = new XmlToJavaGenerator("com.myorg.assemblylines.generated", "Whatever")
 //                .generateFromXml(new File("src/test/resources/samples/assembly-line-iterator.xml"));
-        JavaFile javaFile = new XmlToJavaGeneratorV4("com.myorg.assemblylines.generated", "Whatever")
+        XmlToJavaGeneratorV4.GenerationResult javaFile = new XmlToJavaGeneratorV4("com.myorg.assemblylines.generated")
                 .generateFromAssemblyLine(new File("src/test/resources/samples/assembly-line-iterator.xml"));
 
         // Then
-        javaFile.writeTo(new File("/tmp/a.java"));
-        Appendable writer = new StringWriter();
-        javaFile.writeTo(writer);
-        assertThat(writer.toString())
+        assertThat(javaFile.formattedSource())
                 .as("Java file content should be equal")
-                .isEqualTo(inputStreamToString(getClass().getResourceAsStream("/samples/MyInsaneAssemblyLine.java")));
+                .isEqualTo(inputStreamToString(getClass().getResourceAsStream("/samples/AssertedAssemblyLine.java")));
 
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         DiagnosticCollector<JavaFileObject> ds = new DiagnosticCollector<>();

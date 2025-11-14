@@ -13,7 +13,7 @@ public interface PipelineExecutionRepository {
     Optional<PipelineExecution> findById(UUID id);
     List<PipelineExecution> findByPipelineId(String pipelineId);
     List<PipelineExecution> findByStatus(ExecutionStatus status);
-    void delete(String id);
+    void delete(UUID id);
 
     List<PipelineExecution> findAll();
 }

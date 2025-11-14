@@ -1,6 +1,6 @@
 //package io.test.gear4test.xml.generator;
 //
-//import com.squareup.javapoet.*;
+//import com.palantir.javapoet.*;
 //import io.github.gear4jtest.core.model.Operation;
 //import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
 //import io.github.gear4jtest.core.model.refactor.ContainerBaseDefinition;

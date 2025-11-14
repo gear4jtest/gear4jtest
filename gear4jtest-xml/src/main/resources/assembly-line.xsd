@@ -19,6 +19,7 @@
             <xs:sequence>
                 <xs:element name="operations" type="tns:OperationsType"/>
                 <xs:element name="configuration" type="tns:ConfigurationType" minOccurs="0"/>
+                <xs:element name="dependencies" type="tns:DependenciesType" minOccurs="0"/>
             </xs:sequence>
             <xs:attribute name="id" type="xs:string" use="required"/>
             <xs:attribute name="description" type="xs:string"/>
@@ -385,5 +386,17 @@
             <xs:enumeration value="POSTGRESQL"/>
         </xs:restriction>
     </xs:simpleType>
+
+    <!-- Dependencies -->
+    <xs:complexType name="DependenciesType">
+        <xs:sequence maxOccurs="unbounded">
+            <xs:element name="dependency" type="tns:DependencyType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="DependencyType">
+        <xs:attribute name="name" type="xs:string" />
+        <xs:attribute name="type" type="xs:string" />
+    </xs:complexType>
 
 </xs:schema>

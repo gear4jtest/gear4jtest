@@ -43,7 +43,7 @@ public class InMemoryPipelineExecutionRepository implements PipelineExecutionRep
     }
 
     @Override
-    public void delete(String id) {
+    public void delete(UUID id) {
         executions.remove(id);
     }
 

@@ -6,7 +6,7 @@
     <operations>
         <processingOperation id="step3" type="com.myorg.operation.Step3">
             <parameters>
-                <valueParameter retriever="Step3::getParam" value="a" valueType="java.lang.String"/>
+                <valueParameter retriever="Step3::getParam" value="a" valueType="java.lang.String" />
             </parameters>
             <onErrors>
                 <unsafeError signalType="IGNORE" throwableType="java.lang.Exception">
@@ -15,7 +15,7 @@
                 </unsafeError>
             </onErrors>
             <conditions>
-                <condition expression="input.equals(&quot;a&quot;)"/>
+                <condition expression="input.equals(modelsService.getModel(&quot;fjeifj&quot;))"/>
             </conditions>
             <fallbackTransformer expression="new HashMap&lt;&gt;()"/>
         </processingOperation>
@@ -47,4 +47,8 @@
             <globalEventConfiguration eventOnParameterChanged="true"/>
         </eventHandling>
     </configuration>
+
+    <dependencies>
+        <dependency name="modelsService" type="com.myorg.services.ModelsService" />
+    </dependencies>
 </assemblyLine>

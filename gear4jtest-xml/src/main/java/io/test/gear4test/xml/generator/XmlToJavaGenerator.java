@@ -8,11 +8,11 @@ import java.util.Set;
 import javax.lang.model.element.Modifier;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeSpec;
+import com.palantir.javapoet.ClassName;
+import com.palantir.javapoet.CodeBlock;
+import com.palantir.javapoet.JavaFile;
+import com.palantir.javapoet.MethodSpec;
+import com.palantir.javapoet.TypeSpec;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -127,7 +127,7 @@ public class XmlToJavaGenerator {
         MethodSpec publicMethod = MethodSpec.methodBuilder(publicName)
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
                 .returns(getReturnType(tag))
-                .addCode("return $L.$L();\n", className, mainMethod.name)
+                .addCode("return $L.$L();\n", className, mainMethod.name())
                 .build();
 
         builder.addMethod(publicMethod);

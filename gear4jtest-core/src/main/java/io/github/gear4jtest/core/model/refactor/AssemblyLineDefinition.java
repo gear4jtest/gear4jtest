@@ -11,6 +11,10 @@ import java.util.stream.Collectors;
 
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.factory.ResourceFactory;
+import io.github.gear4jtest.core.execution.PipelineExecutionManager;
+import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
+import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
+
 import io.github.gear4jtest.core.model.EventHandlingDefinition;
 import io.github.gear4jtest.core.persistence.DatabasePipelineExecutionRepository;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
@@ -168,7 +172,8 @@ public class AssemblyLineDefinition<IN, OUT> {
 		private OperationConfigurationDefinition operationDefaultConfiguration;
 		private EventHandlingDefinition eventHandlingDefinition;
 		private PersistenceConfiguration persistence;
-		
+		private PipelineExecutionManager executionManager;
+
 		public OperationConfigurationDefinition getOperationDefaultConfiguration() {
 			return operationDefaultConfiguration;
 		}
@@ -180,6 +185,7 @@ public class AssemblyLineDefinition<IN, OUT> {
 		public PersistenceConfiguration getPersistence() {
 			return persistence;
 		}
+		public PipelineExecutionManager getExecutionManager(){return executionManager;}
 
 		public static class Builder {
 
@@ -204,11 +210,32 @@ public class AssemblyLineDefinition<IN, OUT> {
 				return this;
 			}
 
+			public Builder executionManager(PipelineExecutionManager manager){
+				this.managedInstance.executionManager = manager;
+				return this;
+			}
+
 			public Configuration build() {
 				return managedInstance;
 			}
 
 		}
+	}
+
+
+	private PipelineExecutionManager resolveManager() {
+		if (Optional.ofNullable(configuration).map(Configuration::getExecutionManager).isPresent()) {
+			return configuration.getExecutionManager();
+		}
+		if (Optional.ofNullable(configuration).map(Configuration::getPersistence).isPresent()) {
+			var p = configuration.getPersistence();
+			switch (p.getPersistenceType()) {
+				case IN_MEMORY: return new InMemoryExecutionManager();
+				case DATABASE: return new DatabaseExecutionManager(p.getDataSource());
+				default: return new InMemoryExecutionManager();
+			}
+		}
+		return new InMemoryExecutionManager();
 	}
 
 }

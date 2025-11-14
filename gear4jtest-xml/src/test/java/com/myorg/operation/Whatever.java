@@ -7,11 +7,14 @@ import com.myorg.operation.Step10;
 import com.myorg.operation.Step3;
 import com.myorg.operation.Step8;
 import com.myorg.operation.Step9;
+import com.myorg.services.ModelsService;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
 import io.github.gear4jtest.core.model.refactor.IteratorDefinition;
 import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
+import io.test.gear4test.xml.generator.GeneratedAssemblyLine;
 import java.lang.Integer;
+import java.lang.Override;
 import java.lang.String;
 import java.util.HashMap;
 import java.util.List;
@@ -21,26 +24,28 @@ import java.util.stream.Collectors;
 /**
  * Générée automatiquement à partir de: assembly-line-iterator.xml
  */
-public final class Whatever {
+public final class Whatever implements GeneratedAssemblyLine {
+    private final ModelsService modelsService;
+
     /**
-     * Constructeur privé - classe utilitaire
+     * Constructeur avec injection de dépendances
      */
-    private Whatever() {
+    public Whatever(ModelsService modelsService) {
+        this.modelsService = modelsService;
     }
 
     /**
      * Crée l'opération de traitement 'step3'
      * @return l'opération configurée
      */
-    private static ProcessingOperationDefinition<String, Map<String, String>> createProcessingStep3(
-            ) {
+    private ProcessingOperationDefinition<String, Map<String, String>> createProcessingStep3() {
         return processingOperation("step3", Step3.class)
             .parameter(Step3::getParam, "a")
             .onError(ElementModelBuilders.<String>ignore(Exception.class)
         .condition((input, ctx) -> ctx.getContext().containsKey("a"))
         .action(() -> System.out.println("Error occurred!"))
         .build())
-            .conditional((input, ctx) -> input.equals("a"))
+            .conditional((input, ctx) -> input.equals(modelsService.getModel("fjeifj")))
             .transformer((input, ctx, exec) -> new HashMap<>())
             .build();
     }
@@ -49,8 +54,7 @@ public final class Whatever {
      * Crée l'opération de traitement 'step8'
      * @return l'opération configurée
      */
-    private static ProcessingOperationDefinition<Map<String, String>, Integer> createProcessingStep8(
-            ) {
+    private ProcessingOperationDefinition<Map<String, String>, Integer> createProcessingStep8() {
         return processingOperation("step8", Step8.class)
             .build();
     }
@@ -59,7 +63,7 @@ public final class Whatever {
      * Crée l'opération de traitement 'step9'
      * @return l'opération configurée
      */
-    private static ProcessingOperationDefinition<Integer, List<Integer>> createProcessingStep9() {
+    private ProcessingOperationDefinition<Integer, List<Integer>> createProcessingStep9() {
         return processingOperation("step9", Step9.class)
             .build();
     }
@@ -68,15 +72,15 @@ public final class Whatever {
      * Crée l'itérateur 'iterator'
      * @return l'itérateur configuré
      */
-    private static IteratorDefinition<List<Integer>, List<List<String>>> createIteratorIterator() {
-        return IteratorIteratorOperations.create();
+    private IteratorDefinition<List<Integer>, List<List<String>>> createIteratorIterator() {
+        return new IteratorIteratorOperations().create();
     }
 
     /**
      * Crée la configuration de l'AssemblyLine
      * @return la configuration
      */
-    private static AssemblyLineDefinition.Configuration createConfiguration() {
+    private AssemblyLineDefinition.Configuration createConfiguration() {
         return configuration()
             .stepDefaultConfiguration(operationConfiguration().build())
             .eventHandlingDefinition(eventHandling().build())
@@ -87,7 +91,8 @@ public final class Whatever {
      * Crée l'AssemblyLine 'test'
      * @return l'AssemblyLine configurée
      */
-    public static AssemblyLineDefinition<String, List<List<String>>> createTest() {
+    @Override
+    public AssemblyLineDefinition<String, List<List<String>>> getAssemblyLineDefinition() {
         return ElementModelBuilders.<String>createAssemblyLine("test")
             .then(createProcessingStep3())
             .then(createProcessingStep8())
@@ -100,18 +105,17 @@ public final class Whatever {
     /**
      * Opérations pour l'itérateur 'iterator'
      */
-    private static final class IteratorIteratorOperations {
+    private final class IteratorIteratorOperations {
         /**
          * Crée l'opération de traitement 'step10'
          * @return l'opération configurée
          */
-        private static ProcessingOperationDefinition<Integer, List<String>> createProcessingStep10(
-                ) {
+        private ProcessingOperationDefinition<Integer, List<String>> createProcessingStep10() {
             return processingOperation("step10", Step10.class)
                 .build();
         }
 
-        static IteratorDefinition<List<Integer>, List<List<String>>> create() {
+        IteratorDefinition<List<Integer>, List<List<String>>> create() {
             return ElementModelBuilders.<List<Integer>>iterate("iterator")
                 .iterableFunction(java.util.function.Function.identity())
                 .operation(createProcessingStep10())

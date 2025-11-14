@@ -199,14 +199,14 @@ public class DatabasePipelineExecutionRepository implements PipelineExecutionRep
     }
 
     @Override
-    public void delete(String id) {
+    public void delete(UUID id) {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
             try (PreparedStatement stmt1 = conn.prepareStatement("DELETE FROM operation_executions WHERE pipeline_execution_id = ?");
                  PreparedStatement stmt2 = conn.prepareStatement("DELETE FROM pipeline_executions WHERE id = ?")) {
-                stmt1.setString(1, id);
+                stmt1.setString(1, id.toString());
                 stmt1.executeUpdate();
-                stmt2.setString(1, id);
+                stmt2.setString(1, id.toString());
                 stmt2.executeUpdate();
                 conn.commit();
             } catch (SQLException e) {
