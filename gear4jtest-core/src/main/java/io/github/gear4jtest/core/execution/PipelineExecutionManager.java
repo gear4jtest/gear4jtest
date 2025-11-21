@@ -9,6 +9,7 @@ import io.github.gear4jtest.core.persistence.PipelineExecution;
 public interface PipelineExecutionManager {
     void start(PipelineExecution execution);
     default void append(OperationExecutionRecord record) {}
+    default void appendAll(java.util.List<OperationExecutionRecord> records) { if (records!=null) records.forEach(this::append); }
     default void append(IteratorBatch batch) {}
     default void heartbeat(UUID pipelineId) {}
     void end(PipelineExecution finalExecution);

@@ -13,7 +13,7 @@ public class Step3 implements Transformer<String, Map<String, String>> {
 	private Parameter<String> param = Parameter.of();
 
 	@Override
-	public Map<String, String> transform(String object, ExecutionContext context, OperationExecution operationExecution) {
+	public Map<String, String> transform(String object, ExecutionContext context, OperationExecutionContext operationExecution) {
 		if (object.equals("a")) {
 			throw new RuntimeException();
 		}

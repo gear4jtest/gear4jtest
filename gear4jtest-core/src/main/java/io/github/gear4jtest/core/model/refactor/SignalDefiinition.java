@@ -2,6 +2,8 @@ package io.github.gear4jtest.core.model.refactor;
 
 import java.util.function.Predicate;
 
+import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
+
 public class SignalDefiinition<IN> extends AbstractOperationDefinition<IN, IN> {
 
 	protected SignalType signalType;
@@ -9,7 +11,7 @@ public class SignalDefiinition<IN> extends AbstractOperationDefinition<IN, IN> {
 	protected Predicate<SignalInterpretationContext<IN>> condition;
 
 	public SignalDefiinition() {
-		super("");
+		super("", OperationKind.SIGNAL);
 	}
 
 	public SignalType getSignalType() {
@@ -21,10 +23,10 @@ public class SignalDefiinition<IN> extends AbstractOperationDefinition<IN, IN> {
 	}
 
 	@Override
-	public IN execute(IN input, ExecutionContext context, OperationExecution operationExecution) throws Exception {
+	public IN doExecute(IN input, ExecutionContext context, OperationExecutionContext operationExecution) {
 		switch(signalType) {
-			case FATAL -> operationExecution.getReport().setStatus(OperationExecution.OperationReport.Status.FAILED);
-			case STOP -> operationExecution.getReport().setStatus(OperationExecution.OperationReport.Status.STOPPED);
+			case FATAL -> operationExecution.getRecord().setStatus(OperationExecutionRecord.Status.FAILED);
+			case STOP -> operationExecution.getRecord().setStatus(OperationExecutionRecord.Status.STOPPED);
 		}
 		return input;
 	}

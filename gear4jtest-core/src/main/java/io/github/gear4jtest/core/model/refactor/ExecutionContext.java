@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.model.refactor;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import io.github.gear4jtest.core.execution.PipelineExecutionManager;
 
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.factory.ResourceFactory;
@@ -12,13 +13,15 @@ public class ExecutionContext {
     private final String pipelineId;
     private final Map<String, Object> context = new ConcurrentHashMap<>();
     private final EventManager eventManager;
+    private final PipelineExecutionManager executionManager;
     private final ResourceFactory resourceFactory;
 
-    public ExecutionContext(String pipelineId, EventManager eventManager, ResourceFactory resourceFactory) {
+    public ExecutionContext(String pipelineId, EventManager eventManager, ResourceFactory resourceFactory, PipelineExecutionManager executionManager) {
         this.pipelineId = pipelineId;
         this.executionId = UUID.randomUUID();
         this.eventManager = eventManager;
         this.resourceFactory = resourceFactory;
+        this.executionManager = executionManager;
     }
 
     public String getPipelineId() {
@@ -34,4 +37,6 @@ public class ExecutionContext {
     public Map<String, Object> getContext() {
         return context;
     }
+
+    public PipelineExecutionManager getExecutionManager() { return executionManager; }
 }

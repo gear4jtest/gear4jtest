@@ -4,56 +4,110 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
-import static io.github.gear4jtest.core.model.refactor.OperationExecution.OperationReport.*;
-
+/**
+ * Représente l'exécution d'une opération dans un pipeline.
+ * Sert à la fois de modèle runtime et de modèle de persistance.
+ */
 public class OperationExecutionRecord {
+
+    public enum Status {
+        SKIPPED, SUCCEEDED, FAILED, STOPPED
+    }
+
+    private transient Object output;
+    private transient List<Throwable> throwables;
+
     private String id;
     private String pipelineExecutionId;
     private String operationId;
     private String parentOperationId;
     private Status status;
-    private Instant startTime;
-    private Instant endTime;
+    private Instant startedAt;
+    private Instant endedAt;
     private String errorMessage;
     private String errorHandlerMessages;
     private Map<String, Object> context;
     private List<OperationExecutionRecord> subOperations = new ArrayList<>();
 
-    public OperationExecutionRecord() {
+    // ---------- Fabrication ----------
+
+    public static OperationExecutionRecord start(String pipelineExecutionId,
+                                                 String operationId,
+                                                 String parentOperationId) {
+        OperationExecutionRecord record = new OperationExecutionRecord();
+        record.id = UUID.randomUUID().toString();
+        record.pipelineExecutionId = pipelineExecutionId;
+        record.operationId = operationId;
+        record.parentOperationId = parentOperationId;
+        record.status = Status.SKIPPED; // par défaut
+        record.startedAt = Instant.now();
+        return record;
     }
 
-    public OperationExecutionRecord(String id,
-                                    String pipelineExecutionId,
-                                    String operationId,
-                                    String parentOperationId,
-                                    Status status,
-                                    Instant startTime,
-                                    Instant endTime,
-                                    String errorMessage,
-                                    String errorHandlerMessages,
-                                    Map<String, Object> context,
-                                    List<OperationExecutionRecord> subOperations) {
-        this.id = id;
-        this.pipelineExecutionId = pipelineExecutionId;
-        this.operationId = operationId;
-        this.parentOperationId = parentOperationId;
-        this.status = status;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.errorMessage = errorMessage;
-        this.errorHandlerMessages = errorHandlerMessages;
-        this.context = context;
-        this.subOperations = subOperations;
+    // ---------- Lifecycle helpers ----------
+
+    public void markSuccess(Object output) {
+        this.status = Status.SUCCEEDED;
+        this.endedAt = Instant.now();
+        this.output = output;
     }
+
+    public void markFailed(Exception e) {
+        this.status = Status.FAILED;
+        this.endedAt = Instant.now();
+        this.errorMessage = e != null ? e.getMessage() : null;
+    }
+
+    public void markStopped(Exception e) {
+        this.status = Status.STOPPED;
+        this.endedAt = Instant.now();
+        this.errorMessage = e != null ? e.getMessage() : null;
+    }
+
+    public void markSkipped() {
+        this.status = Status.SKIPPED;
+        this.endedAt = Instant.now();
+    }
+
+    public void markSkipped(Exception e) {
+        this.status = Status.SKIPPED;
+        this.endedAt = Instant.now();
+        this.errorMessage = e != null ? e.getMessage() : null;
+    }
+
+    public void addErrorHandlerException(Exception e) {
+        if (e == null) return;
+        String msg = e.getMessage();
+        if (msg == null) return;
+        if (this.throwables == null) {
+            this.throwables = new ArrayList<>();
+        }
+        this.throwables.add(e);
+        if (this.errorHandlerMessages == null || this.errorHandlerMessages.isBlank()) {
+            this.errorHandlerMessages = msg;
+        } else {
+            this.errorHandlerMessages = this.errorHandlerMessages + ", " + msg;
+        }
+    }
+
+    public void addSubOperation(OperationExecutionRecord child) {
+        if (child == null) return;
+        child.setParentOperationId(this.id);
+        if (subOperations == null) {
+            subOperations = new ArrayList<>();
+        }
+        subOperations.add(child);
+    }
+
+    // ---------- Getters / setters ----------
 
     public String getId() {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    public void setId(String id) { this.id = id; }
 
     public String getPipelineExecutionId() {
         return pipelineExecutionId;
@@ -87,20 +141,20 @@ public class OperationExecutionRecord {
         this.status = status;
     }
 
-    public Instant getStartTime() {
-        return startTime;
+    public Instant getStartedAt() {
+        return startedAt;
     }
 
-    public void setStartTime(Instant startTime) {
-        this.startTime = startTime;
+    public void setStartedAt(Instant startedAt) {
+        this.startedAt = startedAt;
     }
 
-    public Instant getEndTime() {
-        return endTime;
+    public Instant getEndedAt() {
+        return endedAt;
     }
 
-    public void setEndTime(Instant endTime) {
-        this.endTime = endTime;
+    public void setEndedAt(Instant endedAt) {
+        this.endedAt = endedAt;
     }
 
     public String getErrorMessage() {
@@ -111,6 +165,22 @@ public class OperationExecutionRecord {
         this.errorMessage = errorMessage;
     }
 
+    public String getErrorHandlerMessages() {
+        return errorHandlerMessages;
+    }
+
+    public void setErrorHandlerMessages(String errorHandlerMessages) {
+        this.errorHandlerMessages = errorHandlerMessages;
+    }
+
+    public Map<String, Object> getContext() {
+        return context;
+    }
+
+    public void setContext(Map<String, Object> context) {
+        this.context = context;
+    }
+
     public List<OperationExecutionRecord> getSubOperations() {
         return subOperations;
     }
@@ -118,16 +188,17 @@ public class OperationExecutionRecord {
     public void setSubOperations(List<OperationExecutionRecord> subOperations) {
         this.subOperations = subOperations;
     }
-    public String getErrorHandlerMessages() {
-        return errorHandlerMessages;
+
+    @SuppressWarnings("unchecked")
+    public <T> T getOutput(Class<T> type) {
+        return (T) output;
     }
-    public void setErrorHandlerMessages(String errorHandlerMessages) {
-        this.errorHandlerMessages = errorHandlerMessages;
+
+    public void setOutput(Object output) {
+        this.output = output;
     }
-    public Map<String, Object> getContext() {
-        return context;
-    }
-    public void setContext(Map<String, Object> context) {
-        this.context = context;
+
+    public List<Throwable> getThrowables() {
+        return throwables;
     }
 }

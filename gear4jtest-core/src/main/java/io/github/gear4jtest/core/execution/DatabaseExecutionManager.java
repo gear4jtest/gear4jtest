@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.execution;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.persistence.DatabasePipelineExecutionRepository;
+import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
 import io.github.gear4jtest.core.persistence.PipelineExecution;
 
 public class DatabaseExecutionManager implements PipelineExecutionManager {
@@ -17,6 +18,11 @@ public class DatabaseExecutionManager implements PipelineExecutionManager {
     @Override
     public void start(PipelineExecution execution) {
         repository.save(execution);
+    }
+
+    @Override
+    public void append(OperationExecutionRecord rec) {
+        repository.saveOperation(rec);
     }
 
     @Override

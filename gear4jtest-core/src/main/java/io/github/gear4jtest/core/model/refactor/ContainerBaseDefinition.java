@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
+import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
+
 public class ContainerBaseDefinition<IN, OUT> extends AbstractOperationDefinition<IN, OUT> {
 
 	protected final List<Branch<IN>> pipelines;
@@ -13,25 +15,27 @@ public class ContainerBaseDefinition<IN, OUT> extends AbstractOperationDefinitio
 	protected ExecutorService executorService;
 
 	public ContainerBaseDefinition(List<Branch<IN>> pipelines, ContainerFunction<OUT> func) {
-		super("");
+		super("", OperationKind.CONTAINER);
 		this.pipelines = pipelines;
 		this.func = func;
 	}
 
 	@Override
-	public OUT execute(IN input, ExecutionContext context, OperationExecution operationExecution) {
-		Collection<OperationResult<?>> results = new ArrayList<>();
+	public OUT doExecute(IN input, ExecutionContext context, OperationExecutionContext operationExecution) {
+		Collection<Object> results = new ArrayList<>();
 		if (isParallel && executorService != null) {
 			List<Runnable> tasks = new ArrayList<>();
 			for (Branch<IN> element : pipelines) {
 				tasks.add(() -> {
 					IN newObject = deepClone(input);
-					var result = element.getOperation().run(newObject, context);
-					if (result.getReport().getStatus() == OperationExecution.OperationReport.Status.FAILED) {
-						operationExecution.getReport().complete();
+					var rec = element.getOperation().run(newObject, context);
+                    rec.setParentOperationId(operationExecution.getOperationId());
+                    context.getExecutionManager().append(rec);
+					if (rec.getStatus() == OperationExecutionRecord.Status.FAILED) {
+						operationExecution.getRecord().markFailed(null);
 						return;
 					}
-					results.add(result);
+					results.add(rec.getOutput(Object.class));
 				});
 			}
 			tasks.forEach(executorService::submit);
@@ -39,23 +43,23 @@ public class ContainerBaseDefinition<IN, OUT> extends AbstractOperationDefinitio
 		} else {
 			for (Branch<IN> element : pipelines) {
 				IN newObject = deepClone(input);
-				var result = element.getOperation().run(newObject, context);
+				var rec = element.getOperation().run(newObject, context);
+                    rec.setParentOperationId(operationExecution.getOperationId());
+                    context.getExecutionManager().append(rec);
 
-				if (result.getReport().getStatus() == OperationExecution.OperationReport.Status.FAILED) {
-					operationExecution.getReport().complete();
+				if (rec.getStatus() == OperationExecutionRecord.Status.FAILED) {
+					operationExecution.getRecord().markFailed(null);
 					return null;
 				}
 
-				results.add(result);
+				results.add(rec.getOutput(Object.class));
 			}
 		}
 		return returns(results);
 	}
 
-	private OUT returns(Collection<OperationResult<?>> executions) {
-		var returnedObjects = executions.stream()
-				.map(OperationResult::getResult)
-				.toArray();
+	private OUT returns(Collection<Object> executions) {
+		var returnedObjects = executions.toArray();
 		if (func != null) {
 			return func.apply(returnedObjects);
 		} else {

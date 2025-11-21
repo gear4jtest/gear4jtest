@@ -44,7 +44,7 @@ public class EventManager {
 		}
 	}
 
-	public <T extends Event> void publishEvent(T event) {
+	public <T extends Event> void publish(T event) {
 		if (eventBusList != null && !eventBusList.isEmpty()) {
 			for (EventBus eventBus : eventBusList) {
 				eventBus.acceptEvent(event);

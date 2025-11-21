@@ -1,0 +1,19 @@
+package io.github.gear4jtest.core.model.refactor;
+
+public enum TransformerStatefulness {
+
+    /**
+     * L'état (stateful/stateless) est déduit automatiquement par introspection.
+     */
+    AUTO,
+
+    /**
+     * Le transformer est explicitement déclaré comme stateful.
+     */
+    STATEFUL,
+
+    /**
+     * Le transformer est explicitement déclaré comme stateless.
+     */
+    STATELESS
+}

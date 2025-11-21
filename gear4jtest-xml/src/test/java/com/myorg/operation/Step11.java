@@ -10,7 +10,7 @@ public class Step11 implements Transformer<String, String> {
 	private Parameter<String> param = Parameter.of();
 
 	@Override
-	public String transform(String object, ExecutionContext context, OperationExecution operationExecution) {
+	public String transform(String object, ExecutionContext context, OperationExecutionContext operationExecution) {
 		return param.getValue();
 	}
 

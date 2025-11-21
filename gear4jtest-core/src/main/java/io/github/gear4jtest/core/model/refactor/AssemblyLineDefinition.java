@@ -5,237 +5,265 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
+import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.event.EventManager;
-import io.github.gear4jtest.core.factory.ResourceFactory;
-import io.github.gear4jtest.core.execution.PipelineExecutionManager;
-import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
 import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
-
+import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
+import io.github.gear4jtest.core.execution.PipelineExecutionManager;
+import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.model.EventHandlingDefinition;
-import io.github.gear4jtest.core.persistence.DatabasePipelineExecutionRepository;
-import io.github.gear4jtest.core.persistence.ExecutionStatus;
-import io.github.gear4jtest.core.persistence.InMemoryPipelineExecutionRepository;
 import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
 import io.github.gear4jtest.core.persistence.PipelineExecution;
 
-import static io.github.gear4jtest.core.model.refactor.OperationExecution.*;
-
+@SuppressWarnings("unchecked")
 public class AssemblyLineDefinition<IN, OUT> {
 
-	private String id;
-	private String description;
-	private List<OperationDefinition<?, ?>> operations;
-	private Configuration configuration;
+    private final String id;
+    private final List<OperationDefinition<?, ?>> operations;
+    private final Map<String, Object> context;
+    private final ResourceFactory resourceFactory;
+    private final Configuration configuration; // config "par défaut" issue du builder
 
-	private AssemblyLineDefinition() {
-	}
+    public AssemblyLineDefinition(String id,
+                                  List<OperationDefinition<?, ?>> operations,
+                                  Map<String, Object> context,
+                                  ResourceFactory resourceFactory,
+                                  Configuration configuration) {
+        this.id = Objects.requireNonNull(id, "id");
+        this.operations = operations != null ? new ArrayList<>(operations) : List.of();
+        this.context = context != null ? new HashMap<>(context) : new HashMap<>();
+//        this.resourceFactory = Objects.requireNonNull(resourceFactory, "resourceFactory");
+        this.resourceFactory = resourceFactory;
+        this.configuration = Objects.requireNonNull(configuration, "configuration");
+    }
 
-	public ExecutionResult<OUT> execute(IN input, Map<String, Object> context, ResourceFactory resourceFactory) {
-		EventManager eventManager = null;
-		try {
-			eventManager = new EventManager(configuration != null ? configuration.getEventHandlingDefinition().getEventBuses() : null);
-			ExecutionContext executionContext = new ExecutionContext(id, eventManager, resourceFactory);
-			ExecutionReport report = new ExecutionReport();
-			PipelineExecution execution = new PipelineExecution(executionContext.getExecutionId(), id, new HashMap<>(context));
-			saveExecution(execution);
-			Object current = input;
+    public static <IN, OUT> Builder<IN, OUT> builder() {
+        return Builder.create();
+    }
 
-			for (OperationDefinition<?, ?> op : operations) {
-				var a = (OperationDefinition<Object, Object>) op;
-				OperationResult<Object> result = a.run(current, executionContext);
-				report.addOperationReport(result.getReport());
+    public ExecutionResult<OUT> execute(IN input,
+                                        Map<String, Object> context,
+                                        ResourceFactory resourceFactory) {
+        EventManager eventManager = null;
+        try {
+            // Event buses éventuels (peuvent être null)
+            eventManager = new EventManager(
+                    configuration != null && configuration.getEventHandlingDefinition() != null
+                            ? configuration.getEventHandlingDefinition().getEventBuses()
+                            : null
+            );
 
-				if (!result.isSuccess() || result.getReport().getStatus() == OperationReport.Status.FAILED || result.getReport().getStatus() == OperationReport.Status.STOPPED) {
-					report.complete();
-					return new ExecutionResult<>(executionContext.getExecutionId(), null, false, result.getError(), report);
-				}
-				current = result.getResult();
-			}
+            // Choix du manager (IN_MEMORY / DATABASE ou custom via configuration)
+            PipelineExecutionManager manager = resolveManager(configuration);
 
-			report.complete();
-			saveExecution(execution, executionContext, report, current);
-			return new ExecutionResult<>(executionContext.getExecutionId(), (OUT) current, true, null, report);
-		} finally {
-			if (eventManager != null) {
-				eventManager.shutdown();
-			}
-		}
-	}
+            // ⚠️ ExecutionContext doit avoir un ctor étendu :
+            // new ExecutionContext(pipelineId, eventManager, resourceFactory, manager)
+            ExecutionContext executionContext =
+                    new ExecutionContext(id, eventManager, resourceFactory, manager);
 
-	private void saveExecution(PipelineExecution execution) {
-		if (Optional.ofNullable(configuration).map(Configuration::getPersistence).isPresent()) {
-			switch (configuration.persistence.getPersistenceType()) {
-				case IN_MEMORY -> InMemoryPipelineExecutionRepository.INSTANCE.save(execution);
-				case DATABASE -> {
-					var repo = new DatabasePipelineExecutionRepository(configuration.persistence.getDataSource());
-					repo.initialize();
-					repo.save(execution);
-				}
-				default -> throw new UnsupportedOperationException("Unsupported persistence type: " + configuration.persistence.getPersistenceType());
-			}
-		}
-	}
+            // Création de l’exécution globale
+            PipelineExecution execution =
+                    new PipelineExecution(executionContext.getExecutionId(), id, new HashMap<>(context));
+            manager.start(execution);
 
-	private void saveExecution(PipelineExecution execution, ExecutionContext executionContext, ExecutionReport report, Object result) {
-		if (Optional.ofNullable(configuration).map(Configuration::getPersistence).isEmpty()) {
-			return;
-		}
+            Object current = input;
 
-		if (report.isFatal()) {
-			execution.setStatus(ExecutionStatus.FAILED);
-		} else if (report.isShouldStop()) {
-			execution.setStatus(ExecutionStatus.STOPPED);
-		} else {
-			execution.setStatus(ExecutionStatus.SUCCEEDED);
-		}
-		execution.setContext(executionContext.getContext());
-		execution.setEndTime(Instant.now());
-		if (configuration.persistence.isStoreResultObject()) {
-			execution.setResult(result);
-		}
-		execution.setOperations(buildOperationRecords(report, executionContext.getExecutionId(), null));
+            for (OperationDefinition<?, ?> op : operations) {
+                @SuppressWarnings("unchecked")
+                OperationDefinition<Object, Object> a = (OperationDefinition<Object, Object>) op;
 
-		switch (configuration.persistence.getPersistenceType()) {
-			case IN_MEMORY -> InMemoryPipelineExecutionRepository.INSTANCE.update(execution);
-			case DATABASE -> new DatabasePipelineExecutionRepository(configuration.persistence.getDataSource()).update(execution);
-			default -> throw new UnsupportedOperationException("Unsupported persistence type: " + configuration.persistence.getPersistenceType());
-		}
-	}
+                // 👉 run(...) retourne maintenant un OperationExecutionRecord
+                OperationExecutionRecord rec = a.run(current, executionContext);
 
-	private List<OperationExecutionRecord> buildOperationRecords(ExecutionReport report, UUID pipelineExecutionId, UUID parentExecutionId) {
-		return report.getOperations().stream()
-				.map(entry -> buildOperationRecords(entry, pipelineExecutionId, parentExecutionId))
-				.toList();
-	}
+                // persistance au fil de l’eau
+                manager.append(rec);
 
-	private OperationExecutionRecord buildOperationRecords(OperationReport report, UUID pipelineExecutionId, UUID parentExecutionId) {
-		List<OperationExecutionRecord> children = new ArrayList<>();
-		if (report.getSubOperationReports() != null && !report.getSubOperationReports().isEmpty()) {
-			children = report.getSubOperationReports().stream().map(subEntry -> buildOperationRecords(subEntry, pipelineExecutionId, report.getId())).toList();
-		}
-		return new OperationExecutionRecord(UUID.randomUUID().toString(),
-				pipelineExecutionId.toString(),
-				report.getOperationId(),
-				Optional.ofNullable(parentExecutionId).map(UUID::toString).orElse(null),
-				report.getStatus(),
-				report.getStartTime(),
-				report.getEndTime(),
-				report.getError() != null ? report.getError().getMessage() : null,
-				report.getErrorHandlerExceptions() != null && !report.getErrorHandlerExceptions().isEmpty() ? report.getErrorHandlerExceptions().stream().map(Exception::getMessage).collect(Collectors.joining(", ")) : null,
-				report.getContext(),
-				children);
-	}
+                // arrêt en cas d’échec ou de STOP
+                if (rec.getStatus() == OperationExecutionRecord.Status.FAILED
+                        || rec.getStatus() == OperationExecutionRecord.Status.STOPPED) {
 
-	public String getId() {
-		return id;
-	}
+                    execution.setContext(executionContext.getContext());
+                    execution.setEndTime(Instant.now());
+                    if (configuration.getPersistence() != null
+                            && configuration.getPersistence().isStoreResultObject()) {
+                        execution.setResult(null);
+                    }
+                    manager.end(execution);
 
-	public String getDescription() {
-		return description;
-	}
+                    return new ExecutionResult<>(
+                            executionContext.getExecutionId(),
+                            null,
+                            false,
+                            null
+                    );
+                }
 
-	public Configuration getConfiguration() {
-		return configuration;
-	}
+                // chaînage : on utilise la sortie transiente du record
+                current = rec.getOutput(Object.class);
+            }
 
-	public static class Builder<IN, OUT> {
+            // fin OK
+            execution.setContext(executionContext.getContext());
+            execution.setEndTime(Instant.now());
+            if (configuration.getPersistence() != null
+                    && configuration.getPersistence().isStoreResultObject()) {
+                execution.setResult(current);
+            }
+            manager.end(execution);
 
-		private final AssemblyLineDefinition<IN, OUT> managedInstance;
+            return new ExecutionResult<>(
+                    executionContext.getExecutionId(),
+                    (OUT) current,
+                    true,
+                    null
+            );
 
-		public Builder(String identifier) {
-			managedInstance = new AssemblyLineDefinition<>();
-			managedInstance.operations = new ArrayList<>();
-			managedInstance.id = identifier;
-		}
+        } catch (Exception e) {
+            // garde-fou : en cas d’erreur non gérée
+            return new ExecutionResult<>(UUID.randomUUID(), null, false, e);
+        } finally {
+            if (eventManager != null) {
+                eventManager.shutdown();
+            }
+        }
+    }
 
-		public <T> Builder<IN, T> then(OperationDefinition<OUT, T> operation) {
-			managedInstance.operations.add(operation);
-			return (Builder<IN, T>) this;
-		}
+    // ---------- Persistance de l'exécution ----------
+    private void saveExecutionStart(PipelineExecutionManager manager, PipelineExecution execution) {
+        manager.start(execution);
+    }
 
-		public Builder<IN, OUT> configuration(Configuration configuration) {
-			this.managedInstance.configuration = configuration;
-			return this;
-		}
+    private void saveExecutionEnd(PipelineExecutionManager manager,
+                                  Configuration effectiveConfig,
+                                  PipelineExecution execution,
+                                  ExecutionContext executionContext,
+                                  Object result) {
+        execution.setContext(executionContext.getContext());
+        execution.setEndTime(Instant.now());
+        if (effectiveConfig.persistence != null && effectiveConfig.persistence.isStoreResultObject()) {
+            execution.setResult(result);
+        }
+        manager.end(execution);
+    }
 
-		public AssemblyLineDefinition<IN, OUT> build() {
-			return managedInstance;
-		}
+    // ---------- Résolution du manager (in-memory / DB) ----------
+    private PipelineExecutionManager resolveManager(Configuration cfg) {
+        if (cfg != null && cfg.persistence != null) {
+            final var p = cfg.persistence;
+            if (p.getPersistenceType() == PersistenceConfiguration.PersistenceType.DATABASE) {
+                DataSource ds = p.getDataSource();
+                return new DatabaseExecutionManager(ds);
+            } else {
+                return new InMemoryExecutionManager();
+            }
+        }
+        return new InMemoryExecutionManager();
+    }
 
-	}
+    // --------------------------------------------------------------------------------------------
+    // Builder (conservé pour compatibilité avec les ElementModelBuilders)
+    // --------------------------------------------------------------------------------------------
+    public static class Builder<IN, OUT> {
+        private final List<OperationDefinition<?, ?>> operations = new ArrayList<>();
+        private final Map<String, Object> context = new HashMap<>();
+        private String id;
+        private ResourceFactory resourceFactory;
+        private Configuration configuration = Configuration.builder().build();
 
-	public static class Configuration {
-		private OperationConfigurationDefinition operationDefaultConfiguration;
-		private EventHandlingDefinition eventHandlingDefinition;
-		private PersistenceConfiguration persistence;
-		private PipelineExecutionManager executionManager;
+        public static <IN, OUT> Builder<IN, OUT> create() {
+            return new Builder<>();
+        }
 
-		public OperationConfigurationDefinition getOperationDefaultConfiguration() {
-			return operationDefaultConfiguration;
-		}
+        public Builder<IN, OUT> id(String id) {
+            this.id = id;
+            return this;
+        }
 
-		public EventHandlingDefinition getEventHandlingDefinition() {
-			return eventHandlingDefinition;
-		}
+        public Builder<IN, OUT> resourceFactory(ResourceFactory factory) {
+            this.resourceFactory = factory;
+            return this;
+        }
 
-		public PersistenceConfiguration getPersistence() {
-			return persistence;
-		}
-		public PipelineExecutionManager getExecutionManager(){return executionManager;}
+        public Builder<IN, OUT> configuration(Configuration configuration) {
+            this.configuration = configuration;
+            return this;
+        }
 
-		public static class Builder {
+        public Builder<IN, OUT> persistence(PersistenceConfiguration persistence) {
+            if (this.configuration == null) this.configuration = new Configuration();
+            this.configuration.persistence = persistence;
+            return this;
+        }
 
-			private final Configuration managedInstance;
+        public Builder<IN, OUT> eventHandling(EventHandlingDefinition def) {
+            if (this.configuration == null) this.configuration = new Configuration();
+            this.configuration.eventHandlingDefinition = def;
+            return this;
+        }
 
-			public Builder() {
-				managedInstance = new Configuration();
-			}
+        public Builder<IN, OUT> putContext(String key, Object value) {
+            this.context.put(key, value);
+            return this;
+        }
 
-			public Builder stepDefaultConfiguration(OperationConfigurationDefinition operationDefaultConfiguration) {
-				this.managedInstance.operationDefaultConfiguration = operationDefaultConfiguration;
-				return this;
-			}
+        public Builder<IN, OUT> context(Map<String, Object> ctx) {
+            this.context.clear();
+            if (ctx != null) this.context.putAll(ctx);
+            return this;
+        }
 
-			public Builder eventHandlingDefinition(EventHandlingDefinition eventHandlingDefinition) {
-				this.managedInstance.eventHandlingDefinition = eventHandlingDefinition;
-				return this;
-			}
+        public <T> Builder<IN, T> then(OperationDefinition<OUT, T> operation) {
+            Objects.requireNonNull(operation);
+            this.operations.add(operation);
+            return (Builder<IN, T>) this;
+        }
 
-			public Builder persistence(PersistenceConfiguration persistence) {
-				this.managedInstance.persistence = persistence;
-				return this;
-			}
+        public AssemblyLineDefinition<IN, OUT> build() {
+            Objects.requireNonNull(id, "id");
+//            Objects.requireNonNull(resourceFactory, "resourceFactory");
+            Objects.requireNonNull(configuration, "configuration");
+            return new AssemblyLineDefinition<>(id, operations, context, resourceFactory, configuration);
+        }
+    }
 
-			public Builder executionManager(PipelineExecutionManager manager){
-				this.managedInstance.executionManager = manager;
-				return this;
-			}
+    // --------------------------------------------------------------------------------------------
+    // Configuration (et son builder)
+    // --------------------------------------------------------------------------------------------
+    public static class Configuration {
+        private PersistenceConfiguration persistence;
+        private EventHandlingDefinition eventHandlingDefinition;
 
-			public Configuration build() {
-				return managedInstance;
-			}
+        public static ConfigBuilder builder() {
+            return new ConfigBuilder();
+        }
 
-		}
-	}
+        public PersistenceConfiguration getPersistence() {
+            return persistence;
+        }
 
+        public EventHandlingDefinition getEventHandlingDefinition() {
+            return eventHandlingDefinition;
+        }
 
-	private PipelineExecutionManager resolveManager() {
-		if (Optional.ofNullable(configuration).map(Configuration::getExecutionManager).isPresent()) {
-			return configuration.getExecutionManager();
-		}
-		if (Optional.ofNullable(configuration).map(Configuration::getPersistence).isPresent()) {
-			var p = configuration.getPersistence();
-			switch (p.getPersistenceType()) {
-				case IN_MEMORY: return new InMemoryExecutionManager();
-				case DATABASE: return new DatabaseExecutionManager(p.getDataSource());
-				default: return new InMemoryExecutionManager();
-			}
-		}
-		return new InMemoryExecutionManager();
-	}
+        public static class ConfigBuilder {
+            private final Configuration managed = new Configuration();
 
+            public ConfigBuilder persistence(PersistenceConfiguration persistence) {
+                managed.persistence = persistence;
+                return this;
+            }
+
+            public ConfigBuilder eventHandling(EventHandlingDefinition def) {
+                managed.eventHandlingDefinition = def;
+                return this;
+            }
+
+            public Configuration build() {
+                return managed;
+            }
+        }
+    }
 }

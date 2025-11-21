@@ -16,7 +16,6 @@ import java.util.UUID;
 import javax.sql.DataSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.gear4jtest.core.model.refactor.OperationExecution;
 
 public class DatabasePipelineExecutionRepository implements PipelineExecutionRepository {
     private final DataSource dataSource;
@@ -99,8 +98,8 @@ public class DatabasePipelineExecutionRepository implements PipelineExecutionRep
                 stmt.setString(3, op.getOperationId());
                 stmt.setString(4, parentId);
                 stmt.setString(5, op.getStatus().toString());
-                stmt.setTimestamp(6, Timestamp.from(op.getStartTime()));
-                stmt.setTimestamp(7, Timestamp.from(op.getEndTime()));
+                stmt.setTimestamp(6, Timestamp.from(op.getStartedAt()));
+                stmt.setTimestamp(7, Timestamp.from(op.getEndedAt()));
                 stmt.setString(8, op.getErrorMessage());
                 stmt.setString(9, op.getErrorHandlerMessages());
                 stmt.setString(10, toJson(op.getContext()));
@@ -261,9 +260,9 @@ public class DatabasePipelineExecutionRepository implements PipelineExecutionRep
         op.setPipelineExecutionId(rs.getString("pipeline_execution_id"));
         op.setOperationId(rs.getString("operation_id"));
         op.setParentOperationId(rs.getString("parent_operation_id"));
-        op.setStatus(OperationExecution.OperationReport.Status.valueOf(rs.getString("status")));
-        op.setStartTime(rs.getTimestamp("start_time").toInstant());
-        op.setEndTime(rs.getTimestamp("end_time").toInstant());
+        op.setStatus(OperationExecutionRecord.Status.valueOf(rs.getString("status")));
+        op.setStartedAt(rs.getTimestamp("start_time").toInstant());
+        op.setEndedAt(rs.getTimestamp("end_time").toInstant());
         op.setErrorMessage(rs.getString("error_message"));
         op.setErrorHandlerMessages(rs.getString("error_handler_messages"));
         op.setContext(fromJson(rs.getString("context"), Map.class));
@@ -285,4 +284,28 @@ public class DatabasePipelineExecutionRepository implements PipelineExecutionRep
             throw new RuntimeException(e);
         }
     }
+
+    public void saveOperation(io.github.gear4jtest.core.persistence.OperationExecutionRecord rec) {
+        String sql = "INSERT INTO operation_executions (id, pipeline_execution_id, operation_id, parent_operation_id, status, start_time, end_time, error_message, error_handler_messages, context) VALUES (?,?,?,?,?,?,?,?,?,?)";
+        try (java.sql.Connection conn = dataSource.getConnection(); java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, rec.getId());
+            ps.setString(2, rec.getPipelineExecutionId());
+            ps.setString(3, rec.getOperationId());
+            ps.setString(4, rec.getParentOperationId());
+            ps.setString(5, rec.getStatus().toString());
+            ps.setTimestamp(6, java.sql.Timestamp.from(rec.getStartedAt()));
+            ps.setTimestamp(7, rec.getEndedAt() != null ? java.sql.Timestamp.from(rec.getEndedAt()) : null);
+            ps.setString(8, rec.getErrorMessage());
+            ps.setString(9, rec.getErrorHandlerMessages());
+            ps.setString(10, toJson(rec.getContext()));
+            ps.executeUpdate();
+        } catch (Exception e) { throw new RuntimeException(e); }
+    }
+    
+    public static String toJson(java.util.Map<String, Object> map) {
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(map);
+        } catch (Exception e) { throw new RuntimeException(e); }
+    }
+
 }

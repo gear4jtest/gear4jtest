@@ -1,11 +1,12 @@
 package io.github.gear4jtest.core.model.refactor;
 
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationDefinition;
-import io.github.gear4jtest.core.model.refactor.OperationExecution;
-
-@FunctionalInterface
+/**
+ * Un processor qui intervient avant l'exécution de l'opération.
+ * (Tu peux ajouter afterExecution plus tard si besoin.)
+ */
 public interface Processor {
 
-	void process(Object input, ExecutionContext context, OperationDefinition<?, ?> model, OperationExecution operationExecution) throws Exception;
+	<I> void beforeExecution(I input, OperationExecutionContext ctx) throws Exception;
+
+	void afterExecution(Object result, OperationExecutionContext context);
 }

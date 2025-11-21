@@ -2,6 +2,8 @@ package io.github.gear4jtest.core.model.refactor;
 
 import java.util.ArrayList;
 
+import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
+
 public class UnvaryingIfElseContainerDefinition<A> extends ContainerBaseDefinition<A, A> {
 	private OperationDefinition<A, A> elseOp;
 
@@ -10,7 +12,7 @@ public class UnvaryingIfElseContainerDefinition<A> extends ContainerBaseDefiniti
 	}
 
 	@Override
-	public A execute(A input, ExecutionContext context, OperationExecution operationExecution) {
+	public A doExecute(A input, ExecutionContext context, OperationExecutionContext operationExecution) {
 		boolean conditionMet = false;
 		A containerResult = null;
 
@@ -18,25 +20,29 @@ public class UnvaryingIfElseContainerDefinition<A> extends ContainerBaseDefiniti
 			if (element.getCondition() == null || element.getCondition().test(input, context)) {
 				conditionMet = true;
 				A newObject = deepClone(input);
-				var result = element.getOperation().run(newObject, context);
-				if (result.getReport().getStatus() == OperationExecution.OperationReport.Status.FAILED) {
-					operationExecution.getReport().complete();
+				var rec = element.getOperation().run(newObject, context);
+                rec.setParentOperationId(operationExecution.getOperationId());
+                context.getExecutionManager().append(rec);
+				if (rec.getStatus() == OperationExecutionRecord.Status.FAILED) {
+					operationExecution.getRecord().markFailed(null);
 					return null;
 				}
 
-				containerResult = (A) result.getResult();
+				containerResult = (A) rec.getOutput(Object.class);
 				break;
 			}
 		}
 
 		if (!conditionMet && elseOp != null) {
 			A newObject = deepClone(input);
-			var result = elseOp.run(newObject, context);
-			if (result.getReport().getStatus() == OperationExecution.OperationReport.Status.FAILED) {
-				operationExecution.getReport().complete();
+			var recElse = elseOp.run(newObject, context);
+            recElse.setParentOperationId(operationExecution.getOperationId());
+            context.getExecutionManager().append(recElse);
+			if (recElse.getStatus() == OperationExecutionRecord.Status.FAILED) {
+				operationExecution.getRecord().markFailed(null);
 				return null;
 			}
-			containerResult = (A) result.getResult();
+			containerResult = (A) recElse.getOutput(Object.class);
 		}
 
 		return containerResult;

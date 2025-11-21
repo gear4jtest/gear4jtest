@@ -15,7 +15,7 @@ public class PipelineDefinition<IN, OUT> extends AbstractOperationDefinition<IN,
 	private Collector collector;
 
 	private PipelineDefinition() {
-		super("");
+		super("", OperationKind.OTHER);
 	}
 
 	public Function<IN, ? extends Iterable<?>> getFunc() {
@@ -31,7 +31,7 @@ public class PipelineDefinition<IN, OUT> extends AbstractOperationDefinition<IN,
 	}
 
 	@Override
-	public OUT execute(IN input, ExecutionContext context, OperationExecution operationExecution) throws Exception {
+	public OUT doExecute(IN input, ExecutionContext context, OperationExecutionContext operationExecution) throws Exception {
 		Iterable<?> collection = null;
 		if (func != null) {
 			collection = func.apply(input);
@@ -42,8 +42,7 @@ public class PipelineDefinition<IN, OUT> extends AbstractOperationDefinition<IN,
 		for (Object element: collection) {
 			var result = assemblyLineDefinition.execute(element, context.getContext(), context.getResourceFactory());
 
-			if (result.getReport().isFatal()) {
-				operationExecution.getReport().complete();
+			if (!result.isSuccess()) {
 				return null;
 			}
 

@@ -10,7 +10,7 @@ import io.github.gear4jtest.core.model.refactor.Transformer;
 public class Step10 implements Transformer<Integer, List<String>> {
 
 	@Override
-	public List<String> transform(Integer integer, ExecutionContext context, OperationExecution operationExecution) {
+	public List<String> transform(Integer integer, ExecutionContext context, OperationExecutionContext operationExecution) {
 		return Arrays.asList("");
 	}
 

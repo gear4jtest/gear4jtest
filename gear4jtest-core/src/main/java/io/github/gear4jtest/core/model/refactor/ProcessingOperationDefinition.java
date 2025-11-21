@@ -7,6 +7,23 @@ import java.util.function.Supplier;
 
 public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDefinition<IN, OUT> {
 
+	/**
+	 * Manager de concurrence partagé.
+	 *
+	 * Si tu veux le scoper à un runtime d'AssemblyLine spécifique,
+	 * tu pourras injecter un manager plutôt qu'utiliser ce static.
+	 */
+	private static final TransformerConcurrencyManager CONCURRENCY_MANAGER =
+			new TransformerConcurrencyManager();
+
+	/**
+	 * ThreadLocal pour savoir si on a acquis un lock sur CE thread
+	 * pour CETTE exécution, et surtout pour ne pas faire d'afterUse()
+	 * si beforeUse() a échoué.
+	 */
+	private static final ThreadLocal<TransformerConcurrencyGuard> CURRENT_GUARD =
+			new ThreadLocal<>();
+
 	private Class<Transformer<IN, OUT>> type;
 
 	private List<ParameterModel<?, ?>> parameters;
@@ -14,7 +31,7 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 	private OperationConfigurationDefinition operationConfiguration;
 	
 	private ProcessingOperationDefinition() {
-		super("");
+		super("", OperationKind.PROCESSING);
 		this.parameters = new ArrayList<>();
 		this.onErrors = new ArrayList<>();
 	}
@@ -28,14 +45,66 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 	}
 
 	@Override
-	public void initialize(IN input, ExecutionContext context, OperationExecution operationExecution) {
+	public void setUp(IN input, ExecutionContext context, OperationExecutionContext operationExecution) {
 		var operation = context.getResourceFactory().getResource(type);
-		operationExecution.setOperation(operation);
+		((DefaultOperationExecutionContext) operationExecution).addCapability(Transformer.class, operation);
+		var parameters = OperationParamsInjector.Parameters.newBuilder();
+		this.parameters.forEach(parameters::withParameter);
+		((DefaultOperationExecutionContext) operationExecution).addCapability(OperationParamsInjector.Parameters.class, parameters.build());
+
+		if (!isStateful(operationExecution)) {
+			return;
+		}
+
+		TransformerConcurrencyGuard guard =
+				CONCURRENCY_MANAGER.guardFor(operation, concurrencyStrategy());
+
+		// Si beforeUse() FAIL_FAST et échoue, il va jeter avant qu'on pose le ThreadLocal.
+		guard.beforeUse();
+		CURRENT_GUARD.set(guard);
 	}
 
 	@Override
-	public OUT execute(IN input, ExecutionContext context, OperationExecution operationExecution) throws Exception {
-		return ((Transformer<IN, OUT>) operationExecution.getOperation()).transform(input, context, operationExecution);
+	public OUT doExecute(IN input, ExecutionContext context, OperationExecutionContext operationExecution) {
+		var transformer = OperationContextUtils.<IN, OUT>getTypedTransformer(operationExecution);
+		if (transformer.isEmpty()) {
+			throw new IllegalStateException("No transformer present found in operation execution context");
+		}
+		return transformer.get().transform(input, context, operationExecution);
+	}
+
+	@Override
+	protected void release(OperationExecutionContext context, OUT result, List<Throwable> errors) {
+		try {
+			if (isStateful(context)) {
+				TransformerConcurrencyGuard guard = CURRENT_GUARD.get();
+				if (guard != null) {
+					guard.afterUse();
+				}
+			}
+		} finally {
+			// Nettoyage du ThreadLocal pour éviter les fuites sur les pools de threads
+			CURRENT_GUARD.remove();
+			// Et on laisse la super-classe faire son éventuel cleanup
+			super.release(context, result, errors);
+		}
+	}
+
+	/**
+	 * Stratégie de concurrence utilisée lorsque cette opération est exécutée
+	 * de manière concurrente (iteration parallèle, containers parallélisés, etc.).
+	 */
+	protected TransformerConcurrencyStrategy concurrencyStrategy() {
+		return TransformerConcurrencyStrategy.FAIL_FAST;
+	}
+
+	/**
+	 * Indique si cette opération est stateful.
+	 * Par défaut, on déduit cela automatiquement depuis le transformer.
+	 */
+	protected boolean isStateful(OperationExecutionContext operationExecution) {
+		var transformer = OperationContextUtils.<IN, OUT>getTypedTransformer(operationExecution);
+		return transformer.isPresent() && TransformerIntrospector.isStateful(transformer.get());
 	}
 
 	public static class Builder<IN, OUT, OP extends Transformer<IN, OUT>> {
@@ -123,7 +192,7 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 			this.paramRetriever = paramRetriever;
 		}
 
-		public ParamRetriever<?, ?> getParamRetriever() {
+		public ParamRetriever<OP, T> getParamRetriever() {
 			return paramRetriever;
 		}
 

@@ -38,7 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
 
 import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
-import static io.github.gear4jtest.core.model.refactor.OperationExecution.OperationReport.Status;
+import static io.github.gear4jtest.core.persistence.OperationExecutionRecord.*;
 import static org.assertj.core.api.Assertions.*;
 
 // handle factory for step / processor... configuration
@@ -129,8 +129,7 @@ public class SimpleChainBuilderTest {
 						.collector(Collectors.toList())
 						.build())
 				.configuration(configuration()
-						.stepDefaultConfiguration(operationConfiguration().build())
-						.eventHandlingDefinition(eventHandling()
+						.eventHandling(eventHandling()
 								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
@@ -183,8 +182,7 @@ public class SimpleChainBuilderTest {
 						.collector(Collectors.toList())
 						.build())
 				.configuration(configuration()
-						.stepDefaultConfiguration(operationConfiguration().build())
-						.eventHandlingDefinition(eventHandling()
+						.eventHandling(eventHandling()
 								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
@@ -245,8 +243,7 @@ public class SimpleChainBuilderTest {
 						.collector(Collectors.toList())
 						.build())
 				.configuration(configuration()
-						.stepDefaultConfiguration(operationConfiguration().build())
-						.eventHandlingDefinition(eventHandling()
+						.eventHandling(eventHandling()
 								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
@@ -349,8 +346,7 @@ public class SimpleChainBuilderTest {
 								.build())
 						.returns(Arrays::asList))
 				.configuration(configuration()
-						.stepDefaultConfiguration(operationConfiguration().build())
-						.eventHandlingDefinition(eventHandling()
+						.eventHandling(eventHandling()
 								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
@@ -392,8 +388,7 @@ public class SimpleChainBuilderTest {
 								.build())
 						.returns(Arrays::asList))
 				.configuration(configuration()
-						.stepDefaultConfiguration(operationConfiguration().build())
-						.eventHandlingDefinition(eventHandling()
+						.eventHandling(eventHandling()
 								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
@@ -439,8 +434,7 @@ public class SimpleChainBuilderTest {
 								.parameter(Step11::getParam, "b")
 								.build()))
 				.configuration(configuration()
-						.stepDefaultConfiguration(operationConfiguration().build())
-						.eventHandlingDefinition(eventHandling()
+						.eventHandling(eventHandling()
 								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
