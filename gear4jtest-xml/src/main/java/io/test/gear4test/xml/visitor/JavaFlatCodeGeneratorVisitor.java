@@ -21,7 +21,7 @@ import io.github.gear4jtest.core.model.refactor.IteratorDefinition;
 import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
 import io.github.gear4jtest.core.model.refactor.SignalDefiinition;
 import io.github.gear4jtest.core.model.refactor.Transformer;
-import io.github.gear4jtest.core.model.refactor.UnvaryingIfElseContainerDefinition;
+import io.github.gear4jtest.core.model.refactor.UnaryIfElseContainerDefinition;
 import io.test.gear4jtest.xml.generated.ActionType;
 import io.test.gear4jtest.xml.generated.AssemblyLine;
 import io.test.gear4jtest.xml.generated.BaseOperationType;
@@ -322,7 +322,7 @@ public class JavaFlatCodeGeneratorVisitor implements XmlToJavaVisitor {
                     });
 
         var inputType = visitorContext.getLastOut();
-        ParameterizedTypeName ptn = ParameterizedTypeName.get(UnvaryingIfElseContainerDefinition.class, inputType, visitorContext.getLastOut());
+        ParameterizedTypeName ptn = ParameterizedTypeName.get(UnaryIfElseContainerDefinition.class, inputType, visitorContext.getLastOut());
 
         MethodSpec method = MethodSpec.methodBuilder(methodName)
                 .addModifiers(Modifier.PRIVATE)

@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import io.github.gear4jtest.core.model.OperationAdditionalModel;
+
 public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDefinition<IN, OUT> {
 
 	/**
@@ -24,19 +26,17 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 	private static final ThreadLocal<TransformerConcurrencyGuard> CURRENT_GUARD =
 			new ThreadLocal<>();
 
-	private Class<Transformer<IN, OUT>> type;
+	protected Class<Transformer<IN, OUT>> type;
 
-	private List<ParameterModel<?, ?>> parameters;
+	protected List<OperationParamsInjector.ParameterModel<?, ?>> parameters;
 	
 	private OperationConfigurationDefinition operationConfiguration;
 	
-	private ProcessingOperationDefinition() {
+	ProcessingOperationDefinition() {
 		super("", OperationKind.PROCESSING);
-		this.parameters = new ArrayList<>();
-		this.onErrors = new ArrayList<>();
 	}
 
-	public List<ParameterModel<?, ?>> getParameters() {
+	public List<OperationParamsInjector.ParameterModel<?, ?>> getParameters() {
 		return parameters;
 	}
 
@@ -125,29 +125,101 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 			return this;
 		}
 
-		public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever, A value) {
+		/**
+		 * Paramètre avec valeur fixe.
+		 */
+		public <A> Builder<IN, OUT, OP> parameter(
+				ParamRetriever<OP, A> retriever,
+				A value) {
+
 			addParameterInjectorIfNecessary();
-			managedInstance.parameters.add(new ValueParameterModel<>(retriever, value));
+			addParameter(new OperationParamsInjector.InterpretationContextParameterModel<>(
+					retriever,
+					ctx -> value
+			));
 			return this;
 		}
 
-		public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever, Supplier<A> value) {
+		/**
+		 * Paramètre avec Supplier (sans dépendance au contexte).
+		 */
+		public <A> Builder<IN, OUT, OP> parameter(
+				ParamRetriever<OP, A> retriever,
+				java.util.function.Supplier<A> supplier) {
+
 			addParameterInjectorIfNecessary();
-			managedInstance.parameters.add(new SupplierParameterModel<>(retriever, value));
+			addParameter(new OperationParamsInjector.InterpretationContextParameterModel<>(
+					retriever,
+					ctx -> supplier.get()
+			));
 			return this;
 		}
 
-		public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever, Function<InterpretationContextParameterModel.InterpretationContext, A> value) {
+		/**
+		 * Paramètre context-aware : accès à l'input + ExecutionContext + OperationExecutionContext.
+		 * C'est ici que tu pourras faire du side compute, etc.
+		 */
+		public <A> Builder<IN, OUT, OP> parameter(
+				ParamRetriever<OP, A> retriever,
+				Function<OperationParamsInjector.InterpretationContext<IN>, A> resolver) {
+
 			addParameterInjectorIfNecessary();
-			managedInstance.parameters.add(new InterpretationContextParameterModel<>(retriever, value));
+			addParameter(new OperationParamsInjector.InterpretationContextParameterModel<>(
+					retriever,
+					resolver
+			));
 			return this;
 		}
 
 		private void addParameterInjectorIfNecessary() {
+			if (managedInstance.processors == null) {
+				managedInstance.processors = new ArrayList<>();
+			}
 			if (managedInstance.processors.stream().noneMatch(p -> p instanceof OperationParamsInjector)) {
 				managedInstance.processors.add(new OperationParamsInjector());
 			}
 		}
+
+		private void addParameter(OperationParamsInjector.ParameterModel<OP, ?> parameterModel) {
+			if (managedInstance.parameters == null) {
+				managedInstance.parameters = new ArrayList<>();
+			}
+			managedInstance.parameters.add(parameterModel);
+		}
+//
+//		public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever, A value) {
+//			addParameterInjectorIfNecessary();
+//			addParameter(new OperationParamsInjector.ValueParameterModel<>(retriever, value));
+//			return this;
+//		}
+//
+//		public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever, Supplier<A> value) {
+//			addParameterInjectorIfNecessary();
+//			addParameter(new OperationParamsInjector.SupplierParameterModel<>(retriever, value));
+//			return this;
+//		}
+//
+//		public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever, Function<OperationParamsInjector.InterpretationContextParameterModel.InterpretationContext, A> value) {
+//			addParameterInjectorIfNecessary();
+//			addParameter(new OperationParamsInjector.InterpretationContextParameterModel<>(retriever, value));
+//			return this;
+//		}
+//
+//		private void addParameterInjectorIfNecessary() {
+//			if (managedInstance.processors == null) {
+//				managedInstance.processors = new ArrayList<>();
+//			}
+//			if (managedInstance.processors.stream().noneMatch(p -> p instanceof OperationParamsInjector)) {
+//				managedInstance.processors.add(new OperationParamsInjector());
+//			}
+//		}
+
+//		private void addParameter(OperationParamsInjector.ParameterModel<OP, ?> parameterModel) {
+//			if (managedInstance.parameters == null) {
+//				managedInstance.parameters = new ArrayList<>();
+//			}
+//			managedInstance.parameters.add(parameterModel);
+//		}
 
 		public Builder<IN, OUT, OP> onError(BaseError.SafeError<IN> onError) {
 			this.managedInstance.onErrors.add(onError);
@@ -169,100 +241,20 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 			return new UnsafeOperation.Builder<>(this);
 		}
 
+		public Builder<IN, OUT, OP> additionalModel(OperationAdditionalModel<IN, OUT, OP> model) {
+			model.contributeTo(this);
+			return this;
+		}
+
 		public ProcessingOperationDefinition<IN, OUT> build() {
 			return managedInstance;
 		}
-
 	}
 
 	@FunctionalInterface
 	public interface ParamRetriever<T extends Transformer<?, ?>, U> {
 
 		OperationParamsInjector.Parameter<U> getParameterValue(T operation);
-
-	}
-
-	public static abstract class ParameterModel<OP extends Transformer<?, ?>, T> {
-
-		private ParamRetriever<OP, T> paramRetriever;
-
-		public abstract T getValue(Object item);
-
-		private ParameterModel(ParamRetriever<OP, T> paramRetriever) {
-			this.paramRetriever = paramRetriever;
-		}
-
-		public ParamRetriever<OP, T> getParamRetriever() {
-			return paramRetriever;
-		}
-
-	}
-
-	public static class ValueParameterModel<OP extends Transformer<?, ?>, T> extends ParameterModel<OP, T> {
-
-		private T value;
-
-		public ValueParameterModel(ParamRetriever<OP, T> paramRetriever, T value) {
-			super(paramRetriever);
-			this.value = value;
-		}
-
-		@Override
-		public T getValue(Object item) {
-			return value;
-		}
-
-	}
-
-	public static class SupplierParameterModel<OP extends Transformer<?, ?>, T> extends ParameterModel<OP, T> {
-
-		private Supplier<T> value;
-
-		public SupplierParameterModel(ParamRetriever<OP, T> paramRetriever, Supplier<T> value) {
-			super(paramRetriever);
-			this.value = value;
-		}
-
-		@Override
-		public T getValue(Object item) {
-			return value.get();
-		}
-
-	}
-
-	public static class InterpretationContextParameterModel<OP extends Transformer<?, ?>, T>
-			extends ParameterModel<OP, T> {
-
-		private Function<InterpretationContext, T> value;
-
-		public InterpretationContextParameterModel(ParamRetriever<OP, T> paramRetriever,
-				Function<InterpretationContext, T> value) {
-			super(paramRetriever);
-			this.value = value;
-		}
-
-		private InterpretationContext buildContext(Object item) {
-			return new InterpretationContext(item);
-		}
-
-		@Override
-		public T getValue(Object item) {
-			return value.apply(buildContext(item));
-		}
-
-		public static class InterpretationContext {
-
-			private Object item;
-
-			public InterpretationContext(Object item) {
-				this.item = item;
-			}
-
-			public Object getItem() {
-				return item;
-			}
-
-		}
 
 	}
 

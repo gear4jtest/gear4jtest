@@ -30,6 +30,7 @@ import io.github.gear4jtest.core.service.steps.Step11;
 import io.github.gear4jtest.core.service.steps.Step12;
 import io.github.gear4jtest.core.service.steps.Step13;
 import io.github.gear4jtest.core.service.steps.Step3;
+import io.github.gear4jtest.core.service.steps.Step6;
 import io.github.gear4jtest.core.service.steps.Step7;
 import io.github.gear4jtest.core.service.steps.Step8;
 import io.github.gear4jtest.core.service.steps.Step9;
@@ -108,6 +109,9 @@ public class SimpleChainBuilderTest {
 	public void test_v2() throws AssemblyLineException {
 		// Given
 		var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
+				.then(unaryProcessingOperation("step6", Step6.class)
+						.parameter(Step6::getParam, "r")
+						.build())
 				.then(processingOperation("step3", Step3.class)
 						.parameter(Step3::getParam, "a")
 						.onError(

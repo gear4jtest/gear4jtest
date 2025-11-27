@@ -2,18 +2,18 @@ package io.github.gear4jtest.core.model.refactor;
 
 import java.util.ArrayList;
 
-public class UnvaryingContainerDefinition<A> extends ContainerBaseDefinition<A, A> {
+public class UnaryContainerDefinition<A> extends ContainerBaseDefinition<A, A> {
 
-	private UnvaryingContainerDefinition() {
+	private UnaryContainerDefinition() {
 		super(new ArrayList<>(), null);
 	}
 
 	public static class Builder<A> {
 
-		private final UnvaryingContainerDefinition<A> managedInstance;
+		private final UnaryContainerDefinition<A> managedInstance;
 
 		public Builder() {
-			managedInstance = new UnvaryingContainerDefinition<>();
+			managedInstance = new UnaryContainerDefinition<>();
 		}
 
 		public Builder<A> withOneLine(AbstractOperationDefinition<A, A> operationDefinition) {

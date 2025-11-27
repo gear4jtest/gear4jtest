@@ -1,5 +1,6 @@
 package io.github.gear4jtest.core.model.refactor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -23,9 +24,9 @@ public abstract class AbstractOperationDefinition<I, O> implements OperationDefi
     protected List<BaseError<I>> onErrors;
     protected List<Condition<I>> conditions;
     protected Transformer<I, O> fallbackTransformer;
+    protected Boolean unary;
 
-    protected AbstractOperationDefinition(String id,
-                                          OperationKind kind) {
+    protected AbstractOperationDefinition(String id, OperationKind kind) {
         this.id = Objects.requireNonNull(id, "id is required");
         this.kind = Objects.requireNonNull(kind, "kind is required");
     }
@@ -58,38 +59,48 @@ public abstract class AbstractOperationDefinition<I, O> implements OperationDefi
         }
 
         O result = null;
+        Exception mainException = null;
         try {
             setUp(input, context, ctx);
-            for (Condition<I> condition : conditions) {
-                if (condition != null && !condition.test(input, context)) {
-                    if (fallbackTransformer != null) {
-                        result = fallbackTransformer.transform(input, context, ctx);
-                        record.markSuccess(result);
-                        return record;
+            if (conditions != null && !conditions.isEmpty()) {
+                boolean allMatch = true;
+                for (Condition<I> condition : conditions) {
+                    if (condition != null && !condition.test(input, context)) {
+                        allMatch = false;
+                        break;
                     }
-                    throw new RuntimeException("Operation skipped without transformer");
+                }
+
+                if (!allMatch) {
+                    // Conditions KO => fallback éventuel, ou unary, ou SKIPPED
+                    result = handleSkippedByCondition(input, context, ctx, record);
+                    return record;
                 }
             }
 
             // Processors pré-exécution
-            for (Processor processor : processors) {
-                try {
-                    processor.beforeExecution(input, ctx);
-                } catch (Exception e) {
-                    // échec d'un processor = on marque en FAILED et on publie un event d'erreur
-                    record.addErrorHandlerException(e);
+            if (processors != null && !processors.isEmpty()) {
+                for (Processor processor : processors) {
+                    try {
+                        processor.beforeExecution(input, ctx);
+                    } catch (Exception e) {
+                        // échec d'un processor = on marque en FAILED et on publie un event d'erreur
+                        record.addErrorHandlerException(e);
+                    }
                 }
             }
 
             result = doExecute(input, context, ctx);
             record.markSuccess(result);
 
-            for (Processor processor : processors) {
-                try {
-                    processor.afterExecution(input, ctx);
-                } catch (Exception e) {
-                    // échec d'un processor = on marque en FAILED et on publie un event d'erreur
-                    record.addErrorHandlerException(e);
+            if (processors != null && !processors.isEmpty()) {
+                for (Processor processor : processors) {
+                    try {
+                        processor.afterExecution(input, ctx);
+                    } catch (Exception e) {
+                        // échec d'un processor = on marque en FAILED et on publie un event d'erreur
+                        record.addErrorHandlerException(e);
+                    }
                 }
             }
 
@@ -98,14 +109,23 @@ public abstract class AbstractOperationDefinition<I, O> implements OperationDefi
                 context.getEventManager().publish(new OperationCompletedEvent(context.getPipelineId(), context.getExecutionId().toString(), id, input, result));
             }
 
-        } catch (Exception e) {
-            record.markFailed(e);
-            if (context.getEventManager() != null) {
-                context.getEventManager().publish(new OperationErrorEvent(context.getPipelineId(), context.getExecutionId().toString(), id, input, e));
-            }
+        }  catch (Exception e) {
+            mainException = e;
+            result = handleException(input, context, ctx, record, e);
         } finally {
-            // 5. release (unlock, cleanup, etc.)
-            release(ctx, result, record.getThrowables());
+            // Hook release, toujours appelé
+            try {
+                List<Throwable> errorsForRelease = buildErrorListForRelease(record, mainException);
+                release(ctx, result, errorsForRelease);
+            } catch (Exception releaseEx) {
+                // On trace les erreurs de release comme "errorHandlerException"
+                record.addErrorHandlerException(releaseEx);
+            }
+
+            // Append dans l'execution manager, s'il y en a un
+            if (context.getExecutionManager() != null) {
+                context.getExecutionManager().append(record);
+            }
         }
 
         // Append dans l'execution manager, s'il y en a un
@@ -114,6 +134,171 @@ public abstract class AbstractOperationDefinition<I, O> implements OperationDefi
         }
 
         return record;
+    }
+
+
+    // -------------------------------------------------------------
+    //              LOGIQUE DE SKIP (conditions KO)
+    // -------------------------------------------------------------
+
+    /**
+     * Conditions KO : on applique la même logique que pour un "skip propre".
+     * - fallbackTransformer si présent → SUCCESS
+     * - sinon unary = true → SUCCESS avec input
+     * - sinon SKIPPED
+     */
+    @SuppressWarnings("unchecked")
+    protected O handleSkippedByCondition(I input,
+                                         ExecutionContext context,
+                                         OperationExecutionContext opContext,
+                                         OperationExecutionRecord record) {
+        O result = null;
+
+        if (fallbackTransformer != null) {
+            try {
+                result = fallbackTransformer.transform(input, context, opContext);
+                record.markSuccess(result);
+            } catch (Exception e) {
+                // Échec du fallback => on log l'erreur mais on marque SKIPPED
+                record.addErrorHandlerException(e);
+                record.markSkipped(e);
+            }
+            return result;
+        }
+
+        if (Boolean.TRUE.equals(unary)) {
+            result = (O) input;
+            record.markSuccess(result);
+            return result;
+        }
+
+        // Simple skip
+        record.markSkipped();
+        return null;
+    }
+
+    /**
+     * Gestion centralisée d'une exception levée pendant l'exécution.
+     * On applique les règles onErrors dans l'ordre de déclaration.
+     *
+     * Règle de base :
+     *  - Si aucune règle ne matche → FAILED
+     *  - Si une règle matche :
+     *      * IGNORE → fallback / unary / SKIPPED
+     *      * STOP   → STOPPED
+     *      * FATAL  → FAILED
+     */
+    @SuppressWarnings("unchecked")
+    protected O handleException(I input,
+                                ExecutionContext context,
+                                OperationExecutionContext opContext,
+                                OperationExecutionRecord record,
+                                Exception exception) {
+
+        // On publie l'évènement d'erreur quoi qu'il arrive
+        if (context.getEventManager() != null) {
+            context.getEventManager()
+                    .publish(new OperationErrorEvent(
+                            context.getPipelineId(),
+                            context.getExecutionId().toString(),
+                            id,
+                            input,
+                            exception
+                    ));
+        }
+
+        // Aucune stratégie onError : comportement par défaut
+        if (onErrors == null || onErrors.isEmpty()) {
+            record.markFailed(exception);
+            return null;
+        }
+
+        BaseError<I> matched = null;
+
+        for (BaseError<I> error : onErrors) {
+            if (error == null) {
+                continue;
+            }
+
+            // Filtre sur le type de throwable
+            Class<? extends Throwable> t = error.getThrowableType();
+            if (t != null && !t.isAssignableFrom(exception.getClass())) {
+                continue;
+            }
+
+            // Filtre sur la condition (si présente)
+            Condition<I> cond = error.getCondition();
+            if (cond != null && !cond.test(input, context)) {
+                continue;
+            }
+
+            matched = error;
+            break;
+        }
+
+        if (matched == null) {
+            // Aucun handler ne matche : FAILED
+            record.markFailed(exception);
+            return null;
+        }
+
+        // Exécution de l'action associée, en "safe mode" :
+        // toute erreur d'action est loggée dans le record mais ne remplace pas l'erreur principale
+        try {
+            if (matched.getAction() != null) {
+                matched.getAction().run();
+            }
+        } catch (Exception handlerEx) {
+            record.addErrorHandlerException(handlerEx);
+        }
+
+        var signal = matched.getSignalType();
+        if (signal == null) {
+            signal = SignalType.FATAL;
+        }
+
+        return switch (signal) {
+            case IGNORE -> handleSkippedByCondition(input, context, opContext, record);
+            case STOP -> {
+                record.markStopped(exception);
+                yield null;
+                // On arrête logiquement le pipeline (via le status STOPPED)
+            }
+            default -> {
+                record.markFailed(exception);
+                yield null;
+                // Comportement classique : FAILED
+            }
+        };
+    }
+
+    // -------------------------------------------------------------
+    //              OUTILS POUR release(...)
+    // -------------------------------------------------------------
+
+    /**
+     * Construit la liste des erreurs transmise à release :
+     *  - les throwables enregistrés par addErrorHandlerException
+     *  - sinon, l'exception principale le cas échéant
+     */
+    protected List<Throwable> buildErrorListForRelease(OperationExecutionRecord record,
+                                                       Exception mainException) {
+        List<Throwable> throwables = record.getThrowables();
+        if (throwables == null || throwables.isEmpty()) {
+            if (mainException == null) {
+                return List.of();
+            }
+            List<Throwable> result = new ArrayList<>();
+            result.add(mainException);
+            return result;
+        }
+        // On ne rajoute l'exception principale que si elle n'est pas déjà dedans
+        if (mainException != null && !throwables.contains(mainException)) {
+            List<Throwable> result = new ArrayList<>(throwables);
+            result.add(mainException);
+            return result;
+        }
+        return throwables;
     }
 
     /**

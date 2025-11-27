@@ -18,4 +18,11 @@ public class OperationBaseEvent extends Event {
 		this.operationId = operationId;
 		this.input = input;
 	}
+
+	public String getOperationId() {
+		return operationId;
+	}
+	public Object getOutput() {
+		return output;
+	}
 }

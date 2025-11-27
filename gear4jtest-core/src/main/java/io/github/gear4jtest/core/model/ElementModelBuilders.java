@@ -20,7 +20,8 @@ import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
 import io.github.gear4jtest.core.model.refactor.SignalDefiinition;
 import io.github.gear4jtest.core.model.refactor.SignalType;
 import io.github.gear4jtest.core.model.refactor.Transformer;
-import io.github.gear4jtest.core.model.refactor.UnvaryingIfElseContainerDefinition;
+import io.github.gear4jtest.core.model.refactor.UnaryProcessingOperationDefinition;
+import io.github.gear4jtest.core.model.refactor.UnaryIfElseContainerDefinition;
 
 public final class ElementModelBuilders {
 
@@ -63,6 +64,10 @@ public final class ElementModelBuilders {
 		return new ProcessingOperationDefinition.Builder<A, B, T>().id(id).type(step);
 	}
 
+	public static <A, T extends Transformer<A, A>> UnaryProcessingOperationDefinition.Builder<A, T> unaryProcessingOperation(String id, Class<T> step) {
+		return new UnaryProcessingOperationDefinition.Builder<A, T>().id(id).type(step);
+	}
+
 	public static <A> IteratorDefinition.Builder<A, A> iterate(String id) {
 		return new IteratorDefinition.Builder<>(id);
 	}
@@ -85,8 +90,8 @@ public final class ElementModelBuilders {
 		return new ContainerBaseDefinition.Builder<>(executorService);
 	}
 
-	public static <T> UnvaryingIfElseContainerDefinition.Builder<T> ifElseContainer(Class<T> clazz) {
-		return new UnvaryingIfElseContainerDefinition.Builder<>();
+	public static <T> UnaryIfElseContainerDefinition.Builder<T> ifElseContainer(Class<T> clazz) {
+		return new UnaryIfElseContainerDefinition.Builder<>();
 	}
 
 	public static Configuration.ConfigBuilder configuration() {

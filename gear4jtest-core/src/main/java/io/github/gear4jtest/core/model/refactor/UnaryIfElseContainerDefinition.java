@@ -4,10 +4,10 @@ import java.util.ArrayList;
 
 import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
 
-public class UnvaryingIfElseContainerDefinition<A> extends ContainerBaseDefinition<A, A> {
+public class UnaryIfElseContainerDefinition<A> extends ContainerBaseDefinition<A, A> {
 	private OperationDefinition<A, A> elseOp;
 
-	private UnvaryingIfElseContainerDefinition() {
+	private UnaryIfElseContainerDefinition() {
 		super(new ArrayList<>(), null);
 	}
 
@@ -50,10 +50,10 @@ public class UnvaryingIfElseContainerDefinition<A> extends ContainerBaseDefiniti
 
 	public static class Builder<A> {
 
-		private final UnvaryingIfElseContainerDefinition<A> managedInstance;
+		private final UnaryIfElseContainerDefinition<A> managedInstance;
 
 		public Builder() {
-			managedInstance = new UnvaryingIfElseContainerDefinition<>();
+			managedInstance = new UnaryIfElseContainerDefinition<>();
 		}
 
 		public Builder<A> conditionally(AbstractOperationDefinition<A, A> operationDefinition, Condition<A> condition) {
@@ -61,7 +61,7 @@ public class UnvaryingIfElseContainerDefinition<A> extends ContainerBaseDefiniti
 			return this;
 		}
 
-		public UnvaryingIfElseContainerDefinition<A> elseOp(OperationDefinition<A, A> operationDefinition) {
+		public UnaryIfElseContainerDefinition<A> elseOp(OperationDefinition<A, A> operationDefinition) {
 			this.managedInstance.elseOp = operationDefinition;
 			return this.managedInstance;
 		}

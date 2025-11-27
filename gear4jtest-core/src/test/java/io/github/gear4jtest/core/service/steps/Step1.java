@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.github.gear4jtest.core.model.refactor.ExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationExecution;
 import io.github.gear4jtest.core.model.refactor.OperationExecutionContext;
 import io.github.gear4jtest.core.model.refactor.Transformer;
 

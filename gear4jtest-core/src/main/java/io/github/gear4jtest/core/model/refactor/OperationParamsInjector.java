@@ -3,21 +3,27 @@ package io.github.gear4jtest.core.model.refactor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
-import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition.ParameterModel;
+import io.github.gear4jtest.core.sidecompute.DefaultSideComputeAccessor;
+import io.github.gear4jtest.core.sidecompute.SideComputeAccessor;
 
 public class OperationParamsInjector implements Processor {
 
 	@Override
-	public void beforeExecution(Object input, OperationExecutionContext operationExecution) {
+	public <I> void beforeExecution(I input, OperationExecutionContext operationExecution) {
 		var processingParameters = OperationContextUtils.getProcessingParameters(operationExecution);
 		var transformer = OperationContextUtils.getRawTransformer(operationExecution);
 		if (processingParameters.isEmpty() || transformer.isEmpty()) {
 			return;
 		}
 
+		// Contexte unique de résolution des paramètres
+		InterpretationContext<I> ctx =
+				new InterpretationContext<>(input, operationExecution.getGlobalContext(), operationExecution);
+
 		for (ParameterModel<?, ?> rawParam : processingParameters.get().getParameters()) {
-			injectParameter(rawParam, transformer.get(), input);
+			injectParameter(rawParam, transformer.get(), ctx);
 		}
 	}
 
@@ -30,7 +36,7 @@ public class OperationParamsInjector implements Processor {
 	private <IN, OUT, OP extends Transformer<IN, OUT>, T> void injectParameter(
 			ParameterModel<?, ?> rawParam,
 			Transformer<?, ?> rawTransformer,
-			Object input) {
+			InterpretationContext<?> ctx) {
 
 		// Récupération typée
 		ParameterModel<OP, T> param = (ParameterModel<OP, T>) rawParam;
@@ -43,13 +49,15 @@ public class OperationParamsInjector implements Processor {
 			return;
 		}
 
-		T value = param.getValue(input);
+		T value = param.getValue(ctx);
 		parameterValue.injectValue(value);
 
 		// Event à réactiver si besoin :
 		// context.getEventTriggerService()
 		//        .publishEvent(new ParameterInjectionEventBuilder()
-		//        .buildEvent(context.getId(), buildParameterContextualData(value)));
+		//            .withOperationId(operationExecution.getOperationId())
+		//            .withParamName(...)
+		//            .withValue(...));
 	}
 
 	@Override
@@ -60,10 +68,8 @@ public class OperationParamsInjector implements Processor {
 			return;
 		}
 
-		var op = transformer.get();
-
 		for (ParameterModel<?, ?> rawParam : processingParameters.get().getParameters()) {
-			cleanupParameter(rawParam, op);
+			cleanupParameter(rawParam, transformer.get());
 		}
 	}
 
@@ -111,7 +117,7 @@ public class OperationParamsInjector implements Processor {
 
 			private final Parameters instance = new Parameters();
 
-			public Builder withParameter(ParameterModel<?, ?> parameter) {
+			public <OP extends Transformer<?, ?>, T> Builder withParameter(ParameterModel<OP, T> parameter) {
 				instance.parameters.add(parameter);
 				return this;
 			}
@@ -150,29 +156,22 @@ public class OperationParamsInjector implements Processor {
 			this.value = builder.defaultValue;
 		}
 
-		public static <T> Parameter<T> of() {
-			return Parameter.<T>builder().build();
-		}
-
-		public static <T> Parameter<T> ofDefault(T defaultValue) {
-			return Parameter.<T>builder().defaultValue(defaultValue).build();
-		}
-
-		public static <T> Builder<T> builder() {
+		public static <T> Builder<T> newBuilder() {
 			return new Builder<>();
 		}
 
-		public static final class Builder<T> {
-			private LifecyclePolicy lifecyclePolicy = LifecyclePolicy.PERSISTENT;
-			private T defaultValue = null;
+		public static class Builder<T> {
 
-			public Builder<T> defaultValue(T defaultValue) {
-				this.defaultValue = defaultValue;
+			private LifecyclePolicy lifecyclePolicy = LifecyclePolicy.PER_EXECUTION;
+			private T defaultValue;
+
+			public Builder<T> lifecyclePolicy(LifecyclePolicy lifecyclePolicy) {
+				this.lifecyclePolicy = lifecyclePolicy;
 				return this;
 			}
 
-			public Builder<T> perExecution() {
-				this.lifecyclePolicy = LifecyclePolicy.PER_EXECUTION;
+			public Builder<T> defaultValue(T defaultValue) {
+				this.defaultValue = defaultValue;
 				return this;
 			}
 
@@ -195,4 +194,78 @@ public class OperationParamsInjector implements Processor {
 			}
 		}
 	}
+
+	// ------------------------------------------------------------------------
+	// ParameterModel : modèle générique basé sur InterpretationContext
+	// ------------------------------------------------------------------------
+
+	public static abstract class ParameterModel<OP extends Transformer<?, ?>, T> {
+
+		private final ProcessingOperationDefinition.ParamRetriever<OP, T> paramRetriever;
+
+		protected ParameterModel(ProcessingOperationDefinition.ParamRetriever<OP, T> paramRetriever) {
+			this.paramRetriever = paramRetriever;
+		}
+
+		public ProcessingOperationDefinition.ParamRetriever<OP, T> getParamRetriever() {
+			return paramRetriever;
+		}
+
+		/**
+		 * Résout la valeur à injecter à partir du contexte d'interprétation.
+		 */
+		public abstract T getValue(InterpretationContext<?> ctx);
+	}
+
+	/**
+	 * Implémentation canonique : une fonction (InterpretationContext<IN> -> T).
+	 * Tous les paramètres (valeur fixe, supplier, context-aware) sont
+	 * traduits vers ce modèle par les Builders.
+	 */
+	public static class InterpretationContextParameterModel<IN, OP extends Transformer<?, ?>, T>
+			extends ParameterModel<OP, T> {
+
+		private final Function<InterpretationContext<IN>, T> resolver;
+
+		public InterpretationContextParameterModel(
+				ProcessingOperationDefinition.ParamRetriever<OP, T> paramRetriever,
+				Function<InterpretationContext<IN>, T> resolver) {
+			super(paramRetriever);
+			this.resolver = resolver;
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public T getValue(InterpretationContext<?> ctx) {
+			return resolver.apply((InterpretationContext<IN>) ctx);
+		}
+	}
+
+	public static final class InterpretationContext<IN> {
+
+		private final IN item;
+		private final ExecutionContext executionContext;
+		private final OperationExecutionContext operationExecutionContext;
+		private final SideComputeAccessor sideComputeAccessor;
+
+		public InterpretationContext(IN item,
+									 ExecutionContext executionContext,
+									 OperationExecutionContext operationExecutionContext) {
+			this.item = item;
+			this.executionContext = executionContext;
+			this.operationExecutionContext = operationExecutionContext;
+			this.sideComputeAccessor = new DefaultSideComputeAccessor(executionContext);
+		}
+
+		public IN getItem() { return item; }
+
+		public ExecutionContext getExecutionContext() { return executionContext; }
+
+		public OperationExecutionContext getOperationExecutionContext() {
+			return operationExecutionContext;
+		}
+
+		public SideComputeAccessor getSideCompute() { return sideComputeAccessor; }
+	}
+
 }
