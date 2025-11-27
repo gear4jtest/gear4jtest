@@ -1,24 +1,21 @@
 package io.github.gear4jtest.core.model.refactor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 import java.util.List;
 import java.util.function.Supplier;
-
-import org.junit.jupiter.api.Test;
 
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.execution.PipelineExecutionManager;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class ProcessingOperationDefinitionTest {
 
     static class UpperCaseTransformer implements Transformer<String, String> {
-        OperationParamsInjector.Parameter<String> prefix = OperationParamsInjector.Parameter.ofDefault("");
+        OperationParamsInjector.Parameter<String> prefix = OperationParamsInjector.Parameter.<String>newBuilder().defaultValue("").build();
 
         @Override
         public String transform(String input,
@@ -48,11 +45,9 @@ class ProcessingOperationDefinitionTest {
 
         ProcessingOperationDefinition<String, String> def = new ProcessingOperationDefinition<>();
         def.type = (Class) UpperCaseTransformer.class;
-        def.parameters = List.of(
-                new OperationParamsInjector.ValueParameterModel<>(
-                        (ProcessingOperationDefinition.ParamRetriever<UpperCaseTransformer, String>) op -> op.prefix,
-                        ">> "
-                )
+        def.parameters = List.of(new OperationParamsInjector.InterpretationContextParameterModel<>(
+                (ProcessingOperationDefinition.ParamRetriever<UpperCaseTransformer, String>) op -> op.prefix,
+                ctx -> ">> ")
         );
         def.processors = List.of(new OperationParamsInjector());
 
@@ -107,7 +102,7 @@ class ProcessingOperationDefinitionTest {
                 new DefaultOperationExecutionContext("op", OperationKind.PROCESSING, globalContext, record);
 
         UpperCaseTransformer transformer = new UpperCaseTransformer();
-        transformer.prefix = OperationParamsInjector.Parameter.ofDefault("**");
+        transformer.prefix = OperationParamsInjector.Parameter.<String>newBuilder().defaultValue("**").build();
 
         // On simule le travail de setUp : on pose directement le transformer dans les capabilities
         opCtx.addCapability(Transformer.class, transformer);

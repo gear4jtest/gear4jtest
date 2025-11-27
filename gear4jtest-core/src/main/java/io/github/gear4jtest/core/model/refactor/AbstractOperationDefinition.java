@@ -121,16 +121,6 @@ public abstract class AbstractOperationDefinition<I, O> implements OperationDefi
                 // On trace les erreurs de release comme "errorHandlerException"
                 record.addErrorHandlerException(releaseEx);
             }
-
-            // Append dans l'execution manager, s'il y en a un
-            if (context.getExecutionManager() != null) {
-                context.getExecutionManager().append(record);
-            }
-        }
-
-        // Append dans l'execution manager, s'il y en a un
-        if (context.getExecutionManager() != null) {
-            context.getExecutionManager().append(record);
         }
 
         return record;

@@ -86,7 +86,7 @@ public final class SideComputeWaitProcessor implements Processor {
                 result = future.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
             }
 
-            execCtx.put(SideComputeKeys.valueKey(key), result);
+            execCtx.getContext().put(SideComputeKeys.valueKey(key), result);
 
         } catch (TimeoutException te) {
             switch (onTimeout) {
@@ -97,7 +97,7 @@ public final class SideComputeWaitProcessor implements Processor {
                 case USE_FALLBACK -> {
                     Object fb = fallback != null ? fallback.get() : null;
                     future.complete(fb);
-                    execCtx.put(SideComputeKeys.valueKey(key), fb);
+                    execCtx.getContext().put(SideComputeKeys.valueKey(key), fb);
                 }
                 case IGNORE -> {
                     // Ne rien faire : pas de valeur résolue, le param verra que rien n'est là.

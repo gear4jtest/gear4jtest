@@ -3,7 +3,11 @@ package io.github.gear4jtest.core.model.refactor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
 
@@ -23,29 +27,57 @@ public class ContainerBaseDefinition<IN, OUT> extends AbstractOperationDefinitio
 	@Override
 	public OUT doExecute(IN input, ExecutionContext context, OperationExecutionContext operationExecution) {
 		Collection<Object> results = new ArrayList<>();
+
 		if (isParallel && executorService != null) {
-			List<Runnable> tasks = new ArrayList<>();
+			List<Callable<Object>> tasks = new ArrayList<>();
+
 			for (Branch<IN> element : pipelines) {
 				tasks.add(() -> {
 					IN newObject = deepClone(input);
 					var rec = element.getOperation().run(newObject, context);
-                    rec.setParentOperationId(operationExecution.getOperationId());
-                    context.getExecutionManager().append(rec);
+					System.out.println(rec.getOutput(Object.class));
+					rec.setParentOperationId(operationExecution.getOperationId());
+					context.getExecutionManager().append(rec);
+
 					if (rec.getStatus() == OperationExecutionRecord.Status.FAILED) {
+						// On marque l'opération globale en échec
 						operationExecution.getRecord().markFailed(null);
-						return;
+						return null; // pas de résultat pour cette branche
 					}
-					results.add(rec.getOutput(Object.class));
+
+					return rec.getOutput(Object.class);
 				});
 			}
-			tasks.forEach(executorService::submit);
-			executorService.shutdown();
+
+			try {
+				// Lance toutes les tâches et attend qu’elles soient terminées
+				List<Future<Object>> futures = executorService.invokeAll(tasks);
+
+				for (Future<Object> future : futures) {
+					Object value = future.get(); // bloque jusqu'à fin de la tâche
+					if (value != null) {
+						results.add(value);
+					}
+				}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new RuntimeException(e);
+			} catch (ExecutionException e) {
+				throw new RuntimeException("Erreur dans une sous-ligne du container", e.getCause());
+			}
+
+			// ⚠ À toi de décider si on shutdown ici ou non
+			// Si l'executor est fourni de l'extérieur (comme dans ton test),
+			// je te conseille de NE PAS le shutdown dans le container.
+			// executorService.shutdown();
+
 		} else {
+			// Version séquentielle inchangée
 			for (Branch<IN> element : pipelines) {
 				IN newObject = deepClone(input);
 				var rec = element.getOperation().run(newObject, context);
-                    rec.setParentOperationId(operationExecution.getOperationId());
-                    context.getExecutionManager().append(rec);
+				rec.setParentOperationId(operationExecution.getOperationId());
+				context.getExecutionManager().append(rec);
 
 				if (rec.getStatus() == OperationExecutionRecord.Status.FAILED) {
 					operationExecution.getRecord().markFailed(null);
@@ -55,6 +87,7 @@ public class ContainerBaseDefinition<IN, OUT> extends AbstractOperationDefinitio
 				results.add(rec.getOutput(Object.class));
 			}
 		}
+
 		return returns(results);
 	}
 

@@ -10,7 +10,7 @@ import io.github.gear4jtest.core.model.refactor.Transformer;
 
 public class Step3 implements Transformer<String, Map<String, String>> {
 
-	private final Parameter<String> param = Parameter.of();
+	private final Parameter<String> param = Parameter.<String>newBuilder().build();
 
 	@Override
 	public Map<String, String> transform(String object, ExecutionContext context, OperationExecutionContext operationExecution) {

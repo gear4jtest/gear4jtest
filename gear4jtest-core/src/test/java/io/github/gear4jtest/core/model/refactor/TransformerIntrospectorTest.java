@@ -21,7 +21,7 @@ class TransformerIntrospectorTest {
      */
     static class StatefulByParameter {
         @SuppressWarnings("unused")
-        private final Parameter<String> param = Parameter.of();
+        private final Parameter<String> param = Parameter.<String>newBuilder().build();
     }
 
     /**
@@ -49,7 +49,7 @@ class TransformerIntrospectorTest {
      */
     static class AutoWithParameter implements ConcurrencyAwareTransformer {
         @SuppressWarnings("unused")
-        private final Parameter<Integer> param = Parameter.of();
+        private final Parameter<Integer> param = Parameter.<Integer>newBuilder().build();
     }
 
     @Test
@@ -84,7 +84,7 @@ class TransformerIntrospectorTest {
         // on triche : on met un champ Parameter malgré tout
         class ExplicitStatelessWithParameter extends ExplicitStatelessTransformer {
             @SuppressWarnings("unused")
-            private final Parameter<String> param = Parameter.of();
+            private final Parameter<String> param = Parameter.<String>newBuilder().build();
         }
 
         ExplicitStatelessWithParameter transformer = new ExplicitStatelessWithParameter();

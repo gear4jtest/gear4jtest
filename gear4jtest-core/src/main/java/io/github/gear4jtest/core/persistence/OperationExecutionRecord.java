@@ -58,12 +58,14 @@ public class OperationExecutionRecord {
         this.status = Status.FAILED;
         this.endedAt = Instant.now();
         this.errorMessage = e != null ? e.getMessage() : null;
+        addErrorHandlerException(e);
     }
 
     public void markStopped(Exception e) {
         this.status = Status.STOPPED;
         this.endedAt = Instant.now();
         this.errorMessage = e != null ? e.getMessage() : null;
+        addErrorHandlerException(e);
     }
 
     public void markSkipped() {
@@ -75,6 +77,7 @@ public class OperationExecutionRecord {
         this.status = Status.SKIPPED;
         this.endedAt = Instant.now();
         this.errorMessage = e != null ? e.getMessage() : null;
+        addErrorHandlerException(e);
     }
 
     public void addErrorHandlerException(Exception e) {

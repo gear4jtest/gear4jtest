@@ -10,7 +10,7 @@ class OperationParamsInjectorParameterTest {
 
     @Test
     void of_shouldCreatePersistentParameterWithNullDefaultValue() {
-        Parameter<String> parameter = Parameter.of();
+        Parameter<String> parameter = Parameter.<String>newBuilder().build();
 
         assertThat(parameter.getValue()).isNull();
 
@@ -24,7 +24,7 @@ class OperationParamsInjectorParameterTest {
 
     @Test
     void ofDefault_shouldInitializeWithDefaultValueAndPersistentLifecycle() {
-        Parameter<Integer> parameter = Parameter.ofDefault(123);
+        Parameter<Integer> parameter = Parameter.<Integer>newBuilder().defaultValue(123).build();
 
         assertThat(parameter.getValue()).isEqualTo(123);
 
@@ -38,9 +38,9 @@ class OperationParamsInjectorParameterTest {
 
     @Test
     void builder_perExecution_shouldResetToDefaultAfterExecution() {
-        Parameter<String> parameter = Parameter.<String>builder()
+        Parameter<String> parameter = Parameter.<String>newBuilder()
                 .defaultValue("default")
-                .perExecution()
+                .lifecyclePolicy(Parameter.LifecyclePolicy.PER_EXECUTION)
                 .build();
 
         // au départ : valeur par défaut

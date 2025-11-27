@@ -15,6 +15,7 @@ import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
 import io.github.gear4jtest.core.execution.PipelineExecutionManager;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.model.EventHandlingDefinition;
+import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
 import io.github.gear4jtest.core.persistence.PipelineExecution;
 
@@ -108,6 +109,7 @@ public class AssemblyLineDefinition<IN, OUT> {
             // fin OK
             execution.setContext(executionContext.getContext());
             execution.setEndTime(Instant.now());
+            execution.setStatus(ExecutionStatus.SUCCEEDED);
             if (configuration.getPersistence() != null
                     && configuration.getPersistence().isStoreResultObject()) {
                 execution.setResult(current);

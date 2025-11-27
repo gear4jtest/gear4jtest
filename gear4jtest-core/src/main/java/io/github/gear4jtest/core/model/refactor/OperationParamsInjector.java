@@ -162,7 +162,7 @@ public class OperationParamsInjector implements Processor {
 
 		public static class Builder<T> {
 
-			private LifecyclePolicy lifecyclePolicy = LifecyclePolicy.PER_EXECUTION;
+			private LifecyclePolicy lifecyclePolicy = LifecyclePolicy.PERSISTENT;
 			private T defaultValue;
 
 			public Builder<T> lifecyclePolicy(LifecyclePolicy lifecyclePolicy) {
@@ -218,7 +218,7 @@ public class OperationParamsInjector implements Processor {
 	}
 
 	/**
-	 * Implémentation canonique : une fonction (InterpretationContext<IN> -> T).
+	 * Implémentation canonique : une fonction (InterpretationContext&lt;IN&gt; -> T).
 	 * Tous les paramètres (valeur fixe, supplier, context-aware) sont
 	 * traduits vers ce modèle par les Builders.
 	 */

@@ -10,7 +10,7 @@ public class Step6 implements Transformer<String, String> {
 //	protected final Parameter<Integer> value = Parameter.of();
 	
 //	protected final ChainContext chainContext = ChainContext.of();
-	private final OperationParamsInjector.Parameter<String> param = OperationParamsInjector.Parameter.of();
+	private final OperationParamsInjector.Parameter<String> param = OperationParamsInjector.Parameter.<String>newBuilder().build();
 	
 	@Override
 	public String transform(String object, ExecutionContext context, OperationExecutionContext operationExecution) {

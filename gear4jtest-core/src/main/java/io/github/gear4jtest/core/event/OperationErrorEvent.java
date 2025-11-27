@@ -6,7 +6,7 @@ public class OperationErrorEvent extends OperationBaseEvent {
 	private final Exception exception;
 
 	public OperationErrorEvent(String pipelineId, String executionId, String operationId, Object input, Exception exception) {
-        super(pipelineId, executionId, operationId, TYPE, input);
+        super(pipelineId, executionId, TYPE, operationId, input);
 		this.exception = exception;
 	}
 

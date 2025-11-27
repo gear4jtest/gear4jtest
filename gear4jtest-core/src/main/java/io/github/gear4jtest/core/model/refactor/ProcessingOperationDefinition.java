@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.model.refactor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -49,7 +50,7 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 		var operation = context.getResourceFactory().getResource(type);
 		((DefaultOperationExecutionContext) operationExecution).addCapability(Transformer.class, operation);
 		var parameters = OperationParamsInjector.Parameters.newBuilder();
-		this.parameters.forEach(parameters::withParameter);
+		Optional.ofNullable(this.parameters).stream().flatMap(List::stream).forEach(parameters::withParameter);
 		((DefaultOperationExecutionContext) operationExecution).addCapability(OperationParamsInjector.Parameters.class, parameters.build());
 
 		if (!isStateful(operationExecution)) {
@@ -95,7 +96,7 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 	 * de manière concurrente (iteration parallèle, containers parallélisés, etc.).
 	 */
 	protected TransformerConcurrencyStrategy concurrencyStrategy() {
-		return TransformerConcurrencyStrategy.FAIL_FAST;
+		return TransformerConcurrencyStrategy.BLOCK_CALLER;
 	}
 
 	/**
@@ -222,11 +223,17 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 //		}
 
 		public Builder<IN, OUT, OP> onError(BaseError.SafeError<IN> onError) {
+			if (this.managedInstance.onErrors == null) {
+				this.managedInstance.onErrors = new ArrayList<>();
+			}
 			this.managedInstance.onErrors.add(onError);
 			return this;
 		}
 
 		public UnsafeOperation.Builder<IN, OUT, OP> onError(BaseError.UnSafeError<IN> onError) {
+			if (this.managedInstance.onErrors == null) {
+				this.managedInstance.onErrors = new ArrayList<>();
+			}
 			this.managedInstance.onErrors.add(onError);
 			return new UnsafeOperation.Builder<>(this);
 		}
@@ -237,6 +244,9 @@ public class ProcessingOperationDefinition<IN, OUT> extends AbstractOperationDef
 		}
 
 		public UnsafeOperation.Builder<IN, OUT, OP> conditional(Condition<IN> condition) {
+			if (this.managedInstance.conditions == null) {
+				this.managedInstance.conditions = new ArrayList<>();
+			}
 			this.managedInstance.conditions.add(condition);
 			return new UnsafeOperation.Builder<>(this);
 		}

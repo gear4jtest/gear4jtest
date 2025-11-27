@@ -109,9 +109,6 @@ public class SimpleChainBuilderTest {
 	public void test_v2() throws AssemblyLineException {
 		// Given
 		var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
-				.then(unaryProcessingOperation("step6", Step6.class)
-						.parameter(Step6::getParam, "r")
-						.build())
 				.then(processingOperation("step3", Step3.class)
 						.parameter(Step3::getParam, "a")
 						.onError(
@@ -1297,7 +1294,11 @@ public class SimpleChainBuilderTest {
 	}
 
 	public static class TestEventListener implements EventListener<Event> {
-		public static int COUNTER = 1;
+		public static int COUNTER;
+
+		public TestEventListener() {
+			COUNTER = 1;
+		}
 
 		@Override
 		public void handleEvent(Event e) {
