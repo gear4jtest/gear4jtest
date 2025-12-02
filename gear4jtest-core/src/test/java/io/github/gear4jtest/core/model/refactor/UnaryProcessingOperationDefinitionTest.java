@@ -1,5 +1,7 @@
 package io.github.gear4jtest.core.model.refactor;
 
+import java.util.UUID;
+
 import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
@@ -25,7 +27,7 @@ class UnaryProcessingOperationDefinitionTest {
         ResourceFactory factory = new TestResourceFactory();
 
         var execManager = new InMemoryExecutionManager();
-        var ctx = new ExecutionContext("pipe-unary", null, factory, execManager);
+        var ctx = new ExecutionContext(UUID.randomUUID(), "pipe-unary", null, factory, execManager, null);
 
         UnaryProcessingOperationDefinition.Builder<String, UpperCaseTransformer> builder =
                 new UnaryProcessingOperationDefinition.Builder<>();

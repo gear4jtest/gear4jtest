@@ -1,5 +1,7 @@
 package io.github.gear4jtest.core.model.refactor;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
@@ -11,7 +13,7 @@ class DefaultOperationExecutionContextTest {
     @Test
     void constructor_shouldExposeOperationAndGlobalContext() {
         ExecutionContext global =
-                new ExecutionContext("pipeline-1", null, null, null);
+                new ExecutionContext(UUID.randomUUID(), "pipeline-1", null, null, null, null);
         OperationExecutionRecord record =
                 OperationExecutionRecord.start("exec-1", "op-1", null);
 
@@ -27,7 +29,7 @@ class DefaultOperationExecutionContextTest {
     @Test
     void capabilities_shouldBeEmptyByDefaultAndReturnValueWhenAdded() {
         ExecutionContext global =
-                new ExecutionContext("pipeline-1", null, null, null);
+                new ExecutionContext(UUID.randomUUID(), "pipeline-1", null, null, null, null);
         OperationExecutionRecord record =
                 OperationExecutionRecord.start("exec-1", "op-1", null);
 

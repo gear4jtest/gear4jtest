@@ -2,12 +2,9 @@ package io.github.gear4jtest.core.persistence;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import org.checkerframework.checker.units.qual.K;
 
 public class PipelineExecution {
     private UUID id;
@@ -21,9 +18,40 @@ public class PipelineExecution {
     private String errorMessage;
     private Exception error;
     private List<OperationExecutionRecord> operations = new ArrayList<>();
-    
+
+    private UUID parentExecutionId; // null pour la top-level
+    private UUID rootExecutionId;   // id de la top-level
+
+
     public PipelineExecution(){}
     public PipelineExecution(UUID id, String pipelineId, Map<String, Object> pipelineParams){this.id=id;this.pipelineId=pipelineId;this.startTime=Instant.now();this.status=ExecutionStatus.RUNNING;this.setInputParams(pipelineParams);}
+
+    public void markStarted() {
+        this.status = ExecutionStatus.RUNNING;
+        this.startTime = Instant.now();
+    }
+
+    public void markSuccess(Object result) {
+        this.status = ExecutionStatus.SUCCEEDED;
+        this.endTime = Instant.now();
+        // sérialiser result si besoin
+    }
+
+    public void markFailed(Throwable t) {
+        this.status = ExecutionStatus.FAILED;
+        this.endTime = Instant.now();
+        // sérialiser t sous forme de message si besoin
+    }
+
+    public static PipelineExecution childOf(PipelineExecution parent, String assemblyLineId) {
+        PipelineExecution child = new PipelineExecution();
+        child.id = UUID.randomUUID();
+        child.pipelineId = assemblyLineId;
+        child.parentExecutionId = parent.getId();
+        child.rootExecutionId = parent.getRootExecutionId() != null ? parent.getRootExecutionId() : parent.getId();
+        child.markStarted();
+        return child;
+    }
 
     // Getters/Setters
     public UUID getId(){return id;}
@@ -48,7 +76,14 @@ public class PipelineExecution {
     public void setError(Exception error){this.error=error;this.errorMessage=error!=null?error.getMessage():null;}
     public List<OperationExecutionRecord> getOperations(){return operations;}
     public void setOperations(List<OperationExecutionRecord> operations){this.operations=operations;}
-    
-//    public void complete(){this.endTime=Instant.now();this.status=ExecutionStatus.COMPLETED;}
+
+    public UUID getParentExecutionId() {
+        return parentExecutionId;
+    }
+
+    public UUID getRootExecutionId() {
+        return rootExecutionId;
+    }
+    //    public void complete(){this.endTime=Instant.now();this.status=ExecutionStatus.COMPLETED;}
 //    public void fail(Exception error){this.endTime=Instant.now();this.status=ExecutionStatus.FAILED;setError(error);}
 }

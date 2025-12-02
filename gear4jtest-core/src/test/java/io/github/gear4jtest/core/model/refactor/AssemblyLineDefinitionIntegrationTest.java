@@ -86,7 +86,7 @@ class AssemblyLineDefinitionIntegrationTest {
         // ----------- Vérification de la persistance en mémoire -----------
 
         Optional<PipelineExecution> execOpt =
-                InMemoryPipelineExecutionRepository.INSTANCE.findById(result.getExecutionId());
+                InMemoryPipelineExecutionRepository.INSTANCE.findById(result.getExecution().getId());
 
         assertThat(execOpt).isPresent();
 

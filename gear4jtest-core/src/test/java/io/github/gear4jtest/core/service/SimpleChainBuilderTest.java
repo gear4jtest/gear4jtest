@@ -30,7 +30,6 @@ import io.github.gear4jtest.core.service.steps.Step11;
 import io.github.gear4jtest.core.service.steps.Step12;
 import io.github.gear4jtest.core.service.steps.Step13;
 import io.github.gear4jtest.core.service.steps.Step3;
-import io.github.gear4jtest.core.service.steps.Step6;
 import io.github.gear4jtest.core.service.steps.Step7;
 import io.github.gear4jtest.core.service.steps.Step8;
 import io.github.gear4jtest.core.service.steps.Step9;
@@ -39,7 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
 
 import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
-import static io.github.gear4jtest.core.persistence.OperationExecutionRecord.*;
+import static io.github.gear4jtest.core.persistence.OperationExecutionRecord.Status;
 import static org.assertj.core.api.Assertions.*;
 
 // handle factory for step / processor... configuration
@@ -126,7 +125,7 @@ public class SimpleChainBuilderTest {
 				.then(processingOperation("step9", Step9.class).build())
 				.then(ElementModelBuilders.<List<Integer>>iterate("iterator")
 						.iterableFunction(Function.identity())
-						.operation(processingOperation("step10", Step10.class).build())
+						.pipeline(chain(processingOperation("step10", Step10.class).build()).build())
 						.collector(Collectors.toList())
 						.build())
 				.configuration(configuration()
@@ -179,7 +178,7 @@ public class SimpleChainBuilderTest {
 				.then(processingOperation("step9", Step9.class).build())
 				.then(ElementModelBuilders.<List<Integer>>iterate("iterator")
 						.iterableFunction(Function.identity())
-						.operation(processingOperation("step10", Step10.class).build())
+						.pipeline(chain(processingOperation("step10", Step10.class).build()).build())
 						.collector(Collectors.toList())
 						.build())
 				.configuration(configuration()
@@ -240,7 +239,7 @@ public class SimpleChainBuilderTest {
 				.then(processingOperation("step9", Step9.class).build())
 				.then(ElementModelBuilders.<List<Integer>>iterate("iterator")
 						.iterableFunction(Function.identity())
-						.operation(processingOperation("step10", Step10.class).build())
+						.pipeline(chain(processingOperation("step10", Step10.class).build()).build())
 						.collector(Collectors.toList())
 						.build())
 				.configuration(configuration()
@@ -277,7 +276,7 @@ public class SimpleChainBuilderTest {
 				.asList()
 				.contains("");
 
-		var pipelineExecution = new DatabasePipelineExecutionRepository(dataSource).findById(result.getExecutionId());
+		var pipelineExecution = new DatabasePipelineExecutionRepository(dataSource).findById(result.getExecution().getId());
 		assertThat(pipelineExecution)
 				.isPresent()
 				.get()
@@ -289,7 +288,7 @@ public class SimpleChainBuilderTest {
 						PipelineExecution::getResult,
 						PipelineExecution::getStatus)
 				.containsExactly(
-						result.getExecutionId(),
+						result.getExecution().getId(),
 						"test",
 						context,
 						Map.of(),
@@ -309,10 +308,10 @@ public class SimpleChainBuilderTest {
 						OperationExecutionRecord::getStatus,
 						OperationExecutionRecord::getContext)
 				.containsExactly(
-						tuple(result.getExecutionId().toString(), "step3", null, Status.SUCCEEDED, Map.of()),
-						tuple(result.getExecutionId().toString(), "step8", null, Status.SUCCEEDED, Map.of()),
-						tuple(result.getExecutionId().toString(), "step9", null, Status.SUCCEEDED, Map.of()),
-						tuple(result.getExecutionId().toString(), "iterator", null, Status.SUCCEEDED, Map.of()));
+						tuple(result.getExecution().getId().toString(), "step3", null, Status.SUCCEEDED, null),
+						tuple(result.getExecution().getId().toString(), "step8", null, Status.SUCCEEDED, null),
+						tuple(result.getExecution().getId().toString(), "step9", null, Status.SUCCEEDED, null),
+						tuple(result.getExecution().getId().toString(), "iterator", null, Status.SUCCEEDED, null));
 		var iteratorExecutionRecord = getRecordByOperationId(pipelineExecution.get().getOperations(), "iterator");
 		assertThat(iteratorExecutionRecord.getSubOperations())
 				.extracting(
@@ -321,7 +320,7 @@ public class SimpleChainBuilderTest {
 						OperationExecutionRecord::getParentOperationId,
 						OperationExecutionRecord::getStatus,
 						OperationExecutionRecord::getContext)
-				.containsExactly(tuple(result.getExecutionId().toString(), "step10", getRecordByOperationId(pipelineExecution.get().getOperations(), "iterator").getId(), Status.SUCCEEDED, Map.of()));
+				.containsExactly(tuple(result.getExecution().getId().toString(), "step10", getRecordByOperationId(pipelineExecution.get().getOperations(), "iterator").getId(), Status.SUCCEEDED, null));
 	}
 
 	private static OperationExecutionRecord getRecordByOperationId(List<OperationExecutionRecord> records, String operationId) {

@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
@@ -89,7 +90,7 @@ class AbstractOperationDefinitionTest {
         PipelineExecutionManager executionManager = mock(PipelineExecutionManager.class);
 
         ExecutionContext globalContext =
-                new ExecutionContext("pipeline-1", eventManager, resourceFactory, executionManager);
+                new ExecutionContext(UUID.randomUUID(), "pipeline-1", eventManager, resourceFactory, executionManager, null);
 
         TestOperation op = new TestOperation("op-1", OperationKind.PROCESSING);
         RecordingProcessor processor = new RecordingProcessor();
@@ -123,7 +124,7 @@ class AbstractOperationDefinitionTest {
         PipelineExecutionManager executionManager = mock(PipelineExecutionManager.class);
 
         ExecutionContext globalContext =
-                new ExecutionContext("pipeline-1", eventManager, resourceFactory, executionManager);
+                new ExecutionContext(UUID.randomUUID(), "pipeline-1", eventManager, resourceFactory, executionManager, null);
 
         FailingOperation op = new FailingOperation("op-err", OperationKind.PROCESSING);
 
@@ -146,7 +147,7 @@ class AbstractOperationDefinitionTest {
         PipelineExecutionManager executionManager = mock(PipelineExecutionManager.class);
 
         ExecutionContext globalContext =
-                new ExecutionContext("pipeline-1", eventManager, resourceFactory, executionManager);
+                new ExecutionContext(UUID.randomUUID(), "pipeline-1", eventManager, resourceFactory, executionManager, null);
 
         TestOperation op = new TestOperation("op-1", OperationKind.PROCESSING);
 

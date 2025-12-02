@@ -144,6 +144,8 @@ task jacocoRootTestReport(type: JacocoReport) {
     classDirectories.from = coreProjects.sourceSets.main.output
     executionData.setFrom project.fileTree(dir: '.', include: '**/build/jacoco/test.exec')
 
+    dependsOn subprojects.collect { it.tasks.withType(Javadoc) }
+
     onlyIf {
         true
     }

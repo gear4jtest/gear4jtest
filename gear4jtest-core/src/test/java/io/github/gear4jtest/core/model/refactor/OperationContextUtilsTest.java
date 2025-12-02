@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.model.refactor;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +23,7 @@ class OperationContextUtilsTest {
     @Test
     void isProcessing_shouldReturnTrueOnlyForProcessingKind() {
         ExecutionContext global =
-                new ExecutionContext("pipe", null, null, null);
+                new ExecutionContext(UUID.randomUUID(), "pipe", null, null, null, null);
         OperationExecutionRecord record =
                 OperationExecutionRecord.start("exec", "op", null);
 
@@ -38,7 +39,7 @@ class OperationContextUtilsTest {
     @Test
     void getRawAndTypedTransformer_shouldReadFromCapabilities() {
         ExecutionContext global =
-                new ExecutionContext("pipe", null, null, null);
+                new ExecutionContext(UUID.randomUUID(), "pipe", null, null, null, null);
         OperationExecutionRecord record =
                 OperationExecutionRecord.start("exec", "op", null);
         DefaultOperationExecutionContext ctx =
@@ -58,7 +59,7 @@ class OperationContextUtilsTest {
     @Test
     void getProcessingParameters_shouldReturnParametersCapabilityIfPresent() {
         ExecutionContext global =
-                new ExecutionContext("pipe", null, null, null);
+                new ExecutionContext(UUID.randomUUID(), "pipe", null, null, null, null);
         OperationExecutionRecord record =
                 OperationExecutionRecord.start("exec", "op", null);
         DefaultOperationExecutionContext ctx =

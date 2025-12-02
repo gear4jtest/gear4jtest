@@ -9,5 +9,6 @@ public enum OperationKind {
     CONTAINER,
     ITERATOR,
     SIGNAL,
+    PIPELINE,
     OTHER
 }

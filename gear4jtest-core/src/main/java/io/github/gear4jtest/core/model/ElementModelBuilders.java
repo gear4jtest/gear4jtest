@@ -5,6 +5,9 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import io.github.gear4jtest.core.model.EventHandlingDefinition.EventConfiguration;
+import io.github.gear4jtest.core.model.refactor.AbstractOperationDefinition;
+import io.github.gear4jtest.core.model.refactor.OperationChain;
+import io.github.gear4jtest.core.model.refactor.PipelineOperation;
 import io.github.gear4jtest.core.model.refactor.SimpleEventBus;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
 import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition.Configuration;
@@ -112,6 +115,15 @@ public final class ElementModelBuilders {
 
 	public static <T extends SimpleEventBus> PersistenceConfiguration.Builder eventBus(Class<T> clazz) {
 		return new PersistenceConfiguration.Builder();
+	}
+
+	public static <IN, OUT> OperationChain.Builder<IN, OUT> chain(AbstractOperationDefinition<IN, OUT> step) {
+		return new OperationChain.Builder<>(step);
+	}
+
+	public static <IN, OUT> PipelineOperation.Builder<IN, OUT> pipelineOperation(String id,
+																				 AssemblyLineDefinition<IN, OUT> subPipeline) {
+		return new PipelineOperation.Builder<>(id, subPipeline);
 	}
 
 	public static ListAccumulator toList() {

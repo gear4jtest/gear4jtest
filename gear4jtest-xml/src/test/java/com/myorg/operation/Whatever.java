@@ -82,8 +82,7 @@ public final class Whatever implements GeneratedAssemblyLine {
      */
     private AssemblyLineDefinition.Configuration createConfiguration() {
         return configuration()
-            .stepDefaultConfiguration(operationConfiguration().build())
-            .eventHandlingDefinition(eventHandling().build())
+            .eventHandling(eventHandling().build())
             .build();
     }
 
@@ -118,7 +117,7 @@ public final class Whatever implements GeneratedAssemblyLine {
         IteratorDefinition<List<Integer>, List<List<String>>> create() {
             return ElementModelBuilders.<List<Integer>>iterate("iterator")
                 .iterableFunction(java.util.function.Function.identity())
-                .operation(createProcessingStep10())
+                .pipeline(chain(createProcessingStep10()).build())
                 .collector(Collectors.toList())
                 .build();
         }

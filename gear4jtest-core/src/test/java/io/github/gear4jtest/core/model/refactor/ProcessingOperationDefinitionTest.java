@@ -1,6 +1,7 @@
 package io.github.gear4jtest.core.model.refactor;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 import io.github.gear4jtest.core.event.EventManager;
@@ -36,7 +37,7 @@ class ProcessingOperationDefinitionTest {
         when(resourceFactory.getResource(UpperCaseTransformer.class)).thenReturn(transformer);
 
         ExecutionContext globalContext =
-                new ExecutionContext("pipe", eventManager, resourceFactory, executionManager);
+                new ExecutionContext(UUID.randomUUID(), "pipe", eventManager, resourceFactory, executionManager, null);
 
         OperationExecutionRecord record =
                 OperationExecutionRecord.start("exec", "op", null);
@@ -95,7 +96,7 @@ class ProcessingOperationDefinitionTest {
     @Test
     void doExecute_shouldDelegateToTypedTransformer() {
         ExecutionContext globalContext =
-                new ExecutionContext("pipe", null, null, null);
+                new ExecutionContext(UUID.randomUUID(), "pipe", null, null, null, null);
         OperationExecutionRecord record =
                 OperationExecutionRecord.start("exec", "op", null);
         DefaultOperationExecutionContext opCtx =
@@ -117,7 +118,7 @@ class ProcessingOperationDefinitionTest {
     @Test
     void doExecute_shouldThrowIfNoTransformerPresentInContext() {
         ExecutionContext globalContext =
-                new ExecutionContext("pipe", null, null, null);
+                new ExecutionContext(UUID.randomUUID(), "pipe", null, null, null, null);
         OperationExecutionRecord record =
                 OperationExecutionRecord.start("exec", "op", null);
         DefaultOperationExecutionContext opCtx =

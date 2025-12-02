@@ -197,6 +197,43 @@ public class DatabasePipelineExecutionRepository implements PipelineExecutionRep
         }
     }
 
+    /**
+     * Sauvegarde un batch de OperationExecutionRecord en une seule passe.
+     * Utilisé par DatabaseExecutionManager pour limiter le nombre de transactions.
+     */
+    public void saveOperationsBatch(List<OperationExecutionRecord> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+
+        String sql = "INSERT INTO operation_executions " +
+                "(id, pipeline_execution_id, operation_id, parent_operation_id, status, " +
+                " start_time, end_time, error_message, error_handler_messages, context) " +
+                "VALUES (?,?,?,?,?,?,?,?,?,?)";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            for (OperationExecutionRecord rec : records) {
+                stmt.setString(1, rec.getId());
+                stmt.setString(2, rec.getPipelineExecutionId());
+                stmt.setString(3, rec.getOperationId());
+                stmt.setString(4, rec.getParentOperationId());
+                stmt.setString(5, rec.getStatus().toString());
+                stmt.setTimestamp(6, Timestamp.from(rec.getStartedAt()));
+                stmt.setTimestamp(7, rec.getEndedAt() != null ? Timestamp.from(rec.getEndedAt()) : null);
+                stmt.setString(8, rec.getErrorMessage());
+                stmt.setString(9, rec.getErrorHandlerMessages());
+                stmt.setString(10, toJson(rec.getContext()));
+                stmt.addBatch();
+            }
+
+            stmt.executeBatch();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public void delete(UUID id) {
         try (Connection conn = dataSource.getConnection()) {

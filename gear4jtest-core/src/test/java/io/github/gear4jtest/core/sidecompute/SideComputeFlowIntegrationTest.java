@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.sidecompute;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.event.OperationCompletedEvent;
@@ -40,10 +41,12 @@ class SideComputeFlowIntegrationTest {
 
         // 2) ExecutionContext enregistré
         ExecutionContext execCtx = new ExecutionContext(
+                UUID.randomUUID(),
                 "pipeline-test",
                 eventManager,
                 null, // ResourceFactory mocké/absent ici
-                null  // PipelineExecutionManager mocké/absent ici
+                null,  // PipelineExecutionManager mocké/absent ici
+                null
         );
         registry.register(execCtx);
 

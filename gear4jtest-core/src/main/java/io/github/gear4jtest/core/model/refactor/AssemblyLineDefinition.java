@@ -49,6 +49,8 @@ public class AssemblyLineDefinition<IN, OUT> {
                                         Map<String, Object> context,
                                         ResourceFactory resourceFactory) {
         EventManager eventManager = null;
+        PipelineExecution execution = null;
+        PipelineExecutionManager manager = null;
         try {
             // Event buses éventuels (peuvent être null)
             eventManager = new EventManager(
@@ -58,52 +60,23 @@ public class AssemblyLineDefinition<IN, OUT> {
             );
 
             // Choix du manager (IN_MEMORY / DATABASE ou custom via configuration)
-            PipelineExecutionManager manager = resolveManager(configuration);
+            manager = resolveManager(configuration);
+
+            UUID executionId = UUID.randomUUID();
+            // Création de l’exécution globale
+            execution = new PipelineExecution(executionId, id, new HashMap<>(context));
+            execution.markStarted();
+            manager.start(execution);
 
             // ⚠️ ExecutionContext doit avoir un ctor étendu :
             // new ExecutionContext(pipelineId, eventManager, resourceFactory, manager)
             ExecutionContext executionContext =
-                    new ExecutionContext(id, eventManager, resourceFactory, manager);
+                    new ExecutionContext(executionId, id, eventManager, resourceFactory, manager, execution);
+            executionContext.setCurrentItemId("root"); // ou null
 
-            // Création de l’exécution globale
-            PipelineExecution execution =
-                    new PipelineExecution(executionContext.getExecutionId(), id, new HashMap<>(context));
-            manager.start(execution);
-
-            Object current = input;
-
-            for (OperationDefinition<?, ?> op : operations) {
-                @SuppressWarnings("unchecked")
-                OperationDefinition<Object, Object> a = (OperationDefinition<Object, Object>) op;
-
-                // 👉 run(...) retourne maintenant un OperationExecutionRecord
-                OperationExecutionRecord rec = a.run(current, executionContext);
-
-                // persistance au fil de l’eau
-                manager.append(rec);
-
-                // arrêt en cas d’échec ou de STOP
-                if (rec.getStatus() == OperationExecutionRecord.Status.FAILED
-                        || rec.getStatus() == OperationExecutionRecord.Status.STOPPED) {
-
-                    execution.setContext(executionContext.getContext());
-                    execution.setEndTime(Instant.now());
-                    if (configuration.getPersistence() != null
-                            && configuration.getPersistence().isStoreResultObject()) {
-                        execution.setResult(null);
-                    }
-                    manager.end(execution);
-
-                    return new ExecutionResult<>(
-                            executionContext.getExecutionId(),
-                            null,
-                            false,
-                            null
-                    );
-                }
-
-                // chaînage : on utilise la sortie transiente du record
-                current = rec.getOutput(Object.class);
+            var result = executeWithin(executionContext, input);
+            if (!result.isSuccess()) {
+                return result;
             }
 
             // fin OK
@@ -112,25 +85,59 @@ public class AssemblyLineDefinition<IN, OUT> {
             execution.setStatus(ExecutionStatus.SUCCEEDED);
             if (configuration.getPersistence() != null
                     && configuration.getPersistence().isStoreResultObject()) {
-                execution.setResult(current);
+                execution.setResult(result.getResult());
             }
-            manager.end(execution);
 
-            return new ExecutionResult<>(
-                    executionContext.getExecutionId(),
-                    (OUT) current,
-                    true,
-                    null
-            );
+            return result;
 
         } catch (Exception e) {
             // garde-fou : en cas d’erreur non gérée
-            return new ExecutionResult<>(UUID.randomUUID(), null, false, e);
+            return ExecutionResult.failure(e, execution);
         } finally {
+           if (manager != null) {
+               manager.end(execution);
+           }
             if (eventManager != null) {
                 eventManager.shutdown();
             }
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public ExecutionResult<OUT> executeWithin(ExecutionContext ctx, IN input) {
+        Object current = input;
+        boolean success = true;
+        Exception error = null;
+
+        for (OperationDefinition<?, ?> op : operations) {
+            OperationDefinition<Object, Object> a = (OperationDefinition<Object, Object>) op;
+
+            // 👉 run(...) retourne maintenant un OperationExecutionRecord
+            OperationExecutionRecord rec = a.run(current, ctx);
+
+            // persistance au fil de l’eau
+//            ctx.getExecutionManager().append(rec);
+
+            // arrêt en cas d’échec ou de STOP
+            if (rec.getStatus() == OperationExecutionRecord.Status.FAILED
+                    || rec.getStatus() == OperationExecutionRecord.Status.STOPPED) {
+
+                ctx.getPipelineExecution().setContext(ctx.getContext());
+                ctx.getPipelineExecution().setEndTime(Instant.now());
+                if (configuration.getPersistence() != null
+                        && configuration.getPersistence().isStoreResultObject()) {
+                    ctx.getPipelineExecution().setResult(null);
+                }
+                ctx.getExecutionManager().end(ctx.getPipelineExecution());
+                success = false;
+                break;
+            }
+
+            // chaînage : on utilise la sortie transiente du record
+            current = rec.getOutput(Object.class);
+        }
+        OUT out = success ? (OUT) current : null;
+        return new ExecutionResult<>(out, success, ctx.getPipelineExecution(), error);
     }
 
     // ---------- Persistance de l'exécution ----------
@@ -163,6 +170,10 @@ public class AssemblyLineDefinition<IN, OUT> {
             }
         }
         return new InMemoryExecutionManager();
+    }
+
+    public String getId() {
+        return id;
     }
 
     // --------------------------------------------------------------------------------------------

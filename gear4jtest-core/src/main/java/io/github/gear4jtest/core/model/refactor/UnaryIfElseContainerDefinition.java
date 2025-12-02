@@ -22,7 +22,7 @@ public class UnaryIfElseContainerDefinition<A> extends ContainerBaseDefinition<A
 				A newObject = deepClone(input);
 				var rec = element.getOperation().run(newObject, context);
                 rec.setParentOperationId(operationExecution.getOperationId());
-                context.getExecutionManager().append(rec);
+//                context.getExecutionManager().append(rec);
 				if (rec.getStatus() == OperationExecutionRecord.Status.FAILED) {
 					operationExecution.getRecord().markFailed(null);
 					return null;
@@ -37,7 +37,7 @@ public class UnaryIfElseContainerDefinition<A> extends ContainerBaseDefinition<A
 			A newObject = deepClone(input);
 			var recElse = elseOp.run(newObject, context);
             recElse.setParentOperationId(operationExecution.getOperationId());
-            context.getExecutionManager().append(recElse);
+//            context.getExecutionManager().append(recElse);
 			if (recElse.getStatus() == OperationExecutionRecord.Status.FAILED) {
 				operationExecution.getRecord().markFailed(null);
 				return null;

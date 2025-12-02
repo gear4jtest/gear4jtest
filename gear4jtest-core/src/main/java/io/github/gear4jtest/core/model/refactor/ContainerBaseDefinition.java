@@ -27,17 +27,18 @@ public class ContainerBaseDefinition<IN, OUT> extends AbstractOperationDefinitio
 	@Override
 	public OUT doExecute(IN input, ExecutionContext context, OperationExecutionContext operationExecution) {
 		Collection<Object> results = new ArrayList<>();
+		String currentItemId = context.getCurrentItemId();
 
 		if (isParallel && executorService != null) {
 			List<Callable<Object>> tasks = new ArrayList<>();
 
 			for (Branch<IN> element : pipelines) {
-				tasks.add(() -> {
+				tasks.add(() -> context.withItemId(currentItemId, () -> {
 					IN newObject = deepClone(input);
 					var rec = element.getOperation().run(newObject, context);
-					System.out.println(rec.getOutput(Object.class));
+
 					rec.setParentOperationId(operationExecution.getOperationId());
-					context.getExecutionManager().append(rec);
+//					context.getExecutionManager().append(rec);
 
 					if (rec.getStatus() == OperationExecutionRecord.Status.FAILED) {
 						// On marque l'opération globale en échec
@@ -46,7 +47,7 @@ public class ContainerBaseDefinition<IN, OUT> extends AbstractOperationDefinitio
 					}
 
 					return rec.getOutput(Object.class);
-				});
+				}));
 			}
 
 			try {
@@ -77,7 +78,7 @@ public class ContainerBaseDefinition<IN, OUT> extends AbstractOperationDefinitio
 				IN newObject = deepClone(input);
 				var rec = element.getOperation().run(newObject, context);
 				rec.setParentOperationId(operationExecution.getOperationId());
-				context.getExecutionManager().append(rec);
+//				context.getExecutionManager().append(rec);
 
 				if (rec.getStatus() == OperationExecutionRecord.Status.FAILED) {
 					operationExecution.getRecord().markFailed(null);

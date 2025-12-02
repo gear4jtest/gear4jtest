@@ -45,17 +45,26 @@ public abstract class AbstractOperationDefinition<I, O> implements OperationDefi
 
     @Override
     public final OperationExecutionRecord run(I input, ExecutionContext context) {
+        String parentId = context.getCurrentParentOperationId();
         var record = OperationExecutionRecord.start(
                 context.getExecutionId().toString(),
                 id,
-                null // parent sera éventuellement posé par un container
+                parentId
         );
 
+        // PROPAGE le scope item courant
+        record.setItemId(context.getCurrentItemId());
+
         var ctx = new DefaultOperationExecutionContext(id, kind, context, record);
+        context.pushParentOperationId(record.getId());
 
         // Event : started
         if (context.getEventManager() != null) {
             context.getEventManager().publish(new OperationStartedEvent(context.getPipelineId(), context.getExecutionId().toString(), id, input));
+        }
+
+        if (context.getExecutionManager() != null) {
+            context.getExecutionManager().append(record);
         }
 
         O result = null;
@@ -113,6 +122,7 @@ public abstract class AbstractOperationDefinition<I, O> implements OperationDefi
             mainException = e;
             result = handleException(input, context, ctx, record, e);
         } finally {
+            context.popParentOperationId();
             // Hook release, toujours appelé
             try {
                 List<Throwable> errorsForRelease = buildErrorListForRelease(record, mainException);

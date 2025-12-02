@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.persistence;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,7 +30,8 @@ public class OperationExecutionRecord {
     private String errorMessage;
     private String errorHandlerMessages;
     private Map<String, Object> context;
-    private List<OperationExecutionRecord> subOperations = new ArrayList<>();
+    private List<OperationExecutionRecord> subOperations = Collections.synchronizedList(new ArrayList<>());
+    private String itemId;
 
     // ---------- Fabrication ----------
 
@@ -98,9 +100,6 @@ public class OperationExecutionRecord {
     public void addSubOperation(OperationExecutionRecord child) {
         if (child == null) return;
         child.setParentOperationId(this.id);
-        if (subOperations == null) {
-            subOperations = new ArrayList<>();
-        }
         subOperations.add(child);
     }
 
@@ -185,7 +184,8 @@ public class OperationExecutionRecord {
     }
 
     public List<OperationExecutionRecord> getSubOperations() {
-        return subOperations;
+        // Optionnel : exposer une vue non modifiable
+        return Collections.unmodifiableList(subOperations);
     }
 
     public void setSubOperations(List<OperationExecutionRecord> subOperations) {
@@ -203,5 +203,13 @@ public class OperationExecutionRecord {
 
     public List<Throwable> getThrowables() {
         return throwables;
+    }
+
+    public String getItemId() {
+        return itemId;
+    }
+
+    public void setItemId(String itemId) {
+        this.itemId = itemId;
     }
 }

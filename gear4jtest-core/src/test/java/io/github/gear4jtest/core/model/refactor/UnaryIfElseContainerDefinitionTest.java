@@ -1,5 +1,7 @@
 package io.github.gear4jtest.core.model.refactor;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
@@ -34,7 +36,7 @@ class UnaryIfElseContainerDefinitionTest {
     @Test
     void run_shouldExecuteMatchingBranchWhenConditionTrue() {
         var execManager = new InMemoryExecutionManager();
-        var ctx = new ExecutionContext("pipeline-if", null, null, execManager);
+        var ctx = new ExecutionContext(UUID.randomUUID(), "pipeline-if", null, null, execManager, null);
 
         ConstantOperation yesOp = new ConstantOperation("yes-op", "YES");
         ConstantOperation noOp = new ConstantOperation("no-op", "NO");
@@ -57,7 +59,7 @@ class UnaryIfElseContainerDefinitionTest {
     @Test
     void run_shouldExecuteElseBranchWhenNoConditionMatches() {
         var execManager = new InMemoryExecutionManager();
-        var ctx = new ExecutionContext("pipeline-if", null, null, execManager);
+        var ctx = new ExecutionContext(UUID.randomUUID(), "pipeline-if", null, null, execManager, null);
 
         ConstantOperation yesOp = new ConstantOperation("yes-op", "YES");
         ConstantOperation noOp = new ConstantOperation("no-op", "NO");

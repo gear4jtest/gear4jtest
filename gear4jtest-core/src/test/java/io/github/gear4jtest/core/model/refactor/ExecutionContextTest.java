@@ -30,7 +30,7 @@ class ExecutionContextTest {
         String pipelineId = "pipe-123";
 
         ExecutionContext context =
-                new ExecutionContext(pipelineId, eventManager, resourceFactory, pipelineExecutionManager);
+                new ExecutionContext(UUID.randomUUID(), pipelineId, eventManager, resourceFactory, pipelineExecutionManager, null);
 
         assertThat(context.getPipelineId()).isEqualTo(pipelineId);
         assertThat(context.getExecutionId()).isNotNull()
@@ -45,7 +45,7 @@ class ExecutionContextTest {
     @Test
     void putAndGet_shouldStoreAndRetrieveTypedValues() {
         ExecutionContext context =
-                new ExecutionContext("pipe", eventManager, resourceFactory, pipelineExecutionManager);
+                new ExecutionContext(UUID.randomUUID(), "pipe", eventManager, resourceFactory, pipelineExecutionManager, null);
 
         context.put("int", 42);
         context.put("str", "hello");
