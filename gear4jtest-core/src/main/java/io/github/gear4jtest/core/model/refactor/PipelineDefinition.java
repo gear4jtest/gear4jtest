@@ -40,7 +40,7 @@ public class PipelineDefinition<IN, OUT> extends AbstractOperationDefinition<IN,
 		}
 		Collection<Object> results = new ArrayList<>();
 		for (Object element: collection) {
-			var result = assemblyLineDefinition.execute(element, context.getContext(), context.getResourceFactory());
+			var result = assemblyLineDefinition.execute(element, context.getContext(), context.getResourceFactory(), context.getExecutionManager());
 
 			if (!result.isSuccess()) {
 				return null;

@@ -60,7 +60,7 @@ public final class ElementModelBuilders {
 	}
 
 	public static <T> AssemblyLineDefinition.Builder<T, T> createAssemblyLine(String identifier) {
-		return AssemblyLineDefinition.Builder.<T, T>create().id(identifier);
+		return AssemblyLineDefinition.builder(identifier);
 	}
 
 	public static <A, B, T extends Transformer<A, B>> ProcessingOperationDefinition.Builder<A, B, T> processingOperation(String id, Class<T> step) {
@@ -97,8 +97,8 @@ public final class ElementModelBuilders {
 		return new UnaryIfElseContainerDefinition.Builder<>();
 	}
 
-	public static Configuration.ConfigBuilder configuration() {
-		return new Configuration.ConfigBuilder();
+	public static Configuration.Builder configuration() {
+		return new Configuration.Builder();
 	}
 
 	public static OperationConfigurationDefinition.Builder operationConfiguration() {

@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.model.refactor;
 import java.util.Map;
 import java.util.Optional;
 
+import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.persistence.InMemoryPipelineExecutionRepository;
 import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
@@ -66,9 +67,7 @@ class AssemblyLineDefinitionIntegrationTest {
         // ----------- Définition de la pipeline / assembly line -----------
 
         AssemblyLineDefinition.Builder<String, String> lineBuilder =
-                AssemblyLineDefinition.<String, String>builder()
-                        .id("test-line")
-                        .resourceFactory(factory);
+                AssemblyLineDefinition.builder("test-line");
 
         AssemblyLineDefinition<String, String> line = lineBuilder
                 .then(upperOp)
@@ -78,7 +77,7 @@ class AssemblyLineDefinitionIntegrationTest {
         // ----------- Exécution -----------
 
         ExecutionResult<String> result =
-                line.execute("hello", Map.of(), factory);
+                line.execute("hello", Map.of(), factory, new InMemoryExecutionManager());
 
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.getResult()).isEqualTo("HELLO!");

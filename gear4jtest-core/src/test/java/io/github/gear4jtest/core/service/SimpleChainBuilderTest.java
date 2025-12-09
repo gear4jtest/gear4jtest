@@ -17,6 +17,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.exception.AssemblyLineException;
+import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
+import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
 import io.github.gear4jtest.core.model.refactor.ExecutionResult;
@@ -143,7 +145,7 @@ public class SimpleChainBuilderTest {
 		};
 
 		// When
-		ExecutionResult<List<List<String>>> result = assemblyLine.execute("b", context, new TestResourceFactory());
+		ExecutionResult<List<List<String>>> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
 
 		// Then
 		assertThat(result).isNotNull()
@@ -196,7 +198,7 @@ public class SimpleChainBuilderTest {
 		};
 
 		// When
-		ExecutionResult<List<List<String>>> result = assemblyLine.execute("b", context, new TestResourceFactory());
+		ExecutionResult<List<List<String>>> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
 
 		// Then
 		assertThat(result).isNotNull()
@@ -213,7 +215,7 @@ public class SimpleChainBuilderTest {
 	}
 
 	@Test
-	public void test_v2_with_datasource() throws AssemblyLineException, JsonProcessingException {
+	public void test_v2_with_datasource() {
 		// Given
 		PGSimpleDataSource dataSource = new PGSimpleDataSource();
 		dataSource.setUser("postgres");
@@ -248,9 +250,6 @@ public class SimpleChainBuilderTest {
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
 						.persistence(persistenceConfiguration()
-								.persistenceType(PersistenceConfiguration.PersistenceType.DATABASE)
-								.dataSource(dataSource)
-								.dataSourceType(PersistenceConfiguration.DataSourceType.POSTGRESQL)
 								.storeResultObject(true)
 								.build())
 						.build())
@@ -263,7 +262,8 @@ public class SimpleChainBuilderTest {
 		};
 
 		// When
-		ExecutionResult<List<List<String>>> result = assemblyLine.execute("b", context, new TestResourceFactory());
+		ExecutionResult<List<List<String>>> result =
+				assemblyLine.execute("b", context, new TestResourceFactory(), new DatabaseExecutionManager(dataSource));
 
 		// Then
 		assertThat(result).isNotNull()
@@ -360,7 +360,7 @@ public class SimpleChainBuilderTest {
 		};
 
 		// When
-		ExecutionResult<List<String>> result = assemblyLine.execute("b", context, new TestResourceFactory());
+		ExecutionResult<List<String>> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
 
 		// Then
 		assertThat(result)
@@ -402,7 +402,7 @@ public class SimpleChainBuilderTest {
 		};
 
 		// When
-		ExecutionResult<List<String>> result = assemblyLine.execute("b", context, new TestResourceFactory());
+		ExecutionResult<List<String>> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
 
 		// Then
 		assertThat(result)
@@ -448,7 +448,7 @@ public class SimpleChainBuilderTest {
 		};
 
 		// When
-		ExecutionResult<String> result = assemblyLine.execute("b", context, new TestResourceFactory());
+		ExecutionResult<String> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
 
 		// Then
 		assertThat(result)

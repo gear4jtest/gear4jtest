@@ -1,71 +1,37 @@
 package io.github.gear4jtest.core.model.refactor;
 
-import javax.sql.DataSource;
-
 public class PersistenceConfiguration {
-    private PersistenceType persistenceType;
-    private DataSource dataSource;
-    private DataSourceType dataSourceType;
-    private boolean storeResultObject;
 
-    public PersistenceConfiguration() {
-    }
+    // On garde ça : Est-ce qu'on veut stocker le JSON du résultat final ?
+    // C'est un choix métier (coût stockage vs auditabilité).
+    private final boolean storeResultObject;
 
-    public DataSource getDataSource() {
-        return dataSource;
+    // On pourrait ajouter d'autres options de "tuning" ici :
+    // private final boolean storeIntermediateSteps; (Garder le détail des opérations ou juste le résumé ?)
+    // private final int flushThreshold; (Pour la performance spécifique de ce pipeline)
+
+    private PersistenceConfiguration(boolean storeResultObject) {
+        this.storeResultObject = storeResultObject;
     }
 
     public boolean isStoreResultObject() {
         return storeResultObject;
     }
 
-    public DataSourceType getDataSourceType() {
-        return dataSourceType;
-    }
-
-    public PersistenceType getPersistenceType() {
-        return persistenceType;
+    public static Builder builder() {
+        return new Builder();
     }
 
     public static class Builder {
+        private boolean storeResultObject = true; // Valeur par défaut
 
-        private final PersistenceConfiguration managedInstance;
-
-        public Builder() {
-            managedInstance = new PersistenceConfiguration();
-        }
-
-        public PersistenceConfiguration.Builder persistenceType(PersistenceType persistenceType) {
-            managedInstance.persistenceType = persistenceType;
-            return this;
-        }
-
-        public PersistenceConfiguration.Builder dataSource(DataSource dataSource) {
-            managedInstance.dataSource = dataSource;
-            return this;
-        }
-
-        public PersistenceConfiguration.Builder storeResultObject(boolean storeResultObject) {
-            managedInstance.storeResultObject = storeResultObject;
-            return this;
-        }
-
-        public PersistenceConfiguration.Builder dataSourceType(DataSourceType dataSourceType) {
-            managedInstance.dataSourceType = dataSourceType;
+        public Builder storeResultObject(boolean storeResultObject) {
+            this.storeResultObject = storeResultObject;
             return this;
         }
 
         public PersistenceConfiguration build() {
-            return managedInstance;
+            return new PersistenceConfiguration(storeResultObject);
         }
-
-    }
-
-    public enum DataSourceType {
-        H2, MYSQL, POSTGRESQL
-    }
-
-    public enum PersistenceType {
-        IN_MEMORY, DATABASE
     }
 }

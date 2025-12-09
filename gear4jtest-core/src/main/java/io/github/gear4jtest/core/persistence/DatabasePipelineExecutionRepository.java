@@ -1,23 +1,33 @@
 package io.github.gear4jtest.core.persistence;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class DatabasePipelineExecutionRepository implements PipelineExecutionRepository {
+
+    private static final String SCRIPT_POSTGRES = "/io/github/gear4j/db/postgresql/gear4j_schema.sql";
+    private static final String SCRIPT_MYSQL = "/io/github/gear4j/db/mysql/gear4j_schema.sql";
+    private static final String SCRIPT_H2 = "/io/github/gear4j/db/h2/gear4j_schema.sql";
+
     private final DataSource dataSource;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -27,42 +37,82 @@ public class DatabasePipelineExecutionRepository implements PipelineExecutionRep
 
     @Override
     public void initialize() {
-        boolean doesPipelineExecutionTableExist = false;
-        boolean doesOperationExecutionTableExist = false;
         try (Connection conn = dataSource.getConnection()) {
-            DatabaseMetaData databaseMetaData = conn.getMetaData();
-            ResultSet resultSet = databaseMetaData.getTables(null, null, null, new String[] {"TABLE"});
+            if (isSchemaInitialized(conn)) {
+                return;
+            }
 
-            while (resultSet.next()) {
-                String name = resultSet.getString("TABLE_NAME");
-                String schema = resultSet.getString("TABLE_SCHEM");
-                System.out.println(name + " on schema " + schema);
-
-                if (name.equals("pipeline_executions")) {
-                    doesPipelineExecutionTableExist = true;
-                } else if (name.equals("operation_executions")) {
-                    doesOperationExecutionTableExist = true;
-                }
-            }
-            if (!doesPipelineExecutionTableExist) {
-                createPipelineExecutionTable(conn, "/sql/pipeline_executions_schema.sql");
-            }
-            if (!doesOperationExecutionTableExist) {
-                createPipelineExecutionTable(conn, "/sql/operation_executions_schema.sql");
-            }
+            String scriptPath = resolveScriptPath(conn);
+            System.out.println("[Gear4J] Initializing schema using script: " + scriptPath);
+            executeScript(conn, scriptPath);
         } catch (SQLException | IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error while initializing Gear4J schema", e);
         }
     }
 
-    private void createPipelineExecutionTable(Connection conn, String schemaPath) throws IOException {
-        try (InputStream is = getClass().getResourceAsStream(schemaPath)) {
-            String createPipelineExecutionSQL = new String(is.readAllBytes());
+    /**
+     * Vérifie simplement si la table principale 'pipeline_executions' existe déjà.
+     * C'est le marqueur pour savoir si on doit lancer le script ou non.
+     */
+    private boolean isSchemaInitialized(Connection conn) throws SQLException {
+        DatabaseMetaData meta = conn.getMetaData();
 
-            try (PreparedStatement stmt1 = conn.prepareStatement(createPipelineExecutionSQL)) {
-                stmt1.executeUpdate();
-            } catch (SQLException e) {
-                throw new RuntimeException("Error creating tables", e);
+        // On teste en minuscule et majuscule car selon les DB ça change
+        return tableExists(meta, "pipeline_executions") || tableExists(meta, "PIPELINE_EXECUTIONS");
+    }
+
+    private boolean tableExists(DatabaseMetaData meta, String tableName) throws SQLException {
+        try (ResultSet rs = meta.getTables(null, null, tableName, null)) {
+            return rs.next();
+        }
+    }
+
+    /**
+     * Détecte le type de base de données et retourne le bon script SQL.
+     */
+    private String resolveScriptPath(Connection conn) throws SQLException {
+        String dbProductName = conn.getMetaData().getDatabaseProductName().toLowerCase();
+
+        if (dbProductName.contains("postgresql")) {
+            return SCRIPT_POSTGRES;
+        } else if (dbProductName.contains("mysql") || dbProductName.contains("mariadb")) {
+            return SCRIPT_MYSQL;
+        } else if (dbProductName.contains("h2")) {
+            return SCRIPT_H2;
+        } else {
+            // Fallback par défaut (H2) ou Exception selon ta politique
+            System.err.println("[Gear4J] Unknown database '" + dbProductName + "'. Falling back to H2 script.");
+            return SCRIPT_H2;
+        }
+    }
+
+    /**
+     * Lit et exécute le script SQL statement par statement.
+     */
+    private void executeScript(Connection conn, String scriptPath) throws IOException, SQLException {
+        try (InputStream is = getClass().getResourceAsStream(scriptPath)) {
+            if (is == null) {
+                throw new IOException("Script file not found in classpath: " + scriptPath);
+            }
+
+            // Lecture du fichier complet
+            String scriptContent;
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                scriptContent = reader.lines().collect(Collectors.joining("\n"));
+            }
+
+            // Découpage naïf par point-virgule pour exécuter instruction par instruction
+            // (Tes scripts sont simples, donc ça suffit largement)
+            String[] statements = scriptContent.split(";");
+
+            try (Statement stmt = conn.createStatement()) {
+                for (String sql : statements) {
+                    String trimmedSql = sql.trim();
+                    if (trimmedSql.isEmpty()) {
+                        continue;
+                    }
+                    stmt.execute(trimmedSql);
+                }
             }
         }
     }

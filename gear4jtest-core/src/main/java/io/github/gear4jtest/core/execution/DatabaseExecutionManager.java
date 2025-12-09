@@ -34,13 +34,15 @@ public class DatabaseExecutionManager implements PipelineExecutionManager {
     private final int flushThreshold;
 
     public DatabaseExecutionManager(DataSource dataSource) {
-        this(dataSource, 500); // par défaut : flush tous les 500 records
+        this(dataSource, 500, true); // par défaut : flush tous les 500 records
     }
 
-    public DatabaseExecutionManager(DataSource dataSource, int flushThreshold) {
+    public DatabaseExecutionManager(DataSource dataSource, int flushThreshold, boolean autoCreateTables) {
         this.repository = new DatabasePipelineExecutionRepository(dataSource);
-        this.repository.initialize();
         this.flushThreshold = flushThreshold;
+        if (autoCreateTables) {
+            this.repository.initialize();
+        }
     }
 
     @Override

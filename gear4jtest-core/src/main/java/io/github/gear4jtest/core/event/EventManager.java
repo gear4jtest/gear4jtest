@@ -18,7 +18,7 @@ public class EventManager {
 	}
 
 	private void initializeEventBusses() {
-		if (eventBusList != null && !eventBusList.isEmpty()) {
+		if (eventBusList != null) {
 			for (EventBus eventBus : eventBusList) {
 				if (eventBus != null) {
 					var thread = new Thread(eventBus);
