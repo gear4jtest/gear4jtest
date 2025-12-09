@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://github.com/gear4jtest/core/model"
+           xmlns:tns="http://github.com/gear4jtest/core/model"
+           elementFormDefault="qualified">
+
+<!--     Root Element-->
+<!--    <xs:element name="assemblyLine" type="tns:AssemblyLineType">-->
+        <!-- Contrainte d'unicité simplifiée pour tous les IDs d'opérations -->
+<!--        <xs:unique name="uniqueOperationId">-->
+<!--            <xs:selector xpath=".//tns:operation"/>-->
+<!--            <xs:field xpath="@id"/>-->
+<!--        </xs:unique>-->
+<!--    </xs:element>-->
+
+    <!-- Assembly Line Definition -->
+    <xs:element name="assemblyLine">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="operations" type="tns:OperationsType"/>
+                <xs:element name="configuration" type="tns:ConfigurationType" minOccurs="0"/>
+                <xs:element name="dependencies" type="tns:DependenciesType" minOccurs="0"/>
+            </xs:sequence>
+            <xs:attribute name="id" type="xs:string" use="required"/>
+            <xs:attribute name="description" type="xs:string"/>
+            <xs:attribute name="inputType" type="xs:string" use="required"/>
+            <xs:attribute name="outputType" type="xs:string" use="required"/>
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Operations Container simplifié -->
+    <xs:complexType name="OperationsType">
+        <xs:sequence maxOccurs="unbounded">
+            <xs:element name="processingOperation" type="tns:ProcessingOperationType"/>
+            <xs:element name="iterator" type="tns:IteratorType"/>
+            <xs:element name="container" type="tns:ContainerType"/>
+            <xs:element name="ifElseContainer" type="tns:IfElseContainerType"/>
+            <xs:element name="signal" type="tns:SignalType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="OperationType">
+        <xs:choice maxOccurs="1">
+            <xs:element name="processingOperation" type="tns:ProcessingOperationType"/>
+            <xs:element name="iterator" type="tns:IteratorType"/>
+            <xs:element name="container" type="tns:ContainerType"/>
+            <xs:element name="ifElseContainer" type="tns:IfElseContainerType"/>
+            <xs:element name="signal" type="tns:SignalType"/>
+        </xs:choice>
+    </xs:complexType>
+
+    <!-- Élément de base pour toutes les opérations -->
+    <xs:element name="operation" type="tns:BaseOperationType"/>
+
+    <!-- Éléments spécialisés qui peuvent substituer l'élément de base -->
+    <xs:element name="processingOperation" type="tns:ProcessingOperationType" substitutionGroup="tns:operation"/>
+    <xs:element name="iterator" type="tns:IteratorType" substitutionGroup="tns:operation"/>
+    <xs:element name="container" type="tns:ContainerType" substitutionGroup="tns:operation"/>
+    <xs:element name="ifElseContainer" type="tns:IfElseContainerType" substitutionGroup="tns:operation"/>
+    <xs:element name="signal" type="tns:SignalType" substitutionGroup="tns:operation"/>
+
+    <!-- Type de base pour toutes les opérations -->
+    <xs:complexType name="BaseOperationType" abstract="true">
+        <xs:attribute name="id" type="xs:ID" use="required"/>
+    </xs:complexType>
+
+    <!-- Processing Operation -->
+    <xs:complexType name="ProcessingOperationType">
+        <xs:complexContent>
+            <xs:extension base="tns:BaseOperationType">
+                <xs:sequence>
+                    <xs:element name="parameters" type="tns:ParametersType" minOccurs="0"/>
+                    <xs:element name="onErrors" type="tns:OnErrorsType" minOccurs="0"/>
+                    <xs:element name="conditions" type="tns:ConditionsType" minOccurs="0"/>
+                    <xs:element name="fallbackTransformer" type="tns:TransformerType" minOccurs="0"/>
+                </xs:sequence>
+                <xs:attribute name="type" type="xs:string" use="required"/>
+                <xs:attribute name="inputType" type="xs:string"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!-- Parameters -->
+    <xs:complexType name="ParametersType">
+        <xs:choice maxOccurs="unbounded">
+            <xs:element name="valueParameter" type="tns:ValueParameterType"/>
+            <xs:element name="supplierParameter" type="tns:SupplierParameterType"/>
+            <xs:element name="contextParameter" type="tns:ContextParameterType"/>
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="ValueParameterType">
+        <xs:attribute name="retriever" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+        <xs:attribute name="valueType" type="xs:string" default="java.lang.String"/>
+    </xs:complexType>
+
+    <xs:complexType name="SupplierParameterType">
+        <xs:attribute name="retriever" type="xs:string" use="required"/>
+        <xs:attribute name="supplier" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="ContextParameterType">
+        <xs:attribute name="retriever" type="xs:string" use="required"/>
+        <xs:attribute name="function" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <!-- Error Handling -->
+    <xs:complexType name="OnErrorsType">
+        <xs:choice maxOccurs="unbounded">
+            <xs:element name="safeError" type="tns:SafeErrorType"/>
+            <xs:element name="unsafeError" type="tns:UnsafeErrorType"/>
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="SafeErrorType">
+        <xs:sequence>
+            <xs:element name="condition" type="tns:ConditionType" minOccurs="0"/>
+            <xs:element name="action" type="tns:ActionType" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="signalType" type="tns:SignalTypeEnum" use="required"/>
+        <xs:attribute name="throwableType" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="UnsafeErrorType">
+        <xs:sequence>
+            <xs:element name="condition" type="tns:ConditionType" minOccurs="0"/>
+            <xs:element name="action" type="tns:ActionType" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="signalType" type="tns:SignalTypeEnum" use="required"/>
+        <xs:attribute name="throwableType" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <!-- Conditions -->
+    <xs:complexType name="ConditionsType">
+        <xs:sequence>
+            <xs:element name="condition" type="tns:ConditionType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="ConditionType">
+        <xs:attribute name="expression" type="xs:string" use="required"/>
+        <xs:attribute name="description" type="xs:string"/>
+    </xs:complexType>
+
+    <!-- Action -->
+    <xs:complexType name="ActionType">
+        <xs:attribute name="expression" type="xs:string" use="required"/>
+        <xs:attribute name="description" type="xs:string"/>
+    </xs:complexType>
+
+    <!-- Transformer -->
+    <xs:complexType name="TransformerType">
+        <xs:attribute name="expression" type="xs:string" use="required"/>
+        <xs:attribute name="inputType" type="xs:string"/>
+        <xs:attribute name="outputType" type="xs:string"/>
+    </xs:complexType>
+
+    <!-- Iterator -->
+    <xs:complexType name="IteratorType">
+        <xs:complexContent>
+            <xs:extension base="tns:BaseOperationType">
+                <xs:sequence>
+                    <xs:element name="iterableFunction" type="tns:FunctionType"/>
+                    <xs:element name="operation" type="tns:OperationType"/>
+                    <xs:choice minOccurs="0">
+                        <xs:element name="accumulator" type="tns:AccumulatorType"/>
+                        <xs:element name="collector" type="tns:CollectorType"/>
+                    </xs:choice>
+                </xs:sequence>
+                <xs:attribute name="inputType" type="xs:string"/>
+                <xs:attribute name="outputType" type="xs:string"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="FunctionType">
+        <xs:attribute name="expression" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="xs:string" default="Function.identity()"/>
+    </xs:complexType>
+
+    <xs:complexType name="AccumulatorType">
+        <xs:attribute name="type" type="tns:AccumulatorTypeEnum" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="CollectorType">
+        <xs:attribute name="expression" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <!-- Container -->
+    <xs:complexType name="ContainerType">
+        <xs:complexContent>
+            <xs:extension base="tns:BaseOperationType">
+                <xs:sequence>
+                    <xs:element name="subLines" type="tns:SubLinesType"/>
+                    <xs:element name="returnsFunction" type="tns:ContainerFunctionType"/>
+                </xs:sequence>
+                <xs:attribute name="inputType" type="xs:string" use="required"/>
+                <xs:attribute name="outputType" type="xs:string" use="required"/>
+                <xs:attribute name="parallel" type="xs:boolean" default="false"/>
+                <xs:attribute name="threadPoolSize" type="xs:int"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="SubLinesType">
+        <xs:sequence>
+            <xs:element name="subLine" type="tns:SubLineType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="SubLineType">
+        <xs:sequence>
+            <xs:element name="condition" type="tns:ConditionType" minOccurs="0"/>
+            <xs:element ref="tns:operation"/>
+        </xs:sequence>
+        <xs:attribute name="id" type="xs:string"/>
+    </xs:complexType>
+
+    <xs:complexType name="ContainerFunctionType">
+        <xs:attribute name="expression" type="xs:string" use="required"/>
+        <xs:attribute name="description" type="xs:string"/>
+    </xs:complexType>
+
+    <!-- If-Else Container -->
+    <xs:complexType name="IfElseContainerType">
+        <xs:complexContent>
+            <xs:extension base="tns:BaseOperationType">
+                <xs:sequence>
+                    <xs:element name="conditionalOperations" type="tns:ConditionalOperationsType"/>
+                    <xs:element name="elseOperation" type="tns:ProcessingOperationType" minOccurs="0"/>
+                </xs:sequence>
+                <xs:attribute name="inputType" type="xs:string" use="required"/>
+                <xs:attribute name="outputType" type="xs:string" use="required"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="ConditionalOperationsType">
+        <xs:sequence>
+            <xs:element name="conditionalOperation" type="tns:ConditionalOperationType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="ConditionalOperationType">
+        <xs:sequence>
+            <xs:element name="condition" type="tns:ConditionType"/>
+            <xs:element name="operation" type="tns:ProcessingOperationType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- Signal -->
+    <xs:complexType name="SignalType">
+        <xs:complexContent>
+            <xs:extension base="tns:BaseOperationType">
+                <xs:sequence>
+                    <xs:element name="condition" type="tns:ConditionType" minOccurs="0"/>
+                </xs:sequence>
+                <xs:attribute name="type" type="tns:SignalTypeEnum" use="required"/>
+                <xs:attribute name="inputType" type="xs:string"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!-- Configuration -->
+    <xs:complexType name="ConfigurationType">
+        <xs:sequence>
+            <xs:element name="operationDefaultConfiguration" type="tns:OperationConfigurationType" minOccurs="0"/>
+            <xs:element name="eventHandling" type="tns:EventHandlingType" minOccurs="0"/>
+            <xs:element name="persistence" type="tns:PersistenceConfigurationType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="OperationConfigurationType">
+        <xs:sequence>
+            <xs:element name="transformer" type="tns:TransformerType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- Event Handling -->
+    <xs:complexType name="EventHandlingType">
+        <xs:sequence>
+            <xs:element name="eventBuses" type="tns:EventBusesType" minOccurs="0"/>
+            <xs:element name="globalEventConfiguration" type="tns:GlobalEventConfigurationType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="EventBusesType">
+        <xs:sequence>
+            <xs:element name="eventBus" type="tns:EventBusType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="EventBusType">
+        <xs:sequence>
+            <xs:element name="eventListeners" type="tns:EventListenersType" minOccurs="0"/>
+            <xs:element name="filters" type="tns:FiltersType" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="xs:string" default="SimpleEventBus"/>
+    </xs:complexType>
+
+    <xs:complexType name="EventListenersType">
+        <xs:sequence>
+            <xs:element name="eventListener" type="tns:EventListenerType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="EventListenerType">
+        <xs:attribute name="class" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="FiltersType">
+        <xs:sequence>
+            <xs:element name="filter" type="tns:FilterType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="FilterType">
+        <xs:attribute name="class" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="GlobalEventConfigurationType">
+        <xs:attribute name="eventOnParameterChanged" type="xs:boolean" default="false"/>
+    </xs:complexType>
+
+    <!-- Persistence Configuration -->
+    <xs:complexType name="PersistenceConfigurationType">
+        <xs:sequence>
+            <xs:element name="dataSource" type="tns:DataSourceType" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="persistenceType" type="tns:PersistenceTypeEnum" use="required"/>
+        <xs:attribute name="dataSourceType" type="tns:DataSourceTypeEnum"/>
+        <xs:attribute name="storeResultObject" type="xs:boolean" default="false"/>
+    </xs:complexType>
+
+    <xs:complexType name="DataSourceType">
+        <xs:sequence>
+            <xs:element name="property" type="tns:PropertyType" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="class" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="PropertyType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <!-- Enumerations -->
+    <xs:simpleType name="OperationTypeEnum">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="PROCESSING"/>
+            <xs:enumeration value="ITERATOR"/>
+            <xs:enumeration value="CONTAINER"/>
+            <xs:enumeration value="IF_ELSE_CONTAINER"/>
+            <xs:enumeration value="SIGNAL"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="SignalTypeEnum">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="STOP"/>
+            <xs:enumeration value="FATAL"/>
+            <xs:enumeration value="IGNORE"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="AccumulatorTypeEnum">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="LIST"/>
+            <xs:enumeration value="SET"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="PersistenceTypeEnum">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="IN_MEMORY"/>
+            <xs:enumeration value="DATABASE"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="DataSourceTypeEnum">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="H2"/>
+            <xs:enumeration value="MYSQL"/>
+            <xs:enumeration value="POSTGRESQL"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- Dependencies -->
+    <xs:complexType name="DependenciesType">
+        <xs:sequence maxOccurs="unbounded">
+            <xs:element name="dependency" type="tns:DependencyType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="DependencyType">
+        <xs:attribute name="name" type="xs:string" />
+        <xs:attribute name="type" type="xs:string" />
+    </xs:complexType>
+
+</xs:schema>

@@ -1,0 +1,7 @@
+dependencies {
+    implementation project(':gear4jtest-core')
+
+    implementation group: 'org.eclipse.jdt', name: 'org.eclipse.jdt.core', version: '3.43.0'
+}
+
+ext.moduleName = 'io.test.gear4jtest.external-api'
