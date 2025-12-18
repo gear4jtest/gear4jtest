@@ -5,7 +5,6 @@ import java.util.List;
 
 import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.event.EventBusFilter;
-import io.github.gear4jtest.core.model.refactor.EventBus;
 
 public class SimpleBusDefinition {
 

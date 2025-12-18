@@ -7,9 +7,9 @@ import java.util.function.Supplier;
 
 import io.github.gear4jtest.core.exception.SideComputeExecutionException;
 import io.github.gear4jtest.core.exception.SideComputeTimeoutException;
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationExecutionContext;
-import io.github.gear4jtest.core.model.refactor.Processor;
+import io.github.gear4jtest.core.model.ExecutionContext;
+import io.github.gear4jtest.core.model.StationExecutionContext;
+import io.github.gear4jtest.core.model.Processor;
 
 public final class SideComputeWaitProcessor implements Processor {
 
@@ -74,7 +74,7 @@ public final class SideComputeWaitProcessor implements Processor {
     }
 
     @Override
-    public <I> void beforeExecution(I input, OperationExecutionContext opCtx) {
+    public <I> void beforeExecution(I input, StationExecutionContext opCtx) {
         ExecutionContext execCtx = opCtx.getGlobalContext();
         var future = execCtx.getSideComputeContext().getOrCreateFuture(key);
 
@@ -110,7 +110,7 @@ public final class SideComputeWaitProcessor implements Processor {
     }
 
     @Override
-    public void afterExecution(Object result, OperationExecutionContext context) {
+    public void afterExecution(Object result, StationExecutionContext context) {
         // Rien ici – la valeur est dans le context global, dispo pour les paramètres.
     }
 }

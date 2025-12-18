@@ -1,13 +1,13 @@
 package io.github.gear4jtest.core.service.steps;
 
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationExecutionContext;
-import io.github.gear4jtest.core.model.refactor.Transformer;
+import io.github.gear4jtest.core.model.ExecutionContext;
+import io.github.gear4jtest.core.model.StationExecutionContext;
+import io.github.gear4jtest.core.model.Operator;
 
-public class Step5 implements Transformer<Void, String> {
+public class Step5 implements Operator<Void, String> {
 
 	@Override
-	public String transform(Void object, ExecutionContext context, OperationExecutionContext operationExecution) {
+	public String transform(Void object, ExecutionContext context, StationExecutionContext operationExecution) {
 		return "b";
 	}
 

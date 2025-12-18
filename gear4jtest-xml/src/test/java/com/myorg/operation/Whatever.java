@@ -3,15 +3,11 @@ package com.myorg.operation;
 
 import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
 
-import com.myorg.operation.Step10;
-import com.myorg.operation.Step3;
-import com.myorg.operation.Step8;
-import com.myorg.operation.Step9;
 import com.myorg.services.ModelsService;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
-import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
-import io.github.gear4jtest.core.model.refactor.IteratorDefinition;
-import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
+import io.github.gear4jtest.core.model.AssemblyLine;
+import io.github.gear4jtest.core.model.IteratorDefinition;
+import io.github.gear4jtest.core.model.WorkStation;
 import io.test.gear4test.xml.generator.GeneratedAssemblyLine;
 import java.lang.Integer;
 import java.lang.Override;
@@ -38,7 +34,7 @@ public final class Whatever implements GeneratedAssemblyLine {
      * Crée l'opération de traitement 'step3'
      * @return l'opération configurée
      */
-    private ProcessingOperationDefinition<String, Map<String, String>> createProcessingStep3() {
+    private WorkStation<String, Map<String, String>> createProcessingStep3() {
         return processingOperation("step3", Step3.class)
             .parameter(Step3::getParam, "a")
             .onError(ElementModelBuilders.<String>ignore(Exception.class)
@@ -54,7 +50,7 @@ public final class Whatever implements GeneratedAssemblyLine {
      * Crée l'opération de traitement 'step8'
      * @return l'opération configurée
      */
-    private ProcessingOperationDefinition<Map<String, String>, Integer> createProcessingStep8() {
+    private WorkStation<Map<String, String>, Integer> createProcessingStep8() {
         return processingOperation("step8", Step8.class)
             .build();
     }
@@ -63,7 +59,7 @@ public final class Whatever implements GeneratedAssemblyLine {
      * Crée l'opération de traitement 'step9'
      * @return l'opération configurée
      */
-    private ProcessingOperationDefinition<Integer, List<Integer>> createProcessingStep9() {
+    private WorkStation<Integer, List<Integer>> createProcessingStep9() {
         return processingOperation("step9", Step9.class)
             .build();
     }
@@ -80,7 +76,7 @@ public final class Whatever implements GeneratedAssemblyLine {
      * Crée la configuration de l'AssemblyLine
      * @return la configuration
      */
-    private AssemblyLineDefinition.Configuration createConfiguration() {
+    private AssemblyLine.Configuration createConfiguration() {
         return configuration()
             .eventHandling(eventHandling().build())
             .build();
@@ -91,7 +87,7 @@ public final class Whatever implements GeneratedAssemblyLine {
      * @return l'AssemblyLine configurée
      */
     @Override
-    public AssemblyLineDefinition<String, List<List<String>>> getAssemblyLineDefinition() {
+    public AssemblyLine<String, List<List<String>>> getAssemblyLineDefinition() {
         return ElementModelBuilders.<String>createAssemblyLine("test")
             .then(createProcessingStep3())
             .then(createProcessingStep8())
@@ -109,7 +105,7 @@ public final class Whatever implements GeneratedAssemblyLine {
          * Crée l'opération de traitement 'step10'
          * @return l'opération configurée
          */
-        private ProcessingOperationDefinition<Integer, List<String>> createProcessingStep10() {
+        private WorkStation<Integer, List<String>> createProcessingStep10() {
             return processingOperation("step10", Step10.class)
                 .build();
         }

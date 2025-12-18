@@ -3,8 +3,6 @@ package io.github.gear4jtest.core.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.github.gear4jtest.core.model.refactor.EventBus;
-
 public class EventHandlingDefinition {
 
 	private final List<EventBus> eventBuses;

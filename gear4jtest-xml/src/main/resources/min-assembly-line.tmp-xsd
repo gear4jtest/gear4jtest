@@ -185,7 +185,7 @@ xmlns:tns="http://github.com/gear4jtest/core/model" elementFormDefault="qualifie
 </xs:complexType>
 <xs:complexType name="OperationConfigurationType">
 <xs:sequence>
-<xs:element name="transformer" type="tns:TransformerType" minOccurs="0"/>
+<xs:element name="operator" type="tns:TransformerType" minOccurs="0"/>
 </xs:sequence>
 </xs:complexType><!-- Event Handling -->
 <xs:complexType name="EventHandlingType">

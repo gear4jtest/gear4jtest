@@ -273,7 +273,7 @@
 
     <xs:complexType name="OperationConfigurationType">
         <xs:sequence>
-            <xs:element name="transformer" type="tns:TransformerType" minOccurs="0"/>
+            <xs:element name="operator" type="tns:TransformerType" minOccurs="0"/>
         </xs:sequence>
     </xs:complexType>
 

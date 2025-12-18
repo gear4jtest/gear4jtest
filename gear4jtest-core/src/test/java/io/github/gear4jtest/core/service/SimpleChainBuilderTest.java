@@ -13,7 +13,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.exception.AssemblyLineException;
@@ -21,12 +20,11 @@ import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
-import io.github.gear4jtest.core.model.refactor.ExecutionResult;
-import io.github.gear4jtest.core.model.refactor.PersistenceConfiguration;
-import io.github.gear4jtest.core.persistence.DatabasePipelineExecutionRepository;
+import io.github.gear4jtest.core.model.ExecutionResult;
+import io.github.gear4jtest.core.persistence.DatabaseAssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
-import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
-import io.github.gear4jtest.core.persistence.PipelineExecution;
+import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.persistence.AssemblyRun;
 import io.github.gear4jtest.core.service.steps.Step10;
 import io.github.gear4jtest.core.service.steps.Step11;
 import io.github.gear4jtest.core.service.steps.Step12;
@@ -40,7 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
 
 import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
-import static io.github.gear4jtest.core.persistence.OperationExecutionRecord.Status;
+import static io.github.gear4jtest.core.persistence.StationLog.Status;
 import static org.assertj.core.api.Assertions.*;
 
 // handle factory for step / processor... configuration
@@ -276,17 +274,17 @@ public class SimpleChainBuilderTest {
 				.asList()
 				.contains("");
 
-		var pipelineExecution = new DatabasePipelineExecutionRepository(dataSource).findById(result.getExecution().getId());
+		var pipelineExecution = new DatabaseAssemblyRunRepository(dataSource).findById(result.getExecution().getId());
 		assertThat(pipelineExecution)
 				.isPresent()
 				.get()
 				.extracting(
-						PipelineExecution::getId,
-						PipelineExecution::getPipelineId,
-						PipelineExecution::getInputParams,
-						PipelineExecution::getContext,
-						PipelineExecution::getResult,
-						PipelineExecution::getStatus)
+						AssemblyRun::getId,
+						AssemblyRun::getPipelineId,
+						AssemblyRun::getInputParams,
+						AssemblyRun::getContext,
+						AssemblyRun::getResult,
+						AssemblyRun::getStatus)
 				.containsExactly(
 						result.getExecution().getId(),
 						"test",
@@ -297,16 +295,16 @@ public class SimpleChainBuilderTest {
 		assertThat(pipelineExecution)
 				.isPresent()
 				.get()
-				.extracting(PipelineExecution::getOperations)
+				.extracting(AssemblyRun::getOperations)
 				.asList()
 				.hasSize(4)
-				.asInstanceOf(InstanceOfAssertFactories.list(OperationExecutionRecord.class))
+				.asInstanceOf(InstanceOfAssertFactories.list(StationLog.class))
 				.extracting(
-						OperationExecutionRecord::getPipelineExecutionId,
-						OperationExecutionRecord::getOperationId,
-						OperationExecutionRecord::getParentOperationId,
-						OperationExecutionRecord::getStatus,
-						OperationExecutionRecord::getContext)
+						StationLog::getPipelineExecutionId,
+						StationLog::getOperationId,
+						StationLog::getParentOperationId,
+						StationLog::getStatus,
+						StationLog::getContext)
 				.containsExactly(
 						tuple(result.getExecution().getId().toString(), "step3", null, Status.SUCCEEDED, null),
 						tuple(result.getExecution().getId().toString(), "step8", null, Status.SUCCEEDED, null),
@@ -315,15 +313,15 @@ public class SimpleChainBuilderTest {
 		var iteratorExecutionRecord = getRecordByOperationId(pipelineExecution.get().getOperations(), "iterator");
 		assertThat(iteratorExecutionRecord.getSubOperations())
 				.extracting(
-						OperationExecutionRecord::getPipelineExecutionId,
-						OperationExecutionRecord::getOperationId,
-						OperationExecutionRecord::getParentOperationId,
-						OperationExecutionRecord::getStatus,
-						OperationExecutionRecord::getContext)
+						StationLog::getPipelineExecutionId,
+						StationLog::getOperationId,
+						StationLog::getParentOperationId,
+						StationLog::getStatus,
+						StationLog::getContext)
 				.containsExactly(tuple(result.getExecution().getId().toString(), "step10", getRecordByOperationId(pipelineExecution.get().getOperations(), "iterator").getId(), Status.SUCCEEDED, null));
 	}
 
-	private static OperationExecutionRecord getRecordByOperationId(List<OperationExecutionRecord> records, String operationId) {
+	private static StationLog getRecordByOperationId(List<StationLog> records, String operationId) {
 		return records.stream()
 				.filter(record -> Objects.equals(record.getOperationId(), operationId))
 				.findFirst()

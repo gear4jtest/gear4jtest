@@ -7,7 +7,7 @@ import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.event.OperationCompletedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
+import io.github.gear4jtest.core.model.ExecutionContext;
 
 /**
  * Listener branché sur un EventBus dédié (ex: "sideCompute").

@@ -9,7 +9,7 @@ import java.util.UUID;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import org.junit.jupiter.api.Test;
 
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
+import io.github.gear4jtest.core.model.ExecutionContext;
 
 class ExecutionContextRegistryTest {
 

@@ -2,14 +2,14 @@ package com.myorg.operation;
 
 import java.util.Map;
 
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationExecutionContext;
-import io.github.gear4jtest.core.model.refactor.Transformer;
+import io.github.gear4jtest.core.model.ExecutionContext;
+import io.github.gear4jtest.core.model.StationExecutionContext;
+import io.github.gear4jtest.core.model.Operator;
 
-public class Step8 implements Transformer<Map<String, String>, Integer> {
+public class Step8 implements Operator<Map<String, String>, Integer> {
 
 	@Override
-	public Integer transform(Map<String, String> object, ExecutionContext context, OperationExecutionContext operationExecution) {
+	public Integer transform(Map<String, String> object, ExecutionContext context, StationExecutionContext operationExecution) {
 		return 5;
 	}
 

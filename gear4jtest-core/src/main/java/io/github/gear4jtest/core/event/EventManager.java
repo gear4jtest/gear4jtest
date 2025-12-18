@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.github.gear4jtest.core.model.refactor.EventBus;
+import io.github.gear4jtest.core.model.EventBus;
 
 public class EventManager {
 

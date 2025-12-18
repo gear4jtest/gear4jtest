@@ -5,26 +5,9 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import io.github.gear4jtest.core.model.EventHandlingDefinition.EventConfiguration;
-import io.github.gear4jtest.core.model.refactor.AbstractOperationDefinition;
-import io.github.gear4jtest.core.model.refactor.OperationChain;
-import io.github.gear4jtest.core.model.refactor.PipelineOperation;
-import io.github.gear4jtest.core.model.refactor.SimpleEventBus;
-import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
-import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition.Configuration;
-import io.github.gear4jtest.core.model.refactor.BaseError;
-import io.github.gear4jtest.core.model.refactor.ContainerBaseDefinition;
-import io.github.gear4jtest.core.model.refactor.EventBus;
-import io.github.gear4jtest.core.model.refactor.IteratorDefinition;
-import io.github.gear4jtest.core.model.refactor.IteratorDefinition.ListAccumulator;
-import io.github.gear4jtest.core.model.refactor.IteratorDefinition.SetAccumulator;
-import io.github.gear4jtest.core.model.refactor.OperationConfigurationDefinition;
-import io.github.gear4jtest.core.model.refactor.PersistenceConfiguration;
-import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
-import io.github.gear4jtest.core.model.refactor.SignalDefiinition;
-import io.github.gear4jtest.core.model.refactor.SignalType;
-import io.github.gear4jtest.core.model.refactor.Transformer;
-import io.github.gear4jtest.core.model.refactor.UnaryProcessingOperationDefinition;
-import io.github.gear4jtest.core.model.refactor.UnaryIfElseContainerDefinition;
+import io.github.gear4jtest.core.model.AssemblyLine.Configuration;
+import io.github.gear4jtest.core.model.IteratorDefinition.ListAccumulator;
+import io.github.gear4jtest.core.model.IteratorDefinition.SetAccumulator;
 
 public final class ElementModelBuilders {
 
@@ -59,16 +42,16 @@ public final class ElementModelBuilders {
 		return new MapType<>(clazzA, classB);
 	}
 
-	public static <T> AssemblyLineDefinition.Builder<T, T> createAssemblyLine(String identifier) {
-		return AssemblyLineDefinition.builder(identifier);
+	public static <T> AssemblyLine.Builder<T, T> createAssemblyLine(String identifier) {
+		return AssemblyLine.builder(identifier);
 	}
 
-	public static <A, B, T extends Transformer<A, B>> ProcessingOperationDefinition.Builder<A, B, T> processingOperation(String id, Class<T> step) {
-		return new ProcessingOperationDefinition.Builder<A, B, T>().id(id).type(step);
+	public static <A, B, T extends Operator<A, B>> WorkStation.Builder<A, B, T> processingOperation(String id, Class<T> step) {
+		return new WorkStation.Builder<A, B, T>().id(id).type(step);
 	}
 
-	public static <A, T extends Transformer<A, A>> UnaryProcessingOperationDefinition.Builder<A, T> unaryProcessingOperation(String id, Class<T> step) {
-		return new UnaryProcessingOperationDefinition.Builder<A, T>().id(id).type(step);
+	public static <A, T extends Operator<A, A>> UnaryWorkStation.Builder<A, T> unaryProcessingOperation(String id, Class<T> step) {
+		return new UnaryWorkStation.Builder<A, T>().id(id).type(step);
 	}
 
 	public static <A> IteratorDefinition.Builder<A, A> iterate(String id) {
@@ -101,8 +84,8 @@ public final class ElementModelBuilders {
 		return new Configuration.Builder();
 	}
 
-	public static OperationConfigurationDefinition.Builder operationConfiguration() {
-		return new OperationConfigurationDefinition.Builder();
+	public static StationConfigurationDefinition.Builder operationConfiguration() {
+		return new StationConfigurationDefinition.Builder();
 	}
 
 	public static PersistenceConfiguration.Builder persistenceConfiguration() {
@@ -117,12 +100,12 @@ public final class ElementModelBuilders {
 		return new PersistenceConfiguration.Builder();
 	}
 
-	public static <IN, OUT> OperationChain.Builder<IN, OUT> chain(AbstractOperationDefinition<IN, OUT> step) {
-		return new OperationChain.Builder<>(step);
+	public static <IN, OUT> StationChain.Builder<IN, OUT> chain(AbstractStation<IN, OUT> step) {
+		return new StationChain.Builder<>(step);
 	}
 
 	public static <IN, OUT> PipelineOperation.Builder<IN, OUT> pipelineOperation(String id,
-																				 AssemblyLineDefinition<IN, OUT> subPipeline) {
+																				 AssemblyLine<IN, OUT> subPipeline) {
 		return new PipelineOperation.Builder<>(id, subPipeline);
 	}
 

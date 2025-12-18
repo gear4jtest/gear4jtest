@@ -2,7 +2,7 @@
     <operators>
         <operation>
             <type>PROCESSING_OPERATION</type>
-            <transformer>com.myorg.operation.Step11</transformer>
+            <operator>com.myorg.operation.Step11</operator>
             <parameters>
                 <parameter>
                     <retriever>getParam</retriever>

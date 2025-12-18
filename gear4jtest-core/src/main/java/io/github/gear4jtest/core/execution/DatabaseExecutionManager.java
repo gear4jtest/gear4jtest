@@ -8,9 +8,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.sql.DataSource;
 
-import io.github.gear4jtest.core.persistence.DatabasePipelineExecutionRepository;
-import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
-import io.github.gear4jtest.core.persistence.PipelineExecution;
+import io.github.gear4jtest.core.persistence.DatabaseAssemblyRunRepository;
+import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.persistence.AssemblyRun;
 
 /**
  * ExecutionManager pour persister en DB :
@@ -18,14 +18,14 @@ import io.github.gear4jtest.core.persistence.PipelineExecution;
  *  - flush en batch tous les N records (par pipeline),
  *  - flush final à la fin de l'exécution.
  */
-public class DatabaseExecutionManager implements PipelineExecutionManager {
+public class DatabaseExecutionManager implements AssemblyRunManager {
 
-    private final DatabasePipelineExecutionRepository repository;
+    private final DatabaseAssemblyRunRepository repository;
 
     /**
      * Buffer des opérations par pipeline.
      */
-    private final Map<UUID, ConcurrentLinkedQueue<OperationExecutionRecord>> opBuffers =
+    private final Map<UUID, ConcurrentLinkedQueue<StationLog>> opBuffers =
             new ConcurrentHashMap<>();
 
     /**
@@ -38,7 +38,7 @@ public class DatabaseExecutionManager implements PipelineExecutionManager {
     }
 
     public DatabaseExecutionManager(DataSource dataSource, int flushThreshold, boolean autoCreateTables) {
-        this.repository = new DatabasePipelineExecutionRepository(dataSource);
+        this.repository = new DatabaseAssemblyRunRepository(dataSource);
         this.flushThreshold = flushThreshold;
         if (autoCreateTables) {
             this.repository.initialize();
@@ -46,7 +46,7 @@ public class DatabaseExecutionManager implements PipelineExecutionManager {
     }
 
     @Override
-    public void start(PipelineExecution execution) {
+    public void start(AssemblyRun execution) {
         // On persiste l'exécution elle-même (sans ses opérations pour l'instant)
         repository.save(execution);
         // On initialise le buffer d'opérations pour ce pipeline
@@ -54,13 +54,13 @@ public class DatabaseExecutionManager implements PipelineExecutionManager {
     }
 
     @Override
-    public void append(OperationExecutionRecord record) {
+    public void append(StationLog record) {
         if (record == null) {
             return;
         }
 
         UUID pipelineId = UUID.fromString(record.getPipelineExecutionId());
-        ConcurrentLinkedQueue<OperationExecutionRecord> queue =
+        ConcurrentLinkedQueue<StationLog> queue =
                 opBuffers.computeIfAbsent(pipelineId, id -> new ConcurrentLinkedQueue<>());
 
         queue.add(record);
@@ -72,7 +72,7 @@ public class DatabaseExecutionManager implements PipelineExecutionManager {
     }
 
     @Override
-    public void appendAll(List<OperationExecutionRecord> records) {
+    public void appendAll(List<StationLog> records) {
         if (records == null || records.isEmpty()) {
             return;
         }
@@ -82,7 +82,7 @@ public class DatabaseExecutionManager implements PipelineExecutionManager {
         String pipelineExecutionId = records.get(0).getPipelineExecutionId();
         UUID pipelineId = UUID.fromString(pipelineExecutionId);
 
-        ConcurrentLinkedQueue<OperationExecutionRecord> queue =
+        ConcurrentLinkedQueue<StationLog> queue =
                 opBuffers.computeIfAbsent(pipelineId, id -> new ConcurrentLinkedQueue<>());
 
         queue.addAll(records);
@@ -94,14 +94,14 @@ public class DatabaseExecutionManager implements PipelineExecutionManager {
 
     @Override
     public void flush(UUID pipelineId) {
-        ConcurrentLinkedQueue<OperationExecutionRecord> queue = opBuffers.get(pipelineId);
+        ConcurrentLinkedQueue<StationLog> queue = opBuffers.get(pipelineId);
         if (queue == null || queue.isEmpty()) {
             return;
         }
 
-        List<OperationExecutionRecord> batch = new ArrayList<>(flushThreshold);
+        List<StationLog> batch = new ArrayList<>(flushThreshold);
 
-        OperationExecutionRecord rec;
+        StationLog rec;
         while ((rec = queue.poll()) != null) {
             batch.add(rec);
             if (batch.size() >= flushThreshold) {
@@ -116,7 +116,7 @@ public class DatabaseExecutionManager implements PipelineExecutionManager {
     }
 
     @Override
-    public void end(PipelineExecution finalExecution) {
+    public void end(AssemblyRun finalExecution) {
         UUID pipelineId = finalExecution.getId();
 
         // Flush final des records pour ce pipeline

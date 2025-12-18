@@ -2,7 +2,6 @@ package io.github.gear4jtest.core.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -13,7 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import io.github.gear4jtest.core.model.refactor.EventBus;
+import io.github.gear4jtest.core.model.EventBus;
 
 @ExtendWith(MockitoExtension.class)
 class EventManagerTest {

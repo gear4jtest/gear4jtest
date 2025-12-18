@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import java.util.concurrent.*;
 
-import io.github.gear4jtest.core.model.refactor.SimpleEventBus;
+import io.github.gear4jtest.core.model.SimpleEventBus;
 import org.junit.jupiter.api.Test;
 
 class SimpleEventBusThreadingTest {

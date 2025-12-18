@@ -15,15 +15,14 @@ import com.palantir.javapoet.MethodSpec;
 import com.palantir.javapoet.ParameterizedTypeName;
 import com.palantir.javapoet.TypeSpec;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
-import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
-import io.github.gear4jtest.core.model.refactor.ContainerBaseDefinition;
-import io.github.gear4jtest.core.model.refactor.IteratorDefinition;
-import io.github.gear4jtest.core.model.refactor.ProcessingOperationDefinition;
-import io.github.gear4jtest.core.model.refactor.SignalDefiinition;
-import io.github.gear4jtest.core.model.refactor.Transformer;
-import io.github.gear4jtest.core.model.refactor.UnaryIfElseContainerDefinition;
+import io.github.gear4jtest.core.model.AssemblyLine;
+import io.github.gear4jtest.core.model.ContainerBaseDefinition;
+import io.github.gear4jtest.core.model.IteratorDefinition;
+import io.github.gear4jtest.core.model.Operator;
+import io.github.gear4jtest.core.model.WorkStation;
+import io.github.gear4jtest.core.model.SignalDefiinition;
+import io.github.gear4jtest.core.model.UnaryIfElseContainerDefinition;
 import io.test.gear4jtest.xml.generated.ActionType;
-import io.test.gear4jtest.xml.generated.AssemblyLine;
 import io.test.gear4jtest.xml.generated.BaseOperationType;
 import io.test.gear4jtest.xml.generated.ConditionType;
 import io.test.gear4jtest.xml.generated.ConditionalOperationType;
@@ -52,7 +51,7 @@ import io.test.gear4test.xml.generator.GeneratedAssemblyLine;
 public class JavaFlatCodeGeneratorVisitor implements XmlToJavaVisitor {
 
     @Override
-    public TypeSpec visit(AssemblyLine assemblyLine, VisitorContext visitorContext) throws ClassNotFoundException {
+    public TypeSpec visit(io.test.gear4jtest.xml.generated.AssemblyLine assemblyLine, VisitorContext visitorContext) throws ClassNotFoundException {
         Objects.requireNonNull(assemblyLine, "assemblyLine");
         Objects.requireNonNull(visitorContext, "visitorContext");
 
@@ -83,7 +82,7 @@ public class JavaFlatCodeGeneratorVisitor implements XmlToJavaVisitor {
         return classBuilder.build();
     }
 
-    private void visit(AssemblyLine assemblyLine, TypeSpec.Builder classBuilder, VisitorContext visitorContext) throws ClassNotFoundException {
+    private void visit(io.test.gear4jtest.xml.generated.AssemblyLine assemblyLine, TypeSpec.Builder classBuilder, VisitorContext visitorContext) throws ClassNotFoundException {
         var inputClassName = Class.forName(assemblyLine.getInputType());
 
         String methodName = "getAssemblyLineDefinition";
@@ -98,7 +97,7 @@ public class JavaFlatCodeGeneratorVisitor implements XmlToJavaVisitor {
         if (assemblyLine.getConfiguration() != null) {
             code.add(".configuration(createConfiguration())\n");
         }
-        ParameterizedTypeName ptn = ParameterizedTypeName.get(AssemblyLineDefinition.class, inputClassName, visitorContext.getLastOut());
+        ParameterizedTypeName ptn = ParameterizedTypeName.get(AssemblyLine.class, inputClassName, visitorContext.getLastOut());
 
         MethodSpec mainMethod = MethodSpec.methodBuilder(methodName)
                 .addModifiers(Modifier.PUBLIC)
@@ -138,11 +137,11 @@ public class JavaFlatCodeGeneratorVisitor implements XmlToJavaVisitor {
         ParameterizedType operationType = Arrays.stream(clazz.getGenericInterfaces())
                 .filter(ParameterizedType.class::isInstance)
                 .map(ParameterizedType.class::cast)
-                .filter(type -> type.getRawType() == Transformer.class)
+                .filter(type -> type.getRawType() == Operator.class)
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Operation class does not implements Transformer"));
         Type[] argumentsTypes = operationType.getActualTypeArguments();
-        ParameterizedTypeName ptn = ParameterizedTypeName.get(ProcessingOperationDefinition.class, argumentsTypes[0], argumentsTypes[1]);
+        ParameterizedTypeName ptn = ParameterizedTypeName.get(WorkStation.class, argumentsTypes[0], argumentsTypes[1]);
 
         visitorContext.setLastOut(argumentsTypes[1]);
 

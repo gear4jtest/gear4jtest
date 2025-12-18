@@ -6,7 +6,7 @@ import java.util.concurrent.CompletableFuture;
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.OperationCompletedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
+import io.github.gear4jtest.core.model.ExecutionContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;

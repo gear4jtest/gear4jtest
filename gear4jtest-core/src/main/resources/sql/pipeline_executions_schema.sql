@@ -1,4 +1,4 @@
-CREATE TABLE pipeline_executions (
+CREATE TABLE assembly_run (
     id VARCHAR(255) PRIMARY KEY,
     pipeline_id VARCHAR(255) NOT NULL,
     input_parameters TEXT,

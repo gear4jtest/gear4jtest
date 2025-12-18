@@ -3,7 +3,7 @@ package io.github.gear4jtest.core.execution;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
+import io.github.gear4jtest.core.model.ExecutionContext;
 
 /**
  * Registry simple pour mapper un executionId (String) vers un ExecutionContext.

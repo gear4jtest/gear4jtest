@@ -1,12 +1,12 @@
 package io.github.gear4jtest.core.service.steps;
 
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationExecutionContext;
+import io.github.gear4jtest.core.model.ExecutionContext;
+import io.github.gear4jtest.core.model.StationExecutionContext;
 
 public class Step7 extends Step6 {
 
 	@Override
-	public String transform(String object, ExecutionContext context, OperationExecutionContext operationExecution) {
+	public String transform(String object, ExecutionContext context, StationExecutionContext operationExecution) {
 		if (object.equals("a")) {
 			throw new RuntimeException();
 		}

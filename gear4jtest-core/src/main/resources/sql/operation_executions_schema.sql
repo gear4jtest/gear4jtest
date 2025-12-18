@@ -1,4 +1,4 @@
-CREATE TABLE operation_executions (
+CREATE TABLE station_log (
     id VARCHAR(255) PRIMARY KEY,
     pipeline_execution_id VARCHAR(255) NOT NULL,
     operation_id VARCHAR(255) NOT NULL,
@@ -9,6 +9,6 @@ CREATE TABLE operation_executions (
     error_message TEXT,
     error_handler_messages TEXT,
     context TEXT,
-    FOREIGN KEY (pipeline_execution_id) REFERENCES pipeline_executions(id) ON DELETE CASCADE,
-    FOREIGN KEY (parent_operation_id) REFERENCES operation_executions(id) ON DELETE CASCADE
+    FOREIGN KEY (pipeline_execution_id) REFERENCES assembly_run(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_operation_id) REFERENCES station_log(id) ON DELETE CASCADE
 );

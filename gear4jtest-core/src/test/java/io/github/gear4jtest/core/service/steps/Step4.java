@@ -2,9 +2,9 @@ package io.github.gear4jtest.core.service.steps;
 
 import java.util.Map;
 
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationExecutionContext;
-import io.github.gear4jtest.core.model.refactor.Transformer;
+import io.github.gear4jtest.core.model.ExecutionContext;
+import io.github.gear4jtest.core.model.StationExecutionContext;
+import io.github.gear4jtest.core.model.Operator;
 
 public class Step4 {
 
@@ -14,20 +14,20 @@ public class Step4 {
 		this.whatever = whatever;
 	}
 	
-	public class Step4Map implements Transformer<Map<String, String>, Void> {
+	public class Step4Map implements Operator<Map<String, String>, Void> {
 
 		@Override
-		public Void transform(Map<String, String> object, ExecutionContext context, OperationExecutionContext operationExecution) {
+		public Void transform(Map<String, String> object, ExecutionContext context, StationExecutionContext operationExecution) {
 			System.out.println(whatever);
 			return null;
 		}
 		
 	}
 	
-	public class Step4Integer implements Transformer<Integer, Void> {
+	public class Step4Integer implements Operator<Integer, Void> {
 
 		@Override
-		public Void transform(Integer object, ExecutionContext context, OperationExecutionContext operationExecution) {
+		public Void transform(Integer object, ExecutionContext context, StationExecutionContext operationExecution) {
 			return null;
 		}
 		

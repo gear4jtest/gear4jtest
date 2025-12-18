@@ -11,8 +11,8 @@ import java.util.concurrent.CompletableFuture;
 import io.github.gear4jtest.core.exception.SideComputeTimeoutException;
 import org.junit.jupiter.api.Test;
 
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationExecutionContext;
+import io.github.gear4jtest.core.model.ExecutionContext;
+import io.github.gear4jtest.core.model.StationExecutionContext;
 
 class SideComputeWaitProcessorTest {
 
@@ -20,7 +20,7 @@ class SideComputeWaitProcessorTest {
     void beforeExecution_shouldWaitAndStoreResolvedValue() throws Exception {
         // arrange
         ExecutionContext execCtx = mock(ExecutionContext.class);
-        OperationExecutionContext opCtx = mock(OperationExecutionContext.class);
+        StationExecutionContext opCtx = mock(StationExecutionContext.class);
 
         SideComputeContext scCtx = new SideComputeContext();
         Map<String, Object> globalMap = new HashMap<>();
@@ -48,7 +48,7 @@ class SideComputeWaitProcessorTest {
     @Test
     void beforeExecution_shouldThrowOnTimeoutWhenConfiguredToFail() {
         ExecutionContext execCtx = mock(ExecutionContext.class);
-        OperationExecutionContext opCtx = mock(OperationExecutionContext.class);
+        StationExecutionContext opCtx = mock(StationExecutionContext.class);
 
         SideComputeContext scCtx = new SideComputeContext();
         Map<String, Object> globalMap = new HashMap<>();
@@ -73,7 +73,7 @@ class SideComputeWaitProcessorTest {
     @Test
     void beforeExecution_shouldUseFallbackOnTimeoutWhenConfigured() throws Exception {
         ExecutionContext execCtx = mock(ExecutionContext.class);
-        OperationExecutionContext opCtx = mock(OperationExecutionContext.class);
+        StationExecutionContext opCtx = mock(StationExecutionContext.class);
 
         SideComputeContext scCtx = new SideComputeContext();
         Map<String, Object> globalMap = new HashMap<>();
@@ -104,7 +104,7 @@ class SideComputeWaitProcessorTest {
     @Test
     void beforeExecution_shouldIgnoreTimeoutWhenConfiguredToIgnore() throws Exception {
         ExecutionContext execCtx = mock(ExecutionContext.class);
-        OperationExecutionContext opCtx = mock(OperationExecutionContext.class);
+        StationExecutionContext opCtx = mock(StationExecutionContext.class);
 
         SideComputeContext scCtx = new SideComputeContext();
         Map<String, Object> globalMap = new HashMap<>();

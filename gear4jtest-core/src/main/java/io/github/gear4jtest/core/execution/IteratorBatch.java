@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.List;
 
-import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
+import io.github.gear4jtest.core.persistence.StationLog;
 
 public final class IteratorBatch {
     private final UUID pipelineExecutionId;
@@ -15,14 +15,14 @@ public final class IteratorBatch {
     private final Instant startedAt;
     private final Instant endedAt;
     private final Map<String, Long> operationCounts;
-    private final List<OperationExecutionRecord> samples;
+    private final List<StationLog> samples;
     private final String summaryJson;
 
     public IteratorBatch(UUID pipelineExecutionId, String iteratorId,
                          long startIndexInclusive, long endIndexInclusive,
                          Instant startedAt, Instant endedAt,
                          Map<String, Long> operationCounts,
-                         List<OperationExecutionRecord> samples,
+                         List<StationLog> samples,
                          String summaryJson) {
         this.pipelineExecutionId = pipelineExecutionId;
         this.iteratorId = iteratorId;
@@ -41,6 +41,6 @@ public final class IteratorBatch {
     public Instant getStartedAt(){return startedAt;}
     public Instant getEndedAt(){return endedAt;}
     public Map<String, Long> getOperationCounts(){return operationCounts;}
-    public List<OperationExecutionRecord> getSamples(){return samples;}
+    public List<StationLog> getSamples(){return samples;}
     public String getSummaryJson(){return summaryJson;}
 }

@@ -8,13 +8,13 @@ import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.event.OperationCompletedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
-import io.github.gear4jtest.core.model.refactor.DefaultOperationExecutionContext;
-import io.github.gear4jtest.core.model.refactor.EventBus;
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationKind;
-import io.github.gear4jtest.core.model.refactor.OperationParamsInjector;
-import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
+import io.github.gear4jtest.core.model.DefaultStationExecutionContext;
+import io.github.gear4jtest.core.model.EventBus;
+import io.github.gear4jtest.core.model.ExecutionContext;
+import io.github.gear4jtest.core.model.StationExecutionContext;
+import io.github.gear4jtest.core.model.StationKind;
+import io.github.gear4jtest.core.model.WorkerParamsInjector;
+import io.github.gear4jtest.core.persistence.StationLog;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,13 +51,13 @@ class SideComputeFlowIntegrationTest {
         registry.register(execCtx);
 
         // 3) On simule une opération qui va consommer bigStuff via param
-        OperationExecutionRecord record = OperationExecutionRecord.start(
+        StationLog record = StationLog.start(
                 execCtx.getExecutionId().toString(),
                 "step-op",
                 null
         );
-        OperationExecutionContext opCtx =
-                new DefaultOperationExecutionContext("step-op", OperationKind.PROCESSING, execCtx, record);
+        StationExecutionContext opCtx =
+                new DefaultStationExecutionContext("step-op", StationKind.PROCESSING, execCtx, record);
 
         // 4) On publie l'événement de fin d'opération
         OperationCompletedEvent event = new OperationCompletedEvent(
@@ -81,8 +81,8 @@ class SideComputeFlowIntegrationTest {
         waiter.beforeExecution("input", opCtx);
 
         // 7) Param resolver context-aware
-        OperationParamsInjector.InterpretationContext<String> paramCtx =
-                new OperationParamsInjector.InterpretationContext<>(
+        WorkerParamsInjector.InterpretationContext<String> paramCtx =
+                new WorkerParamsInjector.InterpretationContext<>(
                         "input",
                         execCtx,
                         opCtx
