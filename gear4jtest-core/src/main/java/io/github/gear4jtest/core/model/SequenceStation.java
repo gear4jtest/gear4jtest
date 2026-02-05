@@ -1,0 +1,66 @@
+package io.github.gear4jtest.core.model;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
+
+    private final List<AbstractStation<?, ?>> steps;
+
+    private SequenceStation(String id, String name, List<AbstractStation<?, ?>> steps) {
+        super(id, StationKind.OTHER);
+        this.steps = List.copyOf(steps);
+    }
+
+    public List<AbstractStation<?, ?>> getSteps() {
+        return steps;
+    }
+
+//    @SuppressWarnings("unchecked")
+//    public OUT doExecute(IN input, ExecutionContext context, StationExecutionContext operationExecution) {
+//        StationLog rec = null;
+//        Object in = input;
+//        boolean success = true;
+//
+//        for (Station<?, ?> step : steps) {
+//            Station<Object, Object> typed = (Station<Object, Object>) step;
+//            rec = typed.run(in, context);
+////            ctx.getExecutionManager().append(rec);
+//
+//            if (rec.getStatus() == StationLog.Status.FAILED || rec.getStatus() == StationLog.Status.STOPPED) {
+//                success = false;
+//                break;
+//            }
+//
+//            in = rec.getOutput(Object.class);
+//        }
+//        return (OUT) in;
+//    }
+
+    public static class Builder<IN, OUT> {
+
+        private final String id;
+        private final String name;
+        private final List<AbstractStation<?, ?>> accumulatedSteps;
+
+        public static <I> Builder<I, I> create(String id) {
+            return new Builder<>(id, id, new ArrayList<>());
+        }
+
+        private Builder(String id, String name, List<AbstractStation<?, ?>> steps) {
+            this.id = id;
+            this.name = name;
+            this.accumulatedSteps = steps;
+        }
+
+        public <NEXT_OUT> Builder<IN, NEXT_OUT> next(AbstractStation<OUT, NEXT_OUT> nextStep) {
+            this.accumulatedSteps.add(nextStep);
+
+            return new Builder<>(this.id, this.name, this.accumulatedSteps);
+        }
+
+        public SequenceStation<IN, OUT> build() {
+            return new SequenceStation<>(id, name, accumulatedSteps);
+        }
+    }
+}

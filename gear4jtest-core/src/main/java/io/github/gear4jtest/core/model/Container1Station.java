@@ -2,41 +2,41 @@ package io.github.gear4jtest.core.model;
 
 import java.util.ArrayList;
 
-public class Container1Definition<IN, OUT, A> extends ContainerBaseDefinition<IN, OUT> {
+public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT> {
 
-	private Container1Definition() {
+	private Container1Station() {
 		super(new ArrayList<>(1), null);
 	}
 
 	public static class Builder<IN, OUT, A> {
 
-		private final Container1Definition<IN, OUT, A> managedInstance;
+		private final Container1Station<IN, OUT, A> managedInstance;
 
-		public Builder(ContainerBaseDefinition<IN, OUT> parentDefinition, Branch<IN> branch) {
-			managedInstance = new Container1Definition<>();
+		public Builder(ContainerBaseStation<IN, OUT> parentDefinition, Branch<IN> branch) {
+			managedInstance = new Container1Station<>();
 			managedInstance.pipelines.add(branch);
 			managedInstance.executorService = parentDefinition.executorService;
 			managedInstance.isParallel = parentDefinition.isParallel;
 		}
 
-		public <B> Container2Definition.Builder<IN, OUT, A, B> withSubLine(AbstractStation<IN, B> operationDefinition) {
+		public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(AbstractStation<IN, B> operationDefinition) {
 			var branch = new Branch.Builder<IN>().withOperation(operationDefinition).build();
-			return new Container2Definition.Builder<>(managedInstance, branch);
+			return new Container2Station.Builder<>(managedInstance, branch);
 		}
 
-		public <B> Container2Definition.Builder<IN, OUT, A, B> withSubLine(AbstractStation<IN, B> operationDefinition, Condition<IN> condition) {
+		public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(AbstractStation<IN, B> operationDefinition, Condition<IN> condition) {
 			var branch = new Branch.Builder<IN>().withCondition(condition).withOperation(operationDefinition).build();
-			return new Container2Definition.Builder<>(managedInstance, branch);
+			return new Container2Station.Builder<>(managedInstance, branch);
 		}
 
-		public <C> ContainerBaseDefinition<IN, C> returns(Container1DFunction<A, C> func) {
+		public <C> ContainerBaseStation<IN, C> returns(Container1DFunction<A, C> func) {
 			managedInstance.func = func;
-			return (ContainerBaseDefinition<IN, C>) this.managedInstance;
+			return (ContainerBaseStation<IN, C>) this.managedInstance;
 //			return new ContainerDefinition<>(managedInstance.subLines, managedInstance.func);
 		}
 
-		public ContainerBaseDefinition<IN, Void> build() {
-			return (ContainerBaseDefinition<IN, Void>) this.managedInstance;
+		public ContainerBaseStation<IN, Void> build() {
+			return (ContainerBaseStation<IN, Void>) this.managedInstance;
 //			return new ContainerDefinition<IN, Void>(managedInstance.subLines, managedInstance.func);
 //			return (Container1Definition<IN, Void, A>) managedInstance;
 		}

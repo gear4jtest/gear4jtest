@@ -2,27 +2,26 @@ package io.github.gear4jtest.core.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 
 public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
-	/**
-	 * Manager de concurrence partagé.
-	 *
-	 * Si tu veux le scoper à un runtime d'AssemblyLine spécifique,
-	 * tu pourras injecter un manager plutôt qu'utiliser ce static.
-	 */
-	private static final WorkerConcurrencyManager CONCURRENCY_MANAGER =
-			new WorkerConcurrencyManager();
-
-	/**
-	 * ThreadLocal pour savoir si on a acquis un lock sur CE thread
-	 * pour CETTE exécution, et surtout pour ne pas faire d'afterUse()
-	 * si beforeUse() a échoué.
-	 */
-	private static final ThreadLocal<WorkerConcurrencyGuard> CURRENT_GUARD =
-			new ThreadLocal<>();
+//	/**
+//	 * Manager de concurrence partagé.
+//	 *
+//	 * Si tu veux le scoper à un runtime d'AssemblyLine spécifique,
+//	 * tu pourras injecter un manager plutôt qu'utiliser ce static.
+//	 */
+//	private static final WorkerConcurrencyManager CONCURRENCY_MANAGER =
+//			new WorkerConcurrencyManager();
+//
+//	/**
+//	 * ThreadLocal pour savoir si on a acquis un lock sur CE thread
+//	 * pour CETTE exécution, et surtout pour ne pas faire d'afterUse()
+//	 * si beforeUse() a échoué.
+//	 */
+//	private static final ThreadLocal<WorkerConcurrencyGuard> CURRENT_GUARD =
+//			new ThreadLocal<>();
 
 	protected Class<Operator<IN, OUT>> type;
 
@@ -42,68 +41,76 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 		return operationConfiguration;
 	}
 
-	@Override
-	public void setUp(IN input, ExecutionContext context, StationExecutionContext operationExecution) {
-		var operation = context.getResourceFactory().getResource(type);
-		((DefaultStationExecutionContext) operationExecution).addCapability(Operator.class, operation);
-		var parameters = WorkerParamsInjector.Parameters.newBuilder();
-		Optional.ofNullable(this.parameters).stream().flatMap(List::stream).forEach(parameters::withParameter);
-		((DefaultStationExecutionContext) operationExecution).addCapability(WorkerParamsInjector.Parameters.class, parameters.build());
-
-		if (!isStateful(operationExecution)) {
-			return;
-		}
-
-		WorkerConcurrencyGuard guard =
-				CONCURRENCY_MANAGER.guardFor(operation, concurrencyStrategy());
-
-		// Si beforeUse() FAIL_FAST et échoue, il va jeter avant qu'on pose le ThreadLocal.
-		guard.beforeUse();
-		CURRENT_GUARD.set(guard);
+	public Class<Operator<IN, OUT>> getType() {
+		return type;
 	}
 
-	@Override
-	public OUT doExecute(IN input, ExecutionContext context, StationExecutionContext operationExecution) {
-		var transformer = StationContextUtils.<IN, OUT>getTypedTransformer(operationExecution);
-		if (transformer.isEmpty()) {
-			throw new IllegalStateException("No transformer present found in operation execution context");
-		}
-		return transformer.get().transform(input, context, operationExecution);
+	public void setParameters(List<WorkerParamsInjector.ParameterModel<?, ?>> parameters) {
+		this.parameters = parameters;
 	}
 
-	@Override
-	protected void release(StationExecutionContext context, OUT result, List<Throwable> errors) {
-		try {
-			if (isStateful(context)) {
-				WorkerConcurrencyGuard guard = CURRENT_GUARD.get();
-				if (guard != null) {
-					guard.afterUse();
-				}
-			}
-		} finally {
-			// Nettoyage du ThreadLocal pour éviter les fuites sur les pools de threads
-			CURRENT_GUARD.remove();
-			// Et on laisse la super-classe faire son éventuel cleanup
-			super.release(context, result, errors);
-		}
-	}
+//	@Override
+//	public void setUp(IN input, ExecutionContext context, StationExecutionContext operationExecution) {
+//		var operation = context.getResourceFactory().getResource(type);
+//		((DefaultStationExecutionContext) operationExecution).addCapability(Operator.class, operation);
+//		var parameters = WorkerParamsInjector.Parameters.newBuilder();
+//		Optional.ofNullable(this.parameters).stream().flatMap(List::stream).forEach(parameters::withParameter);
+//		((DefaultStationExecutionContext) operationExecution).addCapability(WorkerParamsInjector.Parameters.class, parameters.build());
+//
+//		if (!isStateful(operationExecution)) {
+//			return;
+//		}
+//
+//		WorkerConcurrencyGuard guard =
+//				CONCURRENCY_MANAGER.guardFor(operation, concurrencyStrategy());
+//
+//		// Si beforeUse() FAIL_FAST et échoue, il va jeter avant qu'on pose le ThreadLocal.
+//		guard.beforeUse();
+//		CURRENT_GUARD.set(guard);
+//	}
+//
+//	@Override
+//	public OUT doExecute(IN input, ExecutionContext context, StationExecutionContext operationExecution) {
+//		var transformer = StationContextUtils.<IN, OUT>getTypedTransformer(operationExecution);
+//		if (transformer.isEmpty()) {
+//			throw new IllegalStateException("No transformer present found in operation execution context");
+//		}
+//		return transformer.get().transform(input, context, operationExecution);
+//	}
+//
+//	@Override
+//	protected void release(StationExecutionContext context, OUT result, List<Throwable> errors) {
+//		try {
+//			if (isStateful(context)) {
+//				WorkerConcurrencyGuard guard = CURRENT_GUARD.get();
+//				if (guard != null) {
+//					guard.afterUse();
+//				}
+//			}
+//		} finally {
+//			// Nettoyage du ThreadLocal pour éviter les fuites sur les pools de threads
+//			CURRENT_GUARD.remove();
+//			// Et on laisse la super-classe faire son éventuel cleanup
+//			super.release(context, result, errors);
+//		}
+//	}
 
-	/**
-	 * Stratégie de concurrence utilisée lorsque cette opération est exécutée
-	 * de manière concurrente (iteration parallèle, containers parallélisés, etc.).
-	 */
-	protected WorkerConcurrencyStrategy concurrencyStrategy() {
-		return WorkerConcurrencyStrategy.BLOCK_CALLER;
-	}
-
-	/**
-	 * Indique si cette opération est stateful.
-	 * Par défaut, on déduit cela automatiquement depuis le transformer.
-	 */
-	protected boolean isStateful(StationExecutionContext operationExecution) {
-		var transformer = StationContextUtils.<IN, OUT>getTypedTransformer(operationExecution);
-		return transformer.isPresent() && WorkerIntrospector.isStateful(transformer.get());
-	}
+//	/**
+//	 * Stratégie de concurrence utilisée lorsque cette opération est exécutée
+//	 * de manière concurrente (iteration parallèle, containers parallélisés, etc.).
+//	 */
+//	protected WorkerConcurrencyStrategy concurrencyStrategy() {
+//		return WorkerConcurrencyStrategy.BLOCK_CALLER;
+//	}
+//
+//	/**
+//	 * Indique si cette opération est stateful.
+//	 * Par défaut, on déduit cela automatiquement depuis le transformer.
+//	 */
+//	protected boolean isStateful(StationExecutionContext operationExecution) {
+//		var transformer = StationContextUtils.<IN, OUT>getTypedTransformer(operationExecution);
+//		return transformer.isPresent() && WorkerIntrospector.isStateful(transformer.get());
+//	}
 
 	public static class Builder<IN, OUT, OP extends Operator<IN, OUT>> {
 

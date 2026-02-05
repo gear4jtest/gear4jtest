@@ -45,8 +45,7 @@ class SideComputeFlowIntegrationTest {
                 "pipeline-test",
                 eventManager,
                 null, // ResourceFactory mocké/absent ici
-                null,  // PipelineExecutionManager mocké/absent ici
-                null
+                null  // PipelineExecutionManager mocké/absent ici
         );
         registry.register(execCtx);
 

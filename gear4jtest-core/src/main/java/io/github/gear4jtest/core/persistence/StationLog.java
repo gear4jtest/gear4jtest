@@ -14,7 +14,7 @@ import java.util.UUID;
 public class StationLog {
 
     public enum Status {
-        SKIPPED, SUCCEEDED, FAILED, STOPPED
+        RUNNING, SKIPPED, SUCCEEDED, FAILED, STOPPED
     }
 
     private transient Object output;

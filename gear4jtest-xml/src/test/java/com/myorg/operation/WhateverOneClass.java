@@ -6,7 +6,7 @@ import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
 import com.myorg.services.ModelsService;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
 import io.github.gear4jtest.core.model.AssemblyLine;
-import io.github.gear4jtest.core.model.IteratorDefinition;
+import io.github.gear4jtest.core.model.IteratorStation;
 import io.github.gear4jtest.core.model.WorkStation;
 import io.test.gear4test.xml.generator.GeneratedAssemblyLine;
 
@@ -71,7 +71,7 @@ public final class WhateverOneClass implements GeneratedAssemblyLine {
             .build();
     }
 
-    private IteratorDefinition<List<Integer>, List<List<String>>> iterateIterator() {
+    private IteratorStation<List<Integer>, List<List<String>>> iterateIterator() {
         return ElementModelBuilders.<List<Integer>>iterate("iterator")
             .iterableFunction(java.util.function.Function.identity())
             .pipeline(chain(processStep10()).build())

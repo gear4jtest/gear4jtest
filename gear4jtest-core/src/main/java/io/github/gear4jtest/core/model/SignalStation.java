@@ -4,13 +4,13 @@ import java.util.function.Predicate;
 
 import io.github.gear4jtest.core.persistence.StationLog;
 
-public class SignalDefiinition<IN> extends AbstractStation<IN, IN> {
+public class SignalStation<IN> extends AbstractStation<IN, IN> {
 
 	protected SignalType signalType;
 
 	protected Predicate<SignalInterpretationContext<IN>> condition;
 
-	public SignalDefiinition() {
+	public SignalStation() {
 		super("", StationKind.SIGNAL);
 	}
 
@@ -22,21 +22,21 @@ public class SignalDefiinition<IN> extends AbstractStation<IN, IN> {
 		return condition;
 	}
 
-	@Override
-	public IN doExecute(IN input, ExecutionContext context, StationExecutionContext operationExecution) {
-		switch(signalType) {
-			case FATAL -> operationExecution.getRecord().setStatus(StationLog.Status.FAILED);
-			case STOP -> operationExecution.getRecord().setStatus(StationLog.Status.STOPPED);
-		}
-		return input;
-	}
+//	@Override
+//	public IN doExecute(IN input, ExecutionContext context, StationExecutionContext operationExecution) {
+//		switch(signalType) {
+//			case FATAL -> operationExecution.getRecord().setStatus(StationLog.Status.FAILED);
+//			case STOP -> operationExecution.getRecord().setStatus(StationLog.Status.STOPPED);
+//		}
+//		return input;
+//	}
 
 	public static class Builder<IN> {
 
-		private final SignalDefiinition<IN> managedInstance;
+		private final SignalStation<IN> managedInstance;
 
 		public Builder() {
-			managedInstance = new SignalDefiinition<>();
+			managedInstance = new SignalStation<>();
 		}
 
 		public Builder<IN> type(SignalType signalType) {
@@ -49,7 +49,7 @@ public class SignalDefiinition<IN> extends AbstractStation<IN, IN> {
 			return this;
 		}
 
-		public SignalDefiinition<IN> build() {
+		public SignalStation<IN> build() {
 			return managedInstance;
 		}
 

@@ -1,32 +1,21 @@
 package io.github.gear4jtest.core.model;
 
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-
-import io.github.gear4jtest.core.event.EventManager;
-import io.github.gear4jtest.core.execution.AssemblyRunManager;
-import io.github.gear4jtest.core.factory.ResourceFactory;
-import io.github.gear4jtest.core.persistence.ExecutionStatus;
-import io.github.gear4jtest.core.persistence.StationLog;
-import io.github.gear4jtest.core.persistence.AssemblyRun;
 
 public class AssemblyLine<IN, OUT> {
 
     private final String id;
-    private final List<Station<?, ?>> stations;
+    private final List<AbstractStation<?, ?>> stations;
     private final Map<String, Object> defaultContext;
     private final Configuration configuration;
 
     private AssemblyLine(String id,
-                         List<Station<?, ?>> stations,
+                         List<AbstractStation<?, ?>> stations,
                          Map<String, Object> defaultContext,
                          Configuration configuration) {
         this.id = id;
@@ -35,98 +24,106 @@ public class AssemblyLine<IN, OUT> {
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
     }
 
-    public ExecutionResult<OUT> execute(IN input,
-                                        Map<String, Object> context,
-                                        ResourceFactory resourceFactory,
-                                        AssemblyRunManager manager) {
-        EventManager eventManager = null;
-        AssemblyRun execution = null;
-
-        Map<String, Object> effectiveContext = new HashMap<>(this.defaultContext);
-        if (context != null) {
-            effectiveContext.putAll(context);
-        }
-
-        try {
-            eventManager = new EventManager(
-                    Optional.ofNullable(configuration.getEventHandlingDefinition())
-                            .map(EventHandlingDefinition::getEventBuses)
-                            .orElse(List.of())
-            );
-
-            UUID executionId = UUID.randomUUID();
-            execution = new AssemblyRun(executionId, id, new HashMap<>(effectiveContext));
-            execution.markStarted();
-            manager.start(execution);
-
-            ExecutionContext executionContext =
-                    new ExecutionContext(executionId, id, eventManager, resourceFactory, manager, execution);
-            executionContext.getContext().putAll(effectiveContext);
-            executionContext.setCurrentItemId("root");
-
-            var result = executeWithin(executionContext, input);
-            if (!result.isSuccess()) {
-                return result;
-            }
-
-            execution.setContext(executionContext.getContext());
-            execution.setEndTime(Instant.now());
-            execution.setStatus(ExecutionStatus.SUCCEEDED);
-            if (configuration.getPersistence() != null && configuration.getPersistence().isStoreResultObject()) {
-                execution.setResult(result.getResult());
-            }
-
-            return result;
-
-        } catch (Exception e) {
-            return ExecutionResult.failure(e, execution);
-        } finally {
-            if (manager != null) {
-                manager.end(execution);
-            }
-            if (eventManager != null) {
-                eventManager.shutdown();
-            }
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    public ExecutionResult<OUT> executeWithin(ExecutionContext ctx, IN input) {
-        Object current = input;
-        boolean success = true;
-        Exception error = null;
-
-        for (Station<?, ?> op : stations) {
-            Station<Object, Object> a = (Station<Object, Object>) op;
-
-            StationLog rec = a.run(current, ctx);
-
-            if (rec.getStatus() == StationLog.Status.FAILED
-                    || rec.getStatus() == StationLog.Status.STOPPED) {
-
-                ctx.getPipelineExecution().setContext(ctx.getContext());
-                ctx.getPipelineExecution().setEndTime(Instant.now());
-                if (configuration.getPersistence() != null
-                        && configuration.getPersistence().isStoreResultObject()) {
-                    ctx.getPipelineExecution().setResult(null);
-                }
-                ctx.getExecutionManager().end(ctx.getPipelineExecution());
-                success = false;
-                break;
-            }
-
-            current = rec.getOutput(Object.class);
-        }
-        OUT out = success ? (OUT) current : null;
-        return new ExecutionResult<>(out, success, ctx.getPipelineExecution(), error);
-    }
+//    public ExecutionResult<OUT> execute(IN input,
+//                                        Map<String, Object> context,
+//                                        ResourceFactory resourceFactory,
+//                                        AssemblyRunManager manager) {
+//        EventManager eventManager = null;
+//        AssemblyRun execution = null;
+//
+//        Map<String, Object> effectiveContext = new HashMap<>(this.defaultContext);
+//        if (context != null) {
+//            effectiveContext.putAll(context);
+//        }
+//
+//        try {
+//            eventManager = new EventManager(
+//                    Optional.ofNullable(configuration.getEventHandlingDefinition())
+//                            .map(EventHandlingDefinition::getEventBuses)
+//                            .orElse(List.of())
+//            );
+//
+//            UUID executionId = UUID.randomUUID();
+//            execution = new AssemblyRun(executionId, id, new HashMap<>(effectiveContext));
+//            execution.markStarted();
+//            manager.start(execution);
+//
+//            ExecutionContext executionContext =
+//                    new ExecutionContext(executionId, id, eventManager, resourceFactory, manager, execution);
+//            executionContext.getContext().putAll(effectiveContext);
+//            executionContext.setCurrentItemId("root");
+//
+//            var result = executeWithin(executionContext, input);
+//            if (!result.isSuccess()) {
+//                return result;
+//            }
+//
+//            execution.setContext(executionContext.getContext());
+//            execution.setEndTime(Instant.now());
+//            execution.setStatus(ExecutionStatus.SUCCEEDED);
+//            if (configuration.getPersistence() != null && configuration.getPersistence().isStoreResultObject()) {
+//                execution.setResult(result.getResult());
+//            }
+//
+//            return result;
+//
+//        } catch (Exception e) {
+//            return ExecutionResult.failure(e, execution);
+//        } finally {
+//            if (manager != null) {
+//                manager.end(execution);
+//            }
+//            if (eventManager != null) {
+//                eventManager.shutdown();
+//            }
+//        }
+//    }
+//
+//    @SuppressWarnings("unchecked")
+//    public ExecutionResult<OUT> executeWithin(ExecutionContext ctx, IN input) {
+//        Object current = input;
+//        boolean success = true;
+//        Exception error = null;
+//
+//        for (Station<?, ?> op : stations) {
+//            Station<Object, Object> a = (Station<Object, Object>) op;
+//
+//            StationLog rec = a.run(current, ctx);
+//
+//            if (rec.getStatus() == StationLog.Status.FAILED
+//                    || rec.getStatus() == StationLog.Status.STOPPED) {
+//
+//                ctx.getPipelineExecution().setContext(ctx.getContext());
+//                ctx.getPipelineExecution().setEndTime(Instant.now());
+//                if (configuration.getPersistence() != null
+//                        && configuration.getPersistence().isStoreResultObject()) {
+//                    ctx.getPipelineExecution().setResult(null);
+//                }
+//                ctx.getAssemblyRunManager().end(ctx.getPipelineExecution());
+//                success = false;
+//                break;
+//            }
+//
+//            current = rec.getOutput(Object.class);
+//        }
+//        OUT out = success ? (OUT) current : null;
+//        return new ExecutionResult<>(out, success, ctx.getPipelineExecution(), error);
+//    }
 
     public String getId() {
         return id;
     }
 
-    public List<Station> getStations() {
+    public List<AbstractStation> getStations() {
         return Collections.unmodifiableList(this.stations);
+    }
+
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+
+    public Map<String, Object> getDefaultContext() {
+        return defaultContext;
     }
 
     public static <IN, OUT> Builder<IN, OUT> builder(String id) {
@@ -135,7 +132,7 @@ public class AssemblyLine<IN, OUT> {
 
     public static class Builder<IN, OUT> {
         private final String id;
-        private final List<Station<?, ?>> operations = new ArrayList<>();
+        private final List<AbstractStation<?, ?>> operations = new ArrayList<>();
         private final Map<String, Object> defaultContext = new HashMap<>();
         private final Configuration.Builder configBuilder = Configuration.builder();
 
@@ -174,7 +171,7 @@ public class AssemblyLine<IN, OUT> {
             return this;
         }
 
-        public <T> Builder<IN, T> then(Station<OUT, T> operation) {
+        public <T> Builder<IN, T> then(AbstractStation<OUT, T> operation) {
             Objects.requireNonNull(operation);
             this.operations.add(operation);
             return (Builder<IN, T>) this;

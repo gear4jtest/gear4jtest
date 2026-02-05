@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.execution.AssemblyRunManager;
+import io.github.gear4jtest.core.execution.NoOpAssemblyRunManager;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.persistence.AssemblyRun;
 import io.github.gear4jtest.core.sidecompute.SideComputeContext;
@@ -22,7 +23,7 @@ public class ExecutionContext {
     private final String pipelineId;
     private final Map<String, Object> context = new ConcurrentHashMap<>();
     private final EventManager eventManager;
-    private final AssemblyRunManager executionManager;
+    private final AssemblyRunManager assemblyRunManager;
     private final ResourceFactory resourceFactory;
     private final SideComputeContext sideComputeContext = new SideComputeContext();
     private final AssemblyRun assemblyRun;
@@ -31,14 +32,13 @@ public class ExecutionContext {
                             String pipelineId,
                             EventManager eventManager,
                             ResourceFactory resourceFactory,
-                            AssemblyRunManager executionManager,
                             AssemblyRun assemblyRun) {
         this.pipelineId = pipelineId;
         this.executionId = executionId;
         this.eventManager = eventManager;
         this.resourceFactory = resourceFactory;
-        this.executionManager = executionManager;
         this.assemblyRun = assemblyRun;
+        this.assemblyRunManager = NoOpAssemblyRunManager.NO_OP_INSTANCE;
     }
 
     public String getPipelineId() {
@@ -69,8 +69,8 @@ public class ExecutionContext {
         return context;
     }
 
-    public AssemblyRunManager getExecutionManager() {
-        return executionManager;
+    public AssemblyRunManager getAssemblyRunManager() {
+        return assemblyRunManager;
     }
 
     public SideComputeContext getSideComputeContext() {
@@ -93,7 +93,7 @@ public class ExecutionContext {
         return assemblyRun;
     }
 
-    void withItemId(String itemId, Runnable action) {
+    public void withItemId(String itemId, Runnable action) {
         String previous = getCurrentItemId();
         setCurrentItemId(itemId);
         try {
@@ -103,7 +103,7 @@ public class ExecutionContext {
         }
     }
 
-    <T> T withItemId(String itemId, Supplier<T> action) {
+    public <T> T withItemId(String itemId, Supplier<T> action) {
         String previous = getCurrentItemId();
         setCurrentItemId(itemId);
         try {

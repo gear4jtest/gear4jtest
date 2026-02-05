@@ -6,14 +6,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-import io.github.gear4jtest.core.model.IteratorDefinition;
 import org.junit.jupiter.api.Test;
 
-class IteratorDefinitionAccumulatorTest {
+class IteratorStationAccumulatorTest {
 
     @Test
     void listAccumulator_shouldProvideListCollection() {
-        IteratorDefinition.ListAccumulator acc = new IteratorDefinition.ListAccumulator();
+        IteratorStation.ListAccumulator acc = new IteratorStation.ListAccumulator();
 
         Collection<Object> collection = acc.getCollectionSupplier().getSupplier().get();
 
@@ -24,7 +23,7 @@ class IteratorDefinitionAccumulatorTest {
 
     @Test
     void setAccumulator_shouldProvideSetCollection() {
-        IteratorDefinition.SetAccumulator acc = new IteratorDefinition.SetAccumulator();
+        IteratorStation.SetAccumulator acc = new IteratorStation.SetAccumulator();
 
         Collection<Object> collection = acc.getCollectionSupplier().getSupplier().get();
 

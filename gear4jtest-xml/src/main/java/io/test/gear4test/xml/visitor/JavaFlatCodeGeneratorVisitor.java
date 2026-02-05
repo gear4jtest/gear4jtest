@@ -16,12 +16,12 @@ import com.palantir.javapoet.ParameterizedTypeName;
 import com.palantir.javapoet.TypeSpec;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
 import io.github.gear4jtest.core.model.AssemblyLine;
-import io.github.gear4jtest.core.model.ContainerBaseDefinition;
-import io.github.gear4jtest.core.model.IteratorDefinition;
+import io.github.gear4jtest.core.model.ContainerBaseStation;
+import io.github.gear4jtest.core.model.IteratorStation;
 import io.github.gear4jtest.core.model.Operator;
 import io.github.gear4jtest.core.model.WorkStation;
-import io.github.gear4jtest.core.model.SignalDefiinition;
-import io.github.gear4jtest.core.model.UnaryIfElseContainerDefinition;
+import io.github.gear4jtest.core.model.SignalStation;
+import io.github.gear4jtest.core.model.UnaryIfElseContainerStation;
 import io.test.gear4jtest.xml.generated.ActionType;
 import io.test.gear4jtest.xml.generated.BaseOperationType;
 import io.test.gear4jtest.xml.generated.ConditionType;
@@ -174,7 +174,7 @@ public class JavaFlatCodeGeneratorVisitor implements XmlToJavaVisitor {
 
         MethodSpec method = MethodSpec.methodBuilder(methodName)
                 .addModifiers(Modifier.PRIVATE)
-                .returns(SignalDefiinition.class)
+                .returns(SignalStation.class)
                 .addJavadoc("Crée le signal '$L' de type $L\n@return le signal configuré", signal.getId(), signal.getType())
                 .addCode(code.add(".build();\n").build())
                 .build();
@@ -226,7 +226,7 @@ public class JavaFlatCodeGeneratorVisitor implements XmlToJavaVisitor {
         if (iterator.getCollector() != null && iterator.getCollector().getExpression().equals("Collectors.toList()")) {
             visitorContext.setLastOut(new ParameterizedTypeImpl(List.class, null, new Type[]{visitorContext.getLastOut()}));
         }
-        ParameterizedTypeName ptn = ParameterizedTypeName.get(IteratorDefinition.class, lastOut, visitorContext.getLastOut());
+        ParameterizedTypeName ptn = ParameterizedTypeName.get(IteratorStation.class, lastOut, visitorContext.getLastOut());
 
         MethodSpec createMethod = MethodSpec.methodBuilder(methodName)
                 .addModifiers(Modifier.PRIVATE)
@@ -275,7 +275,7 @@ public class JavaFlatCodeGeneratorVisitor implements XmlToJavaVisitor {
                 .ifPresent(func -> code.add(".returns($L)\n", func.getExpression()));
 
         var inputType = visitorContext.getLastOut();
-        ParameterizedTypeName ptn = ParameterizedTypeName.get(ContainerBaseDefinition.class, inputType, visitorContext.getLastOut());
+        ParameterizedTypeName ptn = ParameterizedTypeName.get(ContainerBaseStation.class, inputType, visitorContext.getLastOut());
 
         MethodSpec method = MethodSpec.methodBuilder(methodName)
                 .addModifiers(Modifier.PRIVATE)
@@ -321,7 +321,7 @@ public class JavaFlatCodeGeneratorVisitor implements XmlToJavaVisitor {
                     });
 
         var inputType = visitorContext.getLastOut();
-        ParameterizedTypeName ptn = ParameterizedTypeName.get(UnaryIfElseContainerDefinition.class, inputType, visitorContext.getLastOut());
+        ParameterizedTypeName ptn = ParameterizedTypeName.get(UnaryIfElseContainerStation.class, inputType, visitorContext.getLastOut());
 
         MethodSpec method = MethodSpec.methodBuilder(methodName)
                 .addModifiers(Modifier.PRIVATE)

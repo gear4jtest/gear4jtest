@@ -6,7 +6,7 @@ import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
 import com.myorg.services.ModelsService;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
 import io.github.gear4jtest.core.model.AssemblyLine;
-import io.github.gear4jtest.core.model.IteratorDefinition;
+import io.github.gear4jtest.core.model.IteratorStation;
 import io.github.gear4jtest.core.model.WorkStation;
 import io.test.gear4test.xml.generator.GeneratedAssemblyLine;
 import java.lang.Integer;
@@ -68,7 +68,7 @@ public final class Whatever implements GeneratedAssemblyLine {
      * Crée l'itérateur 'iterator'
      * @return l'itérateur configuré
      */
-    private IteratorDefinition<List<Integer>, List<List<String>>> createIteratorIterator() {
+    private IteratorStation<List<Integer>, List<List<String>>> createIteratorIterator() {
         return new IteratorIteratorOperations().create();
     }
 
@@ -110,7 +110,7 @@ public final class Whatever implements GeneratedAssemblyLine {
                 .build();
         }
 
-        IteratorDefinition<List<Integer>, List<List<String>>> create() {
+        IteratorStation<List<Integer>, List<List<String>>> create() {
             return ElementModelBuilders.<List<Integer>>iterate("iterator")
                 .iterableFunction(java.util.function.Function.identity())
                 .pipeline(chain(createProcessingStep10()).build())

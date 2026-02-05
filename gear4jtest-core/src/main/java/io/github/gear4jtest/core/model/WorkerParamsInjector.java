@@ -117,7 +117,7 @@ public class WorkerParamsInjector implements Processor {
 
 			private final Parameters instance = new Parameters();
 
-			public <OP extends Operator<?, ?>, T> Builder withParameter(ParameterModel<OP, T> parameter) {
+			public <OP extends Operator<?, ?>, T> Builder withParameter(ParameterModel parameter) {
 				instance.parameters.add(parameter);
 				return this;
 			}

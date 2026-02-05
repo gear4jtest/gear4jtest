@@ -30,24 +30,24 @@ public class PipelineDefinition<IN, OUT> extends AbstractStation<IN, OUT> {
 		return collector;
 	}
 
-	@Override
-	public OUT doExecute(IN input, ExecutionContext context, StationExecutionContext operationExecution) throws Exception {
-		Iterable<?> collection = null;
-		if (func != null) {
-			collection = func.apply(input);
-		} else {
-			collection = (Iterable<?>) input;
-		}
-		Collection<Object> results = new ArrayList<>();
-		for (Object element: collection) {
-			var result = assemblyLine.execute(element, context.getContext(), context.getResourceFactory(), context.getExecutionManager());
-
-			if (!result.isSuccess()) {
-				return null;
-			}
-
-			results.add(result.getResult());
-		}
+//	@Override
+//	public OUT doExecute(IN input, ExecutionContext context, StationExecutionContext operationExecution) throws Exception {
+//		Iterable<?> collection = null;
+//		if (func != null) {
+//			collection = func.apply(input);
+//		} else {
+//			collection = (Iterable<?>) input;
+//		}
+//		Collection<Object> results = new ArrayList<>();
+//		for (Object element: collection) {
+//			var result = assemblyLine.execute(element, context.getContext(), context.getResourceFactory(), context.getAssemblyRunManager());
+//
+//			if (!result.isSuccess()) {
+//				return null;
+//			}
+//
+//			results.add(result.getResult());
+//		}
 
 //		if (accumulator != null) {
 //			Collection<?> acc = accumulator.getCollectionSupplier().getSupplier().get();
@@ -58,14 +58,14 @@ public class PipelineDefinition<IN, OUT> extends AbstractStation<IN, OUT> {
 //					report.addError(r.getError());
 //				}
 //			});
-		if (collector != null) {
-			return (OUT) results.stream().collect(collector);
-		} else {
-			return (OUT) results;
-		}
+//		if (collector != null) {
+//			return (OUT) results.stream().collect(collector);
+//		} else {
+//			return (OUT) results;
+//		}
 //		}
 //		return new ExecutionResult<>((OUT) results, true, null, report);
-	}
+//	}
 
 	public static class Builder<IN, OUT> {
 

@@ -6,8 +6,8 @@ import java.util.concurrent.ExecutorService;
 
 import io.github.gear4jtest.core.model.EventHandlingDefinition.EventConfiguration;
 import io.github.gear4jtest.core.model.AssemblyLine.Configuration;
-import io.github.gear4jtest.core.model.IteratorDefinition.ListAccumulator;
-import io.github.gear4jtest.core.model.IteratorDefinition.SetAccumulator;
+import io.github.gear4jtest.core.model.IteratorStation.ListAccumulator;
+import io.github.gear4jtest.core.model.IteratorStation.SetAccumulator;
 
 public final class ElementModelBuilders {
 
@@ -54,30 +54,30 @@ public final class ElementModelBuilders {
 		return new UnaryWorkStation.Builder<A, T>().id(id).type(step);
 	}
 
-	public static <A> IteratorDefinition.Builder<A, A> iterate(String id) {
-		return new IteratorDefinition.Builder<>(id);
+	public static <A> IteratorStation.Builder<A, A> iterate(String id) {
+		return new IteratorStation.Builder<>(id);
 	}
 
-	public static <T> SignalDefiinition.Builder<T> fatalSignal(Class<T> clazz) {
-		return new SignalDefiinition.Builder<T>()
+	public static <T> SignalStation.Builder<T> fatalSignal(Class<T> clazz) {
+		return new SignalStation.Builder<T>()
 				.type(SignalType.FATAL);
 	}
 
-	public static <U, V> SignalDefiinition.Builder<Map<U, V>> fatalSignal(MapType<U, V> clazz) {
-		return new SignalDefiinition.Builder<Map<U, V>>()
+	public static <U, V> SignalStation.Builder<Map<U, V>> fatalSignal(MapType<U, V> clazz) {
+		return new SignalStation.Builder<Map<U, V>>()
 				.type(SignalType.FATAL);
 	}
 
-	public static <T> ContainerBaseDefinition.Builder<T, T> container(Class<T> clazz) {
-		return new ContainerBaseDefinition.Builder<>();
+	public static <T> ContainerBaseStation.Builder<T, T> container(Class<T> clazz) {
+		return new ContainerBaseStation.Builder<>();
 	}
 
-	public static <T> ContainerBaseDefinition.Builder<T, T> container(Class<T> clazz, ExecutorService executorService) {
-		return new ContainerBaseDefinition.Builder<>(executorService);
+	public static <T> ContainerBaseStation.Builder<T, T> container(Class<T> clazz, ExecutorService executorService) {
+		return new ContainerBaseStation.Builder<>(executorService);
 	}
 
-	public static <T> UnaryIfElseContainerDefinition.Builder<T> ifElseContainer(Class<T> clazz) {
-		return new UnaryIfElseContainerDefinition.Builder<>();
+	public static <T> UnaryIfElseContainerStation.Builder<T> ifElseContainer(Class<T> clazz) {
+		return new UnaryIfElseContainerStation.Builder<>();
 	}
 
 	public static Configuration.Builder configuration() {
@@ -100,14 +100,15 @@ public final class ElementModelBuilders {
 		return new PersistenceConfiguration.Builder();
 	}
 
-	public static <IN, OUT> StationChain.Builder<IN, OUT> chain(AbstractStation<IN, OUT> step) {
-		return new StationChain.Builder<>(step);
+	public static <IN, OUT> SequenceStation.Builder<IN, OUT> chain(String id, AbstractStation<IN, OUT> step) {
+		return SequenceStation.Builder.<IN>create(id)
+                .next(step);
 	}
 
-	public static <IN, OUT> PipelineOperation.Builder<IN, OUT> pipelineOperation(String id,
-																				 AssemblyLine<IN, OUT> subPipeline) {
-		return new PipelineOperation.Builder<>(id, subPipeline);
-	}
+//	public static <IN, OUT> PipelineOperation.Builder<IN, OUT> pipelineOperation(String id,
+//																				 AssemblyLine<IN, OUT> subPipeline) {
+//		return new PipelineOperation.Builder<>(id, subPipeline);
+//	}
 
 	public static ListAccumulator toList() {
 		return new ListAccumulator();

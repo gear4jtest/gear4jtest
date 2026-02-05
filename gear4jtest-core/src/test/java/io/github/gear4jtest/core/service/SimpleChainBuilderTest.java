@@ -9,22 +9,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import io.github.gear4jtest.core.engine.core.ExtensionRegistry;
+import io.github.gear4jtest.core.engine.core.PipelineEngine;
+import io.github.gear4jtest.core.engine.core.RunRequest;
+import io.github.gear4jtest.core.engine.core.RunnerStackBuilder;
+import io.github.gear4jtest.core.engine.core.StrategyRegistry;
+import io.github.gear4jtest.core.engine.extension.PersistenceExtension;
+import io.github.gear4jtest.core.engine.feature.PersistenceFeature;
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.exception.AssemblyLineException;
 import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
-import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.model.ElementModelBuilders;
 import io.github.gear4jtest.core.model.ExecutionResult;
+import io.github.gear4jtest.core.persistence.AssemblyRun;
 import io.github.gear4jtest.core.persistence.DatabaseAssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.persistence.StationLog;
-import io.github.gear4jtest.core.persistence.AssemblyRun;
 import io.github.gear4jtest.core.service.steps.Step10;
 import io.github.gear4jtest.core.service.steps.Step11;
 import io.github.gear4jtest.core.service.steps.Step12;
@@ -125,7 +132,7 @@ public class SimpleChainBuilderTest {
 				.then(processingOperation("step9", Step9.class).build())
 				.then(ElementModelBuilders.<List<Integer>>iterate("iterator")
 						.iterableFunction(Function.identity())
-						.pipeline(chain(processingOperation("step10", Step10.class).build()).build())
+						.pipeline(chain("sequence", processingOperation("step10", Step10.class).build()).build())
 						.collector(Collectors.toList())
 						.build())
 				.configuration(configuration()
@@ -142,8 +149,20 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-		// When
-		ExecutionResult<List<List<String>>> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
+        ExtensionRegistry extensionRegistry = new ExtensionRegistry();
+        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
+        ResourceFactory resourceFactory = new TestResourceFactory();
+        PipelineEngine engine = new PipelineEngine(resourceFactory, stackBuilder);
+
+        var request = RunRequest.builder()
+                .input("b")
+                .context(context)
+                .resourceFactory(resourceFactory)
+                .build();
+
+        // When
+        ExecutionResult<List<List<String>>> result = engine.execute(assemblyLine, request);
+//        ExecutionResult<List<List<String>>> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
 
 		// Then
 		assertThat(result).isNotNull()
@@ -158,8 +177,9 @@ public class SimpleChainBuilderTest {
 	}
 
 	@Test
-	public void test_v2_event_management() throws AssemblyLineException {
+	public void test_v2_event_management() throws AssemblyLineException, InterruptedException {
 		// Given
+        var testEventListener = new TestEventListener();
 		var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
 				.then(processingOperation("step3", Step3.class)
 						.parameter(Step3::getParam, "a")
@@ -178,12 +198,12 @@ public class SimpleChainBuilderTest {
 				.then(processingOperation("step9", Step9.class).build())
 				.then(ElementModelBuilders.<List<Integer>>iterate("iterator")
 						.iterableFunction(Function.identity())
-						.pipeline(chain(processingOperation("step10", Step10.class).build()).build())
+						.pipeline(chain("sequence", processingOperation("step10", Step10.class).build()).build())
 						.collector(Collectors.toList())
 						.build())
 				.configuration(configuration()
 						.eventHandling(eventHandling()
-								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
+								.bus(simpleBus("main").eventListener(testEventListener).build())
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
 						.build())
@@ -195,8 +215,20 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
+        ExtensionRegistry extensionRegistry = new ExtensionRegistry();
+        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
+        ResourceFactory resourceFactory = new TestResourceFactory();
+        PipelineEngine engine = new PipelineEngine(resourceFactory, stackBuilder);
+
+        var request = RunRequest.builder()
+                .input("b")
+                .context(context)
+                .resourceFactory(resourceFactory)
+                .build();
+
 		// When
-		ExecutionResult<List<List<String>>> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
+        ExecutionResult<List<List<String>>> result = engine.execute(assemblyLine, request);
+//        ExecutionResult<List<List<String>>> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
 
 		// Then
 		assertThat(result).isNotNull()
@@ -209,7 +241,8 @@ public class SimpleChainBuilderTest {
 				.asList()
 				.contains("");
 
-		assertThat(TestEventListener.COUNTER).isEqualTo(10);
+        TimeUnit.MILLISECONDS.sleep(500);
+		assertThat(testEventListener.getCounter()).isEqualTo(12);
 	}
 
 	@Test
@@ -239,7 +272,7 @@ public class SimpleChainBuilderTest {
 				.then(processingOperation("step9", Step9.class).build())
 				.then(ElementModelBuilders.<List<Integer>>iterate("iterator")
 						.iterableFunction(Function.identity())
-						.pipeline(chain(processingOperation("step10", Step10.class).build()).build())
+						.pipeline(chain("sequence", processingOperation("step10", Step10.class).build()).build())
 						.collector(Collectors.toList())
 						.build())
 				.configuration(configuration()
@@ -259,9 +292,23 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-		// When
-		ExecutionResult<List<List<String>>> result =
-				assemblyLine.execute("b", context, new TestResourceFactory(), new DatabaseExecutionManager(dataSource));
+        ExtensionRegistry extensionRegistry = new ExtensionRegistry();
+        extensionRegistry.register(PersistenceFeature.KEY, new PersistenceExtension(new DatabaseExecutionManager(dataSource)));
+        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
+        ResourceFactory resourceFactory = new TestResourceFactory();
+        PipelineEngine engine = new PipelineEngine(resourceFactory, stackBuilder);
+
+        var request = RunRequest.builder()
+                .input("b")
+                .context(context)
+                .resourceFactory(resourceFactory)
+                .with(new PersistenceExtension(new DatabaseExecutionManager(dataSource)))
+                .build();
+
+        // When
+        ExecutionResult<List<List<String>>> result = engine.execute(assemblyLine, request);
+//		ExecutionResult<List<List<String>>> result =
+//				assemblyLine.execute("b", context, new TestResourceFactory(), new DatabaseExecutionManager(dataSource));
 
 		// Then
 		assertThat(result).isNotNull()
@@ -310,15 +357,24 @@ public class SimpleChainBuilderTest {
 						tuple(result.getExecution().getId().toString(), "step8", null, Status.SUCCEEDED, null),
 						tuple(result.getExecution().getId().toString(), "step9", null, Status.SUCCEEDED, null),
 						tuple(result.getExecution().getId().toString(), "iterator", null, Status.SUCCEEDED, null));
-		var iteratorExecutionRecord = getRecordByOperationId(pipelineExecution.get().getOperations(), "iterator");
-		assertThat(iteratorExecutionRecord.getSubOperations())
-				.extracting(
-						StationLog::getPipelineExecutionId,
-						StationLog::getOperationId,
-						StationLog::getParentOperationId,
-						StationLog::getStatus,
-						StationLog::getContext)
-				.containsExactly(tuple(result.getExecution().getId().toString(), "step10", getRecordByOperationId(pipelineExecution.get().getOperations(), "iterator").getId(), Status.SUCCEEDED, null));
+        var iteratorExecutionRecord = getRecordByOperationId(pipelineExecution.get().getOperations(), "iterator");
+        assertThat(iteratorExecutionRecord.getSubOperations())
+                .extracting(
+                        StationLog::getPipelineExecutionId,
+                        StationLog::getOperationId,
+                        StationLog::getParentOperationId,
+                        StationLog::getStatus,
+                        StationLog::getContext)
+                .containsExactly(tuple(result.getExecution().getId().toString(), "sequence", getRecordByOperationId(pipelineExecution.get().getOperations(), "iterator").getId(), Status.SUCCEEDED, null));
+        var sequenceExecutionRecord = getRecordByOperationId(iteratorExecutionRecord.getSubOperations(), "sequence");
+        assertThat(sequenceExecutionRecord.getSubOperations())
+                .extracting(
+                        StationLog::getPipelineExecutionId,
+                        StationLog::getOperationId,
+                        StationLog::getParentOperationId,
+                        StationLog::getStatus,
+                        StationLog::getContext)
+                .containsExactly(tuple(result.getExecution().getId().toString(), "step10", getRecordByOperationId(iteratorExecutionRecord.getSubOperations(), "sequence").getId(), Status.SUCCEEDED, null));
 	}
 
 	private static StationLog getRecordByOperationId(List<StationLog> records, String operationId) {
@@ -357,8 +413,20 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-		// When
-		ExecutionResult<List<String>> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
+        ExtensionRegistry extensionRegistry = new ExtensionRegistry();
+        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
+        ResourceFactory resourceFactory = new TestResourceFactory();
+        PipelineEngine engine = new PipelineEngine(resourceFactory, stackBuilder);
+
+        var request = RunRequest.builder()
+                .input("b")
+                .context(context)
+                .resourceFactory(resourceFactory)
+                .build();
+
+        // When
+        ExecutionResult<List<String>> result = engine.execute(assemblyLine, request);
+//		ExecutionResult<List<String>> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
 
 		// Then
 		assertThat(result)
@@ -399,8 +467,20 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-		// When
-		ExecutionResult<List<String>> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
+        ExtensionRegistry extensionRegistry = new ExtensionRegistry();
+        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
+        ResourceFactory resourceFactory = new TestResourceFactory();
+        PipelineEngine engine = new PipelineEngine(resourceFactory, stackBuilder);
+
+        var request = RunRequest.builder()
+                .input("b")
+                .context(context)
+                .resourceFactory(resourceFactory)
+                .build();
+
+        // When
+        ExecutionResult<List<String>> result = engine.execute(assemblyLine, request);
+//		ExecutionResult<List<String>> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
 
 		// Then
 		assertThat(result)
@@ -445,8 +525,20 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-		// When
-		ExecutionResult<String> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
+        ExtensionRegistry extensionRegistry = new ExtensionRegistry();
+        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
+        ResourceFactory resourceFactory = new TestResourceFactory();
+        PipelineEngine engine = new PipelineEngine(resourceFactory, stackBuilder);
+
+        var request = RunRequest.builder()
+                .input("b")
+                .context(context)
+                .resourceFactory(resourceFactory)
+                .build();
+
+        // When
+        ExecutionResult<String> result = engine.execute(assemblyLine, request);
+//		ExecutionResult<String> result = assemblyLine.execute("b", context, new TestResourceFactory(), new InMemoryExecutionManager());
 
 		// Then
 		assertThat(result)
@@ -1291,7 +1383,7 @@ public class SimpleChainBuilderTest {
 	}
 
 	public static class TestEventListener implements EventListener<Event> {
-		public static int COUNTER;
+		public int COUNTER;
 
 		public TestEventListener() {
 			COUNTER = 1;
@@ -1302,6 +1394,10 @@ public class SimpleChainBuilderTest {
 			System.out.println();
 			COUNTER++;
 		}
+
+        public int getCounter() {
+            return COUNTER;
+        }
 	}
 
 //	public static class TestPostProcessor implements ProcessingOperationProcessor {

@@ -10,8 +10,10 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLType;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -98,7 +100,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             // Lecture du fichier complet
             String scriptContent;
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-                scriptContent = reader.lines().collect(Collectors.joining("\n"));
+                scriptContent = reader.lines().collect(Collectors.joining(""));
             }
 
             // Découpage naïf par point-virgule pour exécuter instruction par instruction
@@ -124,9 +126,9 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, execution.getId().toString());
                 stmt.setString(2, execution.getPipelineId());
-                stmt.setString(3, toJson(execution.getInputParams()));
-                stmt.setString(4, toJson(execution.getContext()));
-                stmt.setString(5, toJson(execution.getResult()));
+                stmt.setObject(3, toJson(execution.getInputParams()), Types.OTHER);
+                stmt.setObject(4, toJson(execution.getContext()), Types.OTHER);
+                stmt.setObject(5, toJson(execution.getResult()), Types.OTHER);
                 stmt.setString(6, execution.getStatus().name());
                 stmt.setTimestamp(7, Timestamp.from(execution.getStartTime()));
                 stmt.setTimestamp(8, execution.getEndTime() != null ? Timestamp.from(execution.getEndTime()) : null);
@@ -169,8 +171,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         try (Connection conn = dataSource.getConnection()) {
             String sql = "UPDATE assembly_run SET context=?, result=?, status=?, end_time=?, error_message=? WHERE id=?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setString(1, toJson(execution.getContext()));
-                stmt.setString(2, toJson(execution.getResult()));
+                stmt.setObject(1, toJson(execution.getContext()), Types.OTHER);
+                stmt.setObject(2, toJson(execution.getResult()), Types.OTHER);
                 stmt.setString(3, execution.getStatus().name());
                 stmt.setTimestamp(4, execution.getEndTime() != null ? Timestamp.from(execution.getEndTime()) : null);
                 stmt.setString(5, execution.getErrorMessage());
@@ -259,7 +261,14 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         String sql = "INSERT INTO station_log " +
                 "(id, pipeline_execution_id, operation_id, parent_operation_id, status, " +
                 " start_time, end_time, error_message, error_handler_messages, context) " +
-                "VALUES (?,?,?,?,?,?,?,?,?,?)";
+                "VALUES (?,?,?,?,?,?,?,?,?,?)" +
+                "ON CONFLICT (id) DO UPDATE SET" +
+                "  status = EXCLUDED.status," +
+                "  end_time = EXCLUDED.end_time," +
+                "  error_message = EXCLUDED.error_message," +
+                "  error_handler_messages = EXCLUDED.error_handler_messages," +
+                "  context = EXCLUDED.context " +
+                "WHERE station_log.end_time IS NULL;";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -274,7 +283,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 stmt.setTimestamp(7, rec.getEndedAt() != null ? Timestamp.from(rec.getEndedAt()) : null);
                 stmt.setString(8, rec.getErrorMessage());
                 stmt.setString(9, rec.getErrorHandlerMessages());
-                stmt.setString(10, toJson(rec.getContext()));
+                stmt.setObject(10, toJson(rec.getContext()), Types.OTHER);
                 stmt.addBatch();
             }
 
