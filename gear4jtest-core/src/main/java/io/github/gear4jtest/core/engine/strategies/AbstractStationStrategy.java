@@ -10,7 +10,6 @@ import io.github.gear4jtest.core.event.OperationStartedEvent;
 import io.github.gear4jtest.core.model.AbstractStation;
 import io.github.gear4jtest.core.model.BaseError;
 import io.github.gear4jtest.core.model.Condition;
-import io.github.gear4jtest.core.model.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.model.ExecutionContext;
 import io.github.gear4jtest.core.model.Processor;
 import io.github.gear4jtest.core.model.SignalType;
@@ -51,7 +50,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
         Object result = null;
         Exception mainException = null;
         try {
-            setUp(station, input, context.getGlobalContext(), context);
+            setUp(station, input, context);
             if (station.getConditions() != null && !station.getConditions().isEmpty()) {
                 boolean allMatch = true;
                 for (Condition condition : (List<Condition>) station.getConditions()) {
@@ -63,7 +62,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
 
                 if (!allMatch) {
                     // Conditions KO => fallback éventuel, ou unary, ou SKIPPED
-                    result = handleSkippedByCondition(station, input, context.getGlobalContext(), context, context.getRecord());
+                    result = handleSkippedByCondition(station, input, context, context.getRecord());
                     return context.getRecord();
                 }
             }
@@ -80,7 +79,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
                 }
             }
 
-            result = doExecute(station, input, context.getGlobalContext(), runner, context);
+            result = doExecute(station, input, runner, context);
             context.getRecord().markSuccess(result);
 
             if (station.getProcessors() != null && !station.getProcessors().isEmpty()) {
@@ -137,14 +136,13 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
     @SuppressWarnings("unchecked")
     protected Object handleSkippedByCondition(S station,
                                               Object input,
-                                              ExecutionContext context,
                                               StationExecutionContext opContext,
                                               StationLog record) {
         Object result = null;
 
         if (station.getFallbackOperator() != null) {
             try {
-                result = station.getFallbackOperator().transform(input, context, opContext);
+                result = station.getFallbackOperator().transform(input, opContext);
                 record.markSuccess(result);
             } catch (Exception e) {
                 // Échec du fallback => on log l'erreur mais on marque SKIPPED
@@ -247,7 +245,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
         }
 
         return switch (signal) {
-            case IGNORE -> handleSkippedByCondition(station, input, context, opContext, record);
+            case IGNORE -> handleSkippedByCondition(station, input, opContext, record);
             case STOP -> {
                 record.markStopped(exception);
                 yield null;
@@ -296,7 +294,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
      * Appelé AVANT les preProcessors et AVANT la logique métier.
      * C'est ici que les sous-classes peuvent acquérir des ressources (locks, etc.).
      */
-    protected void setUp(S station, Object input, ExecutionContext context, StationExecutionContext operationExecution) {
+    protected void setUp(S station, Object input, StationExecutionContext operationExecution) {
         // no-op par défaut
     }
 
@@ -317,7 +315,6 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
      */
     protected abstract Object doExecute(S station,
                                         Object input,
-                                        ExecutionContext globalContext,
                                         StationRunner runner,
                                         StationExecutionContext opContext) throws Exception;
 }

@@ -3,9 +3,8 @@ package io.github.gear4jtest.core.service.steps;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.github.gear4jtest.core.model.ExecutionContext;
-import io.github.gear4jtest.core.model.StationExecutionContext;
 import io.github.gear4jtest.core.model.Operator;
+import io.github.gear4jtest.core.model.StationExecutionContext;
 
 public class Step1 implements Operator<String, Integer> {
 
@@ -24,7 +23,7 @@ public class Step1 implements Operator<String, Integer> {
 	}
 	
 	@Override
-	public Integer transform(String object, ExecutionContext context, StationExecutionContext operationExecution) {
+	public Integer transform(String object, StationExecutionContext operationExecution) {
 		return 1;
 	}
 

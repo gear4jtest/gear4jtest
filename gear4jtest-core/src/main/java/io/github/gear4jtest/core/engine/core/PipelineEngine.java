@@ -1,5 +1,6 @@
 package io.github.gear4jtest.core.engine.core;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,11 +50,14 @@ public class PipelineEngine implements PipelineExecutor {
         var executionId = UUID.randomUUID();
         var execution = new AssemblyRun(executionId, pipeline.getId(), new HashMap<>(effectiveContext));
 
+        var resourceFactory = Optional.ofNullable(request.getResourceFactory())
+                .or(() -> Optional.ofNullable(this.resourceFactory))
+                .orElseThrow();
         var ctx = new ExecutionContext(
                 executionId,
                 pipeline.getId(),
                 eventManager,
-                request.getResourceFactory(),
+                resourceFactory,
                 execution);
 
         try {
@@ -80,6 +84,18 @@ public class PipelineEngine implements PipelineExecutor {
             for (AbstractStation station : pipeline.getStations()) {
                 StationLog stationLog = rootRunner.run(input, station, rootContext);
                 input = stationLog.getOutput(null);
+
+                if (stationLog.getStatus() == StationLog.Status.FAILED || stationLog.getStatus() == StationLog.Status.STOPPED) {
+                    ctx.getPipelineExecution().setContext(ctx.getContext());
+                    ctx.getPipelineExecution().setEndTime(Instant.now());
+//                    if (configuration.getPersistence() != null
+//                            && configuration.getPersistence().isStoreResultObject()) {
+                        ctx.getPipelineExecution().setResult(null);
+//                    }
+                    ctx.getAssemblyRunManager().end(ctx.getPipelineExecution());
+//                    success = false;
+                    break;
+                }
             }
 
             for (RuntimeExtension ext : request.getExtensions()) {

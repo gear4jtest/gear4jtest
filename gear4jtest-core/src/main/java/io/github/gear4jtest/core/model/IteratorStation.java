@@ -46,63 +46,6 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
 		return itemIdResolver;
 	}
 
-//	@Override
-//	public OUT doExecute(IN input, ExecutionContext context, StationExecutionContext operationExecution) {
-//		Iterable<?> collection;
-//		if (func != null) {
-//			collection = func.apply(input);
-//		} else {
-//			collection = (Iterable<?>) input;
-//		}
-//
-//		Collection<Object> results = new ArrayList<>();
-//
-//		long index = 0L;
-//		boolean success = true;
-//
-//		for (Object element : collection) {
-//			String itemId = (itemIdResolver != null)
-//					? itemIdResolver.resolve(element, index, context)
-//					: this.id + "#item-" + index;
-//
-//			StationChainResult<Object> chainResult =
-//					context.withItemId(itemId, () -> chain.execute(element, context));
-//
-//			// Rattache systématiquement chaque exécution enfant à l'iterator courant
-////			operationExecution.getRecord().addSubOperation(rec);
-//
-//			if (!chainResult.isSuccess()) {
-//				success = false;
-//				break;
-//			}
-//
-//			// Output fonctionnel pour la suite de la pipeline
-//			Object value = chainResult.getResult();
-//			results.add(value);
-//
-//			if (!success) {
-//				operationExecution.getRecord().markFailed(null);
-//				break;
-//			}
-//		}
-//
-//		// Accumulateur / collector comme avant
-//		if (accumulator != null) {
-//			Collection<Object> acc = accumulator.getCollectionSupplier().getSupplier().get();
-//			acc.addAll(results);
-//			return (OUT) acc;
-//		}
-//
-//		if (collector != null) {
-//			return (OUT) results.stream().collect(collector);
-//		}
-//
-//		return (OUT) results;
-//	}
-
-	// --------------------------------------------------------------------------------------------
-	// Builder ORIGINAL (conservé tel quel)
-	// --------------------------------------------------------------------------------------------
 	public static class Builder<IN, OUT> {
 
 		private final IteratorStation<IN, OUT> managedInstance;
@@ -141,9 +84,6 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
 		}
 	}
 
-	// --------------------------------------------------------------------------------------------
-	// Accumulateurs ORIGINAUX (inchangés)
-	// --------------------------------------------------------------------------------------------
 	public static class Accumulator {
 
 		private final CollectionSupplier collectionSupplier;

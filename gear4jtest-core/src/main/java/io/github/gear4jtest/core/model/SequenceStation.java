@@ -16,27 +16,6 @@ public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
         return steps;
     }
 
-//    @SuppressWarnings("unchecked")
-//    public OUT doExecute(IN input, ExecutionContext context, StationExecutionContext operationExecution) {
-//        StationLog rec = null;
-//        Object in = input;
-//        boolean success = true;
-//
-//        for (Station<?, ?> step : steps) {
-//            Station<Object, Object> typed = (Station<Object, Object>) step;
-//            rec = typed.run(in, context);
-////            ctx.getExecutionManager().append(rec);
-//
-//            if (rec.getStatus() == StationLog.Status.FAILED || rec.getStatus() == StationLog.Status.STOPPED) {
-//                success = false;
-//                break;
-//            }
-//
-//            in = rec.getOutput(Object.class);
-//        }
-//        return (OUT) in;
-//    }
-
     public static class Builder<IN, OUT> {
 
         private final String id;

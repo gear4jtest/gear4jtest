@@ -5,7 +5,6 @@ import java.util.List;
 import io.github.gear4jtest.core.engine.spi.StationRunner;
 import io.github.gear4jtest.core.model.AbstractStation;
 import io.github.gear4jtest.core.model.ContainerBaseStation;
-import io.github.gear4jtest.core.model.ExecutionContext;
 import io.github.gear4jtest.core.model.StationExecutionContext;
 import io.github.gear4jtest.core.model.UnaryIfElseContainerStation;
 import io.github.gear4jtest.core.persistence.StationLog;
@@ -18,12 +17,12 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
     }
 
     @Override
-    public Object doExecute(UnaryIfElseContainerStation station, Object input, ExecutionContext context, StationRunner runner, StationExecutionContext operationExecution) {
+    public Object doExecute(UnaryIfElseContainerStation station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
         boolean conditionMet = false;
         Object containerResult = null;
 
         for (ContainerBaseStation.Branch element : (List<ContainerBaseStation.Branch>) station.getPipelines()) {
-            if (element.getCondition() == null || element.getCondition().test(input, context)) {
+            if (element.getCondition() == null || element.getCondition().test(input, operationExecution.getGlobalContext())) {
                 conditionMet = true;
                 Object newObject = deepClone(input);
                 var rec = runner.run(newObject, element.getStation(), operationExecution);

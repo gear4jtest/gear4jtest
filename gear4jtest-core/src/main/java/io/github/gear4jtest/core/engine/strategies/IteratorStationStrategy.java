@@ -6,10 +6,7 @@ import java.util.function.Function;
 
 import io.github.gear4jtest.core.engine.spi.StationRunner;
 import io.github.gear4jtest.core.model.AbstractStation;
-import io.github.gear4jtest.core.model.ContainerBaseStation;
-import io.github.gear4jtest.core.model.ExecutionContext;
 import io.github.gear4jtest.core.model.IteratorStation;
-import io.github.gear4jtest.core.model.StationChainResult;
 import io.github.gear4jtest.core.model.StationExecutionContext;
 import io.github.gear4jtest.core.persistence.StationLog;
 
@@ -21,7 +18,7 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
     }
 
     @Override
-    public Object doExecute(IteratorStation station, Object input, ExecutionContext context, StationRunner runner, StationExecutionContext operationExecution) {
+    public Object doExecute(IteratorStation station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
         Iterable<?> collection;
         if (station.getFunc() != null) {
             collection = ((Function<Object, ? extends Iterable<?>>) station.getFunc()).apply(input);
@@ -36,11 +33,11 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
 
         for (Object element : collection) {
             String itemId = (station.getItemIdResolver() != null)
-                    ? station.getItemIdResolver().resolve(element, index, context)
+                    ? station.getItemIdResolver().resolve(element, index, operationExecution.getGlobalContext())
                     : station.getId() + "#item-" + index;
 
             StationLog chainResult =
-                    context.withItemId(itemId, () -> runner.run(element, station.getChain(), operationExecution));
+                    operationExecution.getGlobalContext().withItemId(itemId, () -> runner.run(element, station.getChain(), operationExecution));
 
             // Rattache systématiquement chaque exécution enfant à l'iterator courant
 //			operationExecution.getRecord().addSubOperation(rec);
@@ -73,18 +70,5 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
         }
 
         return results;
-    }
-
-    private Object returns(ContainerBaseStation station, Collection<Object> executions) {
-        var returnedObjects = executions.toArray();
-        if (station.getFunc() != null) {
-            return station.getFunc().apply(returnedObjects);
-        } else {
-            return null;
-        }
-    }
-
-    <T> T deepClone(T object) {
-        return object;
     }
 }

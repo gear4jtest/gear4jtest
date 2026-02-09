@@ -6,7 +6,6 @@ import java.util.Optional;
 import io.github.gear4jtest.core.engine.spi.StationRunner;
 import io.github.gear4jtest.core.model.AbstractStation;
 import io.github.gear4jtest.core.model.DefaultStationExecutionContext;
-import io.github.gear4jtest.core.model.ExecutionContext;
 import io.github.gear4jtest.core.model.Operator;
 import io.github.gear4jtest.core.model.StationContextUtils;
 import io.github.gear4jtest.core.model.StationExecutionContext;
@@ -42,8 +41,8 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation> {
     }
 
     @Override
-    public void setUp(WorkStation station, Object input, ExecutionContext context, StationExecutionContext operationExecution) {
-        var operation = context.getResourceFactory().getResource((Class<Operator>) station.getType());
+    public void setUp(WorkStation station, Object input, StationExecutionContext operationExecution) {
+        var operation = operationExecution.getGlobalContext().getResourceFactory().getResource((Class<Operator>) station.getType());
         ((DefaultStationExecutionContext) operationExecution).addCapability(Operator.class, operation);
         var parameters = WorkerParamsInjector.Parameters.newBuilder();
         Optional.ofNullable(station.getParameters()).stream()
@@ -64,12 +63,12 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation> {
     }
 
     @Override
-    public Object doExecute(WorkStation station, Object input, ExecutionContext ctx, StationRunner runner, StationExecutionContext operationExecution) {
+    public Object doExecute(WorkStation station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
         var transformer = StationContextUtils.getTypedTransformer(operationExecution);
         if (transformer.isEmpty()) {
             throw new IllegalStateException("No transformer present found in operation execution context");
         }
-        return transformer.get().transform(input, ctx, operationExecution);
+        return transformer.get().transform(input, operationExecution);
     }
 
     @Override

@@ -23,7 +23,7 @@ public class StrategyRegistry {
     public static StrategyRegistry defaultRegistry() {
         return new StrategyRegistry(List.of(
                 new WorkStationStrategy(),
-                new SequenceStationStrategy<>(),
+                new SequenceStationStrategy(),
                 new IteratorStationStrategy(),
                 new IfElseContainerStationStrategy(),
                 new ContainerStationStrategy(),

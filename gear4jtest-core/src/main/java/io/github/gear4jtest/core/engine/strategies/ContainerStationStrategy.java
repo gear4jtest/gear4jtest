@@ -10,7 +10,6 @@ import java.util.concurrent.Future;
 import io.github.gear4jtest.core.engine.spi.StationRunner;
 import io.github.gear4jtest.core.model.AbstractStation;
 import io.github.gear4jtest.core.model.ContainerBaseStation;
-import io.github.gear4jtest.core.model.ExecutionContext;
 import io.github.gear4jtest.core.model.StationExecutionContext;
 import io.github.gear4jtest.core.persistence.StationLog;
 
@@ -22,15 +21,15 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
     }
 
     @Override
-    public Object doExecute(ContainerBaseStation station, Object input, ExecutionContext context, StationRunner runner, StationExecutionContext operationExecution) {
+    public Object doExecute(ContainerBaseStation station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
         Collection<Object> results = new ArrayList<>();
-        String currentItemId = context.getCurrentItemId();
+        String currentItemId = operationExecution.getGlobalContext().getCurrentItemId();
 
         if (station.isParallel() && station.getExecutorService() != null) {
             List<Callable<Object>> tasks = new ArrayList<>();
 
             for (ContainerBaseStation.Branch element : (List<ContainerBaseStation.Branch>) station.getPipelines()) {
-                tasks.add(() -> context.withItemId(currentItemId, () -> {
+                tasks.add(() -> operationExecution.getGlobalContext().withItemId(currentItemId, () -> {
                     Object newObject = deepClone(input);
                     var rec = runner.run(newObject, element.getStation(), operationExecution);
 //                    var rec = element.getStation().run(newObject, context);

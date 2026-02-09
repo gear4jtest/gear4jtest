@@ -2,8 +2,6 @@ package io.github.gear4jtest.core.model;
 
 import java.util.function.Predicate;
 
-import io.github.gear4jtest.core.persistence.StationLog;
-
 public class SignalStation<IN> extends AbstractStation<IN, IN> {
 
 	protected SignalType signalType;
@@ -21,15 +19,6 @@ public class SignalStation<IN> extends AbstractStation<IN, IN> {
 	public Predicate<SignalInterpretationContext<IN>> getCondition() {
 		return condition;
 	}
-
-//	@Override
-//	public IN doExecute(IN input, ExecutionContext context, StationExecutionContext operationExecution) {
-//		switch(signalType) {
-//			case FATAL -> operationExecution.getRecord().setStatus(StationLog.Status.FAILED);
-//			case STOP -> operationExecution.getRecord().setStatus(StationLog.Status.STOPPED);
-//		}
-//		return input;
-//	}
 
 	public static class Builder<IN> {
 

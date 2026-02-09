@@ -1,14 +1,8 @@
 package io.github.gear4jtest.core.model;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-
-import io.github.gear4jtest.core.persistence.StationLog;
 
 public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
@@ -37,87 +31,6 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
 	public ExecutorService getExecutorService() {
 		return executorService;
-	}
-
-//	@Override
-//	public OUT doExecute(IN input, ExecutionContext context, StationExecutionContext operationExecution) {
-//		Collection<Object> results = new ArrayList<>();
-//		String currentItemId = context.getCurrentItemId();
-//
-//		if (isParallel && executorService != null) {
-//			List<Callable<Object>> tasks = new ArrayList<>();
-//
-//			for (Branch<IN> element : pipelines) {
-//				tasks.add(() -> context.withItemId(currentItemId, () -> {
-//					IN newObject = deepClone(input);
-//					var rec = element.getStation().run(newObject, context);
-//
-//					rec.setParentOperationId(operationExecution.getOperationId());
-////					context.getExecutionManager().append(rec);
-//
-//					if (rec.getStatus() == StationLog.Status.FAILED) {
-//						// On marque l'opération globale en échec
-//						operationExecution.getRecord().markFailed(null);
-//						return null; // pas de résultat pour cette branche
-//					}
-//
-//					return rec.getOutput(Object.class);
-//				}));
-//			}
-//
-//			try {
-//				// Lance toutes les tâches et attend qu’elles soient terminées
-//				List<Future<Object>> futures = executorService.invokeAll(tasks);
-//
-//				for (Future<Object> future : futures) {
-//					Object value = future.get(); // bloque jusqu'à fin de la tâche
-//					if (value != null) {
-//						results.add(value);
-//					}
-//				}
-//			} catch (InterruptedException e) {
-//				Thread.currentThread().interrupt();
-//				throw new RuntimeException(e);
-//			} catch (ExecutionException e) {
-//				throw new RuntimeException("Erreur dans une sous-ligne du container", e.getCause());
-//			}
-//
-//			// ⚠ À toi de décider si on shutdown ici ou non
-//			// Si l'executor est fourni de l'extérieur (comme dans ton test),
-//			// je te conseille de NE PAS le shutdown dans le container.
-//			// executorService.shutdown();
-//
-//		} else {
-//			// Version séquentielle inchangée
-//			for (Branch<IN> element : pipelines) {
-//				IN newObject = deepClone(input);
-//				var rec = element.getStation().run(newObject, context);
-//				rec.setParentOperationId(operationExecution.getOperationId());
-////				context.getExecutionManager().append(rec);
-//
-//				if (rec.getStatus() == StationLog.Status.FAILED) {
-//					operationExecution.getRecord().markFailed(null);
-//					return null;
-//				}
-//
-//				results.add(rec.getOutput(Object.class));
-//			}
-//		}
-//
-//		return returns(results);
-//	}
-
-//	private OUT returns(Collection<Object> executions) {
-//		var returnedObjects = executions.toArray();
-//		if (func != null) {
-//			return func.apply(returnedObjects);
-//		} else {
-//			return null;
-//		}
-//	}
-
-	<T> T deepClone(T object) {
-		return object;
 	}
 
 	public static class Builder<IN, OUT> {
