@@ -34,7 +34,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
                     var rec = runner.run(newObject, element.getStation(), operationExecution);
 //                    var rec = element.getStation().run(newObject, context);
 
-                    rec.setParentOperationId(operationExecution.getOperationId());
+                    rec.setParentOperationId(operationExecution.getRecord().getId());
 //					context.getExecutionManager().append(rec);
 
                     if (rec.getStatus() == StationLog.Status.FAILED) {
@@ -43,7 +43,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
                         return null; // pas de résultat pour cette branche
                     }
 
-                    return rec.getOutput(Object.class);
+                    return rec.getOutput();
                 }));
             }
 
@@ -74,7 +74,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
             for (ContainerBaseStation.Branch element : (List<ContainerBaseStation.Branch>) station.getPipelines()) {
                 Object newObject = deepClone(input);
                 var rec = runner.run(newObject, element.getStation(), operationExecution);
-                rec.setParentOperationId(operationExecution.getOperationId());
+                rec.setParentOperationId(operationExecution.getRecord().getId());
 //				context.getExecutionManager().append(rec);
 
                 if (rec.getStatus() == StationLog.Status.FAILED) {
@@ -82,7 +82,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
                     return null;
                 }
 
-                results.add(rec.getOutput(Object.class));
+                results.add(rec.getOutput());
             }
         }
 

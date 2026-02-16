@@ -15,16 +15,22 @@ public class DefaultStationExecutionContext implements StationExecutionContext {
 
     private final Map<Class<?>, Object> capabilities = new HashMap<>();
 
-    public DefaultStationExecutionContext(
-            String operationId,
-            StationKind kind,
-            ExecutionContext globalContext,
-            StationLog record
-    ) {
+    public DefaultStationExecutionContext(String operationId,
+                                          StationKind kind,
+                                          ExecutionContext globalContext,
+                                          StationLog record) {
         this.operationId = operationId;
         this.kind = kind;
         this.globalContext = globalContext;
         this.record = record;
+    }
+
+    public DefaultStationExecutionContext(String operationId,
+                                          ExecutionContext globalContext) {
+        this.operationId = operationId;
+        this.kind = StationKind.OTHER;
+        this.globalContext = globalContext;
+        this.record = null;
     }
 
     @Override

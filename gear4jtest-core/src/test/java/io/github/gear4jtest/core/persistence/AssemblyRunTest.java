@@ -14,11 +14,11 @@ class AssemblyRunTest {
         UUID id = UUID.randomUUID();
 
         StationLog r1 =
-                StationLog.start("exec", "op1", null);
+                StationLog.start(UUID.randomUUID(), "op1", null);
         r1.markSuccess("A");
 
         StationLog r2 =
-                StationLog.start("exec", "op2", null);
+                StationLog.start(UUID.randomUUID(), "op2", null);
         r2.markSuccess("B");
 
         AssemblyRun pe = new AssemblyRun(id, "pipe", Map.of());

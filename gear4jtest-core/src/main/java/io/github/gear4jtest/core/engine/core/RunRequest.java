@@ -8,6 +8,7 @@ import java.util.Objects;
 
 import io.github.gear4jtest.core.engine.spi.RuntimeExtension;
 import io.github.gear4jtest.core.factory.ResourceFactory;
+import io.github.gear4jtest.core.spi.IdGenerator;
 
 public class RunRequest {
 
@@ -16,6 +17,7 @@ public class RunRequest {
     private final Map<String, Object> context;
     private final ResourceFactory resourceFactory;
     private final List<RuntimeExtension> extensions;
+    private final IdGenerator idGenerator;
 
     private RunRequest(Builder builder) {
         this.input = builder.input;
@@ -23,6 +25,7 @@ public class RunRequest {
         this.context = builder.context;
         this.resourceFactory = builder.resourceFactory;
         this.extensions = Collections.unmodifiableList(builder.extensions);
+        this.idGenerator = builder.idGenerator;
     }
 
     public static Builder builder() {
@@ -68,12 +71,17 @@ public class RunRequest {
         return context;
     }
 
+    public IdGenerator getIdGenerator() {
+        return idGenerator;
+    }
+
     public static class Builder {
         private final List<RuntimeExtension> extensions = new ArrayList<>();
         private Object input;
         private ContextInfo contextInfo;
         private Map<String, Object> context;
         private ResourceFactory resourceFactory;
+        private IdGenerator idGenerator;
 
         public Builder input(Object input) {
             this.input = input;
@@ -92,6 +100,11 @@ public class RunRequest {
 
         public Builder resourceFactory(ResourceFactory resourceFactory) {
             this.resourceFactory = resourceFactory;
+            return this;
+        }
+
+        public Builder withIdGenerator(IdGenerator idGenerator) {
+            this.idGenerator = idGenerator;
             return this;
         }
 

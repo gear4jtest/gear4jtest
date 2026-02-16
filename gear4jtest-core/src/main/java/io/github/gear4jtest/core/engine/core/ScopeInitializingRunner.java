@@ -9,7 +9,7 @@ import io.github.gear4jtest.core.persistence.StationLog.Status;
 
 public class ScopeInitializingRunner implements StationRunner {
 
-    private final StationRunner delegate; // Le reste de la chaîne (Persist -> Terminal)
+    private final StationRunner delegate;
 
     public ScopeInitializingRunner(StationRunner delegate) {
         this.delegate = delegate;
@@ -17,30 +17,22 @@ public class ScopeInitializingRunner implements StationRunner {
 
     @Override
     public StationLog run(Object input, AbstractStation station, StationExecutionContext parentCtx) {
-        // 1. CRÉATION DU LOG (Single Source of Truth)
-        // On utilise l'ID du parent fourni par le contexte appelant
-        StationLog log = StationLog.start(
-            parentCtx.getGlobalContext().getExecutionId().toString(),
+        StationLog stationLog = StationLog.start(
+            parentCtx.getGlobalContext().getExecutionId(),
             station.getId(),
             parentCtx.getGlobalContext().getCurrentParentOperationId()
-//            parentCtx.getRecord() != null ? parentCtx.getRecord().getId() : null // Parent ID
         );
-        log.setItemId(parentCtx.getGlobalContext().getCurrentItemId());
-        log.setStatus(Status.RUNNING);
+        stationLog.setItemId(parentCtx.getGlobalContext().getCurrentItemId());
+        stationLog.setStatus(Status.RUNNING);
 
-        // 2. CRÉATION DU CONTEXTE LOCAL (DefaultStationExecutionContext)
-        // C'est ici qu'on encapsule le tout.
         StationExecutionContext currentCtx = new DefaultStationExecutionContext(
             station.getId(),
             station.getKind(),
             parentCtx.getGlobalContext(),
-            log
+            stationLog
         );
-        parentCtx.getGlobalContext().pushParentOperationId(log.getId());
+        parentCtx.getGlobalContext().pushParentOperationId(stationLog.getId());
 
-        // 3. PASSAGE AUX SUIVANTS
-        // Les suivants (Persistance, Terminal) reçoivent un contexte TOUT PRÊT.
-        // Ils n'ont rien à créer, juste à consommer.
         return delegate.run(input, station, currentCtx);
     }
 }

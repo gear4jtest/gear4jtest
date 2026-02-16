@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.engine.spi;
 import io.github.gear4jtest.core.persistence.StationLog;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Responsabilité : Fabriquer des instances de StationLog configurées pour représenter
@@ -20,7 +21,7 @@ class MockLogFactory {
     /**
      * Crée un StationLog en succès immédiat avec les données mockées.
      */
-    StationLog createMock(String stationId, String pipelineExecutionId, String parentOperationId, Object mockData) {
+    StationLog createMock(String stationId, UUID pipelineExecutionId, UUID parentOperationId, Object mockData) {
         // 1. Utilisation de l'API standard du modèle (Lifecycle start)
         StationLog log = StationLog.start(pipelineExecutionId, stationId, parentOperationId);
 

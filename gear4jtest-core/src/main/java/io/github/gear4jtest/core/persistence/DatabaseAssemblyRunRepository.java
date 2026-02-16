@@ -10,7 +10,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.SQLType;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -124,7 +123,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         try (Connection conn = dataSource.getConnection()) {
             String sql = "INSERT INTO assembly_run (id, pipeline_id, input_parameters, context, result, status, start_time, end_time, error_message) VALUES (?,?,?,?,?,?,?,?,?)";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setString(1, execution.getId().toString());
+                stmt.setObject(1, execution.getId());
                 stmt.setString(2, execution.getPipelineId());
                 stmt.setObject(3, toJson(execution.getInputParams()), Types.OTHER);
                 stmt.setObject(4, toJson(execution.getContext()), Types.OTHER);
@@ -141,14 +140,14 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         }
     }
 
-    private void saveOperations(Connection conn, List<StationLog> operations, String pipelineId, String parentId) throws SQLException {
-        String sql = "INSERT INTO station_log (id, pipeline_execution_id, operation_id, parent_operation_id, status, start_time, end_time, error_message, error_handler_messages, context) VALUES (?,?,?,?,?,?,?,?,?,?)";
+    private void saveOperations(Connection conn, List<StationLog> operations, String pipelineId, UUID parentId) throws SQLException {
+        String sql = "INSERT INTO station_log (id, pipeline_execution_id, operation_id, parent_log_id, status, start_time, end_time, error_message, error_handler_messages, context) VALUES (?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             for (StationLog op : operations) {
-                stmt.setString(1, op.getId());
+                stmt.setObject(1, op.getId());
                 stmt.setString(2, pipelineId);
                 stmt.setString(3, op.getOperationId());
-                stmt.setString(4, parentId);
+                stmt.setObject(4, parentId);
                 stmt.setString(5, op.getStatus().toString());
                 stmt.setTimestamp(6, Timestamp.from(op.getStartedAt()));
                 stmt.setTimestamp(7, Timestamp.from(op.getEndedAt()));
@@ -176,7 +175,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 stmt.setString(3, execution.getStatus().name());
                 stmt.setTimestamp(4, execution.getEndTime() != null ? Timestamp.from(execution.getEndTime()) : null);
                 stmt.setString(5, execution.getErrorMessage());
-                stmt.setString(6, execution.getId().toString());
+                stmt.setObject(6, execution.getId());
                 stmt.executeUpdate();
             }
             saveOperations(conn, execution.getOperations(), execution.getId().toString(), null);
@@ -190,11 +189,11 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         try (Connection conn = dataSource.getConnection()) {
             String sql = "SELECT * FROM assembly_run WHERE id = ?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setString(1, id.toString());
+                stmt.setObject(1, id);
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
                         AssemblyRun exec = mapExecution(rs);
-                        exec.setOperations(loadOperations(conn, id.toString(), null));
+                        exec.setOperations(loadOperations(conn, id, null));
                         return Optional.of(exec);
                     }
                 }
@@ -205,17 +204,17 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         return Optional.empty();
     }
 
-    private List<StationLog> loadOperations(Connection conn, String pipelineId, String parentId) throws SQLException {
+    private List<StationLog> loadOperations(Connection conn, UUID pipelineExecutionId, UUID parentId) throws SQLException {
         String sql = "SELECT * FROM station_log WHERE pipeline_execution_id = ? AND " +
-                (parentId == null ? "parent_operation_id IS NULL" : "parent_operation_id = ?") + " ORDER BY start_time";
+                (parentId == null ? "parent_log_id IS NULL" : "parent_log_id = ?") + " ORDER BY start_time";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, pipelineId);
-            if (parentId != null) stmt.setString(2, parentId);
+            stmt.setObject(1, pipelineExecutionId);
+            if (parentId != null) stmt.setObject(2, parentId);
             try (ResultSet rs = stmt.executeQuery()) {
                 List<StationLog> operations = new ArrayList<>();
                 while (rs.next()) {
                     StationLog op = mapOperation(rs);
-                    op.setSubOperations(loadOperations(conn, pipelineId, op.getId()));
+                    op.setSubOperations(loadOperations(conn, pipelineExecutionId, op.getId()));
                     operations.add(op);
                 }
                 return operations;
@@ -259,7 +258,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         }
 
         String sql = "INSERT INTO station_log " +
-                "(id, pipeline_execution_id, operation_id, parent_operation_id, status, " +
+                "(id, pipeline_execution_id, operation_id, parent_log_id, status, " +
                 " start_time, end_time, error_message, error_handler_messages, context) " +
                 "VALUES (?,?,?,?,?,?,?,?,?,?)" +
                 "ON CONFLICT (id) DO UPDATE SET" +
@@ -274,10 +273,10 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             for (StationLog rec : records) {
-                stmt.setString(1, rec.getId());
-                stmt.setString(2, rec.getPipelineExecutionId());
+                stmt.setObject(1, rec.getId());
+                stmt.setObject(2, rec.getPipelineExecutionId());
                 stmt.setString(3, rec.getOperationId());
-                stmt.setString(4, rec.getParentOperationId());
+                stmt.setObject(4, rec.getParentOperationId());
                 stmt.setString(5, rec.getStatus().toString());
                 stmt.setTimestamp(6, Timestamp.from(rec.getStartedAt()));
                 stmt.setTimestamp(7, rec.getEndedAt() != null ? Timestamp.from(rec.getEndedAt()) : null);
@@ -352,10 +351,10 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     private StationLog mapOperation(ResultSet rs) throws SQLException {
         StationLog op = new StationLog();
-        op.setId(rs.getString("id"));
-        op.setPipelineExecutionId(rs.getString("pipeline_execution_id"));
+        op.setId(rs.getObject("id", UUID.class));
+        op.setPipelineExecutionId(rs.getObject("pipeline_execution_id", UUID.class));
         op.setOperationId(rs.getString("operation_id"));
-        op.setParentOperationId(rs.getString("parent_operation_id"));
+        op.setParentOperationId(rs.getObject("parent_log_id", UUID.class));
         op.setStatus(StationLog.Status.valueOf(rs.getString("status")));
         op.setStartedAt(rs.getTimestamp("start_time").toInstant());
         op.setEndedAt(rs.getTimestamp("end_time").toInstant());
@@ -382,12 +381,12 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     public void saveOperation(StationLog rec) {
-        String sql = "INSERT INTO station_log (id, pipeline_execution_id, operation_id, parent_operation_id, status, start_time, end_time, error_message, error_handler_messages, context) VALUES (?,?,?,?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO station_log (id, pipeline_execution_id, operation_id, parent_log_id, status, start_time, end_time, error_message, error_handler_messages, context) VALUES (?,?,?,?,?,?,?,?,?,?)";
         try (java.sql.Connection conn = dataSource.getConnection(); java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, rec.getId());
-            ps.setString(2, rec.getPipelineExecutionId());
+            ps.setObject(1, rec.getId());
+            ps.setObject(2, rec.getPipelineExecutionId());
             ps.setString(3, rec.getOperationId());
-            ps.setString(4, rec.getParentOperationId());
+            ps.setObject(4, rec.getParentOperationId());
             ps.setString(5, rec.getStatus().toString());
             ps.setTimestamp(6, java.sql.Timestamp.from(rec.getStartedAt()));
             ps.setTimestamp(7, rec.getEndedAt() != null ? java.sql.Timestamp.from(rec.getEndedAt()) : null);

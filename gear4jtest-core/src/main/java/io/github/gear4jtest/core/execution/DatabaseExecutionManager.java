@@ -59,7 +59,7 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
             return;
         }
 
-        UUID pipelineId = UUID.fromString(record.getPipelineExecutionId());
+        UUID pipelineId = record.getPipelineExecutionId();
         ConcurrentLinkedQueue<StationLog> queue =
                 opBuffers.computeIfAbsent(pipelineId, id -> new ConcurrentLinkedQueue<>());
 
@@ -79,16 +79,15 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
 
         // On suppose que tous les records appartiennent au même pipeline,
         // ce qui est le cas si l'orchestrateur fait bien son boulot.
-        String pipelineExecutionId = records.get(0).getPipelineExecutionId();
-        UUID pipelineId = UUID.fromString(pipelineExecutionId);
+        UUID pipelineExecutionId = records.get(0).getPipelineExecutionId();
 
         ConcurrentLinkedQueue<StationLog> queue =
-                opBuffers.computeIfAbsent(pipelineId, id -> new ConcurrentLinkedQueue<>());
+                opBuffers.computeIfAbsent(pipelineExecutionId, id -> new ConcurrentLinkedQueue<>());
 
         queue.addAll(records);
 
         if (queue.size() >= flushThreshold) {
-            flush(pipelineId);
+            flush(pipelineExecutionId);
         }
     }
 

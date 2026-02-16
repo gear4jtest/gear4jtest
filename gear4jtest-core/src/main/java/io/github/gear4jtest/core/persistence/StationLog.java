@@ -14,16 +14,16 @@ import java.util.UUID;
 public class StationLog {
 
     public enum Status {
-        RUNNING, SKIPPED, SUCCEEDED, FAILED, STOPPED
+        RUNNING, SKIPPED, SUCCEEDED, FAILED, STOPPED, CANCELLED
     }
 
     private transient Object output;
     private transient List<Throwable> throwables;
 
-    private String id;
-    private String pipelineExecutionId;
+    private UUID id;
+    private UUID pipelineExecutionId;
     private String operationId;
-    private String parentOperationId;
+    private UUID parentOperationId;
     private Status status;
     private Instant startedAt;
     private Instant endedAt;
@@ -35,11 +35,11 @@ public class StationLog {
 
     // ---------- Fabrication ----------
 
-    public static StationLog start(String pipelineExecutionId,
+    public static StationLog start(UUID pipelineExecutionId,
                                    String operationId,
-                                   String parentOperationId) {
+                                   UUID parentOperationId) {
         StationLog record = new StationLog();
-        record.id = UUID.randomUUID().toString();
+        record.id = UUID.randomUUID();
         record.pipelineExecutionId = pipelineExecutionId;
         record.operationId = operationId;
         record.parentOperationId = parentOperationId;
@@ -58,6 +58,13 @@ public class StationLog {
 
     public void markFailed(Exception e) {
         this.status = Status.FAILED;
+        this.endedAt = Instant.now();
+        this.errorMessage = e != null ? e.getMessage() : null;
+        addErrorHandlerException(e);
+    }
+
+    public void markCancelled(Exception e) {
+        this.status = Status.CANCELLED;
         this.endedAt = Instant.now();
         this.errorMessage = e != null ? e.getMessage() : null;
         addErrorHandlerException(e);
@@ -97,25 +104,25 @@ public class StationLog {
         }
     }
 
-    public void addSubOperation(StationLog child) {
-        if (child == null) return;
-        child.setParentOperationId(this.id);
-        subOperations.add(child);
-    }
+//    public void addSubOperation(StationLog child) {
+//        if (child == null) return;
+//        child.setParentOperationId(this.id);
+//        subOperations.add(child);
+//    }
 
     // ---------- Getters / setters ----------
 
-    public String getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(String id) { this.id = id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public String getPipelineExecutionId() {
+    public UUID getPipelineExecutionId() {
         return pipelineExecutionId;
     }
 
-    public void setPipelineExecutionId(String pipelineExecutionId) {
+    public void setPipelineExecutionId(UUID pipelineExecutionId) {
         this.pipelineExecutionId = pipelineExecutionId;
     }
 
@@ -127,11 +134,11 @@ public class StationLog {
         this.operationId = operationId;
     }
 
-    public String getParentOperationId() {
+    public UUID getParentOperationId() {
         return parentOperationId;
     }
 
-    public void setParentOperationId(String parentOperationId) {
+    public void setParentOperationId(UUID parentOperationId) {
         this.parentOperationId = parentOperationId;
     }
 
@@ -193,7 +200,7 @@ public class StationLog {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T getOutput(Class<T> type) {
+    public <T> T getOutput() {
         return (T) output;
     }
 

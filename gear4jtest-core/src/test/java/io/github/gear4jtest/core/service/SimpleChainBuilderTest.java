@@ -152,7 +152,10 @@ public class SimpleChainBuilderTest {
         ExtensionRegistry extensionRegistry = new ExtensionRegistry();
         RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
-        PipelineEngine engine = new PipelineEngine(resourceFactory, stackBuilder);
+        PipelineEngine engine = PipelineEngine.builder()
+                .stackBuilder(stackBuilder)
+                .resourceFactory(resourceFactory)
+                .build();
 
         var request = RunRequest.builder()
                 .input("b")
@@ -218,7 +221,10 @@ public class SimpleChainBuilderTest {
         ExtensionRegistry extensionRegistry = new ExtensionRegistry();
         RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
-        PipelineEngine engine = new PipelineEngine(resourceFactory, stackBuilder);
+        PipelineEngine engine = PipelineEngine.builder()
+                .stackBuilder(stackBuilder)
+                .resourceFactory(resourceFactory)
+                .build();
 
         var request = RunRequest.builder()
                 .input("b")
@@ -242,7 +248,7 @@ public class SimpleChainBuilderTest {
 				.contains("");
 
         TimeUnit.MILLISECONDS.sleep(500);
-		assertThat(testEventListener.getCounter()).isEqualTo(12);
+		assertThat(testEventListener.getCounter()).isEqualTo(14);
 	}
 
 	@Test
@@ -296,7 +302,10 @@ public class SimpleChainBuilderTest {
         extensionRegistry.register(PersistenceFeature.KEY, new PersistenceExtension(new DatabaseExecutionManager(dataSource)));
         RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
-        PipelineEngine engine = new PipelineEngine(resourceFactory, stackBuilder);
+        PipelineEngine engine = PipelineEngine.builder()
+                .stackBuilder(stackBuilder)
+                .resourceFactory(resourceFactory)
+                .build();
 
         var request = RunRequest.builder()
                 .input("b")
@@ -339,13 +348,25 @@ public class SimpleChainBuilderTest {
 						Map.of(),
 						List.of(List.of("")),
 						ExecutionStatus.SUCCEEDED);
-		assertThat(pipelineExecution)
-				.isPresent()
-				.get()
-				.extracting(AssemblyRun::getOperations)
-				.asList()
-				.hasSize(4)
-				.asInstanceOf(InstanceOfAssertFactories.list(StationLog.class))
+
+        assertThat(pipelineExecution)
+                .isPresent()
+                .get()
+                .extracting(AssemblyRun::getOperations)
+                .asList()
+                .hasSize(1)
+                .first()
+                .asInstanceOf(InstanceOfAssertFactories.type(StationLog.class))
+                .extracting(
+                        StationLog::getPipelineExecutionId,
+                        StationLog::getOperationId,
+                        StationLog::getParentOperationId,
+                        StationLog::getStatus,
+                        StationLog::getContext)
+                .containsExactly(result.getExecution().getId(), "test:root", null, Status.SUCCEEDED, null);
+
+        var rootSequenceExecutionRecord = getRecordByOperationId(pipelineExecution.get().getOperations(), "test:root");
+		assertThat(rootSequenceExecutionRecord.getSubOperations())
 				.extracting(
 						StationLog::getPipelineExecutionId,
 						StationLog::getOperationId,
@@ -353,11 +374,12 @@ public class SimpleChainBuilderTest {
 						StationLog::getStatus,
 						StationLog::getContext)
 				.containsExactly(
-						tuple(result.getExecution().getId().toString(), "step3", null, Status.SUCCEEDED, null),
-						tuple(result.getExecution().getId().toString(), "step8", null, Status.SUCCEEDED, null),
-						tuple(result.getExecution().getId().toString(), "step9", null, Status.SUCCEEDED, null),
-						tuple(result.getExecution().getId().toString(), "iterator", null, Status.SUCCEEDED, null));
-        var iteratorExecutionRecord = getRecordByOperationId(pipelineExecution.get().getOperations(), "iterator");
+						tuple(result.getExecution().getId(), "step3", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, null),
+						tuple(result.getExecution().getId(), "step8", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, null),
+						tuple(result.getExecution().getId(), "step9", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, null),
+						tuple(result.getExecution().getId(), "iterator", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, null));
+
+        var iteratorExecutionRecord = getRecordByOperationId(rootSequenceExecutionRecord.getSubOperations(), "iterator");
         assertThat(iteratorExecutionRecord.getSubOperations())
                 .extracting(
                         StationLog::getPipelineExecutionId,
@@ -365,7 +387,7 @@ public class SimpleChainBuilderTest {
                         StationLog::getParentOperationId,
                         StationLog::getStatus,
                         StationLog::getContext)
-                .containsExactly(tuple(result.getExecution().getId().toString(), "sequence", getRecordByOperationId(pipelineExecution.get().getOperations(), "iterator").getId(), Status.SUCCEEDED, null));
+                .containsExactly(tuple(result.getExecution().getId(), "sequence", iteratorExecutionRecord.getId(), Status.SUCCEEDED, null));
         var sequenceExecutionRecord = getRecordByOperationId(iteratorExecutionRecord.getSubOperations(), "sequence");
         assertThat(sequenceExecutionRecord.getSubOperations())
                 .extracting(
@@ -374,7 +396,7 @@ public class SimpleChainBuilderTest {
                         StationLog::getParentOperationId,
                         StationLog::getStatus,
                         StationLog::getContext)
-                .containsExactly(tuple(result.getExecution().getId().toString(), "step10", getRecordByOperationId(iteratorExecutionRecord.getSubOperations(), "sequence").getId(), Status.SUCCEEDED, null));
+                .containsExactly(tuple(result.getExecution().getId(), "step10", sequenceExecutionRecord.getId(), Status.SUCCEEDED, null));
 	}
 
 	private static StationLog getRecordByOperationId(List<StationLog> records, String operationId) {
@@ -416,7 +438,10 @@ public class SimpleChainBuilderTest {
         ExtensionRegistry extensionRegistry = new ExtensionRegistry();
         RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
-        PipelineEngine engine = new PipelineEngine(resourceFactory, stackBuilder);
+        PipelineEngine engine = PipelineEngine.builder()
+                .stackBuilder(stackBuilder)
+                .resourceFactory(resourceFactory)
+                .build();
 
         var request = RunRequest.builder()
                 .input("b")
@@ -470,7 +495,10 @@ public class SimpleChainBuilderTest {
         ExtensionRegistry extensionRegistry = new ExtensionRegistry();
         RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
-        PipelineEngine engine = new PipelineEngine(resourceFactory, stackBuilder);
+        PipelineEngine engine = PipelineEngine.builder()
+                .stackBuilder(stackBuilder)
+                .resourceFactory(resourceFactory)
+                .build();
 
         var request = RunRequest.builder()
                 .input("b")
@@ -528,7 +556,10 @@ public class SimpleChainBuilderTest {
         ExtensionRegistry extensionRegistry = new ExtensionRegistry();
         RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
-        PipelineEngine engine = new PipelineEngine(resourceFactory, stackBuilder);
+        PipelineEngine engine = PipelineEngine.builder()
+                .stackBuilder(stackBuilder)
+                .resourceFactory(resourceFactory)
+                .build();
 
         var request = RunRequest.builder()
                 .input("b")

@@ -17,7 +17,7 @@ import io.github.gear4jtest.core.sidecompute.SideComputeContext;
 public class ExecutionContext {
 
     private final ThreadLocal<String> currentItemId = new ThreadLocal<>();
-    private final ThreadLocal<Deque<String>> parentStack = ThreadLocal.withInitial(ArrayDeque::new);
+    private final ThreadLocal<Deque<UUID>> parentStack = ThreadLocal.withInitial(ArrayDeque::new);
 
     private final UUID executionId;
     private final String pipelineId;
@@ -113,23 +113,23 @@ public class ExecutionContext {
         }
     }
 
-    public String getCurrentParentOperationId() {
-        Deque<String> stack = parentStack.get();
+    public UUID getCurrentParentOperationId() {
+        Deque<UUID> stack = parentStack.get();
         return stack.isEmpty() ? null : stack.peek();
     }
 
-    public void pushParentOperationId(String operationId) {
+    public void pushParentOperationId(UUID operationId) {
         parentStack.get().push(operationId);
     }
 
     public void popParentOperationId() {
-        Deque<String> stack = parentStack.get();
+        Deque<UUID> stack = parentStack.get();
         if (!stack.isEmpty()) {
             stack.pop();
         }
     }
 
-    void withParentOperation(String operationId, Runnable action) {
+    void withParentOperation(UUID operationId, Runnable action) {
         pushParentOperationId(operationId);
         try {
             action.run();

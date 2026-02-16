@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS assembly_run (
-    id VARCHAR(36) PRIMARY KEY,
+    id UUID PRIMARY KEY,
     pipeline_id VARCHAR(255) NOT NULL,
     input_parameters JSONB,
     context JSONB,
@@ -11,10 +11,10 @@ CREATE TABLE IF NOT EXISTS assembly_run (
 );
 
 CREATE TABLE IF NOT EXISTS station_log (
-    id VARCHAR(36) PRIMARY KEY,
-    pipeline_execution_id VARCHAR(36) NOT NULL,
+    id UUID PRIMARY KEY,
+    pipeline_execution_id UUID NOT NULL,
     operation_id VARCHAR(255) NOT NULL,
-    parent_operation_id VARCHAR(36),
+    parent_log_id UUID,
     status VARCHAR(50) NOT NULL,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS station_log (
     ON DELETE CASCADE,
 
     CONSTRAINT fk_parent_op
-    FOREIGN KEY (parent_operation_id)
+    FOREIGN KEY (parent_log_id)
     REFERENCES station_log(id)
     ON DELETE CASCADE
 );

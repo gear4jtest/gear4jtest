@@ -20,7 +20,7 @@ public class InMemoryExecutionManager implements AssemblyRunManager {
         if (record == null) {
             return;
         }
-        UUID id = UUID.fromString(record.getPipelineExecutionId());
+        UUID id = record.getPipelineExecutionId();
         InMemoryAssemblyRunRepository.INSTANCE.findById(id).ifPresent(exec -> {
             List<StationLog> ops = exec.getOperations();
             if (ops == null) {

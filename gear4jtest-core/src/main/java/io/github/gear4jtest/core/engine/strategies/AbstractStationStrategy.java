@@ -80,7 +80,21 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
             }
 
             result = doExecute(station, input, runner, context);
-            context.getRecord().markSuccess(result);
+
+            // IMPORTANT : certaines strategies (conteneurs, signaux, ...) peuvent déjà avoir fixé
+            // le statut du record (STOPPED/FAILED/CANCELLED). Dans ce cas, on ne doit PAS écraser
+            // ce statut avec un markSuccess().
+            if (context.getRecord().getStatus() == StationLog.Status.RUNNING) {
+                context.getRecord().markSuccess(result);
+            } else {
+                // Par cohérence, on conserve l'output calculé si la strategy en renvoie un.
+                // (ex : STOPPED peut vouloir garder le dernier output valide)
+                context.getRecord().setOutput(result);
+                // Si la strategy n'a pas fixé de endedAt, on le fait.
+                if (context.getRecord().getEndedAt() == null) {
+                    context.getRecord().setEndedAt(java.time.Instant.now());
+                }
+            }
 
             if (station.getProcessors() != null && !station.getProcessors().isEmpty()) {
                 for (Processor processor : (List<Processor>) station.getProcessors()) {

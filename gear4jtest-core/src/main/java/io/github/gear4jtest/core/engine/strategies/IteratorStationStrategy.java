@@ -4,6 +4,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Function;
 
+import io.github.gear4jtest.core.engine.flow.CancelPolicy;
+import io.github.gear4jtest.core.engine.flow.FlowConfig;
+import io.github.gear4jtest.core.engine.flow.FlowDecider;
+import io.github.gear4jtest.core.engine.flow.FlowDecision;
+import io.github.gear4jtest.core.engine.flow.StopPolicy;
 import io.github.gear4jtest.core.engine.spi.StationRunner;
 import io.github.gear4jtest.core.model.AbstractStation;
 import io.github.gear4jtest.core.model.IteratorStation;
@@ -19,6 +24,7 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
 
     @Override
     public Object doExecute(IteratorStation station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
+        FlowConfig config = station.getFlowConfig() != null ? station.getFlowConfig() : FlowConfig.DEFAULT;
         Iterable<?> collection;
         if (station.getFunc() != null) {
             collection = ((Function<Object, ? extends Iterable<?>>) station.getFunc()).apply(input);
@@ -27,9 +33,9 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
         }
 
         Collection<Object> results = new ArrayList<>();
+        Collection<Throwable> collectedErrors = new ArrayList<>();
 
         long index = 0L;
-        boolean success = true;
 
         for (Object element : collection) {
             String itemId = (station.getItemIdResolver() != null)
@@ -42,20 +48,41 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
             // Rattache systématiquement chaque exécution enfant à l'iterator courant
 //			operationExecution.getRecord().addSubOperation(rec);
 
-            if (chainResult.getStatus() == StationLog.Status.FAILED || chainResult.getStatus() == StationLog.Status.STOPPED) {
-//                success = false;
-                operationExecution.getRecord().markFailed(null);
+            FlowDecision decision = FlowDecider.decide(chainResult, config);
+            switch (decision) {
+                case PROCEED -> {
+                    // On ne produit un output que si la chain a réussi.
+                    if (chainResult.getStatus() == StationLog.Status.SUCCEEDED) {
+                        results.add(chainResult.getOutput());
+                    }
+                }
+                case MARK_AND_PROCEED -> {
+                    if (chainResult.getThrowables() != null && !chainResult.getThrowables().isEmpty()) {
+                        collectedErrors.addAll(chainResult.getThrowables());
+                    } else {
+                        collectedErrors.add(new RuntimeException("Item failed without exception: " + itemId));
+                    }
+                }
+                case INTERRUPT -> applyInterruptToParentLog(operationExecution.getRecord(), chainResult, config);
+            }
+
+            if (decision == FlowDecision.INTERRUPT) {
                 break;
             }
 
-            // Output fonctionnel pour la suite de la pipeline
-            Object value = chainResult.getOutput(null);
-            results.add(value);
+            index++;
 
 //            if (!success) {
 //                operationExecution.getRecord().markFailed(null);
 //                break;
 //            }
+        }
+
+        // Fin : si erreurs collectées => échec global
+        if (!collectedErrors.isEmpty()) {
+            Throwable first = collectedErrors.iterator().next();
+            operationExecution.getRecord().markFailed(
+                    first instanceof Exception ex ? ex : new RuntimeException(first.getMessage(), first));
         }
 
         // Accumulateur / collector comme avant
@@ -70,5 +97,41 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
         }
 
         return results;
+    }
+
+    private static void applyInterruptToParentLog(StationLog parent, StationLog child, FlowConfig config) {
+        StationLog.Status childStatus = child.getStatus();
+        Exception representative = null;
+        if (child.getThrowables() != null && !child.getThrowables().isEmpty()) {
+            Throwable t = child.getThrowables().get(0);
+            representative = (t instanceof Exception ex) ? ex : new RuntimeException(t.getMessage(), t);
+        } else if (child.getErrorMessage() != null) {
+            representative = new RuntimeException(child.getErrorMessage());
+        }
+
+        if (childStatus == StationLog.Status.FAILED) {
+            parent.markFailed(representative);
+            return;
+        }
+
+        if (childStatus == StationLog.Status.STOPPED) {
+            if (config.stopPolicy() == StopPolicy.TREAT_AS_FAILURE) {
+                parent.markFailed(representative);
+            } else {
+                parent.markStopped(representative);
+            }
+            return;
+        }
+
+        if (childStatus == StationLog.Status.CANCELLED) {
+            if (config.cancelPolicy() == CancelPolicy.TREAT_AS_FAILURE) {
+                parent.markFailed(representative);
+            } else {
+                parent.markCancelled(representative);
+            }
+            return;
+        }
+
+        parent.markFailed(representative != null ? representative : new RuntimeException("Unknown terminal status: " + childStatus));
     }
 }

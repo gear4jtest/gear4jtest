@@ -19,8 +19,8 @@ public class SignalStationStrategy extends AbstractStationStrategy<SignalStation
 
         if (eligible) {
             switch (station.getSignalType()) {
-                case FATAL -> operationExecution.getRecord().setStatus(StationLog.Status.FAILED);
-                case STOP -> operationExecution.getRecord().setStatus(StationLog.Status.STOPPED);
+                case FATAL -> operationExecution.getRecord().markFailed(null);
+                case STOP -> operationExecution.getRecord().markStopped(null);
             }
         }
         return input;

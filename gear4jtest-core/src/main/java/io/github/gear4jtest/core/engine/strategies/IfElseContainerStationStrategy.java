@@ -27,14 +27,14 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
                 Object newObject = deepClone(input);
                 var rec = runner.run(newObject, element.getStation(), operationExecution);
 //                var rec = element.getStation().run(newObject, context);
-                rec.setParentOperationId(operationExecution.getOperationId());
+                rec.setParentOperationId(operationExecution.getRecord().getId());
 //                context.getExecutionManager().append(rec);
                 if (rec.getStatus() == StationLog.Status.FAILED) {
                     operationExecution.getRecord().markFailed(null);
                     return null;
                 }
 
-                containerResult = rec.getOutput(Object.class);
+                containerResult = rec.getOutput();
                 break;
             }
         }
@@ -43,13 +43,13 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
             Object newObject = deepClone(input);
             var recElse = runner.run(newObject, station.getElseOp(), operationExecution);
 //            var recElse = station.getElseOp().run(newObject, context);
-            recElse.setParentOperationId(operationExecution.getOperationId());
+            recElse.setParentOperationId(operationExecution.getRecord().getId());
 //            context.getExecutionManager().append(recElse);
             if (recElse.getStatus() == StationLog.Status.FAILED) {
                 operationExecution.getRecord().markFailed(null);
                 return null;
             }
-            containerResult = recElse.getOutput(Object.class);
+            containerResult = recElse.getOutput();
         }
 
         return containerResult;

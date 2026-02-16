@@ -51,7 +51,7 @@ class SideComputeFlowIntegrationTest {
 
         // 3) On simule une opération qui va consommer bigStuff via param
         StationLog record = StationLog.start(
-                execCtx.getExecutionId().toString(),
+                execCtx.getExecutionId(),
                 "step-op",
                 null
         );

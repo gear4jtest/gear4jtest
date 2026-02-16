@@ -10,16 +10,16 @@ import java.util.Objects;
 public class AssemblyLine<IN, OUT> {
 
     private final String id;
-    private final List<AbstractStation<?, ?>> stations;
+    private final AbstractStation<?, ?> rootStation;
     private final Map<String, Object> defaultContext;
     private final Configuration configuration;
 
     private AssemblyLine(String id,
-                         List<AbstractStation<?, ?>> stations,
+                         AbstractStation<?, ?> rootStation,
                          Map<String, Object> defaultContext,
                          Configuration configuration) {
         this.id = id;
-        this.stations = stations != null ? new ArrayList<>(stations) : List.of();
+        this.rootStation = Objects.requireNonNull(rootStation, "rootStation must not be null");
         this.defaultContext = defaultContext != null ? new HashMap<>(defaultContext) : new HashMap<>();
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
     }
@@ -28,8 +28,13 @@ public class AssemblyLine<IN, OUT> {
         return id;
     }
 
+    public AbstractStation<?, ?> getRootStation() {
+        return rootStation;
+    }
+
     public List<AbstractStation> getStations() {
-        return Collections.unmodifiableList(this.stations);
+        // Compatibilité : historiquement, une AL exposait une liste. Désormais, l'exécution s'appuie sur une racine unique.
+        return Collections.unmodifiableList(List.of(this.rootStation));
     }
 
     public Configuration getConfiguration() {
@@ -94,7 +99,16 @@ public class AssemblyLine<IN, OUT> {
         public AssemblyLine<IN, OUT> build() {
             Objects.requireNonNull(id, "id");
             Configuration finalConfig = this.configBuilder.build();
-            return new AssemblyLine<>(id, operations, defaultContext, finalConfig);
+            AbstractStation<?, ?> root;
+            if (operations.isEmpty()) {
+                // Pipeline vide : on crée une sequence root vide (SUCCEEDED avec input)
+                root = SequenceStation.syntheticRoot(id + ":root", List.of(), io.github.gear4jtest.core.engine.flow.FlowConfig.DEFAULT);
+            } else if (operations.size() == 1) {
+                root = operations.get(0);
+            } else {
+                root = SequenceStation.syntheticRoot(id + ":root", operations, io.github.gear4jtest.core.engine.flow.FlowConfig.DEFAULT);
+            }
+            return new AssemblyLine<>(id, root, defaultContext, finalConfig);
         }
     }
 
