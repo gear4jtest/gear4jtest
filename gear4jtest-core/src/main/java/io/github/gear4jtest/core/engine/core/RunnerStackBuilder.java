@@ -1,13 +1,8 @@
 package io.github.gear4jtest.core.engine.core;
 
-import io.github.gear4jtest.core.engine.api.PipelineFeature;
-import io.github.gear4jtest.core.engine.spi.RuntimeExtension;
 import io.github.gear4jtest.core.engine.spi.StationRunner;
 import io.github.gear4jtest.core.model.AssemblyLine;
 import io.github.gear4jtest.core.model.ExecutionContext;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class RunnerStackBuilder {
 
@@ -21,7 +16,7 @@ public class RunnerStackBuilder {
 
     public StationRunner build(AssemblyLine<?, ?> pipeline, RunRequest request, ExecutionContext ctx) {
         // 1. Identification des extensions à activer
-        List<RuntimeExtension> extensions = request.getExtensions();
+//        List<RuntimeExtension> extensions = request.getExtensions();
 
         // On itère sur les features demandées dans la Request
 //        for (PipelineFeature feature : request.getActiveFeatures()) {
@@ -35,9 +30,9 @@ public class RunnerStackBuilder {
         // Avec notre modèle "Explicite", c'est à l'appelant de traduire la config AssemblyLine en Feature.
 
         // 2. Phase PREPARE (Injection des ressources)
-        for (RuntimeExtension ext : extensions) {
-            ext.prepare(ctx, request);
-        }
+//        for (RuntimeExtension ext : extensions) {
+//            ext.prepare(ctx, request);
+//        }
 
         // 3. Phase DECORATE (Empilement des Runners)
         // Base de la pile : Le TerminalRunner (exécute la stratégie)
@@ -45,8 +40,9 @@ public class RunnerStackBuilder {
         StationRunner stack = terminalStationRunner;
 
         // On empile les extensions par dessus
-        for (RuntimeExtension ext : extensions) {
-            stack = ext.decorate(stack, ctx);
+        var wrappers = registry.getStationWrappers();
+        for (int i = wrappers.size() - 1; i >= 0; i--) {
+            stack = wrappers.get(i).wrapStationRunner(stack, ctx);
         }
 
         // 4. Le Sommet : ScopeInitializingRunner (Garantit la création du log/context)
@@ -56,5 +52,9 @@ public class RunnerStackBuilder {
         terminalStationRunner.setRootRunner(rootRunner);
 
         return rootRunner;
+    }
+
+    public ExtensionRegistry getRegistry() {
+        return registry;
     }
 }

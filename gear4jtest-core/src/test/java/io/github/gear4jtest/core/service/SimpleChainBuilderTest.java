@@ -20,7 +20,6 @@ import io.github.gear4jtest.core.engine.core.RunRequest;
 import io.github.gear4jtest.core.engine.core.RunnerStackBuilder;
 import io.github.gear4jtest.core.engine.core.StrategyRegistry;
 import io.github.gear4jtest.core.engine.extension.PersistenceExtension;
-import io.github.gear4jtest.core.engine.feature.PersistenceFeature;
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.exception.AssemblyLineException;
@@ -149,7 +148,7 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-        ExtensionRegistry extensionRegistry = new ExtensionRegistry();
+        ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
         RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
@@ -218,7 +217,7 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-        ExtensionRegistry extensionRegistry = new ExtensionRegistry();
+        ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
         RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
@@ -298,8 +297,7 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-        ExtensionRegistry extensionRegistry = new ExtensionRegistry();
-        extensionRegistry.register(PersistenceFeature.KEY, new PersistenceExtension(new DatabaseExecutionManager(dataSource)));
+        ExtensionRegistry extensionRegistry = new ExtensionRegistry(List.of(new PersistenceExtension(new DatabaseExecutionManager(dataSource))));
         RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
@@ -435,7 +433,7 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-        ExtensionRegistry extensionRegistry = new ExtensionRegistry();
+        ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
         RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
@@ -492,7 +490,7 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-        ExtensionRegistry extensionRegistry = new ExtensionRegistry();
+        ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
         RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
@@ -553,7 +551,7 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-        ExtensionRegistry extensionRegistry = new ExtensionRegistry();
+        ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
         RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()

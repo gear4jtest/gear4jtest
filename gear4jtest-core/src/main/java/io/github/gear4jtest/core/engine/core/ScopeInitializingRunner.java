@@ -26,10 +26,11 @@ public class ScopeInitializingRunner implements StationRunner {
         stationLog.setStatus(Status.RUNNING);
 
         StationExecutionContext currentCtx = new DefaultStationExecutionContext(
-            station.getId(),
-            station.getKind(),
-            parentCtx.getGlobalContext(),
-            stationLog
+                station.getId(),
+                station.getKind(),
+                parentCtx.getGlobalContext(),
+                stationLog,
+                parentCtx.getSupport()
         );
         parentCtx.getGlobalContext().pushParentOperationId(stationLog.getId());
 

@@ -93,26 +93,6 @@ public class ExecutionContext {
         return assemblyRun;
     }
 
-    public void withItemId(String itemId, Runnable action) {
-        String previous = getCurrentItemId();
-        setCurrentItemId(itemId);
-        try {
-            action.run();
-        } finally {
-            setCurrentItemId(previous);
-        }
-    }
-
-    public <T> T withItemId(String itemId, Supplier<T> action) {
-        String previous = getCurrentItemId();
-        setCurrentItemId(itemId);
-        try {
-            return action.get();
-        } finally {
-            setCurrentItemId(previous);
-        }
-    }
-
     public UUID getCurrentParentOperationId() {
         Deque<UUID> stack = parentStack.get();
         return stack.isEmpty() ? null : stack.peek();
@@ -126,15 +106,6 @@ public class ExecutionContext {
         Deque<UUID> stack = parentStack.get();
         if (!stack.isEmpty()) {
             stack.pop();
-        }
-    }
-
-    void withParentOperation(UUID operationId, Runnable action) {
-        pushParentOperationId(operationId);
-        try {
-            action.run();
-        } finally {
-            popParentOperationId();
         }
     }
 }

@@ -73,8 +73,6 @@ configure(project.coreProjects.stream().filter { !it.name.contains("gradle") }.c
 
     dependencies {
         implementation(libraries.slf4j)
-        implementation(libraries.log4jApi)
-        implementation(libraries.log4jCore)
         implementation(libraries.cglib)
         implementation(libraries.aspectjrt)
         implementation(libraries.google)

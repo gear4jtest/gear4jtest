@@ -56,7 +56,7 @@ class SideComputeFlowIntegrationTest {
                 null
         );
         StationExecutionContext opCtx =
-                new DefaultStationExecutionContext("step-op", StationKind.PROCESSING, execCtx, record);
+                new DefaultStationExecutionContext("step-op", StationKind.PROCESSING, execCtx, record, null);
 
         // 4) On publie l'événement de fin d'opération
         OperationCompletedEvent event = new OperationCompletedEvent(

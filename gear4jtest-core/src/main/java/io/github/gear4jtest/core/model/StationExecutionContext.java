@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.model;
 
 import java.util.Optional;
 
+import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.persistence.StationLog;
 
 /**
@@ -21,6 +22,8 @@ public interface StationExecutionContext {
     ExecutionContext getGlobalContext();
 
     StationLog getRecord();
+
+    ExecutionSupport getSupport();
 
     /**
      * Capabilities typées, optionnelles, utilisées pour les besoins spécifiques

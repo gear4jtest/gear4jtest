@@ -42,8 +42,7 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
                     ? station.getItemIdResolver().resolve(element, index, operationExecution.getGlobalContext())
                     : station.getId() + "#item-" + index;
 
-            StationLog chainResult =
-                    operationExecution.getGlobalContext().withItemId(itemId, () -> runner.run(element, station.getChain(), operationExecution));
+            StationLog chainResult = runner.run(element, station.getChain(), operationExecution);
 
             // Rattache systématiquement chaque exécution enfant à l'iterator courant
 //			operationExecution.getRecord().addSubOperation(rec);

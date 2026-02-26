@@ -3,7 +3,9 @@ package io.github.gear4jtest.core.model;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
+import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.persistence.StationLog;
 
 public class DefaultStationExecutionContext implements StationExecutionContext {
@@ -12,24 +14,29 @@ public class DefaultStationExecutionContext implements StationExecutionContext {
     private final StationKind kind;
     private final ExecutionContext globalContext;
     private final StationLog record;
+    private final ExecutionSupport support;
 
     private final Map<Class<?>, Object> capabilities = new HashMap<>();
 
     public DefaultStationExecutionContext(String operationId,
                                           StationKind kind,
                                           ExecutionContext globalContext,
-                                          StationLog record) {
+                                          StationLog record,
+                                          ExecutionSupport support) {
         this.operationId = operationId;
         this.kind = kind;
         this.globalContext = globalContext;
         this.record = record;
+        this.support = support;
     }
 
     public DefaultStationExecutionContext(String operationId,
-                                          ExecutionContext globalContext) {
+                                          ExecutionContext globalContext,
+                                          ExecutionSupport support) {
         this.operationId = operationId;
         this.kind = StationKind.OTHER;
         this.globalContext = globalContext;
+        this.support = support;
         this.record = null;
     }
 
@@ -51,6 +58,11 @@ public class DefaultStationExecutionContext implements StationExecutionContext {
     @Override
     public StationLog getRecord() {
         return record;
+    }
+
+    @Override
+    public ExecutionSupport getSupport() {
+        return support;
     }
 
     @Override

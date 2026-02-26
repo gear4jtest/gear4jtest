@@ -5,11 +5,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import io.github.gear4jtest.core.engine.spi.StationRunner;
 import io.github.gear4jtest.core.model.AbstractStation;
 import io.github.gear4jtest.core.model.ContainerBaseStation;
+import io.github.gear4jtest.core.model.Station;
 import io.github.gear4jtest.core.model.StationExecutionContext;
 import io.github.gear4jtest.core.persistence.StationLog;
 
@@ -22,37 +24,40 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
 
     @Override
     public Object doExecute(ContainerBaseStation station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
-        Collection<Object> results = new ArrayList<>();
+        Collection<StationLog> results = new ArrayList<>();
         String currentItemId = operationExecution.getGlobalContext().getCurrentItemId();
 
         if (station.isParallel() && station.getExecutorService() != null) {
-            List<Callable<Object>> tasks = new ArrayList<>();
+            List<Callable<StationLog>> tasks = new ArrayList<>();
+            ExecutorService executor = operationExecution.getSupport().executorFor(station.getExecutorService(), operationExecution.getGlobalContext());
 
             for (ContainerBaseStation.Branch element : (List<ContainerBaseStation.Branch>) station.getPipelines()) {
-                tasks.add(() -> operationExecution.getGlobalContext().withItemId(currentItemId, () -> {
-                    Object newObject = deepClone(input);
-                    var rec = runner.run(newObject, element.getStation(), operationExecution);
+                tasks.add(operationExecution.getSupport().getTaskFactory().createTask(() -> this.deepClone(input), element.getStation(), runner, operationExecution, currentItemId));
+
+//                tasks.add(() -> operationExecution.getGlobalContext().withItemId(currentItemId, () -> {
+//                    Object newObject = deepClone(input);
+//                    var rec = runner.run(newObject, element.getStation(), operationExecution);
 //                    var rec = element.getStation().run(newObject, context);
 
-                    rec.setParentOperationId(operationExecution.getRecord().getId());
+//                    rec.setParentOperationId(operationExecution.getRecord().getId());
 //					context.getExecutionManager().append(rec);
 
-                    if (rec.getStatus() == StationLog.Status.FAILED) {
-                        // On marque l'opération globale en échec
-                        operationExecution.getRecord().markFailed(null);
-                        return null; // pas de résultat pour cette branche
-                    }
+//                    if (rec.getStatus() == StationLog.Status.FAILED) {
+//                        // On marque l'opération globale en échec
+//                        operationExecution.getRecord().markFailed(null);
+//                        return null; // pas de résultat pour cette branche
+//                    }
 
-                    return rec.getOutput();
-                }));
+//                    return rec.getOutput();
+//                }));
             }
 
             try {
                 // Lance toutes les tâches et attend qu’elles soient terminées
-                List<Future<Object>> futures = station.getExecutorService().invokeAll(tasks);
+                List<Future<StationLog>> futures = executor.invokeAll(tasks);
 
-                for (Future<Object> future : futures) {
-                    Object value = future.get(); // bloque jusqu'à fin de la tâche
+                for (Future<StationLog> future : futures) {
+                    StationLog value = future.get(); // bloque jusqu'à fin de la tâche
                     if (value != null) {
                         results.add(value);
                     }
@@ -82,15 +87,15 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
                     return null;
                 }
 
-                results.add(rec.getOutput());
+                results.add(rec);
             }
         }
 
         return returns(station, results);
     }
 
-    private Object returns(ContainerBaseStation station, Collection<Object> executions) {
-        var returnedObjects = executions.toArray();
+    private Object returns(ContainerBaseStation station, Collection<StationLog> executions) {
+        var returnedObjects = executions.stream().map(StationLog::getOutput).toArray();
         if (station.getFunc() != null) {
             return station.getFunc().apply(returnedObjects);
         } else {
