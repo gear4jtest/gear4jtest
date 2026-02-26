@@ -42,7 +42,18 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation> {
 
     @Override
     public void setUp(WorkStation station, Object input, StationExecutionContext operationExecution) {
-        var operation = operationExecution.getGlobalContext().getResourceFactory().getResource((Class<Operator>) station.getType());
+        var execCtx = operationExecution.getGlobalContext();
+
+        Operator<?, ?> operation;
+        if (station.isReuseOperatorInstanceWithinRun()) {
+            operation = execCtx.getOrCreateStationResource(
+                    station.getId(),
+                    (Class<Operator>) station.getType(),
+                    () -> execCtx.getResourceFactory().getResource((Class<Operator>) station.getType()));
+        } else {
+            operation = execCtx.getResourceFactory().getResource((Class<Operator>) station.getType());
+        }
+
         ((DefaultStationExecutionContext) operationExecution).addCapability(Operator.class, operation);
         var parameters = WorkerParamsInjector.Parameters.newBuilder();
         Optional.ofNullable(station.getParameters()).stream()

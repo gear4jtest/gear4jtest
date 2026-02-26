@@ -37,16 +37,30 @@ public class PipelineEngine implements PipelineExecutor {
 
     private final ResourceFactory resourceFactory;
     private final RunnerStackBuilder stackBuilder;
+    private final ExtensionRegistry globalExtensions;
     private final IdGenerator defaultIdGenerator;
+    private final TaskFactory taskFactory;
 
     private PipelineEngine(Builder builder) {
         this.stackBuilder = Objects.requireNonNull(builder.stackBuilder, "StackBuilder must not be null");
         this.resourceFactory = Objects.requireNonNull(builder.resourceFactory, "ResourceFactory must not be null");
+        this.globalExtensions = Objects.requireNonNull(builder.globalExtensions, "Global extension registry must not be null");
         this.defaultIdGenerator = builder.idGenerator != null ? builder.idGenerator : IdGenerator.defaultGenerator();
+        this.taskFactory = builder.taskFactory != null ? builder.taskFactory : new TaskFactory();
     }
 
     @Override
     public <IN, OUT> ExecutionResult<OUT> execute(AssemblyLine<IN, OUT> pipeline, RunRequest request) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(
+                    "Starting pipeline execution. pipelineId={}, rootStation={}, requestExtensions={} ",
+                    pipeline.getId(),
+                    pipeline.getRootStation() != null ? pipeline.getRootStation().getId() : null,
+                    request.getExtensions().stream().map(e -> e.getClass().getSimpleName()).toList());
+        }
+
+        RunPlan plan = RunPlanFactory.create(globalExtensions, request);
+
         // 1. Context Init
         var eventManager = new EventManager(
                 Optional.ofNullable(pipeline.getConfiguration().getEventHandlingDefinition())
@@ -56,14 +70,14 @@ public class PipelineEngine implements PipelineExecutor {
 
         ExecutorDecorator decorator = (rawExec, context) -> {
             ExecutorService wrapped = rawExec;
-            for (var wrapperExt : stackBuilder.getRegistry().getExecutorWrappers()) {
+            for (var wrapperExt : plan.executorWrappers()) {
                 wrapped = wrapperExt.wrapExecutor(wrapped, context);
             }
             return wrapped;
         };
 
         // 2. On instancie la boîte à outils technique
-        ExecutionSupport support = new ExecutionSupport(decorator, new TaskFactory());
+        ExecutionSupport support = new ExecutionSupport(decorator, taskFactory);
 
         Map<String, Object> effectiveContext = new HashMap<>(pipeline.getDefaultContext());
         if (request.getContext() != null) {
@@ -87,13 +101,13 @@ public class PipelineEngine implements PipelineExecutor {
                 execution);
 
         // 2. Build Stack (C'est ici que PersistenceFeature -> Extension -> Manager injecté)
-        StationRunner rootRunner = stackBuilder.build(pipeline, request, ctx);
+        StationRunner rootRunner = stackBuilder.build(pipeline, request, ctx, plan);
 
         // 3. Dummy Root Context (Bootstrapping)
         StationExecutionContext rootContext = new DefaultStationExecutionContext("root-invoker", ctx, support);
 
         // 4. Run root station (Composite) : les stratégies gèrent bubbling + stop/failure.
-        List<RunInterceptorExtension> interceptors = stackBuilder.getRegistry().getRunInterceptors();
+        List<RunInterceptorExtension> interceptors = plan.runInterceptors();
         RunChain<IN, OUT> chain = () -> doExecuteInternal(pipeline, request, rootRunner, rootContext, ctx, execution);
 
         // Boucle inversée : l'ordre 0 (le plus externe) enveloppera tout le reste
@@ -149,7 +163,9 @@ public class PipelineEngine implements PipelineExecutor {
 
         private RunnerStackBuilder stackBuilder;
         private ResourceFactory resourceFactory;
+        private ExtensionRegistry globalExtensions;
         private IdGenerator idGenerator;
+        private TaskFactory taskFactory;
 
         public Builder stackBuilder(RunnerStackBuilder stackBuilder) {
             this.stackBuilder = stackBuilder;
@@ -160,9 +176,18 @@ public class PipelineEngine implements PipelineExecutor {
             this.resourceFactory = resourceFactory;
             return this;
         }
+        public Builder globalExtensions(ExtensionRegistry globalExtensions) {
+            this.globalExtensions = globalExtensions;
+            return this;
+        }
 
         public Builder idGenerator(IdGenerator idGenerator) {
             this.idGenerator = idGenerator;
+            return this;
+        }
+
+        public Builder taskFactory(TaskFactory taskFactory) {
+            this.taskFactory = taskFactory;
             return this;
         }
 

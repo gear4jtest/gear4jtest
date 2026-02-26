@@ -26,6 +26,11 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 	protected Class<Operator<IN, OUT>> type;
 
 	protected List<WorkerParamsInjector.ParameterModel<?, ?>> parameters;
+
+    /**
+     * Si true, l'instance d'Operator est réutilisée pour toute la durée d'un run de pipeline.
+     */
+    protected boolean reuseOperatorInstanceWithinRun = false;
 	
 	private StationConfigurationDefinition operationConfiguration;
 	
@@ -49,6 +54,10 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 		this.parameters = parameters;
 	}
 
+    public boolean isReuseOperatorInstanceWithinRun() {
+        return reuseOperatorInstanceWithinRun;
+    }
+
 	public static class Builder<IN, OUT, OP extends Operator<IN, OUT>> {
 
 		private final WorkStation<IN, OUT> managedInstance;
@@ -66,6 +75,16 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 			managedInstance.id = id;
 			return this;
 		}
+
+        public Builder<IN, OUT, OP> reuseOperatorInstanceWithinRun() {
+            managedInstance.reuseOperatorInstanceWithinRun = true;
+            return this;
+        }
+
+        public Builder<IN, OUT, OP> reuseOperatorInstanceWithinRun(boolean enabled) {
+            managedInstance.reuseOperatorInstanceWithinRun = enabled;
+            return this;
+        }
 
 		/**
 		 * Paramètre avec valeur fixe.

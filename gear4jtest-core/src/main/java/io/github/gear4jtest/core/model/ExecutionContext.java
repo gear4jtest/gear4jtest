@@ -26,6 +26,7 @@ public class ExecutionContext {
     private final AssemblyRunManager assemblyRunManager;
     private final ResourceFactory resourceFactory;
     private final SideComputeContext sideComputeContext = new SideComputeContext();
+    private final Map<String, Object> stationScopedResources = new ConcurrentHashMap<>();
     private final AssemblyRun assemblyRun;
 
     public ExecutionContext(UUID executionId,
@@ -107,5 +108,16 @@ public class ExecutionContext {
         if (!stack.isEmpty()) {
             stack.pop();
         }
+    }
+
+    /**
+     * Cache de ressources \"scopées run\" (une seule instance par station et par type).
+     *
+     * <p>Cas d'usage : réutiliser une instance d'Operator stateful au sein d'un même run.
+     */
+    public <T> T getOrCreateStationResource(String stationId, Class<T> type, Supplier<T> factory) {
+        String key = stationId + ":" + type.getName();
+        Object value = stationScopedResources.computeIfAbsent(key, k -> factory.get());
+        return type.cast(value);
     }
 }

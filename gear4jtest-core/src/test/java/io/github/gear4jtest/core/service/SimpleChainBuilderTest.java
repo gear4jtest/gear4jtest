@@ -149,11 +149,12 @@ public class SimpleChainBuilderTest {
 		};
 
         ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
-        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
+        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
                 .stackBuilder(stackBuilder)
                 .resourceFactory(resourceFactory)
+                .globalExtensions(extensionRegistry)
                 .build();
 
         var request = RunRequest.builder()
@@ -218,11 +219,12 @@ public class SimpleChainBuilderTest {
 		};
 
         ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
-        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
+        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
                 .stackBuilder(stackBuilder)
                 .resourceFactory(resourceFactory)
+                .globalExtensions(extensionRegistry)
                 .build();
 
         var request = RunRequest.builder()
@@ -297,12 +299,13 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-        ExtensionRegistry extensionRegistry = new ExtensionRegistry(List.of(new PersistenceExtension(new DatabaseExecutionManager(dataSource))));
-        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
+        ExtensionRegistry extensionRegistry = new ExtensionRegistry(List.of());
+        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
                 .stackBuilder(stackBuilder)
                 .resourceFactory(resourceFactory)
+                .globalExtensions(extensionRegistry)
                 .build();
 
         var request = RunRequest.builder()
@@ -434,11 +437,12 @@ public class SimpleChainBuilderTest {
 		};
 
         ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
-        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
+        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
                 .stackBuilder(stackBuilder)
                 .resourceFactory(resourceFactory)
+                .globalExtensions(extensionRegistry)
                 .build();
 
         var request = RunRequest.builder()
@@ -491,11 +495,12 @@ public class SimpleChainBuilderTest {
 		};
 
         ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
-        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
+        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
                 .stackBuilder(stackBuilder)
                 .resourceFactory(resourceFactory)
+                .globalExtensions(extensionRegistry)
                 .build();
 
         var request = RunRequest.builder()
@@ -552,11 +557,12 @@ public class SimpleChainBuilderTest {
 		};
 
         ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
-        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(extensionRegistry, StrategyRegistry.defaultRegistry());
+        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(StrategyRegistry.defaultRegistry());
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
                 .stackBuilder(stackBuilder)
                 .resourceFactory(resourceFactory)
+                .globalExtensions(extensionRegistry)
                 .build();
 
         var request = RunRequest.builder()

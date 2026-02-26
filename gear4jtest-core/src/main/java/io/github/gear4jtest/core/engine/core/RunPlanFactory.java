@@ -14,14 +14,13 @@ public final class RunPlanFactory {
     private RunPlanFactory() {}
 
     public static RunPlan create(ExtensionRegistry globalRegistry, RunRequest request) {
-        
         // 1. On récupère les extensions globales
         List<RuntimeExtension> activeExtensions = new ArrayList<>(globalRegistry.getAllExtensions());
-        
-        // 2. [OPTIONNEL] On ajoute les extensions spécifiques à ce run si RunRequest le permet
-        // if (request.getExtensions() != null) {
-        //     activeExtensions.addAll(request.getExtensions());
-        // }
+
+        // 2. On ajoute les extensions spécifiques à ce run
+        if (request.getExtensions() != null) {
+            activeExtensions.addAll(request.getExtensions());
+        }
 
         // 3. Filtrage et tri (Fait une seule fois par Run)
         List<RunInterceptorExtension> runInterceptors = activeExtensions.stream()
