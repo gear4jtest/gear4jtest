@@ -23,7 +23,7 @@ public class WorkerParamsInjector implements Processor {
 				new InterpretationContext<>(input, operationExecution.getGlobalContext(), operationExecution);
 
 		for (ParameterModel<?, ?> rawParam : processingParameters.get().getParameters()) {
-			injectParameter(rawParam, transformer.get(), ctx);
+			injectParameter(rawParam, transformer.get(), ctx, operationExecution);
 		}
 	}
 
@@ -33,11 +33,10 @@ public class WorkerParamsInjector implements Processor {
 	 * (Builder.parameter(...)), donc on peut raisonnablement faire ce cast.
 	 */
 	@SuppressWarnings("unchecked")
-	private <IN, OUT, OP extends Operator<IN, OUT>, T> void injectParameter(
-			ParameterModel<?, ?> rawParam,
-			Operator<?, ?> rawOperator,
-			InterpretationContext<?> ctx) {
-
+	private <IN, OUT, OP extends Operator<IN, OUT>, T> void injectParameter(ParameterModel<?, ?> rawParam,
+                                                                            Operator<?, ?> rawOperator,
+                                                                            InterpretationContext<?> ctx,
+                                                                            StationExecutionContext operationExecution) {
 		// Récupération typée
 		ParameterModel<OP, T> param = (ParameterModel<OP, T>) rawParam;
 		OP op = (OP) rawOperator;
@@ -49,8 +48,12 @@ public class WorkerParamsInjector implements Processor {
 			return;
 		}
 
-		T value = param.getValue(ctx);
-		parameterValue.injectValue(value);
+        ResolvedParameters cache = operationExecution.getResolvedParameters();
+        T value = cache.resolveIfAbsent(rawParam, ctx);
+        parameterValue.injectValue(value);
+
+//		T value = param.getValue(ctx);
+//		parameterValue.injectValue(value);
 
 		// Event à réactiver si besoin :
 		// context.getEventTriggerService()

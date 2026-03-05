@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -83,10 +84,14 @@ public class StationLog {
     }
 
     public void markSkipped(Exception e) {
-        this.status = Status.SKIPPED;
-        this.endedAt = Instant.now();
+        markSkipped();
         this.errorMessage = e != null ? e.getMessage() : null;
         addErrorHandlerException(e);
+    }
+
+    public void markSkipped(String reason) {
+        markSkipped();
+        Optional.ofNullable(reason).ifPresent(r -> this.context.put("skip.reason", r));
     }
 
     public void addErrorHandlerException(Exception e) {

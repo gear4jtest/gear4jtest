@@ -121,7 +121,7 @@ public class SimpleChainBuilderTest {
 										.condition((input, ctx) -> ctx.getContext().containsKey("a"))
 										.action(() -> System.out.println("Error occurred!"))
 										.build())
-						.conditional((input, ctx) -> input.equals("a"))
+						.skipIf((input, ctx) -> input.equals("a"))
 						.transformer((a, ctx) -> new HashMap<>())
 						.build())
 //				.then(fatalSignal(typeMap(String.class, String.class))
@@ -191,7 +191,7 @@ public class SimpleChainBuilderTest {
 										.condition((input, ctx) -> ctx.getContext().containsKey("a"))
 										.action(() -> System.out.println("Error occurred!"))
 										.build())
-						.conditional((input, ctx) -> input.equals("a"))
+						.skipIf((input, ctx) -> input.equals("a"))
 						.transformer((a, ctx) -> new HashMap<>())
 						.build())
 //				.then(fatalSignal(typeMap(String.class, String.class))
@@ -269,7 +269,7 @@ public class SimpleChainBuilderTest {
 										.condition((input, ctx) -> ctx.getContext().containsKey("a"))
 										.action(() -> System.out.println("Error occurred!"))
 										.build())
-						.conditional((input, ctx) -> input.equals("a"))
+						.skipIf((input, ctx) -> input.equals("a"))
 						.transformer((a, ctx) -> new HashMap<>())
 						.build())
 //				.then(fatalSignal(typeMap(String.class, String.class))
@@ -1421,12 +1421,12 @@ public class SimpleChainBuilderTest {
 		public int COUNTER;
 
 		public TestEventListener() {
-			COUNTER = 1;
+			COUNTER = 0;
 		}
 
 		@Override
 		public void handleEvent(Event e) {
-			System.out.println();
+			System.out.println(e.getExecutionId() + " " + e.getName() + " " + e.getId());
 			COUNTER++;
 		}
 

@@ -1,7 +1,10 @@
 package io.github.gear4jtest.core.model;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiPredicate;
 
 /**
  * Template commun à toutes les OperationDefinition.
@@ -17,6 +20,11 @@ public abstract class AbstractStation<I, O> implements Station<I, O> {
     protected List<Processor> processors;
     protected List<BaseError<I>> onErrors;
     protected List<Condition<I>> conditions;
+
+    private final List<StationSkipper> skippers = new ArrayList<>();
+
+    private final MutableStationMetadata metadata = new MutableStationMetadata();
+
     protected Operator<I, O> fallbackOperator;
     protected Boolean unary;
 
@@ -41,8 +49,58 @@ public abstract class AbstractStation<I, O> implements Station<I, O> {
         return onErrors;
     }
 
-    public List<Condition<I>> getConditions() {
-        return conditions;
+    // ------------------------------------------------------------------------
+    // Skippers
+    // ------------------------------------------------------------------------
+
+    public List<StationSkipper> getSkippers() {
+        return Collections.unmodifiableList(skippers);
+    }
+
+    public AbstractStation<I, O> addSkipper(StationSkipper skipper) {
+        if (skipper != null) {
+            skippers.add(skipper);
+        }
+        return this;
+    }
+
+    /**
+     * DSL : skipper PRE (équivalent de l'ancien concept "condition" runtime).
+     */
+    public AbstractStation<I, O> skipIf(StationSkipTest predicate) {
+        return addSkipper(StationSkipper.pre(predicate));
+    }
+
+    /**
+     * DSL : skipper POST (accès au StationExecutionContext).
+     */
+    public AbstractStation<I, O> skipIfPost(StationSkipTest predicate) {
+        return addSkipper(StationSkipper.post(predicate));
+    }
+
+    /**
+     * Compat optionnelle : alias "condition" -> skipper PRE.
+     * Si tu veux conserver l'API existante.
+     */
+    public AbstractStation<I, O> condition(StationSkipTest predicate) {
+        return skipIf(predicate);
+    }
+
+    // ------------------------------------------------------------------------
+    // Metadata
+    // ------------------------------------------------------------------------
+
+    public StationMetadata getMetadata() {
+        return metadata;
+    }
+
+    public MutableStationMetadata mutableMetadata() {
+        return metadata;
+    }
+
+    public <T> AbstractStation<I, O> putMetadata(Class<T> type, T value) {
+        metadata.put(type, value);
+        return this;
     }
 
     public Operator<I, O> getFallbackOperator() {

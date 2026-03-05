@@ -78,4 +78,13 @@ public class DefaultStationExecutionContext implements StationExecutionContext {
     public <T> void addCapability(Class<T> type, T instance) {
         capabilities.put(type, instance);
     }
+
+    @Override
+    public ResolvedParameters getResolvedParameters() {
+        return getCapability(ResolvedParameters.class).orElseGet(() -> {
+            ResolvedParameters cache = new ResolvedParameters();
+            addCapability(ResolvedParameters.class, cache);
+            return cache;
+        });
+    }
 }

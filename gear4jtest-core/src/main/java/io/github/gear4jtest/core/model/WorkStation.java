@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
@@ -203,13 +204,34 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 			return this;
 		}
 
-		public UnsafeOperation.Builder<IN, OUT, OP> conditional(Condition<IN> condition) {
-			if (this.managedInstance.conditions == null) {
-				this.managedInstance.conditions = new ArrayList<>();
-			}
-			this.managedInstance.conditions.add(condition);
-			return new UnsafeOperation.Builder<>(this);
-		}
+//		public UnsafeOperation.Builder<IN, OUT, OP> conditional(Condition<IN> condition) {
+//			if (this.managedInstance.conditions == null) {
+//				this.managedInstance.conditions = new ArrayList<>();
+//			}
+//			this.managedInstance.conditions.add(condition);
+//			return new UnsafeOperation.Builder<>(this);
+//		}
+
+        /**
+         * Skipper PRE-Processor. S'évalue très tôt, basé sur l'input et le contexte global.
+         */
+        public UnsafeOperation.Builder<IN, OUT, OP> skipIf(StationSkipTest predicate) {
+            managedInstance.skipIf(predicate);
+            return new UnsafeOperation.Builder<>(this);
+        }
+
+        /**
+         * Skipper POST-Processor. S'évalue après la résolution des paramètres et l'attente des side-computes.
+         */
+        public UnsafeOperation.Builder<IN, OUT, OP> skipIfPost(StationSkipTest predicate) {
+            managedInstance.skipIfPost(predicate);
+            return new UnsafeOperation.Builder<>(this);
+        }
+
+        public <T> Builder<IN, OUT, OP> metadata(Class<T> type, T value) {
+            managedInstance.putMetadata(type, value);
+            return this;
+        }
 
 		public Builder<IN, OUT, OP> additionalModel(OperationAdditionalModel<IN, OUT, OP> model) {
 			model.contributeTo(this);
@@ -251,10 +273,26 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 				return this;
 			}
 
-			public UnsafeOperation.Builder<IN, OUT, OP> conditional(Condition<IN> condition) {
-				this.managedInstance.operation.conditional(condition);
-				return this;
-			}
+//			public UnsafeOperation.Builder<IN, OUT, OP> conditional(Condition<IN> condition) {
+//				this.managedInstance.operation.conditional(condition);
+//				return this;
+//			}
+
+            /**
+             * Skipper PRE-Processor. S'évalue très tôt, basé sur l'input et le contexte global.
+             */
+            public UnsafeOperation.Builder<IN, OUT, OP> skipIf(StationSkipTest predicate) {
+                managedInstance.operation.skipIf(predicate);
+                return this;
+            }
+
+            /**
+             * Skipper POST-Processor. S'évalue après la résolution des paramètres et l'attente des side-computes.
+             */
+            public UnsafeOperation.Builder<IN, OUT, OP> skipIfPost(StationSkipTest predicate) {
+                managedInstance.operation.skipIfPost(predicate);
+                return this;
+            }
 
 			public SafeOperation.Builder<IN, OUT, OP> transformer(Operator<IN, OUT> operator) {
 				this.managedInstance.operation.fallback(operator);
@@ -286,10 +324,26 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 				return this;
 			}
 
-			public Builder<IN, OUT, OP> conditional(Condition<IN> condition) {
-				this.managedInstance.operation.conditional(condition);
-				return this;
-			}
+//			public Builder<IN, OUT, OP> conditional(Condition<IN> condition) {
+//				this.managedInstance.operation.conditional(condition);
+//				return this;
+//			}
+
+            /**
+             * Skipper PRE-Processor. S'évalue très tôt, basé sur l'input et le contexte global.
+             */
+            public Builder<IN, OUT, OP> skipIf(StationSkipTest predicate) {
+                managedInstance.operation.skipIf(predicate);
+                return this;
+            }
+
+            /**
+             * Skipper POST-Processor. S'évalue après la résolution des paramètres et l'attente des side-computes.
+             */
+            public Builder<IN, OUT, OP> skipIfPost(StationSkipTest predicate) {
+                managedInstance.operation.skipIfPost(predicate);
+                return this;
+            }
 
 			public WorkStation.Builder<IN, OUT, OP> transformer(Operator<IN, OUT> operator) {
 				this.managedInstance.operation.fallback(operator);

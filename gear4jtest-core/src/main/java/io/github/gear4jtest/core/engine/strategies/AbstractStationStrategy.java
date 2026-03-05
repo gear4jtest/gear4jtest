@@ -13,7 +13,10 @@ import io.github.gear4jtest.core.model.Condition;
 import io.github.gear4jtest.core.model.ExecutionContext;
 import io.github.gear4jtest.core.model.Processor;
 import io.github.gear4jtest.core.model.SignalType;
+import io.github.gear4jtest.core.model.SkipDecision;
+import io.github.gear4jtest.core.model.SkipPhase;
 import io.github.gear4jtest.core.model.StationExecutionContext;
+import io.github.gear4jtest.core.model.StationSkipper;
 import io.github.gear4jtest.core.persistence.StationLog;
 
 public abstract class AbstractStationStrategy<S extends AbstractStation> implements StationExecutionStrategy<S> {
@@ -51,20 +54,27 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
         Exception mainException = null;
         try {
             setUp(station, input, context);
-            if (station.getConditions() != null && !station.getConditions().isEmpty()) {
-                boolean allMatch = true;
-                for (Condition condition : (List<Condition>) station.getConditions()) {
-                    if (condition != null && !condition.test(input, context.getGlobalContext())) {
-                        allMatch = false;
-                        break;
-                    }
-                }
+//            if (station.getConditions() != null && !station.getConditions().isEmpty()) {
+//                boolean allMatch = true;
+//                for (Condition condition : (List<Condition>) station.getConditions()) {
+//                    if (condition != null && !condition.test(input, context.getGlobalContext())) {
+//                        allMatch = false;
+//                        break;
+//                    }
+//                }
+//
+//                if (!allMatch) {
+//                    // Conditions KO => fallback éventuel, ou unary, ou SKIPPED
+//                    result = handleSkippedByCondition(station, input, context, context.getRecord());
+//                    return context.getRecord();
+//                }
+//            }
 
-                if (!allMatch) {
-                    // Conditions KO => fallback éventuel, ou unary, ou SKIPPED
-                    result = handleSkippedByCondition(station, input, context, context.getRecord());
-                    return context.getRecord();
-                }
+            // 1) Skippers PRE
+            SkipDecision preCause = runSkippers(station, input, context, SkipPhase.PRE_PROCESSORS);
+            if (preCause.shouldSkip()) {
+                result = handleSkip(station, input, context, context.getRecord(), preCause.reason());
+                return context.getRecord();
             }
 
             // Processors pré-exécution
@@ -77,6 +87,13 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
                         context.getRecord().addErrorHandlerException(e);
                     }
                 }
+            }
+
+            // 3) Skippers POST
+            SkipDecision postCause = runSkippers(station, input, context, SkipPhase.POST_PROCESSORS);
+            if (preCause.shouldSkip()) {
+                result = handleSkip(station, input, context, context.getRecord(), postCause.reason());
+                return context.getRecord();
             }
 
             result = doExecute(station, input, runner, context);
@@ -136,6 +153,53 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
         return context.getRecord();
     }
 
+    protected SkipDecision runSkippers(S station, Object input, StationExecutionContext ctx, SkipPhase phase) {
+        List<StationSkipper> skippers = station.getSkippers();
+        if (skippers == null || skippers.isEmpty()) {
+            return SkipDecision.dontSkip();
+        }
+
+        for (StationSkipper s : skippers) {
+            if (s == null || s.phase() != phase) {
+                continue;
+            }
+            SkipDecision skipDecision = s.shouldSkip(input, ctx);
+            if (skipDecision.shouldSkip()) {
+                return skipDecision;
+            }
+        }
+        return SkipDecision.dontSkip();
+    }
+
+    protected Object handleSkip(S station,
+                                Object input,
+                                StationExecutionContext ctx,
+                                StationLog record,
+                                String reason) {
+        if (station.getFallbackOperator() != null) {
+            try {
+                Object res = station.getFallbackOperator().transform(input, ctx);
+                record.markSuccess(res);
+                return res;
+            } catch (Exception e) {
+                record.addErrorHandlerException(e);
+                record.markSkipped(e);
+                return null;
+            }
+        }
+
+        if (Boolean.TRUE.equals(station.getUnary())) {
+            record.markSuccess(input);
+            return input;
+        }
+
+        if (reason != null) {
+            record.markSkipped(reason);
+        } else {
+            record.markSkipped();
+        }
+        return null;
+    }
 
     // -------------------------------------------------------------
     //              LOGIQUE DE SKIP (conditions KO)

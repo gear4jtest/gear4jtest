@@ -30,4 +30,6 @@ public interface StationExecutionContext {
      * (transformer, paramètres d'injection, profils, etc.).
      */
     <T> Optional<T> getCapability(Class<T> type);
+
+    ResolvedParameters getResolvedParameters();
 }
