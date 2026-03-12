@@ -1,5 +1,7 @@
 package io.github.gear4jtest.core.event;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
@@ -27,7 +29,7 @@ class EventListenerTest {
     void isAcceptable_shouldReturnTrueForMatchingSubtype() {
         EventListener<OperationStartedEvent> listener = new StartedEventListener();
         OperationStartedEvent event =
-                new OperationStartedEvent("pipe", "exec", "op", "input");
+                new OperationStartedEvent("pipe", UUID.randomUUID(), "op", "input");
 
         boolean acceptable = listener.isAcceptable(event);
 
@@ -38,7 +40,7 @@ class EventListenerTest {
     void isAcceptable_shouldReturnFalseForNonMatchingSubtype() {
         EventListener<OperationStartedEvent> listener = new StartedEventListener();
         OperationCompletedEvent otherEvent =
-                new OperationCompletedEvent("pipe", "exec", "op", "in", "out");
+                new OperationCompletedEvent("pipe", UUID.randomUUID(), "op", "in", "out");
 
         boolean acceptable = listener.isAcceptable(otherEvent);
 
@@ -47,8 +49,9 @@ class EventListenerTest {
 
     @Test
     void isAcceptable_shouldWorkWithGenericEventListener() {
+        UUID executionId = UUID.randomUUID();
         EventListener<Event> listener = new GenericEventListener();
-        Event event = new Event("pipe", "exec", "GENERIC");
+        Event event = new Event("pipe", executionId, "GENERIC");
 
         boolean acceptable = listener.isAcceptable(event);
 

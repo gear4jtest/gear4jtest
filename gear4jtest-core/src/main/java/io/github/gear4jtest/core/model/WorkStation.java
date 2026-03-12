@@ -183,13 +183,21 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 //			managedInstance.parameters.add(parameterModel);
 //		}
 
-		public Builder<IN, OUT, OP> onError(BaseError.SafeError<IN> onError) {
-			if (this.managedInstance.onErrors == null) {
-				this.managedInstance.onErrors = new ArrayList<>();
-			}
-			this.managedInstance.onErrors.add(onError);
-			return this;
-		}
+        public Builder<IN, OUT, OP> addProcessor(Processor processor) {
+            if (this.managedInstance.processors == null) {
+                this.managedInstance.processors = new ArrayList<>();
+            }
+            this.managedInstance.processors.add(processor);
+            return this;
+        }
+
+        public Builder<IN, OUT, OP> onError(BaseError.SafeError<IN> onError) {
+            if (this.managedInstance.onErrors == null) {
+                this.managedInstance.onErrors = new ArrayList<>();
+            }
+            this.managedInstance.onErrors.add(onError);
+            return this;
+        }
 
 		public UnsafeOperation.Builder<IN, OUT, OP> onError(BaseError.UnSafeError<IN> onError) {
 			if (this.managedInstance.onErrors == null) {

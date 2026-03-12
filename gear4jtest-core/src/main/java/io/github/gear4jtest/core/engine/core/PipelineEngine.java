@@ -16,6 +16,7 @@ import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.engine.support.ExecutorDecorator;
 import io.github.gear4jtest.core.engine.support.TaskFactory;
 import io.github.gear4jtest.core.event.EventManager;
+import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.factory.ResourceFactory;
 import io.github.gear4jtest.core.model.AssemblyLine;
 import io.github.gear4jtest.core.model.DefaultStationExecutionContext;
@@ -38,6 +39,7 @@ public class PipelineEngine implements PipelineExecutor {
     private final ResourceFactory resourceFactory;
     private final RunnerStackBuilder stackBuilder;
     private final ExtensionRegistry globalExtensions;
+    private final ExecutionContextRegistry executionContextRegistry;
     private final IdGenerator defaultIdGenerator;
     private final TaskFactory taskFactory;
 
@@ -45,6 +47,7 @@ public class PipelineEngine implements PipelineExecutor {
         this.stackBuilder = Objects.requireNonNull(builder.stackBuilder, "StackBuilder must not be null");
         this.resourceFactory = Objects.requireNonNull(builder.resourceFactory, "ResourceFactory must not be null");
         this.globalExtensions = Objects.requireNonNull(builder.globalExtensions, "Global extension registry must not be null");
+        this.executionContextRegistry = Objects.requireNonNull(builder.executionContextRegistry, "ExecutionContextRegistry must not be null");
         this.defaultIdGenerator = builder.idGenerator != null ? builder.idGenerator : IdGenerator.defaultGenerator();
         this.taskFactory = builder.taskFactory != null ? builder.taskFactory : new TaskFactory();
     }
@@ -99,6 +102,9 @@ public class PipelineEngine implements PipelineExecutor {
                 eventManager,
                 resourceFactory,
                 execution);
+        ctx.getContext().putAll(effectiveContext);
+
+        executionContextRegistry.register(ctx);
 
         // 2. Build Stack (C'est ici que PersistenceFeature -> Extension -> Manager injecté)
         StationRunner rootRunner = stackBuilder.build(pipeline, request, ctx, plan);
@@ -127,6 +133,7 @@ public class PipelineEngine implements PipelineExecutor {
         } finally {
             execution.setContext(ctx.getContext());
             execution.setEndTime(Instant.now());
+            executionContextRegistry.remove(ctx.getExecutionId());
         }
     }
 
@@ -164,6 +171,7 @@ public class PipelineEngine implements PipelineExecutor {
         private RunnerStackBuilder stackBuilder;
         private ResourceFactory resourceFactory;
         private ExtensionRegistry globalExtensions;
+        private ExecutionContextRegistry executionContextRegistry;
         private IdGenerator idGenerator;
         private TaskFactory taskFactory;
 
@@ -176,8 +184,14 @@ public class PipelineEngine implements PipelineExecutor {
             this.resourceFactory = resourceFactory;
             return this;
         }
+
         public Builder globalExtensions(ExtensionRegistry globalExtensions) {
             this.globalExtensions = globalExtensions;
+            return this;
+        }
+
+        public Builder executionContextRegistry(ExecutionContextRegistry executionContextRegistry) {
+            this.executionContextRegistry = executionContextRegistry;
             return this;
         }
 

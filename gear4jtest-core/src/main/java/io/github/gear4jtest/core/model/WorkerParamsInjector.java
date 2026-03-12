@@ -257,7 +257,9 @@ public class WorkerParamsInjector implements Processor {
 			this.item = item;
 			this.executionContext = executionContext;
 			this.stationExecutionContext = stationExecutionContext;
-			this.sideComputeAccessor = new DefaultSideComputeAccessor(executionContext);
+			this.sideComputeAccessor = stationExecutionContext
+                    .getCapability(SideComputeAccessor.class)
+                    .orElseGet(() -> new DefaultSideComputeAccessor(executionContext));
 		}
 
 		public IN getItem() { return item; }

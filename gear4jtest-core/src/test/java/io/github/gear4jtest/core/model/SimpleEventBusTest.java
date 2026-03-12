@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.model;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,9 +52,9 @@ class SimpleEventBusTest {
         busThread.start();
 
         // Un event filtré (ne doit pas passer)
-        bus.acceptEvent(new Event("p", "exec", "BAR"));
+        bus.acceptEvent(new Event("p", UUID.randomUUID(), "BAR"));
         // Un event accepté (doit passer)
-        bus.acceptEvent(new Event("p", "exec", "FOO"));
+        bus.acceptEvent(new Event("p", UUID.randomUUID(), "FOO"));
 
         // On attend que le listener ait été appelé au moins une fois
         boolean received = latch.await(2, TimeUnit.SECONDS);

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -26,7 +27,7 @@ class EventManagerTest {
     @Test
     void publish_shouldSendEventToAllBusses() {
         EventManager manager = new EventManager(List.of(eventBus1, eventBus2));
-        Event event = new Event("pipe", "exec", "TYPE");
+        Event event = new Event("pipe", UUID.randomUUID(), "TYPE");
 
         manager.publish(event);
 
@@ -37,7 +38,7 @@ class EventManagerTest {
     @Test
     void publish_shouldDoNothingIfNoBusConfigured() {
         EventManager manager = new EventManager(List.of());
-        Event event = new Event("pipe", "exec", "TYPE");
+        Event event = new Event("pipe", UUID.randomUUID(), "TYPE");
 
         manager.publish(event);
 

@@ -41,7 +41,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
             context.getGlobalContext().getEventManager().publish(
                     new OperationStartedEvent(
                             context.getGlobalContext().getPipelineId(),
-                            context.getGlobalContext().getExecutionId().toString(),
+                            context.getGlobalContext().getExecutionId(),
                             station.getId(),
                             input));
         }
@@ -129,7 +129,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
                 context.getGlobalContext().getEventManager().publish(
                         new OperationCompletedEvent(
                                 context.getGlobalContext().getPipelineId(),
-                                context.getGlobalContext().getExecutionId().toString(),
+                                context.getGlobalContext().getExecutionId(),
                                 station.getId(),
                                 input,
                                 result));
@@ -265,7 +265,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
             context.getEventManager()
                     .publish(new OperationErrorEvent(
                             context.getPipelineId(),
-                            context.getExecutionId().toString(),
+                            context.getExecutionId(),
                             station.getId(),
                             input,
                             exception

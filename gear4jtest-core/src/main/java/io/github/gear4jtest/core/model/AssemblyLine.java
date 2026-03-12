@@ -9,16 +9,21 @@ import java.util.Objects;
 
 public class AssemblyLine<IN, OUT> {
 
+    private static final String DEFAULT_VERSION = "1";
+
     private final String id;
+    private final String version;
     private final AbstractStation<?, ?> rootStation;
     private final Map<String, Object> defaultContext;
     private final Configuration configuration;
 
     private AssemblyLine(String id,
+                         String version,
                          AbstractStation<?, ?> rootStation,
                          Map<String, Object> defaultContext,
                          Configuration configuration) {
         this.id = id;
+        this.version = version != null ? version : DEFAULT_VERSION;
         this.rootStation = Objects.requireNonNull(rootStation, "rootStation must not be null");
         this.defaultContext = defaultContext != null ? new HashMap<>(defaultContext) : new HashMap<>();
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
@@ -26,6 +31,10 @@ public class AssemblyLine<IN, OUT> {
 
     public String getId() {
         return id;
+    }
+
+    public String getVersion() {
+        return version;
     }
 
     public AbstractStation<?, ?> getRootStation() {
@@ -51,12 +60,18 @@ public class AssemblyLine<IN, OUT> {
 
     public static class Builder<IN, OUT> {
         private final String id;
+        private String version;
         private final List<AbstractStation<?, ?>> operations = new ArrayList<>();
         private final Map<String, Object> defaultContext = new HashMap<>();
         private final Configuration.Builder configBuilder = Configuration.builder();
 
         private Builder(String id) {
             this.id = id;
+        }
+
+        public Builder<IN, OUT> version(String version) {
+            this.version = version;
+            return this;
         }
 
         public Builder<IN, OUT> persistence(PersistenceConfiguration persistence) {
@@ -108,7 +123,7 @@ public class AssemblyLine<IN, OUT> {
             } else {
                 root = SequenceStation.syntheticRoot(id + ":root", operations, io.github.gear4jtest.core.engine.flow.FlowConfig.DEFAULT);
             }
-            return new AssemblyLine<>(id, root, defaultContext, finalConfig);
+            return new AssemblyLine<>(id, version, root, defaultContext, finalConfig);
         }
     }
 

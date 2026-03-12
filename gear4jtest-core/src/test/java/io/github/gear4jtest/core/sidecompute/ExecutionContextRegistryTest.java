@@ -1,15 +1,13 @@
 package io.github.gear4jtest.core.sidecompute;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.util.UUID;
 
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
+import io.github.gear4jtest.core.model.ExecutionContext;
 import org.junit.jupiter.api.Test;
 
-import io.github.gear4jtest.core.model.ExecutionContext;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 class ExecutionContextRegistryTest {
 
@@ -22,7 +20,7 @@ class ExecutionContextRegistryTest {
 
         registry.register(ctx);
 
-        assertThat(registry.get(id.toString()))
+        assertThat(registry.get(id))
                 .isSameAs(ctx);
     }
 
@@ -34,9 +32,9 @@ class ExecutionContextRegistryTest {
         when(ctx.getExecutionId()).thenReturn(id);
 
         registry.register(ctx);
-        registry.remove(id.toString());
+        registry.remove(id);
 
-        assertThat(registry.get(id.toString()))
+        assertThat(registry.get(id))
                 .isNull();
     }
 
@@ -44,7 +42,7 @@ class ExecutionContextRegistryTest {
     void getShouldReturnNullForUnknownId() {
         ExecutionContextRegistry registry = new ExecutionContextRegistry();
 
-        assertThat(registry.get("unknown"))
+        assertThat(registry.get(UUID.randomUUID()))
                 .isNull();
     }
 }

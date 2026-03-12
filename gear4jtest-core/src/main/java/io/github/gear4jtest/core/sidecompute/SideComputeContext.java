@@ -14,6 +14,6 @@ public final class SideComputeContext {
 
     @SuppressWarnings("unchecked")
     public <T> CompletableFuture<T> getOrCreateFuture(String key) {
-        return (CompletableFuture<T>) futures.computeIfAbsent(key, k -> new CompletableFuture<>());
+        return (CompletableFuture<T>) futures.computeIfAbsent(key, __ -> new CompletableFuture<>());
     }
 }

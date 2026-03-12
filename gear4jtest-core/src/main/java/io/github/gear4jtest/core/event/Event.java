@@ -6,10 +6,10 @@ public class Event {
 
 	private final UUID id;
 	private final String pipelineId;
-	private final String executionId;
+	private final UUID executionId;
 	private final String type;
 
-	public Event(String pipelineId, String executionId, String type) {
+	public Event(String pipelineId, UUID executionId, String type) {
 		this.id = UUID.randomUUID();
 		this.pipelineId = pipelineId;
 		this.executionId = executionId;
@@ -24,7 +24,7 @@ public class Event {
 		return pipelineId;
 	}
 
-	public String getExecutionId() {
+	public UUID getExecutionId() {
 		return executionId;
 	}
 

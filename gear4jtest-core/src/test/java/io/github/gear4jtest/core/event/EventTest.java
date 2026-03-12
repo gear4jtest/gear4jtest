@@ -11,7 +11,7 @@ class EventTest {
     @Test
     void constructor_shouldInitializeAllFields() {
         String pipelineId = "pipeline-1";
-        String executionId = "exec-1";
+        var executionId = UUID.randomUUID();
         String type = "MY_EVENT";
 
         Event event = new Event(pipelineId, executionId, type);
@@ -25,8 +25,9 @@ class EventTest {
 
     @Test
     void eachEventShouldHaveADifferentId() {
-        Event e1 = new Event("p", "e", "TYPE");
-        Event e2 = new Event("p", "e", "TYPE");
+        var executionId = UUID.randomUUID();
+        Event e1 = new Event("p", executionId, "TYPE");
+        Event e2 = new Event("p", executionId, "TYPE");
 
         assertThat(e1.getId()).isNotEqualTo(e2.getId());
     }

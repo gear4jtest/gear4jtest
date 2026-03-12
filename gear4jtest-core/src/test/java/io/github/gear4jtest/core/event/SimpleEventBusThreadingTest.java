@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.event;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.*;
 
 import io.github.gear4jtest.core.model.SimpleEventBus;
@@ -30,8 +31,9 @@ class SimpleEventBusThreadingTest {
         Thread t = new Thread(bus::run);
         t.start();
 
-        bus.acceptEvent(new Event("p", "e", "BAR")); // filtered out
-        bus.acceptEvent(new Event("p", "e", "FOO"));
+        var executionId = UUID.randomUUID();
+        bus.acceptEvent(new Event("p", executionId, "BAR")); // filtered out
+        bus.acceptEvent(new Event("p", executionId, "FOO"));
 
         Event received = listener.await(2000);
         assertThat(received).isNotNull();

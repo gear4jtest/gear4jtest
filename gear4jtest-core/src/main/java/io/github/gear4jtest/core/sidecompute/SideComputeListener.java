@@ -1,26 +1,21 @@
 package io.github.gear4jtest.core.sidecompute;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.event.OperationCompletedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.model.ExecutionContext;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-/**
- * Listener branché sur un EventBus dédié (ex: "sideCompute").
- * Il exécute des SideComputer en arrière-plan (thread du bus) et range les
- * résultats dans le SideComputeContext du ExecutionContext associé à l'exécution.
- */
 public final class SideComputeListener implements EventListener<Event> {
 
-    private final List<SideComputer<?>> computers;
+    private final List<SideComputer<?, ?>> computers;
     private final ExecutionContextRegistry registry;
 
-    public SideComputeListener(List<SideComputer<?>> computers,
-                               ExecutionContextRegistry registry) {
+    public SideComputeListener(
+            List<SideComputer<?, ?>> computers,
+            ExecutionContextRegistry registry) {
         this.computers = computers;
         this.registry = registry;
     }
@@ -31,31 +26,42 @@ public final class SideComputeListener implements EventListener<Event> {
             return;
         }
 
-        ExecutionContext ctx = registry.get(completed.getExecutionId());
-        if (ctx == null) {
+        ExecutionContext executionContext = registry.get(completed.getExecutionId());
+        if (executionContext == null) {
             return;
         }
 
-        SideComputeContext scCtx = ctx.getSideComputeContext();
+        SideComputeContext sideComputeContext = executionContext.getSideComputeContext();
 
-        for (SideComputer<?> sc : computers) {
-            if (sc.matches(completed)) {
-                runCompute(completed, scCtx, sc);
+        for (SideComputer<?, ?> sideComputer : computers) {
+            if (sideComputer.matches(completed)) {
+                runCompute(completed, executionContext, sideComputeContext, sideComputer);
             }
         }
     }
 
-    private <R> void runCompute(OperationCompletedEvent ev,
-                                SideComputeContext scCtx,
-                                SideComputer<R> sc) {
+    @SuppressWarnings("unchecked")
+    private <T, R> void runCompute(
+            OperationCompletedEvent event,
+            ExecutionContext executionContext,
+            SideComputeContext sideComputeContext,
+            SideComputer<?, ?> rawSideComputer) {
 
-        CompletableFuture<R> future = scCtx.getOrCreateFuture(sc.key());
+        SideComputer<T, R> sideComputer = (SideComputer<T, R>) rawSideComputer;
+        CompletableFuture<R> future = sideComputeContext.getOrCreateFuture(sideComputer.key());
 
         try {
-            R result = sc.computer().apply(ev);
-            future.complete(result);
-        } catch (Throwable t) {
-            future.completeExceptionally(t);
+            T computeResult = sideComputer.computer().apply(event);
+
+            for (SideComputeHandler<T> handler : sideComputer.handlers()) {
+                handler.handle(sideComputer.key(), event, computeResult, executionContext);
+            }
+
+            R finalResult = sideComputer.mapper().apply(computeResult);
+            future.complete(finalResult);
+
+        } catch (Throwable throwable) {
+            future.completeExceptionally(throwable);
         }
     }
 }
