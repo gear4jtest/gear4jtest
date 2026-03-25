@@ -2,12 +2,12 @@ package io.github.gear4jtest.core.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.github.gear4jtest.core.model.ConcurrencyAwareTransformer;
-import io.github.gear4jtest.core.model.WorkerIntrospector;
-import io.github.gear4jtest.core.model.WorkerStatefulness;
+import io.github.gear4jtest.core.engine.support.ConcurrencyAwareTransformer;
+import io.github.gear4jtest.core.engine.support.WorkerIntrospector;
+import io.github.gear4jtest.core.engine.support.WorkerStatefulness;
 import org.junit.jupiter.api.Test;
 
-import io.github.gear4jtest.core.model.WorkerParamsInjector.Parameter;
+import io.github.gear4jtest.core.engine.support.WorkerParamsInjector.Parameter;
 
 class OperatorIntrospectorTest {
 

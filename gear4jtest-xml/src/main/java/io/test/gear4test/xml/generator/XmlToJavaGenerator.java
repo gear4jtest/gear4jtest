@@ -19,7 +19,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class XmlToJavaGenerator {
-    private static final String BUILDERS = "io.github.gear4jtest.core.model.ElementModelBuilders";
+    private static final String BUILDERS = "io.github.gear4jtest.core.api.util.ElementModelBuilders";
     private final String packageName;
     private final String className;
     private int counter = 1;

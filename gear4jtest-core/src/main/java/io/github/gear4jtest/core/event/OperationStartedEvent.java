@@ -8,5 +8,4 @@ public class OperationStartedEvent extends OperationBaseEvent {
 	public OperationStartedEvent(String pipelineId, UUID executionId, String operationId, Object input) {
         super(pipelineId, executionId, TYPE, operationId, input);
 	}
-
 }

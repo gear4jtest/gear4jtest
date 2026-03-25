@@ -7,13 +7,13 @@
 //import io.github.gear4jtest.core.event.EventManager;
 //import io.github.gear4jtest.core.event.OperationCompletedEvent;
 //import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-//import io.github.gear4jtest.core.model.ElementModelBuilders;
-//import io.github.gear4jtest.core.model.DefaultStationExecutionContext;
-//import io.github.gear4jtest.core.model.EventBus;
-//import io.github.gear4jtest.core.model.ExecutionContext;
-//import io.github.gear4jtest.core.model.StationExecutionContext;
-//import io.github.gear4jtest.core.model.StationKind;
-//import io.github.gear4jtest.core.model.WorkerParamsInjector;
+//import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+//import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
+//import io.github.gear4jtest.core.event.EventBus;
+//import io.github.gear4jtest.core.api.context.ExecutionContext;
+//import io.github.gear4jtest.core.api.context.StationExecutionContext;
+//import io.github.gear4jtest.core.api.station.StationKind;
+//import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 //import io.github.gear4jtest.core.persistence.StationLog;
 //import org.junit.jupiter.api.Test;
 //

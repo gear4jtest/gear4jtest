@@ -14,19 +14,19 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import io.github.gear4jtest.core.engine.core.ExtensionRegistry;
-import io.github.gear4jtest.core.engine.core.PipelineEngine;
-import io.github.gear4jtest.core.engine.core.RunRequest;
-import io.github.gear4jtest.core.engine.core.RunnerStackBuilder;
-import io.github.gear4jtest.core.engine.core.StrategyRegistry;
-import io.github.gear4jtest.core.engine.extension.PersistenceExtension;
+import io.github.gear4jtest.core.api.ExecutionResult;
+import io.github.gear4jtest.core.api.RunRequest;
+import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
+import io.github.gear4jtest.core.engine.PipelineEngine;
+import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
+import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
+import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.exception.AssemblyLineException;
 import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
-import io.github.gear4jtest.core.factory.ResourceFactory;
-import io.github.gear4jtest.core.model.ElementModelBuilders;
-import io.github.gear4jtest.core.model.ExecutionResult;
+import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.persistence.AssemblyRun;
 import io.github.gear4jtest.core.persistence.DatabaseAssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
@@ -39,11 +39,12 @@ import io.github.gear4jtest.core.service.steps.Step3;
 import io.github.gear4jtest.core.service.steps.Step7;
 import io.github.gear4jtest.core.service.steps.Step8;
 import io.github.gear4jtest.core.service.steps.Step9;
+import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
 
-import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
+import static io.github.gear4jtest.core.api.util.ElementModelBuilders.*;
 import static io.github.gear4jtest.core.persistence.StationLog.Status;
 import static org.assertj.core.api.Assertions.*;
 
@@ -148,13 +149,15 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-        ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
-        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(StrategyRegistry.defaultRegistry());
+        RuntimeExtensionResolver runtimeExtensionResolver = new RuntimeExtensionResolver(null);
+        RunnerChainFactory runnerChainFactory = new RunnerChainFactory(StrategyRegistry.defaultRegistry());
+        ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
-                .stackBuilder(stackBuilder)
+                .runnerChainFactory(runnerChainFactory)
                 .resourceFactory(resourceFactory)
-                .globalExtensions(extensionRegistry)
+                .extensionResolver(runtimeExtensionResolver)
+                .executionContextRegistry(executionContextRegistry)
                 .build();
 
         var request = RunRequest.builder()
@@ -218,13 +221,15 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-        ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
-        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(StrategyRegistry.defaultRegistry());
+        RuntimeExtensionResolver runtimeExtensionResolver = new RuntimeExtensionResolver(null);
+        RunnerChainFactory runnerChainFactory = new RunnerChainFactory(StrategyRegistry.defaultRegistry());
+        ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
-                .stackBuilder(stackBuilder)
+                .runnerChainFactory(runnerChainFactory)
                 .resourceFactory(resourceFactory)
-                .globalExtensions(extensionRegistry)
+                .extensionResolver(runtimeExtensionResolver)
+                .executionContextRegistry(executionContextRegistry)
                 .build();
 
         var request = RunRequest.builder()
@@ -299,13 +304,15 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-        ExtensionRegistry extensionRegistry = new ExtensionRegistry(List.of());
-        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(StrategyRegistry.defaultRegistry());
+        RuntimeExtensionResolver runtimeExtensionResolver = new RuntimeExtensionResolver(null);
+        RunnerChainFactory runnerChainFactory = new RunnerChainFactory(StrategyRegistry.defaultRegistry());
+        ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
-                .stackBuilder(stackBuilder)
+                .runnerChainFactory(runnerChainFactory)
                 .resourceFactory(resourceFactory)
-                .globalExtensions(extensionRegistry)
+                .extensionResolver(runtimeExtensionResolver)
+                .executionContextRegistry(executionContextRegistry)
                 .build();
 
         var request = RunRequest.builder()
@@ -346,7 +353,7 @@ public class SimpleChainBuilderTest {
 						result.getExecution().getId(),
 						"test",
 						context,
-						Map.of(),
+                        context,
 						List.of(List.of("")),
 						ExecutionStatus.SUCCEEDED);
 
@@ -436,13 +443,15 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-        ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
-        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(StrategyRegistry.defaultRegistry());
+        RuntimeExtensionResolver runtimeExtensionResolver = new RuntimeExtensionResolver(null);
+        RunnerChainFactory runnerChainFactory = new RunnerChainFactory(StrategyRegistry.defaultRegistry());
+        ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
-                .stackBuilder(stackBuilder)
+                .runnerChainFactory(runnerChainFactory)
                 .resourceFactory(resourceFactory)
-                .globalExtensions(extensionRegistry)
+                .extensionResolver(runtimeExtensionResolver)
+                .executionContextRegistry(executionContextRegistry)
                 .build();
 
         var request = RunRequest.builder()
@@ -494,13 +503,15 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-        ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
-        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(StrategyRegistry.defaultRegistry());
+        RuntimeExtensionResolver runtimeExtensionResolver = new RuntimeExtensionResolver(null);
+        RunnerChainFactory runnerChainFactory = new RunnerChainFactory(StrategyRegistry.defaultRegistry());
+        ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
-                .stackBuilder(stackBuilder)
+                .runnerChainFactory(runnerChainFactory)
                 .resourceFactory(resourceFactory)
-                .globalExtensions(extensionRegistry)
+                .extensionResolver(runtimeExtensionResolver)
+                .executionContextRegistry(executionContextRegistry)
                 .build();
 
         var request = RunRequest.builder()
@@ -556,13 +567,15 @@ public class SimpleChainBuilderTest {
 			}
 		};
 
-        ExtensionRegistry extensionRegistry = new ExtensionRegistry(null);
-        RunnerStackBuilder stackBuilder = new RunnerStackBuilder(StrategyRegistry.defaultRegistry());
+        RuntimeExtensionResolver runtimeExtensionResolver = new RuntimeExtensionResolver(null);
+        RunnerChainFactory runnerChainFactory = new RunnerChainFactory(StrategyRegistry.defaultRegistry());
+        ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
         ResourceFactory resourceFactory = new TestResourceFactory();
         PipelineEngine engine = PipelineEngine.builder()
-                .stackBuilder(stackBuilder)
+                .runnerChainFactory(runnerChainFactory)
                 .resourceFactory(resourceFactory)
-                .globalExtensions(extensionRegistry)
+                .extensionResolver(runtimeExtensionResolver)
+                .executionContextRegistry(executionContextRegistry)
                 .build();
 
         var request = RunRequest.builder()

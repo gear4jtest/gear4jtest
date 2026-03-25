@@ -11,7 +11,7 @@
 //
 //import io.github.gear4jtest.core.event.EventManager;
 //import io.github.gear4jtest.core.execution.AssemblyRunManager;
-//import io.github.gear4jtest.core.factory.ResourceFactory;
+//import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 //
 //@ExtendWith(MockitoExtension.class)
 //class ExecutionContextTest {

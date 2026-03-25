@@ -6,7 +6,7 @@ import java.util.Objects;
 
 import com.palantir.javapoet.JavaFile;
 import com.palantir.javapoet.TypeSpec;
-import io.github.gear4jtest.core.model.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.ElementModelBuilders;
 import io.test.gear4jtest.xml.generated.AssemblyLine;
 import io.test.gear4test.xml.visitor.JavaFlatCodeGeneratorVisitor;
 import io.test.gear4test.xml.visitor.VisitorContext;

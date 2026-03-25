@@ -1,17 +1,17 @@
 // Généré automatiquement par XmlToJavaGeneratorV4
 package com.myorg.assemblylines.generated;
 
-import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
+import static io.github.gear4jtest.core.api.util.ElementModelBuilders.*;
 
 import com.myorg.operation.Step10;
 import com.myorg.operation.Step3;
 import com.myorg.operation.Step8;
 import com.myorg.operation.Step9;
 import com.myorg.services.ModelsService;
-import io.github.gear4jtest.core.model.ElementModelBuilders;
-import io.github.gear4jtest.core.model.AssemblyLine;
-import io.github.gear4jtest.core.model.IteratorStation;
-import io.github.gear4jtest.core.model.WorkStation;
+import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.AssemblyLine;
+import io.github.gear4jtest.core.api.station.IteratorStation;
+import io.github.gear4jtest.core.api.station.WorkStation;
 import io.test.gear4test.xml.generator.GeneratedAssemblyLine;
 import java.util.List;
 import java.util.Map;

@@ -1,9 +1,9 @@
 package com.myorg.operation;
 
-import io.github.gear4jtest.core.model.ExecutionContext;
-import io.github.gear4jtest.core.model.StationExecutionContext;
-import io.github.gear4jtest.core.model.WorkerParamsInjector.Parameter;
-import io.github.gear4jtest.core.model.Operator;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.engine.support.WorkerParamsInjector.Parameter;
+import io.github.gear4jtest.core.api.behavior.Operator;
 
 public class Step11 implements Operator<String, String> {
 

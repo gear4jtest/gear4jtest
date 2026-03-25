@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
 
-import io.github.gear4jtest.core.model.SimpleEventBus;
 import org.junit.jupiter.api.Test;
 
 class SimpleEventBusThreadingTest {

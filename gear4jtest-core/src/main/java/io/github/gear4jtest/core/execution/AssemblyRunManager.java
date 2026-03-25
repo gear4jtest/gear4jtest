@@ -3,8 +3,8 @@ package io.github.gear4jtest.core.execution;
 import java.util.List;
 import java.util.UUID;
 
-import io.github.gear4jtest.core.persistence.StationLog;
 import io.github.gear4jtest.core.persistence.AssemblyRun;
+import io.github.gear4jtest.core.persistence.StationLog;
 
 public interface AssemblyRunManager {
 
@@ -26,14 +26,6 @@ public interface AssemblyRunManager {
         if (records != null) {
             records.forEach(this::append);
         }
-    }
-
-    /**
-     * Append d'un éventuel record agrégé (ex: batch d'iterator).
-     * Non utilisé pour le moment, mais laissé pour extension future.
-     */
-    default void append(IteratorBatch batch) {
-        // no-op par défaut
     }
 
     /**

@@ -11,5 +11,4 @@ public class OperationErrorEvent extends OperationBaseEvent {
         super(pipelineId, executionId, TYPE, operationId, input);
 		this.exception = exception;
 	}
-
 }

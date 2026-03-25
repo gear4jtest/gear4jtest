@@ -21,7 +21,7 @@ class OperationEventsTest {
 
         assertThat(event).isInstanceOf(Event.class);
         assertThat(event.getPipelineId()).isEqualTo("pipeline-1");
-        assertThat(event.getExecutionId()).isEqualTo("exec-1");
+        assertThat(event.getExecutionId()).isEqualTo(executionId);
         assertThat(event.getName()).isEqualTo("CUSTOM_TYPE");
     }
 

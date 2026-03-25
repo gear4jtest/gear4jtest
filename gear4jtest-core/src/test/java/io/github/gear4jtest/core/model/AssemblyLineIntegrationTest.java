@@ -4,13 +4,13 @@
 //import java.util.Optional;
 //
 //import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
-//import io.github.gear4jtest.core.factory.ResourceFactory;
-//import io.github.gear4jtest.core.model.AssemblyLine;
-//import io.github.gear4jtest.core.model.ExecutionContext;
-//import io.github.gear4jtest.core.model.ExecutionResult;
-//import io.github.gear4jtest.core.model.Operator;
-//import io.github.gear4jtest.core.model.WorkStation;
-//import io.github.gear4jtest.core.model.StationExecutionContext;
+//import io.github.gear4jtest.core.spi.factory.ResourceFactory;
+//import io.github.gear4jtest.core.api.AssemblyLine;
+//import io.github.gear4jtest.core.api.context.ExecutionContext;
+//import io.github.gear4jtest.core.api.ExecutionResult;
+//import io.github.gear4jtest.core.api.behavior.Operator;
+//import io.github.gear4jtest.core.api.station.WorkStation;
+//import io.github.gear4jtest.core.api.context.StationExecutionContext;
 //import io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepository;
 //import io.github.gear4jtest.core.persistence.StationLog;
 //import io.github.gear4jtest.core.persistence.AssemblyRun;

@@ -3,10 +3,10 @@ package io.github.gear4jtest.core.engine.support;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
-import io.github.gear4jtest.core.engine.spi.StationRunner;
-import io.github.gear4jtest.core.model.AbstractStation;
-import io.github.gear4jtest.core.model.ExecutionContext;
-import io.github.gear4jtest.core.model.StationExecutionContext;
+import io.github.gear4jtest.core.spi.runner.StationRunner;
+import io.github.gear4jtest.core.api.station.AbstractStation;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.persistence.StationLog;
 
 public class TaskFactory {

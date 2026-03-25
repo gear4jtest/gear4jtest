@@ -7,9 +7,9 @@ import java.util.function.Supplier;
 
 import io.github.gear4jtest.core.exception.SideComputeExecutionException;
 import io.github.gear4jtest.core.exception.SideComputeTimeoutException;
-import io.github.gear4jtest.core.model.ExecutionContext;
-import io.github.gear4jtest.core.model.StationExecutionContext;
-import io.github.gear4jtest.core.model.Processor;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.api.behavior.Processor;
 
 public final class SideComputeWaitProcessor implements Processor {
 

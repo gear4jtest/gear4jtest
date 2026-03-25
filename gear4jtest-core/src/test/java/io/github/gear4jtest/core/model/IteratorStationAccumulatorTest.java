@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import io.github.gear4jtest.core.api.station.IteratorStation;
 import org.junit.jupiter.api.Test;
 
 class IteratorStationAccumulatorTest {

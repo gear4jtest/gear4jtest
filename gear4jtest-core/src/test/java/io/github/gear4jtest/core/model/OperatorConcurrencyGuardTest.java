@@ -3,9 +3,9 @@ package io.github.gear4jtest.core.model;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import io.github.gear4jtest.core.model.ConcurrentTransformerUseException;
-import io.github.gear4jtest.core.model.WorkerConcurrencyGuard;
-import io.github.gear4jtest.core.model.WorkerConcurrencyStrategy;
+import io.github.gear4jtest.core.engine.support.WorkerConcurrencyGuard;
+import io.github.gear4jtest.core.engine.support.WorkerConcurrencyStrategy;
+import io.github.gear4jtest.core.exception.ConcurrentTransformerUseException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.*;

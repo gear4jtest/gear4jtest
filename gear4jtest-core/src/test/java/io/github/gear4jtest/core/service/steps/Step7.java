@@ -1,6 +1,6 @@
 package io.github.gear4jtest.core.service.steps;
 
-import io.github.gear4jtest.core.model.StationExecutionContext;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
 
 public class Step7 extends Step6 {
 

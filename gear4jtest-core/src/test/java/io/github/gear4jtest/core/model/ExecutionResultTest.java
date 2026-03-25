@@ -1,6 +1,6 @@
 package io.github.gear4jtest.core.model;
 
-import io.github.gear4jtest.core.model.ExecutionResult;
+import io.github.gear4jtest.core.api.ExecutionResult;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -4,7 +4,7 @@ import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.event.OperationCompletedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.model.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 

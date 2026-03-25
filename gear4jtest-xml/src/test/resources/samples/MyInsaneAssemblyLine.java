@@ -1,6 +1,6 @@
 //package com.myorg.assemblylines.generated;
 //
-//import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
+//import static io.github.gear4jtest.core.api.util.ElementModelBuilders.*;
 //
 //import com.myorg.operation.Step11;
 //import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;

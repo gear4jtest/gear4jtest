@@ -11,8 +11,8 @@ import java.util.concurrent.CompletableFuture;
 import io.github.gear4jtest.core.exception.SideComputeTimeoutException;
 import org.junit.jupiter.api.Test;
 
-import io.github.gear4jtest.core.model.ExecutionContext;
-import io.github.gear4jtest.core.model.StationExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
 
 class SideComputeWaitProcessorTest {
 

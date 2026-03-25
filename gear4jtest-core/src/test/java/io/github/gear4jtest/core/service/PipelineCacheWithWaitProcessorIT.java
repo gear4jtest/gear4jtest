@@ -7,12 +7,22 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import io.github.gear4jtest.core.engine.core.ExtensionRegistry;
-import io.github.gear4jtest.core.engine.core.PipelineEngine;
-import io.github.gear4jtest.core.engine.core.RunRequest;
-import io.github.gear4jtest.core.engine.core.RunnerStackBuilder;
-import io.github.gear4jtest.core.engine.core.StrategyRegistry;
+import io.github.gear4jtest.core.api.AssemblyLine;
+import io.github.gear4jtest.core.api.ExecutionResult;
+import io.github.gear4jtest.core.api.RunRequest;
+import io.github.gear4jtest.core.api.behavior.Operator;
+import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.api.station.WorkStation;
+import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.engine.PipelineEngine;
+import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
+import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
+import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
+import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 import io.github.gear4jtest.core.event.Event;
+import io.github.gear4jtest.core.event.EventBus;
 import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.event.OperationCompletedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -29,20 +39,11 @@ import io.github.gear4jtest.core.extras.pipelinecache.PipelineCacheExtension;
 import io.github.gear4jtest.core.extras.pipelinecache.PipelineCacheKeyFactory;
 import io.github.gear4jtest.core.extras.pipelinecache.PipelineCachePolicy;
 import io.github.gear4jtest.core.extras.pipelinecache.PipelineCacheRuntimeKeys;
-import io.github.gear4jtest.core.factory.ResourceFactory;
-import io.github.gear4jtest.core.model.AssemblyLine;
-import io.github.gear4jtest.core.model.ElementModelBuilders;
-import io.github.gear4jtest.core.model.EventBus;
-import io.github.gear4jtest.core.model.EventHandlingDefinition;
-import io.github.gear4jtest.core.model.ExecutionResult;
-import io.github.gear4jtest.core.model.Operator;
-import io.github.gear4jtest.core.model.StationExecutionContext;
-import io.github.gear4jtest.core.model.WorkStation;
-import io.github.gear4jtest.core.model.WorkerParamsInjector;
 import io.github.gear4jtest.core.sidecompute.SideComputeHandler;
 import io.github.gear4jtest.core.sidecompute.SideComputeListener;
 import io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessor;
 import io.github.gear4jtest.core.sidecompute.SideComputer;
+import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -137,10 +138,10 @@ class PipelineCacheWithWaitProcessorIT {
 
         PipelineEngine pipelineEngine =
                 PipelineEngine.builder()
-                        .stackBuilder(
-                                new RunnerStackBuilder(StrategyRegistry.defaultRegistry()))
+                        .runnerChainFactory(
+                                new RunnerChainFactory(StrategyRegistry.defaultRegistry()))
                         .resourceFactory(resourceFactory)
-                        .globalExtensions(new ExtensionRegistry(List.of()))
+                        .extensionResolver(new RuntimeExtensionResolver(List.of()))
                         .executionContextRegistry(executionContextRegistry)
                         .build();
 
@@ -243,7 +244,7 @@ class PipelineCacheWithWaitProcessorIT {
                 String sideComputeKey,
                 OperationCompletedEvent event,
                 TaskHistoryResult<T> value,
-                io.github.gear4jtest.core.model.ExecutionContext executionContext) {
+                ExecutionContext executionContext) {
 
             Object trackerObj =
                     executionContext.getContext().get(PipelineCacheRuntimeKeys.EXPIRABLE_DEPENDENCY_TRACKER);

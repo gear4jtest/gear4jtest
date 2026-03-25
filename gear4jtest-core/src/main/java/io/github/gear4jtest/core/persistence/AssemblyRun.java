@@ -19,8 +19,8 @@ public class AssemblyRun {
     private Exception error;
     private List<StationLog> operations = new ArrayList<>();
 
-    private UUID parentExecutionId; // null pour la top-level
-    private UUID rootExecutionId;   // id de la top-level
+    private UUID parentExecutionId;
+    private UUID rootExecutionId;
 
     public AssemblyRun() {
     }

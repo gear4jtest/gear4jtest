@@ -3,7 +3,7 @@ package io.github.gear4jtest.core.extras.history;
 import io.github.gear4jtest.core.event.OperationCompletedEvent;
 import io.github.gear4jtest.core.extras.history.taskhistory.TaskHistoryResult;
 import io.github.gear4jtest.core.extras.pipelinecache.PipelineCacheRuntimeKeys;
-import io.github.gear4jtest.core.model.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.sidecompute.SideComputeHandler;
 
 public final class TaskHistoryExpirySideComputeHandler<T> implements SideComputeHandler<TaskHistoryResult<T>> {

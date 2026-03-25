@@ -1,15 +1,15 @@
 package io.github.gear4jtest.core.extras.pipelinecache;
 
-import io.github.gear4jtest.core.engine.core.RunRequest;
-import io.github.gear4jtest.core.engine.spi.ExecutorWrapperExtension;
-import io.github.gear4jtest.core.engine.spi.RunInterceptorExtension;
+import io.github.gear4jtest.core.api.RunRequest;
+import io.github.gear4jtest.core.spi.extension.ExecutorWrapperExtension;
+import io.github.gear4jtest.core.spi.extension.RunInterceptorExtension;
 import io.github.gear4jtest.core.extras.history.CacheTrackerPropagatingExecutor;
 import io.github.gear4jtest.core.extras.history.CacheTrackerScope;
 import io.github.gear4jtest.core.extras.history.DefaultExpirableDependencyTracker;
 import io.github.gear4jtest.core.extras.history.ExpirableDependencyTracker;
-import io.github.gear4jtest.core.model.AssemblyLine;
-import io.github.gear4jtest.core.model.ExecutionContext;
-import io.github.gear4jtest.core.model.ExecutionResult;
+import io.github.gear4jtest.core.api.AssemblyLine;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.ExecutionResult;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;

@@ -10,7 +10,7 @@
 //import java.util.Arrays;
 //import java.util.List;
 //
-//import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
+//import static io.github.gear4jtest.core.api.util.ElementModelBuilders.*;
 //
 //public class AssemblyLineSampleNoBrainConfig {
 //

@@ -8,7 +8,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.github.gear4jtest.core.model.SimpleEventBus;
+import io.github.gear4jtest.core.event.SimpleEventBus;
 import org.junit.jupiter.api.Test;
 
 import io.github.gear4jtest.core.event.Event;

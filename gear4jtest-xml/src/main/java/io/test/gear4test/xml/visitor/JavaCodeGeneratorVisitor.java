@@ -12,7 +12,7 @@
 //import com.palantir.javapoet.MethodSpec;
 //import com.palantir.javapoet.ParameterizedTypeName;
 //import com.palantir.javapoet.TypeSpec;
-//import io.github.gear4jtest.core.model.ElementModelBuilders;
+//import io.github.gear4jtest.core.api.util.ElementModelBuilders;
 //import io.github.gear4jtest.core.model.refactor.AssemblyLineDefinition;
 //import io.github.gear4jtest.core.model.refactor.ContainerBaseDefinition;
 //import io.github.gear4jtest.core.model.refactor.IteratorDefinition;

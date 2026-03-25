@@ -36,7 +36,7 @@
 //import jakarta.xml.bind.Unmarshaller;
 //
 //public class XmlToJavaGeneratorV2 {
-//    private static final String BUILDERS = "io.github.gear4jtest.core.model.ElementModelBuilders";
+//    private static final String BUILDERS = "io.github.gear4jtest.core.api.util.ElementModelBuilders";
 //    private final String pkg, cls;
 //    private int cnt = 1;
 //    private final Set<String> gen = new HashSet<>();

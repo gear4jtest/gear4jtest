@@ -5,13 +5,13 @@
 //import java.util.Optional;
 //import java.util.UUID;
 //
-//import io.github.gear4jtest.core.model.DefaultStationExecutionContext;
-//import io.github.gear4jtest.core.model.ExecutionContext;
-//import io.github.gear4jtest.core.model.Operator;
-//import io.github.gear4jtest.core.model.StationContextUtils;
-//import io.github.gear4jtest.core.model.StationExecutionContext;
-//import io.github.gear4jtest.core.model.StationKind;
-//import io.github.gear4jtest.core.model.WorkerParamsInjector;
+//import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
+//import io.github.gear4jtest.core.api.context.ExecutionContext;
+//import io.github.gear4jtest.core.api.behavior.Operator;
+//import io.github.gear4jtest.core.api.context.StationContextUtils;
+//import io.github.gear4jtest.core.api.context.StationExecutionContext;
+//import io.github.gear4jtest.core.api.station.StationKind;
+//import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 //import org.junit.jupiter.api.Test;
 //
 //import io.github.gear4jtest.core.persistence.StationLog;

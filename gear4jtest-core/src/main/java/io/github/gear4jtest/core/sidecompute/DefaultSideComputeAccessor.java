@@ -1,6 +1,6 @@
 package io.github.gear4jtest.core.sidecompute;
 
-import io.github.gear4jtest.core.model.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 /**
  * Accesseur par défaut, basé sur le SideComputeContext directement attaché

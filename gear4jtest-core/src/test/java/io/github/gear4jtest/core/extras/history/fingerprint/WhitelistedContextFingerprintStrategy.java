@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.github.gear4jtest.core.model.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 public final class WhitelistedContextFingerprintStrategy implements ContextFingerprintStrategy {
 

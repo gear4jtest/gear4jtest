@@ -8,7 +8,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.gear4jtest.core.model.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 class SideComputeAccessorTest {
 

@@ -3,9 +3,9 @@ package io.github.gear4jtest.core.model;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.github.gear4jtest.core.model.WorkerConcurrencyGuard;
-import io.github.gear4jtest.core.model.WorkerConcurrencyManager;
-import io.github.gear4jtest.core.model.WorkerConcurrencyStrategy;
+import io.github.gear4jtest.core.engine.support.WorkerConcurrencyGuard;
+import io.github.gear4jtest.core.engine.support.WorkerConcurrencyManager;
+import io.github.gear4jtest.core.engine.support.WorkerConcurrencyStrategy;
 import org.junit.jupiter.api.Test;
 
 class OperatorConcurrencyManagerTest {

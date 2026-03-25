@@ -1,6 +1,6 @@
 //package io.github.gear4jtest.core.processor.operation;
 //
-//import static io.github.gear4jtest.core.model.ElementModelBuilders.*;
+//import static io.github.gear4jtest.core.api.util.ElementModelBuilders.*;
 //import static org.assertj.core.api.Assertions.assertThat;
 //import static org.mockito.Mockito.verify;
 //
@@ -18,7 +18,7 @@
 //import io.github.gear4jtest.core.context.ItemExecution;
 //import io.github.gear4jtest.core.context.StepExecution;
 //import io.github.gear4jtest.core.event.EventTriggerService;
-//import io.github.gear4jtest.core.factory.ResourceFactory;
+//import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 //import io.github.gear4jtest.core.internal.Item;
 //import io.github.gear4jtest.core.internal.ServiceRegistry;
 //import io.github.gear4jtest.core.internal.StepLineElement;

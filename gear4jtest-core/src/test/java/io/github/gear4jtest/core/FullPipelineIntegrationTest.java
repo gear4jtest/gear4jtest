@@ -6,12 +6,12 @@
 //import java.util.concurrent.*;
 //
 //import io.github.gear4jtest.core.event.EventListener;
-//import io.github.gear4jtest.core.model.ElementModelBuilders;
+//import io.github.gear4jtest.core.api.util.ElementModelBuilders;
 //import org.junit.jupiter.api.Test;
 //
 //import io.github.gear4jtest.core.event.*;
 //import io.github.gear4jtest.core.execution.*;
-//import io.github.gear4jtest.core.factory.ResourceFactory;
+//import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 //import io.github.gear4jtest.core.model.refactor.*;
 //import io.github.gear4jtest.core.persistence.*;
 //

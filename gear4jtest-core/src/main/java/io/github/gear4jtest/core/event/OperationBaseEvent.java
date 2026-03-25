@@ -4,8 +4,8 @@ import java.util.UUID;
 
 public class OperationBaseEvent extends Event {
 
-	private String operationId;
-	private Object input;
+	private final String operationId;
+	private final Object input;
 	private Object output;
 
 	public OperationBaseEvent(String pipelineId, UUID executionId, String type, String operationId, Object input, Object output) {

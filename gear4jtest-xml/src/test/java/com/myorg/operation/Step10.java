@@ -3,9 +3,9 @@ package com.myorg.operation;
 import java.util.Arrays;
 import java.util.List;
 
-import io.github.gear4jtest.core.model.ExecutionContext;
-import io.github.gear4jtest.core.model.StationExecutionContext;
-import io.github.gear4jtest.core.model.Operator;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.api.behavior.Operator;
 
 public class Step10 implements Operator<Integer, List<String>> {
 

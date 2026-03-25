@@ -1,6 +1,6 @@
 package io.github.gear4jtest.core.engine.support;
 
-import io.github.gear4jtest.core.model.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
 import java.util.concurrent.ExecutorService;
 
 /**

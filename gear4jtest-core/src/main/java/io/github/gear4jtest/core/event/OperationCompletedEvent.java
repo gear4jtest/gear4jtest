@@ -8,5 +8,4 @@ public class OperationCompletedEvent extends OperationBaseEvent {
 	public OperationCompletedEvent(String pipelineId, UUID executionId, String operationId, Object input, Object output) {
         super(pipelineId, executionId, TYPE, operationId, input, output);
 	}
-
 }

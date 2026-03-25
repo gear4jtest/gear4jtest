@@ -6,15 +6,15 @@
 //
 //import io.github.gear4jtest.core.event.EventManager;
 //import io.github.gear4jtest.core.execution.AssemblyRunManager;
-//import io.github.gear4jtest.core.factory.ResourceFactory;
-//import io.github.gear4jtest.core.model.DefaultStationExecutionContext;
-//import io.github.gear4jtest.core.model.ExecutionContext;
-//import io.github.gear4jtest.core.model.Operator;
-//import io.github.gear4jtest.core.model.WorkStation;
-//import io.github.gear4jtest.core.model.StationContextUtils;
-//import io.github.gear4jtest.core.model.StationExecutionContext;
-//import io.github.gear4jtest.core.model.StationKind;
-//import io.github.gear4jtest.core.model.WorkerParamsInjector;
+//import io.github.gear4jtest.core.spi.factory.ResourceFactory;
+//import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
+//import io.github.gear4jtest.core.api.context.ExecutionContext;
+//import io.github.gear4jtest.core.api.behavior.Operator;
+//import io.github.gear4jtest.core.api.station.WorkStation;
+//import io.github.gear4jtest.core.api.context.StationContextUtils;
+//import io.github.gear4jtest.core.api.context.StationExecutionContext;
+//import io.github.gear4jtest.core.api.station.StationKind;
+//import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 //import io.github.gear4jtest.core.persistence.StationLog;
 //import org.junit.jupiter.api.Test;
 //

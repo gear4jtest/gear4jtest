@@ -4,9 +4,9 @@
 //
 //import static org.assertj.core.api.Assertions.assertThat;
 //
-//import io.github.gear4jtest.core.model.DefaultStationExecutionContext;
-//import io.github.gear4jtest.core.model.ExecutionContext;
-//import io.github.gear4jtest.core.model.StationKind;
+//import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
+//import io.github.gear4jtest.core.api.context.ExecutionContext;
+//import io.github.gear4jtest.core.api.station.StationKind;
 //import org.junit.jupiter.api.Test;
 //
 //import io.github.gear4jtest.core.persistence.StationLog;

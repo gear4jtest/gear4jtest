@@ -1,8 +1,8 @@
 package io.github.gear4jtest.core.service.steps;
 
-import io.github.gear4jtest.core.model.Operator;
-import io.github.gear4jtest.core.model.StationExecutionContext;
-import io.github.gear4jtest.core.model.WorkerParamsInjector;
+import io.github.gear4jtest.core.api.behavior.Operator;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 
 public class Step6 implements Operator<String, String> {
 

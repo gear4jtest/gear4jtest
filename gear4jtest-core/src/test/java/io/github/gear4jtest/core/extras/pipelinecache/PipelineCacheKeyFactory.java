@@ -5,7 +5,7 @@ import java.util.Objects;
 import io.github.gear4jtest.core.extras.history.fingerprint.ContextFingerprintStrategy;
 import io.github.gear4jtest.core.extras.history.fingerprint.FingerprintContext;
 import io.github.gear4jtest.core.extras.history.fingerprint.FingerprintStrategy;
-import io.github.gear4jtest.core.model.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 public final class PipelineCacheKeyFactory {
 

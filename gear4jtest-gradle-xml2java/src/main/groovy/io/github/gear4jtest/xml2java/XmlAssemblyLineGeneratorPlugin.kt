@@ -1,7 +1,7 @@
 package io.github.gear4jtest.xml2java
 
 import com.palantir.javapoet.JavaFile
-import io.github.gear4jtest.core.model.ElementModelBuilders
+import io.github.gear4jtest.core.api.util.ElementModelBuilders
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 

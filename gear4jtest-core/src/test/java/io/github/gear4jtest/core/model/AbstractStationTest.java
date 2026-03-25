@@ -7,11 +7,11 @@
 //import java.util.List;
 //import java.util.UUID;
 //
-//import io.github.gear4jtest.core.model.AbstractStation;
-//import io.github.gear4jtest.core.model.ExecutionContext;
-//import io.github.gear4jtest.core.model.Processor;
-//import io.github.gear4jtest.core.model.StationExecutionContext;
-//import io.github.gear4jtest.core.model.StationKind;
+//import io.github.gear4jtest.core.api.station.AbstractStation;
+//import io.github.gear4jtest.core.api.context.ExecutionContext;
+//import io.github.gear4jtest.core.api.behavior.Processor;
+//import io.github.gear4jtest.core.api.context.StationExecutionContext;
+//import io.github.gear4jtest.core.api.station.StationKind;
 //import org.junit.jupiter.api.Test;
 //
 //import io.github.gear4jtest.core.event.EventManager;
@@ -19,7 +19,7 @@
 //import io.github.gear4jtest.core.event.OperationErrorEvent;
 //import io.github.gear4jtest.core.event.OperationStartedEvent;
 //import io.github.gear4jtest.core.execution.AssemblyRunManager;
-//import io.github.gear4jtest.core.factory.ResourceFactory;
+//import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 //import io.github.gear4jtest.core.persistence.StationLog;
 //
 //class AbstractStationTest {
