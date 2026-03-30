@@ -28,7 +28,6 @@ public class AssemblyRun {
     public AssemblyRun(UUID id, String pipelineId, Map<String, Object> pipelineParams) {
         this.id = id;
         this.pipelineId = pipelineId;
-        this.startTime = Instant.now();
         this.status = ExecutionStatus.RUNNING;
         this.setInputParams(pipelineParams);
     }
@@ -50,17 +49,20 @@ public class AssemblyRun {
 
     public void markSuccess(Object result) {
         this.status = ExecutionStatus.SUCCEEDED;
+        this.result = result;
         this.endTime = Instant.now();
-        // sérialiser result si besoin
     }
 
     public void markFailed(Throwable t) {
         this.status = ExecutionStatus.FAILED;
         this.endTime = Instant.now();
-        // sérialiser t sous forme de message si besoin
+        if (t instanceof Exception exception) {
+            setError(exception);
+        } else if (t != null) {
+            this.errorMessage = t.getMessage();
+        }
     }
 
-    // Getters/Setters
     public UUID getId() {
         return id;
     }
@@ -157,6 +159,4 @@ public class AssemblyRun {
     public UUID getRootExecutionId() {
         return rootExecutionId;
     }
-    //    public void complete(){this.endTime=Instant.now();this.status=ExecutionStatus.COMPLETED;}
-//    public void fail(Exception error){this.endTime=Instant.now();this.status=ExecutionStatus.FAILED;setError(error);}
 }

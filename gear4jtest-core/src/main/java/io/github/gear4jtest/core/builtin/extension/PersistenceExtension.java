@@ -1,46 +1,57 @@
 package io.github.gear4jtest.core.builtin.extension;
 
-import java.time.Instant;
+import java.util.Objects;
 
-import io.github.gear4jtest.core.api.RunRequest;
-import io.github.gear4jtest.core.builtin.runner.PersistingStationRunner;
-import io.github.gear4jtest.core.spi.extension.AbstractRunHooksExtension;
-import io.github.gear4jtest.core.spi.extension.StationWrapperExtension;
-import io.github.gear4jtest.core.spi.runner.StationRunner;
-import io.github.gear4jtest.core.execution.AssemblyRunManager;
-import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
-import io.github.gear4jtest.core.api.ExecutionResult;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.execution.AssemblyRunManager;
+import io.github.gear4jtest.core.persistence.AssemblyRun;
+import io.github.gear4jtest.core.persistence.StationLogSnapshot;
+import io.github.gear4jtest.core.spi.extension.LifecycleFailureMode;
+import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
+import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
 
-public class PersistenceExtension extends AbstractRunHooksExtension implements StationWrapperExtension {
+/**
+ * Persistence extension responsible for run and station durability.
+ *
+ * <p>If this extension fails, the failure is considered critical.
+ */
+public class PersistenceExtension implements RunLifecycleExtension, StationLifecycleExtension {
 
     private final AssemblyRunManager manager;
 
     public PersistenceExtension(AssemblyRunManager manager) {
-        this.manager = manager;
+        this.manager = Objects.requireNonNull(manager, "manager must not be null");
     }
 
     @Override
-    protected void onStart(AssemblyLine<?, ?> pipeline, RunRequest request, ExecutionContext ctx) {
-        manager.start(ctx.getPipelineExecution());
+    public LifecycleFailureMode failureMode() {
+        return LifecycleFailureMode.CRITICAL;
     }
 
     @Override
-    protected void onResult(AssemblyLine<?, ?> pipeline, RunRequest request, ExecutionContext ctx, ExecutionResult<?> result) {
-        ctx.getPipelineExecution().setResult(result.getResult());
+    public void onRunStarted(ExecutionContext ctx, AssemblyRun run) {
+        manager.start(run);
     }
 
     @Override
-    protected void onEnd(AssemblyLine<?, ?> pipeline, RunRequest request, ExecutionContext ctx) {
-        ctx.getPipelineExecution().setContext(ctx.getContext());
-        if (ctx.getPipelineExecution().getEndTime() == null) {
-            ctx.getPipelineExecution().setEndTime(Instant.now());
-        }
-        manager.end(ctx.getPipelineExecution());
+    public void onRunCompleted(ExecutionContext ctx, AssemblyRun run) {
+        manager.end(run);
     }
 
     @Override
-    public StationRunner wrapStationRunner(StationRunner delegate, ExecutionContext ctx) {
-        return new PersistingStationRunner(delegate, manager);
+    public void onStationStarted(
+            ExecutionContext runCtx,
+            StationExecutionContext stationCtx,
+            StationLogSnapshot snapshot) {
+        manager.append(snapshot);
+    }
+
+    @Override
+    public void onStationCompleted(
+            ExecutionContext runCtx,
+            StationExecutionContext stationCtx,
+            StationLogSnapshot snapshot) {
+        manager.append(snapshot);
     }
 }

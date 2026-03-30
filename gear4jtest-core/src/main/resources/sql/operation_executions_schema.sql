@@ -4,7 +4,7 @@ CREATE TABLE station_log (
     operation_id VARCHAR(255) NOT NULL,
     parent_log_id VARCHAR(255),
     status VARCHAR(50) NOT NULL,
-    start_time TIMESTAMP NOT NULL,
+    start_time TIMESTAMP,
     end_time TIMESTAMP,
     error_message TEXT,
     error_handler_messages TEXT,

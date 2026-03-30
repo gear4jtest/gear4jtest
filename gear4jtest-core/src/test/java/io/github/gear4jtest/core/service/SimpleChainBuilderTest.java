@@ -371,7 +371,7 @@ public class SimpleChainBuilderTest {
                         StationLog::getParentOperationId,
                         StationLog::getStatus,
                         StationLog::getContext)
-                .containsExactly(result.getExecution().getId(), "test:root", null, Status.SUCCEEDED, null);
+                .containsExactly(result.getExecution().getId(), "test:root", null, Status.SUCCEEDED, Map.of());
 
         var rootSequenceExecutionRecord = getRecordByOperationId(pipelineExecution.get().getOperations(), "test:root");
 		assertThat(rootSequenceExecutionRecord.getSubOperations())
@@ -382,10 +382,10 @@ public class SimpleChainBuilderTest {
 						StationLog::getStatus,
 						StationLog::getContext)
 				.containsExactly(
-						tuple(result.getExecution().getId(), "step3", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, null),
-						tuple(result.getExecution().getId(), "step8", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, null),
-						tuple(result.getExecution().getId(), "step9", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, null),
-						tuple(result.getExecution().getId(), "iterator", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, null));
+						tuple(result.getExecution().getId(), "step3", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, Map.of()),
+						tuple(result.getExecution().getId(), "step8", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, Map.of()),
+						tuple(result.getExecution().getId(), "step9", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, Map.of()),
+						tuple(result.getExecution().getId(), "iterator", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, Map.of()));
 
         var iteratorExecutionRecord = getRecordByOperationId(rootSequenceExecutionRecord.getSubOperations(), "iterator");
         assertThat(iteratorExecutionRecord.getSubOperations())
@@ -395,7 +395,7 @@ public class SimpleChainBuilderTest {
                         StationLog::getParentOperationId,
                         StationLog::getStatus,
                         StationLog::getContext)
-                .containsExactly(tuple(result.getExecution().getId(), "sequence", iteratorExecutionRecord.getId(), Status.SUCCEEDED, null));
+                .containsExactly(tuple(result.getExecution().getId(), "sequence", iteratorExecutionRecord.getId(), Status.SUCCEEDED, Map.of()));
         var sequenceExecutionRecord = getRecordByOperationId(iteratorExecutionRecord.getSubOperations(), "sequence");
         assertThat(sequenceExecutionRecord.getSubOperations())
                 .extracting(
@@ -404,7 +404,7 @@ public class SimpleChainBuilderTest {
                         StationLog::getParentOperationId,
                         StationLog::getStatus,
                         StationLog::getContext)
-                .containsExactly(tuple(result.getExecution().getId(), "step10", sequenceExecutionRecord.getId(), Status.SUCCEEDED, null));
+                .containsExactly(tuple(result.getExecution().getId(), "step10", sequenceExecutionRecord.getId(), Status.SUCCEEDED, Map.of()));
 	}
 
 	private static StationLog getRecordByOperationId(List<StationLog> records, String operationId) {

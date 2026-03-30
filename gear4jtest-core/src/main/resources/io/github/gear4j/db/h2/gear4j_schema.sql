@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS assembly_run (
     context JSON,
     result JSON,
     status VARCHAR(50) NOT NULL,
-    start_time TIMESTAMP NOT NULL,
+    start_time TIMESTAMP,
     end_time TIMESTAMP,
     error_message VARCHAR
 );

@@ -5,7 +5,7 @@ CREATE TABLE assembly_run (
     context TEXT,
     result TEXT,
     status VARCHAR(50) NOT NULL,
-    start_time TIMESTAMP NOT NULL,
+    start_time TIMESTAMP,
     end_time TIMESTAMP,
     error_message TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

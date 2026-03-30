@@ -129,7 +129,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 stmt.setObject(4, toJson(execution.getContext()), Types.OTHER);
                 stmt.setObject(5, toJson(execution.getResult()), Types.OTHER);
                 stmt.setString(6, execution.getStatus().name());
-                stmt.setTimestamp(7, Timestamp.from(execution.getStartTime()));
+                stmt.setTimestamp(7, execution.getStartTime() != null ? Timestamp.from(execution.getStartTime()) : null);
                 stmt.setTimestamp(8, execution.getEndTime() != null ? Timestamp.from(execution.getEndTime()) : null);
                 stmt.setString(9, execution.getErrorMessage());
                 stmt.executeUpdate();
@@ -342,7 +342,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         exec.setContext(fromJson(rs.getString("context"), Map.class));
         exec.setResult(fromJson(rs.getString("result"), Object.class));
         exec.setStatus(ExecutionStatus.valueOf(rs.getString("status")));
-        exec.setStartTime(rs.getTimestamp("start_time").toInstant());
+        Timestamp startTs = rs.getTimestamp("start_time");
+        exec.setStartTime(startTs != null ? startTs.toInstant() : null);
         Timestamp endTs = rs.getTimestamp("end_time");
         exec.setEndTime(endTs != null ? endTs.toInstant() : null);
         exec.setErrorMessage(rs.getString("error_message"));
@@ -403,4 +404,43 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         } catch (Exception e) { throw new RuntimeException(e); }
     }
 
+    public void saveOperationSnapshotsBatch(List<StationLogSnapshot> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+
+        String sql = "INSERT INTO station_log " +
+                "(id, pipeline_execution_id, operation_id, parent_log_id, status, " +
+                " start_time, end_time, error_message, error_handler_messages, context) " +
+                "VALUES (?,?,?,?,?,?,?,?,?,?)" +
+                "ON CONFLICT (id) DO UPDATE SET" +
+                "  status = EXCLUDED.status," +
+                "  end_time = EXCLUDED.end_time," +
+                "  error_message = EXCLUDED.error_message," +
+                "  error_handler_messages = EXCLUDED.error_handler_messages," +
+                "  context = EXCLUDED.context " +
+                "WHERE station_log.end_time IS NULL;";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            for (StationLogSnapshot rec : records) {
+                stmt.setObject(1, rec.id());
+                stmt.setObject(2, rec.pipelineExecutionId());
+                stmt.setString(3, rec.operationId());
+                stmt.setObject(4, rec.parentOperationId());
+                stmt.setString(5, rec.status().toString());
+                stmt.setTimestamp(6, Timestamp.from(rec.startedAt()));
+                stmt.setTimestamp(7, rec.endedAt() != null ? Timestamp.from(rec.endedAt()) : null);
+                stmt.setString(8, rec.errorMessage());
+                stmt.setString(9, rec.errorHandlerMessages());
+                stmt.setObject(10, toJson(rec.context()), Types.OTHER);
+                stmt.addBatch();
+            }
+
+            stmt.executeBatch();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

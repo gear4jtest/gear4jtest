@@ -4,53 +4,33 @@ import java.util.List;
 import java.util.UUID;
 
 import io.github.gear4jtest.core.persistence.AssemblyRun;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.persistence.StationLogSnapshot;
 
 public interface AssemblyRunManager {
 
     void start(AssemblyRun execution);
 
-    /**
-     * Append d'un seul OperationExecutionRecord.
-     * En DB : typiquement ajouté à un buffer, pas forcément inséré immédiatement.
-     */
-    default void append(StationLog record) {
-        // no-op par défaut
+    default void append(StationLogSnapshot record) {
+        // no-op by default
     }
 
-    /**
-     * Append d'une liste de records (si un orchestrateur veut pousser un batch
-     * déjà prêt). Par défaut, boucle sur append(...).
-     */
-    default void appendAll(List<StationLog> records) {
+    default void appendAll(List<StationLogSnapshot> records) {
         if (records != null) {
             records.forEach(this::append);
         }
     }
 
-    /**
-     * Heartbeat éventuel (non utilisé actuellement, conservé pour compat).
-     */
     default void heartbeat(UUID pipelineId) {
         // no-op
     }
 
-    /**
-     * Flush explicite d'un pipeline (écrit les buffers en DB).
-     */
     default void flush(UUID pipelineId) {
-        // no-op par défaut
+        // no-op by default
     }
 
-    /**
-     * Fin d'exécution : flush final + mise à jour de l'exécution.
-     */
     void end(AssemblyRun finalExecution);
 
-    /**
-     * Shutdown global du manager (fermeture des ressources, flush global...).
-     */
     default void shutdown() {
-        // no-op par défaut
+        // no-op by default
     }
 }

@@ -4,12 +4,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.spi.extension.ExecutorWrapperExtension;
 import io.github.gear4jtest.core.spi.extension.RunInterceptorExtension;
+import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
 import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
+import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
 import io.github.gear4jtest.core.spi.extension.StationWrapperExtension;
-import io.github.gear4jtest.core.api.AssemblyLine;
 
 public final class RuntimeExtensionResolver {
 
@@ -43,7 +45,9 @@ public final class RuntimeExtensionResolver {
         return new ResolvedExtensions(
                 ordered,
                 filter(ordered, RunInterceptorExtension.class),
+                filter(ordered, RunLifecycleExtension.class),
                 filter(ordered, StationWrapperExtension.class),
+                filter(ordered, StationLifecycleExtension.class),
                 filter(ordered, ExecutorWrapperExtension.class));
     }
 

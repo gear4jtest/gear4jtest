@@ -8,31 +8,32 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
+import io.github.gear4jtest.core.api.AssemblyLine;
+import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.PipelineExecutor;
 import io.github.gear4jtest.core.api.RunRequest;
+import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
-import io.github.gear4jtest.core.spi.extension.RunInterceptorExtension;
-import io.github.gear4jtest.core.spi.extension.RunInterceptorExtension.RunChain;
-import io.github.gear4jtest.core.spi.runner.StationRunner;
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.engine.support.ExecutorDecorator;
 import io.github.gear4jtest.core.engine.support.TaskFactory;
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.spi.factory.ResourceFactory;
-import io.github.gear4jtest.core.api.AssemblyLine;
-import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
-import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
-import io.github.gear4jtest.core.api.context.ExecutionContext;
-import io.github.gear4jtest.core.api.ExecutionResult;
-import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.persistence.AssemblyRun;
+import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.spi.extension.LifecycleFailureMode;
+import io.github.gear4jtest.core.spi.extension.RunInterceptorExtension;
+import io.github.gear4jtest.core.spi.extension.RunInterceptorExtension.RunChain;
+import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
 import io.github.gear4jtest.core.spi.factory.IdGenerator;
+import io.github.gear4jtest.core.spi.factory.ResourceFactory;
+import io.github.gear4jtest.core.spi.runner.StationRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.github.gear4jtest.core.persistence.ExecutionStatus.FAILED;
 
 public class PipelineEngine implements PipelineExecutor {
 
@@ -49,7 +50,8 @@ public class PipelineEngine implements PipelineExecutor {
         this.runnerChainFactory = Objects.requireNonNull(builder.runnerChainFactory, "ChainFactory must not be null");
         this.resourceFactory = Objects.requireNonNull(builder.resourceFactory, "ResourceFactory must not be null");
         this.extensionResolver = Objects.requireNonNull(builder.extensionResolver, "Extension resolver must not be null");
-        this.executionContextRegistry = Objects.requireNonNull(builder.executionContextRegistry, "ExecutionContextRegistry must not be null");
+        this.executionContextRegistry =
+                Objects.requireNonNull(builder.executionContextRegistry, "ExecutionContextRegistry must not be null");
         this.defaultIdGenerator = builder.idGenerator != null ? builder.idGenerator : IdGenerator.defaultGenerator();
         this.taskFactory = builder.taskFactory != null ? builder.taskFactory : new TaskFactory();
     }
@@ -58,7 +60,7 @@ public class PipelineEngine implements PipelineExecutor {
     public <IN, OUT> ExecutionResult<OUT> execute(AssemblyLine<IN, OUT> pipeline, RunRequest request) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(
-                    "Starting pipeline execution. pipelineId={}, rootStation={}, requestExtensions={} ",
+                    "Starting pipeline execution. pipelineId={}, rootStation={}, requestExtensions={}",
                     pipeline.getId(),
                     pipeline.getRootStation() != null ? pipeline.getRootStation().getId() : null,
                     request.getExtensions().stream().map(e -> e.getClass().getSimpleName()).toList());
@@ -66,12 +68,10 @@ public class PipelineEngine implements PipelineExecutor {
 
         ResolvedExtensions resolvedExtensions = extensionResolver.resolve(pipeline, request);
 
-        // 1. Context Init
-        var eventManager = new EventManager(
+        EventManager eventManager = new EventManager(
                 Optional.ofNullable(pipeline.getConfiguration().getEventHandlingDefinition())
                         .map(EventHandlingDefinition::getEventBuses)
-                        .orElse(List.of())
-        );
+                        .orElse(List.of()));
 
         ExecutorDecorator decorator = (rawExec, context) -> {
             ExecutorService wrapped = rawExec;
@@ -81,7 +81,6 @@ public class PipelineEngine implements PipelineExecutor {
             return wrapped;
         };
 
-        // 2. On instancie la boîte à outils technique
         ExecutionSupport support = new ExecutionSupport(decorator, taskFactory);
 
         Map<String, Object> effectiveContext = new HashMap<>(pipeline.getDefaultContext());
@@ -91,99 +90,205 @@ public class PipelineEngine implements PipelineExecutor {
 
         IdGenerator effectiveGenerator = Optional.ofNullable(request.getIdGenerator()).orElse(this.defaultIdGenerator);
 
-        // 2. Génération de l'ID du Run
         var executionId = effectiveGenerator.generate();
         var execution = new AssemblyRun(executionId, pipeline.getId(), new HashMap<>(effectiveContext));
 
-        var resourceFactory = Optional.ofNullable(request.getResourceFactory())
+        var effectiveResourceFactory = Optional.ofNullable(request.getResourceFactory())
                 .or(() -> Optional.ofNullable(this.resourceFactory))
                 .orElseThrow();
+
         var ctx = new ExecutionContext(
                 executionId,
                 pipeline.getId(),
                 eventManager,
-                resourceFactory,
+                effectiveResourceFactory,
                 execution);
         ctx.getContext().putAll(effectiveContext);
 
         executionContextRegistry.register(ctx);
 
-        // 2. Build Stack (C'est ici que PersistenceFeature -> Extension -> Manager injecté)
-        StationRunner rootRunner = runnerChainFactory.createRootRunner(pipeline, request, ctx, resolvedExtensions);
-
-        // 3. Dummy Root Context (Bootstrapping)
-        StationExecutionContext rootContext = new DefaultStationExecutionContext("root-invoker", ctx, support);
-
-        // 4. Run root station (Composite) : les stratégies gèrent bubbling + stop/failure.
-        List<RunInterceptorExtension> interceptors = resolvedExtensions.runInterceptors();
-        RunChain<IN, OUT> chain = () -> doExecuteInternal(pipeline, request, rootRunner, rootContext, ctx, execution);
-
-        // Boucle inversée : l'ordre 0 (le plus externe) enveloppera tout le reste
-        for (int i = interceptors.size() - 1; i >= 0; i--) {
-            RunInterceptorExtension interceptor = interceptors.get(i);
-            RunChain<IN, OUT> next = chain;
-            chain = () -> interceptor.aroundRun(pipeline, request, ctx, next);
-        }
-
         try {
-            return chain.proceed();
-        } catch (Exception e) {
-            LOGGER.error("Error while executing pipeline", e);
-            execution.setStatus(FAILED);
-            execution.setError(e);
-            return ExecutionResult.failure(e, execution);
+            for (RunLifecycleExtension lifecycleExtension : resolvedExtensions.runLifecycleExtensions()) {
+                invokeRunStartedSafely(lifecycleExtension, ctx, execution);
+            }
+
+            execution.setStartTime(Instant.now());
+            execution.setStatus(ExecutionStatus.RUNNING);
+
+            StationRunner rootRunner = runnerChainFactory.createRootRunner(pipeline, request, ctx, resolvedExtensions);
+            StationExecutionContext rootContext = new DefaultStationExecutionContext("root-invoker", ctx, support);
+
+            List<RunInterceptorExtension> interceptors = resolvedExtensions.runInterceptors();
+            RunChain<IN, OUT> chain = () -> doExecuteInternal(pipeline, request, rootRunner, rootContext, ctx, execution);
+
+            for (int i = interceptors.size() - 1; i >= 0; i--) {
+                RunInterceptorExtension interceptor = interceptors.get(i);
+                RunChain<IN, OUT> next = chain;
+                chain = () -> interceptor.aroundRun(pipeline, request, ctx, next);
+            }
+
+            ExecutionResult<OUT> result = null;
+            Throwable fatalError = null;
+            try {
+                result = chain.proceed();
+                return result;
+            } catch (Exception e) {
+                LOGGER.error("Error while executing pipeline", e);
+                execution.setStatus(ExecutionStatus.FAILED);
+                execution.setError(asException(e));
+                result = ExecutionResult.failure(e, execution);
+                return result;
+            } catch (Throwable t) {
+                fatalError = t;
+                throw t;
+            } finally {
+                finalizeRunFromResult(ctx, execution, result, fatalError);
+
+                for (RunLifecycleExtension lifecycleExtension : resolvedExtensions.runLifecycleExtensions()) {
+                    invokeRunCompletedSafely(lifecycleExtension, ctx, execution);
+                }
+            }
         } finally {
-            execution.setContext(ctx.getContext());
-            execution.setEndTime(Instant.now());
             executionContextRegistry.remove(ctx.getExecutionId());
         }
     }
 
-    private static <IN, OUT> ExecutionResult<OUT> doExecuteInternal(AssemblyLine<IN, OUT> pipeline, RunRequest request, StationRunner rootRunner, StationExecutionContext rootContext, ExecutionContext ctx, AssemblyRun execution) {
+    private static <IN, OUT> ExecutionResult<OUT> doExecuteInternal(
+            AssemblyLine<IN, OUT> pipeline,
+            RunRequest request,
+            StationRunner rootRunner,
+            StationExecutionContext rootContext,
+            ExecutionContext ctx,
+            AssemblyRun execution) {
+
         StationLog rootLog = rootRunner.run(request.getInput(), pipeline.getRootStation(), rootContext);
         Object result = rootLog.getOutput();
 
         return switch (rootLog.getStatus()) {
             case SUCCEEDED, SKIPPED -> {
-                execution.setStatus(io.github.gear4jtest.core.persistence.ExecutionStatus.SUCCEEDED);
+                execution.setStatus(ExecutionStatus.SUCCEEDED);
                 execution.setResult(result);
                 yield (ExecutionResult<OUT>) ExecutionResult.success(result, execution);
             }
             case STOPPED, CANCELLED -> {
-                execution.setStatus(io.github.gear4jtest.core.persistence.ExecutionStatus.STOPPED);
+                execution.setStatus(ExecutionStatus.STOPPED);
                 execution.setResult(result);
                 yield (ExecutionResult<OUT>) ExecutionResult.success(result, execution);
             }
             case FAILED, RUNNING -> {
                 Exception failure = new RuntimeException(
                         rootLog.getErrorMessage() != null ? rootLog.getErrorMessage() : "Pipeline failed");
-                execution.setStatus(FAILED);
+                execution.setStatus(ExecutionStatus.FAILED);
                 execution.setError(failure);
                 yield ExecutionResult.failure(failure, execution);
             }
         };
     }
 
+    private static void finalizeRunFromResult(
+            ExecutionContext ctx,
+            AssemblyRun execution,
+            ExecutionResult<?> result,
+            Throwable fatalError) {
+
+        if (execution.getEndTime() == null) {
+            execution.setEndTime(Instant.now());
+        }
+
+        try {
+            execution.setContext(new HashMap<>(ctx.getContext()));
+        } catch (Throwable ignored) {
+        }
+
+        if (fatalError != null) {
+            execution.setStatus(ExecutionStatus.FAILED);
+            execution.setErrorMessage("CRITICAL JVM ERROR: " + fatalError);
+        } else if (result != null) {
+            execution.setResult(result.getResult());
+            if (!result.isSuccess()) {
+                execution.setStatus(ExecutionStatus.FAILED);
+                if (result.getError() != null) {
+                    execution.setError(asException(result.getError()));
+                }
+            } else if (execution.getStatus() == null || execution.getStatus() == ExecutionStatus.RUNNING) {
+                execution.setStatus(ExecutionStatus.SUCCEEDED);
+            }
+        } else {
+            execution.setStatus(ExecutionStatus.FAILED);
+            execution.setError(new IllegalStateException("Pipeline execution returned no result"));
+        }
+    }
+
+    private static Exception asException(Throwable throwable) {
+        if (throwable instanceof Exception exception) {
+            return exception;
+        }
+        return new RuntimeException(throwable);
+    }
+
+    private void invokeRunStartedSafely(
+            RunLifecycleExtension lifecycleExtension,
+            ExecutionContext ctx,
+            AssemblyRun execution) {
+        try {
+            lifecycleExtension.onRunStarted(ctx, execution);
+        } catch (Error error) {
+            throw error;
+        } catch (Exception e) {
+            if (lifecycleExtension.failureMode() == LifecycleFailureMode.CRITICAL) {
+                throw e instanceof RuntimeException runtimeException
+                        ? runtimeException
+                        : new RuntimeException(e);
+            }
+
+            LOGGER.error(
+                    "A RunLifecycleExtension failed during onRunStarted. Ignoring. extension={}",
+                    lifecycleExtension.getClass().getName(),
+                    e);
+        }
+    }
+
+    private void invokeRunCompletedSafely(
+            RunLifecycleExtension lifecycleExtension,
+            ExecutionContext ctx,
+            AssemblyRun execution) {
+        try {
+            lifecycleExtension.onRunCompleted(ctx, execution);
+        } catch (Error error) {
+            throw error;
+        } catch (Exception e) {
+            if (lifecycleExtension.failureMode() == LifecycleFailureMode.CRITICAL) {
+                throw e instanceof RuntimeException runtimeException
+                        ? runtimeException
+                        : new RuntimeException(e);
+            }
+
+            LOGGER.error(
+                    "A RunLifecycleExtension failed during onRunCompleted. Ignoring. extension={}",
+                    lifecycleExtension.getClass().getName(),
+                    e);
+        }
+    }
+
     public static Builder builder() {
         return new Builder();
     }
 
-    public static class Builder {
-
-        private RunnerChainFactory runnerChainFactory;
+    public static final class Builder {
         private ResourceFactory resourceFactory;
+        private RunnerChainFactory runnerChainFactory;
         private RuntimeExtensionResolver extensionResolver;
         private ExecutionContextRegistry executionContextRegistry;
         private IdGenerator idGenerator;
         private TaskFactory taskFactory;
 
-        public Builder runnerChainFactory(RunnerChainFactory runnerChainFactory) {
-            this.runnerChainFactory = runnerChainFactory;
+        public Builder resourceFactory(ResourceFactory resourceFactory) {
+            this.resourceFactory = resourceFactory;
             return this;
         }
 
-        public Builder resourceFactory(ResourceFactory resourceFactory) {
-            this.resourceFactory = resourceFactory;
+        public Builder runnerChainFactory(RunnerChainFactory runnerChainFactory) {
+            this.runnerChainFactory = runnerChainFactory;
             return this;
         }
 
