@@ -2,9 +2,7 @@ package io.github.gear4jtest.core.engine.strategy;
 
 import java.util.List;
 
-import io.github.gear4jtest.core.api.config.CancelPolicy;
 import io.github.gear4jtest.core.api.config.FlowConfig;
-import io.github.gear4jtest.core.api.config.StopPolicy;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
@@ -20,13 +18,13 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
     }
 
     @Override
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public Object doExecute(
             UnaryIfElseContainerStation station,
             Object input,
             StationRunner runner,
             StationExecutionContext operationExecution) {
 
+        FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
         StationLog selectedBranchLog = null;
 
         for (ContainerBaseStation.Branch element : (List<ContainerBaseStation.Branch>) station.getPipelines()) {
@@ -54,54 +52,8 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
             return selectedBranchLog.getOutput();
         }
 
-        FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
         FlowStrategySupport.applyInterruptToParentLog(operationExecution.getRecord(), selectedBranchLog, config);
         return null;
-    }
-
-    private static void applyInterruptToParentLog(
-            StationLog parent,
-            StationLog child,
-            FlowConfig config) {
-
-        StationLog.Status childStatus = child.getStatus();
-
-        Exception representative = null;
-        if (child.getThrowables() != null && !child.getThrowables().isEmpty()) {
-            Throwable t = child.getThrowables().get(0);
-            representative = (t instanceof Exception ex)
-                    ? ex
-                    : new RuntimeException(t.getMessage(), t);
-        } else if (child.getErrorMessage() != null) {
-            representative = new RuntimeException(child.getErrorMessage());
-        }
-
-        if (childStatus == StationLog.Status.FAILED) {
-            parent.markFailed(representative);
-            return;
-        }
-
-        if (childStatus == StationLog.Status.STOPPED) {
-            if (config.stopPolicy() == StopPolicy.TREAT_AS_FAILURE) {
-                parent.markFailed(representative);
-            } else {
-                parent.markStopped(representative);
-            }
-            return;
-        }
-
-        if (childStatus == StationLog.Status.CANCELLED) {
-            if (config.cancelPolicy() == CancelPolicy.TREAT_AS_FAILURE) {
-                parent.markFailed(representative);
-            } else {
-                parent.markCancelled(representative);
-            }
-            return;
-        }
-
-        parent.markFailed(representative != null
-                ? representative
-                : new RuntimeException("Unknown terminal status: " + childStatus));
     }
 
     <T> T deepClone(T object) {

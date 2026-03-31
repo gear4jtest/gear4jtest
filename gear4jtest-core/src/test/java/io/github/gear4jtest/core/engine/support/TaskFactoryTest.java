@@ -50,6 +50,7 @@ class TaskFactoryTest {
 
         StationLog parentRecord = StationLog.start(globalContext.getExecutionId(), "parent", null);
         parentRecord.setContext(new HashMap<>());
+        parentRecord.setStatus(StationLog.Status.RUNNING);
 
         StationExecutionContext operationExecution = new DefaultStationExecutionContext(
                 "parent",

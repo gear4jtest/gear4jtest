@@ -23,6 +23,7 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
     @Override
     public Object doExecute(IteratorStation station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
         FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
+
         Iterable<?> collection;
         if (station.getFunc() != null) {
             collection = ((Function<Object, ? extends Iterable<?>>) station.getFunc()).apply(input);
@@ -42,13 +43,9 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
 
             StationLog chainResult = runner.run(element, station.getChain(), operationExecution);
 
-            // Rattache systématiquement chaque exécution enfant à l'iterator courant
-//			operationExecution.getRecord().addSubOperation(rec);
-
             FlowDecision decision = FlowDecider.decide(chainResult, config);
             switch (decision) {
                 case PROCEED -> {
-                    // On ne produit un output que si la chain a réussi.
                     if (chainResult.getStatus() == StationLog.Status.SUCCEEDED) {
                         results.add(chainResult.getOutput());
                     }
@@ -68,21 +65,14 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
             }
 
             index++;
-
-//            if (!success) {
-//                operationExecution.getRecord().markFailed(null);
-//                break;
-//            }
         }
 
-        // Fin : si erreurs collectées => échec global
         if (!collectedErrors.isEmpty()) {
             Throwable first = collectedErrors.iterator().next();
             operationExecution.getRecord().markFailed(
                     first instanceof Exception ex ? ex : new RuntimeException(first.getMessage(), first));
         }
 
-        // Accumulateur / collector comme avant
         if (station.getAccumulator() != null) {
             Collection<Object> acc = station.getAccumulator().getCollectionSupplier().getSupplier().get();
             acc.addAll(results);

@@ -14,8 +14,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
@@ -261,6 +263,68 @@ class ContainerStationStrategyTest {
         }
     }
 
+    @Test
+    void should_interrupt_parallel_container_without_waiting_for_all_branches_when_fail_fast() throws Exception {
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        try {
+            // Given
+            ContainerStationStrategy strategy = new ContainerStationStrategy();
+            DummyStation slow = station("slow");
+            DummyStation failing = station("failing");
+
+            var container = new ContainerBaseStation.Builder<Object, Object>(executorService)
+                    .withSubLine(slow)
+                    .withSubLine(failing)
+                    .returns((a, b) -> Arrays.asList(a, b));
+
+            StationExecutionContext operationExecution = newOperationExecutionContext("container");
+
+            CountDownLatch bothStarted = new CountDownLatch(2);
+            CountDownLatch slowInterrupted = new CountDownLatch(1);
+
+            StationRunner runner = (input, station, ctx) -> {
+                try {
+                    if ("slow".equals(station.getId())) {
+                        bothStarted.countDown();
+                        bothStarted.await();
+
+                        try {
+                            Thread.sleep(5_000L);
+                        } catch (InterruptedException e) {
+                            slowInterrupted.countDown();
+                            Thread.currentThread().interrupt();
+                            return cancelledLog("slow", "slow interrupted");
+                        }
+
+                        return successLog("slow", "A");
+                    }
+
+                    bothStarted.countDown();
+                    bothStarted.await();
+                    return failedLog("failing", "boom");
+                } catch (InterruptedException e) {
+                    slowInterrupted.countDown();
+                    Thread.currentThread().interrupt();
+                    return cancelledLog("slow", "slow interrupted");
+                }
+            };
+
+            // When
+            long startNanos = System.nanoTime();
+            Object result = strategy.doExecute(container, "input", runner, operationExecution);
+            long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+
+            // Then
+            assertThat(result).isNull();
+            assertThat(operationExecution.getRecord().getStatus()).isEqualTo(StationLog.Status.FAILED);
+            assertThat(operationExecution.getRecord().getErrorMessage()).isEqualTo("boom");
+            assertThat(elapsedMillis).isLessThan(1_500L);
+            assertThat(slowInterrupted.await(500, TimeUnit.MILLISECONDS)).isTrue();
+        } finally {
+            executorService.shutdownNow();
+        }
+    }
+
     private static StationExecutionContext newOperationExecutionContext(String operationId) {
         AssemblyRun assemblyRun = new AssemblyRun(UUID.randomUUID(), "pipeline-1", Map.of());
         var resourceFactory = new ResourceFactory() {
@@ -278,6 +342,7 @@ class ContainerStationStrategyTest {
 
         StationLog parentRecord = StationLog.start(globalContext.getExecutionId(), operationId, null);
         parentRecord.setContext(new HashMap<>());
+        parentRecord.setStatus(StationLog.Status.RUNNING);
 
         return new DefaultStationExecutionContext(
                 operationId,
@@ -296,6 +361,12 @@ class ContainerStationStrategyTest {
     private static StationLog failedLog(String operationId, String message) {
         StationLog log = newLog(operationId);
         log.markFailed(new RuntimeException(message));
+        return log;
+    }
+
+    private static StationLog cancelledLog(String operationId, String message) {
+        StationLog log = newLog(operationId);
+        log.markCancelled(new RuntimeException(message));
         return log;
     }
 
