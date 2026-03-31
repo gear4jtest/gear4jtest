@@ -18,29 +18,23 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
     }
 
     @Override
-    public Object doExecute(
-            UnaryIfElseContainerStation station,
-            Object input,
-            StationRunner runner,
-            StationExecutionContext operationExecution) {
-
+    public Object doExecute(UnaryIfElseContainerStation station,
+                            Object input,
+                            StationRunner runner,
+                            StationExecutionContext operationExecution) {
         FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
         StationLog selectedBranchLog = null;
 
         for (ContainerBaseStation.Branch element : (List<ContainerBaseStation.Branch>) station.getPipelines()) {
             if (element.getCondition() == null
                     || element.getCondition().test(input, operationExecution.getGlobalContext())) {
-                Object newObject = deepClone(input);
-                selectedBranchLog = runner.run(newObject, element.getStation(), operationExecution);
-                selectedBranchLog.setParentOperationId(operationExecution.getRecord().getId());
+                selectedBranchLog = runner.run(input, element.getStation(), operationExecution);
                 break;
             }
         }
 
         if (selectedBranchLog == null && station.getElseOp() != null) {
-            Object newObject = deepClone(input);
-            selectedBranchLog = runner.run(newObject, station.getElseOp(), operationExecution);
-            selectedBranchLog.setParentOperationId(operationExecution.getRecord().getId());
+            selectedBranchLog = runner.run(input, station.getElseOp(), operationExecution);
         }
 
         if (selectedBranchLog == null) {
@@ -54,9 +48,5 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
 
         FlowStrategySupport.applyInterruptToParentLog(operationExecution.getRecord(), selectedBranchLog, config);
         return null;
-    }
-
-    <T> T deepClone(T object) {
-        return object;
     }
 }

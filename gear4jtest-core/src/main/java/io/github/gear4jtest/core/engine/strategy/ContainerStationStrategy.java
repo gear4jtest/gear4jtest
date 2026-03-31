@@ -82,7 +82,6 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
             } else {
                 Object newObject = deepClone(input);
                 childLog = runner.run(newObject, branch.getStation(), operationExecution);
-                childLog.setParentOperationId(operationExecution.getRecord().getId());
             }
 
             results.add(childLog);
