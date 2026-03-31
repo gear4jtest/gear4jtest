@@ -24,7 +24,7 @@ public class SequenceStationStrategy extends AbstractStationStrategy<SequenceSta
     @Override
     @SuppressWarnings("unchecked")
     public Object doExecute(SequenceStation station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
-        FlowConfig config = resolveFlowConfig(station);
+        FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
 
         Object currentInput = input;
         List<Throwable> collectedErrors = new ArrayList<>();
@@ -40,20 +40,13 @@ public class SequenceStationStrategy extends AbstractStationStrategy<SequenceSta
                         currentInput = childLog.getOutput();
                     }
                 }
-                case MARK_AND_PROCEED -> {
-                    // Collect & fail : on note l'erreur puis on continue.
-                    // On conserve l'input précédent (comme un ignore).
-                    if (childLog.getThrowables() != null && !childLog.getThrowables().isEmpty()) {
-                        collectedErrors.addAll(childLog.getThrowables());
-                    } else {
-                        collectedErrors.add(new RuntimeException("Step failed without exception: " + child.getId()));
-                    }
-                }
+                case MARK_AND_PROCEED -> collectedErrors.add(
+                        FlowStrategySupport.representativeThrowable(
+                                childLog,
+                                "Step failed without exception: " + child.getId()));
                 case INTERRUPT -> {
-                    // STOP/FAIL/CANCEL propagé (ou STOP/CANCEL transformé en failure selon policy)
                     StationLog parentLog = operationExecution.getRecord();
-                    applyInterruptToParentLog(parentLog, childLog, config);
-                    // On conserve le dernier output valide comme output de la sequence.
+                    FlowStrategySupport.applyInterruptToParentLog(parentLog, childLog, config);
                     parentLog.setOutput(currentInput);
                     return currentInput;
                 }
@@ -76,51 +69,5 @@ public class SequenceStationStrategy extends AbstractStationStrategy<SequenceSta
         }
 
         return currentInput;
-    }
-
-    private static FlowConfig resolveFlowConfig(SequenceStation<?, ?> station) {
-        return station.getFlowConfig() != null ? station.getFlowConfig() : FlowConfig.DEFAULT;
-    }
-
-    private static void applyInterruptToParentLog(StationLog parent,
-                                                  StationLog child,
-                                                  FlowConfig config) {
-        StationLog.Status childStatus = child.getStatus();
-
-        Exception representative = null;
-        if (child.getThrowables() != null && !child.getThrowables().isEmpty()) {
-            Throwable t = child.getThrowables().get(0);
-            representative = (t instanceof Exception ex)
-                    ? ex
-                    : new RuntimeException(t.getMessage(), t);
-        } else if (child.getErrorMessage() != null) {
-            representative = new RuntimeException(child.getErrorMessage());
-        }
-
-        if (childStatus == StationLog.Status.FAILED) {
-            parent.markFailed(representative);
-            return;
-        }
-
-        if (childStatus == StationLog.Status.STOPPED) {
-            if (config.stopPolicy() == StopPolicy.TREAT_AS_FAILURE) {
-                parent.markFailed(representative);
-            } else {
-                parent.markStopped(representative);
-            }
-            return;
-        }
-
-        if (childStatus == StationLog.Status.CANCELLED) {
-            if (config.cancelPolicy() == CancelPolicy.TREAT_AS_FAILURE) {
-                parent.markFailed(representative);
-            } else {
-                parent.markCancelled(representative);
-            }
-            return;
-        }
-
-        // fallback sécurité
-        parent.markFailed(representative != null ? representative : new RuntimeException("Unknown terminal status: " + childStatus));
     }
 }
