@@ -1,13 +1,5 @@
 package io.github.gear4jtest.core.engine.strategy;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.same;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,9 +10,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import io.github.gear4jtest.core.spi.factory.ResourceFactory;
-import org.junit.jupiter.api.Test;
 
 import io.github.gear4jtest.core.api.config.CancelPolicy;
 import io.github.gear4jtest.core.api.config.FailurePolicy;
@@ -38,7 +27,13 @@ import io.github.gear4jtest.core.engine.support.TaskFactory;
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.persistence.AssemblyRun;
 import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 class ContainerStationStrategyTest {
 
@@ -49,9 +44,9 @@ class ContainerStationStrategyTest {
         DummyStation first = station("first");
         DummyStation second = station("second");
 
-        var container = new ContainerBaseStation.Builder<Object, Object>()
-                .withSubLine(first)
-                .withSubLine(second)
+        var container = new ContainerBaseStation.Builder<>()
+                .withSubLine("1", first)
+                .withSubLine("2", second)
                 .build();
 
         StationRunner runner = mock(StationRunner.class);
@@ -86,9 +81,9 @@ class ContainerStationStrategyTest {
 
         var container = new ContainerBaseStation.Builder<Object, Object>()
                 .flowConfig(flowConfig)
-                .withSubLine(first)
-                .withSubLine(second)
-                .returns((a, b) -> Arrays.asList(a, b));
+                .withSubLine("1", first)
+                .withSubLine("2", second)
+                .returns(Arrays::asList);
 
         StationRunner runner = mock(StationRunner.class);
         StationExecutionContext operationExecution = newOperationExecutionContext("container");
@@ -124,9 +119,9 @@ class ContainerStationStrategyTest {
 
         var container = new ContainerBaseStation.Builder<Object, Object>()
                 .flowConfig(flowConfig)
-                .withSubLine(first)
-                .withSubLine(second)
-                .returns((a, b) -> Arrays.asList(a, b));
+                .withSubLine("1", first)
+                .withSubLine("2", second)
+                .returns(Arrays::asList);
 
         StationRunner runner = mock(StationRunner.class);
         StationExecutionContext operationExecution = newOperationExecutionContext("container");
@@ -156,9 +151,9 @@ class ContainerStationStrategyTest {
         DummyStation executed = station("executed");
 
         var container = new ContainerBaseStation.Builder<Object, Object>()
-                .withSubLine(skipped, (input, ctx) -> false)
-                .withSubLine(executed)
-                .returns((a, b) -> Arrays.asList(a, b));
+                .withSubLine("1", skipped, (input, ctx) -> false)
+                .withSubLine("2", executed)
+                .returns(Arrays::asList);
 
         StationRunner runner = mock(StationRunner.class);
         StationExecutionContext operationExecution = newOperationExecutionContext("container");
@@ -187,9 +182,9 @@ class ContainerStationStrategyTest {
 
             var container = new ContainerBaseStation.Builder<Object, Object>(executorService)
                     .awaitTimeout(Duration.ofMillis(50))
-                    .withSubLine(slow)
-                    .withSubLine(fast)
-                    .returns((a, b) -> Arrays.asList(a, b));
+                    .withSubLine("1", slow)
+                    .withSubLine("2", fast)
+                    .returns(Arrays::asList);
 
             StationExecutionContext operationExecution = newOperationExecutionContext("container");
 
@@ -233,9 +228,9 @@ class ContainerStationStrategyTest {
             var container = new ContainerBaseStation.Builder<Object, Object>(executorService)
                     .flowConfig(flowConfig)
                     .awaitTimeout(Duration.ofMillis(50))
-                    .withSubLine(slow)
-                    .withSubLine(fast)
-                    .returns((a, b) -> Arrays.asList(a, b));
+                    .withSubLine("1", slow)
+                    .withSubLine("2", fast)
+                    .returns(Arrays::asList);
 
             StationExecutionContext operationExecution = newOperationExecutionContext("container");
 
@@ -273,9 +268,9 @@ class ContainerStationStrategyTest {
             DummyStation failing = station("failing");
 
             var container = new ContainerBaseStation.Builder<Object, Object>(executorService)
-                    .withSubLine(slow)
-                    .withSubLine(failing)
-                    .returns((a, b) -> Arrays.asList(a, b));
+                    .withSubLine("1", slow)
+                    .withSubLine("2", failing)
+                    .returns(Arrays::asList);
 
             StationExecutionContext operationExecution = newOperationExecutionContext("container");
 
@@ -349,7 +344,7 @@ class ContainerStationStrategyTest {
                 StationKind.CONTAINER,
                 globalContext,
                 parentRecord,
-                new ExecutionSupport(ExecutorDecorator.noOp(), new TaskFactory()));
+                new ExecutionSupport(ExecutorDecorator.noOp(), new TaskFactory(), null));
     }
 
     private static StationLog successLog(String operationId, Object output) {

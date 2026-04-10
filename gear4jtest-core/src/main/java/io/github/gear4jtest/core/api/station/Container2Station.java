@@ -25,12 +25,14 @@ public class Container2Station<IN, OUT, A, B> extends ContainerBaseStation<IN, O
 
         @SuppressWarnings("unchecked")
         public <C> ContainerBaseStation<IN, C> returns(Container2DFunction<A, B, C> func) {
+            ContainerBaseStation.validateUniqueBranchIds(managedInstance.getPipelines());
             managedInstance.func = func;
             return (ContainerBaseStation<IN, C>) this.managedInstance;
         }
 
         @SuppressWarnings("unchecked")
         public ContainerBaseStation<IN, Void> build() {
+            ContainerBaseStation.validateUniqueBranchIds(managedInstance.getPipelines());
             return (ContainerBaseStation<IN, Void>) this.managedInstance;
         }
     }

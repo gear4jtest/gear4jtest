@@ -15,6 +15,8 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.PayloadCloner;
+import io.github.gear4jtest.core.api.context.PayloadCloners;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
@@ -45,6 +47,7 @@ public class PipelineEngine implements PipelineExecutor {
     private final ExecutionContextRegistry executionContextRegistry;
     private final IdGenerator defaultIdGenerator;
     private final TaskFactory taskFactory;
+    private final PayloadCloner payloadCloner;
 
     private PipelineEngine(Builder builder) {
         this.runnerChainFactory = Objects.requireNonNull(builder.runnerChainFactory, "ChainFactory must not be null");
@@ -54,6 +57,7 @@ public class PipelineEngine implements PipelineExecutor {
                 Objects.requireNonNull(builder.executionContextRegistry, "ExecutionContextRegistry must not be null");
         this.defaultIdGenerator = builder.idGenerator != null ? builder.idGenerator : IdGenerator.defaultGenerator();
         this.taskFactory = builder.taskFactory != null ? builder.taskFactory : new TaskFactory();
+        this.payloadCloner = builder.payloadCloner != null ? builder.payloadCloner : PayloadCloners.immutableAware();
     }
 
     @Override
@@ -81,7 +85,7 @@ public class PipelineEngine implements PipelineExecutor {
             return wrapped;
         };
 
-        ExecutionSupport support = new ExecutionSupport(decorator, taskFactory);
+        ExecutionSupport support = new ExecutionSupport(decorator, taskFactory, payloadCloner);
 
         Map<String, Object> effectiveContext = new HashMap<>(pipeline.getDefaultContext());
         if (request.getContext() != null) {
@@ -281,6 +285,7 @@ public class PipelineEngine implements PipelineExecutor {
         private ExecutionContextRegistry executionContextRegistry;
         private IdGenerator idGenerator;
         private TaskFactory taskFactory;
+        private PayloadCloner payloadCloner;
 
         public Builder resourceFactory(ResourceFactory resourceFactory) {
             this.resourceFactory = resourceFactory;
@@ -309,6 +314,11 @@ public class PipelineEngine implements PipelineExecutor {
 
         public Builder taskFactory(TaskFactory taskFactory) {
             this.taskFactory = taskFactory;
+            return this;
+        }
+
+        public Builder payloadCloner(PayloadCloner payloadCloner) {
+            this.payloadCloner = payloadCloner;
             return this;
         }
 

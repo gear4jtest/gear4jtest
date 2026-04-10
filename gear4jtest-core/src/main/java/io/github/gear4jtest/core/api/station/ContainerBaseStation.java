@@ -2,9 +2,13 @@ package io.github.gear4jtest.core.api.station;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
+import io.github.gear4jtest.core.api.behavior.BranchCondition;
 import io.github.gear4jtest.core.api.behavior.Condition;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 
@@ -55,6 +59,25 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
         this.awaitTimeout = awaitTimeout;
     }
 
+    protected static void validateUniqueBranchIds(List<? extends Branch<?>> branches) {
+        Set<String> ids = new HashSet<>();
+
+        for (Branch<?> branch : branches) {
+            if (branch == null) {
+                throw new IllegalArgumentException("Container contains a null branch");
+            }
+
+            String branchId = branch.getEffectiveId();
+            if (branchId == null || branchId.isBlank()) {
+                throw new IllegalArgumentException("Container contains a branch without stable id");
+            }
+
+            if (!ids.add(branchId)) {
+                throw new IllegalArgumentException("Container contains duplicated branch id '" + branchId + "'");
+            }
+        }
+    }
+
     public static class Builder<IN, OUT> {
         private final ContainerBaseStation<IN, OUT> managedInstance;
 
@@ -78,16 +101,44 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
             return this;
         }
 
-        public <A> Container1Station.Builder<IN, OUT, A> withSubLine(AbstractStation<IN, A> startingElement) {
-            var branch = new Branch.Builder<IN>().withOperation(startingElement).build();
+        public <A> Container1Station.Builder<IN, OUT, A> withSubLine(String id, AbstractStation<IN, A> startingElement) {
+            var branch = new Branch.Builder<IN>()
+                    .withId(id)
+                    .withOperation(startingElement)
+                    .build();
             return new Container1Station.Builder<>(this.managedInstance, branch);
         }
 
-        public <A> Container1Station.Builder<IN, OUT, A> withSubLine(
-                AbstractStation<IN, A> startingElement,
+        public <A> Container1Station.Builder<IN, OUT, A> withSubLine(String id,
+                                                                     AbstractStation<IN, A> startingElement,
                 Condition<IN> condition) {
             var branch = new Branch.Builder<IN>()
+                    .withId(id)
                     .withCondition(condition)
+                    .withOperation(startingElement)
+                    .build();
+            return new Container1Station.Builder<>(this.managedInstance, branch);
+        }
+
+        public <A> Container1Station.Builder<IN, OUT, A> withSubLine(String id,
+                                                                     AbstractStation<IN, A> startingElement,
+                BranchCondition<IN> siblingCondition) {
+            var branch = new Branch.Builder<IN>()
+                    .withId(id)
+                    .withSiblingCondition(siblingCondition)
+                    .withOperation(startingElement)
+                    .build();
+            return new Container1Station.Builder<>(this.managedInstance, branch);
+        }
+
+        public <A> Container1Station.Builder<IN, OUT, A> withSubLine(String id,
+                                                                     AbstractStation<IN, A> startingElement,
+                Condition<IN> condition,
+                BranchCondition<IN> siblingCondition) {
+            var branch = new Branch.Builder<IN>()
+                    .withId(id)
+                    .withCondition(condition)
+                    .withSiblingCondition(siblingCondition)
                     .withOperation(startingElement)
                     .build();
             return new Container1Station.Builder<>(this.managedInstance, branch);
@@ -103,6 +154,7 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
         private String id;
         private AbstractStation<I, ?> station;
         private Condition<I> condition;
+        private BranchCondition<I> siblingCondition;
 
         public Branch() {
         }
@@ -111,12 +163,20 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
             return id;
         }
 
+        public String getEffectiveId() {
+            return (id != null && !id.isBlank()) ? id : station.getId();
+        }
+
         public AbstractStation<I, ?> getStation() {
             return station;
         }
 
         public Condition<I> getCondition() {
             return condition;
+        }
+
+        public BranchCondition<I> getSiblingCondition() {
+            return siblingCondition;
         }
 
         public static class Builder<I> {
@@ -141,7 +201,16 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
                 return this;
             }
 
+            public Builder<I> withSiblingCondition(BranchCondition<I> siblingCondition) {
+                this.managedInstance.siblingCondition = siblingCondition;
+                return this;
+            }
+
             public Branch<I> build() {
+                Objects.requireNonNull(managedInstance.station, "branch station is required");
+                if (managedInstance.id == null || managedInstance.id.isBlank()) {
+                    managedInstance.id = managedInstance.station.getId();
+                }
                 return this.managedInstance;
             }
         }

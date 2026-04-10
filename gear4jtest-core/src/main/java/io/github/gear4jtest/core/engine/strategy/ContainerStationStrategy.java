@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -16,6 +17,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import io.github.gear4jtest.core.api.behavior.SiblingBranchOutcomes;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 import io.github.gear4jtest.core.api.config.FlowDecider;
 import io.github.gear4jtest.core.api.config.FlowDecision;
@@ -39,6 +41,8 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
             Object input,
             StationRunner runner,
             StationExecutionContext operationExecution) {
+
+        validateSiblingConditionsCompatibility(station);
 
         FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
 
@@ -73,18 +77,20 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
 
         List<StationLog> results = new ArrayList<>();
         List<Throwable> collectedErrors = new ArrayList<>();
+        Map<String, StationLog.Status> siblingStatuses = new LinkedHashMap<>();
 
         for (ContainerBaseStation.Branch branch : (List<ContainerBaseStation.Branch>) station.getPipelines()) {
             StationLog childLog;
 
-            if (!isBranchConditionSatisfied(branch, input, operationExecution)) {
+            if (!isBranchEligible(branch, input, operationExecution, siblingStatuses)) {
                 childLog = buildConditionSkippedBranchLog(branch, operationExecution);
             } else {
-                Object newObject = deepClone(input);
+                Object newObject = clonePayload(input, operationExecution);
                 childLog = runner.run(newObject, branch.getStation(), operationExecution);
             }
 
             results.add(childLog);
+            siblingStatuses.put(branch.getEffectiveId(), childLog.getStatus());
 
             FlowDecision decision = FlowDecider.decide(childLog, config);
             switch (decision) {
@@ -134,7 +140,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
 
             Callable<StationLog> task = operationExecution.getSupport()
                     .getTaskFactory()
-                    .createTask(() -> deepClone(input), branch.getStation(), runner, operationExecution, currentItemId);
+                    .createTask(() -> clonePayload(input, operationExecution), branch.getStation(), runner, operationExecution, currentItemId);
 
             int finalIndex = index;
             Future<BranchExecution> future =
@@ -216,6 +222,20 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
             Thread.currentThread().interrupt();
             cancelPendingBranchesAfterUnexpectedInterruption(submittedBranches, orderedResults, operationExecution);
             throw new RuntimeException("Interrupted while waiting for container branches", e);
+        }
+    }
+
+    private void validateSiblingConditionsCompatibility(ContainerBaseStation station) {
+        if (!station.isParallel()) {
+            return;
+        }
+
+        for (Object rawBranch : station.getPipelines()) {
+            ContainerBaseStation.Branch<?> branch = (ContainerBaseStation.Branch<?>) rawBranch;
+            if (branch.getSiblingCondition() != null) {
+                throw new IllegalArgumentException(
+                        "Sibling branch conditions are only supported in sequential containers");
+            }
         }
     }
 
@@ -424,6 +444,20 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
     }
 
     @SuppressWarnings("unchecked")
+    private boolean isBranchEligible(
+            ContainerBaseStation.Branch branch,
+            Object input,
+            StationExecutionContext operationExecution,
+            Map<String, StationLog.Status> siblingStatuses) {
+
+        if (!isBranchConditionSatisfied(branch, input, operationExecution)) {
+            return false;
+        }
+
+        return isSiblingBranchConditionSatisfied(branch, input, operationExecution, siblingStatuses);
+    }
+
+    @SuppressWarnings("unchecked")
     private boolean isBranchConditionSatisfied(
             ContainerBaseStation.Branch branch,
             Object input,
@@ -434,6 +468,23 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         }
 
         return branch.getCondition().test(input, operationExecution.getGlobalContext());
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean isSiblingBranchConditionSatisfied(
+            ContainerBaseStation.Branch branch,
+            Object input,
+            StationExecutionContext operationExecution,
+            Map<String, StationLog.Status> siblingStatuses) {
+
+        if (branch.getSiblingCondition() == null) {
+            return true;
+        }
+
+        return branch.getSiblingCondition().test(
+                input,
+                operationExecution.getGlobalContext(),
+                SiblingBranchOutcomes.of(siblingStatuses));
     }
 
     private StationLog buildConditionSkippedBranchLog(
@@ -501,10 +552,6 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return log;
     }
 
-    <T> T deepClone(T object) {
-        return object;
-    }
-
     private static final class ExecutionAggregation {
         private final List<StationLog> results;
         private final List<Throwable> collectedErrors;
@@ -525,10 +572,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         private final ContainerBaseStation.Branch<?> branch;
         private final Future<BranchExecution> future;
 
-        private SubmittedBranch(
-                int index,
-                ContainerBaseStation.Branch<?> branch,
-                Future<BranchExecution> future) {
+        private SubmittedBranch(int index, ContainerBaseStation.Branch<?> branch, Future<BranchExecution> future) {
             this.index = index;
             this.branch = branch;
             this.future = future;
@@ -540,10 +584,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         private final ContainerBaseStation.Branch<?> branch;
         private final StationLog log;
 
-        private BranchExecution(
-                int index,
-                ContainerBaseStation.Branch<?> branch,
-                StationLog log) {
+        private BranchExecution(int index, ContainerBaseStation.Branch<?> branch, StationLog log) {
             this.index = index;
             this.branch = branch;
             this.log = log;

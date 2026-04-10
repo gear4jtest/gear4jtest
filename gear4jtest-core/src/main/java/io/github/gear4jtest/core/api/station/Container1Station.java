@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.api.station;
 
 import java.util.ArrayList;
 
+import io.github.gear4jtest.core.api.behavior.BranchCondition;
 import io.github.gear4jtest.core.api.behavior.Condition;
 
 public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT> {
@@ -23,16 +24,44 @@ public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT>
             managedInstance.setAwaitTimeout(parentDefinition.getAwaitTimeout());
         }
 
-        public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(AbstractStation<IN, B> operationDefinition) {
-            var branch = new Branch.Builder<IN>().withOperation(operationDefinition).build();
+        public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(String id, AbstractStation<IN, B> operationDefinition) {
+            var branch = new Branch.Builder<IN>()
+                    .withId(id)
+                    .withOperation(operationDefinition)
+                    .build();
             return new Container2Station.Builder<>(managedInstance, branch);
         }
 
-        public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(
-                AbstractStation<IN, B> operationDefinition,
+        public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(String id,
+                                                                        AbstractStation<IN, B> operationDefinition,
                 Condition<IN> condition) {
             var branch = new Branch.Builder<IN>()
+                    .withId(id)
                     .withCondition(condition)
+                    .withOperation(operationDefinition)
+                    .build();
+            return new Container2Station.Builder<>(managedInstance, branch);
+        }
+
+        public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(String id,
+                                                                        AbstractStation<IN, B> operationDefinition,
+                BranchCondition<IN> siblingCondition) {
+            var branch = new Branch.Builder<IN>()
+                    .withId(id)
+                    .withSiblingCondition(siblingCondition)
+                    .withOperation(operationDefinition)
+                    .build();
+            return new Container2Station.Builder<>(managedInstance, branch);
+        }
+
+        public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(String id,
+                                                                        AbstractStation<IN, B> operationDefinition,
+                Condition<IN> condition,
+                BranchCondition<IN> siblingCondition) {
+            var branch = new Branch.Builder<IN>()
+                    .withId(id)
+                    .withCondition(condition)
+                    .withSiblingCondition(siblingCondition)
                     .withOperation(operationDefinition)
                     .build();
             return new Container2Station.Builder<>(managedInstance, branch);
@@ -40,12 +69,14 @@ public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT>
 
         @SuppressWarnings("unchecked")
         public <C> ContainerBaseStation<IN, C> returns(Container1DFunction<A, C> func) {
+            ContainerBaseStation.validateUniqueBranchIds(managedInstance.getPipelines());
             managedInstance.func = func;
             return (ContainerBaseStation<IN, C>) this.managedInstance;
         }
 
         @SuppressWarnings("unchecked")
         public ContainerBaseStation<IN, Void> build() {
+            ContainerBaseStation.validateUniqueBranchIds(managedInstance.getPipelines());
             return (ContainerBaseStation<IN, Void>) this.managedInstance;
         }
     }

@@ -1,6 +1,8 @@
 package io.github.gear4jtest.core.engine.support;
 
 import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.PayloadCloner;
+import io.github.gear4jtest.core.api.context.PayloadCloners;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -11,10 +13,12 @@ public final class ExecutionSupport {
     
     private final ExecutorDecorator executorDecorator;
     private final TaskFactory taskFactory;
+    private final PayloadCloner payloadCloner;
 
-    public ExecutionSupport(ExecutorDecorator executorDecorator, TaskFactory taskFactory) {
+    public ExecutionSupport(ExecutorDecorator executorDecorator, TaskFactory taskFactory, PayloadCloner payloadCloner) {
         this.executorDecorator = executorDecorator != null ? executorDecorator : ExecutorDecorator.noOp();
         this.taskFactory = taskFactory != null ? taskFactory : new TaskFactory();
+        this.payloadCloner = payloadCloner != null ? payloadCloner : PayloadCloners.immutableAware();
     }
 
     /**
@@ -29,5 +33,9 @@ public final class ExecutionSupport {
 
     public TaskFactory getTaskFactory() {
         return this.taskFactory;
+    }
+
+    public PayloadCloner getPayloadCloner() {
+        return this.payloadCloner;
     }
 }

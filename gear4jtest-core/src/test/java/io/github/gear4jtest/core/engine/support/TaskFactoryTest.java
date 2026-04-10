@@ -28,7 +28,7 @@ class TaskFactoryTest {
     void should_propagate_item_id_and_parent_operation_id_inside_async_task() throws Exception {
         // Given
         TaskFactory taskFactory = new TaskFactory();
-        ExecutionSupport support = new ExecutionSupport(ExecutorDecorator.noOp(), taskFactory);
+        ExecutionSupport support = new ExecutionSupport(ExecutorDecorator.noOp(), taskFactory, null);
 
         AssemblyRun assemblyRun = new AssemblyRun(UUID.randomUUID(), "pipeline-1", Map.of());
         var resourceFactory = new ResourceFactory() {

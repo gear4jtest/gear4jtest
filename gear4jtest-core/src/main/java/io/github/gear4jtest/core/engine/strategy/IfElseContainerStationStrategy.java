@@ -18,23 +18,29 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
     }
 
     @Override
-    public Object doExecute(UnaryIfElseContainerStation station,
-                            Object input,
-                            StationRunner runner,
-                            StationExecutionContext operationExecution) {
+    public Object doExecute(
+            UnaryIfElseContainerStation station,
+            Object input,
+            StationRunner runner,
+            StationExecutionContext operationExecution) {
+
         FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
         StationLog selectedBranchLog = null;
 
         for (ContainerBaseStation.Branch element : (List<ContainerBaseStation.Branch>) station.getPipelines()) {
             if (element.getCondition() == null
                     || element.getCondition().test(input, operationExecution.getGlobalContext())) {
-                selectedBranchLog = runner.run(input, element.getStation(), operationExecution);
+                Object newObject = clonePayload(input, operationExecution);
+                selectedBranchLog = runner.run(newObject, element.getStation(), operationExecution);
+                selectedBranchLog.setParentOperationId(operationExecution.getRecord().getId());
                 break;
             }
         }
 
         if (selectedBranchLog == null && station.getElseOp() != null) {
-            selectedBranchLog = runner.run(input, station.getElseOp(), operationExecution);
+            Object newObject = clonePayload(input, operationExecution);
+            selectedBranchLog = runner.run(newObject, station.getElseOp(), operationExecution);
+            selectedBranchLog.setParentOperationId(operationExecution.getRecord().getId());
         }
 
         if (selectedBranchLog == null) {

@@ -3,15 +3,11 @@ package io.github.gear4jtest.core.persistence;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Représente l'exécution d'une opération dans un pipeline.
- * Sert à la fois de modèle runtime et de modèle de persistance.
- */
 public class StationLog {
 
     public enum Status {
@@ -34,8 +30,6 @@ public class StationLog {
     private List<StationLog> subOperations = Collections.synchronizedList(new ArrayList<>());
     private String itemId;
 
-    // ---------- Fabrication ----------
-
     public static StationLog start(UUID pipelineExecutionId,
                                    String operationId,
                                    UUID parentOperationId) {
@@ -44,12 +38,11 @@ public class StationLog {
         record.pipelineExecutionId = pipelineExecutionId;
         record.operationId = operationId;
         record.parentOperationId = parentOperationId;
-        record.status = Status.SKIPPED; // par défaut
+        record.status = Status.RUNNING;
         record.startedAt = Instant.now();
+        record.context = new HashMap<>();
         return record;
     }
-
-    // ---------- Lifecycle helpers ----------
 
     public void markSuccess(Object output) {
         this.status = Status.SUCCEEDED;
@@ -91,13 +84,19 @@ public class StationLog {
 
     public void markSkipped(String reason) {
         markSkipped();
-        Optional.ofNullable(reason).ifPresent(r -> this.context.put("skip.reason", r));
+        if (reason != null) {
+            ensureContext().put("skip.reason", reason);
+        }
     }
 
     public void addErrorHandlerException(Exception e) {
-        if (e == null) return;
+        if (e == null) {
+            return;
+        }
         String msg = e.getMessage();
-        if (msg == null) return;
+        if (msg == null) {
+            return;
+        }
         if (this.throwables == null) {
             this.throwables = new ArrayList<>();
         }
@@ -109,13 +108,12 @@ public class StationLog {
         }
     }
 
-//    public void addSubOperation(StationLog child) {
-//        if (child == null) return;
-//        child.setParentOperationId(this.id);
-//        subOperations.add(child);
-//    }
-
-    // ---------- Getters / setters ----------
+    private Map<String, Object> ensureContext() {
+        if (this.context == null) {
+            this.context = new HashMap<>();
+        }
+        return this.context;
+    }
 
     public UUID getId() {
         return id;
@@ -196,12 +194,11 @@ public class StationLog {
     }
 
     public List<StationLog> getSubOperations() {
-        // Optionnel : exposer une vue non modifiable
         return Collections.unmodifiableList(subOperations);
     }
 
     public void setSubOperations(List<StationLog> subOperations) {
-        this.subOperations = subOperations;
+        this.subOperations = new ArrayList<>(subOperations == null ? List.of() : subOperations);
     }
 
     @SuppressWarnings("unchecked")

@@ -1,8 +1,6 @@
 package io.github.gear4jtest.core.persistence;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -17,7 +15,6 @@ public class AssemblyRun {
     private Instant endTime;
     private String errorMessage;
     private Exception error;
-    private List<StationLog> operations = new ArrayList<>();
 
     private UUID parentExecutionId;
     private UUID rootExecutionId;
@@ -142,14 +139,6 @@ public class AssemblyRun {
     public void setError(Exception error) {
         this.error = error;
         this.errorMessage = error != null ? error.getMessage() : null;
-    }
-
-    public List<StationLog> getOperations() {
-        return operations;
-    }
-
-    public void setOperations(List<StationLog> operations) {
-        this.operations = operations;
     }
 
     public UUID getParentExecutionId() {

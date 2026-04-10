@@ -180,6 +180,10 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
         // no-op
     }
 
+    protected <T> T clonePayload(T payload, StationExecutionContext context) {
+        return context.getSupport().getPayloadCloner().clonePayload(payload);
+    }
+
     protected abstract Object doExecute(
             S station,
             Object input,

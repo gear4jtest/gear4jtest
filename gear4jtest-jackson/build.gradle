@@ -1,0 +1,12 @@
+dependencies {
+    api project(':gear4jtest-core')
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
+
+    testImplementation(gradleTestKit())
+    testImplementation platform('org.junit:junit-bom:5.5.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation group: "org.assertj",       name: "assertj-core",  version: "3.14.0"
+}
+
+ext.moduleName = 'io.test.gear4jtest.jackson'
