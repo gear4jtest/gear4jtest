@@ -1,5 +1,6 @@
 package io.github.gear4jtest.core.sidecompute;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -15,5 +16,9 @@ public final class SideComputeContext {
     @SuppressWarnings("unchecked")
     public <T> CompletableFuture<T> getOrCreateFuture(String key) {
         return (CompletableFuture<T>) futures.computeIfAbsent(key, __ -> new CompletableFuture<>());
+    }
+
+    public void cancelPendingFutures() {
+        futures.values().forEach(future -> future.completeExceptionally(new CancellationException("Pipeline execution ended")));
     }
 }

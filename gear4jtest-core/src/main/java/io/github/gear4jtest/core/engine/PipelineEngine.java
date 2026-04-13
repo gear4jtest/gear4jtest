@@ -1,13 +1,5 @@
 package io.github.gear4jtest.core.engine;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-
 import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.PipelineExecutor;
@@ -34,6 +26,13 @@ import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
 import io.github.gear4jtest.core.spi.factory.IdGenerator;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,10 +71,10 @@ public class PipelineEngine implements PipelineExecutor {
 
         ResolvedExtensions resolvedExtensions = extensionResolver.resolve(pipeline, request);
 
-        EventManager eventManager = new EventManager(
-                Optional.ofNullable(pipeline.getConfiguration().getEventHandlingDefinition())
-                        .map(EventHandlingDefinition::getEventBuses)
-                        .orElse(List.of()));
+        EventHandlingDefinition eventHandlingDefinition = Optional.ofNullable(pipeline.getConfiguration())
+                .map(AssemblyLine.Configuration::getEventHandlingDefinition)
+                .orElse(null);
+        EventManager eventManager = new EventManager(eventHandlingDefinition, executionContextRegistry);
 
         ExecutorDecorator decorator = (rawExec, context) -> {
             ExecutorService wrapped = rawExec;
@@ -90,6 +89,10 @@ public class PipelineEngine implements PipelineExecutor {
         Map<String, Object> effectiveContext = new HashMap<>(pipeline.getDefaultContext());
         if (request.getContext() != null) {
             effectiveContext.putAll(request.getContext());
+        }
+        if (eventHandlingDefinition != null
+                && eventHandlingDefinition.getGlobalEventConfiguration().isEventOnParameterChanged()) {
+            effectiveContext.put("gear4j.events.parameters.enabled", Boolean.TRUE);
         }
 
         IdGenerator effectiveGenerator = Optional.ofNullable(request.getIdGenerator()).orElse(this.defaultIdGenerator);
@@ -153,7 +156,12 @@ public class PipelineEngine implements PipelineExecutor {
                 }
             }
         } finally {
-            executionContextRegistry.remove(ctx.getExecutionId());
+            try {
+                eventManager.shutdown();
+            } finally {
+                ctx.getSideComputeContext().cancelPendingFutures();
+                executionContextRegistry.remove(ctx.getExecutionId());
+            }
         }
     }
 
@@ -277,6 +285,7 @@ public class PipelineEngine implements PipelineExecutor {
     public static Builder builder() {
         return new Builder();
     }
+
 
     public static final class Builder {
         private ResourceFactory resourceFactory;

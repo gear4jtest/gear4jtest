@@ -1,82 +1,200 @@
 package io.github.gear4jtest.core.api.config;
 
+import io.github.gear4jtest.core.event.Event;
+import io.github.gear4jtest.core.event.EventReaction;
+import io.github.gear4jtest.core.event.EventSubscription;
+import io.github.gear4jtest.core.sidecompute.SideComputer;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-
-import io.github.gear4jtest.core.event.EventBus;
+import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 
 public class EventHandlingDefinition {
 
-	private final List<EventBus> eventBuses;
-	private final EventConfiguration globalEventConfiguration;
+    private final List<EventSubscription<?>> subscriptions;
+    private final List<SideComputer<?, ?, ?>> sideComputers;
+    private final EventConfiguration globalEventConfiguration;
+    private final RuntimeConfiguration runtimeConfiguration;
 
-	private EventHandlingDefinition(List<EventBus> eventBuses, EventConfiguration globalEventConfiguration) {
-		this.eventBuses = eventBuses != null ? List.copyOf(eventBuses) : List.of();
-		this.globalEventConfiguration = globalEventConfiguration;
-	}
+    private EventHandlingDefinition(
+            List<EventSubscription<?>> subscriptions,
+            List<SideComputer<?, ?, ?>> sideComputers,
+            EventConfiguration globalEventConfiguration,
+            RuntimeConfiguration runtimeConfiguration) {
+        this.subscriptions = subscriptions != null ? List.copyOf(subscriptions) : List.of();
+        this.sideComputers = sideComputers != null ? List.copyOf(sideComputers) : List.of();
+        this.globalEventConfiguration = globalEventConfiguration != null
+                ? globalEventConfiguration
+                : EventConfiguration.builder().build();
+        this.runtimeConfiguration = runtimeConfiguration != null
+                ? runtimeConfiguration
+                : RuntimeConfiguration.builder().build();
+    }
 
-	public List<EventBus> getEventBuses() {
-		return eventBuses;
-	}
+    public List<EventSubscription<?>> getSubscriptions() {
+        return subscriptions;
+    }
 
-	public EventConfiguration getGlobalEventConfiguration() {
-		return globalEventConfiguration;
-	}
+    public List<SideComputer<?, ?, ?>> getSideComputers() {
+        return sideComputers;
+    }
 
-	public static Builder builder() {
-		return new Builder();
-	}
+    public EventConfiguration getGlobalEventConfiguration() {
+        return globalEventConfiguration;
+    }
 
-	public static class Builder {
+    public RuntimeConfiguration getRuntimeConfiguration() {
+        return runtimeConfiguration;
+    }
 
-		private final List<EventBus> eventBuses = new ArrayList<>();
-		private EventConfiguration globalEventConfiguration;
+    public boolean hasAsyncReactions() {
+        return !subscriptions.isEmpty() || !sideComputers.isEmpty();
+    }
 
-		public Builder bus(EventBus eventBus) {
-			if (eventBus != null) {
-				this.eventBuses.add(eventBus);
-			}
-			return this;
-		}
+    public static Builder builder() {
+        return new Builder();
+    }
 
-		public Builder globalEventConfiguration(EventConfiguration eventConfiguration) {
-			this.globalEventConfiguration = eventConfiguration;
-			return this;
-		}
+    public static class Builder {
 
-		public EventHandlingDefinition build() {
-			return new EventHandlingDefinition(eventBuses, globalEventConfiguration);
-		}
-	}
+        private final List<EventSubscription<?>> subscriptions = new ArrayList<>();
+        private final List<SideComputer<?, ?, ?>> sideComputers = new ArrayList<>();
+        private EventConfiguration globalEventConfiguration;
+        private RuntimeConfiguration runtimeConfiguration;
 
-	public static class EventConfiguration {
+        public Builder subscription(EventSubscription<?> subscription) {
+            if (subscription != null) {
+                this.subscriptions.add(subscription);
+            }
+            return this;
+        }
 
-		private final boolean eventOnParameterChanged;
+        public <T extends Event> Builder on(Class<T> eventType, EventReaction<? super T> reaction) {
+            return subscription(EventSubscription.on(eventType, reaction));
+        }
 
-		private EventConfiguration(boolean eventOnParameterChanged) {
-			this.eventOnParameterChanged = eventOnParameterChanged;
-		}
+        public Builder sideComputer(SideComputer<?, ?, ?> sideComputer) {
+            if (sideComputer != null) {
+                this.sideComputers.add(sideComputer);
+            }
+            return this;
+        }
 
-		public boolean isEventOnParameterChanged() {
-			return eventOnParameterChanged;
-		}
+        public Builder globalEventConfiguration(EventConfiguration eventConfiguration) {
+            this.globalEventConfiguration = eventConfiguration;
+            return this;
+        }
 
-		public static Builder builder() {
-			return new Builder();
-		}
+        public Builder runtimeConfiguration(RuntimeConfiguration runtimeConfiguration) {
+            this.runtimeConfiguration = runtimeConfiguration;
+            return this;
+        }
 
-		public static class Builder {
+        public EventHandlingDefinition build() {
+            return new EventHandlingDefinition(
+                    subscriptions,
+                    sideComputers,
+                    globalEventConfiguration,
+                    runtimeConfiguration);
+        }
+    }
 
-			private boolean eventOnParameterChanged;
+    public static class EventConfiguration {
 
-			public Builder eventOnParameterChanged(boolean eventOnParameterChanged) {
-				this.eventOnParameterChanged = eventOnParameterChanged;
-				return this;
-			}
+        private final boolean eventOnParameterChanged;
 
-			public EventConfiguration build() {
-				return new EventConfiguration(eventOnParameterChanged);
-			}
-		}
-	}
+        private EventConfiguration(boolean eventOnParameterChanged) {
+            this.eventOnParameterChanged = eventOnParameterChanged;
+        }
+
+        public boolean isEventOnParameterChanged() {
+            return eventOnParameterChanged;
+        }
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        public static class Builder {
+
+            private boolean eventOnParameterChanged;
+
+            public Builder eventOnParameterChanged(boolean eventOnParameterChanged) {
+                this.eventOnParameterChanged = eventOnParameterChanged;
+                return this;
+            }
+
+            public EventConfiguration build() {
+                return new EventConfiguration(eventOnParameterChanged);
+            }
+        }
+    }
+
+    public static class RuntimeConfiguration {
+
+        public enum ShutdownMode {
+            WAIT_FOR_SUBMITTED_TASKS,
+            CANCEL_PENDING_TASKS
+        }
+
+        private final Supplier<ExecutorService> reactionExecutorFactory;
+        private final Duration shutdownTimeout;
+        private final ShutdownMode shutdownMode;
+
+        private RuntimeConfiguration(
+                Supplier<ExecutorService> reactionExecutorFactory,
+                Duration shutdownTimeout,
+                ShutdownMode shutdownMode) {
+            this.reactionExecutorFactory = reactionExecutorFactory != null
+                    ? reactionExecutorFactory
+                    : Executors::newCachedThreadPool;
+            this.shutdownTimeout = shutdownTimeout != null ? shutdownTimeout : Duration.ofSeconds(10);
+            this.shutdownMode = shutdownMode != null ? shutdownMode : ShutdownMode.WAIT_FOR_SUBMITTED_TASKS;
+        }
+
+        public ExecutorService createReactionExecutor() {
+            return reactionExecutorFactory.get();
+        }
+
+        public Duration getShutdownTimeout() {
+            return shutdownTimeout;
+        }
+
+        public ShutdownMode getShutdownMode() {
+            return shutdownMode;
+        }
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        public static class Builder {
+
+            private Supplier<ExecutorService> reactionExecutorFactory;
+            private Duration shutdownTimeout;
+            private ShutdownMode shutdownMode;
+
+            public Builder reactionExecutorFactory(Supplier<ExecutorService> reactionExecutorFactory) {
+                this.reactionExecutorFactory = Objects.requireNonNull(reactionExecutorFactory, "reactionExecutorFactory");
+                return this;
+            }
+
+            public Builder shutdownTimeout(Duration shutdownTimeout) {
+                this.shutdownTimeout = shutdownTimeout;
+                return this;
+            }
+
+            public Builder shutdownMode(ShutdownMode shutdownMode) {
+                this.shutdownMode = shutdownMode;
+                return this;
+            }
+
+            public RuntimeConfiguration build() {
+                return new RuntimeConfiguration(reactionExecutorFactory, shutdownTimeout, shutdownMode);
+            }
+        }
+    }
 }

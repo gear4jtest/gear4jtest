@@ -1,36 +1,24 @@
 package io.github.gear4jtest.core.engine.strategy;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import io.github.gear4jtest.core.api.behavior.Processor;
 import io.github.gear4jtest.core.api.behavior.SkipDecision;
 import io.github.gear4jtest.core.api.behavior.SkipPhase;
 import io.github.gear4jtest.core.api.behavior.StationSkipper;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
-import io.github.gear4jtest.core.event.OperationCompletedEvent;
-import io.github.gear4jtest.core.event.OperationStartedEvent;
 import io.github.gear4jtest.core.exception.StationExecutionException;
 import io.github.gear4jtest.core.persistence.StationLog;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class AbstractStationStrategy<S extends AbstractStation> implements StationExecutionStrategy<S> {
 
+    @SuppressWarnings("unchecked")
     @Override
     public StationLog run(S station, Object input, StationExecutionContext context, StationRunner runner) {
-        if (context.getGlobalContext().getEventManager() != null) {
-            context.getGlobalContext().getEventManager().publish(
-                    new OperationStartedEvent(
-                            context.getGlobalContext().getPipelineId(),
-                            context.getGlobalContext().getExecutionId(),
-                            station.getId(),
-                            input));
-        }
-
         Object result = null;
         Exception mainException = null;
-
         try {
             setUp(station, input, context);
 
@@ -75,16 +63,6 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
                         context.getRecord().addErrorHandlerException(e);
                     }
                 }
-            }
-
-            if (context.getGlobalContext().getEventManager() != null) {
-                context.getGlobalContext().getEventManager().publish(
-                        new OperationCompletedEvent(
-                                context.getGlobalContext().getPipelineId(),
-                                context.getGlobalContext().getExecutionId(),
-                                station.getId(),
-                                input,
-                                result));
             }
 
             return context.getRecord();
@@ -173,11 +151,9 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
     }
 
     protected void setUp(S station, Object input, StationExecutionContext operationExecution) {
-        // no-op
     }
 
     protected void release(S station, Object result, StationExecutionContext context, List<Throwable> errors) {
-        // no-op
     }
 
     protected <T> T clonePayload(T payload, StationExecutionContext context) {

@@ -1,14 +1,12 @@
 package io.github.gear4jtest.core.engine.runner;
 
-import java.util.List;
-
 import io.github.gear4jtest.core.api.behavior.BaseError;
 import io.github.gear4jtest.core.api.behavior.Condition;
 import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
-import io.github.gear4jtest.core.event.OperationErrorEvent;
 import io.github.gear4jtest.core.persistence.StationLog;
+import java.util.List;
 
 public class StationErrorPolicyExecutor {
 
@@ -20,16 +18,6 @@ public class StationErrorPolicyExecutor {
             Exception exception) {
 
         StationLog record = stationCtx.getRecord();
-
-        if (stationCtx.getGlobalContext().getEventManager() != null) {
-            stationCtx.getGlobalContext().getEventManager().publish(
-                    new OperationErrorEvent(
-                            stationCtx.getGlobalContext().getPipelineId(),
-                            stationCtx.getGlobalContext().getExecutionId(),
-                            station.getId(),
-                            input,
-                            exception));
-        }
 
         if (record.getStatus() != StationLog.Status.RUNNING) {
             record.addErrorHandlerException(exception);

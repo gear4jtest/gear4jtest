@@ -24,6 +24,11 @@ public class OperationBaseEvent extends Event {
 	public String getOperationId() {
 		return operationId;
 	}
+
+	public Object getInput() {
+		return input;
+	}
+
 	public Object getOutput() {
 		return output;
 	}
