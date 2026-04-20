@@ -28,7 +28,6 @@ import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
 import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
 import io.github.gear4jtest.core.event.Event;
-import io.github.gear4jtest.core.event.EventListener;
 import io.github.gear4jtest.core.event.EventSubscription;
 import io.github.gear4jtest.core.exception.AssemblyLineException;
 import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
@@ -191,7 +190,7 @@ public class SimpleChainBuilderTest {
 	}
 
 	@Test
-	public void test_v2_event_management() throws InterruptedException {
+	public void test_v2_event_management() throws AssemblyLineException, InterruptedException {
 		// Given
         var testEventListener = new TestEventListener();
 		var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
@@ -298,7 +297,7 @@ public class SimpleChainBuilderTest {
 				.configuration(configuration()
 						.eventHandling(eventHandling()
 								.subscription(EventSubscription.on(Event.class, new TestEventListener()::handleEvent))
-								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(false).build())
+								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
 						.persistence(persistenceConfiguration()
 								.storeResultObject(true)
@@ -1538,14 +1537,13 @@ public class SimpleChainBuilderTest {
 
 	}
 
-	public static class TestEventListener implements EventListener<Event> {
+	public static class TestEventListener {
 		public int COUNTER;
 
 		public TestEventListener() {
 			COUNTER = 0;
 		}
 
-		@Override
 		public void handleEvent(Event e) {
 			System.out.println(e.getExecutionId() + " " + e.getName() + " " + e.getId());
 			COUNTER++;

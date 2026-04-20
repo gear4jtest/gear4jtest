@@ -31,4 +31,16 @@ class EventHandlingDefinitionTest {
         assertThat(definition.getSubscriptions()).isEmpty();
         assertThat(definition.getSideComputers()).isEmpty();
     }
+
+    @Test
+    void runtimeConfiguration_shouldUseSharedExecutorByDefault() {
+        EventHandlingDefinition.RuntimeConfiguration.ExecutorHandle first =
+                EventHandlingDefinition.RuntimeConfiguration.builder().build().acquireReactionExecutor();
+        EventHandlingDefinition.RuntimeConfiguration.ExecutorHandle second =
+                EventHandlingDefinition.RuntimeConfiguration.builder().build().acquireReactionExecutor();
+
+        assertThat(first.shutdownOnClose()).isFalse();
+        assertThat(second.shutdownOnClose()).isFalse();
+        assertThat(first.executorService()).isSameAs(second.executorService());
+    }
 }

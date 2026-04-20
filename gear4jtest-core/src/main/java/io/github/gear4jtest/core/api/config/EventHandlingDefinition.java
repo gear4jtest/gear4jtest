@@ -17,6 +17,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+/**
+ * Declarative configuration for the asynchronous event runtime attached to a pipeline.
+ *
+ * <p>The event runtime is intentionally <strong>best-effort</strong>. Events are kept in memory and reactions are
+ * submitted to an executor. The runtime does not provide durable persistence, transactional hand-off, replay,
+ * or exactly-once guarantees. Callers that require guaranteed delivery must route events to a durable external
+ * system instead of relying solely on the in-process runtime.</p>
+ *
+ * <p>When the reaction executor is saturated or shutting down, some reactions may be rejected and dropped. Those
+ * drops are logged and exposed through {@code EventManager.snapshotStats()} for observability.</p>
+ */
 public class EventHandlingDefinition {
 
     private final List<EventSubscription<?>> subscriptions;
@@ -102,6 +113,9 @@ public class EventHandlingDefinition {
         }
     }
 
+    /**
+     * Configuration of globally applied event features for a pipeline.
+     */
     public static class EventConfiguration {
 
         private final boolean eventOnParameterChanged;
@@ -145,8 +159,18 @@ public class EventHandlingDefinition {
         }
     }
 
+    /**
+     * Runtime configuration of the asynchronous event dispatcher.
+     *
+     * <p>Unless an explicit executor is provided, the runtime uses a shared bounded executor across runs. This
+     * default favors predictable resource usage over guaranteed acceptance. If the executor saturates, reactions
+     * may be rejected and dropped.</p>
+     */
     public static class RuntimeConfiguration {
 
+        /**
+         * Shutdown behavior for the asynchronous event runtime.
+         */
         public enum ShutdownMode {
             WAIT_FOR_DRAIN,
             DETACH_AND_DRAIN,
@@ -231,12 +255,22 @@ public class EventHandlingDefinition {
             private ShutdownMode shutdownMode;
 
             /**
-             * Backward-compatible alias: providing a factory means one dedicated executor per run.
+             * Backward-compatible alias for configuring one dedicated executor per run.
+             *
+             * <p>A per-run executor provides stronger isolation between runs, but it also means more executors are
+             * created over time. Reactions still remain best-effort and may be dropped if the executor rejects
+             * submissions.</p>
              */
             public Builder reactionExecutorFactory(Supplier<ExecutorService> reactionExecutorFactory) {
                 return perRunReactionExecutorFactory(reactionExecutorFactory);
             }
 
+            /**
+             * Configures one dedicated reaction executor per run.
+             *
+             * <p>This can be useful when runs must not share capacity. The caller remains responsible for choosing
+             * a suitable bounded or unbounded strategy.</p>
+             */
             public Builder perRunReactionExecutorFactory(Supplier<ExecutorService> reactionExecutorFactory) {
                 this.perRunReactionExecutorFactory =
                         Objects.requireNonNull(reactionExecutorFactory, "reactionExecutorFactory");
@@ -244,6 +278,13 @@ public class EventHandlingDefinition {
                 return this;
             }
 
+            /**
+             * Configures a shared reaction executor reused across runs.
+             *
+             * <p>This is the recommended model for most applications because it avoids creating one pool per run and
+             * makes global capacity easier to reason about. If the shared executor saturates, reactions may be
+             * rejected and dropped.</p>
+             */
             public Builder sharedReactionExecutor(ExecutorService sharedReactionExecutor) {
                 this.sharedReactionExecutor = Objects.requireNonNull(sharedReactionExecutor, "sharedReactionExecutor");
                 this.perRunReactionExecutorFactory = null;
@@ -255,6 +296,12 @@ public class EventHandlingDefinition {
                 return this;
             }
 
+            /**
+             * Configures how shutdown behaves once the pipeline itself has completed.
+             *
+             * <p>Drain modes wait for or detach from already accepted work. They do not upgrade the runtime to
+             * guaranteed delivery: a saturated executor may still have rejected some reactions earlier.</p>
+             */
             public Builder shutdownMode(ShutdownMode shutdownMode) {
                 this.shutdownMode = shutdownMode;
                 return this;
