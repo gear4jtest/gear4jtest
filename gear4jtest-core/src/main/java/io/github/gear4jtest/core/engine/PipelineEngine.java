@@ -90,10 +90,9 @@ public class PipelineEngine implements PipelineExecutor {
         if (request.getContext() != null) {
             effectiveContext.putAll(request.getContext());
         }
-        if (eventHandlingDefinition != null
-                && eventHandlingDefinition.getGlobalEventConfiguration().isEventOnParameterChanged()) {
-            effectiveContext.put("gear4j.events.parameters.enabled", Boolean.TRUE);
-        }
+
+        ExecutionContext.EventRuntimeOptions eventRuntimeOptions =
+                ExecutionContext.EventRuntimeOptions.from(eventHandlingDefinition);
 
         IdGenerator effectiveGenerator = Optional.ofNullable(request.getIdGenerator()).orElse(this.defaultIdGenerator);
 
@@ -109,7 +108,8 @@ public class PipelineEngine implements PipelineExecutor {
                 pipeline.getId(),
                 eventManager,
                 effectiveResourceFactory,
-                execution);
+                execution,
+                eventRuntimeOptions);
         ctx.getContext().putAll(effectiveContext);
 
         executionContextRegistry.register(ctx);
@@ -156,11 +156,19 @@ public class PipelineEngine implements PipelineExecutor {
                 }
             }
         } finally {
-            try {
-                eventManager.shutdown();
-            } finally {
-                ctx.getSideComputeContext().cancelPendingFutures();
-                executionContextRegistry.remove(ctx.getExecutionId());
+            EventManager.ShutdownHandle shutdownHandle = eventManager.shutdown();
+            Runnable cleanup = () -> {
+                try {
+                    ctx.getSideComputeContext().cancelUnresolvedFutures();
+                } finally {
+                    executionContextRegistry.remove(ctx.getExecutionId());
+                }
+            };
+
+            if (shutdownHandle.detached()) {
+                shutdownHandle.completion().whenComplete((ignored, error) -> cleanup.run());
+            } else {
+                cleanup.run();
             }
         }
     }

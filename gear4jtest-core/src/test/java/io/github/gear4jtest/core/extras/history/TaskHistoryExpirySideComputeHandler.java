@@ -1,17 +1,18 @@
 package io.github.gear4jtest.core.extras.history;
 
-import io.github.gear4jtest.core.event.OperationCompletedEvent;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.event.StationFinishedEvent;
 import io.github.gear4jtest.core.extras.history.taskhistory.TaskHistoryResult;
 import io.github.gear4jtest.core.extras.pipelinecache.PipelineCacheRuntimeKeys;
-import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.sidecompute.SideComputeHandler;
 
-public final class TaskHistoryExpirySideComputeHandler<T> implements SideComputeHandler<TaskHistoryResult<T>> {
+public final class TaskHistoryExpirySideComputeHandler<T>
+        implements SideComputeHandler<StationFinishedEvent, TaskHistoryResult<T>> {
 
     @Override
     public void handle(
             String sideComputeKey,
-            OperationCompletedEvent event,
+            StationFinishedEvent event,
             TaskHistoryResult<T> value,
             ExecutionContext executionContext) {
 

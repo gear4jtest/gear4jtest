@@ -17,13 +17,11 @@ import io.github.gear4jtest.core.api.station.SignalStation;
 import io.github.gear4jtest.core.api.station.UnaryIfElseContainerStation;
 import io.github.gear4jtest.core.api.station.UnaryWorkStation;
 import io.github.gear4jtest.core.api.station.WorkStation;
-import io.github.gear4jtest.core.event.EventBus;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition.EventConfiguration;
 import io.github.gear4jtest.core.api.AssemblyLine.Configuration;
 import io.github.gear4jtest.core.api.station.IteratorStation.ListAccumulator;
 import io.github.gear4jtest.core.api.station.IteratorStation.SetAccumulator;
-import io.github.gear4jtest.core.event.SimpleEventBus;
 import io.github.gear4jtest.core.api.config.StationConfigurationDefinition;
 
 public final class ElementModelBuilders {
@@ -43,9 +41,6 @@ public final class ElementModelBuilders {
 		return new BaseError.SafeError.Builder<>(SignalType.STOP, throwableType);
 	}
 
-	public static SimpleEventBus.Builder simpleBus(String name) {
-		return new SimpleEventBus.Builder().id(name);
-	}
 
 	public static EventConfiguration.Builder eventConfiguration() {
 		return new EventConfiguration.Builder();
@@ -109,13 +104,6 @@ public final class ElementModelBuilders {
 		return new PersistenceConfiguration.Builder();
 	}
 
-	public static <T extends EventBus> PersistenceConfiguration.Builder customEventBus(Class<T> clazz) {
-		return new PersistenceConfiguration.Builder();
-	}
-
-	public static <T extends SimpleEventBus> PersistenceConfiguration.Builder eventBus(Class<T> clazz) {
-		return new PersistenceConfiguration.Builder();
-	}
 
 	public static <IN, OUT> SequenceStation.Builder<IN, OUT> chain(String id, AbstractStation<IN, OUT> step) {
 		return SequenceStation.Builder.<IN>create(id)

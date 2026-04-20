@@ -18,6 +18,11 @@ import java.util.function.Function;
 public class WorkerParamsInjector implements Processor {
 
     @Override
+    public FailureMode beforeExecutionFailureMode() {
+        return FailureMode.FAIL_STATION;
+    }
+
+    @Override
     public <I> void beforeExecution(I input, StationExecutionContext operationExecution) {
         var processingParameters = StationContextUtils.getProcessingParameters(operationExecution);
         var transformer = StationContextUtils.getRawTransformer(operationExecution);
@@ -62,8 +67,9 @@ public class WorkerParamsInjector implements Processor {
             StationExecutionContext operationExecution,
             ResolvedParameters.Resolution<?> resolution,
             Object value) {
-        if (!Boolean.TRUE.equals(
-                operationExecution.getGlobalContext().getContext().get("gear4j.events.parameters.enabled"))) {
+        if (!operationExecution.getGlobalContext()
+                .getEventRuntimeOptions()
+                .isParameterResolvedEventsEnabled()) {
             return;
         }
 

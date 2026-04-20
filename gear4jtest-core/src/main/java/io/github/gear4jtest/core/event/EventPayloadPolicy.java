@@ -1,0 +1,75 @@
+package io.github.gear4jtest.core.event;
+
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+/**
+ * Controls which built-in station event payloads are exposed to asynchronous event consumers.
+ * <p>
+ * User custom events remain fully user-defined. This policy only affects payloads attached by the core runtime
+ * when it publishes built-in station events.
+ */
+public interface EventPayloadPolicy {
+
+    Object mapStationInput(Object input, StationExecutionContext stationExecutionContext);
+
+    default Object mapStationOutput(Object output, StationExecutionContext stationExecutionContext) {
+        return output;
+    }
+
+    static EventPayloadPolicy passthrough() {
+        return new EventPayloadPolicy() {
+            @Override
+            public Object mapStationInput(Object input, StationExecutionContext stationExecutionContext) {
+                return input;
+            }
+
+            @Override
+            public Object mapStationOutput(Object output, StationExecutionContext stationExecutionContext) {
+                return output;
+            }
+        };
+    }
+
+    static EventPayloadPolicy discard() {
+        return new EventPayloadPolicy() {
+            @Override
+            public Object mapStationInput(Object input, StationExecutionContext stationExecutionContext) {
+                return null;
+            }
+
+            @Override
+            public Object mapStationOutput(Object output, StationExecutionContext stationExecutionContext) {
+                return null;
+            }
+        };
+    }
+
+    static EventPayloadPolicy keepIf(Predicate<Object> predicate) {
+        Objects.requireNonNull(predicate, "predicate");
+        return new EventPayloadPolicy() {
+            @Override
+            public Object mapStationInput(Object input, StationExecutionContext stationExecutionContext) {
+                return predicate.test(input) ? input : null;
+            }
+
+            @Override
+            public Object mapStationOutput(Object output, StationExecutionContext stationExecutionContext) {
+                return predicate.test(output) ? output : null;
+            }
+        };
+    }
+
+    static EventPayloadPolicy keepOnlyTypes(Class<?>... allowedTypes) {
+        Objects.requireNonNull(allowedTypes, "allowedTypes");
+        Set<Class<?>> allowed = Arrays.stream(allowedTypes)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toUnmodifiableSet());
+        return keepIf(value -> value != null
+                && allowed.stream().anyMatch(allowedType -> allowedType.isAssignableFrom(value.getClass())));
+    }
+}

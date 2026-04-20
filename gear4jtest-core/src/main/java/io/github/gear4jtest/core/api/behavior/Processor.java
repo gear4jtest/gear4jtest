@@ -3,12 +3,24 @@ package io.github.gear4jtest.core.api.behavior;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 
 /**
- * Un processor qui intervient avant l'exécution de l'opération.
- * (Tu peux ajouter afterExecution plus tard si besoin.)
+ * Processor hook executed around a station invocation.
  */
 public interface Processor {
 
-	<I> void beforeExecution(I input, StationExecutionContext ctx) throws Exception;
+    enum FailureMode {
+        CONTINUE,
+        FAIL_STATION
+    }
 
-	void afterExecution(Object result, StationExecutionContext context);
+    <I> void beforeExecution(I input, StationExecutionContext ctx) throws Exception;
+
+    void afterExecution(Object result, StationExecutionContext context);
+
+    default FailureMode beforeExecutionFailureMode() {
+        return FailureMode.CONTINUE;
+    }
+
+    default FailureMode afterExecutionFailureMode() {
+        return FailureMode.CONTINUE;
+    }
 }

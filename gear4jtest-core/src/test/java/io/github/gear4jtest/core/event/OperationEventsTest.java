@@ -1,62 +1,73 @@
 package io.github.gear4jtest.core.event;
 
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.gear4jtest.core.persistence.StationLog;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-class OperationEventsTest {
+class StationEventsTest {
 
     @Test
-    void operationBaseEvent_shouldExtendEventAndStorePipelineAndExecution() {
+    void stationStartedEvent_shouldExposeCorrelationFields() {
         UUID executionId = UUID.randomUUID();
-        OperationBaseEvent event = new OperationBaseEvent(
+        UUID stationExecutionId = UUID.randomUUID();
+        UUID parentOperationId = UUID.randomUUID();
+
+        StationStartedEvent event = new StationStartedEvent(
                 "pipeline-1",
                 executionId,
-                "CUSTOM_TYPE",
+                stationExecutionId,
                 "operation-1",
-                "input"
-        );
+                parentOperationId,
+                "item-42",
+                "input");
 
-        assertThat(event).isInstanceOf(Event.class);
         assertThat(event.getPipelineId()).isEqualTo("pipeline-1");
         assertThat(event.getExecutionId()).isEqualTo(executionId);
-        assertThat(event.getName()).isEqualTo("CUSTOM_TYPE");
+        assertThat(event.getStationExecutionId()).isEqualTo(stationExecutionId);
+        assertThat(event.getOperationId()).isEqualTo("operation-1");
+        assertThat(event.getParentOperationId()).isEqualTo(parentOperationId);
+        assertThat(event.getItemId()).isEqualTo("item-42");
+        assertThat(event.getInput()).isEqualTo("input");
+        assertThat(event.getName()).isEqualTo("StationStartedEvent");
     }
 
     @Test
-    void operationStartedEvent_shouldHaveTypeOperationStarted() {
-        String pipelineId = "pipeline-1";
-        UUID executionId = UUID.randomUUID();
-        String operationId = "op-42";
+    void stationFinishedEvent_shouldExposeFinalStatusAndError() {
+        RuntimeException boom = new RuntimeException("boom");
+        StationFinishedEvent event = new StationFinishedEvent(
+                "pipeline-1",
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "operation-1",
+                null,
+                "item-42",
+                "input",
+                StationLog.Status.FAILED,
+                null,
+                boom);
 
-        OperationStartedEvent event =
-                new OperationStartedEvent(pipelineId, executionId, operationId, "input");
-
-        assertThat(event.getPipelineId()).isEqualTo(pipelineId);
-        assertThat(event.getExecutionId()).isEqualTo(executionId);
-        // Comportement ATTENDU :
-        assertThat(event.getName()).isEqualTo("OPERATION_STARTED");
+        assertThat(event.getStatus()).isEqualTo(StationLog.Status.FAILED);
+        assertThat(event.getError()).isSameAs(boom);
+        assertThat(event.isSuccessful()).isFalse();
     }
 
     @Test
-    void operationCompletedEvent_shouldHaveTypeOperationCompleted() {
-        UUID executionId = UUID.randomUUID();
-        OperationCompletedEvent event =
-                new OperationCompletedEvent("pipeline", executionId, "op", "in", "out");
+    void parameterResolvedEvent_shouldExposeResolutionMetadata() {
+        ParameterResolvedEvent event = new ParameterResolvedEvent(
+                "pipeline-1",
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "operation-1",
+                null,
+                "item-42",
+                "customer-param",
+                true,
+                String.class.getName());
 
-        assertThat(event.getName()).isEqualTo("OPERATION_COMPLETED");
-    }
-
-    @Test
-    void operationErrorEvent_shouldHaveTypeOperationError() {
-        UUID executionId = UUID.randomUUID();
-        Exception cause = new RuntimeException("boom");
-        OperationErrorEvent event =
-                new OperationErrorEvent("pipeline", executionId, "op", "input", cause);
-
-        assertThat(event.getName()).isEqualTo("OPERATION_ERROR");
-        // Pas de getter sur exception pour l’instant, donc on ne peut pas l’asserter proprement.
+        assertThat(event.getParameterDescriptor()).isEqualTo("customer-param");
+        assertThat(event.isCacheHit()).isTrue();
+        assertThat(event.getValueType()).isEqualTo(String.class.getName());
     }
 }

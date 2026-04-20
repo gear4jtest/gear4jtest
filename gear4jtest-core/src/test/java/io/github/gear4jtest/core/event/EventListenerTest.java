@@ -1,60 +1,65 @@
 package io.github.gear4jtest.core.event;
 
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
-/**
- * Tests de la logique de reflection dans EventListener.isAcceptable(...).
- */
-class EventListenerTest {
+class EventSubscriptionTest {
 
-    static class StartedEventListener implements EventListener<OperationStartedEvent> {
-        @Override
-        public void handleEvent(OperationStartedEvent e) {
-            // no-op
-        }
-    }
+    @Test
+    void accepts_shouldReturnTrueWhenEventMatchesTypeAndPredicate() {
+        EventSubscription<StationFinishedEvent> subscription = EventSubscription.on(
+                StationFinishedEvent.class,
+                event -> event.getOperationId().equals("step-1") && event.isSuccessful(),
+                event -> {});
 
-    static class GenericEventListener implements EventListener<Event> {
-        @Override
-        public void handleEvent(Event e) {
-            // no-op
-        }
+        StationFinishedEvent event = new StationFinishedEvent(
+                "pipe",
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "step-1",
+                null,
+                "item-1",
+                "input",
+                io.github.gear4jtest.core.persistence.StationLog.Status.SUCCEEDED,
+                "output",
+                null);
+
+        assertThat(subscription.accepts(event)).isTrue();
     }
 
     @Test
-    void isAcceptable_shouldReturnTrueForMatchingSubtype() {
-        EventListener<OperationStartedEvent> listener = new StartedEventListener();
-        OperationStartedEvent event =
-                new OperationStartedEvent("pipe", UUID.randomUUID(), "op", "input");
+    void accepts_shouldReturnFalseWhenEventTypeDoesNotMatch() {
+        EventSubscription<StationFinishedEvent> subscription =
+                EventSubscription.on(StationFinishedEvent.class, event -> {});
 
-        boolean acceptable = listener.isAcceptable(event);
+        Event other = new Event("pipe", UUID.randomUUID());
 
-        assertThat(acceptable).isTrue();
+        assertThat(subscription.accepts(other)).isFalse();
     }
 
     @Test
-    void isAcceptable_shouldReturnFalseForNonMatchingSubtype() {
-        EventListener<OperationStartedEvent> listener = new StartedEventListener();
-        OperationCompletedEvent otherEvent =
-                new OperationCompletedEvent("pipe", UUID.randomUUID(), "op", "in", "out");
+    void handle_shouldCastAndForwardTypedEvent() throws Exception {
+        AtomicReference<ParameterResolvedEvent> seen = new AtomicReference<>();
 
-        boolean acceptable = listener.isAcceptable(otherEvent);
+        EventSubscription<ParameterResolvedEvent> subscription =
+                EventSubscription.on(ParameterResolvedEvent.class, seen::set);
 
-        assertThat(acceptable).isFalse();
-    }
+        ParameterResolvedEvent event = new ParameterResolvedEvent(
+                "pipe",
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "step-1",
+                null,
+                "item-1",
+                "customer-param",
+                false,
+                String.class.getName());
 
-    @Test
-    void isAcceptable_shouldWorkWithGenericEventListener() {
-        UUID executionId = UUID.randomUUID();
-        EventListener<Event> listener = new GenericEventListener();
-        Event event = new Event("pipe", executionId, "GENERIC");
+        subscription.handle(event);
 
-        boolean acceptable = listener.isAcceptable(event);
-
-        assertThat(acceptable).isTrue();
+        assertThat(seen.get()).isSameAs(event);
     }
 }

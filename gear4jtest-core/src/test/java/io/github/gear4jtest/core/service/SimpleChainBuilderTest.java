@@ -29,6 +29,7 @@ import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
 import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventListener;
+import io.github.gear4jtest.core.event.EventSubscription;
 import io.github.gear4jtest.core.exception.AssemblyLineException;
 import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -144,7 +145,7 @@ public class SimpleChainBuilderTest {
 						.build())
 				.configuration(configuration()
 						.eventHandling(eventHandling()
-								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
+								.subscription(EventSubscription.on(Event.class, new TestEventListener()::handleEvent))
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
 						.build())
@@ -190,7 +191,7 @@ public class SimpleChainBuilderTest {
 	}
 
 	@Test
-	public void test_v2_event_management() throws AssemblyLineException, InterruptedException {
+	public void test_v2_event_management() throws InterruptedException {
 		// Given
         var testEventListener = new TestEventListener();
 		var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
@@ -216,7 +217,7 @@ public class SimpleChainBuilderTest {
 						.build())
 				.configuration(configuration()
 						.eventHandling(eventHandling()
-								.bus(simpleBus("main").eventListener(testEventListener).build())
+								.subscription(EventSubscription.on(Event.class, testEventListener::handleEvent))
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
 						.build())
@@ -261,7 +262,7 @@ public class SimpleChainBuilderTest {
 				.contains("");
 
         TimeUnit.MILLISECONDS.sleep(500);
-		assertThat(testEventListener.getCounter()).isEqualTo(14);
+		assertThat(testEventListener.getCounter()).isEqualTo(15);
 	}
 
 	@Test
@@ -296,8 +297,8 @@ public class SimpleChainBuilderTest {
 						.build())
 				.configuration(configuration()
 						.eventHandling(eventHandling()
-								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
-								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
+								.subscription(EventSubscription.on(Event.class, new TestEventListener()::handleEvent))
+								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(false).build())
 								.build())
 						.persistence(persistenceConfiguration()
 								.storeResultObject(true)
@@ -466,7 +467,7 @@ public class SimpleChainBuilderTest {
 						.returns(Arrays::asList))
 				.configuration(configuration()
 						.eventHandling(eventHandling()
-								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
+								.subscription(EventSubscription.on(Event.class, new TestEventListener()::handleEvent))
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
 						.build())
@@ -526,7 +527,7 @@ public class SimpleChainBuilderTest {
 						.returns(Arrays::asList))
 				.configuration(configuration()
 						.eventHandling(eventHandling()
-								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
+								.subscription(EventSubscription.on(Event.class, new TestEventListener()::handleEvent))
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
 						.build())
@@ -590,7 +591,7 @@ public class SimpleChainBuilderTest {
 								.build()))
 				.configuration(configuration()
 						.eventHandling(eventHandling()
-								.bus(simpleBus("main").eventListener(new TestEventListener()).build())
+								.subscription(EventSubscription.on(Event.class, new TestEventListener()::handleEvent))
 								.globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build())
 								.build())
 						.build())

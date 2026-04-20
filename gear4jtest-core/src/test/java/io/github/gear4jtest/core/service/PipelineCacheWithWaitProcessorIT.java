@@ -1,11 +1,6 @@
 package io.github.gear4jtest.core.service;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.ExecutionResult;
@@ -21,10 +16,7 @@ import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
 import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
-import io.github.gear4jtest.core.event.Event;
-import io.github.gear4jtest.core.event.EventBus;
-import io.github.gear4jtest.core.event.EventListener;
-import io.github.gear4jtest.core.event.OperationCompletedEvent;
+import io.github.gear4jtest.core.event.StationFinishedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.extras.history.ExpirableDependencyTracker;
 import io.github.gear4jtest.core.extras.history.fingerprint.JsonSha256FingerprintStrategy;
@@ -40,13 +32,17 @@ import io.github.gear4jtest.core.extras.pipelinecache.PipelineCacheKeyFactory;
 import io.github.gear4jtest.core.extras.pipelinecache.PipelineCachePolicy;
 import io.github.gear4jtest.core.extras.pipelinecache.PipelineCacheRuntimeKeys;
 import io.github.gear4jtest.core.sidecompute.SideComputeHandler;
-import io.github.gear4jtest.core.sidecompute.SideComputeListener;
 import io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessor;
 import io.github.gear4jtest.core.sidecompute.SideComputer;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class PipelineCacheWithWaitProcessorIT {
 
@@ -56,10 +52,7 @@ class PipelineCacheWithWaitProcessorIT {
 
         PipelineCacheExtension cacheExtension =
                 new PipelineCacheExtension(
-                        new PipelineCachePolicy(
-                                true,
-                                NoDependencyCachePolicy.DO_NOT_CACHE,
-                                null),
+                        new PipelineCachePolicy(true, NoDependencyCachePolicy.DO_NOT_CACHE, null),
                         new PipelineCacheKeyFactory(
                                 new JsonSha256FingerprintStrategy<>(),
                                 new WhitelistedContextFingerprintStrategy(
@@ -92,19 +85,14 @@ class PipelineCacheWithWaitProcessorIT {
 
         ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
 
-        SideComputer<TaskHistoryResult<CustomerDto>, CustomerDto> sideComputer =
-                SideComputer.<TaskHistoryResult<CustomerDto>>builder(
+        SideComputer<StationFinishedEvent, TaskHistoryResult<CustomerDto>, CustomerDto> sideComputer =
+                SideComputer.<TaskHistoryResult<CustomerDto>>onStationSuccess(
                                 "trigger-customer-fetch",
                                 "customer-profile")
                         .computer(event -> trackingTaskHistoryApi.get("customer:" + event.getOutput(), CustomerDto.class))
                         .addHandler(new TaskHistoryExpirySideComputeHandler<>())
                         .map(TaskHistoryResult::value)
                         .build();
-
-        SideComputeListener sideComputeListener =
-                new SideComputeListener(List.of(sideComputer), executionContextRegistry);
-
-        EventBus synchronousBus = new SynchronousEventBus(List.of(sideComputeListener));
 
         WorkStation<String, String> triggerStation =
                 ElementModelBuilders
@@ -119,7 +107,10 @@ class PipelineCacheWithWaitProcessorIT {
                                 "join-sidecompute-and-taskhistory",
                                 JoinUsingContextOperator.class)
                         .addProcessor(SideComputeWaitProcessor.builder("customer-profile").build())
-                        .parameter(JoinUsingContextOperator::getCustomerParam, (Function<WorkerParamsInjector.InterpretationContext<String>, CustomerDto>) iCtx -> iCtx.getSideCompute().get("customer-profile", CustomerDto.class))
+                        .parameter(
+                                JoinUsingContextOperator::getCustomerParam,
+                                (Function<WorkerParamsInjector.InterpretationContext<String>, CustomerDto>)
+                                        iCtx -> iCtx.getSideCompute().get("customer-profile", CustomerDto.class))
                         .build();
 
         AssemblyLine<String, FinalOutput> pipeline =
@@ -129,7 +120,12 @@ class PipelineCacheWithWaitProcessorIT {
                                 AssemblyLine.Configuration.builder()
                                         .eventHandling(
                                                 EventHandlingDefinition.builder()
-                                                        .bus(synchronousBus)
+                                                        .sideComputer(sideComputer)
+                                                        .runtimeConfiguration(
+                                                                EventHandlingDefinition.RuntimeConfiguration.builder()
+                                                                        .reactionExecutorFactory(Executors::newSingleThreadExecutor)
+                                                                        .shutdownTimeout(Duration.ofSeconds(2))
+                                                                        .build())
                                                         .build())
                                         .build())
                         .then(triggerStation)
@@ -138,8 +134,7 @@ class PipelineCacheWithWaitProcessorIT {
 
         PipelineEngine pipelineEngine =
                 PipelineEngine.builder()
-                        .runnerChainFactory(
-                                new RunnerChainFactory(StrategyRegistry.defaultRegistry()))
+                        .runnerChainFactory(new RunnerChainFactory(StrategyRegistry.defaultRegistry()))
                         .resourceFactory(resourceFactory)
                         .extensionResolver(new RuntimeExtensionResolver(List.of()))
                         .executionContextRegistry(executionContextRegistry)
@@ -152,10 +147,7 @@ class PipelineCacheWithWaitProcessorIT {
                         .with(cacheExtension)
                         .build();
 
-        // 1er run
-        var currentTime = System.currentTimeMillis();
         ExecutionResult<FinalOutput> firstResult = pipelineEngine.execute(pipeline, request);
-        System.out.println(System.currentTimeMillis() - currentTime);
 
         assertThat(firstResult.isSuccess()).isTrue();
         assertThat(firstResult.getResult()).isEqualTo(new FinalOutput("John", "ORD-42"));
@@ -163,19 +155,12 @@ class PipelineCacheWithWaitProcessorIT {
         assertThat(joinExecutions).hasValue(1);
         assertThat(rawTaskHistoryApi.totalCalls()).isEqualTo(2);
 
-        // 2e run => cache pipeline
-        currentTime = System.currentTimeMillis();
         ExecutionResult<FinalOutput> secondResult = pipelineEngine.execute(pipeline, request);
-        System.out.println(System.currentTimeMillis() - currentTime);
 
         assertThat(secondResult.isSuccess()).isTrue();
         assertThat(secondResult.getResult()).isEqualTo(new FinalOutput("John", "ORD-42"));
-
-        // aucune réexécution métier
         assertThat(triggerExecutions).hasValue(1);
         assertThat(joinExecutions).hasValue(1);
-
-        // aucune requête taskHistory supplémentaire
         assertThat(rawTaskHistoryApi.totalCalls()).isEqualTo(2);
     }
 
@@ -193,16 +178,12 @@ class PipelineCacheWithWaitProcessorIT {
         }
     }
 
-    /**
-     * Ici, l'opérateur NE WAIT PAS lui-même.
-     * Il suppose que SideComputeWaitProcessor a déjà fait le travail.
-     * Il lit juste la donnée side-compute disponible dans le contexte.
-     */
     static final class JoinUsingContextOperator implements Operator<String, FinalOutput> {
         private final AtomicInteger executions;
         private final TaskHistoryApi taskHistoryApi;
 
-        private WorkerParamsInjector.Parameter<CustomerDto> customer = WorkerParamsInjector.Parameter.<CustomerDto>newBuilder().build();
+        private WorkerParamsInjector.Parameter<CustomerDto> customer =
+                WorkerParamsInjector.Parameter.<CustomerDto>newBuilder().build();
 
         JoinUsingContextOperator(AtomicInteger executions, TaskHistoryApi taskHistoryApi) {
             this.executions = executions;
@@ -212,18 +193,6 @@ class PipelineCacheWithWaitProcessorIT {
         @Override
         public FinalOutput transform(String input, StationExecutionContext operationExecution) {
             executions.incrementAndGet();
-
-            // À adapter selon le point exact où ton SideComputeWaitProcessor range la donnée.
-            // Idée attendue :
-            // - soit dans ExecutionContext.context
-            // - soit dans un param injecté
-            // - soit dans une capability/context technique
-            //
-            // Exemple si le processor range la valeur dans le context global :
-//            CustomerDto customer =
-//                    (CustomerDto) operationExecution.getGlobalContext()
-//                            .getContext()
-//                            .get("customer-profile");
 
             TaskHistoryResult<OrderDto> order =
                     taskHistoryApi.get("order:" + input, OrderDto.class);
@@ -237,12 +206,12 @@ class PipelineCacheWithWaitProcessorIT {
     }
 
     static final class TaskHistoryExpirySideComputeHandler<T>
-            implements SideComputeHandler<TaskHistoryResult<T>> {
+            implements SideComputeHandler<StationFinishedEvent, TaskHistoryResult<T>> {
 
         @Override
         public void handle(
                 String sideComputeKey,
-                OperationCompletedEvent event,
+                StationFinishedEvent event,
                 TaskHistoryResult<T> value,
                 ExecutionContext executionContext) {
 
@@ -300,30 +269,6 @@ class PipelineCacheWithWaitProcessorIT {
                 return (T) joinOperator;
             }
             throw new IllegalArgumentException("Unsupported resource: " + clazz);
-        }
-    }
-
-    static final class SynchronousEventBus implements EventBus {
-        private final List<EventListener<?>> listeners;
-
-        SynchronousEventBus(List<EventListener<?>> listeners) {
-            this.listeners = listeners;
-        }
-
-        @Override
-        public void run() {}
-
-        @Override
-        public void stopBus() {}
-
-        @Override
-        @SuppressWarnings({"rawtypes", "unchecked"})
-        public void acceptEvent(Event event) {
-            for (EventListener listener : listeners) {
-                if (listener.isAcceptable(event)) {
-                    listener.handleEvent(event);
-                }
-            }
         }
     }
 

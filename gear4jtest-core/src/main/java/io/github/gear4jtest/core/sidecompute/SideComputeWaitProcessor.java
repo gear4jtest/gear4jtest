@@ -13,6 +13,11 @@ import io.github.gear4jtest.core.api.behavior.Processor;
 
 public final class SideComputeWaitProcessor implements Processor {
 
+    @Override
+    public FailureMode beforeExecutionFailureMode() {
+        return FailureMode.FAIL_STATION;
+    }
+
     public enum OnTimeout {
         FAIL_PIPELINE,
         USE_FALLBACK,

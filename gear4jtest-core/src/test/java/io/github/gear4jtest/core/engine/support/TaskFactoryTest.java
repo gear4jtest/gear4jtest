@@ -12,12 +12,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
+import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.StationKind;
 import io.github.gear4jtest.core.event.EventManager;
+import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.persistence.AssemblyRun;
 import io.github.gear4jtest.core.persistence.StationLog;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
@@ -40,7 +42,7 @@ class TaskFactoryTest {
         ExecutionContext globalContext = new ExecutionContext(
                 UUID.randomUUID(),
                 "pipeline-1",
-                new EventManager(List.of()),
+                new EventManager(EventHandlingDefinition.builder().build(), new ExecutionContextRegistry()),
                 resourceFactory,
                 assemblyRun);
 

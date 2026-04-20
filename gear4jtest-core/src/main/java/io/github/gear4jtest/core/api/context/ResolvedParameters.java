@@ -7,8 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class ResolvedParameters {
 
-    public record Resolution<T>(T value, boolean cacheHit) {
-    }
+    public record Resolution<T>(T value, boolean cacheHit) {}
 
     private final Map<WorkerParamsInjector.ParameterModel<?, ?>, Object> resolved = new ConcurrentHashMap<>();
 
@@ -24,18 +23,20 @@ public final class ResolvedParameters {
     public <T> Resolution<T> resolve(
             WorkerParamsInjector.ParameterModel<?, ?> rawModel,
             WorkerParamsInjector.InterpretationContext<?> interpretationCtx) {
-        Objects.requireNonNull(rawModel, "model");
+        Objects.requireNonNull(rawModel, "rawModel");
         Objects.requireNonNull(interpretationCtx, "interpretationCtx");
 
-        if (resolved.containsKey(rawModel)) {
-            return new Resolution<>(get(rawModel), true);
-        }
+        final boolean[] computedHere = {false};
 
         @SuppressWarnings("unchecked")
         T value = (T) resolved.computeIfAbsent(
                 rawModel,
-                model -> ((WorkerParamsInjector.ParameterModel<?, T>) model).getValue(interpretationCtx));
-        return new Resolution<>(value, false);
+                model -> {
+                    computedHere[0] = true;
+                    return ((WorkerParamsInjector.ParameterModel<?, T>) model).getValue(interpretationCtx);
+                });
+
+        return new Resolution<>(value, !computedHere[0]);
     }
 
     public <T> T resolveIfAbsent(

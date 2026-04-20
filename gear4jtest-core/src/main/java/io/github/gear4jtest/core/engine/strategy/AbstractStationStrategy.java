@@ -34,6 +34,9 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
                         processor.beforeExecution(input, context);
                     } catch (Exception e) {
                         context.getRecord().addErrorHandlerException(e);
+                        if (processor.beforeExecutionFailureMode() == Processor.FailureMode.FAIL_STATION) {
+                            throw e;
+                        }
                     }
                 }
             }
@@ -58,9 +61,12 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
             if (station.getProcessors() != null && !station.getProcessors().isEmpty()) {
                 for (Processor processor : (List<Processor>) station.getProcessors()) {
                     try {
-                        processor.afterExecution(input, context);
+                        processor.afterExecution(result, context);
                     } catch (Exception e) {
                         context.getRecord().addErrorHandlerException(e);
+                        if (processor.afterExecutionFailureMode() == Processor.FailureMode.FAIL_STATION) {
+                            throw e;
+                        }
                     }
                 }
             }

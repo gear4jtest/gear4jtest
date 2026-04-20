@@ -61,7 +61,7 @@ public class StationLifecycleRunner implements StationRunner {
                 stationCtx.getOperationId(),
                 record.getParentOperationId(),
                 record.getItemId(),
-                input));
+                runCtx.getEventRuntimeOptions().getEventPayloadPolicy().mapStationInput(input, stationCtx)));
     }
 
     private void publishFinishedEvent(
@@ -79,9 +79,9 @@ public class StationLifecycleRunner implements StationRunner {
                 stationCtx.getOperationId(),
                 result.getParentOperationId(),
                 result.getItemId(),
-                input,
+                runCtx.getEventRuntimeOptions().getEventPayloadPolicy().mapStationInput(input, stationCtx),
                 result.getStatus(),
-                result.getOutput(),
+                runCtx.getEventRuntimeOptions().getEventPayloadPolicy().mapStationOutput(result.getOutput(), stationCtx),
                 extractPrimaryError(result)));
     }
 

@@ -1,5 +1,11 @@
 package io.github.gear4jtest.core.api.context;
 
+import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.event.EventManager;
+import io.github.gear4jtest.core.event.EventPayloadPolicy;
+import io.github.gear4jtest.core.persistence.AssemblyRun;
+import io.github.gear4jtest.core.sidecompute.SideComputeContext;
+import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
@@ -7,12 +13,39 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-import io.github.gear4jtest.core.event.EventManager;
-import io.github.gear4jtest.core.spi.factory.ResourceFactory;
-import io.github.gear4jtest.core.persistence.AssemblyRun;
-import io.github.gear4jtest.core.sidecompute.SideComputeContext;
-
 public class ExecutionContext {
+
+    public static final class EventRuntimeOptions {
+
+        private final boolean parameterResolvedEventsEnabled;
+        private final EventPayloadPolicy eventPayloadPolicy;
+
+        private EventRuntimeOptions(boolean parameterResolvedEventsEnabled, EventPayloadPolicy eventPayloadPolicy) {
+            this.parameterResolvedEventsEnabled = parameterResolvedEventsEnabled;
+            this.eventPayloadPolicy = eventPayloadPolicy != null ? eventPayloadPolicy : EventPayloadPolicy.passthrough();
+        }
+
+        public static EventRuntimeOptions disabled() {
+            return new EventRuntimeOptions(false, EventPayloadPolicy.passthrough());
+        }
+
+        public static EventRuntimeOptions from(EventHandlingDefinition definition) {
+            if (definition == null) {
+                return disabled();
+            }
+            EventHandlingDefinition.EventConfiguration configuration = definition.getGlobalEventConfiguration();
+            return new EventRuntimeOptions(
+                    configuration.isEventOnParameterChanged(), configuration.getEventPayloadPolicy());
+        }
+
+        public boolean isParameterResolvedEventsEnabled() {
+            return parameterResolvedEventsEnabled;
+        }
+
+        public EventPayloadPolicy getEventPayloadPolicy() {
+            return eventPayloadPolicy;
+        }
+    }
 
     private final ThreadLocal<String> currentItemId = new ThreadLocal<>();
     private final ThreadLocal<Deque<UUID>> parentStack = ThreadLocal.withInitial(ArrayDeque::new);
@@ -25,17 +58,30 @@ public class ExecutionContext {
     private final SideComputeContext sideComputeContext = new SideComputeContext();
     private final Map<String, Object> stationScopedResources = new ConcurrentHashMap<>();
     private final AssemblyRun assemblyRun;
+    private final EventRuntimeOptions eventRuntimeOptions;
 
-    public ExecutionContext(UUID executionId,
-                            String pipelineId,
-                            EventManager eventManager,
-                            ResourceFactory resourceFactory,
-                            AssemblyRun assemblyRun) {
+    public ExecutionContext(
+            UUID executionId,
+            String pipelineId,
+            EventManager eventManager,
+            ResourceFactory resourceFactory,
+            AssemblyRun assemblyRun) {
+        this(executionId, pipelineId, eventManager, resourceFactory, assemblyRun, EventRuntimeOptions.disabled());
+    }
+
+    public ExecutionContext(
+            UUID executionId,
+            String pipelineId,
+            EventManager eventManager,
+            ResourceFactory resourceFactory,
+            AssemblyRun assemblyRun,
+            EventRuntimeOptions eventRuntimeOptions) {
         this.pipelineId = pipelineId;
         this.executionId = executionId;
         this.eventManager = eventManager;
         this.resourceFactory = resourceFactory;
         this.assemblyRun = assemblyRun;
+        this.eventRuntimeOptions = eventRuntimeOptions != null ? eventRuntimeOptions : EventRuntimeOptions.disabled();
     }
 
     public String getPipelineId() {
@@ -70,6 +116,10 @@ public class ExecutionContext {
         return sideComputeContext;
     }
 
+    public EventRuntimeOptions getEventRuntimeOptions() {
+        return eventRuntimeOptions;
+    }
+
     public String getCurrentItemId() {
         return currentItemId.get();
     }
@@ -102,11 +152,6 @@ public class ExecutionContext {
         }
     }
 
-    /**
-     * Cache de ressources \"scopées run\" (une seule instance par station et par type).
-     *
-     * <p>Cas d'usage : réutiliser une instance d'Operator stateful au sein d'un même run.
-     */
     public <T> T getOrCreateStationResource(String stationId, Class<T> type, Supplier<T> factory) {
         String key = stationId + ":" + type.getName();
         Object value = stationScopedResources.computeIfAbsent(key, k -> factory.get());
