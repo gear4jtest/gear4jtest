@@ -1,5 +1,7 @@
 package io.github.gear4jtest.core.engine.strategy;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
+
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,8 +29,10 @@ import io.github.gear4jtest.core.engine.support.ExecutorDecorator;
 import io.github.gear4jtest.core.engine.support.TaskFactory;
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.persistence.AssemblyRun;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 import org.junit.jupiter.api.Test;
@@ -62,7 +66,7 @@ class ContainerStationStrategyTest {
 
         // Then
         assertThat(result).isNull();
-        assertThat(operationExecution.getRecord().getStatus()).isEqualTo(StationLog.Status.FAILED);
+        assertThat(operationExecution.getRecord().getStatus()).isEqualTo(StationLogStatus.FAILED);
         assertThat(operationExecution.getRecord().getErrorMessage()).isEqualTo("boom");
 
         verify(runner).run(any(), same(first), same(operationExecution));
@@ -101,7 +105,7 @@ class ContainerStationStrategyTest {
         // Then
         assertThat(result).isEqualTo(Arrays.asList(null, "B"));
         assertThat(operationExecution.getRecord().getStatus())
-                .isNotIn(StationLog.Status.FAILED, StationLog.Status.CANCELLED, StationLog.Status.STOPPED);
+                .isNotIn(StationLogStatus.FAILED, StationLogStatus.CANCELLED, StationLogStatus.STOPPED);
 
         verify(runner).run(any(), same(first), same(operationExecution));
         verify(runner).run(any(), same(second), same(operationExecution));
@@ -138,7 +142,7 @@ class ContainerStationStrategyTest {
 
         // Then
         assertThat(result).isEqualTo(Arrays.asList(null, "B"));
-        assertThat(operationExecution.getRecord().getStatus()).isEqualTo(StationLog.Status.FAILED);
+        assertThat(operationExecution.getRecord().getStatus()).isEqualTo(StationLogStatus.FAILED);
         assertThat(operationExecution.getRecord().getErrorMessage()).isEqualTo("boom");
 
         verify(runner).run(any(), same(first), same(operationExecution));
@@ -207,7 +211,7 @@ class ContainerStationStrategyTest {
 
             // Then
             assertThat(result).isNull();
-            assertThat(operationExecution.getRecord().getStatus()).isEqualTo(StationLog.Status.CANCELLED);
+            assertThat(operationExecution.getRecord().getStatus()).isEqualTo(StationLogStatus.CANCELLED);
         } finally {
             executorService.shutdownNow();
         }
@@ -254,7 +258,7 @@ class ContainerStationStrategyTest {
             // Then
             assertThat(result).isEqualTo(Arrays.asList(null, "B"));
             assertThat(operationExecution.getRecord().getStatus())
-                    .isNotIn(StationLog.Status.FAILED, StationLog.Status.CANCELLED, StationLog.Status.STOPPED);
+                    .isNotIn(StationLogStatus.FAILED, StationLogStatus.CANCELLED, StationLogStatus.STOPPED);
         } finally {
             executorService.shutdownNow();
         }
@@ -313,7 +317,7 @@ class ContainerStationStrategyTest {
 
             // Then
             assertThat(result).isNull();
-            assertThat(operationExecution.getRecord().getStatus()).isEqualTo(StationLog.Status.FAILED);
+            assertThat(operationExecution.getRecord().getStatus()).isEqualTo(StationLogStatus.FAILED);
             assertThat(operationExecution.getRecord().getErrorMessage()).isEqualTo("boom");
             assertThat(elapsedMillis).isLessThan(1_500L);
             assertThat(slowInterrupted.await(500, TimeUnit.MILLISECONDS)).isTrue();
@@ -323,7 +327,7 @@ class ContainerStationStrategyTest {
     }
 
     private static StationExecutionContext newOperationExecutionContext(String operationId) {
-        AssemblyRun assemblyRun = new AssemblyRun(UUID.randomUUID(), "pipeline-1", Map.of());
+        AssemblyRunTrace assemblyRun = new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of());
         var resourceFactory = new ResourceFactory() {
             @Override
             public <T> T getResource(Class<T> clazz) {
@@ -337,9 +341,9 @@ class ContainerStationStrategyTest {
                 resourceFactory,
                 assemblyRun);
 
-        StationLog parentRecord = StationLog.start(globalContext.getExecutionId(), operationId, null);
+        StationLogTrace parentRecord = StationLogTrace.start(globalContext.getExecutionId(), operationId, null);
         parentRecord.setContext(new HashMap<>());
-        parentRecord.setStatus(StationLog.Status.RUNNING);
+        parentRecord.setStatus(StationLogStatus.RUNNING);
 
         return new DefaultStationExecutionContext(
                 operationId,
@@ -349,26 +353,26 @@ class ContainerStationStrategyTest {
                 new ExecutionSupport(ExecutorDecorator.noOp(), new TaskFactory(), null));
     }
 
-    private static StationLog successLog(String operationId, Object output) {
-        StationLog log = newLog(operationId);
+    private static StationLogTrace successLog(String operationId, Object output) {
+        StationLogTrace log = newLog(operationId);
         log.markSuccess(output);
         return log;
     }
 
-    private static StationLog failedLog(String operationId, String message) {
-        StationLog log = newLog(operationId);
+    private static StationLogTrace failedLog(String operationId, String message) {
+        StationLogTrace log = newLog(operationId);
         log.markFailed(new RuntimeException(message));
         return log;
     }
 
-    private static StationLog cancelledLog(String operationId, String message) {
-        StationLog log = newLog(operationId);
+    private static StationLogTrace cancelledLog(String operationId, String message) {
+        StationLogTrace log = newLog(operationId);
         log.markCancelled(new RuntimeException(message));
         return log;
     }
 
-    private static StationLog newLog(String operationId) {
-        StationLog log = StationLog.start(UUID.randomUUID(), operationId, null);
+    private static StationLogTrace newLog(String operationId) {
+        StationLogTrace log = StationLogTrace.start(UUID.randomUUID(), operationId, null);
         log.setContext(new HashMap<>());
         return log;
     }

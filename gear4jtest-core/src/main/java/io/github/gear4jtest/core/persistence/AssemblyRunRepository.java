@@ -9,32 +9,32 @@ public interface AssemblyRunRepository {
     default void initialize() {
     }
 
-    void save(AssemblyRun execution);
+    void save(AssemblyRunRecord execution);
 
-    void update(AssemblyRun execution);
+    void update(AssemblyRunRecord execution);
 
-    Optional<AssemblyRun> findById(UUID id);
+    Optional<AssemblyRunRecord> findById(UUID id);
 
-    List<AssemblyRun> findByPipelineId(String pipelineId);
+    List<AssemblyRunRecord> findByPipelineId(String pipelineId);
 
-    List<AssemblyRun> findByStatus(ExecutionStatus status);
+    List<AssemblyRunRecord> findByStatus(ExecutionStatus status);
 
     void delete(UUID id);
 
-    List<AssemblyRun> findAll();
+    List<AssemblyRunRecord> findAll();
 
-    List<StationLog> findRootLogsByRunId(UUID runId);
+    List<StationLogRecord> findRootLogsByRunId(UUID runId);
 
-    List<StationLog> findChildLogsByRunId(UUID runId, UUID parentLogId);
+    List<StationLogRecord> findChildLogsByRunId(UUID runId, UUID parentLogId);
 
     long countChildLogsByRunId(UUID runId, UUID parentLogId);
 
     /**
      * Helper debug/test uniquement.
      */
-    List<StationLog> findAllLogsByRunId(UUID runId);
+    List<StationLogRecord> findAllLogsByRunId(UUID runId);
 
-    default Optional<AssemblyRunDetails> findDetailsById(UUID runId) {
-        return findById(runId).map(run -> new AssemblyRunDetails(run, findRootLogsByRunId(runId)));
+    default Optional<AssemblyRunView> findViewById(UUID runId) {
+        return findById(runId).map(run -> new AssemblyRunView(run, findRootLogsByRunId(runId)));
     }
 }

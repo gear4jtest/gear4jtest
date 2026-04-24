@@ -7,12 +7,12 @@ import java.util.function.Supplier;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class TaskFactory {
 
-    public Callable<StationLog> createTask(
+    public Callable<StationLogTrace> createTask(
             Supplier<?> inputSupplier,
             AbstractStation station,
             StationRunner runner,

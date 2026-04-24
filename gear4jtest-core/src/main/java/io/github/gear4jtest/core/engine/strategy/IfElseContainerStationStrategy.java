@@ -1,5 +1,7 @@
 package io.github.gear4jtest.core.engine.strategy;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
+
 import java.util.List;
 
 import io.github.gear4jtest.core.api.config.FlowConfig;
@@ -7,7 +9,7 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.api.station.UnaryIfElseContainerStation;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class IfElseContainerStationStrategy extends AbstractStationStrategy<UnaryIfElseContainerStation> {
@@ -25,7 +27,7 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
             StationExecutionContext operationExecution) {
 
         FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
-        StationLog selectedBranchLog = null;
+        StationLogTrace selectedBranchLog = null;
 
         for (ContainerBaseStation.Branch element : (List<ContainerBaseStation.Branch>) station.getPipelines()) {
             if (element.getCondition() == null
@@ -47,8 +49,8 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
             return null;
         }
 
-        if (selectedBranchLog.getStatus() == StationLog.Status.SUCCEEDED
-                || selectedBranchLog.getStatus() == StationLog.Status.SKIPPED) {
+        if (selectedBranchLog.getStatus() == StationLogStatus.SUCCEEDED
+                || selectedBranchLog.getStatus() == StationLogStatus.SKIPPED) {
             return selectedBranchLog.getOutput();
         }
 

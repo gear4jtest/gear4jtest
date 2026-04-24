@@ -2,10 +2,10 @@ package io.github.gear4jtest.core.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.junit.jupiter.api.Test;
 
 class InMemoryAssemblyRunRepositoryTest {
@@ -15,13 +15,13 @@ class InMemoryAssemblyRunRepositoryTest {
         InMemoryAssemblyRunRepository repo = InMemoryAssemblyRunRepository.INSTANCE;
 
         UUID id = UUID.randomUUID();
-        AssemblyRun exec = new AssemblyRun(id, "pipe", Map.of());
+        AssemblyRunRecord exec = AssemblyRunRecord.from(new AssemblyRunTrace(id, "pipe", Map.of()));
 
         repo.save(exec);
-        Optional<AssemblyRun> res = repo.findById(id);
+        Optional<AssemblyRunRecord> res = repo.findById(id);
 
         assertThat(res).isPresent();
-        assertThat(res.get().getPipelineId()).isEqualTo("pipe");
+        assertThat(res.get().pipelineId()).isEqualTo("pipe");
     }
 
     @Test
@@ -29,12 +29,12 @@ class InMemoryAssemblyRunRepositoryTest {
         InMemoryAssemblyRunRepository repo = InMemoryAssemblyRunRepository.INSTANCE;
 
         UUID id = UUID.randomUUID();
-        AssemblyRun v1 = new AssemblyRun(id, "pipe", Map.of());
-        AssemblyRun v2 = new AssemblyRun(id, "pipe2", Map.of());
+        AssemblyRunRecord v1 = AssemblyRunRecord.from(new AssemblyRunTrace(id, "pipe", Map.of()));
+        AssemblyRunRecord v2 = AssemblyRunRecord.from(new AssemblyRunTrace(id, "pipe2", Map.of()));
 
         repo.save(v1);
         repo.update(v2);
 
-        assertThat(repo.findById(id).get().getPipelineId()).isEqualTo("pipe2");
+        assertThat(repo.findById(id).get().pipelineId()).isEqualTo("pipe2");
     }
 }

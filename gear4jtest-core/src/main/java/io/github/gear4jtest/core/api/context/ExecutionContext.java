@@ -3,7 +3,7 @@ package io.github.gear4jtest.core.api.context;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.event.EventPayloadPolicy;
-import io.github.gear4jtest.core.persistence.AssemblyRun;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.sidecompute.SideComputeContext;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import java.util.ArrayDeque;
@@ -57,7 +57,7 @@ public class ExecutionContext {
     private final ResourceFactory resourceFactory;
     private final SideComputeContext sideComputeContext = new SideComputeContext();
     private final Map<String, Object> stationScopedResources = new ConcurrentHashMap<>();
-    private final AssemblyRun assemblyRun;
+    private final AssemblyRunTrace assemblyRun;
     private final EventRuntimeOptions eventRuntimeOptions;
 
     public ExecutionContext(
@@ -65,7 +65,7 @@ public class ExecutionContext {
             String pipelineId,
             EventManager eventManager,
             ResourceFactory resourceFactory,
-            AssemblyRun assemblyRun) {
+            AssemblyRunTrace assemblyRun) {
         this(executionId, pipelineId, eventManager, resourceFactory, assemblyRun, EventRuntimeOptions.disabled());
     }
 
@@ -74,7 +74,7 @@ public class ExecutionContext {
             String pipelineId,
             EventManager eventManager,
             ResourceFactory resourceFactory,
-            AssemblyRun assemblyRun,
+            AssemblyRunTrace assemblyRun,
             EventRuntimeOptions eventRuntimeOptions) {
         this.pipelineId = pipelineId;
         this.executionId = executionId;
@@ -132,7 +132,7 @@ public class ExecutionContext {
         }
     }
 
-    public AssemblyRun getPipelineExecution() {
+    public AssemblyRunTrace getPipelineExecution() {
         return assemblyRun;
     }
 

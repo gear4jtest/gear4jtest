@@ -15,7 +15,8 @@
 //import io.github.gear4jtest.core.api.context.StationExecutionContext;
 //import io.github.gear4jtest.core.api.station.StationKind;
 //import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
-//import io.github.gear4jtest.core.persistence.StationLog;
+//import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 //import org.junit.jupiter.api.Test;
 //
 //import static org.assertj.core.api.Assertions.*;
@@ -47,8 +48,8 @@
 //        ExecutionContext globalContext =
 //                new ExecutionContext(UUID.randomUUID(), "pipe", eventManager, resourceFactory, executionManager, null);
 //
-//        StationLog record =
-//                StationLog.start("exec", "op", null);
+//        StationLogTrace record =
+//                StationLogTrace.start("exec", "op", null);
 //        DefaultStationExecutionContext opCtx =
 //                new DefaultStationExecutionContext("op", StationKind.PROCESSING, globalContext, record);
 //
@@ -105,8 +106,8 @@
 //    void doExecute_shouldDelegateToTypedTransformer() {
 //        ExecutionContext globalContext =
 //                new ExecutionContext(UUID.randomUUID(), "pipe", null, null, null, null);
-//        StationLog record =
-//                StationLog.start("exec", "op", null);
+//        StationLogTrace record =
+//                StationLogTrace.start("exec", "op", null);
 //        DefaultStationExecutionContext opCtx =
 //                new DefaultStationExecutionContext("op", StationKind.PROCESSING, globalContext, record);
 //
@@ -127,8 +128,8 @@
 //    void doExecute_shouldThrowIfNoTransformerPresentInContext() {
 //        ExecutionContext globalContext =
 //                new ExecutionContext(UUID.randomUUID(), "pipe", null, null, null, null);
-//        StationLog record =
-//                StationLog.start("exec", "op", null);
+//        StationLogTrace record =
+//                StationLogTrace.start("exec", "op", null);
 //        DefaultStationExecutionContext opCtx =
 //                new DefaultStationExecutionContext("op", StationKind.PROCESSING, globalContext, record);
 //

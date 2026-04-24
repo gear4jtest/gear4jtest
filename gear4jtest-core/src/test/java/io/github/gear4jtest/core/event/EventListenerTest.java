@@ -1,5 +1,7 @@
 package io.github.gear4jtest.core.event;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.UUID;
@@ -23,7 +25,7 @@ class EventSubscriptionTest {
                 null,
                 "item-1",
                 "input",
-                io.github.gear4jtest.core.persistence.StationLog.Status.SUCCEEDED,
+                io.github.gear4jtest.core.model.StationLogStatus.SUCCEEDED,
                 "output",
                 null);
 

@@ -50,7 +50,6 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
         return itemIdResolver;
     }
 
-
     public FlowConfig getFlowConfig() {
         return flowConfig;
     }

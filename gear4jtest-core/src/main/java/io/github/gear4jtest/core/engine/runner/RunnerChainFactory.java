@@ -9,7 +9,7 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.engine.ResolvedExtensions;
 import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +69,7 @@ public class RunnerChainFactory {
         }
 
         @Override
-        public StationLog run(Object input, AbstractStation station, StationExecutionContext ctx) {
+        public StationLogTrace run(Object input, AbstractStation station, StationExecutionContext ctx) {
             if (delegate == null) {
                 throw new IllegalStateException("Runner chain has not been fully initialized");
             }

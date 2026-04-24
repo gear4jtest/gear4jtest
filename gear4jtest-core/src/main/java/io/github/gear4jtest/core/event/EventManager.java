@@ -237,7 +237,6 @@ public final class EventManager {
         }
     }
 
-
     /**
      * Returns a point-in-time snapshot of the asynchronous runtime counters.
      *

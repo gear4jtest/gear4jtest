@@ -41,7 +41,6 @@ public final class ElementModelBuilders {
 		return new BaseError.SafeError.Builder<>(SignalType.STOP, throwableType);
 	}
 
-
 	public static EventConfiguration.Builder eventConfiguration() {
 		return new EventConfiguration.Builder();
 	}
@@ -103,7 +102,6 @@ public final class ElementModelBuilders {
 	public static PersistenceConfiguration.Builder persistenceConfiguration() {
 		return new PersistenceConfiguration.Builder();
 	}
-
 
 	public static <IN, OUT> SequenceStation.Builder<IN, OUT> chain(String id, AbstractStation<IN, OUT> step) {
 		return SequenceStation.Builder.<IN>create(id)

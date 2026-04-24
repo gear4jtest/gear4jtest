@@ -1,14 +1,14 @@
 package io.github.gear4jtest.core.api;
 
-import io.github.gear4jtest.core.persistence.AssemblyRun;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 
 public class ExecutionResult<T> {
     private final T result;
     private final boolean success;
-    private final AssemblyRun execution;
+    private final AssemblyRunTrace execution;
     private final Exception error;
 
-    public ExecutionResult(T result, boolean success, AssemblyRun execution, Exception error) {
+    public ExecutionResult(T result, boolean success, AssemblyRunTrace execution, Exception error) {
         this.result = result;
         this.success = success;
         this.execution = execution;
@@ -18,16 +18,16 @@ public class ExecutionResult<T> {
 
     public T getResult() { return result; }
     public boolean isSuccess() { return success; }
-    public AssemblyRun getExecution() {
+    public AssemblyRunTrace getExecution() {
         return this.execution;
     }
     public Exception getError() { return error; }
 
-    public static <OUT> ExecutionResult<OUT> success(OUT result, AssemblyRun exec) {
+    public static <OUT> ExecutionResult<OUT> success(OUT result, AssemblyRunTrace exec) {
         return new ExecutionResult<>(result, true, exec, null);
     }
 
-    public static <OUT> ExecutionResult<OUT> failure(Exception message, AssemblyRun exec) {
+    public static <OUT> ExecutionResult<OUT> failure(Exception message, AssemblyRunTrace exec) {
         return new ExecutionResult<>(null, false, exec, message);
     }
 }

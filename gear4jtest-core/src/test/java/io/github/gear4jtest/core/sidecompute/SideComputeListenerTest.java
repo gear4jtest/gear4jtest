@@ -7,7 +7,8 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.persistence.AssemblyRun;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import java.time.Duration;
 import java.util.Map;
@@ -42,7 +43,7 @@ class SideComputeCustomEventTest {
                 "pipe",
                 eventManager,
                 new NoOpResourceFactory(),
-                new AssemblyRun(UUID.randomUUID(), "pipe", Map.of()));
+                new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of()));
         registry.register(executionContext);
 
         try {

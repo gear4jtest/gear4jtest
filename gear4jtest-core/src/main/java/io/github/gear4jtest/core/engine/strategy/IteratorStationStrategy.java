@@ -1,5 +1,7 @@
 package io.github.gear4jtest.core.engine.strategy;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Function;
@@ -10,7 +12,7 @@ import io.github.gear4jtest.core.api.config.FlowDecision;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.IteratorStation;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class IteratorStationStrategy extends AbstractStationStrategy<IteratorStation> {
@@ -41,12 +43,12 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
                     ? station.getItemIdResolver().resolve(element, index, operationExecution.getGlobalContext())
                     : station.getId() + "#item-" + index;
 
-            StationLog chainResult = runner.run(element, station.getChain(), operationExecution);
+            StationLogTrace chainResult = runner.run(element, station.getChain(), operationExecution);
 
             FlowDecision decision = FlowDecider.decide(chainResult, config);
             switch (decision) {
                 case PROCEED -> {
-                    if (chainResult.getStatus() == StationLog.Status.SUCCEEDED) {
+                    if (chainResult.getStatus() == StationLogStatus.SUCCEEDED) {
                         results.add(chainResult.getOutput());
                     }
                 }

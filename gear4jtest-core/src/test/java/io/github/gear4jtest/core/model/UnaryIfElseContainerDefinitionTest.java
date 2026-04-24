@@ -7,7 +7,8 @@
 //import org.junit.jupiter.api.Test;
 //
 //import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
-//import io.github.gear4jtest.core.persistence.StationLog;
+//import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 //
 //class UnaryIfElseContainerDefinitionTest {
 //
@@ -50,9 +51,9 @@
 //                builder.conditionally(yesOp, containsYes)
 //                       .elseOp(noOp);
 //
-//        StationLog rec = container.run("this is yes", ctx);
+//        StationLogTrace rec = container.run("this is yes", ctx);
 //
-//        assertThat(rec.getStatus()).isEqualTo(StationLog.Status.SUCCEEDED);
+//        assertThat(rec.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
 //        assertThat(rec.getOutput(String.class)).isEqualTo("YES");
 //    }
 //
@@ -73,9 +74,9 @@
 //                builder.conditionally(yesOp, containsYes)
 //                       .elseOp(noOp);
 //
-//        StationLog rec = container.run("nothing here", ctx);
+//        StationLogTrace rec = container.run("nothing here", ctx);
 //
-//        assertThat(rec.getStatus()).isEqualTo(StationLog.Status.SUCCEEDED);
+//        assertThat(rec.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
 //        assertThat(rec.getOutput(String.class)).isEqualTo("NO");
 //    }
 //}

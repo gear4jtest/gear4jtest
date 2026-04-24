@@ -5,8 +5,8 @@ import java.util.Objects;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.execution.AssemblyRunManager;
-import io.github.gear4jtest.core.persistence.AssemblyRun;
-import io.github.gear4jtest.core.persistence.StationLogSnapshot;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.extension.LifecycleFailureMode;
 import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
 import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
@@ -30,12 +30,12 @@ public class PersistenceExtension implements RunLifecycleExtension, StationLifec
     }
 
     @Override
-    public void onRunStarted(ExecutionContext ctx, AssemblyRun run) {
+    public void onRunStarted(ExecutionContext ctx, AssemblyRunTrace run) {
         manager.start(run);
     }
 
     @Override
-    public void onRunCompleted(ExecutionContext ctx, AssemblyRun run) {
+    public void onRunCompleted(ExecutionContext ctx, AssemblyRunTrace run) {
         manager.end(run);
     }
 
@@ -43,7 +43,7 @@ public class PersistenceExtension implements RunLifecycleExtension, StationLifec
     public void onStationStarted(
             ExecutionContext runCtx,
             StationExecutionContext stationCtx,
-            StationLogSnapshot snapshot) {
+            StationLogRecord snapshot) {
         manager.append(snapshot);
     }
 
@@ -51,7 +51,7 @@ public class PersistenceExtension implements RunLifecycleExtension, StationLifec
     public void onStationCompleted(
             ExecutionContext runCtx,
             StationExecutionContext stationCtx,
-            StationLogSnapshot snapshot) {
+            StationLogRecord snapshot) {
         manager.append(snapshot);
     }
 }

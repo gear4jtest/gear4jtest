@@ -7,7 +7,9 @@ CREATE TABLE IF NOT EXISTS assembly_run (
     status VARCHAR(50) NOT NULL,
     start_time DATETIME(6),
     end_time DATETIME(6),
-    error_message LONGTEXT
+    error_message LONGTEXT,
+    parent_execution_id VARCHAR(36),
+    root_execution_id VARCHAR(36)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS station_log (
@@ -21,6 +23,7 @@ CREATE TABLE IF NOT EXISTS station_log (
     error_message LONGTEXT,
     error_handler_messages LONGTEXT,
     context JSON,
+    item_id VARCHAR(255),
 
     CONSTRAINT fk_pipeline_exec
     FOREIGN KEY (pipeline_execution_id)

@@ -1,25 +1,27 @@
 package io.github.gear4jtest.core.engine.runner;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
+
 import io.github.gear4jtest.core.api.behavior.BaseError;
 import io.github.gear4jtest.core.api.behavior.Condition;
 import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import java.util.List;
 
 public class StationErrorPolicyExecutor {
 
     @SuppressWarnings("unchecked")
-    public StationLog apply(
+    public StationLogTrace apply(
             AbstractStation<?, ?> station,
             Object input,
             StationExecutionContext stationCtx,
             Exception exception) {
 
-        StationLog record = stationCtx.getRecord();
+        StationLogTrace record = stationCtx.getRecord();
 
-        if (record.getStatus() != StationLog.Status.RUNNING) {
+        if (record.getStatus() != StationLogStatus.RUNNING) {
             record.addErrorHandlerException(exception);
             return record;
         }
@@ -80,11 +82,11 @@ public class StationErrorPolicyExecutor {
         };
     }
 
-    private StationLog applyIgnorePolicy(
+    private StationLogTrace applyIgnorePolicy(
             AbstractStation station,
             Object input,
             StationExecutionContext stationCtx,
-            StationLog record,
+            StationLogTrace record,
             Exception originalException) {
 
         if (station.getFallbackOperator() != null) {

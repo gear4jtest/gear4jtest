@@ -16,9 +16,9 @@ import io.github.gear4jtest.core.engine.support.ExecutorDecorator;
 import io.github.gear4jtest.core.engine.support.TaskFactory;
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.persistence.AssemblyRun;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.extension.LifecycleFailureMode;
 import io.github.gear4jtest.core.spi.extension.RunInterceptorExtension;
 import io.github.gear4jtest.core.spi.extension.RunInterceptorExtension.RunChain;
@@ -97,7 +97,7 @@ public class PipelineEngine implements PipelineExecutor {
         IdGenerator effectiveGenerator = Optional.ofNullable(request.getIdGenerator()).orElse(this.defaultIdGenerator);
 
         var executionId = effectiveGenerator.generate();
-        var execution = new AssemblyRun(executionId, pipeline.getId(), new HashMap<>(effectiveContext));
+        var execution = new AssemblyRunTrace(executionId, pipeline.getId(), new HashMap<>(effectiveContext));
 
         var effectiveResourceFactory = Optional.ofNullable(request.getResourceFactory())
                 .or(() -> Optional.ofNullable(this.resourceFactory))
@@ -179,9 +179,9 @@ public class PipelineEngine implements PipelineExecutor {
             StationRunner rootRunner,
             StationExecutionContext rootContext,
             ExecutionContext ctx,
-            AssemblyRun execution) {
+            AssemblyRunTrace execution) {
 
-        StationLog rootLog = rootRunner.run(request.getInput(), pipeline.getRootStation(), rootContext);
+        StationLogTrace rootLog = rootRunner.run(request.getInput(), pipeline.getRootStation(), rootContext);
         Object result = rootLog.getOutput();
 
         return switch (rootLog.getStatus()) {
@@ -207,7 +207,7 @@ public class PipelineEngine implements PipelineExecutor {
 
     private static void finalizeRunFromResult(
             ExecutionContext ctx,
-            AssemblyRun execution,
+            AssemblyRunTrace execution,
             ExecutionResult<?> result,
             Throwable fatalError) {
 
@@ -249,7 +249,7 @@ public class PipelineEngine implements PipelineExecutor {
     private void invokeRunStartedSafely(
             RunLifecycleExtension lifecycleExtension,
             ExecutionContext ctx,
-            AssemblyRun execution) {
+            AssemblyRunTrace execution) {
         try {
             lifecycleExtension.onRunStarted(ctx, execution);
         } catch (Error error) {
@@ -271,7 +271,7 @@ public class PipelineEngine implements PipelineExecutor {
     private void invokeRunCompletedSafely(
             RunLifecycleExtension lifecycleExtension,
             ExecutionContext ctx,
-            AssemblyRun execution) {
+            AssemblyRunTrace execution) {
         try {
             lifecycleExtension.onRunCompleted(ctx, execution);
         } catch (Error error) {
@@ -293,7 +293,6 @@ public class PipelineEngine implements PipelineExecutor {
     public static Builder builder() {
         return new Builder();
     }
-
 
     public static final class Builder {
         private ResourceFactory resourceFactory;

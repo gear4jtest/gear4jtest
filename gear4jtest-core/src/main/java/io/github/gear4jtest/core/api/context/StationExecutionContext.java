@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.api.station.StationKind;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 
 /**
  * Contexte runtime d'une exécution d'opération.
@@ -22,7 +22,7 @@ public interface StationExecutionContext {
 
     ExecutionContext getGlobalContext();
 
-    StationLog getRecord();
+    StationLogTrace getRecord();
 
     ExecutionSupport getSupport();
 

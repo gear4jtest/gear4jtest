@@ -12,8 +12,10 @@
 //import io.github.gear4jtest.core.api.station.WorkStation;
 //import io.github.gear4jtest.core.api.context.StationExecutionContext;
 //import io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepository;
-//import io.github.gear4jtest.core.persistence.StationLog;
-//import io.github.gear4jtest.core.persistence.AssemblyRun;
+//import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
+//import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 //import org.junit.jupiter.api.Test;
 //
 //import static org.assertj.core.api.Assertions.assertThat;
@@ -90,23 +92,23 @@
 //
 //        // ----------- Vérification de la persistance en mémoire -----------
 //
-//        Optional<AssemblyRun> execOpt =
+//        Optional<AssemblyRunTrace> execOpt =
 //                InMemoryAssemblyRunRepository.INSTANCE.findById(result.getExecution().getId());
 //
 //        assertThat(execOpt).isPresent();
 //
-//        AssemblyRun exec = execOpt.get();
+//        AssemblyRunTrace exec = execOpt.get();
 //        assertThat(exec.getPipelineId()).isEqualTo("test-line");
 //        assertThat(exec.getOperations()).hasSize(2);
 //
-//        StationLog first = exec.getOperations().get(0);
-//        StationLog second = exec.getOperations().get(1);
+//        StationLogTrace first = exec.getOperations().get(0);
+//        StationLogTrace second = exec.getOperations().get(1);
 //
 //        assertThat(first.getOperationId()).isEqualTo("upper");
 //        assertThat(second.getOperationId()).isEqualTo("suffix");
 //
-//        assertThat(first.getStatus()).isEqualTo(StationLog.Status.SUCCEEDED);
-//        assertThat(second.getStatus()).isEqualTo(StationLog.Status.SUCCEEDED);
+//        assertThat(first.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
+//        assertThat(second.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
 //
 //        assertThat(second.getOutput(String.class)).isEqualTo("HELLO!");
 //    }

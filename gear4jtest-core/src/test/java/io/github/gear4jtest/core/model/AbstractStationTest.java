@@ -20,7 +20,8 @@
 //import io.github.gear4jtest.core.event.OperationStartedEvent;
 //import io.github.gear4jtest.core.execution.AssemblyRunManager;
 //import io.github.gear4jtest.core.spi.factory.ResourceFactory;
-//import io.github.gear4jtest.core.persistence.StationLog;
+//import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 //
 //class AbstractStationTest {
 //
@@ -101,9 +102,9 @@
 //        RecordingProcessor processor = new RecordingProcessor();
 //        op.processors = List.of(processor);
 //
-//        StationLog record = op.run("hello", globalContext);
+//        StationLogTrace record = op.run("hello", globalContext);
 //
-//        assertThat(record.getStatus()).isEqualTo(StationLog.Status.SUCCEEDED);
+//        assertThat(record.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
 //        assertThat(record.getOutput(String.class)).isEqualTo("HELLO");
 //
 //        assertThat(processor.beforeCount).isEqualTo(1);
@@ -133,9 +134,9 @@
 //
 //        FailingOperation op = new FailingOperation("op-err", StationKind.PROCESSING);
 //
-//        StationLog record = op.run("input", globalContext);
+//        StationLogTrace record = op.run("input", globalContext);
 //
-//        assertThat(record.getStatus()).isEqualTo(StationLog.Status.FAILED);
+//        assertThat(record.getStatus()).isEqualTo(StationLogStatus.FAILED);
 //        assertThat(record.getOutput(Object.class)).isNull();
 //
 ////        verify(executionManager).append(record);
@@ -170,10 +171,10 @@
 //
 //        op.processors = List.of(throwingProcessor);
 //
-//        StationLog record = op.run("hello", globalContext);
+//        StationLogTrace record = op.run("hello", globalContext);
 //
 //        // L'opération reste SUCCEEDED (la logique métier passe)
-//        assertThat(record.getStatus()).isEqualTo(StationLog.Status.SUCCEEDED);
+//        assertThat(record.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
 //        assertThat(record.getOutput(String.class)).isEqualTo("HELLO");
 //
 //        // Les exceptions de processors doivent apparaître dans les throwables

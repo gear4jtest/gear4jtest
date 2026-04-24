@@ -1,6 +1,5 @@
 package io.github.gear4jtest.core.api;
 
-
 /**
  * Interface publique du moteur d'exécution.
  * Utile pour mocker l'engine dans tes tests de contrôleurs API.

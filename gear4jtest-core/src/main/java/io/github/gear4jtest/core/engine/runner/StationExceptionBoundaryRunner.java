@@ -1,11 +1,13 @@
 package io.github.gear4jtest.core.engine.runner;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
+
 import java.util.Objects;
 
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.exception.StationExecutionException;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +25,7 @@ public class StationExceptionBoundaryRunner implements StationRunner {
     }
 
     @Override
-    public StationLog run(Object input, AbstractStation station, StationExecutionContext ctx) {
+    public StationLogTrace run(Object input, AbstractStation station, StationExecutionContext ctx) {
         try {
             return delegate.run(input, station, ctx);
         } catch (Error error) {
@@ -40,8 +42,8 @@ public class StationExceptionBoundaryRunner implements StationRunner {
                         station.getId(),
                         policyFailure);
 
-                StationLog record = ctx.getRecord();
-                if (record.getStatus() == StationLog.Status.RUNNING) {
+                StationLogTrace record = ctx.getRecord();
+                if (record.getStatus() == StationLogStatus.RUNNING) {
                     record.markFailed(effectiveException);
                 } else {
                     record.addErrorHandlerException(effectiveException);

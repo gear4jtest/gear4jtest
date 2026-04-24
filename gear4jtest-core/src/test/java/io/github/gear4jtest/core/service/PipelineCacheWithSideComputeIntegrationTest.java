@@ -1,5 +1,7 @@
 package io.github.gear4jtest.core.service;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
@@ -24,9 +26,10 @@ import io.github.gear4jtest.core.extras.pipelinecache.PipelineCacheKey;
 import io.github.gear4jtest.core.extras.pipelinecache.PipelineCacheKeyFactory;
 import io.github.gear4jtest.core.extras.pipelinecache.PipelineCachePolicy;
 import io.github.gear4jtest.core.extras.pipelinecache.PipelineCacheRuntimeKeys;
-import io.github.gear4jtest.core.persistence.AssemblyRun;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.sidecompute.SideComputeHandler;
 import io.github.gear4jtest.core.sidecompute.SideComputer;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
@@ -300,7 +303,7 @@ class PipelineCacheWithSideComputeIntegrationTest {
             String pipelineId,
             Map<String, Object> context,
             EventManager eventManager) {
-        AssemblyRun assemblyRun = new AssemblyRun(UUID.randomUUID(), pipelineId, context);
+        AssemblyRunTrace assemblyRun = new AssemblyRunTrace(UUID.randomUUID(), pipelineId, context);
         ExecutionContext executionContext =
                 new ExecutionContext(
                         UUID.randomUUID(),
@@ -326,7 +329,7 @@ class PipelineCacheWithSideComputeIntegrationTest {
                 null,
                 null,
                 input,
-                StationLog.Status.SUCCEEDED,
+                StationLogStatus.SUCCEEDED,
                 output,
                 null);
     }

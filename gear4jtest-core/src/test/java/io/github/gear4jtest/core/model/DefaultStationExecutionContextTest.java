@@ -9,7 +9,8 @@
 //import io.github.gear4jtest.core.api.station.StationKind;
 //import org.junit.jupiter.api.Test;
 //
-//import io.github.gear4jtest.core.persistence.StationLog;
+//import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 //
 //class DefaultStationExecutionContextTest {
 //
@@ -17,8 +18,8 @@
 //    void constructor_shouldExposeOperationAndGlobalContext() {
 //        ExecutionContext global =
 //                new ExecutionContext(UUID.randomUUID(), "pipeline-1", null, null, null, null);
-//        StationLog record =
-//                StationLog.start("exec-1", "op-1", null);
+//        StationLogTrace record =
+//                StationLogTrace.start("exec-1", "op-1", null);
 //
 //        DefaultStationExecutionContext ctx =
 //                new DefaultStationExecutionContext("op-1", StationKind.PROCESSING, global, record);
@@ -33,8 +34,8 @@
 //    void capabilities_shouldBeEmptyByDefaultAndReturnValueWhenAdded() {
 //        ExecutionContext global =
 //                new ExecutionContext(UUID.randomUUID(), "pipeline-1", null, null, null, null);
-//        StationLog record =
-//                StationLog.start("exec-1", "op-1", null);
+//        StationLogTrace record =
+//                StationLogTrace.start("exec-1", "op-1", null);
 //
 //        DefaultStationExecutionContext ctx =
 //                new DefaultStationExecutionContext("op-1", StationKind.PROCESSING, global, record);

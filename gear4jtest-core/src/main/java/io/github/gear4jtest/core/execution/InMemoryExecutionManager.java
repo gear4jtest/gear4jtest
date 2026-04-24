@@ -1,33 +1,33 @@
 package io.github.gear4jtest.core.execution;
 
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
+import io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepository;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 import java.util.List;
 import java.util.Objects;
-
-import io.github.gear4jtest.core.persistence.AssemblyRun;
-import io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepository;
-import io.github.gear4jtest.core.persistence.StationLogSnapshot;
 
 public class InMemoryExecutionManager implements AssemblyRunManager {
 
     @Override
-    public void start(AssemblyRun execution) {
+    public void start(AssemblyRunTrace execution) {
         Objects.requireNonNull(execution, "execution must not be null");
-        InMemoryAssemblyRunRepository.INSTANCE.save(execution);
+        InMemoryAssemblyRunRepository.INSTANCE.save(AssemblyRunRecord.from(execution));
     }
 
     @Override
-    public void append(StationLogSnapshot record) {
-        InMemoryAssemblyRunRepository.INSTANCE.saveOperationSnapshot(record);
+    public void append(StationLogRecord record) {
+        InMemoryAssemblyRunRepository.INSTANCE.saveOperationRecord(record);
     }
 
     @Override
-    public void appendAll(List<StationLogSnapshot> records) {
-        InMemoryAssemblyRunRepository.INSTANCE.saveOperationSnapshots(records);
+    public void appendAll(List<StationLogRecord> records) {
+        InMemoryAssemblyRunRepository.INSTANCE.saveOperationRecords(records);
     }
 
     @Override
-    public void end(AssemblyRun finalExecution) {
+    public void end(AssemblyRunTrace finalExecution) {
         Objects.requireNonNull(finalExecution, "finalExecution must not be null");
-        InMemoryAssemblyRunRepository.INSTANCE.update(finalExecution);
+        InMemoryAssemblyRunRepository.INSTANCE.update(AssemblyRunRecord.from(finalExecution));
     }
 }

@@ -14,7 +14,8 @@
 //import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 //import org.junit.jupiter.api.Test;
 //
-//import io.github.gear4jtest.core.persistence.StationLog;
+//import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 //
 //class StationContextUtilsTest {
 //
@@ -31,8 +32,8 @@
 //    void isProcessing_shouldReturnTrueOnlyForProcessingKind() {
 //        ExecutionContext global =
 //                new ExecutionContext(UUID.randomUUID(), "pipe", null, null, null, null);
-//        StationLog record =
-//                StationLog.start("exec", "op", null);
+//        StationLogTrace record =
+//                StationLogTrace.start("exec", "op", null);
 //
 //        DefaultStationExecutionContext ctxProcessing =
 //                new DefaultStationExecutionContext("op", StationKind.PROCESSING, global, record);
@@ -47,8 +48,8 @@
 //    void getRawAndTypedTransformer_shouldReadFromCapabilities() {
 //        ExecutionContext global =
 //                new ExecutionContext(UUID.randomUUID(), "pipe", null, null, null, null);
-//        StationLog record =
-//                StationLog.start("exec", "op", null);
+//        StationLogTrace record =
+//                StationLogTrace.start("exec", "op", null);
 //        DefaultStationExecutionContext ctx =
 //                new DefaultStationExecutionContext("op", StationKind.PROCESSING, global, record);
 //
@@ -67,8 +68,8 @@
 //    void getProcessingParameters_shouldReturnParametersCapabilityIfPresent() {
 //        ExecutionContext global =
 //                new ExecutionContext(UUID.randomUUID(), "pipe", null, null, null, null);
-//        StationLog record =
-//                StationLog.start("exec", "op", null);
+//        StationLogTrace record =
+//                StationLogTrace.start("exec", "op", null);
 //        DefaultStationExecutionContext ctx =
 //                new DefaultStationExecutionContext("op", StationKind.PROCESSING, global, record);
 //

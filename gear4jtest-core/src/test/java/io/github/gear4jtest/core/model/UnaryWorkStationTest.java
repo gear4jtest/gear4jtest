@@ -8,7 +8,8 @@
 //import io.github.gear4jtest.core.api.behavior.Operator;
 //import io.github.gear4jtest.core.api.context.StationExecutionContext;
 //import io.github.gear4jtest.core.api.station.UnaryWorkStation;
-//import io.github.gear4jtest.core.persistence.StationLog;
+//import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 //import org.junit.jupiter.api.Test;
 //
 //import static org.assertj.core.api.Assertions.assertThat;
@@ -41,9 +42,9 @@
 //                .type(UpperCaseOperator.class)
 //                .build();
 //
-//        StationLog rec = def.run("hello", ctx);
+//        StationLogTrace rec = def.run("hello", ctx);
 //
-//        assertThat(rec.getStatus()).isEqualTo(StationLog.Status.SUCCEEDED);
+//        assertThat(rec.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
 //        assertThat(rec.getOutput(String.class)).isEqualTo("HELLO");
 //    }
 //

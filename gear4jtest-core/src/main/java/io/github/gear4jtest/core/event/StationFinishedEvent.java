@@ -1,11 +1,13 @@
 package io.github.gear4jtest.core.event;
 
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.model.StationLogStatus;
+
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import java.util.UUID;
 
 public final class StationFinishedEvent extends StationEvent {
 
-    private final StationLog.Status status;
+    private final StationLogStatus status;
     private final Object output;
     private final Exception error;
 
@@ -17,7 +19,7 @@ public final class StationFinishedEvent extends StationEvent {
             UUID parentOperationId,
             String itemId,
             Object input,
-            StationLog.Status status,
+            StationLogStatus status,
             Object output,
             Exception error) {
         super(pipelineId, executionId, stationExecutionId, operationId, parentOperationId, itemId, input);
@@ -26,7 +28,7 @@ public final class StationFinishedEvent extends StationEvent {
         this.error = error;
     }
 
-    public StationLog.Status getStatus() {
+    public StationLogStatus getStatus() {
         return status;
     }
 
@@ -39,6 +41,6 @@ public final class StationFinishedEvent extends StationEvent {
     }
 
     public boolean isSuccessful() {
-        return status == StationLog.Status.SUCCEEDED;
+        return status == StationLogStatus.SUCCEEDED;
     }
 }

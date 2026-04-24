@@ -7,7 +7,9 @@ CREATE TABLE IF NOT EXISTS assembly_run (
     status VARCHAR(50) NOT NULL,
     start_time TIMESTAMP,
     end_time TIMESTAMP,
-    error_message TEXT
+    error_message TEXT,
+    parent_execution_id UUID,
+    root_execution_id UUID
 );
 
 CREATE TABLE IF NOT EXISTS station_log (
@@ -21,6 +23,7 @@ CREATE TABLE IF NOT EXISTS station_log (
     error_message TEXT,
     error_handler_messages TEXT,
     context JSONB,
+    item_id VARCHAR(255),
 
     CONSTRAINT fk_pipeline_exec
     FOREIGN KEY (pipeline_execution_id)

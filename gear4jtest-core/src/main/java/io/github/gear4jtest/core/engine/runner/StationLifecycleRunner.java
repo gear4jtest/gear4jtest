@@ -5,8 +5,8 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.event.StationFinishedEvent;
 import io.github.gear4jtest.core.event.StationStartedEvent;
-import io.github.gear4jtest.core.persistence.StationLog;
-import io.github.gear4jtest.core.persistence.StationLogSnapshot;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 import java.util.List;
@@ -27,9 +27,9 @@ public class StationLifecycleRunner implements StationRunner {
     }
 
     @Override
-    public StationLog run(Object input, AbstractStation station, StationExecutionContext ctx) {
+    public StationLogTrace run(Object input, AbstractStation station, StationExecutionContext ctx) {
         ExecutionContext runCtx = ctx.getGlobalContext();
-        StationLogSnapshot startedSnapshot = StationLogSnapshot.from(ctx.getRecord());
+        StationLogRecord startedSnapshot = StationLogRecord.from(ctx.getRecord());
 
         publishStartedEvent(runCtx, ctx, input);
 
@@ -37,8 +37,8 @@ public class StationLifecycleRunner implements StationRunner {
             invokeStartedSafely(extension, runCtx, ctx, startedSnapshot);
         }
 
-        StationLog result = delegate.run(input, station, ctx);
-        StationLogSnapshot completedSnapshot = StationLogSnapshot.from(result);
+        StationLogTrace result = delegate.run(input, station, ctx);
+        StationLogRecord completedSnapshot = StationLogRecord.from(result);
 
         publishFinishedEvent(runCtx, ctx, input, result);
 
@@ -53,7 +53,7 @@ public class StationLifecycleRunner implements StationRunner {
         if (runCtx.getEventManager() == null || stationCtx.getRecord() == null) {
             return;
         }
-        StationLog record = stationCtx.getRecord();
+        StationLogTrace record = stationCtx.getRecord();
         runCtx.getEventManager().publish(new StationStartedEvent(
                 runCtx.getPipelineId(),
                 runCtx.getExecutionId(),
@@ -68,7 +68,7 @@ public class StationLifecycleRunner implements StationRunner {
             ExecutionContext runCtx,
             StationExecutionContext stationCtx,
             Object input,
-            StationLog result) {
+            StationLogTrace result) {
         if (runCtx.getEventManager() == null || result == null) {
             return;
         }
@@ -85,7 +85,7 @@ public class StationLifecycleRunner implements StationRunner {
                 extractPrimaryError(result)));
     }
 
-    private Exception extractPrimaryError(StationLog result) {
+    private Exception extractPrimaryError(StationLogTrace result) {
         if (result.getThrowables() == null || result.getThrowables().isEmpty()) {
             return null;
         }
@@ -100,7 +100,7 @@ public class StationLifecycleRunner implements StationRunner {
             StationLifecycleExtension extension,
             ExecutionContext runCtx,
             StationExecutionContext stationCtx,
-            StationLogSnapshot snapshot) {
+            StationLogRecord snapshot) {
         try {
             extension.onStationStarted(runCtx, stationCtx, snapshot);
         } catch (Error error) {
@@ -118,7 +118,7 @@ public class StationLifecycleRunner implements StationRunner {
             StationLifecycleExtension extension,
             ExecutionContext runCtx,
             StationExecutionContext stationCtx,
-            StationLogSnapshot snapshot) {
+            StationLogRecord snapshot) {
         try {
             extension.onStationCompleted(runCtx, stationCtx, snapshot);
         } catch (Error error) {

@@ -1,48 +1,50 @@
 package io.github.gear4jtest.core.api.behavior;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 
 public interface SiblingBranchOutcomes {
 
-    Optional<StationLog.Status> statusOf(String branchId);
+    Optional<StationLogStatus> statusOf(String branchId);
 
     Set<String> branchIds();
 
-    default boolean hasStatus(String branchId, StationLog.Status expected) {
+    default boolean hasStatus(String branchId, StationLogStatus expected) {
         return statusOf(branchId).map(expected::equals).orElse(false);
     }
 
     default boolean isSucceeded(String branchId) {
-        return hasStatus(branchId, StationLog.Status.SUCCEEDED);
+        return hasStatus(branchId, StationLogStatus.SUCCEEDED);
     }
 
     default boolean isSkipped(String branchId) {
-        return hasStatus(branchId, StationLog.Status.SKIPPED);
+        return hasStatus(branchId, StationLogStatus.SKIPPED);
     }
 
     default boolean isFailed(String branchId) {
-        return hasStatus(branchId, StationLog.Status.FAILED);
+        return hasStatus(branchId, StationLogStatus.FAILED);
     }
 
     default boolean isStopped(String branchId) {
-        return hasStatus(branchId, StationLog.Status.STOPPED);
+        return hasStatus(branchId, StationLogStatus.STOPPED);
     }
 
     default boolean isCancelled(String branchId) {
-        return hasStatus(branchId, StationLog.Status.CANCELLED);
+        return hasStatus(branchId, StationLogStatus.CANCELLED);
     }
 
     static SiblingBranchOutcomes empty() {
         return ImmutableSiblingBranchOutcomes.EMPTY;
     }
 
-    static SiblingBranchOutcomes of(Map<String, StationLog.Status> statuses) {
+    static SiblingBranchOutcomes of(Map<String, StationLogStatus> statuses) {
         if (statuses == null || statuses.isEmpty()) {
             return empty();
         }
@@ -52,14 +54,14 @@ public interface SiblingBranchOutcomes {
     final class ImmutableSiblingBranchOutcomes implements SiblingBranchOutcomes {
         private static final ImmutableSiblingBranchOutcomes EMPTY = new ImmutableSiblingBranchOutcomes(Map.of());
 
-        private final Map<String, StationLog.Status> statuses;
+        private final Map<String, StationLogStatus> statuses;
 
-        private ImmutableSiblingBranchOutcomes(Map<String, StationLog.Status> statuses) {
+        private ImmutableSiblingBranchOutcomes(Map<String, StationLogStatus> statuses) {
             this.statuses = Collections.unmodifiableMap(new LinkedHashMap<>(statuses));
         }
 
         @Override
-        public Optional<StationLog.Status> statusOf(String branchId) {
+        public Optional<StationLogStatus> statusOf(String branchId) {
             return Optional.ofNullable(statuses.get(branchId));
         }
 

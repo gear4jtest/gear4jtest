@@ -1,5 +1,7 @@
 package io.github.gear4jtest.core.engine.strategy;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
+
 import io.github.gear4jtest.core.api.behavior.Processor;
 import io.github.gear4jtest.core.api.behavior.SkipDecision;
 import io.github.gear4jtest.core.api.behavior.SkipPhase;
@@ -7,7 +9,7 @@ import io.github.gear4jtest.core.api.behavior.StationSkipper;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.exception.StationExecutionException;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +18,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
 
     @SuppressWarnings("unchecked")
     @Override
-    public StationLog run(S station, Object input, StationExecutionContext context, StationRunner runner) {
+    public StationLogTrace run(S station, Object input, StationExecutionContext context, StationRunner runner) {
         Object result = null;
         Exception mainException = null;
         try {
@@ -49,7 +51,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
 
             result = doExecute(station, input, runner, context);
 
-            if (context.getRecord().getStatus() == StationLog.Status.RUNNING) {
+            if (context.getRecord().getStatus() == StationLogStatus.RUNNING) {
                 context.getRecord().markSuccess(result);
             } else {
                 context.getRecord().setOutput(result);
@@ -109,7 +111,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
             S station,
             Object input,
             StationExecutionContext ctx,
-            StationLog record,
+            StationLogTrace record,
             String reason) {
 
         if (station.getFallbackOperator() != null) {
@@ -137,7 +139,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
         return null;
     }
 
-    protected List<Throwable> buildErrorListForRelease(StationLog record, Exception mainException) {
+    protected List<Throwable> buildErrorListForRelease(StationLogTrace record, Exception mainException) {
         List<Throwable> throwables = record.getThrowables();
         if (throwables == null || throwables.isEmpty()) {
             if (mainException == null) {

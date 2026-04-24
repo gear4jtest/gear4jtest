@@ -2,7 +2,7 @@ package io.github.gear4jtest.core.spi.extension;
 
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.persistence.StationLogSnapshot;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 
 /**
  * Passive station lifecycle hooks.
@@ -24,14 +24,14 @@ public interface StationLifecycleExtension extends RuntimeExtension {
     default void onStationStarted(
             ExecutionContext runCtx,
             StationExecutionContext stationCtx,
-            StationLogSnapshot snapshot) {
+            StationLogRecord snapshot) {
         // no-op
     }
 
     default void onStationCompleted(
             ExecutionContext runCtx,
             StationExecutionContext stationCtx,
-            StationLogSnapshot snapshot) {
+            StationLogRecord snapshot) {
         // no-op
     }
 }

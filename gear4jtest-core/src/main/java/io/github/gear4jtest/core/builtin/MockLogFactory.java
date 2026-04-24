@@ -1,12 +1,12 @@
 //package io.github.gear4jtest.core.engine.spi;
 //
-//import io.github.gear4jtest.core.persistence.StationLog;
+//import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 //import java.util.HashMap;
 //import java.util.Map;
 //import java.util.UUID;
 //
 ///**
-// * Responsabilité : Fabriquer des instances de StationLog configurées pour représenter
+// * Responsabilité : Fabriquer des instances de StationLogTrace configurées pour représenter
 // * une exécution simulée (Mock).
 // *
 // * Pattern : Pure Fabrication / Factory.
@@ -19,11 +19,11 @@
 //    private static final String MODE_MOCK_DATA = "MOCKED_DATA";
 //
 //    /**
-//     * Crée un StationLog en succès immédiat avec les données mockées.
+//     * Crée un StationLogTrace en succès immédiat avec les données mockées.
 //     */
-//    StationLog createMock(String stationId, UUID pipelineExecutionId, UUID parentOperationId, Object mockData) {
+//    StationLogTrace createMock(String stationId, UUID pipelineExecutionId, UUID parentOperationId, Object mockData) {
 //        // 1. Utilisation de l'API standard du modèle (Lifecycle start)
-//        StationLog log = StationLog.start(pipelineExecutionId, stationId, parentOperationId);
+//        StationLogTrace log = StationLogTrace.start(pipelineExecutionId, stationId, parentOperationId);
 //
 //        // 2. Simulation du succès
 //        log.markSuccess(mockData);
@@ -32,13 +32,13 @@
 //        // Cela permet de distinguer visuellement un mock d'une exécution réelle très rapide (1ms)
 //        log.setEndedAt(log.getStartedAt());
 //
-//        // 4. Enrichissement des métadonnées (Sans modifier la classe StationLog)
+//        // 4. Enrichissement des métadonnées (Sans modifier la classe StationLogTrace)
 //        injectMockMetadata(log);
 //
 //        return log;
 //    }
 //
-//    private void injectMockMetadata(StationLog log) {
+//    private void injectMockMetadata(StationLogTrace log) {
 //        // On copie la map existante ou on en crée une nouvelle pour éviter les NullPointer
 //        Map<String, Object> context = log.getContext();
 //        Map<String, Object> newContext = (context != null) ? new HashMap<>(context) : new HashMap<>();

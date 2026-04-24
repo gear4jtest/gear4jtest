@@ -1,10 +1,12 @@
 package io.github.gear4jtest.core.sidecompute;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
+
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventSubscription;
 import io.github.gear4jtest.core.event.StationFinishedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -46,16 +48,16 @@ public final class SideComputer<E extends Event, T, R> {
     }
 
     public static <T> Builder<StationFinishedEvent, T, T> onStationSuccess(String operationId, String key) {
-        return onStationStatus(operationId, StationLog.Status.SUCCEEDED, key);
+        return onStationStatus(operationId, StationLogStatus.SUCCEEDED, key);
     }
 
     public static <T> Builder<StationFinishedEvent, T, T> onStationFailure(String operationId, String key) {
-        return onStationStatus(operationId, StationLog.Status.FAILED, key);
+        return onStationStatus(operationId, StationLogStatus.FAILED, key);
     }
 
     public static <T> Builder<StationFinishedEvent, T, T> onStationStatus(
             String operationId,
-            StationLog.Status status,
+            StationLogStatus status,
             String key) {
         Builder<StationFinishedEvent, T, T> builder = SideComputer.<StationFinishedEvent, T>onEvent(StationFinishedEvent.class, key);
         return builder

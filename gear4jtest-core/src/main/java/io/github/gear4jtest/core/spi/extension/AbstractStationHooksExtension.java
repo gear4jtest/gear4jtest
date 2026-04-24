@@ -1,7 +1,7 @@
 package io.github.gear4jtest.core.spi.extension;
 
 import io.github.gear4jtest.core.api.context.ExecutionContext;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 /**
@@ -21,7 +21,7 @@ public abstract class AbstractStationHooksExtension implements StationWrapperExt
             onStart(station, parentCtx);
 
             try {
-                StationLog log = delegate.run(input, station, parentCtx);
+                StationLogTrace log = delegate.run(input, station, parentCtx);
                 onResult(station, parentCtx, log);
                 return log;
             } catch (RuntimeException e) {
@@ -36,7 +36,7 @@ public abstract class AbstractStationHooksExtension implements StationWrapperExt
     protected void onStart(Object station, Object stationCtx) {
     }
 
-    protected void onResult(Object station, Object stationCtx, StationLog log) {
+    protected void onResult(Object station, Object stationCtx, StationLogTrace log) {
     }
 
     protected void onException(Object station, Object stationCtx, RuntimeException error) {

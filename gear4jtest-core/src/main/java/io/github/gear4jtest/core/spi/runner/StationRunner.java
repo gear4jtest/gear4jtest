@@ -2,7 +2,7 @@ package io.github.gear4jtest.core.spi.runner;
 
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 
 /**
  * Responsable de l'exécution d'une station unique.
@@ -10,5 +10,5 @@ import io.github.gear4jtest.core.persistence.StationLog;
  */
 @FunctionalInterface
 public interface StationRunner {
-    StationLog run(Object input, AbstractStation station, StationExecutionContext ctx);
+    StationLogTrace run(Object input, AbstractStation station, StationExecutionContext ctx);
 }

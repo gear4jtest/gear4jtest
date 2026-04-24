@@ -32,7 +32,6 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
 			return this;
 		}
 
-
 		/**
 		 * Paramètre avec valeur fixe.
 		 */

@@ -16,9 +16,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
-import io.github.gear4jtest.core.persistence.AssemblyRun;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.persistence.DatabaseAssemblyRunRepository;
-import io.github.gear4jtest.core.persistence.StationLogSnapshot;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,15 +63,15 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
     }
 
     @Override
-    public void start(AssemblyRun execution) {
+    public void start(AssemblyRunTrace execution) {
         Objects.requireNonNull(execution, "execution must not be null");
 
-        repository.save(execution);
+        repository.save(io.github.gear4jtest.core.persistence.AssemblyRunRecord.from(execution));
         buffers.put(execution.getId(), new RunBuffer(execution.getId()));
     }
 
     @Override
-    public void append(StationLogSnapshot record) {
+    public void append(StationLogRecord record) {
         if (record == null) {
             return;
         }
@@ -95,12 +95,12 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
     }
 
     @Override
-    public void appendAll(List<StationLogSnapshot> records) {
+    public void appendAll(List<StationLogRecord> records) {
         if (records == null || records.isEmpty()) {
             return;
         }
 
-        for (StationLogSnapshot record : records) {
+        for (StationLogRecord record : records) {
             append(record);
         }
     }
@@ -122,7 +122,7 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
     }
 
     @Override
-    public void end(AssemblyRun finalExecution) {
+    public void end(AssemblyRunTrace finalExecution) {
         Objects.requireNonNull(finalExecution, "finalExecution must not be null");
 
         UUID runId = finalExecution.getId();
@@ -134,7 +134,7 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
             assertHealthy(buffer);
             flushBufferBlocking(buffer, true);
             assertHealthy(buffer);
-            repository.update(finalExecution);
+            repository.update(io.github.gear4jtest.core.persistence.AssemblyRunRecord.from(finalExecution));
         } finally {
             buffers.remove(runId);
         }
@@ -176,12 +176,12 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
         buffer.flushLock.lock();
         try {
             do {
-                List<StationLogSnapshot> batch = drainBatch(buffer);
+                List<StationLogRecord> batch = drainBatch(buffer);
                 if (batch.isEmpty()) {
                     return;
                 }
 
-                repository.saveOperationSnapshotsBatch(batch);
+                repository.saveOperationRecordsBatch(batch);
             } while (drainCompletely);
         } catch (Exception e) {
             recordFailure(buffer, e);
@@ -196,11 +196,11 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
         }
     }
 
-    private List<StationLogSnapshot> drainBatch(RunBuffer buffer) {
-        List<StationLogSnapshot> batch = new ArrayList<>(flushThreshold);
+    private List<StationLogRecord> drainBatch(RunBuffer buffer) {
+        List<StationLogRecord> batch = new ArrayList<>(flushThreshold);
 
         for (int i = 0; i < flushThreshold; i++) {
-            StationLogSnapshot record = buffer.queue.poll();
+            StationLogRecord record = buffer.queue.poll();
             if (record == null) {
                 break;
             }
@@ -231,7 +231,7 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
 
     private static final class RunBuffer {
         private final UUID runId;
-        private final ConcurrentLinkedQueue<StationLogSnapshot> queue = new ConcurrentLinkedQueue<>();
+        private final ConcurrentLinkedQueue<StationLogRecord> queue = new ConcurrentLinkedQueue<>();
         private final AtomicInteger pendingCount = new AtomicInteger();
         private final AtomicBoolean flushScheduled = new AtomicBoolean(false);
         private final AtomicBoolean closed = new AtomicBoolean(false);

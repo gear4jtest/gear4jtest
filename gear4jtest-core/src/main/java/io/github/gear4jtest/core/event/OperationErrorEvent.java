@@ -12,7 +12,6 @@ public class OperationErrorEvent extends OperationBaseEvent {
 		this.exception = exception;
 	}
 
-
 	public Exception getException() {
 		return exception;
 	}

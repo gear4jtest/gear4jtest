@@ -6,7 +6,7 @@
 //import io.github.gear4jtest.core.api.context.ExecutionContext;
 //import io.github.gear4jtest.core.model.Station;
 //import io.github.gear4jtest.core.api.context.StationExecutionContext;
-//import io.github.gear4jtest.core.persistence.StationLog;
+//import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 //
 ///**
 // * Orchestrateur pour le mode Simulation (Dry Run).
@@ -24,7 +24,7 @@
 //    }
 //
 //    @Override
-//    public StationLog run(Object input, AbstractStation station, StationExecutionContext ctx) {
+//    public StationLogTrace run(Object input, AbstractStation station, StationExecutionContext ctx) {
 //        String id = station.getId();
 //
 //        // 1. MOCK (Interception)

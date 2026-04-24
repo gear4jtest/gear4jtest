@@ -1,5 +1,7 @@
 package io.github.gear4jtest.core.service;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
+
 import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Method;
@@ -33,12 +35,12 @@ import io.github.gear4jtest.core.exception.AssemblyLineException;
 import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
-import io.github.gear4jtest.core.persistence.AssemblyRun;
-import io.github.gear4jtest.core.persistence.AssemblyRunDetails;
+import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
+import io.github.gear4jtest.core.persistence.AssemblyRunView;
 import io.github.gear4jtest.core.persistence.DatabaseAssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepository;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.service.steps.Step10;
 import io.github.gear4jtest.core.service.steps.Step11;
 import io.github.gear4jtest.core.service.steps.Step12;
@@ -52,7 +54,6 @@ import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
 
 import static io.github.gear4jtest.core.api.util.ElementModelBuilders.*;
-import static io.github.gear4jtest.core.persistence.StationLog.Status;
 import static org.assertj.core.api.Assertions.*;
 
 // handle factory for step / processor... configuration
@@ -352,12 +353,12 @@ public class SimpleChainBuilderTest {
                 .isPresent()
                 .get()
                 .extracting(
-                        AssemblyRun::getId,
-                        AssemblyRun::getPipelineId,
-                        AssemblyRun::getInputParams,
-                        AssemblyRun::getContext,
-                        AssemblyRun::getResult,
-                        AssemblyRun::getStatus)
+                        AssemblyRunRecord::id,
+                        AssemblyRunRecord::pipelineId,
+                        AssemblyRunRecord::inputParams,
+                        AssemblyRunRecord::context,
+                        AssemblyRunRecord::result,
+                        AssemblyRunRecord::status)
                 .containsExactly(
                         result.getExecution().getId(),
                         "test",
@@ -366,87 +367,87 @@ public class SimpleChainBuilderTest {
                         List.of(List.of("")),
                         ExecutionStatus.SUCCEEDED);
 
-        var pipelineDetails = repository.findDetailsById(result.getExecution().getId());
+        var pipelineDetails = repository.findViewById(result.getExecution().getId());
         assertThat(pipelineDetails)
                 .isPresent()
                 .get()
-                .extracting(AssemblyRunDetails::getRootOperations)
+                .extracting(AssemblyRunView::getRootOperations)
                 .asList()
                 .hasSize(1)
                 .first()
-                .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(StationLog.class))
+                .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(StationLogRecord.class))
                 .extracting(
-                        StationLog::getPipelineExecutionId,
-                        StationLog::getOperationId,
-                        StationLog::getParentOperationId,
-                        StationLog::getStatus,
-                        StationLog::getContext)
-                .containsExactly(result.getExecution().getId(), "test:root", null, Status.SUCCEEDED, Map.of());
+                        StationLogRecord::pipelineExecutionId,
+                        StationLogRecord::operationId,
+                        StationLogRecord::parentOperationId,
+                        StationLogRecord::status,
+                        StationLogRecord::context)
+                .containsExactly(result.getExecution().getId(), "test:root", null, StationLogStatus.SUCCEEDED, Map.of());
 
-        List<StationLog> rootLogs = repository.findRootLogsByRunId(result.getExecution().getId());
+        List<StationLogRecord> rootLogs = repository.findRootLogsByRunId(result.getExecution().getId());
         var rootSequenceExecutionRecord = getRecordByOperationId(rootLogs, "test:root");
 
-        List<StationLog> rootChildren =
-                repository.findChildLogsByRunId(result.getExecution().getId(), rootSequenceExecutionRecord.getId());
+        List<StationLogRecord> rootChildren =
+                repository.findChildLogsByRunId(result.getExecution().getId(), rootSequenceExecutionRecord.id());
 
         assertThat(rootChildren)
                 .extracting(
-                        StationLog::getPipelineExecutionId,
-                        StationLog::getOperationId,
-                        StationLog::getParentOperationId,
-                        StationLog::getStatus,
-                        StationLog::getContext)
+                        StationLogRecord::pipelineExecutionId,
+                        StationLogRecord::operationId,
+                        StationLogRecord::parentOperationId,
+                        StationLogRecord::status,
+                        StationLogRecord::context)
                 .containsExactly(
-                        tuple(result.getExecution().getId(), "step3", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, Map.of()),
-                        tuple(result.getExecution().getId(), "step8", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, Map.of()),
-                        tuple(result.getExecution().getId(), "step9", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, Map.of()),
-                        tuple(result.getExecution().getId(), "iterator", rootSequenceExecutionRecord.getId(), Status.SUCCEEDED, Map.of()));
+                        tuple(result.getExecution().getId(), "step3", rootSequenceExecutionRecord.id(), StationLogStatus.SUCCEEDED, Map.of()),
+                        tuple(result.getExecution().getId(), "step8", rootSequenceExecutionRecord.id(), StationLogStatus.SUCCEEDED, Map.of()),
+                        tuple(result.getExecution().getId(), "step9", rootSequenceExecutionRecord.id(), StationLogStatus.SUCCEEDED, Map.of()),
+                        tuple(result.getExecution().getId(), "iterator", rootSequenceExecutionRecord.id(), StationLogStatus.SUCCEEDED, Map.of()));
 
-        assertThat(repository.countChildLogsByRunId(result.getExecution().getId(), rootSequenceExecutionRecord.getId()))
+        assertThat(repository.countChildLogsByRunId(result.getExecution().getId(), rootSequenceExecutionRecord.id()))
                 .isEqualTo(4);
 
         var iteratorExecutionRecord = getRecordByOperationId(rootChildren, "iterator");
 
-        List<StationLog> iteratorChildren =
-                repository.findChildLogsByRunId(result.getExecution().getId(), iteratorExecutionRecord.getId());
+        List<StationLogRecord> iteratorChildren =
+                repository.findChildLogsByRunId(result.getExecution().getId(), iteratorExecutionRecord.id());
 
         assertThat(iteratorChildren)
                 .extracting(
-                        StationLog::getPipelineExecutionId,
-                        StationLog::getOperationId,
-                        StationLog::getParentOperationId,
-                        StationLog::getStatus,
-                        StationLog::getContext)
+                        StationLogRecord::pipelineExecutionId,
+                        StationLogRecord::operationId,
+                        StationLogRecord::parentOperationId,
+                        StationLogRecord::status,
+                        StationLogRecord::context)
                 .containsExactly(
-                        tuple(result.getExecution().getId(), "sequence", iteratorExecutionRecord.getId(), Status.SUCCEEDED, Map.of()));
+                        tuple(result.getExecution().getId(), "sequence", iteratorExecutionRecord.id(), StationLogStatus.SUCCEEDED, Map.of()));
 
-        assertThat(repository.countChildLogsByRunId(result.getExecution().getId(), iteratorExecutionRecord.getId()))
+        assertThat(repository.countChildLogsByRunId(result.getExecution().getId(), iteratorExecutionRecord.id()))
                 .isEqualTo(1);
 
         var sequenceExecutionRecord = getRecordByOperationId(iteratorChildren, "sequence");
 
-        List<StationLog> sequenceChildren =
-                repository.findChildLogsByRunId(result.getExecution().getId(), sequenceExecutionRecord.getId());
+        List<StationLogRecord> sequenceChildren =
+                repository.findChildLogsByRunId(result.getExecution().getId(), sequenceExecutionRecord.id());
 
         assertThat(sequenceChildren)
                 .extracting(
-                        StationLog::getPipelineExecutionId,
-                        StationLog::getOperationId,
-                        StationLog::getParentOperationId,
-                        StationLog::getStatus,
-                        StationLog::getContext)
+                        StationLogRecord::pipelineExecutionId,
+                        StationLogRecord::operationId,
+                        StationLogRecord::parentOperationId,
+                        StationLogRecord::status,
+                        StationLogRecord::context)
                 .containsExactly(
-                        tuple(result.getExecution().getId(), "step10", sequenceExecutionRecord.getId(), Status.SUCCEEDED, Map.of()));
+                        tuple(result.getExecution().getId(), "step10", sequenceExecutionRecord.id(), StationLogStatus.SUCCEEDED, Map.of()));
 
-        assertThat(repository.countChildLogsByRunId(result.getExecution().getId(), sequenceExecutionRecord.getId()))
+        assertThat(repository.countChildLogsByRunId(result.getExecution().getId(), sequenceExecutionRecord.id()))
                 .isEqualTo(1);
     }
 
-    private static StationLog getRecordByOperationId(List<StationLog> logs, String operationId) {
+    private static StationLogRecord getRecordByOperationId(List<StationLogRecord> logs, String operationId) {
         return logs.stream()
-                .filter(log -> operationId.equals(log.getOperationId()))
+                .filter(log -> operationId.equals(log.operationId()))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("No StationLog found for operationId=" + operationId));
+                .orElseThrow(() -> new AssertionError("No StationLogRecord found for operationId=" + operationId));
     }
 
 	@Test
@@ -630,7 +631,6 @@ public class SimpleChainBuilderTest {
 				.isEqualTo("c");
 	}
 
-
     @Test
     void should_execute_fallback_branch_only_when_primary_failed() {
         // Given
@@ -676,14 +676,14 @@ public class SimpleChainBuilderTest {
                 .as("primary failed, fallback must run")
                 .containsExactly(null, "fallback-ok");
 
-        List<StationLog> allLogs =
+        List<StationLogRecord> allLogs =
                 InMemoryAssemblyRunRepository.INSTANCE.findAllLogsByRunId(result.getExecution().getId());
 
         assertThat(allLogs)
-                .extracting(StationLog::getOperationId, StationLog::getStatus)
+                .extracting(StationLogRecord::operationId, StationLogRecord::status)
                 .contains(
-                        tuple("primary", StationLog.Status.FAILED),
-                        tuple("fallback", StationLog.Status.SUCCEEDED));
+                        tuple("primary", StationLogStatus.FAILED),
+                        tuple("fallback", StationLogStatus.SUCCEEDED));
     }
 
     public static class FailingPrimary implements Operator<String, String> {

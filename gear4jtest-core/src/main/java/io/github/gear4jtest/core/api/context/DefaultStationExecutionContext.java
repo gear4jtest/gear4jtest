@@ -6,14 +6,14 @@ import java.util.Optional;
 
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.api.station.StationKind;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 
 public class DefaultStationExecutionContext implements StationExecutionContext {
 
     private final String operationId;
     private final StationKind kind;
     private final ExecutionContext globalContext;
-    private final StationLog record;
+    private final StationLogTrace record;
     private final ExecutionSupport support;
 
     private final Map<Class<?>, Object> capabilities = new HashMap<>();
@@ -21,7 +21,7 @@ public class DefaultStationExecutionContext implements StationExecutionContext {
     public DefaultStationExecutionContext(String operationId,
                                           StationKind kind,
                                           ExecutionContext globalContext,
-                                          StationLog record,
+                                          StationLogTrace record,
                                           ExecutionSupport support) {
         this.operationId = operationId;
         this.kind = kind;
@@ -56,7 +56,7 @@ public class DefaultStationExecutionContext implements StationExecutionContext {
     }
 
     @Override
-    public StationLog getRecord() {
+    public StationLogTrace getRecord() {
         return record;
     }
 

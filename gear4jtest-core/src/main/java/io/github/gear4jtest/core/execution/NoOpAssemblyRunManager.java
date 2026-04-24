@@ -1,6 +1,6 @@
 package io.github.gear4jtest.core.execution;
 
-import io.github.gear4jtest.core.persistence.AssemblyRun;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 
 public class NoOpAssemblyRunManager implements AssemblyRunManager {
 
@@ -10,12 +10,12 @@ public class NoOpAssemblyRunManager implements AssemblyRunManager {
     }
 
     @Override
-    public void start(AssemblyRun execution) {
+    public void start(AssemblyRunTrace execution) {
         // No op
     }
 
     @Override
-    public void end(AssemblyRun finalExecution) {
+    public void end(AssemblyRunTrace finalExecution) {
         // No op
     }
 }

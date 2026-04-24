@@ -3,18 +3,18 @@ package io.github.gear4jtest.core.execution;
 import java.util.List;
 import java.util.UUID;
 
-import io.github.gear4jtest.core.persistence.AssemblyRun;
-import io.github.gear4jtest.core.persistence.StationLogSnapshot;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 
 public interface AssemblyRunManager {
 
-    void start(AssemblyRun execution);
+    void start(AssemblyRunTrace execution);
 
-    default void append(StationLogSnapshot record) {
+    default void append(StationLogRecord record) {
         // no-op by default
     }
 
-    default void appendAll(List<StationLogSnapshot> records) {
+    default void appendAll(List<StationLogRecord> records) {
         if (records != null) {
             records.forEach(this::append);
         }
@@ -28,7 +28,7 @@ public interface AssemblyRunManager {
         // no-op by default
     }
 
-    void end(AssemblyRun finalExecution);
+    void end(AssemblyRunTrace finalExecution);
 
     default void shutdown() {
         // no-op by default

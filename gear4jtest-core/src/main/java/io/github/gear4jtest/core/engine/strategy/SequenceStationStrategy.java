@@ -1,5 +1,7 @@
 package io.github.gear4jtest.core.engine.strategy;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,7 +11,7 @@ import io.github.gear4jtest.core.api.config.FlowDecision;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.SequenceStation;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class SequenceStationStrategy extends AbstractStationStrategy<SequenceStation> {
@@ -28,12 +30,12 @@ public class SequenceStationStrategy extends AbstractStationStrategy<SequenceSta
         List<Throwable> collectedErrors = new ArrayList<>();
 
         for (AbstractStation<?, ?> child : (List<AbstractStation>) station.getSteps()) {
-            StationLog childLog = runner.run(currentInput, child, operationExecution);
+            StationLogTrace childLog = runner.run(currentInput, child, operationExecution);
 
             FlowDecision decision = FlowDecider.decide(childLog, config);
             switch (decision) {
                 case PROCEED -> {
-                    if (childLog.getStatus() == StationLog.Status.SUCCEEDED) {
+                    if (childLog.getStatus() == StationLogStatus.SUCCEEDED) {
                         currentInput = childLog.getOutput();
                     }
                 }
@@ -42,7 +44,7 @@ public class SequenceStationStrategy extends AbstractStationStrategy<SequenceSta
                                 childLog,
                                 "Step failed without exception: " + child.getId()));
                 case INTERRUPT -> {
-                    StationLog parentLog = operationExecution.getRecord();
+                    StationLogTrace parentLog = operationExecution.getRecord();
                     FlowStrategySupport.applyInterruptToParentLog(parentLog, childLog, config);
                     parentLog.setOutput(currentInput);
                     return currentInput;
@@ -51,7 +53,7 @@ public class SequenceStationStrategy extends AbstractStationStrategy<SequenceSta
         }
 
         if (!collectedErrors.isEmpty()) {
-            StationLog parentLog = operationExecution.getRecord();
+            StationLogTrace parentLog = operationExecution.getRecord();
             Throwable first = collectedErrors.get(0);
             if (first instanceof Exception ex) {
                 parentLog.markFailed(ex);

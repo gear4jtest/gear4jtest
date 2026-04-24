@@ -5,7 +5,7 @@ import java.util.Objects;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 
 public class RecursiveStationRunner implements StationRunner {
 
@@ -16,7 +16,7 @@ public class RecursiveStationRunner implements StationRunner {
     }
 
     @Override
-    public StationLog run(Object input, AbstractStation station, StationExecutionContext ctx) {
+    public StationLogTrace run(Object input, AbstractStation station, StationExecutionContext ctx) {
         return rootRunner.run(input, station, ctx);
     }
 }

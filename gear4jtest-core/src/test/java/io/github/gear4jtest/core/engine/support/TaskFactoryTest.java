@@ -1,5 +1,7 @@
 package io.github.gear4jtest.core.engine.support;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
@@ -20,8 +22,10 @@ import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.StationKind;
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.persistence.AssemblyRun;
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 class TaskFactoryTest {
@@ -32,7 +36,7 @@ class TaskFactoryTest {
         TaskFactory taskFactory = new TaskFactory();
         ExecutionSupport support = new ExecutionSupport(ExecutorDecorator.noOp(), taskFactory, null);
 
-        AssemblyRun assemblyRun = new AssemblyRun(UUID.randomUUID(), "pipeline-1", Map.of());
+        AssemblyRunTrace assemblyRun = new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of());
         var resourceFactory = new ResourceFactory() {
             @Override
             public <T> T getResource(Class<T> clazz) {
@@ -50,9 +54,9 @@ class TaskFactoryTest {
         globalContext.setCurrentItemId("outer-item");
         globalContext.pushParentOperationId(parentOperationId);
 
-        StationLog parentRecord = StationLog.start(globalContext.getExecutionId(), "parent", null);
+        StationLogTrace parentRecord = StationLogTrace.start(globalContext.getExecutionId(), "parent", null);
         parentRecord.setContext(new HashMap<>());
-        parentRecord.setStatus(StationLog.Status.RUNNING);
+        parentRecord.setStatus(StationLogStatus.RUNNING);
 
         StationExecutionContext operationExecution = new DefaultStationExecutionContext(
                 "parent",
@@ -70,13 +74,13 @@ class TaskFactoryTest {
             seenItemId.set(ctx.getGlobalContext().getCurrentItemId());
             seenParentOperationId.set(ctx.getGlobalContext().getCurrentParentOperationId());
 
-            StationLog childLog = StationLog.start(ctx.getGlobalContext().getExecutionId(), station.getId(), null);
+            StationLogTrace childLog = StationLogTrace.start(ctx.getGlobalContext().getExecutionId(), station.getId(), null);
             childLog.setContext(new HashMap<>());
             childLog.markSuccess("ok");
             return childLog;
         };
 
-        Callable<StationLog> task = taskFactory.createTask(
+        Callable<StationLogTrace> task = taskFactory.createTask(
                 () -> "payload",
                 child,
                 runner,
@@ -84,10 +88,10 @@ class TaskFactoryTest {
                 "child-item");
 
         // When
-        StationLog result = task.call();
+        StationLogTrace result = task.call();
 
         // Then
-        assertThat(result.getStatus()).isEqualTo(StationLog.Status.SUCCEEDED);
+        assertThat(result.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
         assertThat(seenItemId.get()).isEqualTo("child-item");
         assertThat(seenParentOperationId.get()).isEqualTo(parentOperationId);
 

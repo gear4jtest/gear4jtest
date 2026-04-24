@@ -1,9 +1,11 @@
 package io.github.gear4jtest.core.api.config;
 
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.model.StationLogStatus;
+
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 
 /**
- * Normalise un {@link StationLog} enfant en une {@link FlowDecision} selon une {@link FlowConfig}.
+ * Normalise un {@link StationLogTrace} enfant en une {@link FlowDecision} selon une {@link FlowConfig}.
  *
  * <p>Ce composant est stateless, pur et facilement testable.
  */
@@ -11,16 +13,16 @@ public final class FlowDecider {
 
     private FlowDecider() {}
 
-    public static FlowDecision decide(StationLog childLog, FlowConfig config) {
-        StationLog.Status status = childLog.getStatus();
+    public static FlowDecision decide(StationLogTrace childLog, FlowConfig config) {
+        StationLogStatus status = childLog.getStatus();
 
         // 1) Happy path
-        if (status == StationLog.Status.SUCCEEDED || status == StationLog.Status.SKIPPED) {
+        if (status == StationLogStatus.SUCCEEDED || status == StationLogStatus.SKIPPED) {
             return FlowDecision.PROCEED;
         }
 
         // 2) Failures
-        if (status == StationLog.Status.FAILED) {
+        if (status == StationLogStatus.FAILED) {
             return switch (config.failurePolicy()) {
                 case FAIL_FAST -> FlowDecision.INTERRUPT;
                 case IGNORE_AND_CONTINUE -> FlowDecision.PROCEED;
@@ -29,7 +31,7 @@ public final class FlowDecider {
         }
 
         // 3) STOPPED (fonctionnel)
-        if (status == StationLog.Status.STOPPED) {
+        if (status == StationLogStatus.STOPPED) {
             return switch (config.stopPolicy()) {
                 case PROPAGATE_STOP, TREAT_AS_FAILURE -> FlowDecision.INTERRUPT;
                 case IGNORE_AND_CONTINUE -> FlowDecision.PROCEED;
@@ -37,7 +39,7 @@ public final class FlowDecider {
         }
 
         // 4) CANCELLED (technique)
-        if (status == StationLog.Status.CANCELLED) {
+        if (status == StationLogStatus.CANCELLED) {
             return switch (config.cancelPolicy()) {
                 case PROPAGATE_CANCEL, TREAT_AS_FAILURE -> FlowDecision.INTERRUPT;
                 case IGNORE_AND_CONTINUE -> FlowDecision.PROCEED;

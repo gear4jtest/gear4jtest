@@ -1,8 +1,10 @@
 package io.github.gear4jtest.core.event;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.github.gear4jtest.core.persistence.StationLog;
+import io.github.gear4jtest.core.persistence.StationLogRecord;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -44,11 +46,11 @@ class StationEventsTest {
                 null,
                 "item-42",
                 "input",
-                StationLog.Status.FAILED,
+                StationLogStatus.FAILED,
                 null,
                 boom);
 
-        assertThat(event.getStatus()).isEqualTo(StationLog.Status.FAILED);
+        assertThat(event.getStatus()).isEqualTo(StationLogStatus.FAILED);
         assertThat(event.getError()).isSameAs(boom);
         assertThat(event.isSuccessful()).isFalse();
     }

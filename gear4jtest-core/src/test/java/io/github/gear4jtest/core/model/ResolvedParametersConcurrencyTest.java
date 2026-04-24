@@ -10,7 +10,8 @@ import io.github.gear4jtest.core.api.context.ResolvedParameters;
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.engine.support.TaskFactory;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
-import io.github.gear4jtest.core.persistence.AssemblyRun;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +55,7 @@ class ResolvedParametersConcurrencyTest {
                 "pipe",
                 null,
                 new NoOpResourceFactory(),
-                new AssemblyRun(UUID.randomUUID(), "pipe", Map.of()));
+                new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of()));
         DefaultStationExecutionContext stationExecutionContext = new DefaultStationExecutionContext(
                 "step-1",
                 executionContext,
