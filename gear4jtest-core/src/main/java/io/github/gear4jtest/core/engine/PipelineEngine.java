@@ -7,6 +7,7 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.api.context.PayloadCloners;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
@@ -103,11 +104,12 @@ public class PipelineEngine implements PipelineExecutor {
                 .or(() -> Optional.ofNullable(this.resourceFactory))
                 .orElseThrow();
 
+        ExecutionServices services = new ExecutionServices(eventManager, effectiveResourceFactory);
+
         var ctx = new ExecutionContext(
                 executionId,
                 pipeline.getId(),
-                eventManager,
-                effectiveResourceFactory,
+                services,
                 execution,
                 eventRuntimeOptions);
         ctx.getContext().putAll(effectiveContext);
@@ -160,6 +162,7 @@ public class PipelineEngine implements PipelineExecutor {
             Runnable cleanup = () -> {
                 try {
                     ctx.getSideComputeContext().cancelUnresolvedFutures();
+                    ctx.getServices().getStationScopedResources().clearAll();
                 } finally {
                     executionContextRegistry.remove(ctx.getExecutionId());
                 }

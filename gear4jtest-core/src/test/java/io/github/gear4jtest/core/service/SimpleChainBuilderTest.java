@@ -35,6 +35,7 @@ import io.github.gear4jtest.core.exception.AssemblyLineException;
 import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 import io.github.gear4jtest.core.persistence.AssemblyRunView;
 import io.github.gear4jtest.core.persistence.DatabaseAssemblyRunRepository;

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -41,8 +42,7 @@ class SideComputeCustomEventTest {
         ExecutionContext executionContext = new ExecutionContext(
                 UUID.randomUUID(),
                 "pipe",
-                eventManager,
-                new NoOpResourceFactory(),
+                new ExecutionServices(eventManager, new NoOpResourceFactory()),
                 new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of()));
         registry.register(executionContext);
 

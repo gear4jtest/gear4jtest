@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.context.PayloadCloners;
 import io.github.gear4jtest.core.api.context.ResolvedParameters;
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
@@ -53,8 +54,7 @@ class ResolvedParametersConcurrencyTest {
         ExecutionContext executionContext = new ExecutionContext(
                 UUID.randomUUID(),
                 "pipe",
-                null,
-                new NoOpResourceFactory(),
+                new ExecutionServices(null, new NoOpResourceFactory()),
                 new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of()));
         DefaultStationExecutionContext stationExecutionContext = new DefaultStationExecutionContext(
                 "step-1",

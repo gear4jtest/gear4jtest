@@ -50,11 +50,11 @@ public class StationLifecycleRunner implements StationRunner {
     }
 
     private void publishStartedEvent(ExecutionContext runCtx, StationExecutionContext stationCtx, Object input) {
-        if (runCtx.getEventManager() == null || stationCtx.getRecord() == null) {
+        if (runCtx.getServices().getEventManager() == null || stationCtx.getRecord() == null) {
             return;
         }
         StationLogTrace record = stationCtx.getRecord();
-        runCtx.getEventManager().publish(new StationStartedEvent(
+        runCtx.getServices().getEventManager().publish(new StationStartedEvent(
                 runCtx.getPipelineId(),
                 runCtx.getExecutionId(),
                 record.getId(),
@@ -69,10 +69,10 @@ public class StationLifecycleRunner implements StationRunner {
             StationExecutionContext stationCtx,
             Object input,
             StationLogTrace result) {
-        if (runCtx.getEventManager() == null || result == null) {
+        if (runCtx.getServices().getEventManager() == null || result == null) {
             return;
         }
-        runCtx.getEventManager().publish(new StationFinishedEvent(
+        runCtx.getServices().getEventManager().publish(new StationFinishedEvent(
                 runCtx.getPipelineId(),
                 runCtx.getExecutionId(),
                 result.getId(),

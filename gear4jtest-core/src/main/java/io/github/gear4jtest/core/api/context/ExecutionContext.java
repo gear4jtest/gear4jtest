@@ -1,17 +1,15 @@
 package io.github.gear4jtest.core.api.context;
 
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
-import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.event.EventPayloadPolicy;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.sidecompute.SideComputeContext;
-import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
 public class ExecutionContext {
 
@@ -53,33 +51,29 @@ public class ExecutionContext {
     private final UUID executionId;
     private final String pipelineId;
     private final Map<String, Object> context = new ConcurrentHashMap<>();
-    private final EventManager eventManager;
-    private final ResourceFactory resourceFactory;
     private final SideComputeContext sideComputeContext = new SideComputeContext();
-    private final Map<String, Object> stationScopedResources = new ConcurrentHashMap<>();
     private final AssemblyRunTrace assemblyRun;
+    private final ExecutionServices services;
     private final EventRuntimeOptions eventRuntimeOptions;
+
 
     public ExecutionContext(
             UUID executionId,
             String pipelineId,
-            EventManager eventManager,
-            ResourceFactory resourceFactory,
+            ExecutionServices services,
             AssemblyRunTrace assemblyRun) {
-        this(executionId, pipelineId, eventManager, resourceFactory, assemblyRun, EventRuntimeOptions.disabled());
+        this(executionId, pipelineId, services, assemblyRun, EventRuntimeOptions.disabled());
     }
 
     public ExecutionContext(
             UUID executionId,
             String pipelineId,
-            EventManager eventManager,
-            ResourceFactory resourceFactory,
+            ExecutionServices services,
             AssemblyRunTrace assemblyRun,
             EventRuntimeOptions eventRuntimeOptions) {
         this.pipelineId = pipelineId;
         this.executionId = executionId;
-        this.eventManager = eventManager;
-        this.resourceFactory = resourceFactory;
+        this.services = Objects.requireNonNull(services, "services");
         this.assemblyRun = assemblyRun;
         this.eventRuntimeOptions = eventRuntimeOptions != null ? eventRuntimeOptions : EventRuntimeOptions.disabled();
     }
@@ -96,16 +90,8 @@ public class ExecutionContext {
         return type.cast(context.get(key));
     }
 
-    public EventManager getEventManager() {
-        return eventManager;
-    }
-
     public UUID getExecutionId() {
         return executionId;
-    }
-
-    public ResourceFactory getResourceFactory() {
-        return resourceFactory;
     }
 
     public Map<String, Object> getContext() {
@@ -114,6 +100,14 @@ public class ExecutionContext {
 
     public SideComputeContext getSideComputeContext() {
         return sideComputeContext;
+    }
+
+    public AssemblyRunTrace getPipelineExecution() {
+        return assemblyRun;
+    }
+
+    public ExecutionServices getServices() {
+        return services;
     }
 
     public EventRuntimeOptions getEventRuntimeOptions() {
@@ -132,10 +126,6 @@ public class ExecutionContext {
         }
     }
 
-    public AssemblyRunTrace getPipelineExecution() {
-        return assemblyRun;
-    }
-
     public UUID getCurrentParentOperationId() {
         Deque<UUID> stack = parentStack.get();
         return stack.isEmpty() ? null : stack.peek();
@@ -150,11 +140,5 @@ public class ExecutionContext {
         if (!stack.isEmpty()) {
             stack.pop();
         }
-    }
-
-    public <T> T getOrCreateStationResource(String stationId, Class<T> type, Supplier<T> factory) {
-        String key = stationId + ":" + type.getName();
-        Object value = stationScopedResources.computeIfAbsent(key, k -> factory.get());
-        return type.cast(value);
     }
 }

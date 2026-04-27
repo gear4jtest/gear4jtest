@@ -20,6 +20,7 @@ import io.github.gear4jtest.core.api.config.StopPolicy;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
@@ -337,8 +338,9 @@ class ContainerStationStrategyTest {
         ExecutionContext globalContext = new ExecutionContext(
                 UUID.randomUUID(),
                 "pipeline-1",
-                new EventManager(EventHandlingDefinition.builder().build(), new ExecutionContextRegistry()),
-                resourceFactory,
+                new ExecutionServices(
+                        new EventManager(EventHandlingDefinition.builder().build(), new ExecutionContextRegistry()),
+                        resourceFactory),
                 assemblyRun);
 
         StationLogTrace parentRecord = StationLogTrace.start(globalContext.getExecutionId(), operationId, null);

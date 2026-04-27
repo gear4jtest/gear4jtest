@@ -8,5 +8,6 @@ CREATE TABLE assembly_run (
     start_time TIMESTAMP,
     end_time TIMESTAMP,
     error_message TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    parent_execution_id VARCHAR(255),
+    root_execution_id VARCHAR(255)
 );

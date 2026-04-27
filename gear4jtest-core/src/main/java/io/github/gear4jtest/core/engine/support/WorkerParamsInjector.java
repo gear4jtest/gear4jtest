@@ -73,11 +73,11 @@ public class WorkerParamsInjector implements Processor {
             return;
         }
 
-        if (operationExecution.getGlobalContext().getEventManager() == null) {
+        if (operationExecution.getServices().getEventManager() == null) {
             return;
         }
 
-        operationExecution.getGlobalContext().getEventManager().publish(new ParameterResolvedEvent(
+        operationExecution.getServices().getEventManager().publish(new ParameterResolvedEvent(
                 operationExecution.getGlobalContext().getPipelineId(),
                 operationExecution.getGlobalContext().getExecutionId(),
                 operationExecution.getRecord().getId(),

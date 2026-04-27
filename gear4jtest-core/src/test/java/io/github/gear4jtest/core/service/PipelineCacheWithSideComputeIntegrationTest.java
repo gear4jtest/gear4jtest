@@ -9,6 +9,7 @@ import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.event.StationFinishedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -308,8 +309,7 @@ class PipelineCacheWithSideComputeIntegrationTest {
                 new ExecutionContext(
                         UUID.randomUUID(),
                         pipelineId,
-                        eventManager,
-                        new NoOpResourceFactory(),
+                        new ExecutionServices(eventManager, new NoOpResourceFactory()),
                         assemblyRun);
         executionContext.getContext().putAll(context);
         return executionContext;
