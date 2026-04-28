@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS assembly_run (
     end_time TIMESTAMP,
     error_message VARCHAR,
     parent_execution_id VARCHAR(36),
-    root_execution_id VARCHAR(36)
+    root_execution_id VARCHAR(36),
+    parent_station_log_id VARCHAR(36)
 );
 
 CREATE TABLE IF NOT EXISTS station_log (

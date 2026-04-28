@@ -12,8 +12,10 @@ import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.api.station.IteratorStation;
+import io.github.gear4jtest.core.api.station.PipelineCallStation;
 import io.github.gear4jtest.core.api.station.SequenceStation;
 import io.github.gear4jtest.core.api.station.SignalStation;
+import io.github.gear4jtest.core.api.pipeline.PipelineExecutionMode;
 import io.github.gear4jtest.core.api.station.UnaryIfElseContainerStation;
 import io.github.gear4jtest.core.api.station.UnaryWorkStation;
 import io.github.gear4jtest.core.api.station.WorkStation;
@@ -107,6 +109,24 @@ public final class ElementModelBuilders {
 		return SequenceStation.Builder.<IN>create(id)
                 .next(step);
 	}
+
+    public static <IN, OUT> PipelineCallStation.Builder<IN, OUT> pipelineCall(String id) {
+        return PipelineCallStation.builder(id);
+    }
+
+    public static <IN, OUT> PipelineCallStation<IN, OUT> inlinePipeline(String id, AssemblyLine<IN, OUT> childPipeline) {
+        return PipelineCallStation.<IN, OUT>builder(id)
+                .executionMode(PipelineExecutionMode.INLINE)
+                .directTarget(childPipeline)
+                .build();
+    }
+
+    public static <IN, OUT> PipelineCallStation<IN, OUT> nestedPipeline(String id, AssemblyLine<IN, OUT> childPipeline) {
+        return PipelineCallStation.<IN, OUT>builder(id)
+                .executionMode(PipelineExecutionMode.NESTED_RUN)
+                .directTarget(childPipeline)
+                .build();
+    }
 
 //	public static <IN, OUT> PipelineOperation.Builder<IN, OUT> pipelineOperation(String id,
 //																				 AssemblyLine<IN, OUT> subPipeline) {

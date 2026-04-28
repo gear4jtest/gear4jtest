@@ -17,7 +17,8 @@ public record AssemblyRunRecord(
         Instant endTime,
         String errorMessage,
         UUID parentExecutionId,
-        UUID rootExecutionId) {
+        UUID rootExecutionId,
+        UUID parentStationLogId) {
 
     public static AssemblyRunRecord from(AssemblyRunTrace trace) {
         if (trace == null) {
@@ -35,7 +36,8 @@ public record AssemblyRunRecord(
                 trace.getEndTime(),
                 trace.getErrorMessage(),
                 trace.getParentExecutionId(),
-                trace.getRootExecutionId());
+                trace.getRootExecutionId(),
+                trace.getParentStationLogId());
     }
 
     public AssemblyRunTrace toTrace() {
@@ -51,6 +53,7 @@ public record AssemblyRunRecord(
         trace.setErrorMessage(errorMessage);
         trace.setParentExecutionId(parentExecutionId);
         trace.setRootExecutionId(rootExecutionId);
+        trace.setParentStationLogId(parentStationLogId);
         return trace;
     }
 }

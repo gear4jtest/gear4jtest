@@ -11,15 +11,21 @@ import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.api.context.PayloadCloners;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.api.context.StationScopedResourceRegistry;
+import io.github.gear4jtest.core.api.pipeline.NestedRunContext;
+import io.github.gear4jtest.core.api.pipeline.PipelineCallStack;
+import io.github.gear4jtest.core.api.pipeline.PipelineReference;
+import io.github.gear4jtest.core.api.station.PipelineCallStation;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
+import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.engine.support.ExecutorDecorator;
 import io.github.gear4jtest.core.engine.support.TaskFactory;
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
-import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.spi.extension.LifecycleFailureMode;
 import io.github.gear4jtest.core.spi.extension.RunInterceptorExtension;
 import io.github.gear4jtest.core.spi.extension.RunInterceptorExtension.RunChain;
@@ -50,18 +56,56 @@ public class PipelineEngine implements PipelineExecutor {
     private final PayloadCloner payloadCloner;
 
     private PipelineEngine(Builder builder) {
-        this.runnerChainFactory = Objects.requireNonNull(builder.runnerChainFactory, "ChainFactory must not be null");
         this.resourceFactory = Objects.requireNonNull(builder.resourceFactory, "ResourceFactory must not be null");
         this.extensionResolver = Objects.requireNonNull(builder.extensionResolver, "Extension resolver must not be null");
-        this.executionContextRegistry =
-                Objects.requireNonNull(builder.executionContextRegistry, "ExecutionContextRegistry must not be null");
+        this.executionContextRegistry = Objects.requireNonNull(builder.executionContextRegistry, "ExecutionContextRegistry must not be null");
         this.defaultIdGenerator = builder.idGenerator != null ? builder.idGenerator : IdGenerator.defaultGenerator();
         this.taskFactory = builder.taskFactory != null ? builder.taskFactory : new TaskFactory();
         this.payloadCloner = builder.payloadCloner != null ? builder.payloadCloner : PayloadCloners.immutableAware();
+        this.runnerChainFactory = builder.runnerChainFactory != null
+                ? builder.runnerChainFactory
+                : new RunnerChainFactory(StrategyRegistry.defaultRegistry(this::executeNestedPipeline));
     }
 
     @Override
     public <IN, OUT> ExecutionResult<OUT> execute(AssemblyLine<IN, OUT> pipeline, RunRequest request) {
+        Objects.requireNonNull(pipeline, "pipeline must not be null");
+        RunRequest effectiveRequest = request != null ? request : RunRequest.builder().build();
+        PipelineCallStack callStack = effectiveRequest.getPipelineCallStack() != null
+                ? effectiveRequest.getPipelineCallStack().copy()
+                : new PipelineCallStack();
+
+        try (PipelineCallStack.Scope ignored = callStack.enter(PipelineReference.from(pipeline))) {
+            return executeWithCallStack(pipeline, effectiveRequest, callStack);
+        }
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private ExecutionResult<?> executeNestedPipeline(
+            PipelineCallStation<?, ?> station,
+            AssemblyLine<?, ?> childPipeline,
+            Object input,
+            StationExecutionContext parentContext) {
+        NestedRunContext nestedRunContext = NestedRunContext.from(parentContext);
+
+        /*
+         * NESTED_RUN currently inherits the full key/value context from the parent run. This is an
+         * explicit MVP choice. A future ContextPropagationPolicy can narrow this to NONE, ALL or an
+         * explicit projection without changing the PipelineCallStation contract.
+         */
+        RunRequest childRequest = RunRequest.builder()
+                .input(input)
+                .context(new HashMap<>(parentContext.getGlobalContext().getContext()))
+                .resourceFactory(parentContext.getServices().getResourceFactory())
+                .withIdGenerator(Optional.ofNullable(parentContext.getGlobalContext().getIdGenerator()).orElse(defaultIdGenerator))
+                .nestedRunContext(nestedRunContext)
+                .pipelineCallStack(parentContext.getGlobalContext().getPipelineCallStack())
+                .build();
+
+        return execute((AssemblyLine) childPipeline, childRequest);
+    }
+
+    private <IN, OUT> ExecutionResult<OUT> executeWithCallStack(AssemblyLine<IN, OUT> pipeline, RunRequest request, PipelineCallStack callStack) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(
                     "Starting pipeline execution. pipelineId={}, rootStation={}, requestExtensions={}",
@@ -92,26 +136,28 @@ public class PipelineEngine implements PipelineExecutor {
             effectiveContext.putAll(request.getContext());
         }
 
-        ExecutionContext.EventRuntimeOptions eventRuntimeOptions =
-                ExecutionContext.EventRuntimeOptions.from(eventHandlingDefinition);
-
+        ExecutionContext.EventRuntimeOptions eventRuntimeOptions = ExecutionContext.EventRuntimeOptions.from(eventHandlingDefinition);
         IdGenerator effectiveGenerator = Optional.ofNullable(request.getIdGenerator()).orElse(this.defaultIdGenerator);
 
         var executionId = effectiveGenerator.generate();
         var execution = new AssemblyRunTrace(executionId, pipeline.getId(), new HashMap<>(effectiveContext));
+        applyNestedRunContext(execution, request.getNestedRunContext());
 
         var effectiveResourceFactory = Optional.ofNullable(request.getResourceFactory())
                 .or(() -> Optional.ofNullable(this.resourceFactory))
                 .orElseThrow();
 
-        ExecutionServices services = new ExecutionServices(eventManager, effectiveResourceFactory);
+        ExecutionServices services = new ExecutionServices(eventManager, effectiveResourceFactory, new StationScopedResourceRegistry());
 
         var ctx = new ExecutionContext(
                 executionId,
                 pipeline.getId(),
                 services,
                 execution,
-                eventRuntimeOptions);
+                eventRuntimeOptions,
+                pipeline.getConfiguration().getRuntimeContract(),
+                callStack,
+                effectiveGenerator);
         ctx.getContext().putAll(effectiveContext);
 
         executionContextRegistry.register(ctx);
@@ -176,6 +222,15 @@ public class PipelineEngine implements PipelineExecutor {
         }
     }
 
+    private static void applyNestedRunContext(AssemblyRunTrace execution, NestedRunContext nestedRunContext) {
+        if (nestedRunContext == null) {
+            return;
+        }
+        execution.setParentExecutionId(nestedRunContext.parentExecutionId());
+        execution.setRootExecutionId(nestedRunContext.rootExecutionId());
+        execution.setParentStationLogId(nestedRunContext.parentStationLogId());
+    }
+
     @SuppressWarnings("unchecked")
     private static <IN, OUT> ExecutionResult<OUT> doExecuteInternal(
             AssemblyLine<IN, OUT> pipeline,
@@ -200,8 +255,7 @@ public class PipelineEngine implements PipelineExecutor {
                 yield (ExecutionResult<OUT>) ExecutionResult.success(result, execution);
             }
             case FAILED, RUNNING -> {
-                Exception failure = new RuntimeException(
-                        rootLog.getErrorMessage() != null ? rootLog.getErrorMessage() : "Pipeline failed");
+                Exception failure = new RuntimeException(rootLog.getErrorMessage() != null ? rootLog.getErrorMessage() : "Pipeline failed");
                 execution.setStatus(ExecutionStatus.FAILED);
                 execution.setError(failure);
                 yield ExecutionResult.failure(failure, execution);
@@ -209,12 +263,7 @@ public class PipelineEngine implements PipelineExecutor {
         };
     }
 
-    private static void finalizeRunFromResult(
-            ExecutionContext ctx,
-            AssemblyRunTrace execution,
-            ExecutionResult<?> result,
-            Throwable fatalError) {
-
+    private static void finalizeRunFromResult(ExecutionContext ctx, AssemblyRunTrace execution, ExecutionResult<?> result, Throwable fatalError) {
         if (execution.getEndTime() == null) {
             execution.setEndTime(Instant.now());
         }
@@ -250,47 +299,31 @@ public class PipelineEngine implements PipelineExecutor {
         return new RuntimeException(throwable);
     }
 
-    private void invokeRunStartedSafely(
-            RunLifecycleExtension lifecycleExtension,
-            ExecutionContext ctx,
-            AssemblyRunTrace execution) {
+    private void invokeRunStartedSafely(RunLifecycleExtension lifecycleExtension, ExecutionContext ctx, AssemblyRunTrace execution) {
         try {
             lifecycleExtension.onRunStarted(ctx, execution);
         } catch (Error error) {
             throw error;
         } catch (Exception e) {
             if (lifecycleExtension.failureMode() == LifecycleFailureMode.CRITICAL) {
-                throw e instanceof RuntimeException runtimeException
-                        ? runtimeException
-                        : new RuntimeException(e);
+                throw e instanceof RuntimeException runtimeException ? runtimeException : new RuntimeException(e);
             }
 
-            LOGGER.error(
-                    "A RunLifecycleExtension failed during onRunStarted. Ignoring. extension={}",
-                    lifecycleExtension.getClass().getName(),
-                    e);
+            LOGGER.error("A RunLifecycleExtension failed during onRunStarted. Ignoring. extension={}", lifecycleExtension.getClass().getName(), e);
         }
     }
 
-    private void invokeRunCompletedSafely(
-            RunLifecycleExtension lifecycleExtension,
-            ExecutionContext ctx,
-            AssemblyRunTrace execution) {
+    private void invokeRunCompletedSafely(RunLifecycleExtension lifecycleExtension, ExecutionContext ctx, AssemblyRunTrace execution) {
         try {
             lifecycleExtension.onRunCompleted(ctx, execution);
         } catch (Error error) {
             throw error;
         } catch (Exception e) {
             if (lifecycleExtension.failureMode() == LifecycleFailureMode.CRITICAL) {
-                throw e instanceof RuntimeException runtimeException
-                        ? runtimeException
-                        : new RuntimeException(e);
+                throw e instanceof RuntimeException runtimeException ? runtimeException : new RuntimeException(e);
             }
 
-            LOGGER.error(
-                    "A RunLifecycleExtension failed during onRunCompleted. Ignoring. extension={}",
-                    lifecycleExtension.getClass().getName(),
-                    e);
+            LOGGER.error("A RunLifecycleExtension failed during onRunCompleted. Ignoring. extension={}", lifecycleExtension.getClass().getName(), e);
         }
     }
 
@@ -307,40 +340,13 @@ public class PipelineEngine implements PipelineExecutor {
         private TaskFactory taskFactory;
         private PayloadCloner payloadCloner;
 
-        public Builder resourceFactory(ResourceFactory resourceFactory) {
-            this.resourceFactory = resourceFactory;
-            return this;
-        }
-
-        public Builder runnerChainFactory(RunnerChainFactory runnerChainFactory) {
-            this.runnerChainFactory = runnerChainFactory;
-            return this;
-        }
-
-        public Builder extensionResolver(RuntimeExtensionResolver extensionResolver) {
-            this.extensionResolver = extensionResolver;
-            return this;
-        }
-
-        public Builder executionContextRegistry(ExecutionContextRegistry executionContextRegistry) {
-            this.executionContextRegistry = executionContextRegistry;
-            return this;
-        }
-
-        public Builder idGenerator(IdGenerator idGenerator) {
-            this.idGenerator = idGenerator;
-            return this;
-        }
-
-        public Builder taskFactory(TaskFactory taskFactory) {
-            this.taskFactory = taskFactory;
-            return this;
-        }
-
-        public Builder payloadCloner(PayloadCloner payloadCloner) {
-            this.payloadCloner = payloadCloner;
-            return this;
-        }
+        public Builder resourceFactory(ResourceFactory resourceFactory) { this.resourceFactory = resourceFactory; return this; }
+        public Builder runnerChainFactory(RunnerChainFactory runnerChainFactory) { this.runnerChainFactory = runnerChainFactory; return this; }
+        public Builder extensionResolver(RuntimeExtensionResolver extensionResolver) { this.extensionResolver = extensionResolver; return this; }
+        public Builder executionContextRegistry(ExecutionContextRegistry executionContextRegistry) { this.executionContextRegistry = executionContextRegistry; return this; }
+        public Builder idGenerator(IdGenerator idGenerator) { this.idGenerator = idGenerator; return this; }
+        public Builder taskFactory(TaskFactory taskFactory) { this.taskFactory = taskFactory; return this; }
+        public Builder payloadCloner(PayloadCloner payloadCloner) { this.payloadCloner = payloadCloner; return this; }
 
         public PipelineEngine build() {
             return new PipelineEngine(this);

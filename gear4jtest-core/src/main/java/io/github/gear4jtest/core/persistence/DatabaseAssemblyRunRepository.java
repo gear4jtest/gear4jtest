@@ -104,7 +104,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     @Override
     public void save(AssemblyRunRecord execution) {
         try (Connection conn = dataSource.getConnection()) {
-            String sql = "INSERT INTO assembly_run (id, pipeline_id, input_parameters, context, result, status, start_time, end_time, error_message, parent_execution_id, root_execution_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+            String sql = "INSERT INTO assembly_run (id, pipeline_id, input_parameters, context, result, status, start_time, end_time, error_message, parent_execution_id, root_execution_id, parent_station_log_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setObject(1, execution.id());
                 stmt.setString(2, execution.pipelineId());
@@ -117,6 +117,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 stmt.setString(9, execution.errorMessage());
                 stmt.setObject(10, execution.parentExecutionId());
                 stmt.setObject(11, execution.rootExecutionId());
+                stmt.setObject(12, execution.parentStationLogId());
                 stmt.executeUpdate();
             }
         } catch (SQLException e) {
@@ -127,7 +128,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     @Override
     public void update(AssemblyRunRecord execution) {
         try (Connection conn = dataSource.getConnection()) {
-            String sql = "UPDATE assembly_run SET context=?, result=?, status=?, end_time=?, error_message=?, parent_execution_id=?, root_execution_id=? WHERE id=?";
+            String sql = "UPDATE assembly_run SET context=?, result=?, status=?, end_time=?, error_message=?, parent_execution_id=?, root_execution_id=?, parent_station_log_id=? WHERE id=?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setObject(1, toJson(execution.context()), Types.OTHER);
                 stmt.setObject(2, toJson(execution.result()), Types.OTHER);
@@ -136,7 +137,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 stmt.setString(5, execution.errorMessage());
                 stmt.setObject(6, execution.parentExecutionId());
                 stmt.setObject(7, execution.rootExecutionId());
-                stmt.setObject(8, execution.id());
+                stmt.setObject(8, execution.parentStationLogId());
+                stmt.setObject(9, execution.id());
                 stmt.executeUpdate();
             }
         } catch (SQLException e) {
@@ -340,7 +342,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 toInstant(rs.getTimestamp("end_time")),
                 rs.getString("error_message"),
                 rs.getObject("parent_execution_id", UUID.class),
-                rs.getObject("root_execution_id", UUID.class));
+                rs.getObject("root_execution_id", UUID.class),
+                rs.getObject("parent_station_log_id", UUID.class));
     }
 
     private StationLogRecord mapOperation(ResultSet rs) throws SQLException {

@@ -18,6 +18,7 @@ public class AssemblyRun {
 
     private UUID parentExecutionId;
     private UUID rootExecutionId;
+    private UUID parentStationLogId;
 
     public AssemblyRun() {
     }
@@ -147,5 +148,21 @@ public class AssemblyRun {
 
     public UUID getRootExecutionId() {
         return rootExecutionId;
+    }
+
+    public UUID getParentStationLogId() {
+        return parentStationLogId;
+    }
+
+    public void setParentExecutionId(UUID parentExecutionId) {
+        this.parentExecutionId = parentExecutionId;
+    }
+
+    public void setRootExecutionId(UUID rootExecutionId) {
+        this.rootExecutionId = rootExecutionId;
+    }
+
+    public void setParentStationLogId(UUID parentStationLogId) {
+        this.parentStationLogId = parentStationLogId;
     }
 }

@@ -9,5 +9,6 @@ CREATE TABLE assembly_run (
     end_time TIMESTAMP,
     error_message TEXT,
     parent_execution_id VARCHAR(255),
-    root_execution_id VARCHAR(255)
+    root_execution_id VARCHAR(255),
+    parent_station_log_id VARCHAR(255)
 );

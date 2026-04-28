@@ -19,6 +19,7 @@ public class AssemblyRunTrace {
 
     private UUID parentExecutionId;
     private UUID rootExecutionId;
+    private UUID parentStationLogId;
 
     public AssemblyRunTrace() {
     }
@@ -156,5 +157,13 @@ public class AssemblyRunTrace {
 
     public void setRootExecutionId(UUID rootExecutionId) {
         this.rootExecutionId = rootExecutionId;
+    }
+
+    public UUID getParentStationLogId() {
+        return parentStationLogId;
+    }
+
+    public void setParentStationLogId(UUID parentStationLogId) {
+        this.parentStationLogId = parentStationLogId;
     }
 }

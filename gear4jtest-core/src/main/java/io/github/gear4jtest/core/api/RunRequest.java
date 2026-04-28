@@ -6,9 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import io.github.gear4jtest.core.api.pipeline.NestedRunContext;
+import io.github.gear4jtest.core.api.pipeline.PipelineCallStack;
 import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
-import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.core.spi.factory.IdGenerator;
+import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 
 public class RunRequest {
 
@@ -17,6 +19,8 @@ public class RunRequest {
     private final ResourceFactory resourceFactory;
     private final List<RuntimeExtension> extensions;
     private final IdGenerator idGenerator;
+    private final NestedRunContext nestedRunContext;
+    private final PipelineCallStack pipelineCallStack;
 
     private RunRequest(Builder builder) {
         this.input = builder.input;
@@ -24,6 +28,8 @@ public class RunRequest {
         this.resourceFactory = builder.resourceFactory;
         this.extensions = List.copyOf(builder.extensions);
         this.idGenerator = builder.idGenerator;
+        this.nestedRunContext = builder.nestedRunContext;
+        this.pipelineCallStack = builder.pipelineCallStack;
     }
 
     public static Builder builder() {
@@ -69,12 +75,34 @@ public class RunRequest {
         return idGenerator;
     }
 
+    public NestedRunContext getNestedRunContext() {
+        return nestedRunContext;
+    }
+
+    public PipelineCallStack getPipelineCallStack() {
+        return pipelineCallStack;
+    }
+
+    public Builder toBuilder() {
+        Builder builder = new Builder()
+                .input(input)
+                .context(context)
+                .resourceFactory(resourceFactory)
+                .withIdGenerator(idGenerator)
+                .nestedRunContext(nestedRunContext)
+                .pipelineCallStack(pipelineCallStack);
+        extensions.forEach(builder::with);
+        return builder;
+    }
+
     public static class Builder {
         private final List<RuntimeExtension> extensions = new ArrayList<>();
         private Object input;
         private Map<String, Object> context;
         private ResourceFactory resourceFactory;
         private IdGenerator idGenerator;
+        private NestedRunContext nestedRunContext;
+        private PipelineCallStack pipelineCallStack;
 
         public Builder input(Object input) {
             this.input = input;
@@ -93,6 +121,16 @@ public class RunRequest {
 
         public Builder withIdGenerator(IdGenerator idGenerator) {
             this.idGenerator = idGenerator;
+            return this;
+        }
+
+        public Builder nestedRunContext(NestedRunContext nestedRunContext) {
+            this.nestedRunContext = nestedRunContext;
+            return this;
+        }
+
+        public Builder pipelineCallStack(PipelineCallStack pipelineCallStack) {
+            this.pipelineCallStack = pipelineCallStack;
             return this;
         }
 
