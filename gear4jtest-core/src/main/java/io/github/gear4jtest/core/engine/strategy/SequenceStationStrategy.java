@@ -14,22 +14,21 @@ import io.github.gear4jtest.core.api.station.SequenceStation;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
-public class SequenceStationStrategy extends AbstractStationStrategy<SequenceStation> {
+public class SequenceStationStrategy extends AbstractStationStrategy<SequenceStation<?, ?>> {
 
     @Override
-    public boolean supports(Class<? extends AbstractStation> type) {
+    public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
         return SequenceStation.class.isAssignableFrom(type);
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public Object doExecute(SequenceStation station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
+    public Object doExecute(SequenceStation<?, ?> station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
         FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
 
         Object currentInput = input;
         List<Throwable> collectedErrors = new ArrayList<>();
 
-        for (AbstractStation<?, ?> child : (List<AbstractStation>) station.getSteps()) {
+        for (AbstractStation<?, ?> child : station.getSteps()) {
             StationLogTrace childLog = runner.run(currentInput, child, operationExecution);
 
             FlowDecision decision = FlowDecider.decide(childLog, config);

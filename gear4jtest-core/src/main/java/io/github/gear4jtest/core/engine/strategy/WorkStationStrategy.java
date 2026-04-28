@@ -16,7 +16,7 @@ import io.github.gear4jtest.core.engine.support.WorkerConcurrencyStrategy;
 import io.github.gear4jtest.core.engine.support.WorkerIntrospector;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 
-public class WorkStationStrategy extends AbstractStationStrategy<WorkStation> {
+public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, ?>> {
 
     /**
      * Manager de concurrence partagé.
@@ -34,22 +34,25 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation> {
     private static final ThreadLocal<WorkerConcurrencyGuard> CURRENT_GUARD = new ThreadLocal<>();
 
     @Override
-    public boolean supports(Class<? extends AbstractStation> type) {
+    public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
         return WorkStation.class.isAssignableFrom(type);
     }
 
     @Override
-    public void setUp(WorkStation station, Object input, StationExecutionContext operationExecution) {
+    public void setUp(WorkStation<?, ?> station, Object input, StationExecutionContext operationExecution) {
         var services = operationExecution.getServices();
+
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        Class<Operator<?, ?>> operatorType = (Class) station.getType();
 
         Operator<?, ?> operation;
         if (station.isReuseOperatorInstanceWithinRun()) {
             operation = services.getOrCreateStationResource(
                     station.getId(),
-                    (Class<Operator>) station.getType(),
-                    () -> services.getResourceFactory().getResource((Class<Operator>) station.getType()));
+                    operatorType,
+                    () -> services.getResourceFactory().getResource(operatorType));
         } else {
-            operation = services.getResourceFactory().getResource((Class<Operator>) station.getType());
+            operation = services.getResourceFactory().getResource(operatorType);
         }
 
         ((DefaultStationExecutionContext) operationExecution).addCapability(Operator.class, operation);
@@ -72,16 +75,13 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation> {
     }
 
     @Override
-    public Object doExecute(WorkStation station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
-        var transformer = StationContextUtils.getTypedTransformer(operationExecution);
-        if (transformer.isEmpty()) {
-            throw new IllegalStateException("No transformer present found in operation execution context");
-        }
-        return transformer.get().transform(input, operationExecution);
+    public Object doExecute(WorkStation<?, ?> station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
+        return StationContextUtils.applyTransformer(input, operationExecution)
+                .orElseThrow(() -> new IllegalStateException("No transformer present found in operation execution context"));
     }
 
     @Override
-    protected void release(WorkStation station, Object result, StationExecutionContext context, List<Throwable> errors) {
+    protected void release(WorkStation<?, ?> station, Object result, StationExecutionContext context, List<Throwable> errors) {
         try {
             if (isStateful(context)) {
                 WorkerConcurrencyGuard guard = CURRENT_GUARD.get();
@@ -102,7 +102,7 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation> {
      * Par défaut, on déduit cela automatiquement depuis le transformer.
      */
     protected boolean isStateful(StationExecutionContext operationExecution) {
-        var transformer = StationContextUtils.getTypedTransformer(operationExecution);
+        var transformer = StationContextUtils.getTransformer(operationExecution);
         return transformer.isPresent() && WorkerIntrospector.isStateful(transformer.get());
     }
 

@@ -176,6 +176,7 @@ public class PipelineEngine implements PipelineExecutor {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static <IN, OUT> ExecutionResult<OUT> doExecuteInternal(
             AssemblyLine<IN, OUT> pipeline,
             RunRequest request,

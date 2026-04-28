@@ -16,7 +16,7 @@ public class RecursiveStationRunner implements StationRunner {
     }
 
     @Override
-    public StationLogTrace run(Object input, AbstractStation station, StationExecutionContext ctx) {
+    public StationLogTrace run(Object input, AbstractStation<?, ?> station, StationExecutionContext ctx) {
         return rootRunner.run(input, station, ctx);
     }
 }

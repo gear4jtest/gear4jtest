@@ -16,15 +16,14 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
  * - n'utilise plus ExecutionReport / OperationResult
  * - branche sur PipelineExecutionManager + IteratorBatch / OperationExecutionRecord
  */
-@SuppressWarnings("unchecked")
 public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
     private Function<IN, ? extends Iterable<?>> func;
-    private SequenceStation chain;
+    private SequenceStation<?, ?> chain;
     private ItemIdResolver itemIdResolver;
     private FlowConfig flowConfig;
     private Accumulator accumulator;
-    private Collector collector;
+    private Collector<?, ?, ?> collector;
 
     public IteratorStation(String id) {
         super(id, StationKind.ITERATOR);
@@ -38,11 +37,11 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
         return accumulator;
     }
 
-    public Collector getCollector() {
+    public Collector<?, ?, ?> getCollector() {
         return collector;
     }
 
-    public SequenceStation getChain() {
+    public SequenceStation<?, ?> getChain() {
         return chain;
     }
 
@@ -66,11 +65,13 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
             managedInstance = new IteratorStation<>(id);
         }
 
+        @SuppressWarnings("unchecked")
         public <A> Builder<IN, A> iterableFunction(Function<IN, ? extends Iterable<A>> func) {
             managedInstance.func = func;
             return (Builder<IN, A>) this;
         }
 
+        @SuppressWarnings("unchecked")
         public <A> Builder<IN, A> pipeline(SequenceStation<OUT, A> sequenceStation) {
             managedInstance.chain = sequenceStation;
             return (Builder<IN, A>) this;
@@ -86,6 +87,7 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
             return this;
         }
 
+        @SuppressWarnings("unchecked")
         public <C> Builder<IN, C> collector(Collector<OUT, ?, C> collector) {
             managedInstance.collector = collector;
             return (Builder<IN, C>) this;

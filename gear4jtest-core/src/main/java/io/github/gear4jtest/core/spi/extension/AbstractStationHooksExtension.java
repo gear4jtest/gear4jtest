@@ -1,6 +1,8 @@
 package io.github.gear4jtest.core.spi.extension;
 
 import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
@@ -33,15 +35,15 @@ public abstract class AbstractStationHooksExtension implements StationWrapperExt
         };
     }
 
-    protected void onStart(Object station, Object stationCtx) {
+    protected void onStart(AbstractStation<?, ?> station, StationExecutionContext stationCtx) {
     }
 
-    protected void onResult(Object station, Object stationCtx, StationLogTrace log) {
+    protected void onResult(AbstractStation<?, ?> station, StationExecutionContext stationCtx, StationLogTrace log) {
     }
 
-    protected void onException(Object station, Object stationCtx, RuntimeException error) {
+    protected void onException(AbstractStation<?, ?> station, StationExecutionContext stationCtx, RuntimeException error) {
     }
 
-    protected void onEnd(Object station, Object stationCtx) {
+    protected void onEnd(AbstractStation<?, ?> station, StationExecutionContext stationCtx) {
     }
 }

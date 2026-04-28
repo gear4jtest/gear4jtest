@@ -69,7 +69,7 @@ public class RunnerChainFactory {
         }
 
         @Override
-        public StationLogTrace run(Object input, AbstractStation station, StationExecutionContext ctx) {
+        public StationLogTrace run(Object input, AbstractStation<?, ?> station, StationExecutionContext ctx) {
             if (delegate == null) {
                 throw new IllegalStateException("Runner chain has not been fully initialized");
             }

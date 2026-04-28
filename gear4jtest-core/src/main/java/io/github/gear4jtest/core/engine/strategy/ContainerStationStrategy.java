@@ -29,17 +29,16 @@ import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
-public class ContainerStationStrategy extends AbstractStationStrategy<ContainerBaseStation> {
+public class ContainerStationStrategy extends AbstractStationStrategy<ContainerBaseStation<?, ?>> {
 
     @Override
-    public boolean supports(Class<? extends AbstractStation> type) {
+    public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
         return ContainerBaseStation.class.isAssignableFrom(type);
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
     public Object doExecute(
-            ContainerBaseStation station,
+            ContainerBaseStation<?, ?> station,
             Object input,
             StationRunner runner,
             StationExecutionContext operationExecution) {
@@ -69,9 +68,8 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return returns(station, aggregation.results);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     private ExecutionAggregation executeSequentialBranches(
-            ContainerBaseStation station,
+            ContainerBaseStation<?, ?> station,
             Object input,
             StationRunner runner,
             StationExecutionContext operationExecution,
@@ -81,7 +79,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         List<Throwable> collectedErrors = new ArrayList<>();
         Map<String, StationLogStatus> siblingStatuses = new LinkedHashMap<>();
 
-        for (ContainerBaseStation.Branch branch : (List<ContainerBaseStation.Branch>) station.getPipelines()) {
+        for (ContainerBaseStation.Branch<?> branch : station.getPipelines()) {
             StationLogTrace childLog;
 
             if (!isBranchEligible(branch, input, operationExecution, siblingStatuses)) {
@@ -112,15 +110,14 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return new ExecutionAggregation(results, collectedErrors, null);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     private ExecutionAggregation executeParallelBranches(
-            ContainerBaseStation station,
+            ContainerBaseStation<?, ?> station,
             Object input,
             StationRunner runner,
             StationExecutionContext operationExecution,
             FlowConfig config) {
 
-        List<ContainerBaseStation.Branch> branches = (List<ContainerBaseStation.Branch>) station.getPipelines();
+        List<? extends ContainerBaseStation.Branch<?>> branches = station.getPipelines();
         StationLogTrace[] orderedResults = new StationLogTrace[branches.size()];
         List<Throwable> collectedErrors = new ArrayList<>();
 
@@ -133,7 +130,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         Map<Future<BranchExecution>, SubmittedBranch> submittedByFuture = new IdentityHashMap<>();
 
         for (int index = 0; index < branches.size(); index++) {
-            ContainerBaseStation.Branch branch = branches.get(index);
+            ContainerBaseStation.Branch<?> branch = branches.get(index);
 
             if (!isBranchConditionSatisfied(branch, input, operationExecution)) {
                 orderedResults[index] = buildConditionSkippedBranchLog(branch, operationExecution);
@@ -227,13 +224,12 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         }
     }
 
-    private void validateSiblingConditionsCompatibility(ContainerBaseStation station) {
+    private void validateSiblingConditionsCompatibility(ContainerBaseStation<?, ?> station) {
         if (!station.isParallel()) {
             return;
         }
 
-        for (Object rawBranch : station.getPipelines()) {
-            ContainerBaseStation.Branch<?> branch = (ContainerBaseStation.Branch<?>) rawBranch;
+        for (ContainerBaseStation.Branch<?> branch : station.getPipelines()) {
             if (branch.getSiblingCondition() != null) {
                 throw new IllegalArgumentException(
                         "Sibling branch conditions are only supported in sequential containers");
@@ -414,7 +410,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
     }
 
     private List<StationLogTrace> asOrderedList(
-            List<ContainerBaseStation.Branch> branches,
+            List<? extends ContainerBaseStation.Branch<?>> branches,
             StationLogTrace[] orderedResults,
             StationExecutionContext operationExecution) {
 
@@ -434,7 +430,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return results;
     }
 
-    private Object returns(ContainerBaseStation station, List<StationLogTrace> executions) {
+    private Object returns(ContainerBaseStation<?, ?> station, List<StationLogTrace> executions) {
         Object[] returnedObjects = executions.stream()
                 .map(StationLogTrace::getOutput)
                 .toArray();
@@ -445,9 +441,8 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return null;
     }
 
-    @SuppressWarnings("unchecked")
     private boolean isBranchEligible(
-            ContainerBaseStation.Branch branch,
+            ContainerBaseStation.Branch<?> branch,
             Object input,
             StationExecutionContext operationExecution,
             Map<String, StationLogStatus> siblingStatuses) {
@@ -459,9 +454,8 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return isSiblingBranchConditionSatisfied(branch, input, operationExecution, siblingStatuses);
     }
 
-    @SuppressWarnings("unchecked")
-    private boolean isBranchConditionSatisfied(
-            ContainerBaseStation.Branch branch,
+    private static boolean isBranchConditionSatisfied(
+            ContainerBaseStation.Branch<?> branch,
             Object input,
             StationExecutionContext operationExecution) {
 
@@ -469,12 +463,20 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
             return true;
         }
 
-        return branch.getCondition().test(input, operationExecution.getGlobalContext());
+        return evaluateBranchCondition(branch, input, operationExecution);
     }
 
     @SuppressWarnings("unchecked")
-    private boolean isSiblingBranchConditionSatisfied(
-            ContainerBaseStation.Branch branch,
+    private static <I> boolean evaluateBranchCondition(
+            ContainerBaseStation.Branch<I> branch,
+            Object input,
+            StationExecutionContext operationExecution) {
+
+        return branch.getCondition().test((I) input, operationExecution.getGlobalContext());
+    }
+
+    private static boolean isSiblingBranchConditionSatisfied(
+            ContainerBaseStation.Branch<?> branch,
             Object input,
             StationExecutionContext operationExecution,
             Map<String, StationLogStatus> siblingStatuses) {
@@ -483,8 +485,18 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
             return true;
         }
 
+        return evaluateSiblingBranchCondition(branch, input, operationExecution, siblingStatuses);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <I> boolean evaluateSiblingBranchCondition(
+            ContainerBaseStation.Branch<I> branch,
+            Object input,
+            StationExecutionContext operationExecution,
+            Map<String, StationLogStatus> siblingStatuses) {
+
         return branch.getSiblingCondition().test(
-                input,
+                (I) input,
                 operationExecution.getGlobalContext(),
                 SiblingBranchOutcomes.of(siblingStatuses));
     }

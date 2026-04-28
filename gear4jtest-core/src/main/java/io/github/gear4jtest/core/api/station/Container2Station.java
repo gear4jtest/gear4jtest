@@ -23,10 +23,10 @@ public class Container2Station<IN, OUT, A, B> extends ContainerBaseStation<IN, O
             managedInstance.setAwaitTimeout(parentDefinition.getAwaitTimeout());
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "rawtypes"})
         public <C> ContainerBaseStation<IN, C> returns(Container2DFunction<A, B, C> func) {
             ContainerBaseStation.validateUniqueBranchIds(managedInstance.getPipelines());
-            managedInstance.func = func;
+            managedInstance.func = (ContainerBaseStation.ContainerFunction) func;
             return (ContainerBaseStation<IN, C>) this.managedInstance;
         }
 
@@ -38,10 +38,11 @@ public class Container2Station<IN, OUT, A, B> extends ContainerBaseStation<IN, O
     }
 
     @FunctionalInterface
-    public interface Container2DFunction<A, B, C> extends ContainerFunction {
+    public interface Container2DFunction<A, B, C> extends ContainerFunction<C> {
         C applya(A a, B b);
 
         @Override
+        @SuppressWarnings("unchecked")
         default C apply(Object... objects) {
             assert objects != null && objects.length == 2;
             return applya((A) objects[0], (B) objects[1]);

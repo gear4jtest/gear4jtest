@@ -16,13 +16,33 @@ public final class StationContextUtils {
         return ctx.getKind() == StationKind.PROCESSING;
     }
 
-    public static <T extends Operator<?, ?>> Optional<T> getRawTransformer(StationExecutionContext ctx) {
-        return ctx.getCapability(Operator.class).map(raw -> (T) raw);
+    /**
+     * Returns the {@link Operator} instance currently bound to the station execution context, if any.
+     *
+     * <p>The returned operator is exposed with wildcards on purpose: the runtime model does not
+     * preserve {@code <IN, OUT>} on the boundary between {@link Operator} instances and the runner
+     * chain, so any cast to specific type variables must be confined to a single, deliberate place.
+     * Use {@link #applyTransformer(Object, StationExecutionContext)} when you actually need to
+     * invoke the transformer with an {@code Object} input.
+     */
+    public static Optional<Operator<?, ?>> getTransformer(StationExecutionContext ctx) {
+        return ctx.getCapability(Operator.class).map(raw -> (Operator<?, ?>) raw);
+    }
+
+    /**
+     * Invokes the bound {@link Operator} on {@code input} if one is present.
+     *
+     * <p>Captures the operator's {@code <IN, OUT>} type variables locally so the necessary
+     * unchecked cast on {@code input} stays in this single helper instead of leaking into every
+     * caller.
+     */
+    public static Optional<Object> applyTransformer(Object input, StationExecutionContext ctx) {
+        return getTransformer(ctx).map(op -> invokeTransformer(op, input, ctx));
     }
 
     @SuppressWarnings("unchecked")
-    public static <I, O> Optional<Operator<I, O>> getTypedTransformer(StationExecutionContext ctx) {
-        return ctx.getCapability(Operator.class).map(raw -> (Operator<I, O>) raw);
+    private static <I, O> O invokeTransformer(Operator<I, O> op, Object input, StationExecutionContext ctx) {
+        return op.transform((I) input, ctx);
     }
 
     public static Optional<WorkerParamsInjector.Parameters> getProcessingParameters(StationExecutionContext ctx) {

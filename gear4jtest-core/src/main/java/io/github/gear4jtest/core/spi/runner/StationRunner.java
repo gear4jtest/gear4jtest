@@ -10,5 +10,5 @@ import io.github.gear4jtest.core.execution.trace.StationLogTrace;
  */
 @FunctionalInterface
 public interface StationRunner {
-    StationLogTrace run(Object input, AbstractStation station, StationExecutionContext ctx);
+    StationLogTrace run(Object input, AbstractStation<?, ?> station, StationExecutionContext ctx);
 }

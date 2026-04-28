@@ -4,6 +4,7 @@ import io.github.gear4jtest.core.model.StationLogStatus;
 
 import io.github.gear4jtest.core.api.behavior.BaseError;
 import io.github.gear4jtest.core.api.behavior.Condition;
+import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
@@ -83,7 +84,7 @@ public class StationErrorPolicyExecutor {
     }
 
     private StationLogTrace applyIgnorePolicy(
-            AbstractStation station,
+            AbstractStation<?, ?> station,
             Object input,
             StationExecutionContext stationCtx,
             StationLogTrace record,
@@ -91,7 +92,7 @@ public class StationErrorPolicyExecutor {
 
         if (station.getFallbackOperator() != null) {
             try {
-                Object result = station.getFallbackOperator().transform(input, stationCtx);
+                Object result = invokeFallback(station.getFallbackOperator(), input, stationCtx);
                 record.markSuccess(result);
                 return record;
             } catch (Exception fallbackException) {
@@ -108,5 +109,14 @@ public class StationErrorPolicyExecutor {
 
         record.markSkipped(originalException);
         return record;
+    }
+
+    /**
+     * Captures the input/output type variables of an {@link Operator} once,
+     * so the unchecked cast on the input is confined to a single place.
+     */
+    @SuppressWarnings("unchecked")
+    private static <I, O> O invokeFallback(Operator<I, O> fallback, Object input, StationExecutionContext ctx) {
+        return fallback.transform((I) input, ctx);
     }
 }

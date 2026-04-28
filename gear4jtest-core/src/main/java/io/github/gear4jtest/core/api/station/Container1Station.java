@@ -67,10 +67,10 @@ public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT>
             return new Container2Station.Builder<>(managedInstance, branch);
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "rawtypes"})
         public <C> ContainerBaseStation<IN, C> returns(Container1DFunction<A, C> func) {
             ContainerBaseStation.validateUniqueBranchIds(managedInstance.getPipelines());
-            managedInstance.func = func;
+            managedInstance.func = (ContainerFunction) func;
             return (ContainerBaseStation<IN, C>) this.managedInstance;
         }
 
@@ -82,7 +82,7 @@ public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT>
     }
 
     @FunctionalInterface
-    public interface Container1DFunction<A, B> extends ContainerFunction {
+    public interface Container1DFunction<A, B> extends ContainerFunction<B> {
         B applya(A a);
 
         static <T> Container1DFunction<T, T> identity() {
@@ -90,6 +90,7 @@ public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT>
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         default B apply(Object... objects) {
             assert objects != null && objects.length == 1;
             return applya((A) objects[0]);

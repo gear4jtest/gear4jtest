@@ -5,16 +5,16 @@ import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.SignalStation;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 
-public class SignalStationStrategy extends AbstractStationStrategy<SignalStation> {
+public class SignalStationStrategy extends AbstractStationStrategy<SignalStation<?>> {
 
     @Override
-    public boolean supports(Class<? extends AbstractStation> type) {
+    public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
         return SignalStation.class.isAssignableFrom(type);
     }
 
     @Override
-    public Object doExecute(SignalStation station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
-        var eligible = station.getCondition().test(new SignalStation.SignalInterpretationContext<>(input, operationExecution.getGlobalContext()));
+    public Object doExecute(SignalStation<?> station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
+        boolean eligible = evaluateCondition(station, input, operationExecution);
 
         if (eligible) {
             switch (station.getSignalType()) {
@@ -23,5 +23,11 @@ public class SignalStationStrategy extends AbstractStationStrategy<SignalStation
             }
         }
         return input;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <I> boolean evaluateCondition(SignalStation<I> station, Object input, StationExecutionContext ctx) {
+        return station.getCondition().test(
+                new SignalStation.SignalInterpretationContext<>((I) input, ctx.getGlobalContext()));
     }
 }

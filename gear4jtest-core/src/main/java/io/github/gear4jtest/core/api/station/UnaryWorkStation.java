@@ -22,6 +22,7 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
 			managedInstance.unary = true;
 		}
 
+		@SuppressWarnings({"unchecked", "rawtypes"})
 		public <A, T extends Operator<INOUT, INOUT>> Builder<INOUT, T> type(Class<T> type) {
 			managedInstance.type = (Class) type;
 			return (Builder<INOUT, T>) this;

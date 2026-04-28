@@ -117,6 +117,7 @@ public class AssemblyLine<IN, OUT> {
             return this;
         }
 
+        @SuppressWarnings("unchecked")
         public <T> Builder<IN, T> then(AbstractStation<OUT, T> operation) {
             Objects.requireNonNull(operation);
             this.operations.add(operation);

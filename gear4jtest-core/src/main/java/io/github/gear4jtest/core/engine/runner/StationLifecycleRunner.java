@@ -27,7 +27,7 @@ public class StationLifecycleRunner implements StationRunner {
     }
 
     @Override
-    public StationLogTrace run(Object input, AbstractStation station, StationExecutionContext ctx) {
+    public StationLogTrace run(Object input, AbstractStation<?, ?> station, StationExecutionContext ctx) {
         ExecutionContext runCtx = ctx.getGlobalContext();
         StationLogRecord startedSnapshot = StationLogRecord.from(ctx.getRecord());
 

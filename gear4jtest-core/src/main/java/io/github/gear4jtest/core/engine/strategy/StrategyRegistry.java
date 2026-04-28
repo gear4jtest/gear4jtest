@@ -8,7 +8,7 @@ import io.github.gear4jtest.core.api.station.AbstractStation;
 
 public class StrategyRegistry {
 
-    private final Map<Class<? extends AbstractStation>, StationExecutionStrategy<?>> cache = new ConcurrentHashMap<>();
+    private final Map<Class<? extends AbstractStation<?, ?>>, StationExecutionStrategy<?>> cache = new ConcurrentHashMap<>();
     private final List<StationExecutionStrategy<?>> strategies;
 
     public static StrategyRegistry defaultRegistry() {
@@ -27,12 +27,12 @@ public class StrategyRegistry {
     }
 
     @SuppressWarnings("unchecked")
-    public <S extends AbstractStation> StationExecutionStrategy<S> getStrategy(S station) {
-        return (StationExecutionStrategy<S>) cache.computeIfAbsent(station.getClass(), type -> 
-            strategies.stream()
-                .filter(s -> s.supports(type))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No strategy for " + type))
-        );
+    public <S extends AbstractStation<?, ?>> StationExecutionStrategy<S> getStrategy(S station) {
+        return (StationExecutionStrategy<S>) cache.computeIfAbsent(
+                (Class<? extends AbstractStation<?, ?>>) station.getClass(),
+                type -> strategies.stream()
+                        .filter(s -> s.supports(type))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException("No strategy for " + type)));
     }
 }

@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.engine.strategy;
 
 import io.github.gear4jtest.core.model.StationLogStatus;
 
+import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
 import io.github.gear4jtest.core.api.behavior.SkipDecision;
 import io.github.gear4jtest.core.api.behavior.SkipPhase;
@@ -14,9 +15,8 @@ import io.github.gear4jtest.core.spi.runner.StationRunner;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class AbstractStationStrategy<S extends AbstractStation> implements StationExecutionStrategy<S> {
+public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> implements StationExecutionStrategy<S> {
 
-    @SuppressWarnings("unchecked")
     @Override
     public StationLogTrace run(S station, Object input, StationExecutionContext context, StationRunner runner) {
         Object result = null;
@@ -31,7 +31,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
             }
 
             if (station.getProcessors() != null && !station.getProcessors().isEmpty()) {
-                for (Processor processor : (List<Processor>) station.getProcessors()) {
+                for (Processor processor : station.getProcessors()) {
                     try {
                         processor.beforeExecution(input, context);
                     } catch (Exception e) {
@@ -61,7 +61,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
             }
 
             if (station.getProcessors() != null && !station.getProcessors().isEmpty()) {
-                for (Processor processor : (List<Processor>) station.getProcessors()) {
+                for (Processor processor : station.getProcessors()) {
                     try {
                         processor.afterExecution(result, context);
                     } catch (Exception e) {
@@ -116,7 +116,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
 
         if (station.getFallbackOperator() != null) {
             try {
-                Object res = station.getFallbackOperator().transform(input, ctx);
+                Object res = invokeFallback(station.getFallbackOperator(), input, ctx);
                 record.markSuccess(res);
                 return res;
             } catch (Exception e) {
@@ -173,4 +173,14 @@ public abstract class AbstractStationStrategy<S extends AbstractStation> impleme
             Object input,
             StationRunner runner,
             StationExecutionContext opContext) throws Exception;
+
+    /**
+     * Captures the input/output type variables of an {@link Operator} once,
+     * so the unchecked cast on the input is confined to a single place
+     * instead of propagating through every caller that only sees {@code Object}.
+     */
+    @SuppressWarnings("unchecked")
+    private static <I, O> O invokeFallback(Operator<I, O> fallback, Object input, StationExecutionContext ctx) {
+        return fallback.transform((I) input, ctx);
+    }
 }

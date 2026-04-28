@@ -16,7 +16,7 @@ public class ScopeInitializingRunner implements StationRunner {
     }
 
     @Override
-    public StationLogTrace run(Object input, AbstractStation station, StationExecutionContext parentCtx) {
+    public StationLogTrace run(Object input, AbstractStation<?, ?> station, StationExecutionContext parentCtx) {
         StationLogTrace stationLog = StationLogTrace.start(
             parentCtx.getGlobalContext().getExecutionId(),
             station.getId(),

@@ -25,7 +25,7 @@ public class WorkerParamsInjector implements Processor {
     @Override
     public <I> void beforeExecution(I input, StationExecutionContext operationExecution) {
         var processingParameters = StationContextUtils.getProcessingParameters(operationExecution);
-        var transformer = StationContextUtils.getRawTransformer(operationExecution);
+        var transformer = StationContextUtils.getTransformer(operationExecution);
         if (processingParameters.isEmpty() || transformer.isEmpty()) {
             return;
         }
@@ -92,7 +92,7 @@ public class WorkerParamsInjector implements Processor {
     @Override
     public void afterExecution(Object result, StationExecutionContext operationExecution) {
         var processingParameters = StationContextUtils.getProcessingParameters(operationExecution);
-        var transformer = StationContextUtils.getRawTransformer(operationExecution);
+        var transformer = StationContextUtils.getTransformer(operationExecution);
         if (processingParameters.isEmpty() || transformer.isEmpty()) {
             return;
         }

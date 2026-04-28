@@ -74,6 +74,7 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 			managedInstance = new WorkStation<>();
 		}
 
+		@SuppressWarnings({"unchecked", "rawtypes"})
 		public <A, T extends Operator<IN, A>> Builder<IN, A, T> type(Class<T> type) {
 			managedInstance.type = (Class) type;
 			return (Builder<IN, A, T>) this;

@@ -14,7 +14,7 @@ public class TaskFactory {
 
     public Callable<StationLogTrace> createTask(
             Supplier<?> inputSupplier,
-            AbstractStation station,
+            AbstractStation<?, ?> station,
             StationRunner runner,
             StationExecutionContext ctx,
             String itemId) {

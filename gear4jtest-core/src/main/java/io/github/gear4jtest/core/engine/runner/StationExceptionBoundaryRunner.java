@@ -25,7 +25,7 @@ public class StationExceptionBoundaryRunner implements StationRunner {
     }
 
     @Override
-    public StationLogTrace run(Object input, AbstractStation station, StationExecutionContext ctx) {
+    public StationLogTrace run(Object input, AbstractStation<?, ?> station, StationExecutionContext ctx) {
         try {
             return delegate.run(input, station, ctx);
         } catch (Error error) {
