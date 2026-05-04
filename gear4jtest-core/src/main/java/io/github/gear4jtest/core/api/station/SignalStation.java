@@ -31,6 +31,11 @@ public class SignalStation<IN> extends AbstractStation<IN, IN> {
 			managedInstance = new SignalStation<>();
 		}
 
+		public Builder<IN> id(String id) {
+			managedInstance.id = java.util.Objects.requireNonNull(id, "id is required");
+			return this;
+		}
+
 		public Builder<IN> type(SignalType signalType) {
 			managedInstance.signalType = signalType;
 			return this;

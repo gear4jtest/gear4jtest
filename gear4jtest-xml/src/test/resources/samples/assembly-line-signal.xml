@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="test_signal"
+              inputType="java.lang.String"
+              outputType="java.lang.String">
+
+    <operations>
+        <processingOperation id="append_a" type="com.myorg.operation.Step11">
+            <parameters>
+                <valueParameter retriever="com.myorg.operation.Step11::getParam" value="a"/>
+            </parameters>
+        </processingOperation>
+
+        <signal id="stop_when_a" type="STOP" inputType="java.lang.String">
+            <condition expression="input.endsWith(&quot;a&quot;)"/>
+        </signal>
+    </operations>
+</assemblyLine>

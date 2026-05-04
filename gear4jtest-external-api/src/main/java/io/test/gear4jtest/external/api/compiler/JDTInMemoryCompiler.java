@@ -2,6 +2,7 @@ package io.test.gear4jtest.external.api.compiler;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.test.gear4jtest.external.api.exception.CompilationException;
+import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.internal.compiler.CompilationResult;
 import org.eclipse.jdt.internal.compiler.Compiler;
 import org.eclipse.jdt.internal.compiler.DefaultErrorHandlingPolicies;
@@ -25,93 +27,81 @@ import org.eclipse.jdt.internal.compiler.problem.DefaultProblemFactory;
 
 public class JDTInMemoryCompiler {
 
+    private final ClassLoader parentClassLoader;
     private final InMemoryNameEnvironment nameEnvironment;
 
     public JDTInMemoryCompiler() {
-        this.nameEnvironment = new InMemoryNameEnvironment();
+        this(Thread.currentThread().getContextClassLoader());
+    }
+
+    public JDTInMemoryCompiler(ClassLoader parentClassLoader) {
+        this.parentClassLoader = parentClassLoader != null ? parentClassLoader : ClassLoader.getSystemClassLoader();
+        this.nameEnvironment = new InMemoryNameEnvironment(this.parentClassLoader);
     }
 
     /**
-     * Compile avec JDT en mémoire
+     * Compiles a single Java source unit in memory.
+     *
+     * @param className fully-qualified class name
+     * @param sourceCode UTF-8 Java source bytes
+     * @return compiled class bytes by fully-qualified class name
      */
     public Map<String, byte[]> compile(String className, byte[] sourceCode) {
         try {
-            // Création de l'unité de compilation
             InMemoryCompilationUnit unit = new InMemoryCompilationUnit(className, sourceCode);
-
-            // Configuration du compilateur JDT
-            CompilerOptions options = getCompilerOptions();
-
-            // Requestor pour récupérer les résultats
             InMemoryCompilerRequestor requestor = new InMemoryCompilerRequestor();
 
-            // Création du compilateur JDT
             Compiler compiler = new Compiler(
                     nameEnvironment,
                     DefaultErrorHandlingPolicies.proceedWithAllProblems(),
-                    options,
+                    compilerOptions(),
                     requestor,
                     new DefaultProblemFactory()
             );
 
-            // Compilation
             compiler.compile(new ICompilationUnit[]{unit});
 
-            // Récupération des résultats
             if (requestor.hasErrors()) {
-                System.err.println("Erreurs de compilation:");
-                requestor.getErrors().forEach(System.err::println);
-                return Map.of();
+                throw new CompilationException("Compilation failed for " + className, requestor.getErrors());
             }
-
-            // Retourne les classes compilées
+            if (requestor.getCompiledClasses().isEmpty()) {
+                throw new CompilationException("Compilation produced no class for " + className);
+            }
             return requestor.getCompiledClasses();
+        } catch (CompilationException e) {
+            throw e;
         } catch (Exception e) {
-            System.err.println("Erreur JDT: " + e.getMessage());
-            throw new CompilationException(e);
+            throw new CompilationException("JDT compilation failed for " + className, List.of(e.getMessage()), e);
         }
     }
 
-    /**
-     * Configure les options du compilateur selon la version Java disponible
-     */
-    private CompilerOptions getCompilerOptions() {
+    public ClassLoader parentClassLoader() {
+        return parentClassLoader;
+    }
+
+    private static CompilerOptions compilerOptions() {
         CompilerOptions options = new CompilerOptions();
-
-        // Détection de la version Java
-        String jdtVersion = CompilerOptions.VERSION_17;
-
-        // Configuration des options
         Map<String, String> optionsMap = new HashMap<>();
-        optionsMap.put(CompilerOptions.OPTION_Source, jdtVersion);
-        optionsMap.put(CompilerOptions.OPTION_TargetPlatform, jdtVersion);
-        optionsMap.put(CompilerOptions.OPTION_Compliance, jdtVersion);
-        optionsMap.put(CompilerOptions.OPTION_Encoding, "UTF-8");
+        optionsMap.put(CompilerOptions.OPTION_Source, CompilerOptions.VERSION_17);
+        optionsMap.put(CompilerOptions.OPTION_TargetPlatform, CompilerOptions.VERSION_17);
+        optionsMap.put(CompilerOptions.OPTION_Compliance, CompilerOptions.VERSION_17);
+        optionsMap.put(CompilerOptions.OPTION_Encoding, StandardCharsets.UTF_8.name());
         optionsMap.put(CompilerOptions.OPTION_ReportDeprecation, CompilerOptions.IGNORE);
         optionsMap.put(CompilerOptions.OPTION_ReportUnusedImport, CompilerOptions.IGNORE);
-
-        // Désactiver le système de modules pour éviter les erreurs
         optionsMap.put(CompilerOptions.OPTION_EnablePreviews, CompilerOptions.DISABLED);
         optionsMap.put(CompilerOptions.OPTION_Release, CompilerOptions.DISABLED);
-
-        // Forcer le mode non-module (classpath traditionnel)
         optionsMap.put(CompilerOptions.OPTION_ReportUnstableAutoModuleName, CompilerOptions.DISABLED);
         optionsMap.put(CompilerOptions.OPTION_IgnoreUnnamedModuleForSplitPackage, CompilerOptions.DISABLED);
-
         options.set(optionsMap);
-
         return options;
     }
 
-    /**
-     * Unité de compilation en mémoire pour JDT
-     */
     private static class InMemoryCompilationUnit implements ICompilationUnit {
         private final String className;
         private final byte[] sourceCode;
         private final String fileName;
 
-        public InMemoryCompilationUnit(String className, byte[] sourceCode) {
+        private InMemoryCompilationUnit(String className, byte[] sourceCode) {
             this.className = className;
             this.sourceCode = sourceCode;
             this.fileName = className.replace('.', '/') + ".java";
@@ -119,7 +109,7 @@ public class JDTInMemoryCompiler {
 
         @Override
         public char[] getContents() {
-            return new String(sourceCode).toCharArray();
+            return new String(sourceCode, StandardCharsets.UTF_8).toCharArray();
         }
 
         @Override
@@ -134,9 +124,7 @@ public class JDTInMemoryCompiler {
             if (lastDot == -1) {
                 return new char[0][];
             }
-
-            String packageName = className.substring(0, lastDot);
-            String[] parts = packageName.split("\\.");
+            String[] parts = className.substring(0, lastDot).split("\\.");
             char[][] result = new char[parts.length][];
             for (int i = 0; i < parts.length; i++) {
                 result[i] = parts[i].toCharArray();
@@ -160,64 +148,36 @@ public class JDTInMemoryCompiler {
         }
     }
 
-    /**
-     * Environnement de noms pour JDT - version améliorée
-     */
     private static class InMemoryNameEnvironment implements INameEnvironment {
-        private final ClassLoader systemClassLoader;
+        private final ClassLoader classLoader;
 
-        public InMemoryNameEnvironment() {
-            this.systemClassLoader = ClassLoader.getSystemClassLoader();
+        private InMemoryNameEnvironment(ClassLoader classLoader) {
+            this.classLoader = classLoader;
         }
 
         @Override
         public NameEnvironmentAnswer findType(char[][] compoundTypeName) {
-            String result = "";
-
-            String sep = "";
-
-            for (int i = 0; i < compoundTypeName.length; i++) {
-                result += sep;
-                result += new String(compoundTypeName[i]);
-                sep = ".";
-            }
-
-            return findType(result);
+            return findType(join(compoundTypeName));
         }
 
         @Override
         public NameEnvironmentAnswer findType(char[] typeName, char[][] packageName) {
-            String result = "";
-
-            String sep = "";
-
-            for (int i = 0; i < packageName.length; i++) {
-                result += sep;
-                result += new String(packageName[i]);
-                sep = ".";
-            }
-
-            result += sep;
-            result += new String(typeName);
-            return findType(result);
+            String pkg = join(packageName);
+            String simple = new String(typeName);
+            return findType(pkg.isBlank() ? simple : pkg + "." + simple);
         }
-
 
         private NameEnvironmentAnswer findType(String className) {
             try {
                 String resourceName = className.replace('.', '/') + ".class";
-
-                InputStream is = systemClassLoader.getResourceAsStream(resourceName);
-
-                if (is == null) {
-                    return null;
+                try (InputStream is = classLoader.getResourceAsStream(resourceName)) {
+                    if (is == null) {
+                        return null;
+                    }
+                    byte[] classBytes = is.readAllBytes();
+                    ClassFileReader classFileReader = new ClassFileReader(classBytes, className.toCharArray(), true);
+                    return new NameEnvironmentAnswer(classFileReader, null);
                 }
-
-                byte[] classBytes = is.readAllBytes();
-                char[] fileName = className.toCharArray();
-                ClassFileReader classFileReader = new ClassFileReader(classBytes, fileName, true);
-
-                return new NameEnvironmentAnswer(classFileReader, null);
             } catch (IOException | ClassFormatException e) {
                 return null;
             }
@@ -225,42 +185,37 @@ public class JDTInMemoryCompiler {
 
         @Override
         public boolean isPackage(char[][] parentPackageName, char[] packageName) {
-            String result = "";
-            String sep = "";
+            String parent = join(parentPackageName);
+            String candidate = parent.isBlank() ? new String(packageName) : parent + "." + new String(packageName);
 
-            if (parentPackageName != null) {
-                for (int i = 0; i < parentPackageName.length; i++) {
-                    result += sep;
-                    result += new String(parentPackageName[i]);
-                    sep = ".";
-                }
-            }
-
-            if (Character.isUpperCase(packageName[0])) {
+            if (packageName.length > 0 && Character.isUpperCase(packageName[0])) {
                 return false;
             }
 
-            String str = new String(packageName);
-            result += sep;
-            result += str;
-            return isPackage(result);
-        }
-
-        private boolean isPackage(String result) {
-            String resourceName = "/" + result.replace('.', '/') + ".class";
-            InputStream is = systemClassLoader.getResourceAsStream(resourceName);
-            return is == null;
+            String resourceName = candidate.replace('.', '/') + ".class";
+            return classLoader.getResource(resourceName) == null;
         }
 
         @Override
         public void cleanup() {
-            // Rien à nettoyer
+            // nothing to clean
+        }
+
+        private static String join(char[][] parts) {
+            if (parts == null || parts.length == 0) {
+                return "";
+            }
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < parts.length; i++) {
+                if (i > 0) {
+                    result.append('.');
+                }
+                result.append(parts[i]);
+            }
+            return result.toString();
         }
     }
 
-    /**
-     * Requestor pour récupérer les résultats de compilation JDT
-     */
     private static class InMemoryCompilerRequestor implements ICompilerRequestor {
         private final Map<String, byte[]> compiledClasses = new HashMap<>();
         private final List<String> errors = new ArrayList<>();
@@ -268,35 +223,40 @@ public class JDTInMemoryCompiler {
         @Override
         public void acceptResult(CompilationResult result) {
             if (result.hasErrors()) {
-                for (var problem : result.getAllProblems()) {
-                    errors.add(problem.getMessage());
-                }
-            } else {
-                // Récupérer les fichiers de classe générés
-                var classFiles = result.getClassFiles();
-                for (var classFile : classFiles) {
-                    String className = new String(classFile.getCompoundName()[0]);
-                    // Construire le nom complet de la classe
-                    char[][] compoundName = classFile.getCompoundName();
-                    if (compoundName.length > 1) {
-                        className = String.join(".", Arrays.stream(compoundName)
-                                .map(String::new)
-                                .toArray(String[]::new));
+                for (IProblem problem : result.getAllProblems()) {
+                    if (problem.isError()) {
+                        errors.add(format(problem));
                     }
-                    compiledClasses.put(className, classFile.getBytes());
                 }
+                return;
+            }
+
+            for (var classFile : result.getClassFiles()) {
+                char[][] compoundName = classFile.getCompoundName();
+                String className = String.join(".", Arrays.stream(compoundName)
+                        .map(String::new)
+                        .toArray(String[]::new));
+                compiledClasses.put(className, classFile.getBytes());
             }
         }
 
-        public boolean hasErrors() {
+        private static String format(IProblem problem) {
+            return "%s:%d:%d: %s".formatted(
+                    new String(problem.getOriginatingFileName()),
+                    problem.getSourceLineNumber(),
+                    problem.getSourceStart(),
+                    problem.getMessage());
+        }
+
+        boolean hasErrors() {
             return !errors.isEmpty();
         }
 
-        public List<String> getErrors() {
+        List<String> getErrors() {
             return errors;
         }
 
-        public Map<String, byte[]> getCompiledClasses() {
+        Map<String, byte[]> getCompiledClasses() {
             return compiledClasses;
         }
     }

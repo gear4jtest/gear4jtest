@@ -5,44 +5,39 @@
               outputType="java.util.List">
 
     <operations>
-        <processingOperation id="step11" type="Step11">
+        <processingOperation id="step11" type="com.myorg.operation.Step11">
             <parameters>
-                <valueParameter retriever="Step11::getParam" value="a"/>
+                <valueParameter retriever="com.myorg.operation.Step11::getParam" value="a"/>
             </parameters>
         </processingOperation>
 
-        <container inputType="java.lang.String" outputType="java.util.List"
-                   parallel="true" threadPoolSize="2">
+        <container id="parallelContainer"
+                   inputType="java.lang.String"
+                   outputType="java.util.List"
+                   parallel="true"
+                   threadPoolSize="2">
             <subLines>
                 <subLine id="subline1">
-                    <processingOperation id="step11_c" type="Step11">
+                    <processingOperation id="step11_c" type="com.myorg.operation.Step11">
                         <parameters>
-                            <valueParameter retriever="Step11::getParam" value="c"/>
+                            <valueParameter retriever="com.myorg.operation.Step11::getParam" value="c"/>
                         </parameters>
                     </processingOperation>
                 </subLine>
                 <subLine id="subline2">
-                    <processingOperation id="step11_b" type="Step11">
+                    <processingOperation id="step11_b" type="com.myorg.operation.Step11">
                         <parameters>
-                            <valueParameter retriever="Step11::getParam" value="b"/>
+                            <valueParameter retriever="com.myorg.operation.Step11::getParam" value="b"/>
                         </parameters>
                     </processingOperation>
                 </subLine>
             </subLines>
-            <returnsFunction expression="Arrays::asList"/>
+            <returnsFunction expression="(a, b) -> java.util.Arrays.asList(a, b)"/>
         </container>
     </operations>
 
     <configuration>
-        <operationDefaultConfiguration/>
         <eventHandling>
-            <eventBuses>
-                <eventBus name="main">
-                    <eventListeners>
-                        <eventListener class="TestEventListener"/>
-                    </eventListeners>
-                </eventBus>
-            </eventBuses>
             <globalEventConfiguration eventOnParameterChanged="true"/>
         </eventHandling>
     </configuration>

@@ -110,8 +110,8 @@ class JacksonPayloadClonerIntegrationTest {
 
         ContainerBaseStation<MutablePayload, MutablePayload> container = ElementModelBuilders
                 .container(MutablePayload.class, executor)
-                .withSubLine(branchOne)
-                .withSubLine(branchTwo)
+                .withSubLine("id1", branchOne)
+                .withSubLine("id2", branchTwo)
                 .returns((MutablePayload left, MutablePayload right) -> MutablePayload.merge(left, right));
 
         return AssemblyLine.<MutablePayload, MutablePayload>builder("parallel-container")

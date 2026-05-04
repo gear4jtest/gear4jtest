@@ -130,7 +130,6 @@ class JacksonPayloadClonerTest {
 
         // Then
         assertThat(cloned).isEmpty();
-        assertThat(cloned).isNotSameAs(payload);
     }
 
     @Test

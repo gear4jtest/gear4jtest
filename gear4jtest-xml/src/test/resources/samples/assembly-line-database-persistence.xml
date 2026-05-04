@@ -1,59 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <assemblyLine xmlns="http://github.com/gear4jtest/core/model"
-              id="test_database"
+              id="test_persistence"
               inputType="java.lang.String"
-              outputType="java.util.List">
+              outputType="java.lang.String">
 
     <operations>
-        <processingOperation id="step3" type="Step3">
+        <processingOperation id="append_persisted" type="com.myorg.operation.Step11">
             <parameters>
-                <valueParameter retriever="Step3::getParam" value="a"/>
+                <valueParameter retriever="com.myorg.operation.Step11::getParam" value="-persisted"/>
             </parameters>
-            <onErrors>
-                <unsafeError signalType="IGNORE" throwableType="java.lang.Exception">
-                    <condition expression="(input, ctx) -> ctx.getContext().containsKey(&quot;a&quot;)"/>
-                    <action expression="() -> System.out.println(&quot;Error occurred!&quot;)"/>
-                </unsafeError>
-            </onErrors>
-            <conditions>
-                <condition expression="(input, ctx) -> input.equals(&quot;a&quot;)"/>
-            </conditions>
-            <fallbackTransformer expression="(a, ctx, exec) -> new HashMap&lt;&gt;()"/>
         </processingOperation>
-
-        <processingOperation id="step8" type="Step8"/>
-        <processingOperation id="step9" type="Step9"/>
-
-        <iterator id="iterator">
-            <iterableFunction expression="Function.identity()"/>
-            <operation id="step10" type="Step10"/>
-            <collector expression="Collectors.toList()"/>
-        </iterator>
     </operations>
 
     <configuration>
-        <operationDefaultConfiguration/>
-
-        <eventHandling>
-            <eventBuses>
-                <eventBus name="main">
-                    <eventListeners>
-                        <eventListener class="TestEventListener"/>
-                    </eventListeners>
-                </eventBus>
-            </eventBuses>
-            <globalEventConfiguration eventOnParameterChanged="true"/>
-        </eventHandling>
-
-        <persistence persistenceType="DATABASE"
-                     dataSourceType="POSTGRESQL"
-                     storeResultObject="true">
-            <dataSource class="org.postgresql.ds.PGSimpleDataSource">
-                <property name="user" value="postgres"/>
-                <property name="password" value="postgres"/>
-                <property name="url" value="jdbc:postgresql://localhost:5432/gear4jtest"/>
-                <property name="databaseName" value="gear4jtest"/>
-            </dataSource>
-        </persistence>
+        <persistence storeResultObject="true"/>
     </configuration>
 </assemblyLine>

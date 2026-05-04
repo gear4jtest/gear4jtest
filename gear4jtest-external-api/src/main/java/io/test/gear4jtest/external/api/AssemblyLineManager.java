@@ -41,6 +41,7 @@ public class AssemblyLineManager {
     private final OperationChainTranslatorResolver translatorResolver;
     private final JDTInMemoryCompiler compiler;
     private final DependencyInjector dependencyInjector;
+    private final ClassLoader generatedClassParent;
 
     private final Map<String, ArtifactStore> storeCacheByAl = new ConcurrentHashMap<>();
 
@@ -50,28 +51,43 @@ public class AssemblyLineManager {
                                ArtifactStoreProvider storeProvider,
                                ClassLoaderRegistry classLoaderRegistry,
                                OperationChainTranslatorResolver translatorResolver) {
+        this(configRepo, objectRepo, chainTagRepo, storeProvider, classLoaderRegistry, translatorResolver,
+                new JDTInMemoryCompiler(contextClassLoader()), new SimpleDependencyInjector(), contextClassLoader());
+    }
+
+    public AssemblyLineManager(OperationChainConfigRepository configRepo,
+                               OperationChainObjectRepository objectRepo,
+                               OperationChainTagRepository chainTagRepo,
+                               ArtifactStoreProvider storeProvider,
+                               ClassLoaderRegistry classLoaderRegistry,
+                               OperationChainTranslatorResolver translatorResolver,
+                               JDTInMemoryCompiler compiler,
+                               DependencyInjector dependencyInjector,
+                               ClassLoader generatedClassParent) {
         this.configRepo = requireNonNull(configRepo);
         this.objectRepo = requireNonNull(objectRepo);
         this.chainTagRepo = requireNonNull(chainTagRepo);
         this.storeProvider = requireNonNull(storeProvider);
         this.classLoaderRegistry = requireNonNull(classLoaderRegistry);
         this.translatorResolver = requireNonNull(translatorResolver);
-        this.compiler = new JDTInMemoryCompiler();
-        this.dependencyInjector = new SimpleDependencyInjector();
+        this.generatedClassParent = generatedClassParent != null ? generatedClassParent : contextClassLoader();
+        this.compiler = compiler != null ? compiler : new JDTInMemoryCompiler(this.generatedClassParent);
+        this.dependencyInjector = dependencyInjector != null ? dependencyInjector : new SimpleDependencyInjector();
     }
 
-    /** Variante discovery via ServiceLoader sur le TCCL */
+    /**
+     * Discovery variant using {@link java.util.ServiceLoader} on the current thread context classloader.
+     */
     public static AssemblyLineManager withServiceLoadedCompilers(OperationChainConfigRepository configRepo,
                                                                  OperationChainObjectRepository objectRepo,
                                                                  OperationChainTagRepository chainTagRepo,
                                                                  ArtifactStoreProvider storeProvider,
                                                                  ClassLoaderRegistry classLoaderRegistry) {
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        ClassLoader cl = contextClassLoader();
         var resolver = OperationChainTranslatorResolver.fromServiceLoader(cl);
-        return new AssemblyLineManager(configRepo, objectRepo, chainTagRepo, storeProvider, classLoaderRegistry, resolver);
+        return new AssemblyLineManager(configRepo, objectRepo, chainTagRepo, storeProvider, classLoaderRegistry,
+                resolver, new JDTInMemoryCompiler(cl), new SimpleDependencyInjector(), cl);
     }
-
-    // ----------------- API -----------------
 
     public String registerAssemblyLine(String alId, String version, ExecutionMode mode,
                                        byte[] content, String mediaType,
@@ -80,8 +96,9 @@ public class AssemblyLineManager {
         if (version == null || version.isBlank()) {
             throw new IllegalArgumentException("version is required for persisted TEST/RUN publication");
         }
-        requireNonNull(alId); requireNonNull(version); requireNonNull(mode); requireNonNull(content);
-
+        requireNonNull(alId);
+        requireNonNull(mode);
+        requireNonNull(content);
 
         if (mode == ExecutionMode.RUN) {
             OperationChainConfig cfg = configRepo.findByAssemblyLineId(alId)
@@ -96,13 +113,15 @@ public class AssemblyLineManager {
 
         OperationChainObject obj = new OperationChainObject(
                 null, alId, version, mode, hash, content.length,
-                (mediaType == null || mediaType.isBlank()) ? "application/xml" : mediaType,
+                normalizeMediaType(mediaType),
                 Instant.now(), createdBy, Instant.now()
         );
         objectRepo.insert(obj);
 
         if (tags != null && !tags.isEmpty()) {
-            for (String t : tags) chainTagRepo.addTag(alId, t); // tags sur l’AL uniquement
+            for (String tag : tags) {
+                chainTagRepo.addTag(alId, tag);
+            }
         }
         return hash;
     }
@@ -112,8 +131,9 @@ public class AssemblyLineManager {
                 .orElseThrow(() -> new NoSuchElementException("TEST object not found for %s:%s".formatted(alId, version)));
         if (objectRepo.exists(alId, version, ExecutionMode.RUN)) {
             var runObj = objectRepo.find(alId, version, ExecutionMode.RUN).orElseThrow();
-            if (!Objects.equals(runObj.contentHash(), testObj.contentHash()))
+            if (!Objects.equals(runObj.contentHash(), testObj.contentHash())) {
                 throw new PolicyViolationException("RUN object already exists with different content_hash");
+            }
             return;
         }
         var runObj = new OperationChainObject(null, alId, version, ExecutionMode.RUN, testObj.contentHash(),
@@ -127,9 +147,13 @@ public class AssemblyLineManager {
         return loadOrCompile(alId, obj);
     }
 
-    /** latest (RUN only) */
+    /**
+     * latest lookup is supported for RUN mode only.
+     */
     public GeneratedAssemblyLine getOperationChain(String alId, ExecutionMode mode) throws IOException {
-        if (mode != ExecutionMode.RUN) throw new IllegalArgumentException("Latest is only supported for RUN mode");
+        if (mode != ExecutionMode.RUN) {
+            throw new IllegalArgumentException("Latest is only supported for RUN mode");
+        }
         var latest = objectRepo.findLatestRun(alId)
                 .orElseThrow(() -> new NoSuchElementException("No RUN object found for alId=" + alId));
         return loadOrCompile(alId, latest);
@@ -143,13 +167,14 @@ public class AssemblyLineManager {
         return chainTagRepo.listTags(alId);
     }
 
-    public void invalidateStore(String alId) { storeCacheByAl.remove(alId); }
-
-    // ----------------- internals -----------------
+    public void invalidateStore(String alId) {
+        storeCacheByAl.remove(alId);
+    }
 
     private ArtifactStore resolveStoreForAl(String alId) {
         return storeCacheByAl.computeIfAbsent(alId, id -> {
-            var cfg = configRepo.findByAssemblyLineId(id).orElseThrow(() -> new NoSuchElementException("Config not found for alId=" + id));
+            var cfg = configRepo.findByAssemblyLineId(id)
+                    .orElseThrow(() -> new NoSuchElementException("Config not found for alId=" + id));
             return storeProvider.forConfig(cfg);
         });
     }
@@ -161,72 +186,89 @@ public class AssemblyLineManager {
         if (existing != null) {
             var bound = classLoaderRegistry.getBoundAssemblyLine(internalLoaderId);
             if (bound != null) {
-                if (obj.mode() == ExecutionMode.RUN) classLoaderRegistry.setAlias(latestAlias(alId), internalLoaderId);
+                registerLatestAliasIfNeeded(alId, obj, internalLoaderId);
                 return bound;
             }
         }
 
-        ArtifactStore store = resolveStoreForAl(alId);
-        Artifact art = store.get(obj.contentHash())
-                .orElseThrow(() -> new IOException("Artifact not found for hash=" + obj.contentHash()));
-        byte[] bytes;
-        try (InputStream in = art.openStream()) { bytes = in.readAllBytes(); }
+        byte[] bytes = readArtifact(alId, obj);
+        String mediaType = normalizeMediaType(obj.mimeType());
 
-        String mediaType = (obj.mimeType() == null || obj.mimeType().isBlank()) ? "application/xml" : obj.mimeType();
         OperationChainTranslator translator = translatorResolver.resolve(mediaType);
         OperationChainTranslator.GenerationResult translated;
         try {
             translated = translator.translate(bytes, mediaType);
         } catch (Exception e) {
-            throw new IOException("Compilation failed for alId=" + alId + ", version=" + obj.version() + ", mediaType=" + mediaType, e);
+            throw new IOException("Translation failed for alId=%s, version=%s, mediaType=%s"
+                    .formatted(alId, obj.version(), mediaType), e);
         }
-        Map<String, byte[]> compilationResult = compiler.compile(translated.className(), translated.formattedSource().getBytes(StandardCharsets.UTF_8));
 
-        // 3. Chargement de la classe
-        InMemoryClassLoader classLoader = new InMemoryClassLoader();
+        Map<String, byte[]> compilationResult = compiler.compile(
+                translated.className(),
+                translated.formattedSource().getBytes(StandardCharsets.UTF_8));
+
+        InMemoryClassLoader classLoader = new InMemoryClassLoader(generatedClassParent);
         classLoader.addCompiledClasses(compilationResult);
-        Class<?> operationChainClass;
-        try {
-            operationChainClass = classLoader.loadClass(translated.className());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
 
-        // 4. Création de l'instance
-        GeneratedAssemblyLine rawInstance;
-        try {
-            rawInstance = (GeneratedAssemblyLine) operationChainClass.getDeclaredConstructor().newInstance();
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
+        GeneratedAssemblyLine instance = instantiate(translated.className(), classLoader, obj.mode());
 
-        // 5. Injection des dépendances
+        classLoaderRegistry.register(internalLoaderId, classLoader, instance);
+        registerLatestAliasIfNeeded(alId, obj, internalLoaderId);
+        return instance;
+    }
+
+    private byte[] readArtifact(String alId, OperationChainObject obj) throws IOException {
+        ArtifactStore store = resolveStoreForAl(alId);
+        Artifact art = store.get(obj.contentHash())
+                .orElseThrow(() -> new IOException("Artifact not found for hash=" + obj.contentHash()));
+        try (InputStream in = art.openStream()) {
+            return in.readAllBytes();
+        }
+    }
+
+    private GeneratedAssemblyLine instantiate(String className, ClassLoader classLoader, ExecutionMode mode) throws IOException {
         try {
-            dependencyInjector.injectDependencies(rawInstance, null);
+            Class<?> operationChainClass = classLoader.loadClass(className);
+            Object rawInstance = operationChainClass.getDeclaredConstructor().newInstance();
+            if (!(rawInstance instanceof GeneratedAssemblyLine generated)) {
+                throw new IOException("Generated class does not implement GeneratedAssemblyLine: " + className);
+            }
+            dependencyInjector.injectDependencies(generated, mode);
+            return generated;
+        } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException
+                 | IllegalAccessException | InvocationTargetException e) {
+            throw new IOException("Unable to instantiate generated class: " + className, e);
         } catch (DependencyInjector.InjectionException e) {
-            throw new RuntimeException(e);
+            throw new IOException("Unable to inject dependencies into generated class: " + className, e);
         }
+    }
 
-        // 6. Sauvegarde du ClassLoader pour nettoyage ultérieur
-        classLoaderRegistry.register(internalLoaderId, classLoader, rawInstance);
+    private void registerLatestAliasIfNeeded(String alId, OperationChainObject obj, String internalLoaderId) {
         if (obj.mode() == ExecutionMode.RUN) {
             classLoaderRegistry.setAlias(latestAlias(alId), internalLoaderId);
         }
-        return rawInstance;
+    }
+
+    private static String normalizeMediaType(String mediaType) {
+        return (mediaType == null || mediaType.isBlank()) ? "application/xml" : mediaType;
     }
 
     private static String toInternalLoaderId(OperationChainObject obj) {
         return obj.alId() + ":" + obj.version() + ":" + obj.mode() + ":" + obj.contentHash();
     }
-    private static String latestAlias(String alId) { return "al/" + alId + "/RUN/latest"; }
+
+    private static String latestAlias(String alId) {
+        return "al/" + alId + "/RUN/latest";
+    }
+
+    private static ClassLoader contextClassLoader() {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        return cl != null ? cl : ClassLoader.getSystemClassLoader();
+    }
 
     public static final class PolicyViolationException extends Exception {
-        public PolicyViolationException(String m) { super(m); }
+        public PolicyViolationException(String message) {
+            super(message);
+        }
     }
 }

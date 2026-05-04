@@ -4,13 +4,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * ClassLoader personnalisé (identique à l'original)
+ * ClassLoader used to load generated pipeline classes compiled in memory.
  */
 public class InMemoryClassLoader extends ClassLoader {
     private final Map<String, byte[]> classes = new ConcurrentHashMap<>();
 
     public InMemoryClassLoader() {
-        super(ClassLoader.getSystemClassLoader());
+        this(Thread.currentThread().getContextClassLoader());
+    }
+
+    public InMemoryClassLoader(ClassLoader parent) {
+        super(parent != null ? parent : ClassLoader.getSystemClassLoader());
     }
 
     public void addCompiledClasses(Map<String, byte[]> compiledClasses) {
@@ -21,7 +25,7 @@ public class InMemoryClassLoader extends ClassLoader {
     protected Class<?> findClass(String name) throws ClassNotFoundException {
         byte[] bytes = classes.get(name);
         if (bytes == null) {
-            throw new ClassNotFoundException("Classe non trouvée: " + name);
+            throw new ClassNotFoundException("Generated class not found: " + name);
         }
         return defineClass(name, bytes, 0, bytes.length);
     }

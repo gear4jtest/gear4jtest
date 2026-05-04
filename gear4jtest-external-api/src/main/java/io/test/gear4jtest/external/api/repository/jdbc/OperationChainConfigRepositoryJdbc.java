@@ -96,7 +96,7 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
                 String sql = "INSERT INTO operation_chain_config(al_id, allow_run_publication_without_test, store_type, store_props) " +
                         "VALUES (?,?,?,to_jsonb(?::json)) " +
                         "ON CONFLICT (al_id) DO UPDATE SET allow_run_publication_without_test=EXCLUDED.allow_run_publication_without_test, " +
-                        "store_type=EXCLUDED.store_type, store_props=EXCLUDED.storeProps";
+                        "store_type=EXCLUDED.store_type, store_props=EXCLUDED.store_props";
                 try (var c = ds.getConnection(); var ps = c.prepareStatement(sql)) {
                     ps.setString(1, cfg.alId());
                     ps.setBoolean(2, Boolean.TRUE.equals(cfg.allowRunPublicationWithoutTest()));

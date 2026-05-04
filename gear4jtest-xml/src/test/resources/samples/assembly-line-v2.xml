@@ -1,35 +1,28 @@
-<assembly-line-definition id="test">
-    <operators>
-        <operation>
-            <type>PROCESSING_OPERATION</type>
-            <operator>com.myorg.operation.Step11</operator>
-            <parameters>
-                <parameter>
-                    <retriever>getParam</retriever>
-                    <value>"a"</value>
-                </parameter>
-            </parameters>
-        </operation>
-    </operators>
+<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="test_ifelse_v2"
+              inputType="java.lang.String"
+              outputType="java.lang.String">
 
-    <configuration>
-        <step-default-configuration>
-            <pre-processors>
-                <processor>com.myorg.processor.MyProcessor</processor>
-                <processor>com.myorg.processor.MyProcessor2</processor>
-            </pre-processors>
-            <post-processors>
-                <processor>com.myorg.processor.MyProcessor</processor>
-                <processor>com.myorg.processor.MyProcessor2</processor>
-            </post-processors>
-        </step-default-configuration>
-        <event-handling-definition>
-            <queue>
-                <event-listener>com.myorg.listener.TestEventListener</event-listener>
-            </queue>
-            <global-event-configuration>
-                <event-on-parameter-changed>true</event-on-parameter-changed>
-            </global-event-configuration>
-        </event-handling-definition>
-    </configuration>
-</assembly-line-definition>
+    <operations>
+        <ifElseContainer id="choice"
+                         inputType="java.lang.String"
+                         outputType="java.lang.String">
+            <conditionalOperations>
+                <conditionalOperation>
+                    <condition expression="input.startsWith(&quot;a&quot;)"/>
+                    <processingOperation id="append_true" type="com.myorg.operation.Step11">
+                        <parameters>
+                            <valueParameter retriever="com.myorg.operation.Step11::getParam" value="-true"/>
+                        </parameters>
+                    </processingOperation>
+                </conditionalOperation>
+            </conditionalOperations>
+            <elseOperation id="append_false" type="com.myorg.operation.Step11">
+                <parameters>
+                    <valueParameter retriever="com.myorg.operation.Step11::getParam" value="-false"/>
+                </parameters>
+            </elseOperation>
+        </ifElseContainer>
+    </operations>
+</assemblyLine>

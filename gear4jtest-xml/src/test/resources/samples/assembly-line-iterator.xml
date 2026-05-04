@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <assemblyLine xmlns="http://github.com/gear4jtest/core/model"
-              id="test"
-              inputType="java.lang.String">
+              id="test_iterator"
+              inputType="java.lang.String"
+              outputType="java.util.List">
 
     <operations>
         <processingOperation id="step3" type="com.myorg.operation.Step3">
             <parameters>
-                <valueParameter retriever="Step3::getParam" value="a" valueType="java.lang.String" />
+                <valueParameter retriever="com.myorg.operation.Step3::getParam" value="a" valueType="java.lang.String"/>
             </parameters>
             <onErrors>
                 <unsafeError signalType="IGNORE" throwableType="java.lang.Exception">
@@ -17,7 +18,7 @@
             <conditions>
                 <condition expression="input.equals(modelsService.getModel(&quot;fjeifj&quot;))"/>
             </conditions>
-            <fallbackTransformer expression="new HashMap&lt;&gt;()"/>
+            <fallbackTransformer expression="new java.util.HashMap&lt;String, String&gt;()"/>
         </processingOperation>
 
         <processingOperation id="step8" type="com.myorg.operation.Step8"/>
@@ -27,28 +28,20 @@
         <iterator id="iterator" inputType="java.util.List" outputType="java.util.List">
             <iterableFunction expression="java.util.function.Function.identity()"/>
             <operation>
-                <processingOperation id="step10" type="com.myorg.operation.Step10" />
+                <processingOperation id="step10" type="com.myorg.operation.Step10"/>
             </operation>
-            <collector expression="Collectors.toList()"/>
+            <collector expression="java.util.stream.Collectors.toList()"/>
         </iterator>
     </operations>
 
     <configuration>
-        <operationDefaultConfiguration/>
-
         <eventHandling>
-            <eventBuses>
-                <eventBus name="main">
-                    <eventListeners>
-                        <eventListener class="TestEventListener"/>
-                    </eventListeners>
-                </eventBus>
-            </eventBuses>
             <globalEventConfiguration eventOnParameterChanged="true"/>
         </eventHandling>
+        <persistence storeResultObject="true"/>
     </configuration>
 
     <dependencies>
-        <dependency name="modelsService" type="com.myorg.services.ModelsService" />
+        <dependency name="modelsService" type="com.myorg.services.ModelsService"/>
     </dependencies>
 </assemblyLine>
