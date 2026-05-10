@@ -1,48 +1,44 @@
-# gear4j-spring
+# gear4jtest-spring
 
-`gear4j-spring` integrates Gear4J with the Spring container.
+`gear4jtest-spring` integrates Gear4J with the Spring container.
 
-Its goal is not to add Spring Boot magic.
-Its goal is to make Gear4J use Spring-managed beans cleanly.
+Its goal is not to add Spring Boot magic. Its goal is to let Gear4J use Spring-managed beans cleanly while keeping the core engine framework-agnostic.
 
 ## Why this module exists
 
-`gear4j-core` is framework-agnostic.
+`gear4jtest-core` does not know about:
 
-It does not know anything about:
+- `ApplicationContext`;
+- Spring bean lookup;
+- Spring ordering;
+- Spring configuration classes.
 
-* `ApplicationContext`
-* Spring bean lookup
-* Spring ordering
-* Spring configuration classes
-
-`gear4j-spring` provides that integration layer.
+This module provides that integration layer.
 
 ## What it provides
 
 The module typically provides:
 
-* a `ResourceFactory` backed by Spring `ApplicationContext`
-* a Spring `@Configuration` that creates a `PipelineEngine`
-* automatic collection of Gear4J runtime extensions declared as Spring beans
-* optional builder customization hooks
+- a `ResourceFactory` backed by Spring `ApplicationContext`;
+- a Spring `@Configuration` that creates a `PipelineEngine`;
+- automatic collection of Gear4J runtime extensions declared as Spring beans;
+- builder customization hooks.
 
-## Scope of this module
+## Scope
 
-This module is intentionally kept small.
+This module is intentionally small and should stay plain-Spring oriented.
 
-It is meant for plain Spring integration, not Spring Boot auto-configuration.
+It should avoid:
 
-That means:
+- Spring Boot auto-configuration;
+- `@ConfigurationProperties`;
+- `@ConditionalOnClass` conventions;
+- starter-style hidden defaults;
+- environment-driven magic.
 
-* no `@ConfigurationProperties`
-* no `@ConditionalOnClass`
-* no starter-style conventions
-* no hidden auto-magic
+Those concerns belong in a future `gear4jtest-spring-boot-starter`.
 
-Those concerns belong in a future `gear4j-spring-boot-starter`.
-
-## Basic usage
+## Basic usage shape
 
 ```java
 @Configuration
@@ -50,7 +46,7 @@ Those concerns belong in a future `gear4j-spring-boot-starter`.
 public class MyGear4jConfiguration {
 
     @Bean
-    public PayloadCloner payloadCloner(ObjectMapper objectMapper) {
+    PayloadCloner payloadCloner(ObjectMapper objectMapper) {
         return JacksonPayloadCloners.with(objectMapper);
     }
 }
@@ -58,15 +54,15 @@ public class MyGear4jConfiguration {
 
 With this setup:
 
-* operators can be resolved as Spring beans
-* Gear4J runtime extensions can be declared as beans
-* the pipeline engine can reuse the application `ObjectMapper` through a `PayloadCloner`
+- operators can be resolved as Spring beans;
+- Gear4J runtime extensions can be declared as beans;
+- the pipeline engine can reuse application-level collaborators.
 
 ## Typical responsibilities
 
 ### Spring-backed resource resolution
 
-Gear4J operators and resources can be instantiated through Spring rather than through manual factories.
+Gear4J operators and resources can be instantiated or looked up through Spring.
 
 ### Engine assembly
 
@@ -80,29 +76,19 @@ Runtime extensions can be discovered automatically from the Spring context.
 
 Applications can tweak the `PipelineEngine.Builder` without replacing the whole base configuration.
 
-## What this module should not do
-
-This module should not become a catch-all integration layer.
-
-It should avoid:
-
-* Boot-specific auto-configuration
-* too many framework assumptions
-* environment-driven magic
-* hidden defaults that are difficult to reason about
-
 ## Future Boot module
 
-A future `gear4j-spring-boot-starter` can provide:
+A future Boot starter can provide:
 
-* auto-configuration
-* configuration properties
-* optional auto-registration of `JacksonPayloadCloner`
-* starter-level defaults
+- auto-configuration;
+- configuration properties;
+- optional auto-registration of `JacksonPayloadCloner`;
+- starter-level defaults.
 
-Example future property:
+## Testing
 
-```yaml
-gear4j:
-  payload-cloning-mode: jackson
+Useful focused task:
+
+```bash
+./gradlew :gear4jtest-spring:test
 ```
