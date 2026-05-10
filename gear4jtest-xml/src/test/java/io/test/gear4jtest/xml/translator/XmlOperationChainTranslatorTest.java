@@ -40,9 +40,15 @@ class XmlOperationChainTranslatorTest {
         // Then
         assertThat(result.className()).isEqualTo("io.test.gear4jtest.xml.generated.Test_iteratorLine");
         assertThat(result.formattedSource())
-                .contains("implements io.test.gear4jtest.external.api.loader.GeneratedAssemblyLine")
-                .contains("@io.test.gear4jtest.external.api.loader.Inject(\"modelsService\")")
+                .contains("implements GeneratedAssemblyLine")
+                .contains("@Inject(\"modelsService\")")
+                .contains("private WorkStation<String, Map<String, String>> processStep3()")
+                .contains("private IteratorStation<List<Integer>, List<List<String>>> iterateIterator()")
+                .contains("ElementModelBuilders.<List<Integer>>iterate(\"iterator\")")
+                .contains("public AssemblyLine<String, List<List<String>>> getAssemblyLineDefinition()")
                 .contains("builder.skipIf((input, ctx) -> input.equals(modelsService.getModel(\"fjeifj\")))")
+                .doesNotContain("@SuppressWarnings")
+                .doesNotContain("AbstractStation)")
                 .doesNotContain("core.model.refactor")
                 .doesNotContain(".conditional(")
                 .doesNotContain(".eventHandlingDefinition(");
@@ -58,10 +64,11 @@ class XmlOperationChainTranslatorTest {
 
         // Then
         assertThat(result.formattedSource())
-                .contains("new io.github.gear4jtest.core.api.station.SignalStation.Builder()")
+                .contains("private SignalStation<String> signalStop_when_a()")
+                .contains("new SignalStation.Builder<String>()")
                 .contains(".id(\"stop_when_a\")")
-                .contains(".type(io.github.gear4jtest.core.api.behavior.SignalType.STOP)")
-                .contains("java.lang.String input = (java.lang.String) sig.getItem();")
+                .contains(".type(SignalType.STOP)")
+                .contains("String input = sig.getItem();")
                 .contains("var ctx = sig.getItemExecution();")
                 .contains("return input.endsWith(\"a\");");
     }

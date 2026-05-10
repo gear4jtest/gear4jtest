@@ -2,7 +2,7 @@
 <assemblyLine xmlns="http://github.com/gear4jtest/core/model"
               id="test_parallel"
               inputType="java.lang.String"
-              outputType="java.util.List">
+              outputType="java.util.List&lt;java.lang.String&gt;">
 
     <operations>
         <processingOperation id="step11" type="com.myorg.operation.Step11">
@@ -13,7 +13,7 @@
 
         <container id="parallelContainer"
                    inputType="java.lang.String"
-                   outputType="java.util.List"
+                   outputType="java.util.List&lt;java.lang.String&gt;"
                    parallel="true"
                    threadPoolSize="2">
             <subLines>

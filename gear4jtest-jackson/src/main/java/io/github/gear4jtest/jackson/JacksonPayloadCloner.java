@@ -251,6 +251,9 @@ public final class JacksonPayloadCloner implements PayloadCloner {
     }
 
     private boolean isKnownImmutable(Class<?> type) {
-        return type.isEnum() || Class.class.equals(type) || KNOWN_IMMUTABLE_TYPES.contains(type);
+        return type.isEnum()
+                || Class.class.equals(type)
+                || ZoneId.class.isAssignableFrom(type)
+                || KNOWN_IMMUTABLE_TYPES.contains(type);
     }
 }
