@@ -14,9 +14,11 @@ This file collects known review topics and future ideas. Items here are not nece
 - Generic typing around station registries and generated code.
 - Packaging and module naming cleanup.
 - Skip semantics: decide whether skipped stations should be marked success, skipped, or another explicit status.
-- Run timing ownership: decide exactly which component sets begin/end times and whether pre/post hooks are included in measured orchestration time.
+- Run timing ownership: decide exactly which component sets begin/end times and whether pre/post hooks are included in
+  measured orchestration time.
 - Exception policy: define where exceptions are caught, converted to `ExecutionResult`, rethrown or treated as fatal.
-- Container behavior: timeouts while waiting for futures, fail-fast semantics, sequential branch failure behavior and executor ownership.
+- Container behavior: timeouts while waiting for futures, fail-fast semantics, sequential branch failure behavior and
+  executor ownership.
 - Payload deep cloning behavior and performance.
 
 ## Persistence and observability

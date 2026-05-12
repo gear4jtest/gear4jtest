@@ -14,11 +14,7 @@ public final class XmlOperationChainTranslator implements OperationChainTranslat
 
     public static final String VENDOR_MEDIA_TYPE = "application/vnd.gear4j.pipeline+xml";
 
-    private static final Set<String> SUPPORTED_MEDIA_TYPES = Set.of(
-            "application/xml",
-            "text/xml",
-            VENDOR_MEDIA_TYPE
-    );
+    private static final Set<String> SUPPORTED_MEDIA_TYPES = Set.of("application/xml", "text/xml", VENDOR_MEDIA_TYPE);
 
     private final AssemblyLineValidator validator;
     private final XmlPipelineParser parser;
@@ -28,7 +24,9 @@ public final class XmlOperationChainTranslator implements OperationChainTranslat
         this(new AssemblyLineValidator(), new XmlPipelineParser(), new XmlToJavaGenerator());
     }
 
-    public XmlOperationChainTranslator(AssemblyLineValidator validator, XmlPipelineParser parser, XmlToJavaGenerator generator) {
+    public XmlOperationChainTranslator(AssemblyLineValidator validator,
+                                       XmlPipelineParser parser,
+                                       XmlToJavaGenerator generator) {
         this.validator = validator;
         this.parser = parser;
         this.generator = generator;

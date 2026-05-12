@@ -1,5 +1,10 @@
 package io.github.gear4jtest.core.engine.support;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
@@ -10,10 +15,6 @@ import io.github.gear4jtest.core.api.station.WorkStation;
 import io.github.gear4jtest.core.event.ParameterResolvedEvent;
 import io.github.gear4jtest.core.sidecompute.DefaultSideComputeAccessor;
 import io.github.gear4jtest.core.sidecompute.SideComputeAccessor;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
 
 public class WorkerParamsInjector implements Processor {
 
@@ -30,8 +31,8 @@ public class WorkerParamsInjector implements Processor {
             return;
         }
 
-        InterpretationContext<I> ctx =
-                new InterpretationContext<>(input, operationExecution.getGlobalContext(), operationExecution);
+        InterpretationContext<I> ctx = new InterpretationContext<>(input, operationExecution.getGlobalContext(),
+                operationExecution);
 
         for (ParameterModel<?, ?> rawParam : processingParameters.get().getParameters()) {
             injectParameter(rawParam, transformer.get(), ctx, operationExecution);
@@ -39,16 +40,14 @@ public class WorkerParamsInjector implements Processor {
     }
 
     @SuppressWarnings("unchecked")
-    private <IN, OUT, OP extends Operator<IN, OUT>, T> void injectParameter(
-            ParameterModel<?, ?> rawParam,
-            Operator<?, ?> rawOperator,
-            InterpretationContext<?> ctx,
-            StationExecutionContext operationExecution) {
+    private <IN, OUT, OP extends Operator<IN, OUT>, T> void injectParameter(ParameterModel<?, ?> rawParam,
+                                                                            Operator<?, ?> rawOperator,
+                                                                            InterpretationContext<?> ctx,
+                                                                            StationExecutionContext operationExecution) {
         ParameterModel<OP, T> param = (ParameterModel<OP, T>) rawParam;
         OP op = (OP) rawOperator;
 
-        WorkerParamsInjector.Parameter<T> parameterValue =
-                param.getParamRetriever().getParameterValue(op);
+        WorkerParamsInjector.Parameter<T> parameterValue = param.getParamRetriever().getParameterValue(op);
 
         if (parameterValue == null) {
             return;
@@ -62,14 +61,11 @@ public class WorkerParamsInjector implements Processor {
         publishParameterResolvedEvent(rawParam, operationExecution, resolution, value);
     }
 
-    private void publishParameterResolvedEvent(
-            ParameterModel<?, ?> rawParam,
-            StationExecutionContext operationExecution,
-            ResolvedParameters.Resolution<?> resolution,
-            Object value) {
-        if (!operationExecution.getGlobalContext()
-                .getEventRuntimeOptions()
-                .isParameterResolvedEventsEnabled()) {
+    private void publishParameterResolvedEvent(ParameterModel<?, ?> rawParam,
+                                               StationExecutionContext operationExecution,
+                                               ResolvedParameters.Resolution<?> resolution,
+                                               Object value) {
+        if (!operationExecution.getGlobalContext().getEventRuntimeOptions().isParameterResolvedEventsEnabled()) {
             return;
         }
 
@@ -77,16 +73,12 @@ public class WorkerParamsInjector implements Processor {
             return;
         }
 
-        operationExecution.getServices().getEventManager().publish(new ParameterResolvedEvent(
-                operationExecution.getGlobalContext().getPipelineId(),
-                operationExecution.getGlobalContext().getExecutionId(),
-                operationExecution.getRecord().getId(),
-                operationExecution.getOperationId(),
-                operationExecution.getRecord().getParentOperationId(),
-                operationExecution.getRecord().getItemId(),
-                rawParam.describe(),
-                resolution.cacheHit(),
-                value != null ? value.getClass().getName() : null));
+        operationExecution.getServices().getEventManager()
+                .publish(new ParameterResolvedEvent(operationExecution.getGlobalContext().getPipelineId(),
+                        operationExecution.getGlobalContext().getExecutionId(), operationExecution.getRecord().getId(),
+                        operationExecution.getOperationId(), operationExecution.getRecord().getParentOperationId(),
+                        operationExecution.getRecord().getItemId(), rawParam.describe(), resolution.cacheHit(),
+                        value != null ? value.getClass().getName() : null));
     }
 
     @Override
@@ -103,15 +95,13 @@ public class WorkerParamsInjector implements Processor {
     }
 
     @SuppressWarnings("unchecked")
-    private <IN, OUT, OP extends Operator<IN, OUT>, T> void cleanupParameter(
-            ParameterModel<?, ?> rawParam,
-            Operator<?, ?> rawOperator) {
+    private <IN, OUT, OP extends Operator<IN, OUT>, T> void cleanupParameter(ParameterModel<?, ?> rawParam,
+                                                                             Operator<?, ?> rawOperator) {
 
         ParameterModel<OP, T> paramModel = (ParameterModel<OP, T>) rawParam;
         OP op = (OP) rawOperator;
 
-        WorkerParamsInjector.Parameter<T> parameterValue =
-                paramModel.getParamRetriever().getParameterValue(op);
+        WorkerParamsInjector.Parameter<T> parameterValue = paramModel.getParamRetriever().getParameterValue(op);
 
         if (parameterValue != null) {
             parameterValue.afterExecutionCleanup();
@@ -126,16 +116,16 @@ public class WorkerParamsInjector implements Processor {
             this.parameters = new ArrayList<>();
         }
 
+        public static Builder newBuilder() {
+            return new Builder();
+        }
+
         public boolean hasParameters() {
             return !this.parameters.isEmpty();
         }
 
         public List<ParameterModel<?, ?>> getParameters() {
             return parameters;
-        }
-
-        public static Builder newBuilder() {
-            return new Builder();
         }
 
         public static class Builder {
@@ -160,11 +150,6 @@ public class WorkerParamsInjector implements Processor {
 
     public static class Parameter<T> {
 
-        public enum LifecyclePolicy {
-            PERSISTENT,
-            PER_EXECUTION
-        }
-
         private final LifecyclePolicy lifecyclePolicy;
         private final T defaultValue;
         private T value;
@@ -177,6 +162,24 @@ public class WorkerParamsInjector implements Processor {
 
         public static <T> Builder<T> newBuilder() {
             return new Builder<>();
+        }
+
+        public T getValue() {
+            return value;
+        }
+
+        void injectValue(T newValue) {
+            this.value = newValue;
+        }
+
+        void afterExecutionCleanup() {
+            if (lifecyclePolicy == LifecyclePolicy.PER_EXECUTION) {
+                this.value = defaultValue;
+            }
+        }
+
+        public enum LifecyclePolicy {
+            PERSISTENT, PER_EXECUTION
         }
 
         public static class Builder<T> {
@@ -198,23 +201,9 @@ public class WorkerParamsInjector implements Processor {
                 return new Parameter<>(this);
             }
         }
-
-        public T getValue() {
-            return value;
-        }
-
-        void injectValue(T newValue) {
-            this.value = newValue;
-        }
-
-        void afterExecutionCleanup() {
-            if (lifecyclePolicy == LifecyclePolicy.PER_EXECUTION) {
-                this.value = defaultValue;
-            }
-        }
     }
 
-    public static abstract class ParameterModel<OP extends Operator<?, ?>, T> {
+    public abstract static class ParameterModel<OP extends Operator<?, ?>, T> {
 
         private final WorkStation.ParamRetriever<OP, T> paramRetriever;
 
@@ -238,9 +227,8 @@ public class WorkerParamsInjector implements Processor {
 
         private final Function<InterpretationContext<IN>, T> resolver;
 
-        public InterpretationContextParameterModel(
-                WorkStation.ParamRetriever<OP, T> paramRetriever,
-                Function<InterpretationContext<IN>, T> resolver) {
+        public InterpretationContextParameterModel(WorkStation.ParamRetriever<OP, T> paramRetriever,
+                                                   Function<InterpretationContext<IN>, T> resolver) {
             super(paramRetriever);
             this.resolver = resolver;
         }
@@ -259,15 +247,13 @@ public class WorkerParamsInjector implements Processor {
         private final StationExecutionContext stationExecutionContext;
         private final SideComputeAccessor sideComputeAccessor;
 
-        public InterpretationContext(
-                IN item,
-                ExecutionContext executionContext,
-                StationExecutionContext stationExecutionContext) {
+        public InterpretationContext(IN item,
+                                     ExecutionContext executionContext,
+                                     StationExecutionContext stationExecutionContext) {
             this.item = item;
             this.executionContext = executionContext;
             this.stationExecutionContext = stationExecutionContext;
-            this.sideComputeAccessor = stationExecutionContext
-                    .getCapability(SideComputeAccessor.class)
+            this.sideComputeAccessor = stationExecutionContext.getCapability(SideComputeAccessor.class)
                     .orElseGet(() -> new DefaultSideComputeAccessor(executionContext));
         }
 

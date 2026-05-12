@@ -20,6 +20,18 @@ Generated Java should:
 - preserve enough explicit generic information to compile without unsafe call-site casts;
 - stay deterministic for snapshot-like assertions.
 
+## Formatting
+
+Repository-wide formatting instructions from the root `AGENTS.md` apply here. Do not manually mimic the Java style; use
+the Gradle formatter and respect Checkstyle failures.
+
+Before finishing code changes in this module, run when possible:
+
+```bash
+./gradlew spotlessApply
+./gradlew check
+```
+
 ## Test focus
 
 For generator changes, test the full path whenever possible:

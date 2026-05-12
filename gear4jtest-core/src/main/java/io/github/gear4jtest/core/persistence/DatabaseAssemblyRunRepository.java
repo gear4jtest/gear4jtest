@@ -1,8 +1,5 @@
 package io.github.gear4jtest.core.persistence;
 
-import io.github.gear4jtest.core.model.StationLogStatus;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +21,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     private static final String SCRIPT_POSTGRES = "/io/github/gear4j/db/postgresql/gear4j_schema.sql";
@@ -35,6 +34,14 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     public DatabaseAssemblyRunRepository(DataSource dataSource) {
         this.dataSource = dataSource;
+    }
+
+    public static String toJson(Map<String, Object> map) {
+        try {
+            return new ObjectMapper().writeValueAsString(map);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -199,8 +206,9 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public void delete(UUID id) {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
-            try (PreparedStatement stmt1 = conn.prepareStatement("DELETE FROM station_log WHERE pipeline_execution_id = ?");
-                 PreparedStatement stmt2 = conn.prepareStatement("DELETE FROM assembly_run WHERE id = ?")) {
+            try (PreparedStatement stmt1 = conn
+                    .prepareStatement("DELETE FROM station_log WHERE pipeline_execution_id = ?");
+                    PreparedStatement stmt2 = conn.prepareStatement("DELETE FROM assembly_run WHERE id = ?")) {
                 stmt1.setObject(1, id);
                 stmt1.executeUpdate();
                 stmt2.setObject(1, id);
@@ -331,34 +339,21 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     private AssemblyRunRecord mapExecution(ResultSet rs) throws SQLException {
-        return new AssemblyRunRecord(
-                rs.getObject("id", UUID.class),
-                rs.getString("pipeline_id"),
-                fromJson(rs.getString("context"), Map.class),
-                fromJson(rs.getString("input_parameters"), Map.class),
-                fromJson(rs.getString("result"), Object.class),
-                ExecutionStatus.valueOf(rs.getString("status")),
-                toInstant(rs.getTimestamp("start_time")),
-                toInstant(rs.getTimestamp("end_time")),
-                rs.getString("error_message"),
-                rs.getObject("parent_execution_id", UUID.class),
-                rs.getObject("root_execution_id", UUID.class),
-                rs.getObject("parent_station_log_id", UUID.class));
+        return new AssemblyRunRecord(rs.getObject("id", UUID.class), rs.getString("pipeline_id"),
+                fromJson(rs.getString("context"), Map.class), fromJson(rs.getString("input_parameters"), Map.class),
+                fromJson(rs.getString("result"), Object.class), ExecutionStatus.valueOf(rs.getString("status")),
+                toInstant(rs.getTimestamp("start_time")), toInstant(rs.getTimestamp("end_time")),
+                rs.getString("error_message"), rs.getObject("parent_execution_id", UUID.class),
+                rs.getObject("root_execution_id", UUID.class), rs.getObject("parent_station_log_id", UUID.class));
     }
 
     private StationLogRecord mapOperation(ResultSet rs) throws SQLException {
-        return new StationLogRecord(
-                rs.getObject("id", UUID.class),
-                rs.getObject("pipeline_execution_id", UUID.class),
-                rs.getString("operation_id"),
-                rs.getObject("parent_log_id", UUID.class),
+        return new StationLogRecord(rs.getObject("id", UUID.class), rs.getObject("pipeline_execution_id", UUID.class),
+                rs.getString("operation_id"), rs.getObject("parent_log_id", UUID.class),
                 io.github.gear4jtest.core.model.StationLogStatus.valueOf(rs.getString("status")),
-                toInstant(rs.getTimestamp("start_time")),
-                toInstant(rs.getTimestamp("end_time")),
-                rs.getString("error_message"),
-                rs.getString("error_handler_messages"),
-                fromJson(rs.getString("context"), Map.class),
-                rs.getString("item_id"));
+                toInstant(rs.getTimestamp("start_time")), toInstant(rs.getTimestamp("end_time")),
+                rs.getString("error_message"), rs.getString("error_handler_messages"),
+                fromJson(rs.getString("context"), Map.class), rs.getString("item_id"));
     }
 
     private java.time.Instant toInstant(Timestamp timestamp) {
@@ -376,14 +371,6 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     private <T> T fromJson(String json, Class<T> clazz) {
         try {
             return json != null ? objectMapper.readValue(json, clazz) : null;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static String toJson(Map<String, Object> map) {
-        try {
-            return new ObjectMapper().writeValueAsString(map);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

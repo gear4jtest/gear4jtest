@@ -1,13 +1,13 @@
 package io.github.gear4jtest.core.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
 import io.github.gear4jtest.core.api.station.IteratorStation;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class IteratorStationAccumulatorTest {
 
@@ -17,9 +17,7 @@ class IteratorStationAccumulatorTest {
 
         Collection<Object> collection = acc.getCollectionSupplier().getSupplier().get();
 
-        assertThat(collection)
-                .isInstanceOf(List.class)
-                .isEmpty();
+        assertThat(collection).isInstanceOf(List.class).isEmpty();
     }
 
     @Test
@@ -28,8 +26,6 @@ class IteratorStationAccumulatorTest {
 
         Collection<Object> collection = acc.getCollectionSupplier().getSupplier().get();
 
-        assertThat(collection)
-                .isInstanceOf(Set.class)
-                .isEmpty();
+        assertThat(collection).isInstanceOf(Set.class).isEmpty();
     }
 }

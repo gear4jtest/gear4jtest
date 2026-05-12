@@ -16,7 +16,8 @@ public interface ArtifactStorePlugin {
     ArtifactStore build(Map<String, String> props, Context ctx) throws Exception;
 
     /**
-     * Contexte générique pour passer des ressources optionnelles (ex: DataSource, logger…).
+     * Contexte générique pour passer des ressources optionnelles (ex: DataSource,
+     * logger…).
      */
     interface Context {
         /**

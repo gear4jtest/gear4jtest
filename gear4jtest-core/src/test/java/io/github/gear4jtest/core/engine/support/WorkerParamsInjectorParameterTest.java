@@ -37,10 +37,8 @@ class WorkerParamsInjectorParameterTest {
 
     @Test
     void builder_perExecution_shouldResetToDefaultAfterExecution() {
-        Parameter<String> parameter = Parameter.<String>newBuilder()
-                .defaultValue("default")
-                .lifecyclePolicy(Parameter.LifecyclePolicy.PER_EXECUTION)
-                .build();
+        Parameter<String> parameter = Parameter.<String>newBuilder().defaultValue("default")
+                .lifecyclePolicy(Parameter.LifecyclePolicy.PER_EXECUTION).build();
 
         // au départ : valeur par défaut
         assertThat(parameter.getValue()).isEqualTo("default");

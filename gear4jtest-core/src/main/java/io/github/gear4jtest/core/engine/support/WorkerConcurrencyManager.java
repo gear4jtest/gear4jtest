@@ -11,8 +11,7 @@ public final class WorkerConcurrencyManager {
     public WorkerConcurrencyManager() {
     }
 
-    public WorkerConcurrencyGuard guardFor(Object transformer,
-                                           WorkerConcurrencyStrategy strategy) {
+    public WorkerConcurrencyGuard guardFor(Object transformer, WorkerConcurrencyStrategy strategy) {
         Objects.requireNonNull(transformer, "transformer must not be null");
         Objects.requireNonNull(strategy, "strategy must not be null");
 
@@ -20,7 +19,8 @@ public final class WorkerConcurrencyManager {
     }
 
     /**
-     * Permet de libérer les références en fin de vie d'une AssemblyLine / classloader.
+     * Permet de libérer les références en fin de vie d'une AssemblyLine /
+     * classloader.
      */
     public void clear() {
         guards.clear();

@@ -36,8 +36,8 @@ public final class ExecutionContextRegistry {
     }
 
     /**
-     * Supprime le contexte associé à l'executionId.
-     * À appeler lorsqu'une exécution de pipeline est terminée.
+     * Supprime le contexte associé à l'executionId. À appeler lorsqu'une exécution
+     * de pipeline est terminée.
      */
     public void remove(UUID executionId) {
         if (executionId == null) {

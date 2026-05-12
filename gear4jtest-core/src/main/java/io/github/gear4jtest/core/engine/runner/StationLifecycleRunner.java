@@ -1,5 +1,8 @@
 package io.github.gear4jtest.core.engine.runner;
 
+import java.util.List;
+import java.util.Objects;
+
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
@@ -9,8 +12,6 @@ import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
-import java.util.List;
-import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,35 +55,26 @@ public class StationLifecycleRunner implements StationRunner {
             return;
         }
         StationLogTrace record = stationCtx.getRecord();
-        runCtx.getServices().getEventManager().publish(new StationStartedEvent(
-                runCtx.getPipelineId(),
-                runCtx.getExecutionId(),
-                record.getId(),
-                stationCtx.getOperationId(),
-                record.getParentOperationId(),
-                record.getItemId(),
-                runCtx.getEventRuntimeOptions().getEventPayloadPolicy().mapStationInput(input, stationCtx)));
+        runCtx.getServices().getEventManager()
+                .publish(new StationStartedEvent(runCtx.getPipelineId(), runCtx.getExecutionId(), record.getId(),
+                        stationCtx.getOperationId(), record.getParentOperationId(), record.getItemId(),
+                        runCtx.getEventRuntimeOptions().getEventPayloadPolicy().mapStationInput(input, stationCtx)));
     }
 
-    private void publishFinishedEvent(
-            ExecutionContext runCtx,
-            StationExecutionContext stationCtx,
-            Object input,
-            StationLogTrace result) {
+    private void publishFinishedEvent(ExecutionContext runCtx,
+                                      StationExecutionContext stationCtx,
+                                      Object input,
+                                      StationLogTrace result) {
         if (runCtx.getServices().getEventManager() == null || result == null) {
             return;
         }
-        runCtx.getServices().getEventManager().publish(new StationFinishedEvent(
-                runCtx.getPipelineId(),
-                runCtx.getExecutionId(),
-                result.getId(),
-                stationCtx.getOperationId(),
-                result.getParentOperationId(),
-                result.getItemId(),
-                runCtx.getEventRuntimeOptions().getEventPayloadPolicy().mapStationInput(input, stationCtx),
-                result.getStatus(),
-                runCtx.getEventRuntimeOptions().getEventPayloadPolicy().mapStationOutput(result.getOutput(), stationCtx),
-                extractPrimaryError(result)));
+        runCtx.getServices().getEventManager()
+                .publish(new StationFinishedEvent(runCtx.getPipelineId(), runCtx.getExecutionId(), result.getId(),
+                        stationCtx.getOperationId(), result.getParentOperationId(), result.getItemId(),
+                        runCtx.getEventRuntimeOptions().getEventPayloadPolicy().mapStationInput(input, stationCtx),
+                        result.getStatus(), runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
+                                .mapStationOutput(result.getOutput(), stationCtx),
+                        extractPrimaryError(result)));
     }
 
     private Exception extractPrimaryError(StationLogTrace result) {
@@ -96,39 +88,31 @@ public class StationLifecycleRunner implements StationRunner {
         return new RuntimeException(throwable);
     }
 
-    private void invokeStartedSafely(
-            StationLifecycleExtension extension,
-            ExecutionContext runCtx,
-            StationExecutionContext stationCtx,
-            StationLogRecord snapshot) {
+    private void invokeStartedSafely(StationLifecycleExtension extension,
+                                     ExecutionContext runCtx,
+                                     StationExecutionContext stationCtx,
+                                     StationLogRecord snapshot) {
         try {
             extension.onStationStarted(runCtx, stationCtx, snapshot);
         } catch (Error error) {
             throw error;
         } catch (Exception exception) {
-            LOGGER.error(
-                    "StationLifecycleExtension failed during onStationStarted. extension={}, stationId={}",
-                    extension.getClass().getName(),
-                    snapshot.operationId(),
-                    exception);
+            LOGGER.error("StationLifecycleExtension failed during onStationStarted. extension={}, stationId={}",
+                         extension.getClass().getName(), snapshot.operationId(), exception);
         }
     }
 
-    private void invokeCompletedSafely(
-            StationLifecycleExtension extension,
-            ExecutionContext runCtx,
-            StationExecutionContext stationCtx,
-            StationLogRecord snapshot) {
+    private void invokeCompletedSafely(StationLifecycleExtension extension,
+                                       ExecutionContext runCtx,
+                                       StationExecutionContext stationCtx,
+                                       StationLogRecord snapshot) {
         try {
             extension.onStationCompleted(runCtx, stationCtx, snapshot);
         } catch (Error error) {
             throw error;
         } catch (Exception exception) {
-            LOGGER.error(
-                    "StationLifecycleExtension failed during onStationCompleted. extension={}, stationId={}",
-                    extension.getClass().getName(),
-                    snapshot.operationId(),
-                    exception);
+            LOGGER.error("StationLifecycleExtension failed during onStationCompleted. extension={}, stationId={}",
+                         extension.getClass().getName(), snapshot.operationId(), exception);
         }
     }
 }

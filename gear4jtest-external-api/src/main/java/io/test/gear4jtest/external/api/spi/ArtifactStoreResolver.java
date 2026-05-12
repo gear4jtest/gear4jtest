@@ -12,14 +12,14 @@ public final class ArtifactStoreResolver {
     private final Map<String, ArtifactStorePlugin> byType = new HashMap<>();
 
     public ArtifactStoreResolver(ClassLoader cl) {
-        ServiceLoader.load(ArtifactStorePlugin.class, cl).forEach(p ->
-                byType.put(p.type().toUpperCase(Locale.ROOT), p)
-        );
+        ServiceLoader.load(ArtifactStorePlugin.class, cl)
+                .forEach(p -> byType.put(p.type().toUpperCase(Locale.ROOT), p));
     }
 
     public ArtifactStore resolve(String type, Map<String, String> props, ArtifactStorePlugin.Context ctx) {
         var p = byType.get(type.toUpperCase(Locale.ROOT));
-        if (p == null) throw new IllegalArgumentException("Unknown store type: " + type);
+        if (p == null)
+            throw new IllegalArgumentException("Unknown store type: " + type);
         try {
             return p.build(props, ctx);
         } catch (Exception e) {

@@ -76,7 +76,8 @@ public class AssemblyLineManager {
     }
 
     /**
-     * Discovery variant using {@link java.util.ServiceLoader} on the current thread context classloader.
+     * Discovery variant using {@link java.util.ServiceLoader} on the current thread
+     * context classloader.
      */
     public static AssemblyLineManager withServiceLoadedCompilers(OperationChainConfigRepository configRepo,
                                                                  OperationChainObjectRepository objectRepo,
@@ -89,9 +90,30 @@ public class AssemblyLineManager {
                 resolver, new JDTInMemoryCompiler(cl), new SimpleDependencyInjector(), cl);
     }
 
-    public String registerAssemblyLine(String alId, String version, ExecutionMode mode,
-                                       byte[] content, String mediaType,
-                                       List<String> tags, String createdBy)
+    private static String normalizeMediaType(String mediaType) {
+        return (mediaType == null || mediaType.isBlank()) ? "application/xml" : mediaType;
+    }
+
+    private static String toInternalLoaderId(OperationChainObject obj) {
+        return obj.alId() + ":" + obj.version() + ":" + obj.mode() + ":" + obj.contentHash();
+    }
+
+    private static String latestAlias(String alId) {
+        return "al/" + alId + "/RUN/latest";
+    }
+
+    private static ClassLoader contextClassLoader() {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        return cl != null ? cl : ClassLoader.getSystemClassLoader();
+    }
+
+    public String registerAssemblyLine(String alId,
+                                       String version,
+                                       ExecutionMode mode,
+                                       byte[] content,
+                                       String mediaType,
+                                       List<String> tags,
+                                       String createdBy)
             throws IOException, PolicyViolationException {
         if (version == null || version.isBlank()) {
             throw new IllegalArgumentException("version is required for persisted TEST/RUN publication");
@@ -111,11 +133,8 @@ public class AssemblyLineManager {
         ArtifactStore store = resolveStoreForAl(alId);
         String hash = store.put(content);
 
-        OperationChainObject obj = new OperationChainObject(
-                null, alId, version, mode, hash, content.length,
-                normalizeMediaType(mediaType),
-                Instant.now(), createdBy, Instant.now()
-        );
+        OperationChainObject obj = new OperationChainObject(null, alId, version, mode, hash, content.length,
+                normalizeMediaType(mediaType), Instant.now(), createdBy, Instant.now());
         objectRepo.insert(obj);
 
         if (tags != null && !tags.isEmpty()) {
@@ -127,8 +146,8 @@ public class AssemblyLineManager {
     }
 
     public void promoteTestToRun(String alId, String version, String promotedBy) throws PolicyViolationException {
-        var testObj = objectRepo.find(alId, version, ExecutionMode.TEST)
-                .orElseThrow(() -> new NoSuchElementException("TEST object not found for %s:%s".formatted(alId, version)));
+        var testObj = objectRepo.find(alId, version, ExecutionMode.TEST).orElseThrow(() -> new NoSuchElementException(
+                "TEST object not found for %s:%s".formatted(alId, version)));
         if (objectRepo.exists(alId, version, ExecutionMode.RUN)) {
             var runObj = objectRepo.find(alId, version, ExecutionMode.RUN).orElseThrow();
             if (!Objects.equals(runObj.contentHash(), testObj.contentHash())) {
@@ -142,8 +161,8 @@ public class AssemblyLineManager {
     }
 
     public GeneratedAssemblyLine getOperationChain(String alId, String version, ExecutionMode mode) throws IOException {
-        var obj = objectRepo.find(alId, version, mode)
-                .orElseThrow(() -> new NoSuchElementException("Object not found for %s:%s:%s".formatted(alId, version, mode)));
+        var obj = objectRepo.find(alId, version, mode).orElseThrow(() -> new NoSuchElementException(
+                "Object not found for %s:%s:%s".formatted(alId, version, mode)));
         return loadOrCompile(alId, obj);
     }
 
@@ -203,9 +222,8 @@ public class AssemblyLineManager {
                     .formatted(alId, obj.version(), mediaType), e);
         }
 
-        Map<String, byte[]> compilationResult = compiler.compile(
-                translated.className(),
-                translated.formattedSource().getBytes(StandardCharsets.UTF_8));
+        Map<String, byte[]> compilationResult = compiler
+                .compile(translated.className(), translated.formattedSource().getBytes(StandardCharsets.UTF_8));
 
         InMemoryClassLoader classLoader = new InMemoryClassLoader(generatedClassParent);
         classLoader.addCompiledClasses(compilationResult);
@@ -226,7 +244,8 @@ public class AssemblyLineManager {
         }
     }
 
-    private GeneratedAssemblyLine instantiate(String className, ClassLoader classLoader, ExecutionMode mode) throws IOException {
+    private GeneratedAssemblyLine instantiate(String className, ClassLoader classLoader, ExecutionMode mode)
+            throws IOException {
         try {
             Class<?> operationChainClass = classLoader.loadClass(className);
             Object rawInstance = operationChainClass.getDeclaredConstructor().newInstance();
@@ -235,8 +254,8 @@ public class AssemblyLineManager {
             }
             dependencyInjector.injectDependencies(generated, mode);
             return generated;
-        } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException
-                 | IllegalAccessException | InvocationTargetException e) {
+        } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException
+                | InvocationTargetException e) {
             throw new IOException("Unable to instantiate generated class: " + className, e);
         } catch (DependencyInjector.InjectionException e) {
             throw new IOException("Unable to inject dependencies into generated class: " + className, e);
@@ -247,23 +266,6 @@ public class AssemblyLineManager {
         if (obj.mode() == ExecutionMode.RUN) {
             classLoaderRegistry.setAlias(latestAlias(alId), internalLoaderId);
         }
-    }
-
-    private static String normalizeMediaType(String mediaType) {
-        return (mediaType == null || mediaType.isBlank()) ? "application/xml" : mediaType;
-    }
-
-    private static String toInternalLoaderId(OperationChainObject obj) {
-        return obj.alId() + ":" + obj.version() + ":" + obj.mode() + ":" + obj.contentHash();
-    }
-
-    private static String latestAlias(String alId) {
-        return "al/" + alId + "/RUN/latest";
-    }
-
-    private static ClassLoader contextClassLoader() {
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        return cl != null ? cl : ClassLoader.getSystemClassLoader();
     }
 
     public static final class PolicyViolationException extends Exception {

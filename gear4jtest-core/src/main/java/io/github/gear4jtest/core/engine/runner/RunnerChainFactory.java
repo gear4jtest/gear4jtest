@@ -25,20 +25,16 @@ public class RunnerChainFactory {
         this.strategyRegistry = Objects.requireNonNull(strategyRegistry, "strategyRegistry must not be null");
     }
 
-    public StationRunner createRootRunner(
-            AssemblyLine<?, ?> pipeline,
-            RunRequest request,
-            ExecutionContext ctx,
-            ResolvedExtensions extensions) {
+    public StationRunner createRootRunner(AssemblyLine<?, ?> pipeline,
+                                          RunRequest request,
+                                          ExecutionContext ctx,
+                                          ResolvedExtensions extensions) {
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(
-                    "Creating station runner chain. pipelineId={}, stationWrappers={}, stationLifecycles={}, runInterceptors={}, executorWrappers={}",
-                    pipeline.getId(),
-                    extensions.stationWrappers().size(),
-                    extensions.stationLifecycleExtensions().size(),
-                    extensions.runInterceptors().size(),
-                    extensions.executorWrappers().size());
+            LOGGER.debug("Creating station runner chain. pipelineId={}, stationWrappers={}, stationLifecycles={}, runInterceptors={}, executorWrappers={}",
+                         pipeline.getId(), extensions.stationWrappers().size(),
+                         extensions.stationLifecycleExtensions().size(), extensions.runInterceptors().size(),
+                         extensions.executorWrappers().size());
         }
 
         LateBoundStationRunner lateBoundRoot = new LateBoundStationRunner();

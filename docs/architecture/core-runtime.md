@@ -20,27 +20,30 @@ The engine is responsible for:
 
 ## Main runtime types
 
-| Type | Role |
-| --- | --- |
-| `AssemblyLine` | Pipeline definition. |
-| `RunRequest` | Per-run input, context and runtime overrides. |
-| `ExecutionResult` | Public result returned by execution. |
-| `ExecutionContext` | Mutable state of one run. |
-| `ExecutionServices` | Run-scoped services used by strategies and station contexts. |
-| `StationExecutionContext` | Context exposed to station execution and user code. |
-| `PipelineEngine` | Runtime orchestrator. |
-| `StationRunner` | Executes a station through a composable runner chain. |
-| `StationExecutionStrategy` | Strategy for a specific station kind. |
+| Type                       | Role                                                         |
+|----------------------------|--------------------------------------------------------------|
+| `AssemblyLine`             | Pipeline definition.                                         |
+| `RunRequest`               | Per-run input, context and runtime overrides.                |
+| `ExecutionResult`          | Public result returned by execution.                         |
+| `ExecutionContext`         | Mutable state of one run.                                    |
+| `ExecutionServices`        | Run-scoped services used by strategies and station contexts. |
+| `StationExecutionContext`  | Context exposed to station execution and user code.          |
+| `PipelineEngine`           | Runtime orchestrator.                                        |
+| `StationRunner`            | Executes a station through a composable runner chain.        |
+| `StationExecutionStrategy` | Strategy for a specific station kind.                        |
 
 ## ExecutionContext vs ExecutionServices
 
 Keep these concepts separate.
 
-`ExecutionContext` is stateful and run-specific. It carries identifiers, context values, runtime contract, call stack and execution trace.
+`ExecutionContext` is stateful and run-specific. It carries identifiers, context values, runtime contract, call stack
+and execution trace.
 
-`ExecutionServices` carries services available during a run: event manager, resource factory and station-scoped resource registry.
+`ExecutionServices` carries services available during a run: event manager, resource factory and station-scoped resource
+registry.
 
-This separation prevents the context object from becoming a bag of infrastructure and keeps service exposure intentional.
+This separation prevents the context object from becoming a bag of infrastructure and keeps service exposure
+intentional.
 
 ## Runner chain
 
@@ -89,6 +92,8 @@ General rules:
 
 `PipelineCallStation` can execute a child pipeline inline or as a nested run.
 
-A nested run creates its own execution trace and runtime setup. The current MVP inherits parent key/value context for nested runs, but this is an explicit implementation choice that can later become a configurable context propagation policy.
+A nested run creates its own execution trace and runtime setup. The current MVP inherits parent key/value context for
+nested runs, but this is an explicit implementation choice that can later become a configurable context propagation
+policy.
 
 A running pipeline graph must not be mutated while a run is in progress.

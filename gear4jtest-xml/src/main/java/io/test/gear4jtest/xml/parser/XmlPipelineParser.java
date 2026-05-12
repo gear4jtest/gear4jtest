@@ -34,6 +34,85 @@ import org.w3c.dom.Node;
 
 public final class XmlPipelineParser {
 
+    private static Element firstOperationChild(Element parent) {
+        for (Element child : children(parent)) {
+            String name = localName(child);
+            if ("condition".equals(name)) {
+                continue;
+            }
+            return child;
+        }
+        throw new IllegalArgumentException("No operation child found in <" + localName(parent) + ">");
+    }
+
+    private static Element requiredChild(Element parent, String name) {
+        Element child = child(parent, name);
+        if (child == null) {
+            throw new IllegalArgumentException("Missing required child <" + name + "> in <" + localName(parent) + ">");
+        }
+        return child;
+    }
+
+    private static Element child(Element parent, String name) {
+        if (parent == null) {
+            return null;
+        }
+        for (Element child : children(parent)) {
+            if (name.equals(localName(child))) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    private static List<Element> childrenNamed(Element parent, String name) {
+        return children(parent).stream().filter(child -> name.equals(localName(child))).toList();
+    }
+
+    private static List<Element> children(Element parent) {
+        List<Element> elements = new ArrayList<>();
+        if (parent == null) {
+            return elements;
+        }
+        for (Node node = parent.getFirstChild(); node != null; node = node.getNextSibling()) {
+            if (node instanceof Element element) {
+                elements.add(element);
+            }
+        }
+        return elements;
+    }
+
+    private static String required(Element element, String attribute) {
+        String value = optional(element, attribute);
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Missing required attribute '" + attribute + "' on <" + localName(element) + ">");
+        }
+        return value;
+    }
+
+    private static String optionalOrDefault(Element element, String attribute, String defaultValue) {
+        String value = optional(element, attribute);
+        return value == null || value.isBlank() ? defaultValue : value;
+    }
+
+    private static String optional(Element element, String attribute) {
+        return hasAttribute(element, attribute) ? element.getAttribute(attribute) : null;
+    }
+
+    private static Integer optionalInteger(Element element, String attribute) {
+        String value = optional(element, attribute);
+        return value == null || value.isBlank() ? null : Integer.valueOf(value);
+    }
+
+    private static boolean hasAttribute(Element element, String attribute) {
+        return element.hasAttribute(attribute);
+    }
+
+    private static String localName(Element element) {
+        return element.getLocalName() != null ? element.getLocalName() : element.getNodeName();
+    }
+
     public XmlPipelineDefinition parse(InputStream inputStream) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -47,7 +126,8 @@ public final class XmlPipelineParser {
             Element root = document.getDocumentElement();
 
             if (!"assemblyLine".equals(localName(root))) {
-                throw new IllegalArgumentException("Expected root element <assemblyLine>, got <" + localName(root) + ">");
+                throw new IllegalArgumentException(
+                        "Expected root element <assemblyLine>, got <" + localName(root) + ">");
             }
 
             String id = required(root, "id");
@@ -55,9 +135,7 @@ public final class XmlPipelineParser {
             String outputType = optional(root, "outputType");
 
             Element operationsElement = requiredChild(root, "operations");
-            List<Operation> operations = children(operationsElement).stream()
-                    .map(this::parseOperation)
-                    .toList();
+            List<Operation> operations = children(operationsElement).stream().map(this::parseOperation).toList();
 
             Configuration configuration = parseConfiguration(child(root, "configuration"));
             List<Dependency> dependencies = parseDependencies(child(root, "dependencies"));
@@ -94,13 +172,9 @@ public final class XmlPipelineParser {
     }
 
     private ProcessingOperation parseProcessing(Element element) {
-        return new ProcessingOperation(
-                required(element, "id"),
-                required(element, "type"),
-                optional(element, "inputType"),
-                parseParameters(child(element, "parameters")),
-                parseErrors(child(element, "onErrors")),
-                parseConditions(child(element, "conditions")),
+        return new ProcessingOperation(required(element, "id"), required(element, "type"),
+                optional(element, "inputType"), parseParameters(child(element, "parameters")),
+                parseErrors(child(element, "onErrors")), parseConditions(child(element, "conditions")),
                 parseTransformer(child(element, "fallbackTransformer")));
     }
 
@@ -108,11 +182,8 @@ public final class XmlPipelineParser {
         Element iterableFunction = requiredChild(element, "iterableFunction");
         Element operationWrapper = requiredChild(element, "operation");
 
-        return new IteratorOperation(
-                required(element, "id"),
-                optional(element, "inputType"),
-                optional(element, "outputType"),
-                required(iterableFunction, "expression"),
+        return new IteratorOperation(required(element, "id"), optional(element, "inputType"),
+                optional(element, "outputType"), required(iterableFunction, "expression"),
                 parseOperation(operationWrapper),
                 child(element, "accumulator") == null ? null : required(child(element, "accumulator"), "type"),
                 child(element, "collector") == null ? null : required(child(element, "collector"), "expression"));
@@ -124,20 +195,14 @@ public final class XmlPipelineParser {
 
         for (Element subLine : childrenNamed(subLinesElement, "subLine")) {
             Element operationElement = firstOperationChild(subLine);
-            subLines.add(new SubLine(
-                    optional(subLine, "id"),
-                    parseCondition(child(subLine, "condition")),
+            subLines.add(new SubLine(optional(subLine, "id"), parseCondition(child(subLine, "condition")),
                     parseOperation(operationElement)));
         }
 
         Element returnsFunction = child(element, "returnsFunction");
-        return new ContainerOperation(
-                required(element, "id"),
-                required(element, "inputType"),
-                required(element, "outputType"),
-                Boolean.parseBoolean(optionalOrDefault(element, "parallel", "false")),
-                optionalInteger(element, "threadPoolSize"),
-                List.copyOf(subLines),
+        return new ContainerOperation(required(element, "id"), required(element, "inputType"),
+                required(element, "outputType"), Boolean.parseBoolean(optionalOrDefault(element, "parallel", "false")),
+                optionalInteger(element, "threadPoolSize"), List.copyOf(subLines),
                 returnsFunction == null ? null : required(returnsFunction, "expression"));
     }
 
@@ -149,11 +214,11 @@ public final class XmlPipelineParser {
             Element op = firstOperationChild(conditionalOperation);
             Operation parsed = parseOperation(op);
             if (!(parsed instanceof ProcessingOperation processingOperation)) {
-                throw new IllegalArgumentException("ifElse conditionalOperation currently supports processing operations only");
+                throw new IllegalArgumentException(
+                        "ifElse conditionalOperation currently supports processing operations only");
             }
             conditionalOperations.add(new ConditionalOperation(
-                    parseCondition(requiredChild(conditionalOperation, "condition")),
-                    processingOperation));
+                    parseCondition(requiredChild(conditionalOperation, "condition")), processingOperation));
         }
 
         ProcessingOperation elseOperation = null;
@@ -162,20 +227,13 @@ public final class XmlPipelineParser {
             elseOperation = parseProcessing(elseElement);
         }
 
-        return new IfElseOperation(
-                required(element, "id"),
-                required(element, "inputType"),
-                required(element, "outputType"),
-                List.copyOf(conditionalOperations),
-                elseOperation);
+        return new IfElseOperation(required(element, "id"), required(element, "inputType"),
+                required(element, "outputType"), List.copyOf(conditionalOperations), elseOperation);
     }
 
     private SignalOperation parseSignal(Element element) {
-        return new SignalOperation(
-                required(element, "id"),
-                required(element, "type").toUpperCase(Locale.ROOT),
-                optional(element, "inputType"),
-                parseCondition(child(element, "condition")));
+        return new SignalOperation(required(element, "id"), required(element, "type").toUpperCase(Locale.ROOT),
+                optional(element, "inputType"), parseCondition(child(element, "condition")));
     }
 
     private Parameters parseParameters(Element element) {
@@ -186,17 +244,14 @@ public final class XmlPipelineParser {
         List<Parameter> parameters = new ArrayList<>();
         for (Element child : children(element)) {
             switch (localName(child)) {
-                case "valueParameter" -> parameters.add(new ValueParameter(
-                        required(child, "retriever"),
-                        required(child, "value"),
-                        optionalOrDefault(child, "valueType", "java.lang.String")));
-                case "supplierParameter" -> parameters.add(new SupplierParameter(
-                        required(child, "retriever"),
-                        required(child, "supplier")));
-                case "contextParameter" -> parameters.add(new ContextParameter(
-                        required(child, "retriever"),
-                        required(child, "function")));
-                default -> throw new IllegalArgumentException("Unsupported parameter element: <" + localName(child) + ">");
+                case "valueParameter" -> parameters.add(new ValueParameter(required(child, "retriever"),
+                        required(child, "value"), optionalOrDefault(child, "valueType", "java.lang.String")));
+                case "supplierParameter" ->
+                    parameters.add(new SupplierParameter(required(child, "retriever"), required(child, "supplier")));
+                case "contextParameter" ->
+                    parameters.add(new ContextParameter(required(child, "retriever"), required(child, "function")));
+                default ->
+                    throw new IllegalArgumentException("Unsupported parameter element: <" + localName(child) + ">");
             }
         }
         return new Parameters(List.copyOf(parameters));
@@ -213,12 +268,9 @@ public final class XmlPipelineParser {
             if (!"safeError".equals(name) && !"unsafeError".equals(name)) {
                 throw new IllegalArgumentException("Unsupported error handler element: <" + name + ">");
             }
-            errors.add(new ErrorHandler(
-                    "safeError".equals(name),
-                    required(child, "signalType").toUpperCase(Locale.ROOT),
-                    required(child, "throwableType"),
-                    parseCondition(child(child, "condition")),
-                    parseAction(child(child, "action"))));
+            errors.add(new ErrorHandler("safeError".equals(name),
+                    required(child, "signalType").toUpperCase(Locale.ROOT), required(child, "throwableType"),
+                    parseCondition(child(child, "condition")), parseAction(child(child, "action"))));
         }
         return List.copyOf(errors);
     }
@@ -252,9 +304,7 @@ public final class XmlPipelineParser {
         if (element == null) {
             return null;
         }
-        return new Transformer(
-                required(element, "expression"),
-                optional(element, "inputType"),
+        return new Transformer(required(element, "expression"), optional(element, "inputType"),
                 optional(element, "outputType"));
     }
 
@@ -266,14 +316,15 @@ public final class XmlPipelineParser {
         Element eventHandlingElement = child(element, "eventHandling");
         if (eventHandlingElement != null) {
             Element global = child(eventHandlingElement, "globalEventConfiguration");
-            eventHandling = new EventHandling(global == null ? null : Boolean.parseBoolean(
-                    optionalOrDefault(global, "eventOnParameterChanged", "false")));
+            eventHandling = new EventHandling(global == null ? null
+                    : Boolean.parseBoolean(optionalOrDefault(global, "eventOnParameterChanged", "false")));
         }
 
         Persistence persistence = null;
         Element persistenceElement = child(element, "persistence");
         if (persistenceElement != null) {
-            persistence = new Persistence(Boolean.parseBoolean(optionalOrDefault(persistenceElement, "storeResultObject", "true")));
+            persistence = new Persistence(
+                    Boolean.parseBoolean(optionalOrDefault(persistenceElement, "storeResultObject", "true")));
         }
 
         return new Configuration(eventHandling, persistence);
@@ -288,85 +339,5 @@ public final class XmlPipelineParser {
             dependencies.add(new Dependency(required(dependency, "name"), required(dependency, "type")));
         }
         return List.copyOf(dependencies);
-    }
-
-    private static Element firstOperationChild(Element parent) {
-        for (Element child : children(parent)) {
-            String name = localName(child);
-            if ("condition".equals(name)) {
-                continue;
-            }
-            return child;
-        }
-        throw new IllegalArgumentException("No operation child found in <" + localName(parent) + ">");
-    }
-
-    private static Element requiredChild(Element parent, String name) {
-        Element child = child(parent, name);
-        if (child == null) {
-            throw new IllegalArgumentException("Missing required child <" + name + "> in <" + localName(parent) + ">");
-        }
-        return child;
-    }
-
-    private static Element child(Element parent, String name) {
-        if (parent == null) {
-            return null;
-        }
-        for (Element child : children(parent)) {
-            if (name.equals(localName(child))) {
-                return child;
-            }
-        }
-        return null;
-    }
-
-    private static List<Element> childrenNamed(Element parent, String name) {
-        return children(parent).stream()
-                .filter(child -> name.equals(localName(child)))
-                .toList();
-    }
-
-    private static List<Element> children(Element parent) {
-        List<Element> elements = new ArrayList<>();
-        if (parent == null) {
-            return elements;
-        }
-        for (Node node = parent.getFirstChild(); node != null; node = node.getNextSibling()) {
-            if (node instanceof Element element) {
-                elements.add(element);
-            }
-        }
-        return elements;
-    }
-
-    private static String required(Element element, String attribute) {
-        String value = optional(element, attribute);
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("Missing required attribute '" + attribute + "' on <" + localName(element) + ">");
-        }
-        return value;
-    }
-
-    private static String optionalOrDefault(Element element, String attribute, String defaultValue) {
-        String value = optional(element, attribute);
-        return value == null || value.isBlank() ? defaultValue : value;
-    }
-
-    private static String optional(Element element, String attribute) {
-        return hasAttribute(element, attribute) ? element.getAttribute(attribute) : null;
-    }
-
-    private static Integer optionalInteger(Element element, String attribute) {
-        String value = optional(element, attribute);
-        return value == null || value.isBlank() ? null : Integer.valueOf(value);
-    }
-
-    private static boolean hasAttribute(Element element, String attribute) {
-        return element.hasAttribute(attribute);
-    }
-
-    private static String localName(Element element) {
-        return element.getLocalName() != null ? element.getLocalName() : element.getNodeName();
     }
 }

@@ -1,12 +1,13 @@
 package io.github.gear4jtest.core.persistence;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class InMemoryAssemblyRunRepositoryTest {
 

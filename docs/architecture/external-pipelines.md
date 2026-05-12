@@ -6,18 +6,20 @@ Partially implemented.
 
 ## Intent
 
-External pipeline support allows pipeline definitions to be stored outside Java source code and translated into executable Gear4J pipelines.
+External pipeline support allows pipeline definitions to be stored outside Java source code and translated into
+executable Gear4J pipelines.
 
-XML is the current implemented external format. Other formats can be added later by implementing the same translator contract.
+XML is the current implemented external format. Other formats can be added later by implementing the same translator
+contract.
 
 ## Module split
 
-| Module | Responsibility |
-| --- | --- |
-| `gear4jtest-external-api` | Common artifact, repository, compiler, classloader and injection infrastructure. |
-| `gear4jtest-xml` | XML-specific validation, parsing and Java generation. |
-| `gear4jtest-gradle-xml2java` | Build-time generation from XML. |
-| `gear4jtest-core` | Runtime execution after an `AssemblyLine` exists. |
+| Module                       | Responsibility                                                                   |
+|------------------------------|----------------------------------------------------------------------------------|
+| `gear4jtest-external-api`    | Common artifact, repository, compiler, classloader and injection infrastructure. |
+| `gear4jtest-xml`             | XML-specific validation, parsing and Java generation.                            |
+| `gear4jtest-gradle-xml2java` | Build-time generation from XML.                                                  |
+| `gear4jtest-core`            | Runtime execution after an `AssemblyLine` exists.                                |
 
 ## Runtime loading path
 
@@ -57,7 +59,8 @@ A generated class should:
 
 Pinned version references are stable.
 
-Mutable aliases such as `latest` need future cache invalidation rules. Until that is fully implemented, avoid assuming that alias invalidation is durable or distributed.
+Mutable aliases such as `latest` need future cache invalidation rules. Until that is fully implemented, avoid assuming
+that alias invalidation is durable or distributed.
 
 When aliasing is involved, future code should preserve both:
 

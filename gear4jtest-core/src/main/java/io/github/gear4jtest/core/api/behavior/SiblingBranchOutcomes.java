@@ -1,16 +1,25 @@
 package io.github.gear4jtest.core.api.behavior;
 
-import io.github.gear4jtest.core.model.StationLogStatus;
-
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.model.StationLogStatus;
 
 public interface SiblingBranchOutcomes {
+
+    static SiblingBranchOutcomes empty() {
+        return ImmutableSiblingBranchOutcomes.EMPTY;
+    }
+
+    static SiblingBranchOutcomes of(Map<String, StationLogStatus> statuses) {
+        if (statuses == null || statuses.isEmpty()) {
+            return empty();
+        }
+        return new ImmutableSiblingBranchOutcomes(statuses);
+    }
 
     Optional<StationLogStatus> statusOf(String branchId);
 
@@ -38,17 +47,6 @@ public interface SiblingBranchOutcomes {
 
     default boolean isCancelled(String branchId) {
         return hasStatus(branchId, StationLogStatus.CANCELLED);
-    }
-
-    static SiblingBranchOutcomes empty() {
-        return ImmutableSiblingBranchOutcomes.EMPTY;
-    }
-
-    static SiblingBranchOutcomes of(Map<String, StationLogStatus> statuses) {
-        if (statuses == null || statuses.isEmpty()) {
-            return empty();
-        }
-        return new ImmutableSiblingBranchOutcomes(statuses);
     }
 
     final class ImmutableSiblingBranchOutcomes implements SiblingBranchOutcomes {

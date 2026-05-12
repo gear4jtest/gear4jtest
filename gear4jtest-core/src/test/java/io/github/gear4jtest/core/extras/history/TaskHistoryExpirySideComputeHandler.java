@@ -10,14 +10,12 @@ public final class TaskHistoryExpirySideComputeHandler<T>
         implements SideComputeHandler<StationFinishedEvent, TaskHistoryResult<T>> {
 
     @Override
-    public void handle(
-            String sideComputeKey,
-            StationFinishedEvent event,
-            TaskHistoryResult<T> value,
-            ExecutionContext executionContext) {
+    public void handle(String sideComputeKey,
+                       StationFinishedEvent event,
+                       TaskHistoryResult<T> value,
+                       ExecutionContext executionContext) {
 
-        Object trackerObj =
-                executionContext.getContext().get(PipelineCacheRuntimeKeys.EXPIRABLE_DEPENDENCY_TRACKER);
+        Object trackerObj = executionContext.getContext().get(PipelineCacheRuntimeKeys.EXPIRABLE_DEPENDENCY_TRACKER);
 
         if (trackerObj instanceof ExpirableDependencyTracker tracker) {
             if (value == null || value.expiresAt() == null) {

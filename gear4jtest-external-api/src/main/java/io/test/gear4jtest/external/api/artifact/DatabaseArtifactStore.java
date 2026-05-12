@@ -18,8 +18,10 @@ public final class DatabaseArtifactStore implements ArtifactStore {
     private static boolean isUniqueViolation(SQLException e) {
         String state = e.getSQLState();
         int code = e.getErrorCode();
-        if ("23505".equals(state)) return true;
-        if (code == 1062) return true;
+        if ("23505".equals(state))
+            return true;
+        if (code == 1062)
+            return true;
         return e.getMessage() != null && e.getMessage().toLowerCase().contains("duplicate");
     }
 
@@ -33,7 +35,8 @@ public final class DatabaseArtifactStore implements ArtifactStore {
                 ps.setBytes(3, content);
                 ps.executeUpdate();
             } catch (SQLException e) {
-                if (!isUniqueViolation(e)) throw e;
+                if (!isUniqueViolation(e))
+                    throw e;
             }
             return hash;
         } catch (SQLException e) {
@@ -44,13 +47,15 @@ public final class DatabaseArtifactStore implements ArtifactStore {
     @Override
     public Optional<Artifact> get(String hashHex) throws IOException {
         try (var c = ds.getConnection();
-             var ps = c.prepareStatement("SELECT size_bytes, content FROM " + table + " WHERE hash_hex=?")) {
+                var ps = c.prepareStatement("SELECT size_bytes, content FROM " + table + " WHERE hash_hex=?")) {
             ps.setString(1, hashHex);
             try (var rs = ps.executeQuery()) {
-                if (!rs.next()) return Optional.empty();
+                if (!rs.next())
+                    return Optional.empty();
                 long size = rs.getLong(1);
                 byte[] bytes = rs.getBytes(2);
-                return Optional.of(new Artifact(hashHex, size, Map.of(), () -> new java.io.ByteArrayInputStream(bytes)));
+                return Optional
+                        .of(new Artifact(hashHex, size, Map.of(), () -> new java.io.ByteArrayInputStream(bytes)));
             }
         } catch (SQLException e) {
             throw new IOException("DB error", e);
@@ -59,8 +64,7 @@ public final class DatabaseArtifactStore implements ArtifactStore {
 
     @Override
     public boolean exists(String hashHex) throws IOException {
-        try (var c = ds.getConnection();
-             var ps = c.prepareStatement("SELECT 1 FROM " + table + " WHERE hash_hex=?")) {
+        try (var c = ds.getConnection(); var ps = c.prepareStatement("SELECT 1 FROM " + table + " WHERE hash_hex=?")) {
             ps.setString(1, hashHex);
             try (var rs = ps.executeQuery()) {
                 return rs.next();

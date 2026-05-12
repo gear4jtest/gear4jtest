@@ -1,18 +1,10 @@
 package io.github.gear4jtest.core.engine.support;
 
-import io.github.gear4jtest.core.model.StationLogStatus;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
-
-import io.github.gear4jtest.core.spi.factory.ResourceFactory;
-import org.junit.jupiter.api.Test;
 
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
@@ -25,9 +17,12 @@ import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
-import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
-import io.github.gear4jtest.core.persistence.StationLogRecord;
+import io.github.gear4jtest.core.model.StationLogStatus;
+import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class TaskFactoryTest {
 
@@ -44,9 +39,7 @@ class TaskFactoryTest {
                 return null;
             }
         };
-        ExecutionContext globalContext = new ExecutionContext(
-                UUID.randomUUID(),
-                "pipeline-1",
+        ExecutionContext globalContext = new ExecutionContext(UUID.randomUUID(), "pipeline-1",
                 new ExecutionServices(
                         new EventManager(EventHandlingDefinition.builder().build(), new ExecutionContextRegistry()),
                         resourceFactory),
@@ -60,12 +53,8 @@ class TaskFactoryTest {
         parentRecord.setContext(new HashMap<>());
         parentRecord.setStatus(StationLogStatus.RUNNING);
 
-        StationExecutionContext operationExecution = new DefaultStationExecutionContext(
-                "parent",
-                StationKind.CONTAINER,
-                globalContext,
-                parentRecord,
-                support);
+        StationExecutionContext operationExecution = new DefaultStationExecutionContext("parent", StationKind.CONTAINER,
+                globalContext, parentRecord, support);
 
         DummyStation child = new DummyStation("child");
 
@@ -76,18 +65,15 @@ class TaskFactoryTest {
             seenItemId.set(ctx.getGlobalContext().getCurrentItemId());
             seenParentOperationId.set(ctx.getGlobalContext().getCurrentParentOperationId());
 
-            StationLogTrace childLog = StationLogTrace.start(ctx.getGlobalContext().getExecutionId(), station.getId(), null);
+            StationLogTrace childLog = StationLogTrace.start(ctx.getGlobalContext().getExecutionId(), station.getId(),
+                                                             null);
             childLog.setContext(new HashMap<>());
             childLog.markSuccess("ok");
             return childLog;
         };
 
-        Callable<StationLogTrace> task = taskFactory.createTask(
-                () -> "payload",
-                child,
-                runner,
-                operationExecution,
-                "child-item");
+        Callable<StationLogTrace> task = taskFactory.createTask(() -> "payload", child, runner, operationExecution,
+                                                                "child-item");
 
         // When
         StationLogTrace result = task.call();

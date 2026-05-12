@@ -2,7 +2,8 @@
 
 `gear4jtest-spring` integrates Gear4J with the Spring container.
 
-Its goal is not to add Spring Boot magic. Its goal is to let Gear4J use Spring-managed beans cleanly while keeping the core engine framework-agnostic.
+Its goal is not to add Spring Boot magic. Its goal is to let Gear4J use Spring-managed beans cleanly while keeping the
+core engine framework-agnostic.
 
 ## Why this module exists
 
@@ -92,3 +93,8 @@ Useful focused task:
 ```bash
 ./gradlew :gear4jtest-spring:test
 ```
+
+## Code style
+
+Repository formatting is enforced by Spotless from the root Gradle build. Use `./gradlew spotlessApply` before
+committing code changes and `./gradlew check` for full validation.

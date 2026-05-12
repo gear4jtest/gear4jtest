@@ -7,9 +7,12 @@ import java.util.Objects;
 /**
  * Runtime contract attached to a pipeline.
  *
- * <p>The contract is the declarative source of truth used to decide whether another pipeline may
- * execute this pipeline inline. Mechanical validation only checks that the actual runtime
- * configuration is coherent with this declaration.</p>
+ * <p>
+ * The contract is the declarative source of truth used to decide whether
+ * another pipeline may execute this pipeline inline. Mechanical validation only
+ * checks that the actual runtime configuration is coherent with this
+ * declaration.
+ * </p>
  */
 public final class PipelineRuntimeContract {
 
@@ -17,17 +20,12 @@ public final class PipelineRuntimeContract {
     private final List<RuntimeRequirement> mandatoryRequirements;
     private final List<RuntimeRequirement> providedRequirements;
 
-    private PipelineRuntimeContract(
-            InlinePolicy inlinePolicy,
-            List<RuntimeRequirement> mandatoryRequirements,
-            List<RuntimeRequirement> providedRequirements) {
+    private PipelineRuntimeContract(InlinePolicy inlinePolicy,
+                                    List<RuntimeRequirement> mandatoryRequirements,
+                                    List<RuntimeRequirement> providedRequirements) {
         this.inlinePolicy = Objects.requireNonNull(inlinePolicy, "inlinePolicy must not be null");
-        this.mandatoryRequirements = mandatoryRequirements == null
-                ? List.of()
-                : List.copyOf(mandatoryRequirements);
-        this.providedRequirements = providedRequirements == null
-                ? List.of()
-                : List.copyOf(providedRequirements);
+        this.mandatoryRequirements = mandatoryRequirements == null ? List.of() : List.copyOf(mandatoryRequirements);
+        this.providedRequirements = providedRequirements == null ? List.of() : List.copyOf(providedRequirements);
     }
 
     public static PipelineRuntimeContract inlineConfigless() {
@@ -39,10 +37,12 @@ public final class PipelineRuntimeContract {
     }
 
     public static PipelineRuntimeContract inlineWhenRequirementsSatisfied(List<RuntimeRequirement> requirements) {
-        return builder()
-                .inlinePolicy(InlinePolicy.ALLOWED_WHEN_REQUIREMENTS_SATISFIED)
-                .mandatoryRequirements(requirements)
-                .build();
+        return builder().inlinePolicy(InlinePolicy.ALLOWED_WHEN_REQUIREMENTS_SATISFIED)
+                .mandatoryRequirements(requirements).build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
     }
 
     public InlinePolicy getInlinePolicy() {
@@ -69,14 +69,10 @@ public final class PipelineRuntimeContract {
         return providedRequirements.contains(requirement);
     }
 
-    public static Builder builder() {
-        return new Builder();
-    }
-
     public static final class Builder {
-        private InlinePolicy inlinePolicy = InlinePolicy.ALLOWED_WHEN_CONFIGLESS;
         private final List<RuntimeRequirement> mandatoryRequirements = new ArrayList<>();
         private final List<RuntimeRequirement> providedRequirements = new ArrayList<>();
+        private InlinePolicy inlinePolicy = InlinePolicy.ALLOWED_WHEN_CONFIGLESS;
 
         public Builder inlinePolicy(InlinePolicy inlinePolicy) {
             this.inlinePolicy = Objects.requireNonNull(inlinePolicy, "inlinePolicy must not be null");

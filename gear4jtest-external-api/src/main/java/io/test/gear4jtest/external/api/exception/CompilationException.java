@@ -23,14 +23,14 @@ public class CompilationException extends RuntimeException {
         this.diagnostics = diagnostics == null ? List.of() : List.copyOf(diagnostics);
     }
 
-    public List<String> diagnostics() {
-        return diagnostics;
-    }
-
     private static String messageWithDiagnostics(String message, List<String> diagnostics) {
         if (diagnostics == null || diagnostics.isEmpty()) {
             return message;
         }
         return message + System.lineSeparator() + String.join(System.lineSeparator(), diagnostics);
+    }
+
+    public List<String> diagnostics() {
+        return diagnostics;
     }
 }

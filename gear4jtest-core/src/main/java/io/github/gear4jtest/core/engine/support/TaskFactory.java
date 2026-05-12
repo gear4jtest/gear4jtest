@@ -12,20 +12,19 @@ import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class TaskFactory {
 
-    public Callable<StationLogTrace> createTask(
-            Supplier<?> inputSupplier,
-            AbstractStation<?, ?> station,
-            StationRunner runner,
-            StationExecutionContext ctx,
-            String itemId) {
+    public Callable<StationLogTrace> createTask(Supplier<?> inputSupplier,
+                                                AbstractStation<?, ?> station,
+                                                StationRunner runner,
+                                                StationExecutionContext ctx,
+                                                String itemId) {
 
         UUID parentOperationId = ctx.getGlobalContext().getCurrentParentOperationId();
 
-        return () -> withItemId(itemId, ctx.getGlobalContext(), () ->
-                withParentOperationId(parentOperationId, ctx.getGlobalContext(), () -> {
-                    Object safeInput = inputSupplier.get();
-                    return runner.run(safeInput, station, ctx);
-                }));
+        return () -> withItemId(itemId, ctx.getGlobalContext(),
+                                () -> withParentOperationId(parentOperationId, ctx.getGlobalContext(), () -> {
+                                    Object safeInput = inputSupplier.get();
+                                    return runner.run(safeInput, station, ctx);
+                                }));
     }
 
     private <T> T withItemId(String itemId, ExecutionContext context, Supplier<T> action) {

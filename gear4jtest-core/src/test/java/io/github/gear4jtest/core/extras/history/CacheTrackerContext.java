@@ -4,7 +4,8 @@ public final class CacheTrackerContext {
 
     private static final ThreadLocal<ExpirableDependencyTracker> TRACKER = new ThreadLocal<>();
 
-    private CacheTrackerContext() {}
+    private CacheTrackerContext() {
+    }
 
     public static void set(ExpirableDependencyTracker tracker) {
         TRACKER.set(tracker);

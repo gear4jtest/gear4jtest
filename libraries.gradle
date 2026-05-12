@@ -8,21 +8,21 @@ ext {
     mockitoVersion = '4.6.0'
 
     libraries = [
-            // compile
-            slf4j: "org.slf4j:slf4j-api:${slf4jVersion}",
-            cglib: "cglib:cglib:3.3.0",
-            aspectjrt: "org.aspectj:aspectjrt:1.9.8.RC3",
-            aspectjweaver: "org.aspectj:aspectjweaver:1.8.9",
-            mojo: "org.codehaus.mojo:aspectj-maven-plugin:1.14.0",
-            google: "com.google.guava:guava:33.0.0-jre",
-            jackson: "com.fasterxml.jackson.core:jackson-databind:2.19.0",
+        // compile
+        slf4j        : "org.slf4j:slf4j-api:${slf4jVersion}",
+        cglib        : "cglib:cglib:3.3.0",
+        aspectjrt    : "org.aspectj:aspectjrt:1.9.8.RC3",
+        aspectjweaver: "org.aspectj:aspectjweaver:1.8.9",
+        mojo         : "org.codehaus.mojo:aspectj-maven-plugin:1.14.0",
+        google       : "com.google.guava:guava:33.0.0-jre",
+        jackson      : "com.fasterxml.jackson.core:jackson-databind:2.19.0",
 
-            // testCompile
-            junit: "org.junit.jupiter:junit-jupiter:${junitVersion}",
-            assertj: "org.assertj:assertj-core:${assertjVersion}",
-            logback: "ch.qos.logback:logback-classic:${logbackVersion}",
-            mockito: "org.mockito:mockito-core:${mockitoVersion}",
-            mockitoJunit: "org.mockito:mockito-junit-jupiter:${mockitoVersion}",
-            postgresql: "org.postgresql:postgresql:42.7.7"
+        // testCompile
+        junit        : "org.junit.jupiter:junit-jupiter:${junitVersion}",
+        assertj      : "org.assertj:assertj-core:${assertjVersion}",
+        logback      : "ch.qos.logback:logback-classic:${logbackVersion}",
+        mockito      : "org.mockito:mockito-core:${mockitoVersion}",
+        mockitoJunit : "org.mockito:mockito-junit-jupiter:${mockitoVersion}",
+        postgresql   : "org.postgresql:postgresql:42.7.7"
     ]
 }

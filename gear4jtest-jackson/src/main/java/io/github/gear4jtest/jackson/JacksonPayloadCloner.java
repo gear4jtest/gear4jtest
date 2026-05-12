@@ -1,10 +1,5 @@
 package io.github.gear4jtest.jackson;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.gear4jtest.core.api.context.PayloadCloner;
-import io.github.gear4jtest.core.exception.PayloadCloneException;
-
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -47,48 +42,21 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.gear4jtest.core.api.context.PayloadCloner;
+import io.github.gear4jtest.core.exception.PayloadCloneException;
+
 public final class JacksonPayloadCloner implements PayloadCloner {
 
-    private static final Set<Class<?>> KNOWN_IMMUTABLE_TYPES = Set.of(
-            String.class,
-            Boolean.class,
-            Byte.class,
-            Short.class,
-            Integer.class,
-            Long.class,
-            Float.class,
-            Double.class,
-            Character.class,
-            BigDecimal.class,
-            BigInteger.class,
-            UUID.class,
-            URI.class,
-            URL.class,
-            Pattern.class,
-            Currency.class,
-            OptionalInt.class,
-            OptionalLong.class,
-            OptionalDouble.class,
-            Instant.class,
-            Duration.class,
-            Period.class,
-            LocalDate.class,
-            LocalTime.class,
-            LocalDateTime.class,
-            OffsetTime.class,
-            OffsetDateTime.class,
-            ZonedDateTime.class,
-            Year.class,
-            YearMonth.class,
-            MonthDay.class,
-            ZoneId.class,
-            ZoneOffset.class,
-            DayOfWeek.class,
-            Month.class,
-            HijrahDate.class,
-            JapaneseDate.class,
-            MinguoDate.class,
-            ThaiBuddhistDate.class);
+    private static final Set<Class<?>> KNOWN_IMMUTABLE_TYPES = Set
+            .of(String.class, Boolean.class, Byte.class, Short.class, Integer.class, Long.class, Float.class,
+                Double.class, Character.class, BigDecimal.class, BigInteger.class, UUID.class, URI.class, URL.class,
+                Pattern.class, Currency.class, OptionalInt.class, OptionalLong.class, OptionalDouble.class,
+                Instant.class, Duration.class, Period.class, LocalDate.class, LocalTime.class, LocalDateTime.class,
+                OffsetTime.class, OffsetDateTime.class, ZonedDateTime.class, Year.class, YearMonth.class,
+                MonthDay.class, ZoneId.class, ZoneOffset.class, DayOfWeek.class, Month.class, HijrahDate.class,
+                JapaneseDate.class, MinguoDate.class, ThaiBuddhistDate.class);
 
     private final ObjectMapper objectMapper;
 
@@ -108,8 +76,7 @@ public final class JacksonPayloadCloner implements PayloadCloner {
         } catch (PayloadCloneException e) {
             throw e;
         } catch (Exception e) {
-            throw new PayloadCloneException(
-                    "Jackson failed to clone payload of type " + payload.getClass().getName(),
+            throw new PayloadCloneException("Jackson failed to clone payload of type " + payload.getClass().getName(),
                     e);
         }
     }
@@ -206,9 +173,7 @@ public final class JacksonPayloadCloner implements PayloadCloner {
         return cloned;
     }
 
-    private Collection<Object> cloneCollection(
-            Collection<?> source,
-            IdentityHashMap<Object, Object> visited) {
+    private Collection<Object> cloneCollection(Collection<?> source, IdentityHashMap<Object, Object> visited) {
 
         Collection<Object> cloned = new ArrayList<>(source.size());
         visited.put(source, cloned);
@@ -236,24 +201,21 @@ public final class JacksonPayloadCloner implements PayloadCloner {
     private Object clonePojo(Object source) {
         try {
             /*
-             * Important:
-             * visited-based cycle protection does not apply inside this Jackson conversion step.
-             * Cyclic POJO graphs therefore require dedicated Jackson configuration and are not
-             * guaranteed to be supported transparently by this cloner.
+             * Important: visited-based cycle protection does not apply inside this Jackson
+             * conversion step. Cyclic POJO graphs therefore require dedicated Jackson
+             * configuration and are not guaranteed to be supported transparently by this
+             * cloner.
              */
             JavaType javaType = objectMapper.getTypeFactory().constructType(source.getClass());
             return objectMapper.convertValue(source, javaType);
         } catch (IllegalArgumentException e) {
-            throw new PayloadCloneException(
-                    "Jackson failed to clone payload of type " + source.getClass().getName(),
+            throw new PayloadCloneException("Jackson failed to clone payload of type " + source.getClass().getName(),
                     e);
         }
     }
 
     private boolean isKnownImmutable(Class<?> type) {
-        return type.isEnum()
-                || Class.class.equals(type)
-                || ZoneId.class.isAssignableFrom(type)
+        return type.isEnum() || Class.class.equals(type) || ZoneId.class.isAssignableFrom(type)
                 || KNOWN_IMMUTABLE_TYPES.contains(type);
     }
 }

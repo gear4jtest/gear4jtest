@@ -3,14 +3,14 @@
               id="bad_ifelse"
               inputType="java.lang.String"
               outputType="java.lang.String">
-    <operations>
-        <ifElseContainer id="choice" inputType="java.lang.String" outputType="java.lang.String">
-            <conditionalOperations>
-                <conditionalOperation>
-                    <condition expression="input.startsWith(&quot;a&quot;)"/>
-                    <processingOperation id="append_true" type="com.myorg.operation.Step11"/>
-                </conditionalOperation>
-            </conditionalOperations>
-        </ifElseContainer>
-    </operations>
+  <operations>
+    <ifElseContainer id="choice" inputType="java.lang.String" outputType="java.lang.String">
+      <conditionalOperations>
+        <conditionalOperation>
+          <condition expression="input.startsWith(&quot;a&quot;)"/>
+          <processingOperation id="append_true" type="com.myorg.operation.Step11"/>
+        </conditionalOperation>
+      </conditionalOperations>
+    </ifElseContainer>
+  </operations>
 </assemblyLine>

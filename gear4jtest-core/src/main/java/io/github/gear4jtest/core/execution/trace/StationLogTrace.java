@@ -1,7 +1,5 @@
 package io.github.gear4jtest.core.execution.trace;
 
-import io.github.gear4jtest.core.model.StationLogStatus;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import io.github.gear4jtest.core.model.StationLogStatus;
 
 public class StationLogTrace {
 
@@ -28,9 +28,7 @@ public class StationLogTrace {
     private List<StationLogTrace> subOperations = Collections.synchronizedList(new ArrayList<>());
     private String itemId;
 
-    public static StationLogTrace start(UUID pipelineExecutionId,
-                                   String operationId,
-                                   UUID parentOperationId) {
+    public static StationLogTrace start(UUID pipelineExecutionId, String operationId, UUID parentOperationId) {
         StationLogTrace record = new StationLogTrace();
         record.id = UUID.randomUUID();
         record.pipelineExecutionId = pipelineExecutionId;
@@ -117,7 +115,9 @@ public class StationLogTrace {
         return id;
     }
 
-    public void setId(UUID id) { this.id = id; }
+    public void setId(UUID id) {
+        this.id = id;
+    }
 
     public UUID getPipelineExecutionId() {
         return pipelineExecutionId;

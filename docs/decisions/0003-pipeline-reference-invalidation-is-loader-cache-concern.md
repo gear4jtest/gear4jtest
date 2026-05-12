@@ -8,9 +8,11 @@ Future direction. Not implemented.
 
 Pipeline versions are expected to be immutable.
 
-A reference to a concrete version is stable. Publishing a newer version should not change a compiled parent pipeline that explicitly references an older version.
+A reference to a concrete version is stable. Publishing a newer version should not change a compiled parent pipeline
+that explicitly references an older version.
 
-Aliases such as `latest` are mutable. A parent pipeline compiled while `latest` points to version `1.2.0` may need invalidation when `latest` later points to `1.3.0`.
+Aliases such as `latest` are mutable. A parent pipeline compiled while `latest` points to version `1.2.0` may need
+invalidation when `latest` later points to `1.3.0`.
 
 ## Decision
 
@@ -19,7 +21,8 @@ Future external pipeline loading should distinguish:
 - `declaredReference`: the reference written by the pipeline definition;
 - `resolvedReference`: the concrete version selected at compile/load time.
 
-A running pipeline graph must remain stable. Alias changes must affect future runs after cache invalidation, not mutate a graph already being executed.
+A running pipeline graph must remain stable. Alias changes must affect future runs after cache invalidation, not mutate
+a graph already being executed.
 
 ## Recommended behavior
 
@@ -37,7 +40,8 @@ Alias reference:
 risk-scoring:latest
 ```
 
-If the alias resolution changes, cached compiled graphs depending on that declared reference should be marked stale and reloaded or recompiled before the next run.
+If the alias resolution changes, cached compiled graphs depending on that declared reference should be marked stale and
+reloaded or recompiled before the next run.
 
 ## Dependency index
 
@@ -52,7 +56,8 @@ This index enables targeted invalidation.
 
 ## Traceability
 
-Execution traces should eventually record both declared and resolved references so historical runs remain explainable after aliases move.
+Execution traces should eventually record both declared and resolved references so historical runs remain explainable
+after aliases move.
 
 ## Non-goal
 

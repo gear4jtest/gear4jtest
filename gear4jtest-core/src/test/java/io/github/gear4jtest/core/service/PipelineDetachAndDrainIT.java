@@ -1,6 +1,11 @@
 package io.github.gear4jtest.core.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.time.Duration;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.ExecutionResult;
@@ -17,15 +22,22 @@ import io.github.gear4jtest.core.event.EventSubscription;
 import io.github.gear4jtest.core.event.StationFinishedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
-import java.time.Duration;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class PipelineDetachAndDrainIT {
+
+    private static void awaitRegistryRemoval(ExecutionContextRegistry registry, UUID executionId)
+            throws InterruptedException {
+        long deadline = System.currentTimeMillis() + 2_000L;
+        while (System.currentTimeMillis() < deadline) {
+            if (registry.get(executionId) == null) {
+                return;
+            }
+            Thread.sleep(25L);
+        }
+    }
 
     @Test
     void execute_shouldKeepExecutionContextRegisteredUntilDetachedDrainCompletes() throws Exception {
@@ -34,29 +46,25 @@ class PipelineDetachAndDrainIT {
         ExecutionContextRegistry registry = new ExecutionContextRegistry();
 
         AssemblyLine<String, Integer> pipeline = ElementModelBuilders.<String>createAssemblyLine("detach-drain")
-                .configuration(AssemblyLine.Configuration.builder()
-                        .eventHandling(EventHandlingDefinition.builder()
-                                .subscription(EventSubscription.on(StationFinishedEvent.class, event -> {
-                                    reactionStarted.countDown();
-                                    assertThat(releaseReaction.await(2, TimeUnit.SECONDS)).isTrue();
-                                }))
-                                .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
-                                        .reactionExecutorFactory(Executors::newSingleThreadExecutor)
-                                        .shutdownTimeout(Duration.ofSeconds(2))
-                                        .shutdownMode(EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.DETACH_AND_DRAIN)
-                                        .build())
+                .configuration(AssemblyLine.Configuration.builder().eventHandling(EventHandlingDefinition.builder()
+                        .subscription(EventSubscription.on(StationFinishedEvent.class, event -> {
+                            reactionStarted.countDown();
+                            assertThat(releaseReaction.await(2, TimeUnit.SECONDS)).isTrue();
+                        }))
+                        .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                                .reactionExecutorFactory(Executors::newSingleThreadExecutor)
+                                .shutdownTimeout(Duration.ofSeconds(2))
+                                .shutdownMode(EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.DETACH_AND_DRAIN)
                                 .build())
-                        .build())
-                .then(ElementModelBuilders.<String, Integer, LengthOperator>processingOperation("step-1", LengthOperator.class)
-                        .build())
+                        .build()).build())
+                .then(ElementModelBuilders
+                        .<String, Integer, LengthOperator>processingOperation("step-1", LengthOperator.class).build())
                 .build();
 
         PipelineEngine engine = PipelineEngine.builder()
                 .runnerChainFactory(new RunnerChainFactory(StrategyRegistry.defaultRegistry()))
                 .resourceFactory(new SingleResourceFactory(new LengthOperator()))
-                .extensionResolver(new RuntimeExtensionResolver(List.of()))
-                .executionContextRegistry(registry)
-                .build();
+                .extensionResolver(new RuntimeExtensionResolver(List.of())).executionContextRegistry(registry).build();
 
         ExecutionResult<Integer> result = engine.execute(pipeline, RunRequest.builder().input("abcd").build());
         UUID executionId = result.getExecution().getId();
@@ -69,16 +77,6 @@ class PipelineDetachAndDrainIT {
         releaseReaction.countDown();
         awaitRegistryRemoval(registry, executionId);
         assertThat(registry.get(executionId)).isNull();
-    }
-
-    private static void awaitRegistryRemoval(ExecutionContextRegistry registry, UUID executionId) throws InterruptedException {
-        long deadline = System.currentTimeMillis() + 2_000L;
-        while (System.currentTimeMillis() < deadline) {
-            if (registry.get(executionId) == null) {
-                return;
-            }
-            Thread.sleep(25L);
-        }
     }
 
     static final class LengthOperator implements Operator<String, Integer> {

@@ -5,7 +5,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-/** Contexte side compute pour une exécution donnée. Stocke des CompletableFuture par clé logique. */
+/**
+ * Contexte side compute pour une exécution donnée. Stocke des CompletableFuture
+ * par clé logique.
+ */
 public final class SideComputeContext {
 
     private final ConcurrentMap<String, CompletableFuture<?>> futures = new ConcurrentHashMap<>();
@@ -18,8 +21,8 @@ public final class SideComputeContext {
     public void cancelUnresolvedFutures() {
         futures.values().forEach(future -> {
             if (!future.isDone()) {
-                future.completeExceptionally(
-                        new CancellationException("Pipeline execution ended before side-compute completion"));
+                future.completeExceptionally(new CancellationException(
+                        "Pipeline execution ended before side-compute completion"));
             }
         });
     }

@@ -1,8 +1,5 @@
 package io.github.gear4jtest.core.event;
 
-import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
-import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.sidecompute.SideComputeListener;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,32 +13,36 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
+import io.github.gear4jtest.core.sidecompute.SideComputeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Runtime dispatcher for asynchronous pipeline events.
  *
- * <p>This runtime is deliberately <strong>best-effort</strong>. Reactions are delivered through an in-memory queue
- * and submitted to an {@link ExecutorService}. There is no durable storage, no transactional hand-off, and no
- * replay mechanism. As a consequence, the runtime does <strong>not</strong> provide guaranteed delivery, exactly-once
- * execution, or recovery after process failure.</p>
+ * <p>
+ * This runtime is deliberately <strong>best-effort</strong>. Reactions are
+ * delivered through an in-memory queue and submitted to an
+ * {@link ExecutorService}. There is no durable storage, no transactional
+ * hand-off, and no replay mechanism. As a consequence, the runtime does
+ * <strong>not</strong> provide guaranteed delivery, exactly-once execution, or
+ * recovery after process failure.
+ * </p>
  *
- * <p>Reactions may be dropped in particular when the configured executor rejects submissions, for example because
- * it is saturated or shutting down. Dropped reactions are logged and counted in {@link #snapshotStats()}.</p>
+ * <p>
+ * Reactions may be dropped in particular when the configured executor rejects
+ * submissions, for example because it is saturated or shutting down. Dropped
+ * reactions are logged and counted in {@link #snapshotStats()}.
+ * </p>
  */
 public final class EventManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EventManager.class);
     private static final Event STOP_EVENT = new Event("__internal__", null, "STOP_EVENT");
     private static final AtomicInteger DISPATCHER_COUNTER = new AtomicInteger();
-
-    public record ShutdownHandle(boolean detached, CompletableFuture<Void> completion) {
-        public static ShutdownHandle completed() {
-            return new ShutdownHandle(false, CompletableFuture.completedFuture(null));
-        }
-    }
-
     private final List<EventSubscription<?>> subscriptions;
     private final BlockingQueue<Event> queue = new LinkedBlockingQueue<>();
     private final Object submissionMonitor = new Object();
@@ -54,17 +55,16 @@ public final class EventManager {
     private final AtomicLong completedReactions = new AtomicLong();
     private final AtomicLong droppedReactions = new AtomicLong();
     private final AtomicLong failedReactions = new AtomicLong();
-
     private final ExecutorService reactionExecutor;
     private final boolean shutdownExecutorOnClose;
     private final Thread dispatcherThread;
     private final Duration shutdownTimeout;
     private final EventHandlingDefinition.RuntimeConfiguration.ShutdownMode shutdownMode;
-
     private boolean accepting;
 
     public EventManager(EventHandlingDefinition definition, ExecutionContextRegistry registry) {
-        EventHandlingDefinition effectiveDefinition = definition != null ? definition : EventHandlingDefinition.builder().build();
+        EventHandlingDefinition effectiveDefinition = definition != null ? definition
+                : EventHandlingDefinition.builder().build();
 
         this.subscriptions = buildSubscriptions(effectiveDefinition, registry);
         this.shutdownTimeout = effectiveDefinition.getRuntimeConfiguration().getShutdownTimeout();
@@ -79,19 +79,19 @@ public final class EventManager {
             return;
         }
 
-        EventHandlingDefinition.RuntimeConfiguration.ExecutorHandle executorHandle =
-                effectiveDefinition.getRuntimeConfiguration().acquireReactionExecutor();
+        EventHandlingDefinition.RuntimeConfiguration.ExecutorHandle executorHandle = effectiveDefinition
+                .getRuntimeConfiguration().acquireReactionExecutor();
         this.reactionExecutor = executorHandle.executorService();
         this.shutdownExecutorOnClose = executorHandle.shutdownOnClose();
         this.accepting = true;
-        this.dispatcherThread = new Thread(
-                this::dispatchLoop, "gear4j-event-dispatcher-" + DISPATCHER_COUNTER.incrementAndGet());
+        this.dispatcherThread = new Thread(this::dispatchLoop,
+                "gear4j-event-dispatcher-" + DISPATCHER_COUNTER.incrementAndGet());
         this.dispatcherThread.setDaemon(true);
         this.dispatcherThread.start();
     }
 
-    private static List<EventSubscription<?>> buildSubscriptions(
-            EventHandlingDefinition definition, ExecutionContextRegistry registry) {
+    private static List<EventSubscription<?>> buildSubscriptions(EventHandlingDefinition definition,
+                                                                 ExecutionContextRegistry registry) {
         List<EventSubscription<?>> resolvedSubscriptions = new ArrayList<>(definition.getSubscriptions());
         resolvedSubscriptions.addAll(SideComputeListener.subscriptions(definition.getSideComputers(), registry));
         return List.copyOf(resolvedSubscriptions);
@@ -100,9 +100,12 @@ public final class EventManager {
     /**
      * Publishes an event to the asynchronous runtime.
      *
-     * <p>The event is accepted only while the runtime is still open for submissions. Once shutdown has started,
-     * further events are ignored. Accepted events are still processed in a best-effort fashion only; downstream
-     * reactions may later be dropped if the reaction executor rejects them.</p>
+     * <p>
+     * The event is accepted only while the runtime is still open for submissions.
+     * Once shutdown has started, further events are ignored. Accepted events are
+     * still processed in a best-effort fashion only; downstream reactions may later
+     * be dropped if the reaction executor rejects them.
+     * </p>
      */
     public <T extends Event> void publish(T event) {
         Objects.requireNonNull(event, "event");
@@ -121,9 +124,12 @@ public final class EventManager {
     /**
      * Initiates shutdown of the asynchronous event runtime.
      *
-     * <p>Depending on the configured shutdown mode, this may wait for the queue to drain, detach and let the
-     * drain finish in the background, or cancel pending queued work. Even in drain modes, the runtime remains
-     * best-effort: a saturated executor may still reject some reactions.</p>
+     * <p>
+     * Depending on the configured shutdown mode, this may wait for the queue to
+     * drain, detach and let the drain finish in the background, or cancel pending
+     * queued work. Even in drain modes, the runtime remains best-effort: a
+     * saturated executor may still reject some reactions.
+     * </p>
      */
     public ShutdownHandle shutdown() {
         if (dispatcherThread == null) {
@@ -199,20 +205,14 @@ public final class EventManager {
             } catch (RejectedExecutionException rejectedExecutionException) {
                 inFlightReactions.decrementAndGet();
                 droppedReactions.incrementAndGet();
-                LOGGER.warn(
-                        "Dropping event reaction because the reaction executor rejected the submission, typically because it is saturated or shutting down. eventType={}, subscriptionType={}",
-                        event.getName(),
-                        subscription.eventType().getName(),
-                        rejectedExecutionException);
+                LOGGER.warn("Dropping event reaction because the reaction executor rejected the submission, typically because it is saturated or shutting down. eventType={}, subscriptionType={}",
+                            event.getName(), subscription.eventType().getName(), rejectedExecutionException);
                 tryCompleteTermination();
             } catch (RuntimeException runtimeException) {
                 inFlightReactions.decrementAndGet();
                 droppedReactions.incrementAndGet();
-                LOGGER.error(
-                        "Dropping event reaction because submitting it to the reaction executor failed unexpectedly. eventType={}, subscriptionType={}",
-                        event.getName(),
-                        subscription.eventType().getName(),
-                        runtimeException);
+                LOGGER.error("Dropping event reaction because submitting it to the reaction executor failed unexpectedly. eventType={}, subscriptionType={}",
+                             event.getName(), subscription.eventType().getName(), runtimeException);
                 tryCompleteTermination();
             }
         }
@@ -225,11 +225,8 @@ public final class EventManager {
             throw error;
         } catch (Exception exception) {
             failedReactions.incrementAndGet();
-            LOGGER.error(
-                    "Asynchronous event reaction failed. eventType={}, subscriptionType={}",
-                    event.getName(),
-                    subscription.eventType().getName(),
-                    exception);
+            LOGGER.error("Asynchronous event reaction failed. eventType={}, subscriptionType={}", event.getName(),
+                         subscription.eventType().getName(), exception);
         } finally {
             completedReactions.incrementAndGet();
             inFlightReactions.decrementAndGet();
@@ -240,17 +237,15 @@ public final class EventManager {
     /**
      * Returns a point-in-time snapshot of the asynchronous runtime counters.
      *
-     * <p>This is primarily intended for observability. In particular, {@code droppedReactions} lets callers detect
-     * saturation or shutdown-related rejections without relying solely on log inspection.</p>
+     * <p>
+     * This is primarily intended for observability. In particular,
+     * {@code droppedReactions} lets callers detect saturation or shutdown-related
+     * rejections without relying solely on log inspection.
+     * </p>
      */
     public EventRuntimeStats snapshotStats() {
-        return new EventRuntimeStats(
-                publishedEvents.get(),
-                dispatchedEvents.get(),
-                submittedReactions.get(),
-                completedReactions.get(),
-                droppedReactions.get(),
-                failedReactions.get());
+        return new EventRuntimeStats(publishedEvents.get(), dispatchedEvents.get(), submittedReactions.get(),
+                completedReactions.get(), droppedReactions.get(), failedReactions.get());
     }
 
     private void tryCompleteTermination() {
@@ -263,11 +258,11 @@ public final class EventManager {
         try {
             completion.join();
             if (shutdownExecutorOnClose && reactionExecutor != null) {
-                boolean terminated = reactionExecutor.awaitTermination(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
+                boolean terminated = reactionExecutor.awaitTermination(shutdownTimeout.toMillis(),
+                                                                       TimeUnit.MILLISECONDS);
                 if (!terminated) {
-                    LOGGER.warn(
-                            "Timed out while waiting for the per-run event reaction executor to terminate. timeout={}",
-                            shutdownTimeout);
+                    LOGGER.warn("Timed out while waiting for the per-run event reaction executor to terminate. timeout={}",
+                                shutdownTimeout);
                     reactionExecutor.shutdownNow();
                     reactionExecutor.awaitTermination(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
                 }
@@ -282,6 +277,12 @@ public final class EventManager {
             if (shutdownExecutorOnClose && reactionExecutor != null) {
                 reactionExecutor.shutdownNow();
             }
+        }
+    }
+
+    public record ShutdownHandle(boolean detached, CompletableFuture<Void> completion) {
+        public static ShutdownHandle completed() {
+            return new ShutdownHandle(false, CompletableFuture.completedFuture(null));
         }
     }
 }

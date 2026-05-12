@@ -10,14 +10,13 @@ public abstract class StationEvent extends Event {
     private final String itemId;
     private final Object input;
 
-    protected StationEvent(
-            String pipelineId,
-            UUID executionId,
-            UUID stationExecutionId,
-            String operationId,
-            UUID parentOperationId,
-            String itemId,
-            Object input) {
+    protected StationEvent(String pipelineId,
+                           UUID executionId,
+                           UUID stationExecutionId,
+                           String operationId,
+                           UUID parentOperationId,
+                           String itemId,
+                           Object input) {
         super(pipelineId, executionId);
         this.stationExecutionId = stationExecutionId;
         this.operationId = operationId;

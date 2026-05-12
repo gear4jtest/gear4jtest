@@ -1,9 +1,10 @@
 package io.github.gear4jtest.core.execution.trace;
 
-import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+
+import io.github.gear4jtest.core.persistence.ExecutionStatus;
 
 public class AssemblyRunTrace {
     private UUID id;

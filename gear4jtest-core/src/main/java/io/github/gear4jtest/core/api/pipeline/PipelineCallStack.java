@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Tracks the current pipeline-call path to fail fast on recursive pipeline composition.
+ * Tracks the current pipeline-call path to fail fast on recursive pipeline
+ * composition.
  */
 public final class PipelineCallStack {
 
@@ -59,8 +60,8 @@ public final class PipelineCallStack {
     private void leave(PipelineReference expected) {
         PipelineReference current = stack.peek();
         if (!Objects.equals(current, expected)) {
-            throw new IllegalStateException("Invalid pipeline call stack state. Expected "
-                    + expected + " but found " + current);
+            throw new IllegalStateException(
+                    "Invalid pipeline call stack state. Expected " + expected + " but found " + current);
         }
         stack.pop();
     }

@@ -146,20 +146,20 @@ public class AssemblyRun {
         return parentExecutionId;
     }
 
-    public UUID getRootExecutionId() {
-        return rootExecutionId;
-    }
-
-    public UUID getParentStationLogId() {
-        return parentStationLogId;
-    }
-
     public void setParentExecutionId(UUID parentExecutionId) {
         this.parentExecutionId = parentExecutionId;
     }
 
+    public UUID getRootExecutionId() {
+        return rootExecutionId;
+    }
+
     public void setRootExecutionId(UUID rootExecutionId) {
         this.rootExecutionId = rootExecutionId;
+    }
+
+    public UUID getParentStationLogId() {
+        return parentStationLogId;
     }
 
     public void setParentStationLogId(UUID parentStationLogId) {

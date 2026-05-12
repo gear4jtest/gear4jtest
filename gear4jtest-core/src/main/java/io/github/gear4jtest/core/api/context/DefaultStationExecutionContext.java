@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.api.station.StationKind;
+import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 
 public class DefaultStationExecutionContext implements StationExecutionContext {
@@ -72,8 +72,8 @@ public class DefaultStationExecutionContext implements StationExecutionContext {
     }
 
     /**
-     * API interne pour enrichir le contexte avec des capabilities typées.
-     * À utiliser depuis les OperationDefinition concrètes.
+     * API interne pour enrichir le contexte avec des capabilities typées. À
+     * utiliser depuis les OperationDefinition concrètes.
      */
     public <T> void addCapability(Class<T> type, T instance) {
         capabilities.put(type, instance);

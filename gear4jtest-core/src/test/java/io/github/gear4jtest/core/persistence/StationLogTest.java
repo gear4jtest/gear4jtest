@@ -1,11 +1,12 @@
 package io.github.gear4jtest.core.persistence;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.UUID;
 
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class StationLogTest {
 

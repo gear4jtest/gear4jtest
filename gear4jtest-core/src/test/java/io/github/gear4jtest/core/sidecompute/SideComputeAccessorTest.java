@@ -1,14 +1,15 @@
 package io.github.gear4jtest.core.sidecompute;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 import java.util.HashMap;
 import java.util.Map;
 
+import io.github.gear4jtest.core.api.context.ExecutionContext;
 import org.junit.jupiter.api.Test;
 
-import io.github.gear4jtest.core.api.context.ExecutionContext;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class SideComputeAccessorTest {
 
@@ -35,8 +36,7 @@ class SideComputeAccessorTest {
 
         DefaultSideComputeAccessor accessor = new DefaultSideComputeAccessor(execCtx);
 
-        assertThatThrownBy(() -> accessor.get("missing", String.class))
-                .isInstanceOf(IllegalStateException.class)
+        assertThatThrownBy(() -> accessor.get("missing", String.class)).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("No resolved side compute value for key 'missing'");
     }
 

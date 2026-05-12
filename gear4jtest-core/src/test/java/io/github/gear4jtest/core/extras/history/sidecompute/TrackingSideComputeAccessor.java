@@ -7,7 +7,9 @@ import io.github.gear4jtest.core.sidecompute.SideComputeAccessor;
 /**
  * Décorateur qui track les side-computes réellement consommés.
  *
- * <p>Le TTL est résolu via SideComputeExpiryRegistry (publié par les side-computes).
+ * <p>
+ * Le TTL est résolu via SideComputeExpiryRegistry (publié par les
+ * side-computes).
  */
 public final class TrackingSideComputeAccessor implements SideComputeAccessor {
 

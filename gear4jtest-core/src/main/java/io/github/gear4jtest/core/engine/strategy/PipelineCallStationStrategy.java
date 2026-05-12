@@ -1,5 +1,8 @@
 package io.github.gear4jtest.core.engine.strategy;
 
+import java.util.Map;
+import java.util.Objects;
+
 import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
@@ -15,8 +18,6 @@ import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
-import java.util.Map;
-import java.util.Objects;
 
 public class PipelineCallStationStrategy extends AbstractStationStrategy<PipelineCallStation<?, ?>> {
 
@@ -25,7 +26,8 @@ public class PipelineCallStationStrategy extends AbstractStationStrategy<Pipelin
     private final NestedPipelineExecutor nestedPipelineExecutor;
 
     public PipelineCallStationStrategy(NestedPipelineExecutor nestedPipelineExecutor) {
-        this.nestedPipelineExecutor = Objects.requireNonNull(nestedPipelineExecutor, "nestedPipelineExecutor must not be null");
+        this.nestedPipelineExecutor = Objects.requireNonNull(nestedPipelineExecutor,
+                                                             "nestedPipelineExecutor must not be null");
     }
 
     @Override
@@ -34,7 +36,10 @@ public class PipelineCallStationStrategy extends AbstractStationStrategy<Pipelin
     }
 
     @Override
-    public Object doExecute(PipelineCallStation<?, ?> station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
+    public Object doExecute(PipelineCallStation<?, ?> station,
+                            Object input,
+                            StationRunner runner,
+                            StationExecutionContext operationExecution) {
         AssemblyLine<?, ?> childPipeline = resolvePipeline(station);
         writeTargetMetadata(station, childPipeline, operationExecution.getRecord());
 
@@ -44,39 +49,40 @@ public class PipelineCallStationStrategy extends AbstractStationStrategy<Pipelin
         return executeNested(station, input, operationExecution, childPipeline);
     }
 
-    private Object executeInline(
-            PipelineCallStation<?, ?> station,
-            Object input,
-            StationRunner runner,
-            StationExecutionContext operationExecution,
-            AssemblyLine<?, ?> childPipeline) {
-        PipelineRuntimeContractValidator.validateInlineAllowed(childPipeline, operationExecution.getGlobalContext().getRuntimeContract());
+    private Object executeInline(PipelineCallStation<?, ?> station,
+                                 Object input,
+                                 StationRunner runner,
+                                 StationExecutionContext operationExecution,
+                                 AssemblyLine<?, ?> childPipeline) {
+        PipelineRuntimeContractValidator
+                .validateInlineAllowed(childPipeline, operationExecution.getGlobalContext().getRuntimeContract());
 
         PipelineReference childReference = targetReference(station.getTarget(), childPipeline);
-        try (PipelineCallStack.Scope ignored = operationExecution.getGlobalContext().getPipelineCallStack().enter(childReference)) {
+        try (PipelineCallStack.Scope ignored = operationExecution.getGlobalContext().getPipelineCallStack()
+                .enter(childReference)) {
             StationLogTrace childRootLog = runner.run(input, childPipeline.getRootStation(), operationExecution);
             return mapInlineChildStatus(station, childPipeline, childRootLog, operationExecution.getRecord());
         }
     }
 
-    private Object executeNested(
-            PipelineCallStation<?, ?> station,
-            Object input,
-            StationExecutionContext operationExecution,
-            AssemblyLine<?, ?> childPipeline) {
-        ExecutionResult<?> childResult = nestedPipelineExecutor.executeNested(station, childPipeline, input, operationExecution);
+    private Object executeNested(PipelineCallStation<?, ?> station,
+                                 Object input,
+                                 StationExecutionContext operationExecution,
+                                 AssemblyLine<?, ?> childPipeline) {
+        ExecutionResult<?> childResult = nestedPipelineExecutor.executeNested(station, childPipeline, input,
+                                                                              operationExecution);
         AssemblyRunTrace childExecution = childResult.getExecution();
         if (childExecution != null) {
-            operationExecution.getRecord().getContext().put(CONTEXT_PREFIX + "childExecutionId", childExecution.getId());
+            operationExecution.getRecord().getContext().put(CONTEXT_PREFIX + "childExecutionId",
+                                                            childExecution.getId());
         }
         return mapNestedChildStatus(station, childPipeline, childResult, operationExecution.getRecord());
     }
 
-    private Object mapInlineChildStatus(
-            PipelineCallStation<?, ?> station,
-            AssemblyLine<?, ?> childPipeline,
-            StationLogTrace childRootLog,
-            StationLogTrace callLog) {
+    private Object mapInlineChildStatus(PipelineCallStation<?, ?> station,
+                                        AssemblyLine<?, ?> childPipeline,
+                                        StationLogTrace childRootLog,
+                                        StationLogTrace callLog) {
         Object childOutput = childRootLog.getOutput();
         return switch (childRootLog.getStatus()) {
             case SUCCEEDED -> childOutput;
@@ -86,28 +92,32 @@ public class PipelineCallStationStrategy extends AbstractStationStrategy<Pipelin
                 yield childOutput;
             }
             case STOPPED -> {
-                Exception exception = representativeException(childRootLog, "Inline child pipeline stopped: " + childPipeline.getId());
+                Exception exception = representativeException(childRootLog, "Inline child pipeline stopped: "
+                        + childPipeline.getId());
                 callLog.markStopped(exception);
                 callLog.setOutput(childOutput);
                 yield childOutput;
             }
             case CANCELLED -> {
-                Exception exception = representativeException(childRootLog, "Inline child pipeline cancelled: " + childPipeline.getId());
+                Exception exception = representativeException(childRootLog, "Inline child pipeline cancelled: "
+                        + childPipeline.getId());
                 callLog.markCancelled(exception);
                 callLog.setOutput(childOutput);
                 yield childOutput;
             }
-            case FAILED, RUNNING -> throw new PipelineCallException(
-                    "Inline child pipeline '" + childPipeline.getId() + ":" + childPipeline.getVersion() + "' failed in station '" + station.getId() + "'",
-                    representativeException(childRootLog, "Child pipeline failed"));
+            case FAILED,
+                    RUNNING ->
+                throw new PipelineCallException(
+                        "Inline child pipeline '" + childPipeline.getId() + ":" + childPipeline.getVersion()
+                                + "' failed in station '" + station.getId() + "'",
+                        representativeException(childRootLog, "Child pipeline failed"));
         };
     }
 
-    private Object mapNestedChildStatus(
-            PipelineCallStation<?, ?> station,
-            AssemblyLine<?, ?> childPipeline,
-            ExecutionResult<?> childResult,
-            StationLogTrace callLog) {
+    private Object mapNestedChildStatus(PipelineCallStation<?, ?> station,
+                                        AssemblyLine<?, ?> childPipeline,
+                                        ExecutionResult<?> childResult,
+                                        StationLogTrace callLog) {
         AssemblyRunTrace childExecution = childResult.getExecution();
         ExecutionStatus childStatus = childExecution != null ? childExecution.getStatus() : null;
         Object childOutput = childResult.getResult();
@@ -121,18 +131,21 @@ public class PipelineCallStationStrategy extends AbstractStationStrategy<Pipelin
             return childOutput;
         }
         if (childStatus == ExecutionStatus.STOPPED) {
-            callLog.markStopped(representativeException(childResult, "Nested child pipeline stopped: " + childPipeline.getId()));
+            callLog.markStopped(representativeException(childResult,
+                                                        "Nested child pipeline stopped: " + childPipeline.getId()));
             callLog.setOutput(childOutput);
             return childOutput;
         }
         if (childStatus == ExecutionStatus.CANCELLED) {
-            callLog.markCancelled(representativeException(childResult, "Nested child pipeline cancelled: " + childPipeline.getId()));
+            callLog.markCancelled(representativeException(childResult,
+                                                          "Nested child pipeline cancelled: " + childPipeline.getId()));
             callLog.setOutput(childOutput);
             return childOutput;
         }
 
         throw new PipelineCallException(
-                "Nested child pipeline '" + childPipeline.getId() + ":" + childPipeline.getVersion() + "' failed in station '" + station.getId() + "'",
+                "Nested child pipeline '" + childPipeline.getId() + ":" + childPipeline.getVersion()
+                        + "' failed in station '" + station.getId() + "'",
                 representativeException(childResult, "Nested child pipeline failed"));
     }
 
@@ -147,11 +160,14 @@ public class PipelineCallStationStrategy extends AbstractStationStrategy<Pipelin
         return target.getResolvedReference().orElseGet(() -> PipelineReference.from(fallbackPipeline));
     }
 
-    private void writeTargetMetadata(PipelineCallStation<?, ?> station, AssemblyLine<?, ?> childPipeline, StationLogTrace callLog) {
+    private void writeTargetMetadata(PipelineCallStation<?, ?> station,
+                                     AssemblyLine<?, ?> childPipeline,
+                                     StationLogTrace callLog) {
         Map<String, Object> context = callLog.getContext();
         context.put(CONTEXT_PREFIX + "mode", station.getExecutionMode().name());
         context.put(CONTEXT_PREFIX + "declaredReference", station.getTarget().declaredReference().displayName());
-        context.put(CONTEXT_PREFIX + "resolvedReference", targetReference(station.getTarget(), childPipeline).displayName());
+        context.put(CONTEXT_PREFIX + "resolvedReference",
+                    targetReference(station.getTarget(), childPipeline).displayName());
     }
 
     private Exception representativeException(StationLogTrace log, String fallbackMessage) {
@@ -171,7 +187,8 @@ public class PipelineCallStationStrategy extends AbstractStationStrategy<Pipelin
             return result.getError();
         }
         AssemblyRunTrace execution = result.getExecution();
-        String message = execution != null && execution.getErrorMessage() != null ? execution.getErrorMessage() : fallbackMessage;
+        String message = execution != null && execution.getErrorMessage() != null ? execution.getErrorMessage()
+                : fallbackMessage;
         return new RuntimeException(message);
     }
 }

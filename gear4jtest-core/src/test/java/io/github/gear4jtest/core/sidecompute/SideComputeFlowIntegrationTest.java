@@ -1,6 +1,9 @@
 package io.github.gear4jtest.core.sidecompute;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.ExecutionResult;
@@ -15,13 +18,11 @@ import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
 import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
-import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
-class SideComputeProcessorFailureIT {
+import static org.assertj.core.api.Assertions.assertThat;
+
+class SideComputeFlowIntegrationTest {
 
     @Test
     void failing_required_processor_should_abort_station_before_operator_execution() {
@@ -32,15 +33,13 @@ class SideComputeProcessorFailureIT {
                         .eventHandling(EventHandlingDefinition.builder()
                                 .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
                                         .reactionExecutorFactory(Executors::newSingleThreadExecutor)
-                                        .shutdownTimeout(Duration.ofSeconds(2))
-                                        .build())
+                                        .shutdownTimeout(Duration.ofSeconds(2)).build())
                                 .build())
                         .build())
-                .then(ElementModelBuilders.<String, String, CountingOperator>processingOperation("step-1", CountingOperator.class)
-                        .addProcessor(SideComputeWaitProcessor.builder("missing-key")
-                                .timeout(Duration.ofMillis(50))
-                                .onTimeoutFail()
-                                .build())
+                .then(ElementModelBuilders
+                        .<String, String, CountingOperator>processingOperation("step-1", CountingOperator.class)
+                        .addProcessor(SideComputeWaitProcessor.builder("missing-key").timeout(Duration.ofMillis(50))
+                                .onTimeoutFail().build())
                         .build())
                 .build();
 
@@ -48,8 +47,7 @@ class SideComputeProcessorFailureIT {
                 .runnerChainFactory(new RunnerChainFactory(StrategyRegistry.defaultRegistry()))
                 .resourceFactory(new CountingResourceFactory(new CountingOperator(operatorExecutions)))
                 .extensionResolver(new RuntimeExtensionResolver(List.of()))
-                .executionContextRegistry(new ExecutionContextRegistry())
-                .build();
+                .executionContextRegistry(new ExecutionContextRegistry()).build();
 
         ExecutionResult<String> result = engine.execute(pipeline, RunRequest.builder().input("hello").build());
 

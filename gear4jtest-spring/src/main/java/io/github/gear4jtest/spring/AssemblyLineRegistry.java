@@ -1,14 +1,16 @@
 package io.github.gear4jtest.spring;
 
-import io.github.gear4jtest.core.api.AssemblyLine;
 import java.util.List;
 import java.util.Optional;
+
+import io.github.gear4jtest.core.api.AssemblyLine;
 
 /**
  * Spring-side registry of {@link AssemblyLine} beans.
  *
- * <p>This registry is useful for diagnostics, administration, testing, or for selecting
- * a pipeline by bean name in an application service layer.
+ * <p>
+ * This registry is useful for diagnostics, administration, testing, or for
+ * selecting a pipeline by bean name in an application service layer.
  */
 public interface AssemblyLineRegistry {
 

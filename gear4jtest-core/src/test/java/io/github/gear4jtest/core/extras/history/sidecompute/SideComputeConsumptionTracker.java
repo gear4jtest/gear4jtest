@@ -19,10 +19,7 @@ public final class SideComputeConsumptionTracker {
             return;
         }
 
-        consumedExpiries.merge(
-                key,
-                expiresAt,
-                (left, right) -> left.isBefore(right) ? left : right);
+        consumedExpiries.merge(key, expiresAt, (left, right) -> left.isBefore(right) ? left : right);
     }
 
     public void recordMissingExpiry(String key) {

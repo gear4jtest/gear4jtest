@@ -1,7 +1,5 @@
 package io.github.gear4jtest.core.engine.strategy;
 
-import io.github.gear4jtest.core.model.StationLogStatus;
-
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,9 +25,51 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class ContainerStationStrategy extends AbstractStationStrategy<ContainerBaseStation<?, ?>> {
+
+    private static boolean isBranchConditionSatisfied(ContainerBaseStation.Branch<?> branch,
+                                                      Object input,
+                                                      StationExecutionContext operationExecution) {
+
+        if (branch.getCondition() == null) {
+            return true;
+        }
+
+        return evaluateBranchCondition(branch, input, operationExecution);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <I> boolean evaluateBranchCondition(ContainerBaseStation.Branch<I> branch,
+                                                       Object input,
+                                                       StationExecutionContext operationExecution) {
+
+        return branch.getCondition().test((I) input, operationExecution.getGlobalContext());
+    }
+
+    private static boolean isSiblingBranchConditionSatisfied(ContainerBaseStation.Branch<?> branch,
+                                                             Object input,
+                                                             StationExecutionContext operationExecution,
+                                                             Map<String, StationLogStatus> siblingStatuses) {
+
+        if (branch.getSiblingCondition() == null) {
+            return true;
+        }
+
+        return evaluateSiblingBranchCondition(branch, input, operationExecution, siblingStatuses);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <I> boolean evaluateSiblingBranchCondition(ContainerBaseStation.Branch<I> branch,
+                                                              Object input,
+                                                              StationExecutionContext operationExecution,
+                                                              Map<String, StationLogStatus> siblingStatuses) {
+
+        return branch.getSiblingCondition().test((I) input, operationExecution.getGlobalContext(),
+                                                 SiblingBranchOutcomes.of(siblingStatuses));
+    }
 
     @Override
     public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
@@ -37,11 +77,10 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
     }
 
     @Override
-    public Object doExecute(
-            ContainerBaseStation<?, ?> station,
-            Object input,
-            StationRunner runner,
-            StationExecutionContext operationExecution) {
+    public Object doExecute(ContainerBaseStation<?, ?> station,
+                            Object input,
+                            StationRunner runner,
+                            StationExecutionContext operationExecution) {
 
         validateSiblingConditionsCompatibility(station);
 
@@ -52,28 +91,25 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
                 : executeSequentialBranches(station, input, runner, operationExecution, config);
 
         if (aggregation.interruptingChild != null) {
-            FlowStrategySupport.applyInterruptToParentLog(
-                    operationExecution.getRecord(),
-                    aggregation.interruptingChild,
-                    config);
+            FlowStrategySupport.applyInterruptToParentLog(operationExecution.getRecord(), aggregation.interruptingChild,
+                                                          config);
             return null;
         }
 
         if (!aggregation.collectedErrors.isEmpty()) {
             Throwable first = aggregation.collectedErrors.get(0);
-            operationExecution.getRecord().markFailed(
-                    first instanceof Exception ex ? ex : new RuntimeException(first.getMessage(), first));
+            operationExecution.getRecord()
+                    .markFailed(first instanceof Exception ex ? ex : new RuntimeException(first.getMessage(), first));
         }
 
         return returns(station, aggregation.results);
     }
 
-    private ExecutionAggregation executeSequentialBranches(
-            ContainerBaseStation<?, ?> station,
-            Object input,
-            StationRunner runner,
-            StationExecutionContext operationExecution,
-            FlowConfig config) {
+    private ExecutionAggregation executeSequentialBranches(ContainerBaseStation<?, ?> station,
+                                                           Object input,
+                                                           StationRunner runner,
+                                                           StationExecutionContext operationExecution,
+                                                           FlowConfig config) {
 
         List<StationLogTrace> results = new ArrayList<>();
         List<Throwable> collectedErrors = new ArrayList<>();
@@ -97,10 +133,9 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
                 case PROCEED -> {
                     // no-op
                 }
-                case MARK_AND_PROCEED -> collectedErrors.add(
-                        FlowStrategySupport.representativeThrowable(
-                                childLog,
-                                "Container branch failed without exception: " + childLog.getOperationId()));
+                case MARK_AND_PROCEED -> collectedErrors.add(FlowStrategySupport
+                        .representativeThrowable(childLog, "Container branch failed without exception: "
+                                + childLog.getOperationId()));
                 case INTERRUPT -> {
                     return new ExecutionAggregation(results, collectedErrors, childLog);
                 }
@@ -110,20 +145,19 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return new ExecutionAggregation(results, collectedErrors, null);
     }
 
-    private ExecutionAggregation executeParallelBranches(
-            ContainerBaseStation<?, ?> station,
-            Object input,
-            StationRunner runner,
-            StationExecutionContext operationExecution,
-            FlowConfig config) {
+    private ExecutionAggregation executeParallelBranches(ContainerBaseStation<?, ?> station,
+                                                         Object input,
+                                                         StationRunner runner,
+                                                         StationExecutionContext operationExecution,
+                                                         FlowConfig config) {
 
         List<? extends ContainerBaseStation.Branch<?>> branches = station.getPipelines();
         StationLogTrace[] orderedResults = new StationLogTrace[branches.size()];
         List<Throwable> collectedErrors = new ArrayList<>();
 
         String currentItemId = operationExecution.getGlobalContext().getCurrentItemId();
-        ExecutorService executor = operationExecution.getSupport()
-                .executorFor(station.getExecutorService(), operationExecution.getGlobalContext());
+        ExecutorService executor = operationExecution.getSupport().executorFor(station.getExecutorService(),
+                                                                               operationExecution.getGlobalContext());
 
         CompletionService<BranchExecution> completionService = new ExecutorCompletionService<>(executor);
         List<SubmittedBranch> submittedBranches = new ArrayList<>();
@@ -137,13 +171,13 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
                 continue;
             }
 
-            Callable<StationLogTrace> task = operationExecution.getSupport()
-                    .getTaskFactory()
-                    .createTask(() -> clonePayload(input, operationExecution), branch.getStation(), runner, operationExecution, currentItemId);
+            Callable<StationLogTrace> task = operationExecution.getSupport().getTaskFactory()
+                    .createTask(() -> clonePayload(input, operationExecution), branch.getStation(), runner,
+                                operationExecution, currentItemId);
 
             int finalIndex = index;
-            Future<BranchExecution> future =
-                    completionService.submit(() -> new BranchExecution(finalIndex, branch, task.call()));
+            Future<BranchExecution> future = completionService
+                    .submit(() -> new BranchExecution(finalIndex, branch, task.call()));
 
             SubmittedBranch submitted = new SubmittedBranch(index, branch, future);
             submittedBranches.add(submitted);
@@ -151,7 +185,8 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         }
 
         if (submittedBranches.isEmpty()) {
-            return new ExecutionAggregation(asOrderedList(branches, orderedResults, operationExecution), collectedErrors, null);
+            return new ExecutionAggregation(asOrderedList(branches, orderedResults, operationExecution),
+                    collectedErrors, null);
         }
 
         long deadlineNanos = computeDeadlineNanos(station.getAwaitTimeout());
@@ -159,28 +194,21 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
 
         try {
             while (completedCount < submittedBranches.size()) {
-                Future<BranchExecution> completedFuture =
-                        waitForNextCompletion(completionService, deadlineNanos, station.getAwaitTimeout());
+                Future<BranchExecution> completedFuture = waitForNextCompletion(completionService, deadlineNanos,
+                                                                                station.getAwaitTimeout());
 
                 if (completedFuture == null) {
-                    StationLogTrace timeoutChild = timeoutPendingBranches(
-                            submittedBranches,
-                            orderedResults,
-                            operationExecution,
-                            station.getAwaitTimeout());
+                    StationLogTrace timeoutChild = timeoutPendingBranches(submittedBranches, orderedResults,
+                                                                          operationExecution,
+                                                                          station.getAwaitTimeout());
 
-                    if (timeoutChild != null
-                            && FlowDecider.decide(timeoutChild, config) == FlowDecision.INTERRUPT) {
-                        return new ExecutionAggregation(
-                                asOrderedList(branches, orderedResults, operationExecution),
-                                collectedErrors,
-                                timeoutChild);
+                    if (timeoutChild != null && FlowDecider.decide(timeoutChild, config) == FlowDecision.INTERRUPT) {
+                        return new ExecutionAggregation(asOrderedList(branches, orderedResults, operationExecution),
+                                collectedErrors, timeoutChild);
                     }
 
-                    return new ExecutionAggregation(
-                            asOrderedList(branches, orderedResults, operationExecution),
-                            collectedErrors,
-                            null);
+                    return new ExecutionAggregation(asOrderedList(branches, orderedResults, operationExecution),
+                            collectedErrors, null);
                 }
 
                 SubmittedBranch submitted = submittedByFuture.get(completedFuture);
@@ -195,28 +223,20 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
                     case PROCEED -> {
                         // no-op
                     }
-                    case MARK_AND_PROCEED -> collectedErrors.add(
-                            FlowStrategySupport.representativeThrowable(
-                                    childLog,
-                                    "Container branch failed without exception: " + childLog.getOperationId()));
+                    case MARK_AND_PROCEED -> collectedErrors.add(FlowStrategySupport
+                            .representativeThrowable(childLog, "Container branch failed without exception: "
+                                    + childLog.getOperationId()));
                     case INTERRUPT -> {
-                        cancelPendingBranchesAfterInterrupt(
-                                submittedBranches,
-                                orderedResults,
-                                operationExecution,
-                                childLog);
-                        return new ExecutionAggregation(
-                                asOrderedList(branches, orderedResults, operationExecution),
-                                collectedErrors,
-                                childLog);
+                        cancelPendingBranchesAfterInterrupt(submittedBranches, orderedResults, operationExecution,
+                                                            childLog);
+                        return new ExecutionAggregation(asOrderedList(branches, orderedResults, operationExecution),
+                                collectedErrors, childLog);
                     }
                 }
             }
 
-            return new ExecutionAggregation(
-                    asOrderedList(branches, orderedResults, operationExecution),
-                    collectedErrors,
-                    null);
+            return new ExecutionAggregation(asOrderedList(branches, orderedResults, operationExecution),
+                    collectedErrors, null);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             cancelPendingBranchesAfterUnexpectedInterruption(submittedBranches, orderedResults, operationExecution);
@@ -244,10 +264,10 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return System.nanoTime() + awaitTimeout.toNanos();
     }
 
-    private Future<BranchExecution> waitForNextCompletion(
-            CompletionService<BranchExecution> completionService,
-            long deadlineNanos,
-            Duration awaitTimeout) throws InterruptedException {
+    private Future<BranchExecution> waitForNextCompletion(CompletionService<BranchExecution> completionService,
+                                                          long deadlineNanos,
+                                                          Duration awaitTimeout)
+            throws InterruptedException {
 
         if (awaitTimeout == null) {
             return completionService.take();
@@ -261,18 +281,17 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return completionService.poll(remainingNanos, TimeUnit.NANOSECONDS);
     }
 
-    private BranchExecution readCompletedExecution(
-            Future<BranchExecution> completedFuture,
-            SubmittedBranch submitted,
-            StationExecutionContext operationExecution) {
+    private BranchExecution readCompletedExecution(Future<BranchExecution> completedFuture,
+                                                   SubmittedBranch submitted,
+                                                   StationExecutionContext operationExecution) {
 
         try {
             return completedFuture.get();
         } catch (CancellationException e) {
-            StationLogTrace cancelled = buildUnexpectedFailureBranchLog(
-                    submitted.branch,
-                    operationExecution,
-                    new RuntimeException("Completed branch future was cancelled unexpectedly", e));
+            StationLogTrace cancelled = buildUnexpectedFailureBranchLog(submitted.branch, operationExecution,
+                                                                        new RuntimeException(
+                                                                                "Completed branch future was cancelled unexpectedly",
+                                                                                e));
             return new BranchExecution(submitted.index, submitted.branch, cancelled);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
@@ -288,11 +307,10 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         }
     }
 
-    private StationLogTrace timeoutPendingBranches(
-            List<SubmittedBranch> submittedBranches,
-            StationLogTrace[] orderedResults,
-            StationExecutionContext operationExecution,
-            Duration awaitTimeout) {
+    private StationLogTrace timeoutPendingBranches(List<SubmittedBranch> submittedBranches,
+                                                   StationLogTrace[] orderedResults,
+                                                   StationExecutionContext operationExecution,
+                                                   Duration awaitTimeout) {
 
         StationLogTrace firstTimeoutLog = null;
 
@@ -308,7 +326,8 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
             }
 
             submitted.future.cancel(true);
-            StationLogTrace timeoutLog = buildTimeoutCancelledBranchLog(submitted.branch, operationExecution, awaitTimeout);
+            StationLogTrace timeoutLog = buildTimeoutCancelledBranchLog(submitted.branch, operationExecution,
+                                                                        awaitTimeout);
             orderedResults[submitted.index] = timeoutLog;
 
             if (firstTimeoutLog == null) {
@@ -319,11 +338,10 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return firstTimeoutLog;
     }
 
-    private void cancelPendingBranchesAfterInterrupt(
-            List<SubmittedBranch> submittedBranches,
-            StationLogTrace[] orderedResults,
-            StationExecutionContext operationExecution,
-            StationLogTrace interruptingChild) {
+    private void cancelPendingBranchesAfterInterrupt(List<SubmittedBranch> submittedBranches,
+                                                     StationLogTrace[] orderedResults,
+                                                     StationExecutionContext operationExecution,
+                                                     StationLogTrace interruptingChild) {
 
         for (SubmittedBranch submitted : submittedBranches) {
             if (orderedResults[submitted.index] != null) {
@@ -337,17 +355,14 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
             }
 
             submitted.future.cancel(true);
-            orderedResults[submitted.index] = buildInterruptedCancelledBranchLog(
-                    submitted.branch,
-                    operationExecution,
-                    interruptingChild);
+            orderedResults[submitted.index] = buildInterruptedCancelledBranchLog(submitted.branch, operationExecution,
+                                                                                 interruptingChild);
         }
     }
 
-    private void cancelPendingBranchesAfterUnexpectedInterruption(
-            List<SubmittedBranch> submittedBranches,
-            StationLogTrace[] orderedResults,
-            StationExecutionContext operationExecution) {
+    private void cancelPendingBranchesAfterUnexpectedInterruption(List<SubmittedBranch> submittedBranches,
+                                                                  StationLogTrace[] orderedResults,
+                                                                  StationExecutionContext operationExecution) {
 
         for (SubmittedBranch submitted : submittedBranches) {
             if (orderedResults[submitted.index] != null) {
@@ -361,16 +376,14 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
             }
 
             submitted.future.cancel(true);
-            orderedResults[submitted.index] = buildUnexpectedFailureBranchLog(
-                    submitted.branch,
-                    operationExecution,
-                    new RuntimeException("Branch cancelled because the container wait was interrupted"));
+            orderedResults[submitted.index] = buildUnexpectedFailureBranchLog(submitted.branch, operationExecution,
+                                                                              new RuntimeException(
+                                                                                      "Branch cancelled because the container wait was interrupted"));
         }
     }
 
-    private StationLogTrace tryResolveAlreadyCompletedBranch(
-            SubmittedBranch submitted,
-            StationExecutionContext operationExecution) {
+    private StationLogTrace tryResolveAlreadyCompletedBranch(SubmittedBranch submitted,
+                                                             StationExecutionContext operationExecution) {
 
         if (!submitted.future.isDone() || submitted.future.isCancelled()) {
             return null;
@@ -393,36 +406,31 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         }
     }
 
-    private StationLogTrace normalizeCompletedLog(
-            ContainerBaseStation.Branch<?> branch,
-            StationLogTrace childLog,
-            StationExecutionContext operationExecution) {
+    private StationLogTrace normalizeCompletedLog(ContainerBaseStation.Branch<?> branch,
+                                                  StationLogTrace childLog,
+                                                  StationExecutionContext operationExecution) {
 
         if (childLog == null) {
-            return buildUnexpectedFailureBranchLog(
-                    branch,
-                    operationExecution,
-                    new IllegalStateException("Parallel branch returned null StationLogTrace"));
+            return buildUnexpectedFailureBranchLog(branch, operationExecution, new IllegalStateException(
+                    "Parallel branch returned null StationLogTrace"));
         }
 
         childLog.setParentOperationId(operationExecution.getRecord().getId());
         return childLog;
     }
 
-    private List<StationLogTrace> asOrderedList(
-            List<? extends ContainerBaseStation.Branch<?>> branches,
-            StationLogTrace[] orderedResults,
-            StationExecutionContext operationExecution) {
+    private List<StationLogTrace> asOrderedList(List<? extends ContainerBaseStation.Branch<?>> branches,
+                                                StationLogTrace[] orderedResults,
+                                                StationExecutionContext operationExecution) {
 
         List<StationLogTrace> results = new ArrayList<>(orderedResults.length);
 
         for (int index = 0; index < orderedResults.length; index++) {
             StationLogTrace log = orderedResults[index];
             if (log == null) {
-                log = buildUnexpectedFailureBranchLog(
-                        branches.get(index),
-                        operationExecution,
-                        new IllegalStateException("Missing container branch result at index " + index));
+                log = buildUnexpectedFailureBranchLog(branches.get(index), operationExecution,
+                                                      new IllegalStateException(
+                                                              "Missing container branch result at index " + index));
             }
             results.add(log);
         }
@@ -431,9 +439,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
     }
 
     private Object returns(ContainerBaseStation<?, ?> station, List<StationLogTrace> executions) {
-        Object[] returnedObjects = executions.stream()
-                .map(StationLogTrace::getOutput)
-                .toArray();
+        Object[] returnedObjects = executions.stream().map(StationLogTrace::getOutput).toArray();
 
         if (station.getFunc() != null) {
             return station.getFunc().apply(returnedObjects);
@@ -441,11 +447,10 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return null;
     }
 
-    private boolean isBranchEligible(
-            ContainerBaseStation.Branch<?> branch,
-            Object input,
-            StationExecutionContext operationExecution,
-            Map<String, StationLogStatus> siblingStatuses) {
+    private boolean isBranchEligible(ContainerBaseStation.Branch<?> branch,
+                                     Object input,
+                                     StationExecutionContext operationExecution,
+                                     Map<String, StationLogStatus> siblingStatuses) {
 
         if (!isBranchConditionSatisfied(branch, input, operationExecution)) {
             return false;
@@ -454,56 +459,8 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return isSiblingBranchConditionSatisfied(branch, input, operationExecution, siblingStatuses);
     }
 
-    private static boolean isBranchConditionSatisfied(
-            ContainerBaseStation.Branch<?> branch,
-            Object input,
-            StationExecutionContext operationExecution) {
-
-        if (branch.getCondition() == null) {
-            return true;
-        }
-
-        return evaluateBranchCondition(branch, input, operationExecution);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <I> boolean evaluateBranchCondition(
-            ContainerBaseStation.Branch<I> branch,
-            Object input,
-            StationExecutionContext operationExecution) {
-
-        return branch.getCondition().test((I) input, operationExecution.getGlobalContext());
-    }
-
-    private static boolean isSiblingBranchConditionSatisfied(
-            ContainerBaseStation.Branch<?> branch,
-            Object input,
-            StationExecutionContext operationExecution,
-            Map<String, StationLogStatus> siblingStatuses) {
-
-        if (branch.getSiblingCondition() == null) {
-            return true;
-        }
-
-        return evaluateSiblingBranchCondition(branch, input, operationExecution, siblingStatuses);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <I> boolean evaluateSiblingBranchCondition(
-            ContainerBaseStation.Branch<I> branch,
-            Object input,
-            StationExecutionContext operationExecution,
-            Map<String, StationLogStatus> siblingStatuses) {
-
-        return branch.getSiblingCondition().test(
-                (I) input,
-                operationExecution.getGlobalContext(),
-                SiblingBranchOutcomes.of(siblingStatuses));
-    }
-
-    private StationLogTrace buildConditionSkippedBranchLog(
-            ContainerBaseStation.Branch<?> branch,
-            StationExecutionContext operationExecution) {
+    private StationLogTrace buildConditionSkippedBranchLog(ContainerBaseStation.Branch<?> branch,
+                                                           StationExecutionContext operationExecution) {
 
         StationLogTrace log = newSyntheticChildLog(branch, operationExecution);
         log.markSkipped();
@@ -511,10 +468,9 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return log;
     }
 
-    private StationLogTrace buildTimeoutCancelledBranchLog(
-            ContainerBaseStation.Branch<?> branch,
-            StationExecutionContext operationExecution,
-            Duration awaitTimeout) {
+    private StationLogTrace buildTimeoutCancelledBranchLog(ContainerBaseStation.Branch<?> branch,
+                                                           StationExecutionContext operationExecution,
+                                                           Duration awaitTimeout) {
 
         StationLogTrace log = newSyntheticChildLog(branch, operationExecution);
         log.markCancelled(new TimeoutException("Container branch timed out after " + awaitTimeout));
@@ -522,29 +478,24 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return log;
     }
 
-    private StationLogTrace buildInterruptedCancelledBranchLog(
-            ContainerBaseStation.Branch<?> branch,
-            StationExecutionContext operationExecution,
-            StationLogTrace interruptingChild) {
+    private StationLogTrace buildInterruptedCancelledBranchLog(ContainerBaseStation.Branch<?> branch,
+                                                               StationExecutionContext operationExecution,
+                                                               StationLogTrace interruptingChild) {
 
         StationLogTrace log = newSyntheticChildLog(branch, operationExecution);
-        log.markCancelled(new RuntimeException(
-                "Container branch cancelled because sibling branch interrupted flow: "
-                        + interruptingChild.getOperationId()
-                        + " [" + interruptingChild.getStatus() + "]"));
+        log.markCancelled(new RuntimeException("Container branch cancelled because sibling branch interrupted flow: "
+                + interruptingChild.getOperationId() + " [" + interruptingChild.getStatus() + "]"));
         log.setOutput(null);
         return log;
     }
 
-    private StationLogTrace buildUnexpectedFailureBranchLog(
-            ContainerBaseStation.Branch<?> branch,
-            StationExecutionContext operationExecution,
-            Throwable cause) {
+    private StationLogTrace buildUnexpectedFailureBranchLog(ContainerBaseStation.Branch<?> branch,
+                                                            StationExecutionContext operationExecution,
+                                                            Throwable cause) {
 
         StationLogTrace log = newSyntheticChildLog(branch, operationExecution);
 
-        Exception representative = cause instanceof Exception ex
-                ? ex
+        Exception representative = cause instanceof Exception ex ? ex
                 : new RuntimeException(cause != null ? cause.getMessage() : "Unknown branch failure", cause);
 
         log.markFailed(representative);
@@ -552,14 +503,12 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         return log;
     }
 
-    private StationLogTrace newSyntheticChildLog(
-            ContainerBaseStation.Branch<?> branch,
-            StationExecutionContext operationExecution) {
+    private StationLogTrace newSyntheticChildLog(ContainerBaseStation.Branch<?> branch,
+                                                 StationExecutionContext operationExecution) {
 
-        StationLogTrace log = StationLogTrace.start(
-                operationExecution.getGlobalContext().getExecutionId(),
-                branch.getStation().getId(),
-                operationExecution.getRecord().getId());
+        StationLogTrace log = StationLogTrace.start(operationExecution.getGlobalContext().getExecutionId(),
+                                                    branch.getStation().getId(),
+                                                    operationExecution.getRecord().getId());
 
         log.setItemId(operationExecution.getGlobalContext().getCurrentItemId());
         log.setContext(new HashMap<>());
@@ -571,10 +520,9 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         private final List<Throwable> collectedErrors;
         private final StationLogTrace interruptingChild;
 
-        private ExecutionAggregation(
-                List<StationLogTrace> results,
-                List<Throwable> collectedErrors,
-                StationLogTrace interruptingChild) {
+        private ExecutionAggregation(List<StationLogTrace> results,
+                                     List<Throwable> collectedErrors,
+                                     StationLogTrace interruptingChild) {
             this.results = results;
             this.collectedErrors = collectedErrors;
             this.interruptingChild = interruptingChild;

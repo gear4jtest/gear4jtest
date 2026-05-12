@@ -35,16 +35,12 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
 
     @Override
     public List<AssemblyRunRecord> findByPipelineId(String pipelineId) {
-        return executions.values().stream()
-                .filter(e -> pipelineId.equals(e.pipelineId()))
-                .collect(Collectors.toList());
+        return executions.values().stream().filter(e -> pipelineId.equals(e.pipelineId())).collect(Collectors.toList());
     }
 
     @Override
     public List<AssemblyRunRecord> findByStatus(ExecutionStatus status) {
-        return executions.values().stream()
-                .filter(e -> status.equals(e.status()))
-                .collect(Collectors.toList());
+        return executions.values().stream().filter(e -> status.equals(e.status())).collect(Collectors.toList());
     }
 
     @Override
@@ -75,9 +71,7 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
             return 0L;
         }
 
-        return byLogId.values().stream()
-                .filter(record -> parentLogId.equals(record.parentOperationId()))
-                .count();
+        return byLogId.values().stream().filter(record -> parentLogId.equals(record.parentOperationId())).count();
     }
 
     @Override
@@ -87,9 +81,7 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
             return List.of();
         }
 
-        return byLogId.values().stream()
-                .sorted(recordComparator())
-                .toList();
+        return byLogId.values().stream().sorted(recordComparator()).toList();
     }
 
     public void saveOperationRecord(StationLogRecord record) {
@@ -97,8 +89,7 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
             return;
         }
 
-        stationLogsByRunId
-                .computeIfAbsent(record.pipelineExecutionId(), ignored -> new ConcurrentHashMap<>())
+        stationLogsByRunId.computeIfAbsent(record.pipelineExecutionId(), ignored -> new ConcurrentHashMap<>())
                 .put(record.id(), record);
     }
 
@@ -118,20 +109,16 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
             return List.of();
         }
 
-        return byLogId.values().stream()
-                .filter(record -> {
-                    if (parentLogId == null) {
-                        return record.parentOperationId() == null;
-                    }
-                    return parentLogId.equals(record.parentOperationId());
-                })
-                .sorted(recordComparator())
-                .toList();
+        return byLogId.values().stream().filter(record -> {
+            if (parentLogId == null) {
+                return record.parentOperationId() == null;
+            }
+            return parentLogId.equals(record.parentOperationId());
+        }).sorted(recordComparator()).toList();
     }
 
     private Comparator<StationLogRecord> recordComparator() {
-        return Comparator
-                .comparing(StationLogRecord::startedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+        return Comparator.comparing(StationLogRecord::startedAt, Comparator.nullsLast(Comparator.naturalOrder()))
                 .thenComparing(StationLogRecord::id, Comparator.nullsLast(Comparator.naturalOrder()));
     }
 }

@@ -36,6 +36,18 @@ Review the impact on:
 - Payload cloning goes through `PayloadCloner`.
 - Pipeline calls must guard against recursive call-stack problems.
 
+## Formatting
+
+Repository-wide formatting instructions from the root `AGENTS.md` apply here. Do not manually mimic the Java style; use
+the Gradle formatter and respect Checkstyle failures.
+
+Before finishing code changes in this module, run when possible:
+
+```bash
+./gradlew spotlessApply
+./gradlew check
+```
+
 ## Test focus
 
 Useful focused tests:

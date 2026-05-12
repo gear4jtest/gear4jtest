@@ -6,14 +6,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
- * Run-scoped registry used to cache resources per station within a single pipeline execution.
+ * Run-scoped registry used to cache resources per station within a single
+ * pipeline execution.
  *
- * <p>This is intentionally separate from {@link ExecutionContext}: it is a technical runtime service,
- * not user-facing execution state.</p>
+ * <p>
+ * This is intentionally separate from {@link ExecutionContext}: it is a
+ * technical runtime service, not user-facing execution state.
+ * </p>
  */
 public final class StationScopedResourceRegistry {
 
     private final Map<String, Object> resources = new ConcurrentHashMap<>();
+
+    private static String key(String stationId, Class<?> type) {
+        return stationId + ":" + type.getName();
+    }
 
     public <T> T getOrCreate(String stationId, Class<T> type, Supplier<T> factory) {
         Objects.requireNonNull(stationId, "stationId");
@@ -34,9 +41,5 @@ public final class StationScopedResourceRegistry {
 
     public void clearAll() {
         resources.clear();
-    }
-
-    private static String key(String stationId, Class<?> type) {
-        return stationId + ":" + type.getName();
     }
 }

@@ -6,7 +6,7 @@ dependencies {
     testImplementation(gradleTestKit())
     testImplementation platform('org.junit:junit-bom:5.5.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation group: "org.assertj",       name: "assertj-core",  version: "3.14.0"
+    testImplementation group: "org.assertj", name: "assertj-core", version: "3.14.0"
 }
 
 ext.moduleName = 'io.test.gear4jtest.jackson'

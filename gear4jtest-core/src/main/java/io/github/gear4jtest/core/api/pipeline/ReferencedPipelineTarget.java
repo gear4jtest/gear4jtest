@@ -1,14 +1,15 @@
 package io.github.gear4jtest.core.api.pipeline;
 
-import io.github.gear4jtest.core.api.AssemblyLine;
 import java.util.Objects;
 import java.util.Optional;
 
+import io.github.gear4jtest.core.api.AssemblyLine;
+
 /**
- * Declarative target used before a compiler/loader resolves the referenced pipeline.
+ * Declarative target used before a compiler/loader resolves the referenced
+ * pipeline.
  */
-public record ReferencedPipelineTarget<IN, OUT>(PipelineReference reference)
-        implements PipelineTarget<IN, OUT> {
+public record ReferencedPipelineTarget<IN, OUT>(PipelineReference reference) implements PipelineTarget<IN, OUT> {
 
     public ReferencedPipelineTarget {
         Objects.requireNonNull(reference, "reference must not be null");

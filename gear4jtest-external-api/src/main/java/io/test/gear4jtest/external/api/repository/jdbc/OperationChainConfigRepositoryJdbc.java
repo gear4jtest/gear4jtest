@@ -93,10 +93,10 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
     public void upsert(OperationChainConfig cfg) {
         switch (dialect) {
             case POSTGRES -> {
-                String sql = "INSERT INTO operation_chain_config(al_id, allow_run_publication_without_test, store_type, store_props) " +
-                        "VALUES (?,?,?,to_jsonb(?::json)) " +
-                        "ON CONFLICT (al_id) DO UPDATE SET allow_run_publication_without_test=EXCLUDED.allow_run_publication_without_test, " +
-                        "store_type=EXCLUDED.store_type, store_props=EXCLUDED.store_props";
+                String sql = "INSERT INTO operation_chain_config(al_id, allow_run_publication_without_test, store_type, store_props) "
+                        + "VALUES (?,?,?,to_jsonb(?::json)) "
+                        + "ON CONFLICT (al_id) DO UPDATE SET allow_run_publication_without_test=EXCLUDED.allow_run_publication_without_test, "
+                        + "store_type=EXCLUDED.store_type, store_props=EXCLUDED.store_props";
                 try (var c = ds.getConnection(); var ps = c.prepareStatement(sql)) {
                     ps.setString(1, cfg.alId());
                     ps.setBoolean(2, Boolean.TRUE.equals(cfg.allowRunPublicationWithoutTest()));
@@ -108,10 +108,10 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
                 }
             }
             case MYSQL8 -> {
-                String sql = "INSERT INTO operation_chain_config(al_id, allow_run_publication_without_test, store_type, store_props) " +
-                        "VALUES (?,?,?,CAST(? AS JSON)) " +
-                        "ON DUPLICATE KEY UPDATE allow_run_publication_without_test=VALUES(allow_run_publication_without_test), " +
-                        "store_type=VALUES(store_type), store_props=VALUES(store_props)";
+                String sql = "INSERT INTO operation_chain_config(al_id, allow_run_publication_without_test, store_type, store_props) "
+                        + "VALUES (?,?,?,CAST(? AS JSON)) "
+                        + "ON DUPLICATE KEY UPDATE allow_run_publication_without_test=VALUES(allow_run_publication_without_test), "
+                        + "store_type=VALUES(store_type), store_props=VALUES(store_props)";
                 try (var c = ds.getConnection(); var ps = c.prepareStatement(sql)) {
                     ps.setString(1, cfg.alId());
                     ps.setBoolean(2, Boolean.TRUE.equals(cfg.allowRunPublicationWithoutTest()));

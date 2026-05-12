@@ -15,14 +15,6 @@ public final class StationExecutionException extends Gear4JException {
         return new StationExecutionException(cause);
     }
 
-    public Exception getOriginalException() {
-        Throwable cause = getCause();
-        if (cause instanceof Exception exception) {
-            return exception;
-        }
-        return new RuntimeException(cause);
-    }
-
     public static Exception unwrap(Throwable throwable) {
         if (throwable instanceof StationExecutionException stationExecutionException) {
             return stationExecutionException.getOriginalException();
@@ -31,5 +23,13 @@ public final class StationExecutionException extends Gear4JException {
             return exception;
         }
         return new RuntimeException(throwable);
+    }
+
+    public Exception getOriginalException() {
+        Throwable cause = getCause();
+        if (cause instanceof Exception exception) {
+            return exception;
+        }
+        return new RuntimeException(cause);
     }
 }

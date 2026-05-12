@@ -18,7 +18,8 @@ public final class DatabaseArtifactStorePlugin implements ArtifactStorePlugin {
         String dataSourceKey = props == null ? null : props.getOrDefault("datasource", "datasource.default");
         Object candidate = ctx.lookup(dataSourceKey);
         if (!(candidate instanceof DataSource dataSource)) {
-            throw new IllegalArgumentException("DATABASE artifact store requires a DataSource in context key: " + dataSourceKey);
+            throw new IllegalArgumentException(
+                    "DATABASE artifact store requires a DataSource in context key: " + dataSourceKey);
         }
         String table = props == null ? null : props.get("table");
         return new DatabaseArtifactStore(dataSource, table);

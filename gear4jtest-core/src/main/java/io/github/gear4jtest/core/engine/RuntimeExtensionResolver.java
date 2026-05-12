@@ -15,9 +15,8 @@ import io.github.gear4jtest.core.spi.extension.StationWrapperExtension;
 
 public final class RuntimeExtensionResolver {
 
-    private static final Comparator<RuntimeExtension> ORDERING =
-            Comparator.comparingInt(RuntimeExtension::getOrder)
-                    .thenComparing(ext -> ext.getClass().getName());
+    private static final Comparator<RuntimeExtension> ORDERING = Comparator.comparingInt(RuntimeExtension::getOrder)
+            .thenComparing(ext -> ext.getClass().getName());
 
     private final List<RuntimeExtension> globalExtensions;
 
@@ -25,11 +24,14 @@ public final class RuntimeExtensionResolver {
         this.globalExtensions = globalExtensions == null ? List.of() : List.copyOf(globalExtensions);
     }
 
+    private static <T extends RuntimeExtension> List<T> filter(List<RuntimeExtension> extensions, Class<T> type) {
+        return extensions.stream().filter(type::isInstance).map(type::cast).toList();
+    }
+
     public ResolvedExtensions resolve(AssemblyLine<?, ?> pipeline, RunRequest request) {
         List<RuntimeExtension> merged = new ArrayList<>(globalExtensions);
 
-        if (pipeline != null
-                && pipeline.getConfiguration() != null
+        if (pipeline != null && pipeline.getConfiguration() != null
                 && pipeline.getConfiguration().getDefaultExtensions() != null) {
             merged.addAll(pipeline.getConfiguration().getDefaultExtensions());
         }
@@ -38,23 +40,10 @@ public final class RuntimeExtensionResolver {
             merged.addAll(request.getExtensions());
         }
 
-        List<RuntimeExtension> ordered = merged.stream()
-                .sorted(ORDERING)
-                .toList();
+        List<RuntimeExtension> ordered = merged.stream().sorted(ORDERING).toList();
 
-        return new ResolvedExtensions(
-                ordered,
-                filter(ordered, RunInterceptorExtension.class),
-                filter(ordered, RunLifecycleExtension.class),
-                filter(ordered, StationWrapperExtension.class),
-                filter(ordered, StationLifecycleExtension.class),
-                filter(ordered, ExecutorWrapperExtension.class));
-    }
-
-    private static <T extends RuntimeExtension> List<T> filter(List<RuntimeExtension> extensions, Class<T> type) {
-        return extensions.stream()
-                .filter(type::isInstance)
-                .map(type::cast)
-                .toList();
+        return new ResolvedExtensions(ordered, filter(ordered, RunInterceptorExtension.class),
+                filter(ordered, RunLifecycleExtension.class), filter(ordered, StationWrapperExtension.class),
+                filter(ordered, StationLifecycleExtension.class), filter(ordered, ExecutorWrapperExtension.class));
     }
 }

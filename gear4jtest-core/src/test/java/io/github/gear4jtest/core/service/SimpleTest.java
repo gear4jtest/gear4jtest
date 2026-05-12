@@ -1,26 +1,26 @@
-//package io.github.gear4jtest.core.service;
+// package io.github.gear4jtest.core.service;
 //
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.extension.ExtendWith;
-//import org.mockito.InjectMocks;
-//import org.mockito.Mock;
-//import org.mockito.junit.jupiter.MockitoExtension;
+// import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.api.extension.ExtendWith;
+// import org.mockito.InjectMocks;
+// import org.mockito.Mock;
+// import org.mockito.junit.jupiter.MockitoExtension;
 //
-//import io.github.gear4jtest.core.internal.AssemblyLineOrchestrator;
-//import io.github.gear4jtest.core.internal.ChainExecutorService;
+// import io.github.gear4jtest.core.internal.AssemblyLineOrchestrator;
+// import io.github.gear4jtest.core.internal.ChainExecutorService;
 //
-//@ExtendWith(MockitoExtension.class)
-//class SimpleTest {
+// @ExtendWith(MockitoExtension.class)
+// class SimpleTest {
 //
-//	@InjectMocks
-//	private ChainExecutorService service;
+// @InjectMocks
+// private ChainExecutorService service;
 //
-//	@Mock
-//	private AssemblyLineOrchestrator commander;
+// @Mock
+// private AssemblyLineOrchestrator commander;
 //
-//	@Test
-//	void test() {
-//		System.out.println(service);
-//	}
+// @Test
+// void test() {
+// System.out.println(service);
+// }
 //
-//}
+// }

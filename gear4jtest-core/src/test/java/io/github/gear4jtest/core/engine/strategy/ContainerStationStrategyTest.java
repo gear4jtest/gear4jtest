@@ -1,11 +1,8 @@
 package io.github.gear4jtest.core.engine.strategy;
 
-import io.github.gear4jtest.core.model.StationLogStatus;
-
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -14,10 +11,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import io.github.gear4jtest.core.api.config.CancelPolicy;
+import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.config.FailurePolicy;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 import io.github.gear4jtest.core.api.config.StopPolicy;
-import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
@@ -32,17 +29,70 @@ import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
-import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
-import io.github.gear4jtest.core.persistence.StationLogRecord;
+import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.same;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class ContainerStationStrategyTest {
+
+    private static StationExecutionContext newOperationExecutionContext(String operationId) {
+        AssemblyRunTrace assemblyRun = new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of());
+        var resourceFactory = new ResourceFactory() {
+            @Override
+            public <T> T getResource(Class<T> clazz) {
+                return null;
+            }
+        };
+        ExecutionContext globalContext = new ExecutionContext(UUID.randomUUID(), "pipeline-1",
+                new ExecutionServices(
+                        new EventManager(EventHandlingDefinition.builder().build(), new ExecutionContextRegistry()),
+                        resourceFactory),
+                assemblyRun);
+
+        StationLogTrace parentRecord = StationLogTrace.start(globalContext.getExecutionId(), operationId, null);
+        parentRecord.setContext(new HashMap<>());
+        parentRecord.setStatus(StationLogStatus.RUNNING);
+
+        return new DefaultStationExecutionContext(operationId, StationKind.CONTAINER, globalContext, parentRecord,
+                new ExecutionSupport(ExecutorDecorator.noOp(), new TaskFactory(), null));
+    }
+
+    private static StationLogTrace successLog(String operationId, Object output) {
+        StationLogTrace log = newLog(operationId);
+        log.markSuccess(output);
+        return log;
+    }
+
+    private static StationLogTrace failedLog(String operationId, String message) {
+        StationLogTrace log = newLog(operationId);
+        log.markFailed(new RuntimeException(message));
+        return log;
+    }
+
+    private static StationLogTrace cancelledLog(String operationId, String message) {
+        StationLogTrace log = newLog(operationId);
+        log.markCancelled(new RuntimeException(message));
+        return log;
+    }
+
+    private static StationLogTrace newLog(String operationId) {
+        StationLogTrace log = StationLogTrace.start(UUID.randomUUID(), operationId, null);
+        log.setContext(new HashMap<>());
+        return log;
+    }
+
+    private static DummyStation station(String id) {
+        return new DummyStation(id);
+    }
 
     @Test
     void should_fail_fast_and_stop_next_branch_by_default_in_sequential_container() {
@@ -51,16 +101,12 @@ class ContainerStationStrategyTest {
         DummyStation first = station("first");
         DummyStation second = station("second");
 
-        var container = new ContainerBaseStation.Builder<>()
-                .withSubLine("1", first)
-                .withSubLine("2", second)
-                .build();
+        var container = new ContainerBaseStation.Builder<>().withSubLine("1", first).withSubLine("2", second).build();
 
         StationRunner runner = mock(StationRunner.class);
         StationExecutionContext operationExecution = newOperationExecutionContext("container");
 
-        when(runner.run(any(), same(first), same(operationExecution)))
-                .thenReturn(failedLog("first", "boom"));
+        when(runner.run(any(), same(first), same(operationExecution))).thenReturn(failedLog("first", "boom"));
 
         // When
         Object result = strategy.doExecute(container, "input", runner, operationExecution);
@@ -81,24 +127,17 @@ class ContainerStationStrategyTest {
         DummyStation first = station("first");
         DummyStation second = station("second");
 
-        FlowConfig flowConfig = new FlowConfig(
-                FailurePolicy.IGNORE_AND_CONTINUE,
-                StopPolicy.PROPAGATE_STOP,
+        FlowConfig flowConfig = new FlowConfig(FailurePolicy.IGNORE_AND_CONTINUE, StopPolicy.PROPAGATE_STOP,
                 CancelPolicy.PROPAGATE_CANCEL);
 
-        var container = new ContainerBaseStation.Builder<Object, Object>()
-                .flowConfig(flowConfig)
-                .withSubLine("1", first)
-                .withSubLine("2", second)
-                .returns(Arrays::asList);
+        var container = new ContainerBaseStation.Builder<Object, Object>().flowConfig(flowConfig)
+                .withSubLine("1", first).withSubLine("2", second).returns(Arrays::asList);
 
         StationRunner runner = mock(StationRunner.class);
         StationExecutionContext operationExecution = newOperationExecutionContext("container");
 
-        when(runner.run(any(), same(first), same(operationExecution)))
-                .thenReturn(failedLog("first", "boom"));
-        when(runner.run(any(), same(second), same(operationExecution)))
-                .thenReturn(successLog("second", "B"));
+        when(runner.run(any(), same(first), same(operationExecution))).thenReturn(failedLog("first", "boom"));
+        when(runner.run(any(), same(second), same(operationExecution))).thenReturn(successLog("second", "B"));
 
         // When
         Object result = strategy.doExecute(container, "input", runner, operationExecution);
@@ -119,24 +158,17 @@ class ContainerStationStrategyTest {
         DummyStation first = station("first");
         DummyStation second = station("second");
 
-        FlowConfig flowConfig = new FlowConfig(
-                FailurePolicy.COLLECT_AND_FAIL,
-                StopPolicy.PROPAGATE_STOP,
+        FlowConfig flowConfig = new FlowConfig(FailurePolicy.COLLECT_AND_FAIL, StopPolicy.PROPAGATE_STOP,
                 CancelPolicy.PROPAGATE_CANCEL);
 
-        var container = new ContainerBaseStation.Builder<Object, Object>()
-                .flowConfig(flowConfig)
-                .withSubLine("1", first)
-                .withSubLine("2", second)
-                .returns(Arrays::asList);
+        var container = new ContainerBaseStation.Builder<Object, Object>().flowConfig(flowConfig)
+                .withSubLine("1", first).withSubLine("2", second).returns(Arrays::asList);
 
         StationRunner runner = mock(StationRunner.class);
         StationExecutionContext operationExecution = newOperationExecutionContext("container");
 
-        when(runner.run(any(), same(first), same(operationExecution)))
-                .thenReturn(failedLog("first", "boom"));
-        when(runner.run(any(), same(second), same(operationExecution)))
-                .thenReturn(successLog("second", "B"));
+        when(runner.run(any(), same(first), same(operationExecution))).thenReturn(failedLog("first", "boom"));
+        when(runner.run(any(), same(second), same(operationExecution))).thenReturn(successLog("second", "B"));
 
         // When
         Object result = strategy.doExecute(container, "input", runner, operationExecution);
@@ -158,15 +190,12 @@ class ContainerStationStrategyTest {
         DummyStation executed = station("executed");
 
         var container = new ContainerBaseStation.Builder<Object, Object>()
-                .withSubLine("1", skipped, (input, ctx) -> false)
-                .withSubLine("2", executed)
-                .returns(Arrays::asList);
+                .withSubLine("1", skipped, (input, ctx) -> false).withSubLine("2", executed).returns(Arrays::asList);
 
         StationRunner runner = mock(StationRunner.class);
         StationExecutionContext operationExecution = newOperationExecutionContext("container");
 
-        when(runner.run(any(), same(executed), same(operationExecution)))
-                .thenReturn(successLog("executed", "B"));
+        when(runner.run(any(), same(executed), same(operationExecution))).thenReturn(successLog("executed", "B"));
 
         // When
         Object result = strategy.doExecute(container, "input", runner, operationExecution);
@@ -188,9 +217,7 @@ class ContainerStationStrategyTest {
             DummyStation fast = station("fast");
 
             var container = new ContainerBaseStation.Builder<Object, Object>(executorService)
-                    .awaitTimeout(Duration.ofMillis(50))
-                    .withSubLine("1", slow)
-                    .withSubLine("2", fast)
+                    .awaitTimeout(Duration.ofMillis(50)).withSubLine("1", slow).withSubLine("2", fast)
                     .returns(Arrays::asList);
 
             StationExecutionContext operationExecution = newOperationExecutionContext("container");
@@ -227,16 +254,11 @@ class ContainerStationStrategyTest {
             DummyStation slow = station("slow");
             DummyStation fast = station("fast");
 
-            FlowConfig flowConfig = new FlowConfig(
-                    FailurePolicy.FAIL_FAST,
-                    StopPolicy.PROPAGATE_STOP,
+            FlowConfig flowConfig = new FlowConfig(FailurePolicy.FAIL_FAST, StopPolicy.PROPAGATE_STOP,
                     CancelPolicy.IGNORE_AND_CONTINUE);
 
-            var container = new ContainerBaseStation.Builder<Object, Object>(executorService)
-                    .flowConfig(flowConfig)
-                    .awaitTimeout(Duration.ofMillis(50))
-                    .withSubLine("1", slow)
-                    .withSubLine("2", fast)
+            var container = new ContainerBaseStation.Builder<Object, Object>(executorService).flowConfig(flowConfig)
+                    .awaitTimeout(Duration.ofMillis(50)).withSubLine("1", slow).withSubLine("2", fast)
                     .returns(Arrays::asList);
 
             StationExecutionContext operationExecution = newOperationExecutionContext("container");
@@ -274,10 +296,8 @@ class ContainerStationStrategyTest {
             DummyStation slow = station("slow");
             DummyStation failing = station("failing");
 
-            var container = new ContainerBaseStation.Builder<Object, Object>(executorService)
-                    .withSubLine("1", slow)
-                    .withSubLine("2", failing)
-                    .returns(Arrays::asList);
+            var container = new ContainerBaseStation.Builder<Object, Object>(executorService).withSubLine("1", slow)
+                    .withSubLine("2", failing).returns(Arrays::asList);
 
             StationExecutionContext operationExecution = newOperationExecutionContext("container");
 
@@ -325,62 +345,6 @@ class ContainerStationStrategyTest {
         } finally {
             executorService.shutdownNow();
         }
-    }
-
-    private static StationExecutionContext newOperationExecutionContext(String operationId) {
-        AssemblyRunTrace assemblyRun = new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of());
-        var resourceFactory = new ResourceFactory() {
-            @Override
-            public <T> T getResource(Class<T> clazz) {
-                return null;
-            }
-        };
-        ExecutionContext globalContext = new ExecutionContext(
-                UUID.randomUUID(),
-                "pipeline-1",
-                new ExecutionServices(
-                        new EventManager(EventHandlingDefinition.builder().build(), new ExecutionContextRegistry()),
-                        resourceFactory),
-                assemblyRun);
-
-        StationLogTrace parentRecord = StationLogTrace.start(globalContext.getExecutionId(), operationId, null);
-        parentRecord.setContext(new HashMap<>());
-        parentRecord.setStatus(StationLogStatus.RUNNING);
-
-        return new DefaultStationExecutionContext(
-                operationId,
-                StationKind.CONTAINER,
-                globalContext,
-                parentRecord,
-                new ExecutionSupport(ExecutorDecorator.noOp(), new TaskFactory(), null));
-    }
-
-    private static StationLogTrace successLog(String operationId, Object output) {
-        StationLogTrace log = newLog(operationId);
-        log.markSuccess(output);
-        return log;
-    }
-
-    private static StationLogTrace failedLog(String operationId, String message) {
-        StationLogTrace log = newLog(operationId);
-        log.markFailed(new RuntimeException(message));
-        return log;
-    }
-
-    private static StationLogTrace cancelledLog(String operationId, String message) {
-        StationLogTrace log = newLog(operationId);
-        log.markCancelled(new RuntimeException(message));
-        return log;
-    }
-
-    private static StationLogTrace newLog(String operationId) {
-        StationLogTrace log = StationLogTrace.start(UUID.randomUUID(), operationId, null);
-        log.setContext(new HashMap<>());
-        return log;
-    }
-
-    private static DummyStation station(String id) {
-        return new DummyStation(id);
     }
 
     private static final class DummyStation extends AbstractStation<Object, Object> {

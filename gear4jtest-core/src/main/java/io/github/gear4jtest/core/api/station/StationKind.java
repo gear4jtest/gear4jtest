@@ -5,10 +5,5 @@ package io.github.gear4jtest.core.api.station;
  * Permet aux processors de filtrer proprement sans instanceof.
  */
 public enum StationKind {
-    PROCESSING,
-    CONTAINER,
-    ITERATOR,
-    SIGNAL,
-    PIPELINE,
-    OTHER
+    PROCESSING, CONTAINER, ITERATOR, SIGNAL, PIPELINE, OTHER
 }

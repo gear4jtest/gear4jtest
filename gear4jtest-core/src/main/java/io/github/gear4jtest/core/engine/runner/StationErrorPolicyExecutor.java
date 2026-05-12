@@ -1,6 +1,6 @@
 package io.github.gear4jtest.core.engine.runner;
 
-import io.github.gear4jtest.core.model.StationLogStatus;
+import java.util.List;
 
 import io.github.gear4jtest.core.api.behavior.BaseError;
 import io.github.gear4jtest.core.api.behavior.Condition;
@@ -9,16 +9,24 @@ import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
-import java.util.List;
+import io.github.gear4jtest.core.model.StationLogStatus;
 
 public class StationErrorPolicyExecutor {
 
+    /**
+     * Captures the input/output type variables of an {@link Operator} once, so the
+     * unchecked cast on the input is confined to a single place.
+     */
     @SuppressWarnings("unchecked")
-    public StationLogTrace apply(
-            AbstractStation<?, ?> station,
-            Object input,
-            StationExecutionContext stationCtx,
-            Exception exception) {
+    private static <I, O> O invokeFallback(Operator<I, O> fallback, Object input, StationExecutionContext ctx) {
+        return fallback.transform((I) input, ctx);
+    }
+
+    @SuppressWarnings("unchecked")
+    public StationLogTrace apply(AbstractStation<?, ?> station,
+                                 Object input,
+                                 StationExecutionContext stationCtx,
+                                 Exception exception) {
 
         StationLogTrace record = stationCtx.getRecord();
 
@@ -66,9 +74,7 @@ public class StationErrorPolicyExecutor {
             record.addErrorHandlerException(handlerException);
         }
 
-        SignalType signalType = matched.getSignalType() != null
-                ? matched.getSignalType()
-                : SignalType.FATAL;
+        SignalType signalType = matched.getSignalType() != null ? matched.getSignalType() : SignalType.FATAL;
 
         return switch (signalType) {
             case IGNORE -> applyIgnorePolicy(station, input, stationCtx, record, exception);
@@ -83,12 +89,11 @@ public class StationErrorPolicyExecutor {
         };
     }
 
-    private StationLogTrace applyIgnorePolicy(
-            AbstractStation<?, ?> station,
-            Object input,
-            StationExecutionContext stationCtx,
-            StationLogTrace record,
-            Exception originalException) {
+    private StationLogTrace applyIgnorePolicy(AbstractStation<?, ?> station,
+                                              Object input,
+                                              StationExecutionContext stationCtx,
+                                              StationLogTrace record,
+                                              Exception originalException) {
 
         if (station.getFallbackOperator() != null) {
             try {
@@ -109,14 +114,5 @@ public class StationErrorPolicyExecutor {
 
         record.markSkipped(originalException);
         return record;
-    }
-
-    /**
-     * Captures the input/output type variables of an {@link Operator} once,
-     * so the unchecked cast on the input is confined to a single place.
-     */
-    @SuppressWarnings("unchecked")
-    private static <I, O> O invokeFallback(Operator<I, O> fallback, Object input, StationExecutionContext ctx) {
-        return fallback.transform((I) input, ctx);
     }
 }

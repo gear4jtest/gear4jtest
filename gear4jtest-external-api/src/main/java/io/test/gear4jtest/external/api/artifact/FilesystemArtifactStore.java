@@ -42,7 +42,8 @@ public final class FilesystemArtifactStore implements ArtifactStore {
     @Override
     public Optional<Artifact> get(String hashHex) throws IOException {
         var p = pathFor(hashHex);
-        if (!Files.exists(p)) return Optional.empty();
+        if (!Files.exists(p))
+            return Optional.empty();
         long size = Files.size(p);
         return Optional.of(new Artifact(hashHex, size, Map.of(), () -> {
             try {

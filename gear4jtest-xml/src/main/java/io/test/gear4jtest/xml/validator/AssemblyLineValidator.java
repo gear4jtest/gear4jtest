@@ -22,20 +22,6 @@ public final class AssemblyLineValidator {
         this.schema = loadSchema(schemaResourcePath);
     }
 
-    public void validate(byte[] xml) {
-        Objects.requireNonNull(xml, "xml");
-        validate(new ByteArrayInputStream(xml));
-    }
-
-    public void validate(InputStream xml) {
-        Objects.requireNonNull(xml, "xml");
-        try {
-            schema.newValidator().validate(new StreamSource(xml));
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid Gear4J XML pipeline definition", e);
-        }
-    }
-
     private static Schema loadSchema(String schemaResourcePath) {
         try (InputStream schemaStream = AssemblyLineValidator.class.getResourceAsStream(schemaResourcePath)) {
             if (schemaStream == null) {
@@ -47,6 +33,20 @@ public final class AssemblyLineValidator {
             return factory.newSchema(new StreamSource(schemaStream));
         } catch (Exception e) {
             throw new IllegalStateException("Unable to load XML schema: " + schemaResourcePath, e);
+        }
+    }
+
+    public void validate(byte[] xml) {
+        Objects.requireNonNull(xml, "xml");
+        validate(new ByteArrayInputStream(xml));
+    }
+
+    public void validate(InputStream xml) {
+        Objects.requireNonNull(xml, "xml");
+        try {
+            schema.newValidator().validate(new StreamSource(xml));
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid Gear4J XML pipeline definition", e);
         }
     }
 }

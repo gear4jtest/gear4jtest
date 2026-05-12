@@ -1,6 +1,7 @@
 # gear4jtest-external-api
 
-`gear4jtest-external-api` contains the contracts and infrastructure used to load pipeline definitions from external artifacts.
+`gear4jtest-external-api` contains the contracts and infrastructure used to load pipeline definitions from external
+artifacts.
 
 It is the common layer for XML today and potentially JSON, YAML or other formats later.
 
@@ -17,7 +18,8 @@ This module owns:
 - dependency injection into generated classes;
 - TEST/RUN publication mode handling.
 
-It should not contain XML-specific parsing or generation logic. Format-specific modules should implement `OperationChainTranslator` and register themselves through `ServiceLoader` or explicit injection.
+It should not contain XML-specific parsing or generation logic. Format-specific modules should implement
+`OperationChainTranslator` and register themselves through `ServiceLoader` or explicit injection.
 
 ## Main flow
 
@@ -38,16 +40,16 @@ Typical flow:
 
 ## Important types
 
-| Type | Purpose |
-| --- | --- |
-| `AssemblyLineManager` | Main facade for registering, promoting, loading and compiling external pipelines. |
-| `OperationChainTranslator` | SPI implemented by external format modules. |
-| `OperationChainTranslatorResolver` | Resolves translators explicitly or with `ServiceLoader`. |
-| `GeneratedAssemblyLine` | Interface implemented by generated pipeline classes. |
-| `JDTInMemoryCompiler` | Compiles generated Java source without writing class files to disk. |
-| `ClassLoaderRegistry` | Tracks generated classloaders and aliases. |
-| `DependencyInjector` | Injects external dependencies into generated pipeline instances. |
-| `ArtifactStore` | Stores raw external pipeline artifacts by content hash. |
+| Type                               | Purpose                                                                           |
+|------------------------------------|-----------------------------------------------------------------------------------|
+| `AssemblyLineManager`              | Main facade for registering, promoting, loading and compiling external pipelines. |
+| `OperationChainTranslator`         | SPI implemented by external format modules.                                       |
+| `OperationChainTranslatorResolver` | Resolves translators explicitly or with `ServiceLoader`.                          |
+| `GeneratedAssemblyLine`            | Interface implemented by generated pipeline classes.                              |
+| `JDTInMemoryCompiler`              | Compiles generated Java source without writing class files to disk.               |
+| `ClassLoaderRegistry`              | Tracks generated classloaders and aliases.                                        |
+| `DependencyInjector`               | Injects external dependencies into generated pipeline instances.                  |
+| `ArtifactStore`                    | Stores raw external pipeline artifacts by content hash.                           |
 
 ## Publication modes
 
@@ -62,7 +64,8 @@ Direct RUN publication is guarded by configuration. The normal flow can publish 
 
 Generated classes should remain no-arg constructible and implement `GeneratedAssemblyLine`.
 
-Dependencies should be represented as fields annotated with `@Inject`. The manager instantiates the class first, then delegates dependency resolution to the configured `DependencyInjector`.
+Dependencies should be represented as fields annotated with `@Inject`. The manager instantiates the class first, then
+delegates dependency resolution to the configured `DependencyInjector`.
 
 This keeps generated code compatible with simple classloader-based loading.
 
@@ -95,4 +98,10 @@ Useful focused tasks:
 ./gradlew :gear4jtest-xml:test
 ```
 
-For translator work, prefer end-to-end tests that translate, compile, instantiate, inject and execute a generated pipeline.
+For translator work, prefer end-to-end tests that translate, compile, instantiate, inject and execute a generated
+pipeline.
+
+## Code style
+
+Repository formatting is enforced by Spotless from the root Gradle build. Use `./gradlew spotlessApply` before
+committing code changes and `./gradlew check` for full validation.

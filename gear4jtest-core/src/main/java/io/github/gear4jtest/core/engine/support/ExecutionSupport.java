@@ -1,15 +1,19 @@
 package io.github.gear4jtest.core.engine.support;
 
+import java.util.concurrent.ExecutorService;
+
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.api.context.PayloadCloners;
-import java.util.concurrent.ExecutorService;
 
 /**
  * Passive framework helpers used during execution.
  *
- * <p>Unlike run-scoped {@code ExecutionServices}, this object groups stateless or near-stateless helpers
- * such as task creation, executor decoration and payload cloning.</p>
+ * <p>
+ * Unlike run-scoped {@code ExecutionServices}, this object groups stateless or
+ * near-stateless helpers such as task creation, executor decoration and payload
+ * cloning.
+ * </p>
  */
 public final class ExecutionSupport {
 

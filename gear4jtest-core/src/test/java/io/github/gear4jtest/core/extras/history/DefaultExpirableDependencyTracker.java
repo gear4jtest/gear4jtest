@@ -2,9 +2,9 @@ package io.github.gear4jtest.core.extras.history;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class DefaultExpirableDependencyTracker implements ExpirableDependencyTracker {
@@ -18,10 +18,7 @@ public final class DefaultExpirableDependencyTracker implements ExpirableDepende
             return;
         }
 
-        consumedExpiries.merge(
-                key,
-                expiresAt,
-                (left, right) -> left.isBefore(right) ? left : right);
+        consumedExpiries.merge(key, expiresAt, (left, right) -> left.isBefore(right) ? left : right);
     }
 
     @Override

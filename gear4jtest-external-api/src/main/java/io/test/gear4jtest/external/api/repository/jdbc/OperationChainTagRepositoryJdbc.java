@@ -45,7 +45,8 @@ public final class OperationChainTagRepositoryJdbc implements OperationChainTagR
             ps.setString(1, alId);
             try (var rs = ps.executeQuery()) {
                 Set<String> s = new java.util.LinkedHashSet<>();
-                while (rs.next()) s.add(rs.getString(1));
+                while (rs.next())
+                    s.add(rs.getString(1));
                 return s;
             }
         } catch (SQLException e) {
@@ -60,7 +61,8 @@ public final class OperationChainTagRepositoryJdbc implements OperationChainTagR
             ps.setString(1, tag);
             try (var rs = ps.executeQuery()) {
                 var list = new java.util.ArrayList<String>();
-                while (rs.next()) list.add(rs.getString(1));
+                while (rs.next())
+                    list.add(rs.getString(1));
                 return list;
             }
         } catch (SQLException e) {

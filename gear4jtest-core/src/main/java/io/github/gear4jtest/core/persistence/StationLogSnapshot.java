@@ -6,40 +6,29 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public record StationLogSnapshot(
-        UUID id,
-        UUID pipelineExecutionId,
-        String operationId,
-        UUID parentOperationId,
-        StationLog.Status status,
-        Instant startedAt,
-        Instant endedAt,
-        String errorMessage,
-        String errorHandlerMessages,
-        Map<String, Object> context,
-        String itemId) {
+public record StationLogSnapshot(UUID id,
+                                 UUID pipelineExecutionId,
+                                 String operationId,
+                                 UUID parentOperationId,
+                                 StationLog.Status status,
+                                 Instant startedAt,
+                                 Instant endedAt,
+                                 String errorMessage,
+                                 String errorHandlerMessages,
+                                 Map<String, Object> context,
+                                 String itemId) {
 
     public static StationLogSnapshot from(StationLog log) {
         if (log == null) {
             throw new IllegalArgumentException("log must not be null");
         }
 
-        Map<String, Object> copiedContext = log.getContext() == null
-                ? Map.of()
+        Map<String, Object> copiedContext = log.getContext() == null ? Map.of()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(log.getContext()));
 
-        return new StationLogSnapshot(
-                log.getId(),
-                log.getPipelineExecutionId(),
-                log.getOperationId(),
-                log.getParentOperationId(),
-                log.getStatus(),
-                log.getStartedAt(),
-                log.getEndedAt(),
-                log.getErrorMessage(),
-                log.getErrorHandlerMessages(),
-                copiedContext,
-                log.getItemId());
+        return new StationLogSnapshot(log.getId(), log.getPipelineExecutionId(), log.getOperationId(),
+                log.getParentOperationId(), log.getStatus(), log.getStartedAt(), log.getEndedAt(),
+                log.getErrorMessage(), log.getErrorHandlerMessages(), copiedContext, log.getItemId());
     }
 
     public StationLog toStationLog() {

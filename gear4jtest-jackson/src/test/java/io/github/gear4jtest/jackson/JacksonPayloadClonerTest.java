@@ -1,7 +1,5 @@
 package io.github.gear4jtest.jackson;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -13,15 +11,16 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gear4jtest.core.exception.PayloadCloneException;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class JacksonPayloadClonerTest {
 
-    private final JacksonPayloadCloner cloner =
-            new JacksonPayloadCloner(new ObjectMapper().findAndRegisterModules());
+    private final JacksonPayloadCloner cloner = new JacksonPayloadCloner(new ObjectMapper().findAndRegisterModules());
 
     @Test
     void should_return_same_reference_for_known_immutable_payloads() {
@@ -106,7 +105,6 @@ class JacksonPayloadClonerTest {
 
         assertThat(original.get("a").getValue()).isEqualTo("one");
     }
-
 
     @Test
     void should_return_null_when_payload_is_null() {
@@ -228,10 +226,7 @@ class JacksonPayloadClonerTest {
     @Test
     void should_deep_clone_array_of_mutable_values() {
         // Given
-        NestedValue[] payload = new NestedValue[] {
-                new NestedValue("one"),
-                new NestedValue("two")
-        };
+        NestedValue[] payload = new NestedValue[] { new NestedValue("one"), new NestedValue("two") };
 
         // When
         NestedValue[] cloned = cloner.clonePayload(payload);
@@ -329,8 +324,7 @@ class JacksonPayloadClonerTest {
         payload.setValue("boom");
 
         // When / Then
-        assertThatThrownBy(() -> cloner.clonePayload(payload))
-                .isInstanceOf(PayloadCloneException.class)
+        assertThatThrownBy(() -> cloner.clonePayload(payload)).isInstanceOf(PayloadCloneException.class)
                 .hasMessageContaining(NonRoundTrippablePayload.class.getName());
     }
 
@@ -351,7 +345,8 @@ class JacksonPayloadClonerTest {
         private List<String> tags = new ArrayList<>();
         private Map<String, NestedValue> children = new LinkedHashMap<>();
 
-        public ComplexPayload() {}
+        public ComplexPayload() {
+        }
 
         public String getId() {
             return id;
@@ -381,7 +376,8 @@ class JacksonPayloadClonerTest {
     static final class NestedValue {
         private String value;
 
-        public NestedValue() {}
+        public NestedValue() {
+        }
 
         public NestedValue(String value) {
             this.value = value;
@@ -399,7 +395,8 @@ class JacksonPayloadClonerTest {
     static final class NestedKey {
         private String id;
 
-        public NestedKey() {}
+        public NestedKey() {
+        }
 
         public NestedKey(String id) {
             this.id = id;
@@ -417,7 +414,8 @@ class JacksonPayloadClonerTest {
     static final class NonRoundTrippablePayload {
         private String value;
 
-        public NonRoundTrippablePayload() {}
+        public NonRoundTrippablePayload() {
+        }
 
         public String getValue() {
             throw new IllegalStateException("Cannot serialize this payload");

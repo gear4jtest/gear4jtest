@@ -1,14 +1,13 @@
 package io.github.gear4jtest.core.event;
 
+import java.util.UUID;
+
 import io.github.gear4jtest.core.model.StationLogStatus;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.github.gear4jtest.core.persistence.StationLogRecord;
-import java.util.UUID;
-import org.junit.jupiter.api.Test;
-
-class StationEventsTest {
+class OperationEventsTest {
 
     @Test
     void stationStartedEvent_shouldExposeCorrelationFields() {
@@ -16,14 +15,8 @@ class StationEventsTest {
         UUID stationExecutionId = UUID.randomUUID();
         UUID parentOperationId = UUID.randomUUID();
 
-        StationStartedEvent event = new StationStartedEvent(
-                "pipeline-1",
-                executionId,
-                stationExecutionId,
-                "operation-1",
-                parentOperationId,
-                "item-42",
-                "input");
+        StationStartedEvent event = new StationStartedEvent("pipeline-1", executionId, stationExecutionId,
+                "operation-1", parentOperationId, "item-42", "input");
 
         assertThat(event.getPipelineId()).isEqualTo("pipeline-1");
         assertThat(event.getExecutionId()).isEqualTo(executionId);
@@ -38,17 +31,8 @@ class StationEventsTest {
     @Test
     void stationFinishedEvent_shouldExposeFinalStatusAndError() {
         RuntimeException boom = new RuntimeException("boom");
-        StationFinishedEvent event = new StationFinishedEvent(
-                "pipeline-1",
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                "operation-1",
-                null,
-                "item-42",
-                "input",
-                StationLogStatus.FAILED,
-                null,
-                boom);
+        StationFinishedEvent event = new StationFinishedEvent("pipeline-1", UUID.randomUUID(), UUID.randomUUID(),
+                "operation-1", null, "item-42", "input", StationLogStatus.FAILED, null, boom);
 
         assertThat(event.getStatus()).isEqualTo(StationLogStatus.FAILED);
         assertThat(event.getError()).isSameAs(boom);
@@ -57,16 +41,8 @@ class StationEventsTest {
 
     @Test
     void parameterResolvedEvent_shouldExposeResolutionMetadata() {
-        ParameterResolvedEvent event = new ParameterResolvedEvent(
-                "pipeline-1",
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                "operation-1",
-                null,
-                "item-42",
-                "customer-param",
-                true,
-                String.class.getName());
+        ParameterResolvedEvent event = new ParameterResolvedEvent("pipeline-1", UUID.randomUUID(), UUID.randomUUID(),
+                "operation-1", null, "item-42", "customer-param", true, String.class.getName());
 
         assertThat(event.getParameterDescriptor()).isEqualTo("customer-param");
         assertThat(event.isCacheHit()).isTrue();

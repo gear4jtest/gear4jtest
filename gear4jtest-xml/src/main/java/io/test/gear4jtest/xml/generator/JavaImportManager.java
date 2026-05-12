@@ -15,6 +15,16 @@ final class JavaImportManager {
         this.packageName = packageName;
     }
 
+    private static String packageNameOf(String fullyQualifiedName) {
+        int lastDot = fullyQualifiedName.lastIndexOf('.');
+        return lastDot < 0 ? "" : fullyQualifiedName.substring(0, lastDot);
+    }
+
+    private static String simpleNameOf(String fullyQualifiedName) {
+        int lastDot = fullyQualifiedName.lastIndexOf('.');
+        return lastDot < 0 ? fullyQualifiedName : fullyQualifiedName.substring(lastDot + 1);
+    }
+
     String use(String fullyQualifiedName) {
         if (fullyQualifiedName == null || fullyQualifiedName.isBlank()) {
             return fullyQualifiedName;
@@ -59,15 +69,5 @@ final class JavaImportManager {
             builder.append('\n');
         }
         return builder.toString();
-    }
-
-    private static String packageNameOf(String fullyQualifiedName) {
-        int lastDot = fullyQualifiedName.lastIndexOf('.');
-        return lastDot < 0 ? "" : fullyQualifiedName.substring(0, lastDot);
-    }
-
-    private static String simpleNameOf(String fullyQualifiedName) {
-        int lastDot = fullyQualifiedName.lastIndexOf('.');
-        return lastDot < 0 ? fullyQualifiedName : fullyQualifiedName.substring(lastDot + 1);
     }
 }

@@ -1,11 +1,11 @@
 package io.github.gear4jtest.core.sidecompute;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class SideComputeContextTest {
 
@@ -47,7 +47,6 @@ class SideComputeContextTest {
         RuntimeException ex = new RuntimeException("boom");
         future.completeExceptionally(ex);
 
-        assertThat(future)
-                .isCompletedExceptionally();
+        assertThat(future).isCompletedExceptionally();
     }
 }

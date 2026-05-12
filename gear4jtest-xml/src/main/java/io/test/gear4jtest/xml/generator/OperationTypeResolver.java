@@ -27,6 +27,10 @@ final class OperationTypeResolver {
         this.classLoader = classLoader != null ? classLoader : ClassLoader.getSystemClassLoader();
     }
 
+    private static JavaTypeName parseNullable(String value) {
+        return value == null || value.isBlank() ? null : JavaTypeName.parse(value);
+    }
+
     Map<Operation, OperationSignature> resolve(XmlPipelineDefinition definition) {
         JavaTypeName current = JavaTypeName.parse(definition.inputType());
         for (Operation operation : definition.operations()) {
@@ -98,10 +102,12 @@ final class OperationTypeResolver {
     private JavaTypeName resolveIteratorOutput(IteratorOperation operation, JavaTypeName childOutput) {
         if (operation.collector() != null) {
             String collector = operation.collector().replace(" ", "");
-            if (collector.equals("java.util.stream.Collectors.toList()") || collector.equals("Collectors.toList()") || collector.equals("toList()")) {
+            if (collector.equals("java.util.stream.Collectors.toList()") || collector.equals("Collectors.toList()")
+                    || collector.equals("toList()")) {
                 return JavaTypeName.parameterized("java.util.List", childOutput);
             }
-            if (collector.equals("java.util.stream.Collectors.toSet()") || collector.equals("Collectors.toSet()") || collector.equals("toSet()")) {
+            if (collector.equals("java.util.stream.Collectors.toSet()") || collector.equals("Collectors.toSet()")
+                    || collector.equals("toSet()")) {
                 return JavaTypeName.parameterized("java.util.Set", childOutput);
             }
         }
@@ -109,7 +115,8 @@ final class OperationTypeResolver {
             return switch (operation.accumulator().toUpperCase(java.util.Locale.ROOT)) {
                 case "LIST" -> JavaTypeName.parameterized("java.util.List", childOutput);
                 case "SET" -> JavaTypeName.parameterized("java.util.Set", childOutput);
-                default -> parseNullable(operation.outputType()) != null ? JavaTypeName.parse(operation.outputType()) : JavaTypeName.OBJECT;
+                default -> parseNullable(operation.outputType()) != null ? JavaTypeName.parse(operation.outputType())
+                        : JavaTypeName.OBJECT;
             };
         }
         JavaTypeName explicitOutput = parseNullable(operation.outputType());
@@ -156,11 +163,13 @@ final class OperationTypeResolver {
             Class<?> operatorClass = Class.forName(className, false, classLoader);
             Type[] arguments = findOperatorArguments(operatorClass, new HashMap<>());
             if (arguments == null || arguments.length != 2) {
-                throw new IllegalArgumentException("Unable to resolve Operator<IN, OUT> generic parameters for " + className);
+                throw new IllegalArgumentException(
+                        "Unable to resolve Operator<IN, OUT> generic parameters for " + className);
             }
             return new OperatorSignature(JavaTypeName.from(arguments[0]), JavaTypeName.from(arguments[1]));
         } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Unable to load operator class '" + className + "' to resolve its generic signature", e);
+            throw new IllegalArgumentException(
+                    "Unable to load operator class '" + className + "' to resolve its generic signature", e);
         }
     }
 
@@ -187,10 +196,8 @@ final class OperationTypeResolver {
                 }
 
                 if (Operator.class.equals(rawClass)) {
-                    return new Type[] {
-                            resolveType(actualArguments[0], resolvedVariables),
-                            resolveType(actualArguments[1], resolvedVariables)
-                    };
+                    return new Type[] { resolveType(actualArguments[0], resolvedVariables),
+                            resolveType(actualArguments[1], resolvedVariables) };
                 }
                 return findOperatorArguments(rawClass, childVariables);
             }
@@ -208,18 +215,17 @@ final class OperationTypeResolver {
             for (int i = 0; i < arguments.length; i++) {
                 resolvedArguments[i] = resolveType(arguments[i], variables);
             }
-            return new ResolvedParameterizedType((Class<?>) parameterizedType.getRawType(), resolvedArguments, parameterizedType.getOwnerType());
+            return new ResolvedParameterizedType((Class<?>) parameterizedType.getRawType(), resolvedArguments,
+                    parameterizedType.getOwnerType());
         }
         return type;
     }
 
-    private static JavaTypeName parseNullable(String value) {
-        return value == null || value.isBlank() ? null : JavaTypeName.parse(value);
+    private record OperatorSignature(JavaTypeName inputType, JavaTypeName outputType) {
     }
 
-    private record OperatorSignature(JavaTypeName inputType, JavaTypeName outputType) {}
-
-    private record ResolvedParameterizedType(Class<?> rawType, Type[] actualTypeArguments, Type ownerType) implements ParameterizedType {
+    private record ResolvedParameterizedType(Class<?> rawType, Type[] actualTypeArguments, Type ownerType)
+            implements ParameterizedType {
         @Override
         public Type[] getActualTypeArguments() {
             return actualTypeArguments.clone();

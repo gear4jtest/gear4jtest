@@ -7,8 +7,10 @@ public interface OperationChainTranslator {
     /**
      * Returns true when this translator can handle the supplied media type.
      *
-     * <p>Examples: {@code application/xml}, {@code application/json},
-     * {@code application/vnd.gear4j.pipeline+xml}.</p>
+     * <p>
+     * Examples: {@code application/xml}, {@code application/json},
+     * {@code application/vnd.gear4j.pipeline+xml}.
+     * </p>
      */
     boolean supports(String mediaType);
 
@@ -18,7 +20,7 @@ public interface OperationChainTranslator {
     GenerationResult translate(byte[] content, String mediaType) throws Exception;
 
     /**
-     * @param className fully-qualified generated class name
+     * @param className       fully-qualified generated class name
      * @param formattedSource formatted Java source code
      */
     record GenerationResult(String className, String formattedSource) {

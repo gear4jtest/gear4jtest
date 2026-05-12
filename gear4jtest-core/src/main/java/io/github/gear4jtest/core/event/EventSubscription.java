@@ -9,25 +9,19 @@ public final class EventSubscription<T extends Event> {
     private final Predicate<? super T> predicate;
     private final EventReaction<? super T> reaction;
 
-    private EventSubscription(
-            Class<T> eventType,
-            Predicate<? super T> predicate,
-            EventReaction<? super T> reaction) {
+    private EventSubscription(Class<T> eventType, Predicate<? super T> predicate, EventReaction<? super T> reaction) {
         this.eventType = Objects.requireNonNull(eventType, "eventType");
         this.predicate = predicate != null ? predicate : __ -> true;
         this.reaction = Objects.requireNonNull(reaction, "reaction");
     }
 
-    public static <T extends Event> EventSubscription<T> on(
-            Class<T> eventType,
-            EventReaction<? super T> reaction) {
+    public static <T extends Event> EventSubscription<T> on(Class<T> eventType, EventReaction<? super T> reaction) {
         return new EventSubscription<>(eventType, null, reaction);
     }
 
-    public static <T extends Event> EventSubscription<T> on(
-            Class<T> eventType,
-            Predicate<? super T> predicate,
-            EventReaction<? super T> reaction) {
+    public static <T extends Event> EventSubscription<T> on(Class<T> eventType,
+                                                            Predicate<? super T> predicate,
+                                                            EventReaction<? super T> reaction) {
         return new EventSubscription<>(eventType, predicate, reaction);
     }
 

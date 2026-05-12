@@ -4,25 +4,25 @@
               inputType="java.lang.String"
               outputType="java.lang.String">
 
-    <operations>
-        <ifElseContainer id="choice"
-                         inputType="java.lang.String"
-                         outputType="java.lang.String">
-            <conditionalOperations>
-                <conditionalOperation>
-                    <condition expression="input.startsWith(&quot;a&quot;)"/>
-                    <processingOperation id="append_true" type="com.myorg.operation.Step11">
-                        <parameters>
-                            <valueParameter retriever="com.myorg.operation.Step11::getParam" value="-true"/>
-                        </parameters>
-                    </processingOperation>
-                </conditionalOperation>
-            </conditionalOperations>
-            <elseOperation id="append_false" type="com.myorg.operation.Step11">
-                <parameters>
-                    <valueParameter retriever="com.myorg.operation.Step11::getParam" value="-false"/>
-                </parameters>
-            </elseOperation>
-        </ifElseContainer>
-    </operations>
+  <operations>
+    <ifElseContainer id="choice"
+                     inputType="java.lang.String"
+                     outputType="java.lang.String">
+      <conditionalOperations>
+        <conditionalOperation>
+          <condition expression="input.startsWith(&quot;a&quot;)"/>
+          <processingOperation id="append_true" type="com.myorg.operation.Step11">
+            <parameters>
+              <valueParameter retriever="com.myorg.operation.Step11::getParam" value="-true"/>
+            </parameters>
+          </processingOperation>
+        </conditionalOperation>
+      </conditionalOperations>
+      <elseOperation id="append_false" type="com.myorg.operation.Step11">
+        <parameters>
+          <valueParameter retriever="com.myorg.operation.Step11::getParam" value="-false"/>
+        </parameters>
+      </elseOperation>
+    </ifElseContainer>
+  </operations>
 </assemblyLine>

@@ -23,7 +23,8 @@ public final class JdtFormatter {
         opts.put(DefaultCodeFormatterConstants.FORMATTER_JOIN_WRAPPED_LINES, DefaultCodeFormatterConstants.FALSE);
 
         CodeFormatter formatter = ToolFactory.createCodeFormatter(opts);
-        TextEdit edit = formatter.format(CodeFormatter.K_COMPILATION_UNIT, src, 0, src.length(), 0, System.lineSeparator());
+        TextEdit edit = formatter.format(CodeFormatter.K_COMPILATION_UNIT, src, 0, src.length(), 0,
+                                         System.lineSeparator());
         if (edit == null) {
             return src;
         }

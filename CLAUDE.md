@@ -1,6 +1,6 @@
 # Claude instructions for Gear4J
 
-Read `AGENTS.md` first. It is the repository-wide source of truth for agent instructions.
+Read `AGENTS.md` first. It is the source of truth for repository-wide agent instructions.
 
 Also check module-level `AGENTS.md` files before editing files inside:
 
@@ -8,16 +8,13 @@ Also check module-level `AGENTS.md` files before editing files inside:
 - `gear4jtest-external-api/`
 - `gear4jtest-xml/`
 
-For architectural context, prefer:
+Style rules are defined by Gradle, Spotless and Checkstyle. Do not rely on your own formatting preferences.
 
-- `docs/architecture/*.md`
-- `docs/decisions/*.md`
-- module README files
+Before producing a patch after code changes, run when possible:
 
-When producing changes:
+```bash
+./gradlew spotlessApply
+./gradlew check
+```
 
-- keep patches minimal and reviewable;
-- include tests for behavior changes;
-- do not present future-direction notes as implemented behavior;
-- report which Gradle commands were run;
-- explicitly mention commands that could not be run and why.
+If a command cannot be run, explicitly mention the command and the reason.

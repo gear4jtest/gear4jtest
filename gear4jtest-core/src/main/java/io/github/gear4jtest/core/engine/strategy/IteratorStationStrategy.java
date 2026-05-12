@@ -1,7 +1,5 @@
 package io.github.gear4jtest.core.engine.strategy;
 
-import io.github.gear4jtest.core.model.StationLogStatus;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Function;
@@ -14,9 +12,15 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.IteratorStation;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class IteratorStationStrategy extends AbstractStationStrategy<IteratorStation<?, ?>> {
+
+    @SuppressWarnings("unchecked")
+    private static <A, R> R collectResults(Collection<Object> results, Collector<?, A, R> collector) {
+        return results.stream().collect((Collector<? super Object, A, R>) collector);
+    }
 
     @Override
     public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
@@ -24,8 +28,11 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public Object doExecute(IteratorStation<?, ?> station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public Object doExecute(IteratorStation<?, ?> station,
+                            Object input,
+                            StationRunner runner,
+                            StationExecutionContext operationExecution) {
         FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
 
         Iterable<?> collection;
@@ -54,14 +61,10 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
                         results.add(chainResult.getOutput());
                     }
                 }
-                case MARK_AND_PROCEED -> collectedErrors.add(
-                        FlowStrategySupport.representativeThrowable(
-                                chainResult,
-                                "Item failed without exception: " + itemId));
-                case INTERRUPT -> FlowStrategySupport.applyInterruptToParentLog(
-                        operationExecution.getRecord(),
-                        chainResult,
-                        config);
+                case MARK_AND_PROCEED -> collectedErrors.add(FlowStrategySupport
+                        .representativeThrowable(chainResult, "Item failed without exception: " + itemId));
+                case INTERRUPT ->
+                    FlowStrategySupport.applyInterruptToParentLog(operationExecution.getRecord(), chainResult, config);
             }
 
             if (decision == FlowDecision.INTERRUPT) {
@@ -73,8 +76,8 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
 
         if (!collectedErrors.isEmpty()) {
             Throwable first = collectedErrors.iterator().next();
-            operationExecution.getRecord().markFailed(
-                    first instanceof Exception ex ? ex : new RuntimeException(first.getMessage(), first));
+            operationExecution.getRecord()
+                    .markFailed(first instanceof Exception ex ? ex : new RuntimeException(first.getMessage(), first));
         }
 
         if (station.getAccumulator() != null) {
@@ -88,10 +91,5 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
         }
 
         return results;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <A, R> R collectResults(Collection<Object> results, Collector<?, A, R> collector) {
-        return results.stream().collect((Collector<? super Object, A, R>) collector);
     }
 }

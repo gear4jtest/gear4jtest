@@ -10,12 +10,14 @@ public enum InlinePolicy {
     ALWAYS_FORBIDDEN,
 
     /**
-     * Inline execution is allowed only for a pipeline without runtime configuration.
+     * Inline execution is allowed only for a pipeline without runtime
+     * configuration.
      */
     ALLOWED_WHEN_CONFIGLESS,
 
     /**
-     * Inline execution is allowed only if the parent runtime declares all required capabilities.
+     * Inline execution is allowed only if the parent runtime declares all required
+     * capabilities.
      */
     ALLOWED_WHEN_REQUIREMENTS_SATISFIED;
 

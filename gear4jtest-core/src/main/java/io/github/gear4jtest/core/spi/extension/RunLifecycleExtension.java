@@ -6,16 +6,19 @@ import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 /**
  * Passive lifecycle hooks around a pipeline run.
  *
- * <p>These hooks are invoked by the engine outside the measured runtime scope:
+ * <p>
+ * These hooks are invoked by the engine outside the measured runtime scope:
  *
  * <ul>
- *   <li>{@link #onRunStarted(ExecutionContext, AssemblyRunTrace)} is called before the engine starts the
- *       runtime timer.</li>
- *   <li>{@link #onRunCompleted(ExecutionContext, AssemblyRunTrace)} is called after the engine has fully
- *       finalized the run (status, result, error, final context, end time).</li>
+ * <li>{@link #onRunStarted(ExecutionContext, AssemblyRunTrace)} is called
+ * before the engine starts the runtime timer.</li>
+ * <li>{@link #onRunCompleted(ExecutionContext, AssemblyRunTrace)} is called
+ * after the engine has fully finalized the run (status, result, error, final
+ * context, end time).</li>
  * </ul>
  *
- * <p>Implementations must not mutate the lifecycle semantics of the run.
+ * <p>
+ * Implementations must not mutate the lifecycle semantics of the run.
  */
 public interface RunLifecycleExtension extends RuntimeExtension {
 

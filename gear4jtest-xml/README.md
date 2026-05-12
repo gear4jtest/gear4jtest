@@ -15,7 +15,8 @@ This module owns:
 - formatting generated Java source;
 - registering the XML translator as an `OperationChainTranslator`.
 
-It should not own artifact storage, publication workflow, classloader caching or runtime execution. Those concerns belong to `gear4jtest-external-api` and `gear4jtest-core`.
+It should not own artifact storage, publication workflow, classloader caching or runtime execution. Those concerns
+belong to `gear4jtest-external-api` and `gear4jtest-core`.
 
 ## Supported media types
 
@@ -93,4 +94,13 @@ Useful focused tasks:
 ./gradlew :gear4jtest-xml:test --tests '*AssemblyLineGeneratorTest'
 ```
 
-For meaningful XML changes, tests should cover the full path: validate, parse, generate, compile, instantiate, inject and execute.
+For meaningful XML changes, tests should cover the full path: validate, parse, generate, compile, instantiate, inject
+and execute.
+
+## Code style
+
+Repository formatting is enforced by Spotless from the root Gradle build. Use `./gradlew spotlessApply` before
+committing code changes and `./gradlew check` for full validation.
+
+Generated Java source is formatted by the XML generator for readability. Generated files under `build/` are excluded
+from repository style validation.

@@ -18,7 +18,8 @@ public final class InMemoryArtifactStore implements ArtifactStore {
     @Override
     public Optional<Artifact> get(String hashHex) {
         byte[] data = map.get(hashHex);
-        if (data == null) return Optional.empty();
+        if (data == null)
+            return Optional.empty();
         return Optional.of(new Artifact(hashHex, data.length, Map.of(), () -> new ByteArrayInputStream(data)));
     }
 

@@ -4,22 +4,22 @@
               inputType="java.lang.String"
               outputType="java.lang.String">
 
-    <operations>
-        <processingOperation id="append_a" type="com.myorg.operation.Step11">
-            <parameters>
-                <valueParameter retriever="com.myorg.operation.Step11::getParam" value="a"/>
-            </parameters>
-        </processingOperation>
-        <processingOperation id="append_b" type="com.myorg.operation.Step11">
-            <parameters>
-                <valueParameter retriever="com.myorg.operation.Step11::getParam" value="b"/>
-            </parameters>
-        </processingOperation>
-    </operations>
+  <operations>
+    <processingOperation id="append_a" type="com.myorg.operation.Step11">
+      <parameters>
+        <valueParameter retriever="com.myorg.operation.Step11::getParam" value="a"/>
+      </parameters>
+    </processingOperation>
+    <processingOperation id="append_b" type="com.myorg.operation.Step11">
+      <parameters>
+        <valueParameter retriever="com.myorg.operation.Step11::getParam" value="b"/>
+      </parameters>
+    </processingOperation>
+  </operations>
 
-    <configuration>
-        <eventHandling>
-            <globalEventConfiguration eventOnParameterChanged="true"/>
-        </eventHandling>
-    </configuration>
+  <configuration>
+    <eventHandling>
+      <globalEventConfiguration eventOnParameterChanged="true"/>
+    </eventHandling>
+  </configuration>
 </assemblyLine>

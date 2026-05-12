@@ -18,6 +18,18 @@ This module owns common infrastructure for external pipeline definitions.
 - Dependencies are injected after instantiation through `DependencyInjector`.
 - `AssemblyLineManager` coordinates artifact lookup, translation, compilation, classloading and injection.
 
+## Formatting
+
+Repository-wide formatting instructions from the root `AGENTS.md` apply here. Do not manually mimic the Java style; use
+the Gradle formatter and respect Checkstyle failures.
+
+Before finishing code changes in this module, run when possible:
+
+```bash
+./gradlew spotlessApply
+./gradlew check
+```
+
 ## Test focus
 
 For external-loading changes, prefer tests that cover:

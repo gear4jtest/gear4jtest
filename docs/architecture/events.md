@@ -67,6 +67,7 @@ Possible future designs include:
 - SQS publisher;
 - RabbitMQ publisher.
 
-A durable design needs explicit decisions about serialization, retries, dead-letter handling, idempotency and transactional boundaries.
+A durable design needs explicit decisions about serialization, retries, dead-letter handling, idempotency and
+transactional boundaries.
 
 Do not turn `EventManager` itself into a broker abstraction.

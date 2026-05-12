@@ -2,13 +2,15 @@
 
 `gear4jtest-jackson` provides a Jackson-based implementation of Gear4J's `PayloadCloner` SPI.
 
-Its role is to enable safer payload isolation for mutable DTOs, POJOs, lists, sets, maps and arrays, without introducing Jackson-specific cloning behavior into `gear4jtest-core`.
+Its role is to enable safer payload isolation for mutable DTOs, POJOs, lists, sets, maps and arrays, without introducing
+Jackson-specific cloning behavior into `gear4jtest-core`.
 
 ## Why this module exists
 
 `gear4jtest-core` intentionally stays dependency-agnostic.
 
-The core engine does not know how to deep-clone arbitrary business objects. That responsibility is delegated to the `PayloadCloner` SPI.
+The core engine does not know how to deep-clone arbitrary business objects. That responsibility is delegated to the
+`PayloadCloner` SPI.
 
 `gear4jtest-jackson` is one optional implementation of that SPI.
 
@@ -64,7 +66,8 @@ Known limitations:
 - cyclic POJO graphs are not guaranteed to be supported transparently;
 - polymorphic models may require a specifically configured `ObjectMapper`;
 - objects that cannot be round-tripped by Jackson cannot be cloned by this module;
-- exotic collection implementations may be recreated using standard mutable implementations instead of the exact original concrete type.
+- exotic collection implementations may be recreated using standard mutable implementations instead of the exact
+  original concrete type.
 
 ## Recommended practice
 
@@ -89,3 +92,8 @@ Useful focused task:
 ```bash
 ./gradlew :gear4jtest-jackson:test
 ```
+
+## Code style
+
+Repository formatting is enforced by Spotless from the root Gradle build. Use `./gradlew spotlessApply` before
+committing code changes and `./gradlew check` for full validation.

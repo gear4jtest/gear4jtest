@@ -1,33 +1,30 @@
 package io.github.gear4jtest.core.event;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
-import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
+import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import org.junit.jupiter.api.Test;
 
-class AsyncDispatcherThreadingTest {
+import static org.assertj.core.api.Assertions.assertThat;
+
+class SimpleEventBusThreadingTest {
 
     @Test
     void reactions_shouldRunOffThePublishingThread() throws Exception {
         AtomicReference<String> threadName = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
 
-        EventHandlingDefinition definition = EventHandlingDefinition.builder()
-                .on(Event.class, event -> {
-                    threadName.set(Thread.currentThread().getName());
-                    latch.countDown();
-                })
-                .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
-                        .reactionExecutorFactory(Executors::newSingleThreadExecutor)
-                        .shutdownTimeout(Duration.ofSeconds(2))
-                        .build())
-                .build();
+        EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
+            threadName.set(Thread.currentThread().getName());
+            latch.countDown();
+        }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                .reactionExecutorFactory(Executors::newSingleThreadExecutor).shutdownTimeout(Duration.ofSeconds(2))
+                .build()).build();
 
         EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
         try {

@@ -1,6 +1,7 @@
 package io.github.gear4jtest.core.engine.strategy;
 
-import io.github.gear4jtest.core.model.StationLogStatus;
+import java.util.ArrayList;
+import java.util.List;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
@@ -11,11 +12,20 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.exception.StationExecutionException;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
-import java.util.ArrayList;
-import java.util.List;
 
 public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> implements StationExecutionStrategy<S> {
+
+    /**
+     * Captures the input/output type variables of an {@link Operator} once, so the
+     * unchecked cast on the input is confined to a single place instead of
+     * propagating through every caller that only sees {@code Object}.
+     */
+    @SuppressWarnings("unchecked")
+    private static <I, O> O invokeFallback(Operator<I, O> fallback, Object input, StationExecutionContext ctx) {
+        return fallback.transform((I) input, ctx);
+    }
 
     @Override
     public StationLogTrace run(S station, Object input, StationExecutionContext context, StationRunner runner) {
@@ -107,12 +117,11 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
         return SkipDecision.dontSkip();
     }
 
-    protected Object handleSkip(
-            S station,
-            Object input,
-            StationExecutionContext ctx,
-            StationLogTrace record,
-            String reason) {
+    protected Object handleSkip(S station,
+                                Object input,
+                                StationExecutionContext ctx,
+                                StationLogTrace record,
+                                String reason) {
 
         if (station.getFallbackOperator() != null) {
             try {
@@ -168,19 +177,9 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
         return context.getSupport().getPayloadCloner().clonePayload(payload);
     }
 
-    protected abstract Object doExecute(
-            S station,
-            Object input,
-            StationRunner runner,
-            StationExecutionContext opContext) throws Exception;
-
-    /**
-     * Captures the input/output type variables of an {@link Operator} once,
-     * so the unchecked cast on the input is confined to a single place
-     * instead of propagating through every caller that only sees {@code Object}.
-     */
-    @SuppressWarnings("unchecked")
-    private static <I, O> O invokeFallback(Operator<I, O> fallback, Object input, StationExecutionContext ctx) {
-        return fallback.transform((I) input, ctx);
-    }
+    protected abstract Object doExecute(S station,
+                                        Object input,
+                                        StationRunner runner,
+                                        StationExecutionContext opContext)
+            throws Exception;
 }

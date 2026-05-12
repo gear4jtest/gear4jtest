@@ -9,10 +9,10 @@ import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
 import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
 import io.github.gear4jtest.core.spi.extension.StationWrapperExtension;
 
-public record ResolvedExtensions(
-        List<RuntimeExtension> allExtensions,
-        List<RunInterceptorExtension> runInterceptors,
-        List<RunLifecycleExtension> runLifecycleExtensions,
-        List<StationWrapperExtension> stationWrappers,
-        List<StationLifecycleExtension> stationLifecycleExtensions,
-        List<ExecutorWrapperExtension> executorWrappers) {}
+public record ResolvedExtensions(List<RuntimeExtension> allExtensions,
+                                 List<RunInterceptorExtension> runInterceptors,
+                                 List<RunLifecycleExtension> runLifecycleExtensions,
+                                 List<StationWrapperExtension> stationWrappers,
+                                 List<StationLifecycleExtension> stationLifecycleExtensions,
+                                 List<ExecutorWrapperExtension> executorWrappers) {
+}

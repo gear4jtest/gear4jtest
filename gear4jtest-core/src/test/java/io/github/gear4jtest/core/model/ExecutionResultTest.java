@@ -11,8 +11,7 @@ class ExecutionResultTest {
     void constructor_shouldStoreAllFieldsForSuccess() {
         String result = "ok";
 
-        ExecutionResult<String> executionResult =
-                new ExecutionResult<>(result, true, null, null);
+        ExecutionResult<String> executionResult = new ExecutionResult<>(result, true, null, null);
 
         assertThat(executionResult.getResult()).isEqualTo(result);
         assertThat(executionResult.isSuccess()).isTrue();
@@ -23,8 +22,7 @@ class ExecutionResultTest {
     void constructor_shouldStoreErrorForFailure() {
         RuntimeException error = new RuntimeException("boom");
 
-        ExecutionResult<Void> executionResult =
-                new ExecutionResult<>(null, false, null, error);
+        ExecutionResult<Void> executionResult = new ExecutionResult<>(null, false, null, error);
 
         assertThat(executionResult.getResult()).isNull();
         assertThat(executionResult.isSuccess()).isFalse();

@@ -21,14 +21,14 @@ normalization {
 jar {
     manifest {
         attributes(
-                'Built-By': 'Quentin Lebreil',
-                'Created-By': System.properties['java.version'] + " (" + System.properties['java.vendor'] + " " + System.properties['java.vm.version'] + ")",
-                'Build-Date': project.buildDate,
-                'Build-Time': project.buildTime,
-                'Specification-Title': projectArtifactId,
-                'Specification-Version': project.version,
-                'Implementation-Title': projectArtifactId,
-                'Implementation-Version': project.version,
+            'Built-By': 'Quentin Lebreil',
+            'Created-By': System.properties['java.version'] + " (" + System.properties['java.vendor'] + " " + System.properties['java.vm.version'] + ")",
+            'Build-Date': project.buildDate,
+            'Build-Time': project.buildTime,
+            'Specification-Title': projectArtifactId,
+            'Specification-Version': project.version,
+            'Implementation-Title': projectArtifactId,
+            'Implementation-Version': project.version,
         )
     }
 }
@@ -70,7 +70,8 @@ publishing {
 
                 def license = root.appendNode('licenses').appendNode('license')
                 license.appendNode('name', 'Apache-2.0')
-                license.appendNode('url', 'https://github.com/resilience4j/resilience4j/blob/master/LICENSE.txt') // à revoir
+                license.appendNode('url', 'https://github.com/resilience4j/resilience4j/blob/master/LICENSE.txt')
+                // à revoir
                 license.appendNode('distribution', 'repo')
 
                 root.appendNode('scm').appendNode('url', 'https://github.com/gear4jtest/g.git')

@@ -1,14 +1,14 @@
 package io.github.gear4jtest.core.api.pipeline;
 
-import io.github.gear4jtest.core.api.AssemblyLine;
 import java.util.Objects;
 import java.util.Optional;
+
+import io.github.gear4jtest.core.api.AssemblyLine;
 
 /**
  * Runtime target used when Java code already has the child pipeline instance.
  */
-public record DirectPipelineTarget<IN, OUT>(AssemblyLine<IN, OUT> pipeline)
-        implements PipelineTarget<IN, OUT> {
+public record DirectPipelineTarget<IN, OUT>(AssemblyLine<IN, OUT> pipeline) implements PipelineTarget<IN, OUT> {
 
     public DirectPipelineTarget {
         Objects.requireNonNull(pipeline, "pipeline must not be null");

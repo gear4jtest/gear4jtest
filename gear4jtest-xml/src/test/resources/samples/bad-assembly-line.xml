@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <assemblyLine xmlns="http://github.com/gear4jtest/core/model"
               inputType="java.lang.String">
-    <operations>
-        <processingOperation id="missing_type"/>
-    </operations>
+  <operations>
+    <processingOperation id="missing_type"/>
+  </operations>
 </assemblyLine>

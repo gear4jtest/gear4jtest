@@ -5,34 +5,29 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import io.github.gear4jtest.core.api.MutableStationMetadata;
+import io.github.gear4jtest.core.api.StationMetadata;
 import io.github.gear4jtest.core.api.behavior.BaseError;
 import io.github.gear4jtest.core.api.behavior.Condition;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
-import io.github.gear4jtest.core.api.behavior.StationSkipper;
-import io.github.gear4jtest.core.api.MutableStationMetadata;
-import io.github.gear4jtest.core.api.StationMetadata;
 import io.github.gear4jtest.core.api.behavior.StationSkipTest;
+import io.github.gear4jtest.core.api.behavior.StationSkipper;
 
 /**
- * Template commun à toutes les OperationDefinition.
- * - Gère la création du record
- * - Gère les events
- * - Gère les processors
- * - Gère le wiring avec le PipelineExecutionManager
+ * Template commun à toutes les OperationDefinition. - Gère la création du
+ * record - Gère les events - Gère les processors - Gère le wiring avec le
+ * PipelineExecutionManager
  */
 public abstract class AbstractStation<I, O> {
 
+    private final List<StationSkipper> skippers = new ArrayList<>();
+    private final MutableStationMetadata metadata = new MutableStationMetadata();
     protected String id;
     protected StationKind kind;
     protected List<Processor> processors;
     protected List<BaseError<I>> onErrors;
     protected List<Condition<I>> conditions;
-
-    private final List<StationSkipper> skippers = new ArrayList<>();
-
-    private final MutableStationMetadata metadata = new MutableStationMetadata();
-
     protected Operator<I, O> fallbackOperator;
     protected Boolean unary;
 
@@ -87,8 +82,8 @@ public abstract class AbstractStation<I, O> {
     }
 
     /**
-     * Compat optionnelle : alias "condition" -> skipper PRE.
-     * Si tu veux conserver l'API existante.
+     * Compat optionnelle : alias "condition" -> skipper PRE. Si tu veux conserver
+     * l'API existante.
      */
     public AbstractStation<I, O> condition(StationSkipTest predicate) {
         return skipIf(predicate);

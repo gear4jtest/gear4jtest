@@ -36,24 +36,25 @@ public class RunRequest {
         return new Builder();
     }
 
-//    /**
-//     * Récupère une feature par sa classe.
-//     * Utilisé par les Extensions pour récupérer leur configuration spécifique.
-//     */
-//    public <T extends PipelineFeature> Optional<T> getFeature(Class<T> featureClass) {
-//        return extensions.values().stream()
-//                .filter(featureClass::isInstance)
-//                .map(featureClass::cast)
-//                .findFirst();
-//    }
+    // /**
+    // * Récupère une feature par sa classe.
+    // * Utilisé par les Extensions pour récupérer leur configuration spécifique.
+    // */
+    // public <T extends PipelineFeature> Optional<T> getFeature(Class<T>
+    // featureClass) {
+    // return extensions.values().stream()
+    // .filter(featureClass::isInstance)
+    // .map(featureClass::cast)
+    // .findFirst();
+    // }
 
-//    public boolean hasFeature(String key) {
-//        return extensions.containsKey(key);
-//    }
-//
-//    public Collection<PipelineFeature> getActiveFeatures() {
-//        return extensions.values();
-//    }
+    // public boolean hasFeature(String key) {
+    // return extensions.containsKey(key);
+    // }
+    //
+    // public Collection<PipelineFeature> getActiveFeatures() {
+    // return extensions.values();
+    // }
 
     public List<RuntimeExtension> getExtensions() {
         return Collections.unmodifiableList(extensions);
@@ -84,13 +85,8 @@ public class RunRequest {
     }
 
     public Builder toBuilder() {
-        Builder builder = new Builder()
-                .input(input)
-                .context(context)
-                .resourceFactory(resourceFactory)
-                .withIdGenerator(idGenerator)
-                .nestedRunContext(nestedRunContext)
-                .pipelineCallStack(pipelineCallStack);
+        Builder builder = new Builder().input(input).context(context).resourceFactory(resourceFactory)
+                .withIdGenerator(idGenerator).nestedRunContext(nestedRunContext).pipelineCallStack(pipelineCallStack);
         extensions.forEach(builder::with);
         return builder;
     }
@@ -135,8 +131,7 @@ public class RunRequest {
         }
 
         /**
-         * Active une feature.
-         * Ex: .with(new PersistenceFeature(myDbManager))
+         * Active une feature. Ex: .with(new PersistenceFeature(myDbManager))
          */
         public Builder with(RuntimeExtension extension) {
             Objects.requireNonNull(extension);

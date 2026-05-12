@@ -21,12 +21,11 @@ final class JavaTypeName {
     private final boolean extendsWildcard;
     private final boolean superWildcard;
 
-    private JavaTypeName(
-            String rawType,
-            List<JavaTypeName> arguments,
-            boolean wildcard,
-            boolean extendsWildcard,
-            boolean superWildcard) {
+    private JavaTypeName(String rawType,
+                         List<JavaTypeName> arguments,
+                         boolean wildcard,
+                         boolean extendsWildcard,
+                         boolean superWildcard) {
         this.rawType = Objects.requireNonNull(rawType, "rawType");
         this.arguments = List.copyOf(arguments);
         this.wildcard = wildcard;
@@ -73,7 +72,8 @@ final class JavaTypeName {
         if (type instanceof WildcardType wildcardType) {
             Type[] lowerBounds = wildcardType.getLowerBounds();
             if (lowerBounds.length > 0) {
-                return new JavaTypeName(from(lowerBounds[0]).rawType, from(lowerBounds[0]).arguments, true, false, true);
+                return new JavaTypeName(from(lowerBounds[0]).rawType, from(lowerBounds[0]).arguments, true, false,
+                        true);
             }
             Type[] upperBounds = wildcardType.getUpperBounds();
             if (upperBounds.length > 0 && !Object.class.equals(upperBounds[0])) {
@@ -129,10 +129,8 @@ final class JavaTypeName {
     }
 
     boolean isIterableLike() {
-        return "java.lang.Iterable".equals(rawType)
-                || "java.util.Collection".equals(rawType)
-                || "java.util.List".equals(rawType)
-                || "java.util.Set".equals(rawType);
+        return "java.lang.Iterable".equals(rawType) || "java.util.Collection".equals(rawType)
+                || "java.util.List".equals(rawType) || "java.util.Set".equals(rawType);
     }
 
     JavaTypeName firstArgumentOrObject() {
@@ -165,10 +163,8 @@ final class JavaTypeName {
         if (!(o instanceof JavaTypeName that)) {
             return false;
         }
-        return wildcard == that.wildcard
-                && extendsWildcard == that.extendsWildcard
-                && superWildcard == that.superWildcard
-                && rawType.equals(that.rawType)
+        return wildcard == that.wildcard && extendsWildcard == that.extendsWildcard
+                && superWildcard == that.superWildcard && rawType.equals(that.rawType)
                 && arguments.equals(that.arguments);
     }
 
@@ -183,6 +179,25 @@ final class JavaTypeName {
 
         private Parser(String value) {
             this.value = value;
+        }
+
+        private static String normalize(String raw) {
+            return switch (raw) {
+                case "String" -> "java.lang.String";
+                case "Integer" -> "java.lang.Integer";
+                case "Long" -> "java.lang.Long";
+                case "Boolean" -> "java.lang.Boolean";
+                case "Double" -> "java.lang.Double";
+                case "Float" -> "java.lang.Float";
+                case "Short" -> "java.lang.Short";
+                case "Byte" -> "java.lang.Byte";
+                case "Character" -> "java.lang.Character";
+                case "Object" -> "java.lang.Object";
+                case "List" -> "java.util.List";
+                case "Set" -> "java.util.Set";
+                case "Map" -> "java.util.Map";
+                default -> raw;
+            };
         }
 
         JavaTypeName parseType() {
@@ -239,25 +254,6 @@ final class JavaTypeName {
             while (index < value.length() && Character.isWhitespace(value.charAt(index))) {
                 index++;
             }
-        }
-
-        private static String normalize(String raw) {
-            return switch (raw) {
-                case "String" -> "java.lang.String";
-                case "Integer" -> "java.lang.Integer";
-                case "Long" -> "java.lang.Long";
-                case "Boolean" -> "java.lang.Boolean";
-                case "Double" -> "java.lang.Double";
-                case "Float" -> "java.lang.Float";
-                case "Short" -> "java.lang.Short";
-                case "Byte" -> "java.lang.Byte";
-                case "Character" -> "java.lang.Character";
-                case "Object" -> "java.lang.Object";
-                case "List" -> "java.util.List";
-                case "Set" -> "java.util.Set";
-                case "Map" -> "java.util.Map";
-                default -> raw;
-            };
         }
     }
 }

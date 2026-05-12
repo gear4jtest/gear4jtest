@@ -1,13 +1,14 @@
 package io.github.gear4jtest.core.spi.extension;
 
-import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.AssemblyLine;
-import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.ExecutionResult;
+import io.github.gear4jtest.core.api.RunRequest;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 /**
- * Base class optionnelle pour écrire des extensions façon "hooks" (onStart/onResult/onException/onEnd)
- * tout en restant compatible avec le modèle middleware.
+ * Base class optionnelle pour écrire des extensions façon "hooks"
+ * (onStart/onResult/onException/onEnd) tout en restant compatible avec le
+ * modèle middleware.
  */
 public abstract class AbstractRunHooksExtension implements RunInterceptorExtension {
 
@@ -34,17 +35,22 @@ public abstract class AbstractRunHooksExtension implements RunInterceptorExtensi
     }
 
     /**
-     * Appelé même si le résultat représente un échec fonctionnel (ExecutionResult.failure)
+     * Appelé même si le résultat représente un échec fonctionnel
+     * (ExecutionResult.failure)
      */
-    protected void onResult(
-            AssemblyLine<?, ?> pipeline, RunRequest request, ExecutionContext ctx, ExecutionResult<?> result) {
+    protected void onResult(AssemblyLine<?, ?> pipeline,
+                            RunRequest request,
+                            ExecutionContext ctx,
+                            ExecutionResult<?> result) {
     }
 
     /**
      * Appelé uniquement sur exception non gérée (crash).
      */
-    protected void onException(
-            AssemblyLine<?, ?> pipeline, RunRequest request, ExecutionContext ctx, RuntimeException error) {
+    protected void onException(AssemblyLine<?, ?> pipeline,
+                               RunRequest request,
+                               ExecutionContext ctx,
+                               RuntimeException error) {
     }
 
     protected void onEnd(AssemblyLine<?, ?> pipeline, RunRequest request, ExecutionContext ctx) {

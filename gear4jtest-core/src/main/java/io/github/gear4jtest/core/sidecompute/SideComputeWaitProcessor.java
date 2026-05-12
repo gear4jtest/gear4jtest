@@ -5,24 +5,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
-import io.github.gear4jtest.core.exception.SideComputeExecutionException;
-import io.github.gear4jtest.core.exception.SideComputeTimeoutException;
+import io.github.gear4jtest.core.api.behavior.Processor;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.behavior.Processor;
+import io.github.gear4jtest.core.exception.SideComputeExecutionException;
+import io.github.gear4jtest.core.exception.SideComputeTimeoutException;
 
 public final class SideComputeWaitProcessor implements Processor {
-
-    @Override
-    public FailureMode beforeExecutionFailureMode() {
-        return FailureMode.FAIL_STATION;
-    }
-
-    public enum OnTimeout {
-        FAIL_PIPELINE,
-        USE_FALLBACK,
-        IGNORE
-    }
 
     private final String key;
     private final Duration timeout;
@@ -40,42 +29,9 @@ public final class SideComputeWaitProcessor implements Processor {
         return new Builder(key);
     }
 
-    public static final class Builder {
-        private final String key;
-        private Duration timeout;
-        private OnTimeout onTimeout = OnTimeout.FAIL_PIPELINE;
-        private Supplier<?> fallback;
-
-        private Builder(String key) {
-            this.key = key;
-        }
-
-        public Builder timeout(Duration timeout) {
-            this.timeout = timeout;
-            return this;
-        }
-
-        public Builder onTimeoutFail() {
-            this.onTimeout = OnTimeout.FAIL_PIPELINE;
-            this.fallback = null;
-            return this;
-        }
-
-        public Builder onTimeoutUseFallback(Supplier<?> fallback) {
-            this.onTimeout = OnTimeout.USE_FALLBACK;
-            this.fallback = fallback;
-            return this;
-        }
-
-        public Builder onTimeoutIgnore() {
-            this.onTimeout = OnTimeout.IGNORE;
-            this.fallback = null;
-            return this;
-        }
-
-        public SideComputeWaitProcessor build() {
-            return new SideComputeWaitProcessor(this);
-        }
+    @Override
+    public FailureMode beforeExecutionFailureMode() {
+        return FailureMode.FAIL_STATION;
     }
 
     @Override
@@ -117,5 +73,47 @@ public final class SideComputeWaitProcessor implements Processor {
     @Override
     public void afterExecution(Object result, StationExecutionContext context) {
         // Rien ici – la valeur est dans le context global, dispo pour les paramètres.
+    }
+
+    public enum OnTimeout {
+        FAIL_PIPELINE, USE_FALLBACK, IGNORE
+    }
+
+    public static final class Builder {
+        private final String key;
+        private Duration timeout;
+        private OnTimeout onTimeout = OnTimeout.FAIL_PIPELINE;
+        private Supplier<?> fallback;
+
+        private Builder(String key) {
+            this.key = key;
+        }
+
+        public Builder timeout(Duration timeout) {
+            this.timeout = timeout;
+            return this;
+        }
+
+        public Builder onTimeoutFail() {
+            this.onTimeout = OnTimeout.FAIL_PIPELINE;
+            this.fallback = null;
+            return this;
+        }
+
+        public Builder onTimeoutUseFallback(Supplier<?> fallback) {
+            this.onTimeout = OnTimeout.USE_FALLBACK;
+            this.fallback = fallback;
+            return this;
+        }
+
+        public Builder onTimeoutIgnore() {
+            this.onTimeout = OnTimeout.IGNORE;
+            this.fallback = null;
+            return this;
+        }
+
+        public SideComputeWaitProcessor build() {
+            return new SideComputeWaitProcessor(this);
+        }
     }
 }

@@ -1,18 +1,17 @@
 package io.github.gear4jtest.core.sidecompute;
 
-import io.github.gear4jtest.core.model.StationLogStatus;
-
-import io.github.gear4jtest.core.event.Event;
-import io.github.gear4jtest.core.event.EventSubscription;
-import io.github.gear4jtest.core.event.StationFinishedEvent;
-import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import io.github.gear4jtest.core.event.Event;
+import io.github.gear4jtest.core.event.EventSubscription;
+import io.github.gear4jtest.core.event.StationFinishedEvent;
+import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
+import io.github.gear4jtest.core.model.StationLogStatus;
 
 public final class SideComputer<E extends Event, T, R> {
 
@@ -23,13 +22,12 @@ public final class SideComputer<E extends Event, T, R> {
     private final Function<T, R> mapper;
     private final List<SideComputeHandler<E, T>> handlers;
 
-    private SideComputer(
-            Class<E> eventType,
-            Predicate<E> trigger,
-            String key,
-            Function<E, T> computer,
-            Function<T, R> mapper,
-            List<SideComputeHandler<E, T>> handlers) {
+    private SideComputer(Class<E> eventType,
+                         Predicate<E> trigger,
+                         String key,
+                         Function<E, T> computer,
+                         Function<T, R> mapper,
+                         List<SideComputeHandler<E, T>> handlers) {
         this.eventType = Objects.requireNonNull(eventType, "eventType");
         this.trigger = trigger != null ? trigger : __ -> true;
         this.key = Objects.requireNonNull(key, "key");
@@ -43,7 +41,8 @@ public final class SideComputer<E extends Event, T, R> {
     }
 
     public static <T> Builder<StationFinishedEvent, T, T> onStationFinished(String operationId, String key) {
-        Builder<StationFinishedEvent, T, T> builder = SideComputer.<StationFinishedEvent, T>onEvent(StationFinishedEvent.class, key);
+        Builder<StationFinishedEvent, T, T> builder = SideComputer
+                .<StationFinishedEvent, T>onEvent(StationFinishedEvent.class, key);
         return builder.filter(event -> operationId.equals(event.getOperationId()));
     }
 
@@ -55,13 +54,12 @@ public final class SideComputer<E extends Event, T, R> {
         return onStationStatus(operationId, StationLogStatus.FAILED, key);
     }
 
-    public static <T> Builder<StationFinishedEvent, T, T> onStationStatus(
-            String operationId,
-            StationLogStatus status,
-            String key) {
-        Builder<StationFinishedEvent, T, T> builder = SideComputer.<StationFinishedEvent, T>onEvent(StationFinishedEvent.class, key);
-        return builder
-                .filter(event -> operationId.equals(event.getOperationId()))
+    public static <T> Builder<StationFinishedEvent, T, T> onStationStatus(String operationId,
+                                                                          StationLogStatus status,
+                                                                          String key) {
+        Builder<StationFinishedEvent, T, T> builder = SideComputer
+                .<StationFinishedEvent, T>onEvent(StationFinishedEvent.class, key);
+        return builder.filter(event -> operationId.equals(event.getOperationId()))
                 .filter(event -> event.getStatus() == status);
     }
 
@@ -98,11 +96,11 @@ public final class SideComputer<E extends Event, T, R> {
 
         private final Class<E> eventType;
         private final String key;
+        private final List<SideComputeHandler<E, T>> handlers = new ArrayList<>();
         private Predicate<E> trigger = __ -> true;
         private Function<E, T> computer;
         @SuppressWarnings("unchecked")
         private Function<T, R> mapper = value -> (R) value;
-        private final List<SideComputeHandler<E, T>> handlers = new ArrayList<>();
 
         private Builder(Class<E> eventType, String key) {
             this.eventType = Objects.requireNonNull(eventType, "eventType");

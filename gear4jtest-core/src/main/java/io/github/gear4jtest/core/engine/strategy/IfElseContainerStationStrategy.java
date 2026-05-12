@@ -1,16 +1,22 @@
 package io.github.gear4jtest.core.engine.strategy;
 
-import io.github.gear4jtest.core.model.StationLogStatus;
-
 import io.github.gear4jtest.core.api.config.FlowConfig;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.api.station.UnaryIfElseContainerStation;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class IfElseContainerStationStrategy extends AbstractStationStrategy<UnaryIfElseContainerStation<?>> {
+
+    @SuppressWarnings("unchecked")
+    private static <I> boolean evaluateBranchCondition(ContainerBaseStation.Branch<I> branch,
+                                                       Object input,
+                                                       StationExecutionContext ctx) {
+        return branch.getCondition().test((I) input, ctx.getGlobalContext());
+    }
 
     @Override
     public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
@@ -18,18 +24,16 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
     }
 
     @Override
-    public Object doExecute(
-            UnaryIfElseContainerStation<?> station,
-            Object input,
-            StationRunner runner,
-            StationExecutionContext operationExecution) {
+    public Object doExecute(UnaryIfElseContainerStation<?> station,
+                            Object input,
+                            StationRunner runner,
+                            StationExecutionContext operationExecution) {
 
         FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
         StationLogTrace selectedBranchLog = null;
 
         for (ContainerBaseStation.Branch<?> element : station.getPipelines()) {
-            if (element.getCondition() == null
-                    || evaluateBranchCondition(element, input, operationExecution)) {
+            if (element.getCondition() == null || evaluateBranchCondition(element, input, operationExecution)) {
                 Object newObject = clonePayload(input, operationExecution);
                 selectedBranchLog = runner.run(newObject, element.getStation(), operationExecution);
                 selectedBranchLog.setParentOperationId(operationExecution.getRecord().getId());
@@ -54,11 +58,5 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
 
         FlowStrategySupport.applyInterruptToParentLog(operationExecution.getRecord(), selectedBranchLog, config);
         return null;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <I> boolean evaluateBranchCondition(
-            ContainerBaseStation.Branch<I> branch, Object input, StationExecutionContext ctx) {
-        return branch.getCondition().test((I) input, ctx.getGlobalContext());
     }
 }

@@ -1,10 +1,5 @@
 package io.github.gear4jtest.core.api.config;
 
-import io.github.gear4jtest.core.event.Event;
-import io.github.gear4jtest.core.event.EventPayloadPolicy;
-import io.github.gear4jtest.core.event.EventReaction;
-import io.github.gear4jtest.core.event.EventSubscription;
-import io.github.gear4jtest.core.sidecompute.SideComputer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,16 +12,30 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import io.github.gear4jtest.core.event.Event;
+import io.github.gear4jtest.core.event.EventPayloadPolicy;
+import io.github.gear4jtest.core.event.EventReaction;
+import io.github.gear4jtest.core.event.EventSubscription;
+import io.github.gear4jtest.core.sidecompute.SideComputer;
+
 /**
- * Declarative configuration for the asynchronous event runtime attached to a pipeline.
+ * Declarative configuration for the asynchronous event runtime attached to a
+ * pipeline.
  *
- * <p>The event runtime is intentionally <strong>best-effort</strong>. Events are kept in memory and reactions are
- * submitted to an executor. The runtime does not provide durable persistence, transactional hand-off, replay,
- * or exactly-once guarantees. Callers that require guaranteed delivery must route events to a durable external
- * system instead of relying solely on the in-process runtime.</p>
+ * <p>
+ * The event runtime is intentionally <strong>best-effort</strong>. Events are
+ * kept in memory and reactions are submitted to an executor. The runtime does
+ * not provide durable persistence, transactional hand-off, replay, or
+ * exactly-once guarantees. Callers that require guaranteed delivery must route
+ * events to a durable external system instead of relying solely on the
+ * in-process runtime.
+ * </p>
  *
- * <p>When the reaction executor is saturated or shutting down, some reactions may be rejected and dropped. Those
- * drops are logged and exposed through {@code EventManager.snapshotStats()} for observability.</p>
+ * <p>
+ * When the reaction executor is saturated or shutting down, some reactions may
+ * be rejected and dropped. Those drops are logged and exposed through
+ * {@code EventManager.snapshotStats()} for observability.
+ * </p>
  */
 public class EventHandlingDefinition {
 
@@ -35,17 +44,20 @@ public class EventHandlingDefinition {
     private final EventConfiguration globalEventConfiguration;
     private final RuntimeConfiguration runtimeConfiguration;
 
-    private EventHandlingDefinition(
-            List<EventSubscription<?>> subscriptions,
-            List<SideComputer<?, ?, ?>> sideComputers,
-            EventConfiguration globalEventConfiguration,
-            RuntimeConfiguration runtimeConfiguration) {
+    private EventHandlingDefinition(List<EventSubscription<?>> subscriptions,
+                                    List<SideComputer<?, ?, ?>> sideComputers,
+                                    EventConfiguration globalEventConfiguration,
+                                    RuntimeConfiguration runtimeConfiguration) {
         this.subscriptions = subscriptions != null ? List.copyOf(subscriptions) : List.of();
         this.sideComputers = sideComputers != null ? List.copyOf(sideComputers) : List.of();
-        this.globalEventConfiguration =
-                globalEventConfiguration != null ? globalEventConfiguration : EventConfiguration.builder().build();
-        this.runtimeConfiguration =
-                runtimeConfiguration != null ? runtimeConfiguration : RuntimeConfiguration.builder().build();
+        this.globalEventConfiguration = globalEventConfiguration != null ? globalEventConfiguration
+                : EventConfiguration.builder().build();
+        this.runtimeConfiguration = runtimeConfiguration != null ? runtimeConfiguration
+                : RuntimeConfiguration.builder().build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
     }
 
     public List<EventSubscription<?>> getSubscriptions() {
@@ -66,10 +78,6 @@ public class EventHandlingDefinition {
 
     public boolean hasAsyncReactions() {
         return !subscriptions.isEmpty() || !sideComputers.isEmpty();
-    }
-
-    public static Builder builder() {
-        return new Builder();
     }
 
     public static class Builder {
@@ -108,8 +116,8 @@ public class EventHandlingDefinition {
         }
 
         public EventHandlingDefinition build() {
-            return new EventHandlingDefinition(
-                    subscriptions, sideComputers, globalEventConfiguration, runtimeConfiguration);
+            return new EventHandlingDefinition(subscriptions, sideComputers, globalEventConfiguration,
+                    runtimeConfiguration);
         }
     }
 
@@ -123,7 +131,12 @@ public class EventHandlingDefinition {
 
         private EventConfiguration(boolean eventOnParameterChanged, EventPayloadPolicy eventPayloadPolicy) {
             this.eventOnParameterChanged = eventOnParameterChanged;
-            this.eventPayloadPolicy = eventPayloadPolicy != null ? eventPayloadPolicy : EventPayloadPolicy.passthrough();
+            this.eventPayloadPolicy = eventPayloadPolicy != null ? eventPayloadPolicy
+                    : EventPayloadPolicy.passthrough();
+        }
+
+        public static Builder builder() {
+            return new Builder();
         }
 
         public boolean isEventOnParameterChanged() {
@@ -132,10 +145,6 @@ public class EventHandlingDefinition {
 
         public EventPayloadPolicy getEventPayloadPolicy() {
             return eventPayloadPolicy;
-        }
-
-        public static Builder builder() {
-            return new Builder();
         }
 
         public static class Builder {
@@ -162,39 +171,44 @@ public class EventHandlingDefinition {
     /**
      * Runtime configuration of the asynchronous event dispatcher.
      *
-     * <p>Unless an explicit executor is provided, the runtime uses a shared bounded executor across runs. This
-     * default favors predictable resource usage over guaranteed acceptance. If the executor saturates, reactions
-     * may be rejected and dropped.</p>
+     * <p>
+     * Unless an explicit executor is provided, the runtime uses a shared bounded
+     * executor across runs. This default favors predictable resource usage over
+     * guaranteed acceptance. If the executor saturates, reactions may be rejected
+     * and dropped.
+     * </p>
      */
     public static class RuntimeConfiguration {
 
-        /**
-         * Shutdown behavior for the asynchronous event runtime.
-         */
-        public enum ShutdownMode {
-            WAIT_FOR_DRAIN,
-            DETACH_AND_DRAIN,
-            CANCEL_PENDING_TASKS
-        }
-
-        public record ExecutorHandle(ExecutorService executorService, boolean shutdownOnClose) {}
-
         private static final ExecutorService DEFAULT_SHARED_REACTION_EXECUTOR = createDefaultSharedReactionExecutor();
-
         private final Supplier<ExecutorService> perRunReactionExecutorFactory;
         private final ExecutorService sharedReactionExecutor;
         private final Duration shutdownTimeout;
         private final ShutdownMode shutdownMode;
 
-        private RuntimeConfiguration(
-                Supplier<ExecutorService> perRunReactionExecutorFactory,
-                ExecutorService sharedReactionExecutor,
-                Duration shutdownTimeout,
-                ShutdownMode shutdownMode) {
+        private RuntimeConfiguration(Supplier<ExecutorService> perRunReactionExecutorFactory,
+                                     ExecutorService sharedReactionExecutor,
+                                     Duration shutdownTimeout,
+                                     ShutdownMode shutdownMode) {
             this.perRunReactionExecutorFactory = perRunReactionExecutorFactory;
             this.sharedReactionExecutor = sharedReactionExecutor;
             this.shutdownTimeout = shutdownTimeout != null ? shutdownTimeout : Duration.ofSeconds(10);
             this.shutdownMode = shutdownMode != null ? shutdownMode : ShutdownMode.WAIT_FOR_DRAIN;
+        }
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        private static ExecutorService createDefaultSharedReactionExecutor() {
+            int processors = Math.max(2, Runtime.getRuntime().availableProcessors());
+            int corePoolSize = Math.min(processors, 8);
+            int maximumPoolSize = Math.max(corePoolSize, corePoolSize * 4);
+            ThreadPoolExecutor executor = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, 60L, TimeUnit.SECONDS,
+                    new LinkedBlockingQueue<>(2048), new Gear4jEventThreadFactory(),
+                    new ThreadPoolExecutor.AbortPolicy());
+            executor.allowCoreThreadTimeOut(true);
+            return executor;
         }
 
         public ExecutorHandle acquireReactionExecutor() {
@@ -215,24 +229,14 @@ public class EventHandlingDefinition {
             return shutdownMode;
         }
 
-        public static Builder builder() {
-            return new Builder();
+        /**
+         * Shutdown behavior for the asynchronous event runtime.
+         */
+        public enum ShutdownMode {
+            WAIT_FOR_DRAIN, DETACH_AND_DRAIN, CANCEL_PENDING_TASKS
         }
 
-        private static ExecutorService createDefaultSharedReactionExecutor() {
-            int processors = Math.max(2, Runtime.getRuntime().availableProcessors());
-            int corePoolSize = Math.min(processors, 8);
-            int maximumPoolSize = Math.max(corePoolSize, corePoolSize * 4);
-            ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                    corePoolSize,
-                    maximumPoolSize,
-                    60L,
-                    TimeUnit.SECONDS,
-                    new LinkedBlockingQueue<>(2048),
-                    new Gear4jEventThreadFactory(),
-                    new ThreadPoolExecutor.AbortPolicy());
-            executor.allowCoreThreadTimeOut(true);
-            return executor;
+        public record ExecutorHandle(ExecutorService executorService, boolean shutdownOnClose) {
         }
 
         private static final class Gear4jEventThreadFactory implements ThreadFactory {
@@ -257,9 +261,11 @@ public class EventHandlingDefinition {
             /**
              * Backward-compatible alias for configuring one dedicated executor per run.
              *
-             * <p>A per-run executor provides stronger isolation between runs, but it also means more executors are
-             * created over time. Reactions still remain best-effort and may be dropped if the executor rejects
-             * submissions.</p>
+             * <p>
+             * A per-run executor provides stronger isolation between runs, but it also
+             * means more executors are created over time. Reactions still remain
+             * best-effort and may be dropped if the executor rejects submissions.
+             * </p>
              */
             public Builder reactionExecutorFactory(Supplier<ExecutorService> reactionExecutorFactory) {
                 return perRunReactionExecutorFactory(reactionExecutorFactory);
@@ -268,12 +274,14 @@ public class EventHandlingDefinition {
             /**
              * Configures one dedicated reaction executor per run.
              *
-             * <p>This can be useful when runs must not share capacity. The caller remains responsible for choosing
-             * a suitable bounded or unbounded strategy.</p>
+             * <p>
+             * This can be useful when runs must not share capacity. The caller remains
+             * responsible for choosing a suitable bounded or unbounded strategy.
+             * </p>
              */
             public Builder perRunReactionExecutorFactory(Supplier<ExecutorService> reactionExecutorFactory) {
-                this.perRunReactionExecutorFactory =
-                        Objects.requireNonNull(reactionExecutorFactory, "reactionExecutorFactory");
+                this.perRunReactionExecutorFactory = Objects.requireNonNull(reactionExecutorFactory,
+                                                                            "reactionExecutorFactory");
                 this.sharedReactionExecutor = null;
                 return this;
             }
@@ -281,9 +289,11 @@ public class EventHandlingDefinition {
             /**
              * Configures a shared reaction executor reused across runs.
              *
-             * <p>This is the recommended model for most applications because it avoids creating one pool per run and
-             * makes global capacity easier to reason about. If the shared executor saturates, reactions may be
-             * rejected and dropped.</p>
+             * <p>
+             * This is the recommended model for most applications because it avoids
+             * creating one pool per run and makes global capacity easier to reason about.
+             * If the shared executor saturates, reactions may be rejected and dropped.
+             * </p>
              */
             public Builder sharedReactionExecutor(ExecutorService sharedReactionExecutor) {
                 this.sharedReactionExecutor = Objects.requireNonNull(sharedReactionExecutor, "sharedReactionExecutor");
@@ -299,8 +309,11 @@ public class EventHandlingDefinition {
             /**
              * Configures how shutdown behaves once the pipeline itself has completed.
              *
-             * <p>Drain modes wait for or detach from already accepted work. They do not upgrade the runtime to
-             * guaranteed delivery: a saturated executor may still have rejected some reactions earlier.</p>
+             * <p>
+             * Drain modes wait for or detach from already accepted work. They do not
+             * upgrade the runtime to guaranteed delivery: a saturated executor may still
+             * have rejected some reactions earlier.
+             * </p>
              */
             public Builder shutdownMode(ShutdownMode shutdownMode) {
                 this.shutdownMode = shutdownMode;
@@ -308,10 +321,7 @@ public class EventHandlingDefinition {
             }
 
             public RuntimeConfiguration build() {
-                return new RuntimeConfiguration(
-                        perRunReactionExecutorFactory,
-                        sharedReactionExecutor,
-                        shutdownTimeout,
+                return new RuntimeConfiguration(perRunReactionExecutorFactory, sharedReactionExecutor, shutdownTimeout,
                         shutdownMode);
             }
         }

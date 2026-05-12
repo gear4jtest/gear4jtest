@@ -1,19 +1,20 @@
 package io.github.gear4jtest.core.extras.pipelinecache;
 
-import io.github.gear4jtest.core.api.RunRequest;
-import io.github.gear4jtest.core.spi.extension.ExecutorWrapperExtension;
-import io.github.gear4jtest.core.spi.extension.RunInterceptorExtension;
-import io.github.gear4jtest.core.extras.history.CacheTrackerPropagatingExecutor;
-import io.github.gear4jtest.core.extras.history.CacheTrackerScope;
-import io.github.gear4jtest.core.extras.history.DefaultExpirableDependencyTracker;
-import io.github.gear4jtest.core.extras.history.ExpirableDependencyTracker;
-import io.github.gear4jtest.core.api.AssemblyLine;
-import io.github.gear4jtest.core.api.context.ExecutionContext;
-import io.github.gear4jtest.core.api.ExecutionResult;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
+
+import io.github.gear4jtest.core.api.AssemblyLine;
+import io.github.gear4jtest.core.api.ExecutionResult;
+import io.github.gear4jtest.core.api.RunRequest;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.extras.history.CacheTrackerPropagatingExecutor;
+import io.github.gear4jtest.core.extras.history.CacheTrackerScope;
+import io.github.gear4jtest.core.extras.history.DefaultExpirableDependencyTracker;
+import io.github.gear4jtest.core.extras.history.ExpirableDependencyTracker;
+import io.github.gear4jtest.core.spi.extension.ExecutorWrapperExtension;
+import io.github.gear4jtest.core.spi.extension.RunInterceptorExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,10 +26,9 @@ public class PipelineCacheExtension implements RunInterceptorExtension, Executor
     private final PipelineCacheKeyFactory keyFactory;
     private final PipelineCacheRepository repository;
 
-    public PipelineCacheExtension(
-            PipelineCachePolicy policy,
-            PipelineCacheKeyFactory keyFactory,
-            PipelineCacheRepository repository) {
+    public PipelineCacheExtension(PipelineCachePolicy policy,
+                                  PipelineCacheKeyFactory keyFactory,
+                                  PipelineCacheRepository repository) {
         this.policy = Objects.requireNonNull(policy, "policy");
         this.keyFactory = Objects.requireNonNull(keyFactory, "keyFactory");
         this.repository = Objects.requireNonNull(repository, "repository");
@@ -40,22 +40,16 @@ public class PipelineCacheExtension implements RunInterceptorExtension, Executor
     }
 
     @Override
-    public <IN, OUT> ExecutionResult<OUT> aroundRun(
-            AssemblyLine<IN, OUT> pipeline,
-            RunRequest request,
-            ExecutionContext ctx,
-            RunChain<IN, OUT> chain) {
+    public <IN, OUT> ExecutionResult<OUT> aroundRun(AssemblyLine<IN, OUT> pipeline,
+                                                    RunRequest request,
+                                                    ExecutionContext ctx,
+                                                    RunChain<IN, OUT> chain) {
 
         if (!policy.enabled()) {
             return chain.proceed();
         }
 
-        PipelineCacheKey key =
-                keyFactory.create(
-                        pipeline.getId(),
-                        pipeline.getVersion(),
-                        request.getInput(),
-                        ctx);
+        PipelineCacheKey key = keyFactory.create(pipeline.getId(), pipeline.getVersion(), request.getInput(), ctx);
 
         ctx.put(PipelineCacheRuntimeKeys.CACHE_KEY, key);
 
@@ -67,11 +61,8 @@ public class PipelineCacheExtension implements RunInterceptorExtension, Executor
             ctx.getPipelineExecution().setStatus(io.github.gear4jtest.core.persistence.ExecutionStatus.SUCCEEDED);
             ctx.getPipelineExecution().setResult(output);
 
-            LOGGER.debug(
-                    "Pipeline cache hit. pipelineId={}, version={}, executionId={}",
-                    pipeline.getId(),
-                    pipeline.getVersion(),
-                    ctx.getExecutionId());
+            LOGGER.debug("Pipeline cache hit. pipelineId={}, version={}, executionId={}", pipeline.getId(),
+                         pipeline.getVersion(), ctx.getExecutionId());
 
             return ExecutionResult.success(output, ctx.getPipelineExecution());
         }
@@ -101,17 +92,14 @@ public class PipelineCacheExtension implements RunInterceptorExtension, Executor
         return new CacheTrackerPropagatingExecutor(delegate);
     }
 
-    private <OUT> void saveIfEligible(
-            OUT output,
-            ExecutionContext ctx,
-            PipelineCacheKey key,
-            ExpirableDependencyTracker tracker) {
+    private <OUT> void saveIfEligible(OUT output,
+                                      ExecutionContext ctx,
+                                      PipelineCacheKey key,
+                                      ExpirableDependencyTracker tracker) {
 
         if (!tracker.isCacheable()) {
-            LOGGER.debug(
-                    "Pipeline cache skipped because some dependencies had no expiry. pipelineId={}, missingKeys={}",
-                    ctx.getPipelineId(),
-                    tracker.getMissingExpiryKeys());
+            LOGGER.debug("Pipeline cache skipped because some dependencies had no expiry. pipelineId={}, missingKeys={}",
+                         ctx.getPipelineId(), tracker.getMissingExpiryKeys());
             return;
         }
 
@@ -120,23 +108,18 @@ public class PipelineCacheExtension implements RunInterceptorExtension, Executor
 
         if (expiresAtOpt.isEmpty()) {
             if (policy.noDependencyCachePolicy() == NoDependencyCachePolicy.DO_NOT_CACHE) {
-                LOGGER.debug(
-                        "Pipeline cache skipped because no expirable dependency was recorded. pipelineId={}",
-                        ctx.getPipelineId());
+                LOGGER.debug("Pipeline cache skipped because no expirable dependency was recorded. pipelineId={}",
+                             ctx.getPipelineId());
                 return;
             }
             expiresAtOpt = Optional.of(now.plus(policy.defaultTtl()));
         }
 
-        PipelineCacheEntry<OUT> entry =
-                new PipelineCacheEntry<>(key, output, expiresAtOpt.get(), now);
+        PipelineCacheEntry<OUT> entry = new PipelineCacheEntry<>(key, output, expiresAtOpt.get(), now);
 
         repository.save(entry);
 
-        LOGGER.debug(
-                "Pipeline cache saved. pipelineId={}, executionId={}, expiresAt={}",
-                ctx.getPipelineId(),
-                ctx.getExecutionId(),
-                expiresAtOpt.get());
+        LOGGER.debug("Pipeline cache saved. pipelineId={}, executionId={}, expiresAt={}", ctx.getPipelineId(),
+                     ctx.getExecutionId(), expiresAtOpt.get());
     }
 }

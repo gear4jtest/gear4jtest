@@ -16,12 +16,15 @@ public class BaseError<T> {
     public Class<? extends Throwable> getThrowableType() {
         return throwableType;
     }
+
     public Condition<T> getCondition() {
         return condition;
     }
+
     public Runnable getAction() {
         return action;
     }
+
     public SignalType getSignalType() {
         return signalType;
     }

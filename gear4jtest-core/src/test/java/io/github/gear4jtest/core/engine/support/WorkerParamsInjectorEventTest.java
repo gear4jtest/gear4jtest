@@ -1,6 +1,10 @@
 package io.github.gear4jtest.core.engine.support;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.function.Function;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.ExecutionResult;
@@ -16,13 +20,9 @@ import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
 import io.github.gear4jtest.core.event.ParameterResolvedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
-import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
-import java.util.function.Function;
-
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class WorkerParamsInjectorEventTest {
 
@@ -33,20 +33,20 @@ class WorkerParamsInjectorEventTest {
         AssemblyLine<String, Integer> pipeline = ElementModelBuilders.<String>createAssemblyLine("param-events")
                 .configuration(AssemblyLine.Configuration.builder()
                         .eventHandling(EventHandlingDefinition.builder()
-                                .subscription(io.github.gear4jtest.core.event.EventSubscription.on(
-                                        ParameterResolvedEvent.class,
-                                        seenEvents::add))
+                                .subscription(io.github.gear4jtest.core.event.EventSubscription
+                                        .on(ParameterResolvedEvent.class, seenEvents::add))
                                 .globalEventConfiguration(EventHandlingDefinition.EventConfiguration.builder()
-                                        .eventOnParameterChanged(true)
-                                        .build())
+                                        .eventOnParameterChanged(true).build())
                                 .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
                                         .reactionExecutorFactory(Executors::newSingleThreadExecutor)
-                                        .shutdownTimeout(Duration.ofSeconds(2))
-                                        .build())
+                                        .shutdownTimeout(Duration.ofSeconds(2)).build())
                                 .build())
                         .build())
-                .then(ElementModelBuilders.<String, Integer, ParamEchoOperator>processingOperation("step-1", ParamEchoOperator.class)
-                        .parameter(ParamEchoOperator::getLengthParam, (Function<WorkerParamsInjector.InterpretationContext<String>, Integer>) ctx -> ctx.getItem().length())
+                .then(ElementModelBuilders
+                        .<String, Integer, ParamEchoOperator>processingOperation("step-1", ParamEchoOperator.class)
+                        .parameter(ParamEchoOperator::getLengthParam,
+                                   (Function<WorkerParamsInjector.InterpretationContext<String>, Integer>) ctx -> ctx
+                                           .getItem().length())
                         .build())
                 .build();
 
@@ -54,8 +54,7 @@ class WorkerParamsInjectorEventTest {
                 .runnerChainFactory(new RunnerChainFactory(StrategyRegistry.defaultRegistry()))
                 .resourceFactory(new SingleResourceFactory(new ParamEchoOperator()))
                 .extensionResolver(new RuntimeExtensionResolver(List.of()))
-                .executionContextRegistry(new ExecutionContextRegistry())
-                .build();
+                .executionContextRegistry(new ExecutionContextRegistry()).build();
 
         ExecutionResult<Integer> result = engine.execute(pipeline, RunRequest.builder().input("abcd").build());
 
@@ -68,8 +67,8 @@ class WorkerParamsInjectorEventTest {
     }
 
     static final class ParamEchoOperator implements Operator<String, Integer> {
-        private final WorkerParamsInjector.Parameter<Integer> lengthParam =
-                WorkerParamsInjector.Parameter.<Integer>newBuilder().build();
+        private final WorkerParamsInjector.Parameter<Integer> lengthParam = WorkerParamsInjector.Parameter
+                .<Integer>newBuilder().build();
 
         @Override
         public Integer transform(String input, StationExecutionContext operationExecution) {

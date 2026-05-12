@@ -1,19 +1,20 @@
 package io.github.gear4jtest.core.event;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
-import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class EventManagerTest {
 
@@ -26,33 +27,23 @@ class EventManagerTest {
                 .subscription(EventSubscription.on(StationStartedEvent.class, event -> {
                     handled.add("started:" + event.getOperationId());
                     latch.countDown();
-                }))
-                .subscription(EventSubscription.on(ParameterResolvedEvent.class, event -> {
+                })).subscription(EventSubscription.on(ParameterResolvedEvent.class, event -> {
                     handled.add("param:" + event.getParameterDescriptor());
                     latch.countDown();
                 }))
                 .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
                         .reactionExecutorFactory(Executors::newSingleThreadExecutor)
-                        .shutdownTimeout(Duration.ofSeconds(2))
-                        .build())
+                        .shutdownTimeout(Duration.ofSeconds(2)).build())
                 .build();
 
         EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
         UUID executionId = UUID.randomUUID();
 
         try {
-            manager.publish(new StationStartedEvent(
-                    "pipe", executionId, UUID.randomUUID(), "step-1", null, "item-1", "input"));
-            manager.publish(new ParameterResolvedEvent(
-                    "pipe",
-                    executionId,
-                    UUID.randomUUID(),
-                    "step-1",
-                    null,
-                    "item-1",
-                    "customer",
-                    false,
-                    String.class.getName()));
+            manager.publish(new StationStartedEvent("pipe", executionId, UUID.randomUUID(), "step-1", null, "item-1",
+                    "input"));
+            manager.publish(new ParameterResolvedEvent("pipe", executionId, UUID.randomUUID(), "step-1", null, "item-1",
+                    "customer", false, String.class.getName()));
             manager.publish(new Event("pipe", executionId));
 
             assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
@@ -68,18 +59,14 @@ class EventManagerTest {
         CountDownLatch completed = new CountDownLatch(1);
         List<String> handled = new CopyOnWriteArrayList<>();
 
-        EventHandlingDefinition definition = EventHandlingDefinition.builder()
-                .on(Event.class, event -> {
-                    started.countDown();
-                    Thread.sleep(150);
-                    handled.add(event.getName());
-                    completed.countDown();
-                })
-                .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
-                        .reactionExecutorFactory(Executors::newSingleThreadExecutor)
-                        .shutdownTimeout(Duration.ofSeconds(2))
-                        .build())
-                .build();
+        EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
+            started.countDown();
+            Thread.sleep(150);
+            handled.add(event.getName());
+            completed.countDown();
+        }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                .reactionExecutorFactory(Executors::newSingleThreadExecutor).shutdownTimeout(Duration.ofSeconds(2))
+                .build()).build();
 
         EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
         try {
@@ -100,16 +87,12 @@ class EventManagerTest {
         CountDownLatch started = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
 
-        EventHandlingDefinition definition = EventHandlingDefinition.builder()
-                .on(Event.class, event -> {
-                    started.countDown();
-                    assertThat(release.await(2, TimeUnit.SECONDS)).isTrue();
-                })
-                .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
-                        .reactionExecutorFactory(Executors::newSingleThreadExecutor)
-                        .shutdownTimeout(Duration.ofSeconds(2))
-                        .shutdownMode(EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.DETACH_AND_DRAIN)
-                        .build())
+        EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
+            started.countDown();
+            assertThat(release.await(2, TimeUnit.SECONDS)).isTrue();
+        }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                .reactionExecutorFactory(Executors::newSingleThreadExecutor).shutdownTimeout(Duration.ofSeconds(2))
+                .shutdownMode(EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.DETACH_AND_DRAIN).build())
                 .build();
 
         EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
@@ -128,40 +111,32 @@ class EventManagerTest {
 
     @Test
     void publish_shouldDoNothingWhenDefinitionHasNoSubscriptions() {
-        EventManager manager = new EventManager(EventHandlingDefinition.builder().build(), new ExecutionContextRegistry());
+        EventManager manager = new EventManager(EventHandlingDefinition.builder().build(),
+                new ExecutionContextRegistry());
         manager.publish(new Event("pipe", UUID.randomUUID(), "IGNORED"));
         manager.shutdown();
         assertThat(true).isTrue();
     }
+
     @Test
     void snapshotStats_shouldExposeDroppedAndFailedReactionsUnderSaturation() throws Exception {
         CountDownLatch firstReactionStarted = new CountDownLatch(1);
         CountDownLatch releaseFirstReaction = new CountDownLatch(1);
 
-        ThreadPoolExecutor sharedExecutor = new ThreadPoolExecutor(
-                1,
-                1,
-                0L,
-                TimeUnit.MILLISECONDS,
-                new ArrayBlockingQueue<>(1),
-                new ThreadPoolExecutor.AbortPolicy());
+        ThreadPoolExecutor sharedExecutor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(1), new ThreadPoolExecutor.AbortPolicy());
 
-        EventHandlingDefinition definition = EventHandlingDefinition.builder()
-                .on(Event.class, event -> {
-                    if ("BLOCK".equals(event.getName())) {
-                        firstReactionStarted.countDown();
-                        assertThat(releaseFirstReaction.await(2, TimeUnit.SECONDS)).isTrue();
-                        return;
-                    }
-                    if ("FAIL".equals(event.getName())) {
-                        throw new IllegalStateException("boom");
-                    }
-                })
-                .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
-                        .sharedReactionExecutor(sharedExecutor)
-                        .shutdownTimeout(Duration.ofSeconds(2))
-                        .build())
-                .build();
+        EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
+            if ("BLOCK".equals(event.getName())) {
+                firstReactionStarted.countDown();
+                assertThat(releaseFirstReaction.await(2, TimeUnit.SECONDS)).isTrue();
+                return;
+            }
+            if ("FAIL".equals(event.getName())) {
+                throw new IllegalStateException("boom");
+            }
+        }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                .sharedReactionExecutor(sharedExecutor).shutdownTimeout(Duration.ofSeconds(2)).build()).build();
 
         EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
         try {

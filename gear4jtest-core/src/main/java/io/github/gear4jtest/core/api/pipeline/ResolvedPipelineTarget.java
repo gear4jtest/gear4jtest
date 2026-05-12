@@ -1,16 +1,17 @@
 package io.github.gear4jtest.core.api.pipeline;
 
-import io.github.gear4jtest.core.api.AssemblyLine;
 import java.util.Objects;
 import java.util.Optional;
 
+import io.github.gear4jtest.core.api.AssemblyLine;
+
 /**
- * Runtime target produced after a declarative reference has been resolved by a compiler/loader.
+ * Runtime target produced after a declarative reference has been resolved by a
+ * compiler/loader.
  */
-public record ResolvedPipelineTarget<IN, OUT>(
-        PipelineReference declaredReference,
-        PipelineReference resolvedReference,
-        AssemblyLine<IN, OUT> pipeline)
+public record ResolvedPipelineTarget<IN, OUT>(PipelineReference declaredReference,
+                                              PipelineReference resolvedReference,
+                                              AssemblyLine<IN, OUT> pipeline)
         implements PipelineTarget<IN, OUT> {
 
     public ResolvedPipelineTarget {

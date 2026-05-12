@@ -6,20 +6,21 @@ Implemented, evolving.
 
 ## Intent
 
-Runtime extensions let applications add behavior around Gear4J execution without hard-coding those concerns into the core engine.
+Runtime extensions let applications add behavior around Gear4J execution without hard-coding those concerns into the
+core engine.
 
 The SPI is intentionally split by scope. Avoid a single extension interface that can intercept everything.
 
 ## Extension types
 
-| Extension | Scope |
-| --- | --- |
-| `RuntimeExtension` | Base type and ordering contract. |
-| `RunInterceptorExtension` | Wraps the whole run with around-run behavior. |
-| `RunLifecycleExtension` | Observes run lifecycle events. |
-| `StationWrapperExtension` | Wraps station runners. |
-| `StationLifecycleExtension` | Observes station lifecycle events. |
-| `ExecutorWrapperExtension` | Decorates executors used by async runtime work. |
+| Extension                   | Scope                                           |
+|-----------------------------|-------------------------------------------------|
+| `RuntimeExtension`          | Base type and ordering contract.                |
+| `RunInterceptorExtension`   | Wraps the whole run with around-run behavior.   |
+| `RunLifecycleExtension`     | Observes run lifecycle events.                  |
+| `StationWrapperExtension`   | Wraps station runners.                          |
+| `StationLifecycleExtension` | Observes station lifecycle events.              |
+| `ExecutorWrapperExtension`  | Decorates executors used by async runtime work. |
 
 ## Ordering
 

@@ -1,17 +1,19 @@
 package io.github.gear4jtest.core.api.config;
 
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 
-import io.github.gear4jtest.core.execution.trace.StationLogTrace;
-
 /**
- * Normalise un {@link StationLogTrace} enfant en une {@link FlowDecision} selon une {@link FlowConfig}.
+ * Normalise un {@link StationLogTrace} enfant en une {@link FlowDecision} selon
+ * une {@link FlowConfig}.
  *
- * <p>Ce composant est stateless, pur et facilement testable.
+ * <p>
+ * Ce composant est stateless, pur et facilement testable.
  */
 public final class FlowDecider {
 
-    private FlowDecider() {}
+    private FlowDecider() {
+    }
 
     public static FlowDecision decide(StationLogTrace childLog, FlowConfig config) {
         StationLogStatus status = childLog.getStatus();

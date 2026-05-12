@@ -10,13 +10,8 @@ import java.util.UUID;
 
 public class StationLog {
 
-    public enum Status {
-        RUNNING, SKIPPED, SUCCEEDED, FAILED, STOPPED, CANCELLED
-    }
-
     private transient Object output;
     private transient List<Throwable> throwables;
-
     private UUID id;
     private UUID pipelineExecutionId;
     private String operationId;
@@ -30,9 +25,7 @@ public class StationLog {
     private List<StationLog> subOperations = Collections.synchronizedList(new ArrayList<>());
     private String itemId;
 
-    public static StationLog start(UUID pipelineExecutionId,
-                                   String operationId,
-                                   UUID parentOperationId) {
+    public static StationLog start(UUID pipelineExecutionId, String operationId, UUID parentOperationId) {
         StationLog record = new StationLog();
         record.id = UUID.randomUUID();
         record.pipelineExecutionId = pipelineExecutionId;
@@ -119,7 +112,9 @@ public class StationLog {
         return id;
     }
 
-    public void setId(UUID id) { this.id = id; }
+    public void setId(UUID id) {
+        this.id = id;
+    }
 
     public UUID getPipelineExecutionId() {
         return pipelineExecutionId;
@@ -220,5 +215,9 @@ public class StationLog {
 
     public void setItemId(String itemId) {
         this.itemId = itemId;
+    }
+
+    public enum Status {
+        RUNNING, SKIPPED, SUCCEEDED, FAILED, STOPPED, CANCELLED
     }
 }

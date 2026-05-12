@@ -1,7 +1,8 @@
 package io.github.gear4jtest.core.api.pipeline;
 
-import io.github.gear4jtest.core.api.AssemblyLine;
 import java.util.Objects;
+
+import io.github.gear4jtest.core.api.AssemblyLine;
 
 /**
  * Stable declarative reference to a pipeline id/version pair.

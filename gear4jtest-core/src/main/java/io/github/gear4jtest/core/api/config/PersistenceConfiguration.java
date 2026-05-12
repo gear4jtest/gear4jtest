@@ -7,19 +7,21 @@ public class PersistenceConfiguration {
     private final boolean storeResultObject;
 
     // On pourrait ajouter d'autres options de "tuning" ici :
-    // private final boolean storeIntermediateSteps; (Garder le détail des opérations ou juste le résumé ?)
-    // private final int flushThreshold; (Pour la performance spécifique de ce pipeline)
+    // private final boolean storeIntermediateSteps; (Garder le détail des
+    // opérations ou juste le résumé ?)
+    // private final int flushThreshold; (Pour la performance spécifique de ce
+    // pipeline)
 
     private PersistenceConfiguration(boolean storeResultObject) {
         this.storeResultObject = storeResultObject;
     }
 
-    public boolean isStoreResultObject() {
-        return storeResultObject;
-    }
-
     public static Builder builder() {
         return new Builder();
+    }
+
+    public boolean isStoreResultObject() {
+        return storeResultObject;
     }
 
     public static class Builder {

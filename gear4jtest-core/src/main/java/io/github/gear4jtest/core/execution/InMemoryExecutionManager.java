@@ -1,11 +1,12 @@
 package io.github.gear4jtest.core.execution;
 
+import java.util.List;
+import java.util.Objects;
+
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 import io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
-import java.util.List;
-import java.util.Objects;
 
 public class InMemoryExecutionManager implements AssemblyRunManager {
 

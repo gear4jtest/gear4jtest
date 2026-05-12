@@ -1,6 +1,9 @@
 package io.github.gear4jtest.core.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.ExecutionResult;
@@ -18,11 +21,9 @@ import io.github.gear4jtest.core.event.EventSubscription;
 import io.github.gear4jtest.core.event.StationFinishedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
-import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class StationEventPayloadPolicyIT {
 
@@ -35,24 +36,21 @@ class StationEventPayloadPolicyIT {
                         .eventHandling(EventHandlingDefinition.builder()
                                 .subscription(EventSubscription.on(StationFinishedEvent.class, seenEvents::add))
                                 .globalEventConfiguration(EventHandlingDefinition.EventConfiguration.builder()
-                                        .eventPayloadPolicy(EventPayloadPolicy.discard())
-                                        .build())
+                                        .eventPayloadPolicy(EventPayloadPolicy.discard()).build())
                                 .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
                                         .reactionExecutorFactory(Executors::newSingleThreadExecutor)
-                                        .shutdownTimeout(Duration.ofSeconds(2))
-                                        .build())
+                                        .shutdownTimeout(Duration.ofSeconds(2)).build())
                                 .build())
                         .build())
-                .then(ElementModelBuilders.<String, Integer, LengthOperator>processingOperation("step-1", LengthOperator.class)
-                        .build())
+                .then(ElementModelBuilders
+                        .<String, Integer, LengthOperator>processingOperation("step-1", LengthOperator.class).build())
                 .build();
 
         PipelineEngine engine = PipelineEngine.builder()
                 .runnerChainFactory(new RunnerChainFactory(StrategyRegistry.defaultRegistry()))
                 .resourceFactory(new SingleResourceFactory(new LengthOperator()))
                 .extensionResolver(new RuntimeExtensionResolver(List.of()))
-                .executionContextRegistry(new ExecutionContextRegistry())
-                .build();
+                .executionContextRegistry(new ExecutionContextRegistry()).build();
 
         ExecutionResult<Integer> result = engine.execute(pipeline, RunRequest.builder().input("abcd").build());
 

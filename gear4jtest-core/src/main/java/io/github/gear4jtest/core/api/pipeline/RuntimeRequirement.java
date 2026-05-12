@@ -1,10 +1,12 @@
 package io.github.gear4jtest.core.api.pipeline;
 
-import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
 import java.util.Objects;
 
+import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
+
 /**
- * Declares a runtime capability required or provided by a pipeline runtime contract.
+ * Declares a runtime capability required or provided by a pipeline runtime
+ * contract.
  */
 public record RuntimeRequirement(RuntimeRequirementType type, String key) {
 

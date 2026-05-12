@@ -4,15 +4,15 @@
               inputType="java.lang.String"
               outputType="java.lang.String">
 
-    <operations>
-        <processingOperation id="append_persisted" type="com.myorg.operation.Step11">
-            <parameters>
-                <valueParameter retriever="com.myorg.operation.Step11::getParam" value="-persisted"/>
-            </parameters>
-        </processingOperation>
-    </operations>
+  <operations>
+    <processingOperation id="append_persisted" type="com.myorg.operation.Step11">
+      <parameters>
+        <valueParameter retriever="com.myorg.operation.Step11::getParam" value="-persisted"/>
+      </parameters>
+    </processingOperation>
+  </operations>
 
-    <configuration>
-        <persistence storeResultObject="true"/>
-    </configuration>
+  <configuration>
+    <persistence storeResultObject="true"/>
+  </configuration>
 </assemblyLine>

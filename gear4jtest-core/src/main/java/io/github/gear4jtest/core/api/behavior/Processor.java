@@ -7,11 +7,6 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
  */
 public interface Processor {
 
-    enum FailureMode {
-        CONTINUE,
-        FAIL_STATION
-    }
-
     <I> void beforeExecution(I input, StationExecutionContext ctx) throws Exception;
 
     void afterExecution(Object result, StationExecutionContext context);
@@ -22,5 +17,9 @@ public interface Processor {
 
     default FailureMode afterExecutionFailureMode() {
         return FailureMode.CONTINUE;
+    }
+
+    enum FailureMode {
+        CONTINUE, FAIL_STATION
     }
 }

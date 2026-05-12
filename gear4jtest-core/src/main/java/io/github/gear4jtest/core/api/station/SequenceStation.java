@@ -20,14 +20,13 @@ public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
     /**
      * Crée une sequence "synthetic root" à partir d'une liste de steps.
      *
-     * <p>Utile pour le builder d'{@link AssemblyLine} :
-     * l'utilisateur construit une liste de stations, et l'engine exécute un unique root.
+     * <p>
+     * Utile pour le builder d'{@link AssemblyLine} : l'utilisateur construit une
+     * liste de stations, et l'engine exécute un unique root.
      */
-    public static SequenceStation<Object, Object> syntheticRoot(
-            String id,
-            List<AbstractStation<?, ?>> steps,
-            FlowConfig flowConfig
-    ) {
+    public static SequenceStation<Object, Object> syntheticRoot(String id,
+                                                                List<AbstractStation<?, ?>> steps,
+                                                                FlowConfig flowConfig) {
         SequenceStation<Object, Object> root = new SequenceStation<>(id, id, steps);
         root.setSynthetic(true);
         root.setFlowConfig(flowConfig);
@@ -60,14 +59,14 @@ public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
         private final String name;
         private final List<AbstractStation<?, ?>> accumulatedSteps;
 
-        public static <I> Builder<I, I> create(String id) {
-            return new Builder<>(id, id, new ArrayList<>());
-        }
-
         private Builder(String id, String name, List<AbstractStation<?, ?>> steps) {
             this.id = id;
             this.name = name;
             this.accumulatedSteps = steps;
+        }
+
+        public static <I> Builder<I, I> create(String id) {
+            return new Builder<>(id, id, new ArrayList<>());
         }
 
         public <NEXT_OUT> Builder<IN, NEXT_OUT> next(AbstractStation<OUT, NEXT_OUT> nextStep) {

@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static io.github.gear4jtest.core.engine.support.WorkerParamsInjector.*;
+import static io.github.gear4jtest.core.engine.support.WorkerParamsInjector.Parameter;
 
 public final class WorkerIntrospector {
 

@@ -9,7 +9,8 @@ final class Hashing {
             var md = java.security.MessageDigest.getInstance("SHA-256");
             var d = md.digest(data);
             var sb = new StringBuilder(d.length * 2);
-            for (byte b : d) sb.append(String.format("%02x", b));
+            for (byte b : d)
+                sb.append(String.format("%02x", b));
             return sb.toString();
         } catch (Exception e) {
             throw new IllegalStateException(e);

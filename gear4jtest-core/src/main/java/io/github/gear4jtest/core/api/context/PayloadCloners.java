@@ -15,19 +15,21 @@ public final class PayloadCloners {
     /**
      * Returns the default strict payload cloner.
      *
-     * <p>This implementation only shares references for known immutable payloads and fails
-     * explicitly for any other type.
+     * <p>
+     * This implementation only shares references for known immutable payloads and
+     * fails explicitly for any other type.
      */
     public static PayloadCloner immutableAware() {
         return IMMUTABLE_AWARE;
     }
 
     /**
-     * Returns an unsafe payload cloner that never clones and always returns the original
-     * instance.
+     * Returns an unsafe payload cloner that never clones and always returns the
+     * original instance.
      *
-     * <p>This should only be used intentionally in legacy scenarios where the caller fully
-     * controls payload mutability.
+     * <p>
+     * This should only be used intentionally in legacy scenarios where the caller
+     * fully controls payload mutability.
      */
     public static PayloadCloner noOpUnsafe() {
         return NO_OP_UNSAFE;

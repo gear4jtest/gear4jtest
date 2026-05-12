@@ -25,17 +25,20 @@ public class AssemblyLine<IN, OUT> {
     private final Map<String, Object> defaultContext;
     private final Configuration configuration;
 
-    private AssemblyLine(
-            String id,
-            String version,
-            AbstractStation<?, ?> rootStation,
-            Map<String, Object> defaultContext,
-            Configuration configuration) {
+    private AssemblyLine(String id,
+                         String version,
+                         AbstractStation<?, ?> rootStation,
+                         Map<String, Object> defaultContext,
+                         Configuration configuration) {
         this.id = id;
         this.version = version != null ? version : DEFAULT_VERSION;
         this.rootStation = Objects.requireNonNull(rootStation, "rootStation must not be null");
         this.defaultContext = defaultContext != null ? new HashMap<>(defaultContext) : new HashMap<>();
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
+    }
+
+    public static <IN, OUT> Builder<IN, OUT> builder(String id) {
+        return new Builder<>(id);
     }
 
     public String getId() {
@@ -58,16 +61,12 @@ public class AssemblyLine<IN, OUT> {
         return defaultContext;
     }
 
-    public static <IN, OUT> Builder<IN, OUT> builder(String id) {
-        return new Builder<>(id);
-    }
-
     public static class Builder<IN, OUT> {
         private final String id;
-        private String version;
         private final List<AbstractStation<?, ?>> operations = new ArrayList<>();
         private final Map<String, Object> defaultContext = new HashMap<>();
         private final Configuration.Builder configBuilder = Configuration.builder();
+        private String version;
 
         private Builder(String id) {
             this.id = id;
@@ -156,15 +155,18 @@ public class AssemblyLine<IN, OUT> {
         private final List<RuntimeExtension> defaultExtensions;
         private final PipelineRuntimeContract runtimeContract;
 
-        private Configuration(
-                PersistenceConfiguration persistence,
-                EventHandlingDefinition eventHandlingDefinition,
-                List<RuntimeExtension> defaultExtensions,
-                PipelineRuntimeContract runtimeContract) {
+        private Configuration(PersistenceConfiguration persistence,
+                              EventHandlingDefinition eventHandlingDefinition,
+                              List<RuntimeExtension> defaultExtensions,
+                              PipelineRuntimeContract runtimeContract) {
             this.persistence = persistence;
             this.eventHandlingDefinition = eventHandlingDefinition;
             this.defaultExtensions = defaultExtensions == null ? List.of() : List.copyOf(defaultExtensions);
             this.runtimeContract = Objects.requireNonNull(runtimeContract, "runtimeContract must not be null");
+        }
+
+        public static Builder builder() {
+            return new Builder();
         }
 
         public PersistenceConfiguration getPersistence() {
@@ -183,15 +185,11 @@ public class AssemblyLine<IN, OUT> {
             return runtimeContract;
         }
 
-        public static Builder builder() {
-            return new Builder();
-        }
-
         public static class Builder {
 
+            private final List<RuntimeExtension> defaultExtensions = new ArrayList<>();
             private PersistenceConfiguration persistence;
             private EventHandlingDefinition eventHandlingDefinition;
-            private final List<RuntimeExtension> defaultExtensions = new ArrayList<>();
             private PipelineRuntimeContract runtimeContract;
 
             public Builder persistence(PersistenceConfiguration persistence) {
@@ -224,20 +222,18 @@ public class AssemblyLine<IN, OUT> {
             }
 
             public Configuration build() {
-                PipelineRuntimeContract finalRuntimeContract = runtimeContract != null
-                        ? runtimeContract
+                PipelineRuntimeContract finalRuntimeContract = runtimeContract != null ? runtimeContract
                         : defaultRuntimeContract();
-                PipelineRuntimeContractValidator.validateConfigurationCoherence(
-                        finalRuntimeContract, persistence, eventHandlingDefinition, defaultExtensions);
+                PipelineRuntimeContractValidator.validateConfigurationCoherence(finalRuntimeContract, persistence,
+                                                                                eventHandlingDefinition,
+                                                                                defaultExtensions);
                 return new Configuration(persistence, eventHandlingDefinition, defaultExtensions, finalRuntimeContract);
             }
 
             private PipelineRuntimeContract defaultRuntimeContract() {
-                boolean hasRuntimeConfiguration = persistence != null
-                        || eventHandlingDefinition != null
+                boolean hasRuntimeConfiguration = persistence != null || eventHandlingDefinition != null
                         || !defaultExtensions.isEmpty();
-                return hasRuntimeConfiguration
-                        ? PipelineRuntimeContract.nestedRunOnly()
+                return hasRuntimeConfiguration ? PipelineRuntimeContract.nestedRunOnly()
                         : PipelineRuntimeContract.inlineConfigless();
             }
         }

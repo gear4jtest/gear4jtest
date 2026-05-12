@@ -12,16 +12,15 @@ public final class ParameterResolvedEvent extends Event {
     private final boolean cacheHit;
     private final String valueType;
 
-    public ParameterResolvedEvent(
-            String pipelineId,
-            UUID executionId,
-            UUID stationExecutionId,
-            String operationId,
-            UUID parentOperationId,
-            String itemId,
-            String parameterDescriptor,
-            boolean cacheHit,
-            String valueType) {
+    public ParameterResolvedEvent(String pipelineId,
+                                  UUID executionId,
+                                  UUID stationExecutionId,
+                                  String operationId,
+                                  UUID parentOperationId,
+                                  String itemId,
+                                  String parameterDescriptor,
+                                  boolean cacheHit,
+                                  String valueType) {
         super(pipelineId, executionId);
         this.stationExecutionId = stationExecutionId;
         this.operationId = operationId;

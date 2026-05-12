@@ -4,15 +4,15 @@
               inputType="java.lang.String"
               outputType="java.lang.String">
 
-    <operations>
-        <processingOperation id="append_a" type="com.myorg.operation.Step11">
-            <parameters>
-                <valueParameter retriever="com.myorg.operation.Step11::getParam" value="a"/>
-            </parameters>
-        </processingOperation>
+  <operations>
+    <processingOperation id="append_a" type="com.myorg.operation.Step11">
+      <parameters>
+        <valueParameter retriever="com.myorg.operation.Step11::getParam" value="a"/>
+      </parameters>
+    </processingOperation>
 
-        <signal id="stop_when_a" type="STOP" inputType="java.lang.String">
-            <condition expression="input.endsWith(&quot;a&quot;)"/>
-        </signal>
-    </operations>
+    <signal id="stop_when_a" type="STOP" inputType="java.lang.String">
+      <condition expression="input.endsWith(&quot;a&quot;)"/>
+    </signal>
+  </operations>
 </assemblyLine>

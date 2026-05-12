@@ -1,14 +1,12 @@
 package io.test.gear4jtest.external.api.artifact;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public final class CompositeArtifactStore implements ArtifactStore {
-
-    public enum WriteMode { PRIMARY_ONLY, SYNC_ALL, ASYNC_FALLBACKS }
-    public enum ReadMode  { PREFER_PRIMARY, FIRST_AVAILABLE }
 
     private final ArtifactStore primary;
     private final java.util.List<ArtifactStore> fallbacks;
@@ -28,9 +26,9 @@ public final class CompositeArtifactStore implements ArtifactStore {
         this.primary = Objects.requireNonNull(primary);
         this.fallbacks = java.util.List.copyOf(Objects.requireNonNull(fallbacks));
         this.writeMode = writeMode == null ? WriteMode.PRIMARY_ONLY : writeMode;
-        this.readMode  = readMode  == null ? ReadMode.PREFER_PRIMARY : readMode;
+        this.readMode = readMode == null ? ReadMode.PREFER_PRIMARY : readMode;
         this.verifyOnRead = verifyOnRead;
-        this.selfHealing  = selfHealing;
+        this.selfHealing = selfHealing;
         this.asyncExec = asyncExec != null ? asyncExec : Executors.newCachedThreadPool();
     }
 
@@ -38,10 +36,20 @@ public final class CompositeArtifactStore implements ArtifactStore {
     public String put(byte[] content) throws IOException {
         String hash = primary.put(content);
         switch (writeMode) {
-            case PRIMARY_ONLY -> {}
-            case SYNC_ALL -> { for (var fb : fallbacks) fb.put(content); }
+            case PRIMARY_ONLY -> {
+            }
+            case SYNC_ALL -> {
+                for (var fb : fallbacks)
+                    fb.put(content);
+            }
             case ASYNC_FALLBACKS -> {
-                for (var fb : fallbacks) asyncExec.execute(() -> { try { fb.put(content); } catch (IOException ignored) {} });
+                for (var fb : fallbacks)
+                    asyncExec.execute(() -> {
+                        try {
+                            fb.put(content);
+                        } catch (IOException ignored) {
+                        }
+                    });
             }
         }
         return hash;
@@ -51,18 +59,22 @@ public final class CompositeArtifactStore implements ArtifactStore {
     public Optional<Artifact> get(String hashHex) throws IOException {
         if (readMode == ReadMode.PREFER_PRIMARY) {
             var a = primary.get(hashHex);
-            if (a.isPresent()) return maybeVerifyAndHeal(hashHex, a.get(), true);
+            if (a.isPresent())
+                return maybeVerifyAndHeal(hashHex, a.get(), true);
             for (var fb : fallbacks) {
                 var b = fb.get(hashHex);
-                if (b.isPresent()) return maybeVerifyAndHeal(hashHex, b.get(), false);
+                if (b.isPresent())
+                    return maybeVerifyAndHeal(hashHex, b.get(), false);
             }
             return Optional.empty();
         } else {
             var a = primary.get(hashHex);
-            if (a.isPresent()) return maybeVerifyAndHeal(hashHex, a.get(), true);
+            if (a.isPresent())
+                return maybeVerifyAndHeal(hashHex, a.get(), true);
             for (var fb : fallbacks) {
                 var b = fb.get(hashHex);
-                if (b.isPresent()) return maybeVerifyAndHeal(hashHex, b.get(), false);
+                if (b.isPresent())
+                    return maybeVerifyAndHeal(hashHex, b.get(), false);
             }
             return Optional.empty();
         }
@@ -70,21 +82,40 @@ public final class CompositeArtifactStore implements ArtifactStore {
 
     @Override
     public boolean exists(String hashHex) throws IOException {
-        if (primary.exists(hashHex)) return true;
-        for (var fb : fallbacks) if (fb.exists(hashHex)) return true;
+        if (primary.exists(hashHex))
+            return true;
+        for (var fb : fallbacks)
+            if (fb.exists(hashHex))
+                return true;
         return false;
     }
 
     private Optional<Artifact> maybeVerifyAndHeal(String hash, Artifact a, boolean fromPrimary) throws IOException {
-        if (!verifyOnRead) return Optional.of(a);
+        if (!verifyOnRead)
+            return Optional.of(a);
         try (var in = a.openStream()) {
             var data = in.readAllBytes();
             String rehash = Hashing.sha256Hex(data);
-            if (!rehash.equalsIgnoreCase(hash)) throw new IOException("Corrupt artifact: " + hash);
+            if (!rehash.equalsIgnoreCase(hash))
+                throw new IOException("Corrupt artifact: " + hash);
             if (!fromPrimary && selfHealing) {
-                asyncExec.execute(() -> { try { if (!primary.exists(hash)) primary.put(data); } catch (IOException ignored) {} });
+                asyncExec.execute(() -> {
+                    try {
+                        if (!primary.exists(hash))
+                            primary.put(data);
+                    } catch (IOException ignored) {
+                    }
+                });
             }
         }
         return Optional.of(a);
+    }
+
+    public enum WriteMode {
+        PRIMARY_ONLY, SYNC_ALL, ASYNC_FALLBACKS
+    }
+
+    public enum ReadMode {
+        PREFER_PRIMARY, FIRST_AVAILABLE
     }
 }

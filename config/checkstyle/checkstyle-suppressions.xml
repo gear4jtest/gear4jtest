@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+  "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+  "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+<suppressions>
+  <!-- Console output is tolerated in tests and legacy examples, but not in new production code. -->
+  <suppress checks="RegexpSinglelineJava" files=".*[\\/]src[\\/]test[\\/].*"/>
+  <suppress checks="RegexpSinglelineJava" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
+  <suppress checks="RegexpSinglelineJava" files=".*DatabaseAssemblyRunRepository\.java"/>
+  <suppress checks="RegexpSinglelineJava" files=".*ElementModelBuilders\.java"/>
+</suppressions>

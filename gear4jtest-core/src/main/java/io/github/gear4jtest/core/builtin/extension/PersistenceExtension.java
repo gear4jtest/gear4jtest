@@ -14,7 +14,8 @@ import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
 /**
  * Persistence extension responsible for run and station durability.
  *
- * <p>If this extension fails, the failure is considered critical.
+ * <p>
+ * If this extension fails, the failure is considered critical.
  */
 public class PersistenceExtension implements RunLifecycleExtension, StationLifecycleExtension {
 
@@ -40,18 +41,16 @@ public class PersistenceExtension implements RunLifecycleExtension, StationLifec
     }
 
     @Override
-    public void onStationStarted(
-            ExecutionContext runCtx,
-            StationExecutionContext stationCtx,
-            StationLogRecord snapshot) {
+    public void onStationStarted(ExecutionContext runCtx,
+                                 StationExecutionContext stationCtx,
+                                 StationLogRecord snapshot) {
         manager.append(snapshot);
     }
 
     @Override
-    public void onStationCompleted(
-            ExecutionContext runCtx,
-            StationExecutionContext stationCtx,
-            StationLogRecord snapshot) {
+    public void onStationCompleted(ExecutionContext runCtx,
+                                   StationExecutionContext stationCtx,
+                                   StationLogRecord snapshot) {
         manager.append(snapshot);
     }
 }

@@ -11,6 +11,22 @@ public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT>
         super(new ArrayList<>(1), null);
     }
 
+    @FunctionalInterface
+    public interface Container1DFunction<A, B> extends ContainerFunction<B> {
+        static <T> Container1DFunction<T, T> identity() {
+            return t -> t;
+        }
+
+        B applya(A a);
+
+        @Override
+        @SuppressWarnings("unchecked")
+        default B apply(Object... objects) {
+            assert objects != null && objects.length == 1;
+            return applya((A) objects[0]);
+        }
+    }
+
     public static class Builder<IN, OUT, A> {
 
         private final Container1Station<IN, OUT, A> managedInstance;
@@ -24,50 +40,38 @@ public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT>
             managedInstance.setAwaitTimeout(parentDefinition.getAwaitTimeout());
         }
 
-        public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(String id, AbstractStation<IN, B> operationDefinition) {
-            var branch = new Branch.Builder<IN>()
-                    .withId(id)
-                    .withOperation(operationDefinition)
+        public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(String id,
+                                                                        AbstractStation<IN, B> operationDefinition) {
+            var branch = new Branch.Builder<IN>().withId(id).withOperation(operationDefinition).build();
+            return new Container2Station.Builder<>(managedInstance, branch);
+        }
+
+        public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(String id,
+                                                                        AbstractStation<IN, B> operationDefinition,
+                                                                        Condition<IN> condition) {
+            var branch = new Branch.Builder<IN>().withId(id).withCondition(condition).withOperation(operationDefinition)
                     .build();
             return new Container2Station.Builder<>(managedInstance, branch);
         }
 
         public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(String id,
                                                                         AbstractStation<IN, B> operationDefinition,
-                Condition<IN> condition) {
-            var branch = new Branch.Builder<IN>()
-                    .withId(id)
-                    .withCondition(condition)
-                    .withOperation(operationDefinition)
-                    .build();
+                                                                        BranchCondition<IN> siblingCondition) {
+            var branch = new Branch.Builder<IN>().withId(id).withSiblingCondition(siblingCondition)
+                    .withOperation(operationDefinition).build();
             return new Container2Station.Builder<>(managedInstance, branch);
         }
 
         public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(String id,
                                                                         AbstractStation<IN, B> operationDefinition,
-                BranchCondition<IN> siblingCondition) {
-            var branch = new Branch.Builder<IN>()
-                    .withId(id)
-                    .withSiblingCondition(siblingCondition)
-                    .withOperation(operationDefinition)
-                    .build();
+                                                                        Condition<IN> condition,
+                                                                        BranchCondition<IN> siblingCondition) {
+            var branch = new Branch.Builder<IN>().withId(id).withCondition(condition)
+                    .withSiblingCondition(siblingCondition).withOperation(operationDefinition).build();
             return new Container2Station.Builder<>(managedInstance, branch);
         }
 
-        public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(String id,
-                                                                        AbstractStation<IN, B> operationDefinition,
-                Condition<IN> condition,
-                BranchCondition<IN> siblingCondition) {
-            var branch = new Branch.Builder<IN>()
-                    .withId(id)
-                    .withCondition(condition)
-                    .withSiblingCondition(siblingCondition)
-                    .withOperation(operationDefinition)
-                    .build();
-            return new Container2Station.Builder<>(managedInstance, branch);
-        }
-
-        @SuppressWarnings({"unchecked", "rawtypes"})
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         public <C> ContainerBaseStation<IN, C> returns(Container1DFunction<A, C> func) {
             ContainerBaseStation.validateUniqueBranchIds(managedInstance.getPipelines());
             managedInstance.func = (ContainerFunction) func;
@@ -78,22 +82,6 @@ public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT>
         public ContainerBaseStation<IN, Void> build() {
             ContainerBaseStation.validateUniqueBranchIds(managedInstance.getPipelines());
             return (ContainerBaseStation<IN, Void>) this.managedInstance;
-        }
-    }
-
-    @FunctionalInterface
-    public interface Container1DFunction<A, B> extends ContainerFunction<B> {
-        B applya(A a);
-
-        static <T> Container1DFunction<T, T> identity() {
-            return t -> t;
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        default B apply(Object... objects) {
-            assert objects != null && objects.length == 1;
-            return applya((A) objects[0]);
         }
     }
 }

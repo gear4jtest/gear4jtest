@@ -21,24 +21,16 @@ public final class OperationChainObjectRepositoryJdbc implements OperationChainO
     }
 
     private static Optional<OperationChainObject> map(ResultSet rs) throws SQLException {
-        return Optional.of(new OperationChainObject(
-                rs.getLong("id"),
-                rs.getString("al_id"),
-                rs.getString("version"),
-                ExecutionMode.valueOf(rs.getString("mode")),
-                rs.getString("content_hash"),
-                rs.getLong("size_bytes"),
-                rs.getString("mime_type"),
-                rs.getTimestamp("created_at").toInstant(),
-                rs.getString("created_by"),
-                rs.getTimestamp("published_at").toInstant()
-        ));
+        return Optional.of(new OperationChainObject(rs.getLong("id"), rs.getString("al_id"), rs.getString("version"),
+                ExecutionMode.valueOf(rs.getString("mode")), rs.getString("content_hash"), rs.getLong("size_bytes"),
+                rs.getString("mime_type"), rs.getTimestamp("created_at").toInstant(), rs.getString("created_by"),
+                rs.getTimestamp("published_at").toInstant()));
     }
 
     @Override
     public long insert(OperationChainObject o) {
-        String sql = "INSERT INTO operation_chain_object(al_id,version,mode,content_hash,size_bytes,mime_type,created_at,created_by,published_at) " +
-                "VALUES (?,?,?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO operation_chain_object(al_id,version,mode,content_hash,size_bytes,mime_type,created_at,created_by,published_at) "
+                + "VALUES (?,?,?,?,?,?,?,?,?)";
         try (var c = ds.getConnection(); var ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, o.alId());
             ps.setString(2, o.version());
@@ -60,8 +52,8 @@ public final class OperationChainObjectRepositoryJdbc implements OperationChainO
 
     @Override
     public Optional<OperationChainObject> find(String alId, String version, ExecutionMode mode) {
-        String sql = "SELECT id, al_id, version, mode, content_hash, size_bytes, mime_type, created_at, created_by, published_at " +
-                "FROM operation_chain_object WHERE al_id=? AND version=? AND mode=?";
+        String sql = "SELECT id, al_id, version, mode, content_hash, size_bytes, mime_type, created_at, created_by, published_at "
+                + "FROM operation_chain_object WHERE al_id=? AND version=? AND mode=?";
         try (var c = ds.getConnection(); var ps = c.prepareStatement(sql)) {
             ps.setString(1, alId);
             ps.setString(2, version);
@@ -76,8 +68,8 @@ public final class OperationChainObjectRepositoryJdbc implements OperationChainO
 
     @Override
     public Optional<OperationChainObject> findLatestRun(String alId) {
-        String sql = "SELECT id, al_id, version, mode, content_hash, size_bytes, mime_type, created_at, created_by, published_at " +
-                "FROM operation_chain_object WHERE al_id=? AND mode='RUN' ORDER BY published_at DESC, id DESC LIMIT 1";
+        String sql = "SELECT id, al_id, version, mode, content_hash, size_bytes, mime_type, created_at, created_by, published_at "
+                + "FROM operation_chain_object WHERE al_id=? AND mode='RUN' ORDER BY published_at DESC, id DESC LIMIT 1";
         try (var c = ds.getConnection(); var ps = c.prepareStatement(sql)) {
             ps.setString(1, alId);
             try (var rs = ps.executeQuery()) {
@@ -105,8 +97,8 @@ public final class OperationChainObjectRepositoryJdbc implements OperationChainO
 
     @Override
     public java.util.List<OperationChainObject> findAll(String alId) {
-        String sql = "SELECT id, al_id, version, mode, content_hash, size_bytes, mime_type, created_at, created_by, published_at " +
-                "FROM operation_chain_object WHERE al_id=? ORDER BY published_at DESC, id DESC";
+        String sql = "SELECT id, al_id, version, mode, content_hash, size_bytes, mime_type, created_at, created_by, published_at "
+                + "FROM operation_chain_object WHERE al_id=? ORDER BY published_at DESC, id DESC";
         try (var c = ds.getConnection(); var ps = c.prepareStatement(sql)) {
             ps.setString(1, alId);
             try (var rs = ps.executeQuery()) {

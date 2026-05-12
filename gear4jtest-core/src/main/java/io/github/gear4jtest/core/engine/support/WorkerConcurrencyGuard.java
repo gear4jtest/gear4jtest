@@ -28,9 +28,7 @@ public final class WorkerConcurrencyGuard {
             case FAIL_FAST -> {
                 boolean acquired = lock.tryLock();
                 if (!acquired) {
-                    throw new ConcurrentTransformerUseException(
-                        "Transformer is already in use by another execution"
-                    );
+                    throw new ConcurrentTransformerUseException("Transformer is already in use by another execution");
                 }
             }
             case BLOCK_CALLER -> lock.lock();

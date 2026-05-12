@@ -36,18 +36,14 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
     }
 
     public DatabaseExecutionManager(DataSource dataSource, int flushThreshold, boolean autoCreateTables) {
-        this(
-                new DatabaseAssemblyRunRepository(Objects.requireNonNull(dataSource, "dataSource must not be null")),
-                flushThreshold,
-                autoCreateTables,
-                Executors.newSingleThreadExecutor(new Gear4jFlushThreadFactory()));
+        this(new DatabaseAssemblyRunRepository(Objects.requireNonNull(dataSource, "dataSource must not be null")),
+                flushThreshold, autoCreateTables, Executors.newSingleThreadExecutor(new Gear4jFlushThreadFactory()));
     }
 
-    public DatabaseExecutionManager(
-            DatabaseAssemblyRunRepository repository,
-            int flushThreshold,
-            boolean autoCreateTables,
-            ExecutorService flushExecutor) {
+    public DatabaseExecutionManager(DatabaseAssemblyRunRepository repository,
+                                    int flushThreshold,
+                                    boolean autoCreateTables,
+                                    ExecutorService flushExecutor) {
 
         if (flushThreshold <= 0) {
             throw new IllegalArgumentException("flushThreshold must be > 0");
@@ -82,8 +78,8 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
         assertHealthy(buffer);
 
         if (buffer.closed.get()) {
-            throw new ExecutionPersistenceException(
-                    "Cannot append station log to a closed run buffer. runId=" + runId + ", stationLogId=" + record.id());
+            throw new ExecutionPersistenceException("Cannot append station log to a closed run buffer. runId=" + runId
+                    + ", stationLogId=" + record.id());
         }
 
         buffer.queue.add(record);
@@ -215,11 +211,8 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
     }
 
     private void recordFailure(RunBuffer buffer, Exception failure) {
-        buffer.firstFailure.compareAndSet(
-                null,
-                new ExecutionPersistenceException(
-                        "Persistence failed for runId=" + buffer.runId,
-                        failure));
+        buffer.firstFailure.compareAndSet(null, new ExecutionPersistenceException(
+                "Persistence failed for runId=" + buffer.runId, failure));
     }
 
     private void assertHealthy(RunBuffer buffer) {

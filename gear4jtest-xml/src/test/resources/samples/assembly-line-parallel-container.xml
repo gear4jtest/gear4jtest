@@ -4,41 +4,41 @@
               inputType="java.lang.String"
               outputType="java.util.List&lt;java.lang.String&gt;">
 
-    <operations>
-        <processingOperation id="step11" type="com.myorg.operation.Step11">
+  <operations>
+    <processingOperation id="step11" type="com.myorg.operation.Step11">
+      <parameters>
+        <valueParameter retriever="com.myorg.operation.Step11::getParam" value="a"/>
+      </parameters>
+    </processingOperation>
+
+    <container id="parallelContainer"
+               inputType="java.lang.String"
+               outputType="java.util.List&lt;java.lang.String&gt;"
+               parallel="true"
+               threadPoolSize="2">
+      <subLines>
+        <subLine id="subline1">
+          <processingOperation id="step11_c" type="com.myorg.operation.Step11">
             <parameters>
-                <valueParameter retriever="com.myorg.operation.Step11::getParam" value="a"/>
+              <valueParameter retriever="com.myorg.operation.Step11::getParam" value="c"/>
             </parameters>
-        </processingOperation>
+          </processingOperation>
+        </subLine>
+        <subLine id="subline2">
+          <processingOperation id="step11_b" type="com.myorg.operation.Step11">
+            <parameters>
+              <valueParameter retriever="com.myorg.operation.Step11::getParam" value="b"/>
+            </parameters>
+          </processingOperation>
+        </subLine>
+      </subLines>
+      <returnsFunction expression="(a, b) -> java.util.Arrays.asList(a, b)"/>
+    </container>
+  </operations>
 
-        <container id="parallelContainer"
-                   inputType="java.lang.String"
-                   outputType="java.util.List&lt;java.lang.String&gt;"
-                   parallel="true"
-                   threadPoolSize="2">
-            <subLines>
-                <subLine id="subline1">
-                    <processingOperation id="step11_c" type="com.myorg.operation.Step11">
-                        <parameters>
-                            <valueParameter retriever="com.myorg.operation.Step11::getParam" value="c"/>
-                        </parameters>
-                    </processingOperation>
-                </subLine>
-                <subLine id="subline2">
-                    <processingOperation id="step11_b" type="com.myorg.operation.Step11">
-                        <parameters>
-                            <valueParameter retriever="com.myorg.operation.Step11::getParam" value="b"/>
-                        </parameters>
-                    </processingOperation>
-                </subLine>
-            </subLines>
-            <returnsFunction expression="(a, b) -> java.util.Arrays.asList(a, b)"/>
-        </container>
-    </operations>
-
-    <configuration>
-        <eventHandling>
-            <globalEventConfiguration eventOnParameterChanged="true"/>
-        </eventHandling>
-    </configuration>
+  <configuration>
+    <eventHandling>
+      <globalEventConfiguration eventOnParameterChanged="true"/>
+    </eventHandling>
+  </configuration>
 </assemblyLine>

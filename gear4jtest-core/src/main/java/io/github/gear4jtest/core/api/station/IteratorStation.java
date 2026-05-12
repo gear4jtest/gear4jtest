@@ -11,10 +11,9 @@ import io.github.gear4jtest.core.api.config.FlowConfig;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 /**
- * Itérateur d'opérations :
- * - conserve le builder et les accumulateurs d'origine
- * - n'utilise plus ExecutionReport / OperationResult
- * - branche sur PipelineExecutionManager + IteratorBatch / OperationExecutionRecord
+ * Itérateur d'opérations : - conserve le builder et les accumulateurs d'origine
+ * - n'utilise plus ExecutionReport / OperationResult - branche sur
+ * PipelineExecutionManager + IteratorBatch / OperationExecutionRecord
  */
 public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
@@ -57,6 +56,11 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
         this.flowConfig = flowConfig;
     }
 
+    @FunctionalInterface
+    public interface ItemIdResolver {
+        String resolve(Object element, long index, ExecutionContext ctx);
+    }
+
     public static class Builder<IN, OUT> {
 
         private final IteratorStation<IN, OUT> managedInstance;
@@ -77,10 +81,11 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
             return (Builder<IN, A>) this;
         }
 
-//		public <A> Builder<IN, A> operation(AbstractOperationDefinition<OUT, A> operation) {
-//			managedInstance.operation = operation;
-//			return (Builder<IN, A>) this;
-//		}
+        // public <A> Builder<IN, A> operation(AbstractOperationDefinition<OUT, A>
+        // operation) {
+        // managedInstance.operation = operation;
+        // return (Builder<IN, A>) this;
+        // }
 
         public Builder<IN, OUT> accumulator(Accumulator accumulator) {
             managedInstance.accumulator = accumulator;
@@ -111,8 +116,7 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         public enum CollectionSupplier {
-            LIST(ArrayList::new),
-            SET(HashSet::new);
+            LIST(ArrayList::new), SET(HashSet::new);
 
             private final Supplier<Collection<Object>> supplier;
 
@@ -136,10 +140,5 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
         public SetAccumulator() {
             super(CollectionSupplier.SET);
         }
-    }
-
-    @FunctionalInterface
-    public interface ItemIdResolver {
-        String resolve(Object element, long index, ExecutionContext ctx);
     }
 }

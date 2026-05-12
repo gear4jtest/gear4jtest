@@ -8,8 +8,10 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 /**
  * Skipper déclaratif attaché à une station.
  *
- * <p>PRE : simple (souvent input + global context).
- * <p>POST : dépend de la préparation (processors.beforeExecution).
+ * <p>
+ * PRE : simple (souvent input + global context).
+ * <p>
+ * POST : dépend de la préparation (processors.beforeExecution).
  */
 public final class StationSkipper {
 
@@ -28,10 +30,7 @@ public final class StationSkipper {
      */
     public static StationSkipper pre(StationSkipTest predicate) {
         Objects.requireNonNull(predicate, "predicate");
-        return new StationSkipper(
-                SkipPhase.PRE_PROCESSORS,
-                predicate,
-                null);
+        return new StationSkipper(SkipPhase.PRE_PROCESSORS, predicate, null);
     }
 
     /**
@@ -39,10 +38,7 @@ public final class StationSkipper {
      */
     public static StationSkipper pre(StationSkipTest predicate, String reason) {
         Objects.requireNonNull(predicate, "predicate");
-        return new StationSkipper(
-                SkipPhase.PRE_PROCESSORS,
-                predicate,
-                reason);
+        return new StationSkipper(SkipPhase.PRE_PROCESSORS, predicate, reason);
     }
 
     /**

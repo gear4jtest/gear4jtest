@@ -13,15 +13,8 @@ public class ExecutionResult<T> {
         this.success = success;
         this.execution = execution;
         this.error = error;
-        
-    }
 
-    public T getResult() { return result; }
-    public boolean isSuccess() { return success; }
-    public AssemblyRunTrace getExecution() {
-        return this.execution;
     }
-    public Exception getError() { return error; }
 
     public static <OUT> ExecutionResult<OUT> success(OUT result, AssemblyRunTrace exec) {
         return new ExecutionResult<>(result, true, exec, null);
@@ -29,5 +22,21 @@ public class ExecutionResult<T> {
 
     public static <OUT> ExecutionResult<OUT> failure(Exception message, AssemblyRunTrace exec) {
         return new ExecutionResult<>(null, false, exec, message);
+    }
+
+    public T getResult() {
+        return result;
+    }
+
+    public boolean isSuccess() {
+        return success;
+    }
+
+    public AssemblyRunTrace getExecution() {
+        return this.execution;
+    }
+
+    public Exception getError() {
+        return error;
     }
 }

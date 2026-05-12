@@ -6,15 +6,15 @@ import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 
 public class Step11 implements Operator<String, String> {
 
-	private WorkerParamsInjector.Parameter<String> param = WorkerParamsInjector.Parameter.<String>newBuilder().build();
+    private WorkerParamsInjector.Parameter<String> param = WorkerParamsInjector.Parameter.<String>newBuilder().build();
 
-	@Override
-	public String transform(String object, StationExecutionContext operationExecution) {
-		return param.getValue();
-	}
+    @Override
+    public String transform(String object, StationExecutionContext operationExecution) {
+        return param.getValue();
+    }
 
-	public WorkerParamsInjector.Parameter<String> getParam() {
-		return param;
-	}
+    public WorkerParamsInjector.Parameter<String> getParam() {
+        return param;
+    }
 
 }

@@ -2,7 +2,8 @@
 
 `gear4jtest-core` contains the Gear4J runtime engine and public Java API.
 
-This module is the dependency-agnostic heart of the project. It should not depend on Spring, XML, Jackson-specific behavior, external transport systems or storage-specific assumptions.
+This module is the dependency-agnostic heart of the project. It should not depend on Spring, XML, Jackson-specific
+behavior, external transport systems or storage-specific assumptions.
 
 ## What this module owns
 
@@ -19,29 +20,31 @@ This module is the dependency-agnostic heart of the project. It should not depen
 
 ## Package map
 
-| Package | Responsibility |
-| --- | --- |
-| `api` | Public pipeline API: assembly lines, run requests, execution results and metadata. |
-| `api.behavior` | User-facing operators, processors, conditions, skippers, signals and sibling outcomes. |
-| `api.config` | Flow, persistence, event and station configuration. |
-| `api.context` | Execution context, execution services, station context and payload cloning SPI. |
-| `api.pipeline` | Pipeline references, pipeline targets, nested-run context and runtime contracts. |
-| `api.station` | Station model types. |
-| `api.util` | Builder helpers. |
-| `engine` | Pipeline engine, extension resolution and runtime orchestration. |
-| `engine.runner` | Runner-chain layers around station execution. |
-| `engine.strategy` | Station execution strategies. |
-| `event` | In-memory asynchronous event runtime and subscriptions. |
-| `execution.trace` | Runtime trace objects for runs and stations. |
-| `persistence` | Persistence status and repository abstractions. |
-| `sidecompute` | Side-compute registry and listener integration. |
-| `spi` | Extension, factory and runner SPIs. |
+| Package           | Responsibility                                                                         |
+|-------------------|----------------------------------------------------------------------------------------|
+| `api`             | Public pipeline API: assembly lines, run requests, execution results and metadata.     |
+| `api.behavior`    | User-facing operators, processors, conditions, skippers, signals and sibling outcomes. |
+| `api.config`      | Flow, persistence, event and station configuration.                                    |
+| `api.context`     | Execution context, execution services, station context and payload cloning SPI.        |
+| `api.pipeline`    | Pipeline references, pipeline targets, nested-run context and runtime contracts.       |
+| `api.station`     | Station model types.                                                                   |
+| `api.util`        | Builder helpers.                                                                       |
+| `engine`          | Pipeline engine, extension resolution and runtime orchestration.                       |
+| `engine.runner`   | Runner-chain layers around station execution.                                          |
+| `engine.strategy` | Station execution strategies.                                                          |
+| `event`           | In-memory asynchronous event runtime and subscriptions.                                |
+| `execution.trace` | Runtime trace objects for runs and stations.                                           |
+| `persistence`     | Persistence status and repository abstractions.                                        |
+| `sidecompute`     | Side-compute registry and listener integration.                                        |
+| `spi`             | Extension, factory and runner SPIs.                                                    |
 
 ## Runtime execution model
 
 A run starts from a fully built `AssemblyLine` and a `RunRequest`.
 
-`PipelineEngine` resolves default and request-level runtime extensions, creates the `EventManager`, merges default and request context, registers an `ExecutionContext`, builds the root station runner, then executes the root station through the runner chain.
+`PipelineEngine` resolves default and request-level runtime extensions, creates the `EventManager`, merges default and
+request context, registers an `ExecutionContext`, builds the root station runner, then executes the root station through
+the runner chain.
 
 The default runner chain separates concerns:
 
@@ -70,7 +73,8 @@ Flow decisions must be driven by runtime state and station outcomes, not by pers
 - `ResourceFactory`;
 - `StationScopedResourceRegistry`.
 
-Keep this separation. User operators should get only the station execution context and the services intentionally exposed through it. Internal engine services should not be leaked as general user dependencies.
+Keep this separation. User operators should get only the station execution context and the services intentionally
+exposed through it. Internal engine services should not be leaked as general user dependencies.
 
 ## Station model
 
@@ -114,7 +118,8 @@ It does not provide:
 - crash recovery;
 - guaranteed external publication.
 
-For durable integration with Kafka, SQS, RabbitMQ or an outbox, use a separate future module or subsystem instead of turning `EventManager` into a broker abstraction.
+For durable integration with Kafka, SQS, RabbitMQ or an outbox, use a separate future module or subsystem instead of
+turning `EventManager` into a broker abstraction.
 
 ## Extensions
 
@@ -126,7 +131,8 @@ For durable integration with Kafka, SQS, RabbitMQ or an outbox, use a separate f
 - `StationLifecycleExtension`: observes station lifecycle.
 - `ExecutorWrapperExtension`: decorates executors used by asynchronous work.
 
-The extension order matters. Keep extensions small and explicit. Prefer separate extensions over one large extension that owns unrelated behavior.
+The extension order matters. Keep extensions small and explicit. Prefer separate extensions over one large extension
+that owns unrelated behavior.
 
 ## Payload cloning
 
@@ -139,7 +145,8 @@ Do not hard-code Jackson into this module. Use `gear4jtest-jackson` when mutable
 `PipelineCallStation` supports two execution modes:
 
 - `INLINE`: executes a child pipeline inside the current run boundary when its runtime requirements are compatible.
-- `NESTED_RUN`: creates a nested run with its own execution trace and runtime setup while inheriting selected parent context for the current MVP.
+- `NESTED_RUN`: creates a nested run with its own execution trace and runtime setup while inheriting selected parent
+  context for the current MVP.
 
 A running pipeline graph must remain stable for the duration of the run.
 
@@ -155,3 +162,8 @@ Useful focused tasks:
 ./gradlew :gear4jtest-core:test --tests '*PipelineCallStationStrategyTest'
 ./gradlew :gear4jtest-core:test --tests '*ContainerStationStrategyTest'
 ```
+
+## Code style
+
+Repository formatting is enforced by Spotless from the root Gradle build. Use `./gradlew spotlessApply` before
+committing code changes and `./gradlew check` for full validation.

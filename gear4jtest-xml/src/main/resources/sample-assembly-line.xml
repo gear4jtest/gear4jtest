@@ -4,44 +4,45 @@
               inputType="java.lang.String"
               outputType="java.util.List&lt;java.util.List&lt;java.lang.String&gt;&gt;">
 
-    <operations>
-        <processingOperation id="step3" type="com.myorg.operation.Step3">
-            <parameters>
-                <valueParameter retriever="com.myorg.operation.Step3::getParam" value="a" valueType="java.lang.String"/>
-            </parameters>
-            <onErrors>
-                <unsafeError signalType="IGNORE" throwableType="java.lang.Exception">
-                    <condition expression="ctx.getContext().containsKey(&quot;a&quot;)"/>
-                    <action expression="System.out.println(&quot;Error occurred!&quot;)"/>
-                </unsafeError>
-            </onErrors>
-            <conditions>
-                <condition expression="input.equals(modelsService.getModel(&quot;fjeifj&quot;))"/>
-            </conditions>
-            <fallbackTransformer expression="new java.util.HashMap&lt;String, String&gt;()"/>
-        </processingOperation>
+  <operations>
+    <processingOperation id="step3" type="com.myorg.operation.Step3">
+      <parameters>
+        <valueParameter retriever="com.myorg.operation.Step3::getParam" value="a" valueType="java.lang.String"/>
+      </parameters>
+      <onErrors>
+        <unsafeError signalType="IGNORE" throwableType="java.lang.Exception">
+          <condition expression="ctx.getContext().containsKey(&quot;a&quot;)"/>
+          <action expression="System.out.println(&quot;Error occurred!&quot;)"/>
+        </unsafeError>
+      </onErrors>
+      <conditions>
+        <condition expression="input.equals(modelsService.getModel(&quot;fjeifj&quot;))"/>
+      </conditions>
+      <fallbackTransformer expression="new java.util.HashMap&lt;String, String&gt;()"/>
+    </processingOperation>
 
-        <processingOperation id="step8" type="com.myorg.operation.Step8"/>
+    <processingOperation id="step8" type="com.myorg.operation.Step8"/>
 
-        <processingOperation id="step9" type="com.myorg.operation.Step9"/>
+    <processingOperation id="step9" type="com.myorg.operation.Step9"/>
 
-        <iterator id="iterator" inputType="java.util.List&lt;java.lang.Integer&gt;" outputType="java.util.List&lt;java.util.List&lt;java.lang.String&gt;&gt;">
-            <iterableFunction expression="java.util.function.Function.identity()"/>
-            <operation>
-                <processingOperation id="step10" type="com.myorg.operation.Step10"/>
-            </operation>
-            <collector expression="java.util.stream.Collectors.toList()"/>
-        </iterator>
-    </operations>
+    <iterator id="iterator" inputType="java.util.List&lt;java.lang.Integer&gt;"
+              outputType="java.util.List&lt;java.util.List&lt;java.lang.String&gt;&gt;">
+      <iterableFunction expression="java.util.function.Function.identity()"/>
+      <operation>
+        <processingOperation id="step10" type="com.myorg.operation.Step10"/>
+      </operation>
+      <collector expression="java.util.stream.Collectors.toList()"/>
+    </iterator>
+  </operations>
 
-    <configuration>
-        <eventHandling>
-            <globalEventConfiguration eventOnParameterChanged="true"/>
-        </eventHandling>
-        <persistence storeResultObject="true"/>
-    </configuration>
+  <configuration>
+    <eventHandling>
+      <globalEventConfiguration eventOnParameterChanged="true"/>
+    </eventHandling>
+    <persistence storeResultObject="true"/>
+  </configuration>
 
-    <dependencies>
-        <dependency name="modelsService" type="com.myorg.services.ModelsService"/>
-    </dependencies>
+  <dependencies>
+    <dependency name="modelsService" type="com.myorg.services.ModelsService"/>
+  </dependencies>
 </assemblyLine>

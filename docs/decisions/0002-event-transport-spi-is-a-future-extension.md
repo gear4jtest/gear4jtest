@@ -6,13 +6,16 @@ Future direction. Not implemented.
 
 ## Context
 
-Applications may eventually want to forward Gear4J runtime events to external transports such as Kafka, SQS, RabbitMQ or an outbox.
+Applications may eventually want to forward Gear4J runtime events to external transports such as Kafka, SQS, RabbitMQ or
+an outbox.
 
-Runtime events are rich Java objects and may reference runtime payloads. They are not stable transport contracts by themselves.
+Runtime events are rich Java objects and may reference runtime payloads. They are not stable transport contracts by
+themselves.
 
 ## Decision
 
-If external forwarding becomes useful, introduce a small transport SPI instead of turning `EventManager` into a broker abstraction.
+If external forwarding becomes useful, introduce a small transport SPI instead of turning `EventManager` into a broker
+abstraction.
 
 Potential future types:
 

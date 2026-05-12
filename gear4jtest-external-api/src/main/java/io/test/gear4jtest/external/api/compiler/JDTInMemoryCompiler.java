@@ -39,10 +39,27 @@ public class JDTInMemoryCompiler {
         this.nameEnvironment = new InMemoryNameEnvironment(this.parentClassLoader);
     }
 
+    private static CompilerOptions compilerOptions() {
+        CompilerOptions options = new CompilerOptions();
+        Map<String, String> optionsMap = new HashMap<>();
+        optionsMap.put(CompilerOptions.OPTION_Source, CompilerOptions.VERSION_17);
+        optionsMap.put(CompilerOptions.OPTION_TargetPlatform, CompilerOptions.VERSION_17);
+        optionsMap.put(CompilerOptions.OPTION_Compliance, CompilerOptions.VERSION_17);
+        optionsMap.put(CompilerOptions.OPTION_Encoding, StandardCharsets.UTF_8.name());
+        optionsMap.put(CompilerOptions.OPTION_ReportDeprecation, CompilerOptions.IGNORE);
+        optionsMap.put(CompilerOptions.OPTION_ReportUnusedImport, CompilerOptions.IGNORE);
+        optionsMap.put(CompilerOptions.OPTION_EnablePreviews, CompilerOptions.DISABLED);
+        optionsMap.put(CompilerOptions.OPTION_Release, CompilerOptions.DISABLED);
+        optionsMap.put(CompilerOptions.OPTION_ReportUnstableAutoModuleName, CompilerOptions.DISABLED);
+        optionsMap.put(CompilerOptions.OPTION_IgnoreUnnamedModuleForSplitPackage, CompilerOptions.DISABLED);
+        options.set(optionsMap);
+        return options;
+    }
+
     /**
      * Compiles a single Java source unit in memory.
      *
-     * @param className fully-qualified class name
+     * @param className  fully-qualified class name
      * @param sourceCode UTF-8 Java source bytes
      * @return compiled class bytes by fully-qualified class name
      */
@@ -51,15 +68,10 @@ public class JDTInMemoryCompiler {
             InMemoryCompilationUnit unit = new InMemoryCompilationUnit(className, sourceCode);
             InMemoryCompilerRequestor requestor = new InMemoryCompilerRequestor();
 
-            Compiler compiler = new Compiler(
-                    nameEnvironment,
-                    DefaultErrorHandlingPolicies.proceedWithAllProblems(),
-                    compilerOptions(),
-                    requestor,
-                    new DefaultProblemFactory()
-            );
+            Compiler compiler = new Compiler(nameEnvironment, DefaultErrorHandlingPolicies.proceedWithAllProblems(),
+                    compilerOptions(), requestor, new DefaultProblemFactory());
 
-            compiler.compile(new ICompilationUnit[]{unit});
+            compiler.compile(new ICompilationUnit[] { unit });
 
             if (requestor.hasErrors()) {
                 throw new CompilationException("Compilation failed for " + className, requestor.getErrors());
@@ -77,23 +89,6 @@ public class JDTInMemoryCompiler {
 
     public ClassLoader parentClassLoader() {
         return parentClassLoader;
-    }
-
-    private static CompilerOptions compilerOptions() {
-        CompilerOptions options = new CompilerOptions();
-        Map<String, String> optionsMap = new HashMap<>();
-        optionsMap.put(CompilerOptions.OPTION_Source, CompilerOptions.VERSION_17);
-        optionsMap.put(CompilerOptions.OPTION_TargetPlatform, CompilerOptions.VERSION_17);
-        optionsMap.put(CompilerOptions.OPTION_Compliance, CompilerOptions.VERSION_17);
-        optionsMap.put(CompilerOptions.OPTION_Encoding, StandardCharsets.UTF_8.name());
-        optionsMap.put(CompilerOptions.OPTION_ReportDeprecation, CompilerOptions.IGNORE);
-        optionsMap.put(CompilerOptions.OPTION_ReportUnusedImport, CompilerOptions.IGNORE);
-        optionsMap.put(CompilerOptions.OPTION_EnablePreviews, CompilerOptions.DISABLED);
-        optionsMap.put(CompilerOptions.OPTION_Release, CompilerOptions.DISABLED);
-        optionsMap.put(CompilerOptions.OPTION_ReportUnstableAutoModuleName, CompilerOptions.DISABLED);
-        optionsMap.put(CompilerOptions.OPTION_IgnoreUnnamedModuleForSplitPackage, CompilerOptions.DISABLED);
-        options.set(optionsMap);
-        return options;
     }
 
     private static class InMemoryCompilationUnit implements ICompilationUnit {
@@ -155,6 +150,20 @@ public class JDTInMemoryCompiler {
             this.classLoader = classLoader;
         }
 
+        private static String join(char[][] parts) {
+            if (parts == null || parts.length == 0) {
+                return "";
+            }
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < parts.length; i++) {
+                if (i > 0) {
+                    result.append('.');
+                }
+                result.append(parts[i]);
+            }
+            return result.toString();
+        }
+
         @Override
         public NameEnvironmentAnswer findType(char[][] compoundTypeName) {
             return findType(join(compoundTypeName));
@@ -200,25 +209,16 @@ public class JDTInMemoryCompiler {
         public void cleanup() {
             // nothing to clean
         }
-
-        private static String join(char[][] parts) {
-            if (parts == null || parts.length == 0) {
-                return "";
-            }
-            StringBuilder result = new StringBuilder();
-            for (int i = 0; i < parts.length; i++) {
-                if (i > 0) {
-                    result.append('.');
-                }
-                result.append(parts[i]);
-            }
-            return result.toString();
-        }
     }
 
     private static class InMemoryCompilerRequestor implements ICompilerRequestor {
         private final Map<String, byte[]> compiledClasses = new HashMap<>();
         private final List<String> errors = new ArrayList<>();
+
+        private static String format(IProblem problem) {
+            return "%s:%d:%d: %s".formatted(new String(problem.getOriginatingFileName()), problem.getSourceLineNumber(),
+                                            problem.getSourceStart(), problem.getMessage());
+        }
 
         @Override
         public void acceptResult(CompilationResult result) {
@@ -233,19 +233,10 @@ public class JDTInMemoryCompiler {
 
             for (var classFile : result.getClassFiles()) {
                 char[][] compoundName = classFile.getCompoundName();
-                String className = String.join(".", Arrays.stream(compoundName)
-                        .map(String::new)
-                        .toArray(String[]::new));
+                String className = String.join(".",
+                                               Arrays.stream(compoundName).map(String::new).toArray(String[]::new));
                 compiledClasses.put(className, classFile.getBytes());
             }
-        }
-
-        private static String format(IProblem problem) {
-            return "%s:%d:%d: %s".formatted(
-                    new String(problem.getOriginatingFileName()),
-                    problem.getSourceLineNumber(),
-                    problem.getSourceStart(),
-                    problem.getMessage());
         }
 
         boolean hasErrors() {

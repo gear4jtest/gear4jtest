@@ -1,11 +1,10 @@
 package io.github.gear4jtest.core.engine.strategy;
 
-import io.github.gear4jtest.core.model.StationLogStatus;
-
 import io.github.gear4jtest.core.api.config.CancelPolicy;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 import io.github.gear4jtest.core.api.config.StopPolicy;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.model.StationLogStatus;
 
 final class FlowStrategySupport {
 
@@ -39,9 +38,8 @@ final class FlowStrategySupport {
     static void applyInterruptToParentLog(StationLogTrace parent, StationLogTrace child, FlowConfig config) {
         StationLogStatus childStatus = child.getStatus();
 
-        Exception representative = representativeException(
-                child,
-                "Interrupted child without error details: " + child.getOperationId());
+        Exception representative = representativeException(child, "Interrupted child without error details: "
+                + child.getOperationId());
 
         if (childStatus == StationLogStatus.FAILED) {
             parent.markFailed(representative);

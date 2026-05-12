@@ -1,7 +1,5 @@
 package io.github.gear4jtest.core.engine.strategy;
 
-import io.github.gear4jtest.core.model.StationLogStatus;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,6 +10,7 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.SequenceStation;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class SequenceStationStrategy extends AbstractStationStrategy<SequenceStation<?, ?>> {
@@ -22,7 +21,10 @@ public class SequenceStationStrategy extends AbstractStationStrategy<SequenceSta
     }
 
     @Override
-    public Object doExecute(SequenceStation<?, ?> station, Object input, StationRunner runner, StationExecutionContext operationExecution) {
+    public Object doExecute(SequenceStation<?, ?> station,
+                            Object input,
+                            StationRunner runner,
+                            StationExecutionContext operationExecution) {
         FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
 
         Object currentInput = input;
@@ -38,10 +40,8 @@ public class SequenceStationStrategy extends AbstractStationStrategy<SequenceSta
                         currentInput = childLog.getOutput();
                     }
                 }
-                case MARK_AND_PROCEED -> collectedErrors.add(
-                        FlowStrategySupport.representativeThrowable(
-                                childLog,
-                                "Step failed without exception: " + child.getId()));
+                case MARK_AND_PROCEED -> collectedErrors.add(FlowStrategySupport
+                        .representativeThrowable(childLog, "Step failed without exception: " + child.getId()));
                 case INTERRUPT -> {
                     StationLogTrace parentLog = operationExecution.getRecord();
                     FlowStrategySupport.applyInterruptToParentLog(parentLog, childLog, config);

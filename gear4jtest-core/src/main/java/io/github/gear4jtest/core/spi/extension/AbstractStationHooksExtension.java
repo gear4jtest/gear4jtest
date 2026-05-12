@@ -9,11 +9,14 @@ import io.github.gear4jtest.core.spi.runner.StationRunner;
 /**
  * Hook wrapper extension.
  *
- * <p>This extension participates in station execution and therefore runs inside the station
- * exception boundary. Any RuntimeException thrown here may be normalized into station status.
+ * <p>
+ * This extension participates in station execution and therefore runs inside
+ * the station exception boundary. Any RuntimeException thrown here may be
+ * normalized into station status.
  *
- * <p>If you need to observe the final normalized station status, use {@link StationLifecycleExtension}
- * instead of this wrapper SPI.
+ * <p>
+ * If you need to observe the final normalized station status, use
+ * {@link StationLifecycleExtension} instead of this wrapper SPI.
  */
 public abstract class AbstractStationHooksExtension implements StationWrapperExtension {
 
@@ -41,7 +44,9 @@ public abstract class AbstractStationHooksExtension implements StationWrapperExt
     protected void onResult(AbstractStation<?, ?> station, StationExecutionContext stationCtx, StationLogTrace log) {
     }
 
-    protected void onException(AbstractStation<?, ?> station, StationExecutionContext stationCtx, RuntimeException error) {
+    protected void onException(AbstractStation<?, ?> station,
+                               StationExecutionContext stationCtx,
+                               RuntimeException error) {
     }
 
     protected void onEnd(AbstractStation<?, ?> station, StationExecutionContext stationCtx) {

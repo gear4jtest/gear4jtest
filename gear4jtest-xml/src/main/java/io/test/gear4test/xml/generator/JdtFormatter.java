@@ -25,7 +25,8 @@ public final class JdtFormatter {
 
         CodeFormatter cf = ToolFactory.createCodeFormatter(opts);
         TextEdit edit = cf.format(CodeFormatter.K_COMPILATION_UNIT, src, 0, src.length(), 0, System.lineSeparator());
-        if (edit == null) return src; // en cas d’erreur, retourne brut
+        if (edit == null)
+            return src; // en cas d’erreur, retourne brut
 
         IDocument doc = new Document(src);
         try {

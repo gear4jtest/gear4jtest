@@ -8,7 +8,8 @@ Implemented.
 
 Gear4J has an asynchronous event runtime used for local reactions, side-compute and observability.
 
-The current implementation relies on in-memory queues and an executor. It does not persist events before hand-off and does not maintain a durable retry/replay log.
+The current implementation relies on in-memory queues and an executor. It does not persist events before hand-off and
+does not maintain a durable retry/replay log.
 
 ## Decision
 
@@ -43,7 +44,8 @@ Reactions may be lost if:
 - shutdown cancels pending work;
 - the reaction itself fails.
 
-Dropped and failed reactions should be observable through runtime stats and logs, but those stats are not durable audit records.
+Dropped and failed reactions should be observable through runtime stats and logs, but those stats are not durable audit
+records.
 
 ## Future direction
 

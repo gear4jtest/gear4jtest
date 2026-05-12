@@ -8,14 +8,14 @@ import io.github.gear4jtest.core.engine.support.WorkerConcurrencyStrategy;
 import io.github.gear4jtest.core.exception.ConcurrentTransformerUseException;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class OperatorConcurrencyGuardTest {
 
     @Test
     void failFast_shouldThrowOnConcurrentUseFromAnotherThread() throws Exception {
-        WorkerConcurrencyGuard guard =
-                new WorkerConcurrencyGuard(WorkerConcurrencyStrategy.FAIL_FAST);
+        WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard(WorkerConcurrencyStrategy.FAIL_FAST);
 
         CountDownLatch locked = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
@@ -39,8 +39,7 @@ class OperatorConcurrencyGuardTest {
         locked.await(2, TimeUnit.SECONDS);
 
         // Ici on est dans un autre thread que t1 -> tryLock doit échouer
-        assertThatThrownBy(guard::beforeUse)
-                .isInstanceOf(ConcurrentTransformerUseException.class)
+        assertThatThrownBy(guard::beforeUse).isInstanceOf(ConcurrentTransformerUseException.class)
                 .hasMessageContaining("Transformer is already in use");
 
         // On libère le premier thread proprement
@@ -51,8 +50,7 @@ class OperatorConcurrencyGuardTest {
 
     @Test
     void blockCaller_shouldBlockUntilLockIsReleased() throws Exception {
-        WorkerConcurrencyGuard guard =
-                new WorkerConcurrencyGuard(WorkerConcurrencyStrategy.BLOCK_CALLER);
+        WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard(WorkerConcurrencyStrategy.BLOCK_CALLER);
 
         CountDownLatch locked = new CountDownLatch(1);
 
@@ -82,17 +80,14 @@ class OperatorConcurrencyGuardTest {
         long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(after - before);
 
         // On tolère large pour éviter les flaky tests
-        assertThat(elapsedMillis)
-                .as("BLOCK_CALLER should block at least ~150ms")
-                .isGreaterThanOrEqualTo(150);
+        assertThat(elapsedMillis).as("BLOCK_CALLER should block at least ~150ms").isGreaterThanOrEqualTo(150);
 
         t1.join();
     }
 
     @Test
     void ignore_shouldNotLockAndNeverThrow() {
-        WorkerConcurrencyGuard guard =
-                new WorkerConcurrencyGuard(WorkerConcurrencyStrategy.IGNORE);
+        WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard(WorkerConcurrencyStrategy.IGNORE);
 
         // Appels répétés, aucune exception attendue
         for (int i = 0; i < 1000; i++) {

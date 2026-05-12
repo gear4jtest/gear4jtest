@@ -1,10 +1,10 @@
 package io.github.gear4jtest.core.event;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class EventTest {
 
@@ -16,8 +16,7 @@ class EventTest {
 
         Event event = new Event(pipelineId, executionId, type);
 
-        assertThat(event.getId()).isNotNull()
-                                 .isInstanceOf(UUID.class);
+        assertThat(event.getId()).isNotNull().isInstanceOf(UUID.class);
         assertThat(event.getPipelineId()).isEqualTo(pipelineId);
         assertThat(event.getExecutionId()).isEqualTo(executionId);
         assertThat(event.getName()).isEqualTo(type);

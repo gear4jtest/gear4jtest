@@ -2,7 +2,8 @@
 
 This directory contains longer-lived design documentation.
 
-Use module README files for module-specific usage. Use this directory for architectural concepts, decisions and future-direction notes that should survive individual refactors.
+Use module README files for module-specific usage. Use this directory for architectural concepts, decisions and
+future-direction notes that should survive individual refactors.
 
 ## Structure
 
