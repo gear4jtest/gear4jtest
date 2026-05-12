@@ -14,10 +14,8 @@ import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
 import io.github.gear4jtest.core.spi.extension.StationWrapperExtension;
 
 public final class RuntimeExtensionResolver {
-
     private static final Comparator<RuntimeExtension> ORDERING = Comparator.comparingInt(RuntimeExtension::getOrder)
             .thenComparing(ext -> ext.getClass().getName());
-
     private final List<RuntimeExtension> globalExtensions;
 
     public RuntimeExtensionResolver(List<RuntimeExtension> globalExtensions) {

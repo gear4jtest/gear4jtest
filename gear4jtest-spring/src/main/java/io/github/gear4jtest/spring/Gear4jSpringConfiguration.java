@@ -29,7 +29,6 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration(proxyBeanMethods = false)
 public class Gear4jSpringConfiguration {
-
     @Bean
     public ResourceFactory gear4jResourceFactory(ApplicationContext applicationContext) {
         return new SpringResourceFactory(applicationContext);

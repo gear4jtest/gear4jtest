@@ -25,7 +25,6 @@ import io.github.gear4jtest.core.api.behavior.StationSkipper;
  * </p>
  */
 public abstract class AbstractStation<I, O> {
-
     private final List<StationSkipper> skippers = new ArrayList<>();
     private final MutableStationMetadata metadata = new MutableStationMetadata();
     protected String id;

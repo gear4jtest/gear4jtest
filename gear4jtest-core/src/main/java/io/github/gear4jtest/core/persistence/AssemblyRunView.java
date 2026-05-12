@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Objects;
 
 public class AssemblyRunView {
-
     private final AssemblyRunRecord summary;
     private final List<StationLogRecord> rootOperations;
 

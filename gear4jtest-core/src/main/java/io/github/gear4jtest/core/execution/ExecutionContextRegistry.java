@@ -16,7 +16,6 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
  * </p>
  */
 public final class ExecutionContextRegistry {
-
     private final ConcurrentMap<UUID, ExecutionContext> contexts = new ConcurrentHashMap<>();
 
     /**

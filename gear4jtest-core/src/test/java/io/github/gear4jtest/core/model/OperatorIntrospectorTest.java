@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class OperatorIntrospectorTest {
-
     @Test
     void isStateful_shouldReturnFalseForPlainTransformerWithoutParameters() {
         PlainTransformer transformer = new PlainTransformer();

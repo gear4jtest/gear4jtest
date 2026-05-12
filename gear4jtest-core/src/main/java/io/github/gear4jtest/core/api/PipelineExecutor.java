@@ -9,7 +9,6 @@ package io.github.gear4jtest.core.api;
  * </p>
  */
 public interface PipelineExecutor {
-
     /**
      * Executes the provided pipeline with the provided run request.
      *

@@ -15,7 +15,6 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
  * </p>
  */
 public final class StationSkipper {
-
     private final SkipPhase phase;
     private final StationSkipTest test;
     private final String reason;

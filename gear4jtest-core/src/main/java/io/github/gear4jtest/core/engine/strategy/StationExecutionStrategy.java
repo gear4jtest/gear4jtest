@@ -15,7 +15,6 @@ import io.github.gear4jtest.core.spi.runner.StationRunner;
  * </p>
  */
 public interface StationExecutionStrategy<S extends AbstractStation<?, ?>> {
-
     /**
      * Returns whether this strategy can execute stations of the provided type.
      */

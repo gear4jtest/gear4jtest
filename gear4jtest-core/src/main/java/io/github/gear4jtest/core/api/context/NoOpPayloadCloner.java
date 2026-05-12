@@ -5,7 +5,6 @@ package io.github.gear4jtest.core.api.context;
  * payload reference.
  */
 public final class NoOpPayloadCloner implements PayloadCloner {
-
     @Override
     public <T> T clonePayload(T payload) {
         return payload;

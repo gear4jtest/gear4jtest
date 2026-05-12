@@ -10,7 +10,6 @@ import io.github.gear4jtest.core.api.AssemblyLine;
  * pipeline.
  */
 public record ReferencedPipelineTarget<IN, OUT>(PipelineReference reference) implements PipelineTarget<IN, OUT> {
-
     public ReferencedPipelineTarget {
         Objects.requireNonNull(reference, "reference must not be null");
     }

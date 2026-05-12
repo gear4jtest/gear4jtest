@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TaskFactoryTest {
-
     @Test
     void should_propagate_item_id_and_parent_operation_id_inside_async_task() throws Exception {
         // Given

@@ -22,7 +22,6 @@ import io.github.gear4jtest.core.persistence.StationLogRecord;
  * </p>
  */
 public interface StationLifecycleExtension extends RuntimeExtension {
-
     default LifecycleFailureMode failureMode() {
         return LifecycleFailureMode.BEST_EFFORT;
     }

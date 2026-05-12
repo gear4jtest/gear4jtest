@@ -4,7 +4,6 @@ import java.util.UUID;
 
 public class OperationErrorEvent extends OperationBaseEvent {
     private static final String TYPE = "OPERATION_ERROR";
-
     private final Exception exception;
 
     public OperationErrorEvent(String pipelineId,

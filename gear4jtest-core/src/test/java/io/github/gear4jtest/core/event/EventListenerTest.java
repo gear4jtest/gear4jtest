@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class EventListenerTest {
-
     @Test
     void accepts_shouldReturnTrueWhenEventMatchesTypeAndPredicate() {
         EventSubscription<StationFinishedEvent> subscription = EventSubscription

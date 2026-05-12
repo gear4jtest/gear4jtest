@@ -7,7 +7,6 @@ import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 
 final class FlowStrategySupport {
-
     private FlowStrategySupport() {
     }
 

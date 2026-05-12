@@ -9,7 +9,6 @@ import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
  * contract.
  */
 public record RuntimeRequirement(RuntimeRequirementType type, String key) {
-
     public RuntimeRequirement {
         Objects.requireNonNull(type, "type must not be null");
         if (key == null || key.isBlank()) {

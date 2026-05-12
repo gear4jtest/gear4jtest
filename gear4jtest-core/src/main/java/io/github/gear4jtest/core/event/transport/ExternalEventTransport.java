@@ -10,6 +10,5 @@ package io.github.gear4jtest.core.event.transport;
  * </p>
  */
 public interface ExternalEventTransport {
-
     PublishResult publish(EventEnvelope envelope) throws Exception;
 }

@@ -7,7 +7,6 @@ import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 
 public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
-
     private final List<AbstractStation<?, ?>> steps;
     private FlowConfig flowConfig;
     private boolean synthetic;
@@ -55,7 +54,6 @@ public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
     }
 
     public static class Builder<IN, OUT> {
-
         private final String id;
         private final String name;
         private final List<AbstractStation<?, ?>> accumulatedSteps;

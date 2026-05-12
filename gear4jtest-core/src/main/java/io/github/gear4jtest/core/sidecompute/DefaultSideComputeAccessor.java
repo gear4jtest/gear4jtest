@@ -7,7 +7,6 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
  * context.
  */
 public final class DefaultSideComputeAccessor implements SideComputeAccessor {
-
     private final ExecutionContext ctx;
 
     public DefaultSideComputeAccessor(ExecutionContext ctx) {

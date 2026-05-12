@@ -11,7 +11,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class ExecutionContextRegistryTest {
-
     @Test
     void registerAndGet_shouldReturnSameContext() {
         ExecutionContextRegistry registry = new ExecutionContextRegistry();

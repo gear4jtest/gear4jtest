@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentMap;
  * name.
  */
 public final class SideComputeContext {
-
     private final ConcurrentMap<String, CompletableFuture<?>> futures = new ConcurrentHashMap<>();
 
     @SuppressWarnings("unchecked")

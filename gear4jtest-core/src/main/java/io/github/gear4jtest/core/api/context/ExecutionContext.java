@@ -16,7 +16,6 @@ import io.github.gear4jtest.core.sidecompute.SideComputeContext;
 import io.github.gear4jtest.core.spi.factory.IdGenerator;
 
 public class ExecutionContext {
-
     private final ThreadLocal<String> currentItemId = new ThreadLocal<>();
     private final ThreadLocal<Deque<UUID>> parentStack = ThreadLocal.withInitial(ArrayDeque::new);
     private final UUID executionId;
@@ -152,7 +151,6 @@ public class ExecutionContext {
     }
 
     public static final class EventRuntimeOptions {
-
         private final boolean parameterResolvedEventsEnabled;
         private final EventPayloadPolicy eventPayloadPolicy;
 

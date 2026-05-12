@@ -3,7 +3,6 @@ package io.test.gear4jtest.external.api.translator;
 import java.util.Objects;
 
 public interface OperationChainTranslator {
-
     /**
      * Returns true when this translator can handle the supplied media type.
      *

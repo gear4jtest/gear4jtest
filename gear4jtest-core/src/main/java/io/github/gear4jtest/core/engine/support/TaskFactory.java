@@ -11,7 +11,6 @@ import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class TaskFactory {
-
     public Callable<StationLogTrace> createTask(Supplier<?> inputSupplier,
                                                 AbstractStation<?, ?> station,
                                                 StationRunner runner,

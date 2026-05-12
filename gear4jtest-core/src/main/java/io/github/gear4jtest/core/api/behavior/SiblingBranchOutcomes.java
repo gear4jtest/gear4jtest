@@ -9,7 +9,6 @@ import java.util.Set;
 import io.github.gear4jtest.core.model.StationLogStatus;
 
 public interface SiblingBranchOutcomes {
-
     static SiblingBranchOutcomes empty() {
         return ImmutableSiblingBranchOutcomes.EMPTY;
     }
@@ -51,7 +50,6 @@ public interface SiblingBranchOutcomes {
 
     final class ImmutableSiblingBranchOutcomes implements SiblingBranchOutcomes {
         private static final ImmutableSiblingBranchOutcomes EMPTY = new ImmutableSiblingBranchOutcomes(Map.of());
-
         private final Map<String, StationLogStatus> statuses;
 
         private ImmutableSiblingBranchOutcomes(Map<String, StationLogStatus> statuses) {

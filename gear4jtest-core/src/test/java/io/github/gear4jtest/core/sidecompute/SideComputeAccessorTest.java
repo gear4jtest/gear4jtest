@@ -12,7 +12,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class SideComputeAccessorTest {
-
     @Test
     void get_shouldReturnResolvedValueFromContext() {
         ExecutionContext execCtx = mock(ExecutionContext.class);

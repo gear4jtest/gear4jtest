@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class DefaultExpirableDependencyTracker implements ExpirableDependencyTracker {
-
     private final Map<String, Instant> consumedExpiries = new ConcurrentHashMap<>();
     private final Set<String> missingExpiryKeys = ConcurrentHashMap.newKeySet();
 

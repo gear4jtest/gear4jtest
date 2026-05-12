@@ -19,7 +19,6 @@ import io.github.gear4jtest.core.spi.extension.StationWrapperExtension;
  * Validation helpers for pipeline runtime contracts.
  */
 public final class PipelineRuntimeContractValidator {
-
     private PipelineRuntimeContractValidator() {
     }
 

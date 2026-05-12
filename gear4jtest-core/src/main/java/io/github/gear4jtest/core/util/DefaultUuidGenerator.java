@@ -13,7 +13,6 @@ import java.util.concurrent.ThreadLocalRandom;
  * </p>
  */
 public final class DefaultUuidGenerator {
-
     private static final Object LOCK = new Object();
     private static long lastTimestampMs = -1L;
     private static int counter = 0;

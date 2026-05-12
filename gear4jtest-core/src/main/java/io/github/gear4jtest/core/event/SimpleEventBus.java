@@ -5,10 +5,8 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class SimpleEventBus implements EventBus {
-
     private static final Event STOP_SIGNAL_EVENT = new Event(null, null, null);
     private final Object monitor = new Object();
-
     private final String id;
     private final LinkedBlockingQueue<Event> eventQueue;
     private final List<EventBusFilter> filters;
@@ -60,7 +58,6 @@ public class SimpleEventBus implements EventBus {
     }
 
     public static class Builder {
-
         private String id;
         private List<EventBusFilter> filters;
         private List<EventListener<?>> eventListeners;

@@ -9,9 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
-
     public static final InMemoryAssemblyRunRepository INSTANCE = new InMemoryAssemblyRunRepository();
-
     private final Map<UUID, AssemblyRunRecord> executions = new ConcurrentHashMap<>();
     private final Map<UUID, Map<UUID, StationLogRecord>> stationLogsByRunId = new ConcurrentHashMap<>();
 

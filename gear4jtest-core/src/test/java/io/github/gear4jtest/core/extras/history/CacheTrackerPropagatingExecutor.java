@@ -10,7 +10,6 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 public final class CacheTrackerPropagatingExecutor extends AbstractExecutorService {
-
     private final ExecutorService delegate;
 
     public CacheTrackerPropagatingExecutor(ExecutorService delegate) {

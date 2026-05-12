@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class WorkerParamsInjectorParameterTest {
-
     @Test
     void of_shouldCreatePersistentParameterWithNullDefaultValue() {
         Parameter<String> parameter = Parameter.<String>newBuilder().build();

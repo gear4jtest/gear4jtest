@@ -10,9 +10,7 @@ import java.util.Objects;
  * composition.
  */
 public final class PipelineCallStack {
-
     public static final int DEFAULT_MAX_DEPTH = 32;
-
     private final Deque<PipelineReference> stack;
     private final int maxDepth;
 

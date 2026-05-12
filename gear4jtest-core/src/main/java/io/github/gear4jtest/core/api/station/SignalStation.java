@@ -6,9 +6,7 @@ import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 public class SignalStation<IN> extends AbstractStation<IN, IN> {
-
     protected SignalType signalType;
-
     protected Predicate<SignalInterpretationContext<IN>> condition;
 
     public SignalStation() {
@@ -24,7 +22,6 @@ public class SignalStation<IN> extends AbstractStation<IN, IN> {
     }
 
     public static class Builder<IN> {
-
         private final SignalStation<IN> managedInstance;
 
         public Builder() {
@@ -49,7 +46,6 @@ public class SignalStation<IN> extends AbstractStation<IN, IN> {
         public SignalStation<IN> build() {
             return managedInstance;
         }
-
     }
 
     public static class SignalInterpretationContext<T> {
@@ -68,6 +64,5 @@ public class SignalStation<IN> extends AbstractStation<IN, IN> {
         public ExecutionContext getItemExecution() {
             return itemExecution;
         }
-
     }
 }

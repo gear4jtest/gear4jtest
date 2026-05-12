@@ -24,11 +24,9 @@ import javax.sql.DataSource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
-
     private static final String SCRIPT_POSTGRES = "/io/github/gear4j/db/postgresql/gear4j_schema.sql";
     private static final String SCRIPT_MYSQL = "/io/github/gear4j/db/mysql/gear4j_schema.sql";
     private static final String SCRIPT_H2 = "/io/github/gear4j/db/h2/gear4j_schema.sql";
-
     private final DataSource dataSource;
     private final ObjectMapper objectMapper = new ObjectMapper();
 

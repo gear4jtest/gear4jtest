@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SimpleBusDefinition {
-
     private String name;
     private Class<? extends EventBus> eventBusClass;
     private List<EventListener> eventListeners;
@@ -27,7 +26,6 @@ public class SimpleBusDefinition {
     }
 
     public static class Builder {
-
         private final SimpleBusDefinition managedInstance;
 
         Builder(String name, Class<? extends EventBus> eventBusClass) {
@@ -57,6 +55,5 @@ public class SimpleBusDefinition {
         public SimpleBusDefinition build() {
             return this.managedInstance;
         }
-
     }
 }

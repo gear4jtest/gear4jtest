@@ -6,7 +6,6 @@ import io.test.gear4jtest.external.api.artifact.ArtifactStore;
 import io.test.gear4jtest.external.api.artifact.InMemoryArtifactStore;
 
 public final class InMemoryArtifactStorePlugin implements ArtifactStorePlugin {
-
     @Override
     public String type() {
         return "MEMORY";

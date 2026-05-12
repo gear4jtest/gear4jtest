@@ -19,9 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PipelineCacheExtension implements RunInterceptorExtension, ExecutorWrapperExtension {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineCacheExtension.class);
-
     private final PipelineCachePolicy policy;
     private final PipelineCacheKeyFactory keyFactory;
     private final PipelineCacheRepository repository;

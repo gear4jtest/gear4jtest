@@ -14,7 +14,6 @@ import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.model.StationLogStatus;
 
 public final class SideComputer<E extends Event, T, R> {
-
     private final Class<E> eventType;
     private final Predicate<E> trigger;
     private final String key;
@@ -93,7 +92,6 @@ public final class SideComputer<E extends Event, T, R> {
     }
 
     public static final class Builder<E extends Event, T, R> {
-
         private final Class<E> eventType;
         private final String key;
         private final List<SideComputeHandler<E, T>> handlers = new ArrayList<>();

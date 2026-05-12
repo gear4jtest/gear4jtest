@@ -7,7 +7,6 @@ import java.util.Map;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 public final class WhitelistedContextFingerprintStrategy implements ContextFingerprintStrategy {
-
     private final List<String> keys;
     private final FingerprintStrategy<Object> delegate;
 

@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public final class PipelineCacheKey {
-
     private final String pipelineId;
     private final String pipelineVersion;
     private final byte[] inputFingerprint;

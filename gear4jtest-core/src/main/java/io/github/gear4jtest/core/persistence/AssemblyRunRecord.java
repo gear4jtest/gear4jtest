@@ -19,7 +19,6 @@ public record AssemblyRunRecord(UUID id,
                                 UUID parentExecutionId,
                                 UUID rootExecutionId,
                                 UUID parentStationLogId) {
-
     public static AssemblyRunRecord from(AssemblyRunTrace trace) {
         if (trace == null) {
             throw new IllegalArgumentException("trace must not be null");

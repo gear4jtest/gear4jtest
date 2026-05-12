@@ -8,13 +8,11 @@ import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 
 public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
-
     private UnaryWorkStation() {
         super();
     }
 
     public static class Builder<INOUT, OP extends Operator<INOUT, INOUT>> {
-
         private final UnaryWorkStation<INOUT> managedInstance;
 
         public Builder() {
@@ -101,15 +99,12 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
         public UnaryWorkStation<INOUT> build() {
             return managedInstance;
         }
-
     }
 
     public static class UnsafeOperation<INOUT, OP extends Operator<INOUT, INOUT>> {
-
         private UnaryWorkStation.Builder<INOUT, OP> operation;
 
         public static class Builder<INOUT, OP extends Operator<INOUT, INOUT>> {
-
             private UnsafeOperation<INOUT, OP> managedInstance;
 
             public Builder(UnaryWorkStation.Builder<INOUT, OP> operation) {
@@ -140,11 +135,9 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
     }
 
     public static class SafeOperation<INOUT, OP extends Operator<INOUT, INOUT>> {
-
         private UnaryWorkStation.Builder<INOUT, OP> operation;
 
         public static class Builder<INOUT, OP extends Operator<INOUT, INOUT>> {
-
             private SafeOperation<INOUT, OP> managedInstance;
 
             public Builder(UnaryWorkStation.Builder<INOUT, OP> operation) {

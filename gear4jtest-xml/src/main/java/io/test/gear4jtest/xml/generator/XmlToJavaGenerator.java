@@ -24,9 +24,7 @@ import io.test.gear4jtest.xml.model.XmlPipelineDefinition.SupplierParameter;
 import io.test.gear4jtest.xml.model.XmlPipelineDefinition.ValueParameter;
 
 public final class XmlToJavaGenerator {
-
     public static final String DEFAULT_PACKAGE = "io.test.gear4jtest.xml.generated";
-
     private final String packageName;
     private final ClassLoader classLoader;
 

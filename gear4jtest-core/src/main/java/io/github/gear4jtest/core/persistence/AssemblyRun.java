@@ -15,7 +15,6 @@ public class AssemblyRun {
     private Instant endTime;
     private String errorMessage;
     private Exception error;
-
     private UUID parentExecutionId;
     private UUID rootExecutionId;
     private UUID parentStationLogId;

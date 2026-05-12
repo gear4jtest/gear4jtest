@@ -17,7 +17,6 @@ public class AssemblyRunTrace {
     private Instant endTime;
     private String errorMessage;
     private Exception error;
-
     private UUID parentExecutionId;
     private UUID rootExecutionId;
     private UUID parentStationLogId;

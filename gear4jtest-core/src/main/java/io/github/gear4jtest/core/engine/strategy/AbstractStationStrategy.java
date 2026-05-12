@@ -16,7 +16,6 @@ import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> implements StationExecutionStrategy<S> {
-
     /**
      * Captures the input/output type variables of an {@link Operator} once, so the
      * unchecked cast on the input is confined to a single place instead of

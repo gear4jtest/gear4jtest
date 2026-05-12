@@ -9,9 +9,7 @@ import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 
 public final class AssemblyLineValidator {
-
     private static final String DEFAULT_SCHEMA = "/assembly-line.xsd";
-
     private final Schema schema;
 
     public AssemblyLineValidator() {

@@ -6,7 +6,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 final class JavaImportManager {
-
     private final String packageName;
     private final Map<String, String> importsBySimpleName = new TreeMap<>();
     private final Set<String> staticImports = new TreeSet<>();

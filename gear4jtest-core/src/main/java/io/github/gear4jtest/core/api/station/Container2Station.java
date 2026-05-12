@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Container2Station<IN, OUT, A, B> extends ContainerBaseStation<IN, OUT> {
-
     private Container2Station(List<Branch<IN>> subLines) {
         super(new ArrayList<>(2), null);
         this.pipelines.add(subLines.get(0));
@@ -23,7 +22,6 @@ public class Container2Station<IN, OUT, A, B> extends ContainerBaseStation<IN, O
     }
 
     public static class Builder<IN, OUT, A, B> {
-
         private final Container2Station<IN, OUT, A, B> managedInstance;
 
         public Builder(ContainerBaseStation<IN, OUT> parentDefinition, Branch<IN> newLine) {

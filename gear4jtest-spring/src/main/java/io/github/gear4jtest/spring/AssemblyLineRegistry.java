@@ -14,7 +14,6 @@ import io.github.gear4jtest.core.api.AssemblyLine;
  * </p>
  */
 public interface AssemblyLineRegistry {
-
     List<AssemblyLine<?, ?>> getAll();
 
     Optional<AssemblyLine<?, ?>> findByBeanName(String beanName);

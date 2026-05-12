@@ -21,7 +21,6 @@ import io.github.gear4jtest.core.spi.runner.StationRunner;
  * </p>
  */
 public abstract class AbstractStationHooksExtension implements StationWrapperExtension {
-
     @Override
     public final StationRunner wrapStationRunner(StationRunner delegate, ExecutionContext ctx) {
         return (input, station, parentCtx) -> {

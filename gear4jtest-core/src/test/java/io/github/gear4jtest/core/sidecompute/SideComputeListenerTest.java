@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SideComputeListenerTest {
-
     @Test
     void sideComputer_shouldSupportCustomUserEvents() {
         ExecutionContextRegistry registry = new ExecutionContextRegistry();

@@ -14,7 +14,6 @@ import io.github.gear4jtest.core.util.DefaultUuidGenerator;
  */
 @FunctionalInterface
 public interface IdGenerator {
-
     /**
      * Returns the default UUIDv7 generator.
      */

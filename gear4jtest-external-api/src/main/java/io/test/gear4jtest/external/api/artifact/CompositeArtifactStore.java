@@ -7,7 +7,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public final class CompositeArtifactStore implements ArtifactStore {
-
     private final ArtifactStore primary;
     private final java.util.List<ArtifactStore> fallbacks;
     private final WriteMode writeMode;

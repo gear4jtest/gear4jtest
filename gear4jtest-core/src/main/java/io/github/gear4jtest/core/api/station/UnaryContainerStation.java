@@ -8,13 +8,11 @@ import io.github.gear4jtest.core.api.behavior.Condition;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 
 public class UnaryContainerStation<A> extends ContainerBaseStation<A, A> {
-
     private UnaryContainerStation() {
         super(new ArrayList<>(), null);
     }
 
     public static class Builder<A> {
-
         private final UnaryContainerStation<A> managedInstance;
 
         public Builder() {

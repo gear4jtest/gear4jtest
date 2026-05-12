@@ -6,7 +6,6 @@ import io.github.gear4jtest.core.api.behavior.BranchCondition;
 import io.github.gear4jtest.core.api.behavior.Condition;
 
 public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT> {
-
     private Container1Station() {
         super(new ArrayList<>(1), null);
     }
@@ -28,7 +27,6 @@ public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT>
     }
 
     public static class Builder<IN, OUT, A> {
-
         private final Container1Station<IN, OUT, A> managedInstance;
 
         public Builder(ContainerBaseStation<IN, OUT> parentDefinition, Branch<IN> branch) {

@@ -15,7 +15,6 @@ import java.util.function.Supplier;
  * </p>
  */
 public final class StationScopedResourceRegistry {
-
     private final Map<String, Object> resources = new ConcurrentHashMap<>();
 
     private static String key(String stationId, Class<?> type) {

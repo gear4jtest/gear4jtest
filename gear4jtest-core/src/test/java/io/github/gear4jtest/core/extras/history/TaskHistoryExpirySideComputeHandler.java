@@ -8,7 +8,6 @@ import io.github.gear4jtest.core.sidecompute.SideComputeHandler;
 
 public final class TaskHistoryExpirySideComputeHandler<T>
         implements SideComputeHandler<StationFinishedEvent, TaskHistoryResult<T>> {
-
     @Override
     public void handle(String sideComputeKey,
                        StationFinishedEvent event,

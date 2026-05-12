@@ -13,7 +13,6 @@ import io.github.gear4jtest.core.api.behavior.Condition;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 
 public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
-
     protected final List<Branch<IN>> pipelines;
     protected ContainerFunction<OUT> func;
     protected boolean isParallel = false;

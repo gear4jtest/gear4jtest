@@ -9,7 +9,6 @@ import io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 
 public class InMemoryExecutionManager implements AssemblyRunManager {
-
     @Override
     public void start(AssemblyRunTrace execution) {
         Objects.requireNonNull(execution, "execution must not be null");

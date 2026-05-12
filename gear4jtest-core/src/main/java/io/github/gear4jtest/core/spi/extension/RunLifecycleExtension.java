@@ -23,7 +23,6 @@ import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
  * </p>
  */
 public interface RunLifecycleExtension extends RuntimeExtension {
-
     default LifecycleFailureMode failureMode() {
         return LifecycleFailureMode.BEST_EFFORT;
     }

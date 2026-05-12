@@ -8,7 +8,6 @@ import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class ScopeInitializingRunner implements StationRunner {
-
     private final StationRunner delegate;
 
     public ScopeInitializingRunner(StationRunner delegate) {

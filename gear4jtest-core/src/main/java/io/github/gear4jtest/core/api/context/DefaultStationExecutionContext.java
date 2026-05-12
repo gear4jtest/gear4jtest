@@ -9,13 +9,11 @@ import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 
 public class DefaultStationExecutionContext implements StationExecutionContext {
-
     private final String operationId;
     private final StationKind kind;
     private final ExecutionContext globalContext;
     private final StationLogTrace record;
     private final ExecutionSupport support;
-
     private final Map<Class<?>, Object> capabilities = new HashMap<>();
 
     public DefaultStationExecutionContext(String operationId,

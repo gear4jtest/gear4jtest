@@ -12,7 +12,6 @@ import io.github.gear4jtest.core.exception.SideComputeExecutionException;
 import io.github.gear4jtest.core.exception.SideComputeTimeoutException;
 
 public final class SideComputeWaitProcessor implements Processor {
-
     private final String key;
     private final Duration timeout;
     private final OnTimeout onTimeout;

@@ -28,7 +28,6 @@ import io.test.gear4jtest.external.api.spi.ArtifactStoreResolver;
  * </p>
  */
 public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider {
-
     private final ArtifactStoreResolver resolver;
     private final ArtifactStorePlugin.Context ctx;
     private final Executor asyncExec;

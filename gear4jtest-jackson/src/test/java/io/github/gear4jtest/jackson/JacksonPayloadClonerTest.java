@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class JacksonPayloadClonerTest {
-
     private final JacksonPayloadCloner cloner = new JacksonPayloadCloner(new ObjectMapper().findAndRegisterModules());
 
     @Test

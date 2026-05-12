@@ -7,7 +7,6 @@ import io.github.gear4jtest.core.api.station.StationKind;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 
 public final class StationContextUtils {
-
     private StationContextUtils() {
         // utility class
     }

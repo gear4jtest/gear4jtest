@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SimpleEventBusThreadingTest {
-
     @Test
     void reactions_shouldRunOffThePublishingThread() throws Exception {
         AtomicReference<String> threadName = new AtomicReference<>();

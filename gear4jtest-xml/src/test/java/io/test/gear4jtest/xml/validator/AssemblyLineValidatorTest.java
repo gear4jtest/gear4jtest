@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AssemblyLineValidatorTest {
-
     private final AssemblyLineValidator validator = new AssemblyLineValidator();
 
     private static byte[] resource(String name) throws IOException {

@@ -16,7 +16,6 @@ import io.github.gear4jtest.core.api.context.PayloadCloners;
  * </p>
  */
 public final class ExecutionSupport {
-
     private final ExecutorDecorator executorDecorator;
     private final TaskFactory taskFactory;
     private final PayloadCloner payloadCloner;

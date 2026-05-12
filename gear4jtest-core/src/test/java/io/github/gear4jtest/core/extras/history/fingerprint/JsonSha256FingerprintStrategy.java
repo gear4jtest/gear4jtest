@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 public final class JsonSha256FingerprintStrategy<T> implements FingerprintStrategy<T> {
-
     private final ObjectMapper mapper;
 
     public JsonSha256FingerprintStrategy() {

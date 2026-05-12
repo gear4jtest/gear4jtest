@@ -45,9 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PipelineEngine implements PipelineExecutor {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineEngine.class);
-
     private final ResourceFactory resourceFactory;
     private final RunnerChainFactory runnerChainFactory;
     private final RuntimeExtensionResolver extensionResolver;

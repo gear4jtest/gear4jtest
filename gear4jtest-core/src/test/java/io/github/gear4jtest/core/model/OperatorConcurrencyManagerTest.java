@@ -9,7 +9,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class OperatorConcurrencyManagerTest {
-
     @Test
     void guardFor_shouldReturnSameGuardForSameTransformerInstance() {
         WorkerConcurrencyManager manager = new WorkerConcurrencyManager();

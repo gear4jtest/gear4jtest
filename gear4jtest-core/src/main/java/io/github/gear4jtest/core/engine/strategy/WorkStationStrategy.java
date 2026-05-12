@@ -17,13 +17,11 @@ import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, ?>> {
-
     /**
      * Shared concurrency manager used to protect stateful operators during station
      * execution.
      */
     private static final WorkerConcurrencyManager CONCURRENCY_MANAGER = new WorkerConcurrencyManager();
-
     /**
      * Thread-local guard acquired for the current execution, if any.
      */

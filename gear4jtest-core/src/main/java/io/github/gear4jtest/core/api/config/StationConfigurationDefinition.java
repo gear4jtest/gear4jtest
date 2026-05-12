@@ -30,7 +30,6 @@ public class StationConfigurationDefinition {
     // }
 
     public static class Builder {
-
         private final StationConfigurationDefinition managedInstance;
 
         public Builder() {
@@ -85,5 +84,4 @@ public class StationConfigurationDefinition {
             return managedInstance;
         }
     }
-
 }

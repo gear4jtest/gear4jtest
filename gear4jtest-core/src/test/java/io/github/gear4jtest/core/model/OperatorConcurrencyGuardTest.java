@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class OperatorConcurrencyGuardTest {
-
     @Test
     void failFast_shouldThrowOnConcurrentUseFromAnotherThread() throws Exception {
         WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard(WorkerConcurrencyStrategy.FAIL_FAST);

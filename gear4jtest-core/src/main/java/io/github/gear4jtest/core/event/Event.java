@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 public class Event {
-
     private final UUID id;
     private final String pipelineId;
     private final UUID executionId;

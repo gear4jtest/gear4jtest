@@ -10,7 +10,6 @@ package io.github.gear4jtest.core.api.config;
  * </p>
  */
 public record FlowConfig(FailurePolicy failurePolicy, StopPolicy stopPolicy, CancelPolicy cancelPolicy) {
-
     public static final FlowConfig DEFAULT = new FlowConfig(FailurePolicy.FAIL_FAST, StopPolicy.PROPAGATE_STOP,
             CancelPolicy.PROPAGATE_CANCEL);
 }

@@ -1,7 +1,6 @@
 package io.github.gear4jtest.core.exception;
 
 public final class StationExecutionException extends Gear4JException {
-
     private static final long serialVersionUID = 1L;
 
     public StationExecutionException(Exception cause) {

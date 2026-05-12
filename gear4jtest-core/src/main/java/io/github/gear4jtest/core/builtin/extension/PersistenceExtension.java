@@ -19,7 +19,6 @@ import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
  * </p>
  */
 public class PersistenceExtension implements RunLifecycleExtension, StationLifecycleExtension {
-
     private final AssemblyRunManager manager;
 
     public PersistenceExtension(AssemblyRunManager manager) {

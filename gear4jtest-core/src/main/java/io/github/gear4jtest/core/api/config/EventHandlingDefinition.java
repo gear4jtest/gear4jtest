@@ -38,7 +38,6 @@ import io.github.gear4jtest.core.sidecompute.SideComputer;
  * </p>
  */
 public class EventHandlingDefinition {
-
     private final List<EventSubscription<?>> subscriptions;
     private final List<SideComputer<?, ?, ?>> sideComputers;
     private final EventConfiguration globalEventConfiguration;
@@ -81,7 +80,6 @@ public class EventHandlingDefinition {
     }
 
     public static class Builder {
-
         private final List<EventSubscription<?>> subscriptions = new ArrayList<>();
         private final List<SideComputer<?, ?, ?>> sideComputers = new ArrayList<>();
         private EventConfiguration globalEventConfiguration;
@@ -125,7 +123,6 @@ public class EventHandlingDefinition {
      * Configuration of globally applied event features for a pipeline.
      */
     public static class EventConfiguration {
-
         private final boolean eventOnParameterChanged;
         private final EventPayloadPolicy eventPayloadPolicy;
 
@@ -148,7 +145,6 @@ public class EventHandlingDefinition {
         }
 
         public static class Builder {
-
             private boolean eventOnParameterChanged;
             private EventPayloadPolicy eventPayloadPolicy;
 
@@ -179,7 +175,6 @@ public class EventHandlingDefinition {
      * </p>
      */
     public static class RuntimeConfiguration {
-
         private static final ExecutorService DEFAULT_SHARED_REACTION_EXECUTOR = createDefaultSharedReactionExecutor();
         private final Supplier<ExecutorService> perRunReactionExecutorFactory;
         private final ExecutorService sharedReactionExecutor;
@@ -240,7 +235,6 @@ public class EventHandlingDefinition {
         }
 
         private static final class Gear4jEventThreadFactory implements ThreadFactory {
-
             private static final AtomicInteger COUNTER = new AtomicInteger();
 
             @Override
@@ -252,7 +246,6 @@ public class EventHandlingDefinition {
         }
 
         public static class Builder {
-
             private Supplier<ExecutorService> perRunReactionExecutorFactory;
             private ExecutorService sharedReactionExecutor;
             private Duration shutdownTimeout;

@@ -23,9 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DatabaseExecutionManager implements AssemblyRunManager {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseExecutionManager.class);
-
     private final DatabaseAssemblyRunRepository repository;
     private final Map<UUID, RunBuffer> buffers = new ConcurrentHashMap<>();
     private final ExecutorService flushExecutor;

@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentMap;
 import static io.github.gear4jtest.core.engine.support.WorkerParamsInjector.Parameter;
 
 public final class WorkerIntrospector {
-
     private static final ConcurrentMap<Class<?>, Boolean> STATEFUL_CACHE = new ConcurrentHashMap<>();
 
     private WorkerIntrospector() {

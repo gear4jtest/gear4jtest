@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class MutableStationMetadata implements StationMetadata {
-
     private final Map<Class<?>, Object> values = new ConcurrentHashMap<>();
 
     @Override

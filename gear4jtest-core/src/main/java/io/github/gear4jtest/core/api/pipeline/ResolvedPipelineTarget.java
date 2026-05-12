@@ -13,7 +13,6 @@ public record ResolvedPipelineTarget<IN, OUT>(PipelineReference declaredReferenc
                                               PipelineReference resolvedReference,
                                               AssemblyLine<IN, OUT> pipeline)
         implements PipelineTarget<IN, OUT> {
-
     public ResolvedPipelineTarget {
         Objects.requireNonNull(declaredReference, "declaredReference must not be null");
         Objects.requireNonNull(resolvedReference, "resolvedReference must not be null");

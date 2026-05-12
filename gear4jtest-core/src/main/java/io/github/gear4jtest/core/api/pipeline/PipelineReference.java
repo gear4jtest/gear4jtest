@@ -8,7 +8,6 @@ import io.github.gear4jtest.core.api.AssemblyLine;
  * Stable declarative reference to a pipeline id/version pair.
  */
 public record PipelineReference(String pipelineId, String version) {
-
     public PipelineReference {
         if (pipelineId == null || pipelineId.isBlank()) {
             throw new IllegalArgumentException("pipelineId must not be blank");

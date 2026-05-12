@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class CompositeFingerprint {
-
     private final List<byte[]> parts = new ArrayList<>();
 
     private static byte[] intToBytes(int v) {

@@ -4,7 +4,6 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 
 @FunctionalInterface
 public interface StationSkipTest {
-
     /**
      * Evaluates whether the current station execution should be skipped.
      *

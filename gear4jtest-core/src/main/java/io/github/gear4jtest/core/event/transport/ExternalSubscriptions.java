@@ -9,7 +9,6 @@ import io.github.gear4jtest.core.event.EventSubscription;
  * Convenience factory for forwarding subscriptions.
  */
 public final class ExternalSubscriptions {
-
     private ExternalSubscriptions() {
     }
 

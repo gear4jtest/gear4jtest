@@ -16,9 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class StationLifecycleRunner implements StationRunner {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(StationLifecycleRunner.class);
-
     private final StationRunner delegate;
     private final List<StationLifecycleExtension> lifecycleExtensions;
 

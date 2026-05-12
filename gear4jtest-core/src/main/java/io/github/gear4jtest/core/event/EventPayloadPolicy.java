@@ -18,7 +18,6 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
  * </p>
  */
 public interface EventPayloadPolicy {
-
     static EventPayloadPolicy passthrough() {
         return new EventPayloadPolicy() {
             @Override

@@ -10,7 +10,6 @@ import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class IfElseContainerStationStrategy extends AbstractStationStrategy<UnaryIfElseContainerStation<?>> {
-
     @SuppressWarnings("unchecked")
     private static <I> boolean evaluateBranchCondition(ContainerBaseStation.Branch<I> branch,
                                                        Object input,

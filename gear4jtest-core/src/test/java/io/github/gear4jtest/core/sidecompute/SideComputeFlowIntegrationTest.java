@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SideComputeFlowIntegrationTest {
-
     @Test
     void failing_required_processor_should_abort_station_before_operator_execution() {
         AtomicInteger operatorExecutions = new AtomicInteger();

@@ -11,10 +11,8 @@ import java.util.UUID;
 import io.github.gear4jtest.core.model.StationLogStatus;
 
 public class StationLogTrace {
-
     private transient Object output;
     private transient List<Throwable> throwables;
-
     private UUID id;
     private UUID pipelineExecutionId;
     private String operationId;

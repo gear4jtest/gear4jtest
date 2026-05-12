@@ -4,7 +4,6 @@ package io.github.gear4jtest.core.api.context;
  * Factory methods for built-in {@link PayloadCloner} implementations.
  */
 public final class PayloadCloners {
-
     private static final PayloadCloner IMMUTABLE_AWARE = new ImmutableAwarePayloadCloner();
     private static final PayloadCloner NO_OP_UNSAFE = new NoOpPayloadCloner();
 

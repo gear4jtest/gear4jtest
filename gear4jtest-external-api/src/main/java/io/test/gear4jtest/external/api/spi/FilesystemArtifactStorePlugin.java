@@ -7,7 +7,6 @@ import io.test.gear4jtest.external.api.artifact.ArtifactStore;
 import io.test.gear4jtest.external.api.artifact.FilesystemArtifactStore;
 
 public final class FilesystemArtifactStorePlugin implements ArtifactStorePlugin {
-
     @Override
     public String type() {
         return "FILESYSTEM";

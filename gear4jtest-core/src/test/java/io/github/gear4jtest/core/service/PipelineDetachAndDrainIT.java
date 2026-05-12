@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PipelineDetachAndDrainIT {
-
     private static void awaitRegistryRemoval(ExecutionContextRegistry registry, UUID executionId)
             throws InterruptedException {
         long deadline = System.currentTimeMillis() + 2_000L;

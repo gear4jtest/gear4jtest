@@ -4,7 +4,6 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 public final class EventSubscription<T extends Event> {
-
     private final Class<T> eventType;
     private final Predicate<? super T> predicate;
     private final EventReaction<? super T> reaction;

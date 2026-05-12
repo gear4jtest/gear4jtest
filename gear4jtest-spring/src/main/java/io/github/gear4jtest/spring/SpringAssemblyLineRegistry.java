@@ -14,7 +14,6 @@ import org.springframework.beans.factory.ListableBeanFactory;
  * Default Spring-backed {@link AssemblyLineRegistry}.
  */
 public final class SpringAssemblyLineRegistry implements AssemblyLineRegistry {
-
     private final Map<String, AssemblyLine<?, ?>> assemblyLinesByBeanName;
 
     @SuppressWarnings("rawtypes")

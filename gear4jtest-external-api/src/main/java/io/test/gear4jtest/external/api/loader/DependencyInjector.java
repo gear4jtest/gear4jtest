@@ -5,7 +5,6 @@ import java.util.Optional;
 import io.test.gear4jtest.external.api.ExecutionMode;
 
 public interface DependencyInjector {
-
     /**
      * Injects registered dependencies into the supplied instance.
      */

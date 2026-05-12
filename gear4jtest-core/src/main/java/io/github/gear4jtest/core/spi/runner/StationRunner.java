@@ -16,7 +16,6 @@ import io.github.gear4jtest.core.execution.trace.StationLogTrace;
  */
 @FunctionalInterface
 public interface StationRunner {
-
     /**
      * Executes the provided station with the provided input.
      */

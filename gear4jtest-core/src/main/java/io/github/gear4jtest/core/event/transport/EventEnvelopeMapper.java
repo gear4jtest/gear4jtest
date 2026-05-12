@@ -10,6 +10,5 @@ import io.github.gear4jtest.core.event.Event;
  * </p>
  */
 public interface EventEnvelopeMapper {
-
     EventEnvelope map(Event event) throws Exception;
 }

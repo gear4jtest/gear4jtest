@@ -26,7 +26,6 @@ import org.eclipse.jdt.internal.compiler.lookup.ModuleBinding;
 import org.eclipse.jdt.internal.compiler.problem.DefaultProblemFactory;
 
 public class JDTInMemoryCompiler {
-
     private final ClassLoader parentClassLoader;
     private final InMemoryNameEnvironment nameEnvironment;
 

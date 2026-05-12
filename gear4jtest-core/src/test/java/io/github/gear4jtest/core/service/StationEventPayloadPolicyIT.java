@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class StationEventPayloadPolicyIT {
-
     @Test
     void stationEvents_shouldRespectConfiguredPayloadPolicy() {
         CopyOnWriteArrayList<StationFinishedEvent> seenEvents = new CopyOnWriteArrayList<>();

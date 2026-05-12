@@ -6,7 +6,6 @@ import java.util.Objects;
 public record PipelineCachePolicy(boolean enabled,
                                   NoDependencyCachePolicy noDependencyCachePolicy,
                                   Duration defaultTtl) {
-
     public PipelineCachePolicy {
         Objects.requireNonNull(noDependencyCachePolicy, "noDependencyCachePolicy");
         if (noDependencyCachePolicy == NoDependencyCachePolicy.USE_DEFAULT_TTL) {

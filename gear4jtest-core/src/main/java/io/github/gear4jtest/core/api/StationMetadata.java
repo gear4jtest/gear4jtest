@@ -11,7 +11,6 @@ import java.util.Optional;
  * </p>
  */
 public interface StationMetadata {
-
     <T> Optional<T> get(Class<T> type);
 
     default <T> T require(Class<T> type) {

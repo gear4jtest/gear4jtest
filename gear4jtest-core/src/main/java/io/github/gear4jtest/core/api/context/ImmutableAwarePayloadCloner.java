@@ -40,7 +40,6 @@ import io.github.gear4jtest.core.exception.PayloadCloneException;
  * </p>
  */
 public final class ImmutableAwarePayloadCloner implements PayloadCloner {
-
     private static final Set<Class<?>> IMMUTABLE_TYPES = Set
             .of(String.class, Boolean.class, Byte.class, Short.class, Integer.class, Long.class, Float.class,
                 Double.class, Character.class, BigDecimal.class, BigInteger.class, UUID.class, URI.class, URL.class,

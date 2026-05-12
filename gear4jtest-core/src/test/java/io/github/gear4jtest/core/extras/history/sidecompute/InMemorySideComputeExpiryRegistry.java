@@ -6,7 +6,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class InMemorySideComputeExpiryRegistry implements SideComputeExpiryRegistry {
-
     private final Map<String, Instant> expiries = new ConcurrentHashMap<>();
 
     @Override

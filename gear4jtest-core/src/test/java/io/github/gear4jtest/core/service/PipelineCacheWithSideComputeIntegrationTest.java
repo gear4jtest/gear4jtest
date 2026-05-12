@@ -42,7 +42,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PipelineCacheWithSideComputeIntegrationTest {
-
     @SafeVarargs
     private static EventManager eventManager(ExecutionContextRegistry registry,
                                              SideComputer<?, ?, ?>... sideComputers) {
@@ -259,7 +258,6 @@ class PipelineCacheWithSideComputeIntegrationTest {
 
     private static final class RichCustomerPayloadExpiryHandler
             implements SideComputeHandler<StationFinishedEvent, RichCustomerPayload> {
-
         @Override
         public void handle(String sideComputeKey,
                            StationFinishedEvent event,
@@ -281,7 +279,6 @@ class PipelineCacheWithSideComputeIntegrationTest {
 
     private static final class TaskHistoryExpirySideComputeHandler<T>
             implements SideComputeHandler<StationFinishedEvent, TaskHistoryResult<T>> {
-
         @Override
         public void handle(String sideComputeKey,
                            StationFinishedEvent event,
@@ -302,7 +299,6 @@ class PipelineCacheWithSideComputeIntegrationTest {
     }
 
     private static final class FakeRawTaskHistoryApi implements RawTaskHistoryApi {
-
         private final Map<String, TaskHistoryResult<?>> values;
         private final AtomicInteger totalCalls = new AtomicInteger();
 

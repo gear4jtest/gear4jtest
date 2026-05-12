@@ -10,7 +10,6 @@ import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class TerminalStationRunner implements StationRunner {
-
     private final StrategyRegistry registry;
     private final StationRunner recursiveRunner;
 

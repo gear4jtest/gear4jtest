@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ExpirableDependencyTracker {
-
     void recordConsumed(String key, Instant expiresAt);
 
     void recordMissingExpiry(String key);

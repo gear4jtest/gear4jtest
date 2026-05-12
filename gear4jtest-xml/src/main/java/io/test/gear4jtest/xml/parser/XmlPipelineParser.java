@@ -33,7 +33,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 public final class XmlPipelineParser {
-
     private static Element firstOperationChild(Element parent) {
         for (Element child : children(parent)) {
             String name = localName(child);

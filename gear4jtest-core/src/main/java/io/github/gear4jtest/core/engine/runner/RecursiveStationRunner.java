@@ -8,7 +8,6 @@ import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class RecursiveStationRunner implements StationRunner {
-
     private final StationRunner rootRunner;
 
     public RecursiveStationRunner(StationRunner rootRunner) {

@@ -43,7 +43,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ContainerStationStrategyTest {
-
     private static StationExecutionContext newOperationExecutionContext(String operationId) {
         AssemblyRunTrace assemblyRun = new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of());
         var resourceFactory = new ResourceFactory() {

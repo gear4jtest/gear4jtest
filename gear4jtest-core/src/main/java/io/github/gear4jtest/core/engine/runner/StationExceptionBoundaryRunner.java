@@ -12,9 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class StationExceptionBoundaryRunner implements StationRunner {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(StationExceptionBoundaryRunner.class);
-
     private final StationRunner delegate;
     private final StationErrorPolicyExecutor errorPolicyExecutor;
 

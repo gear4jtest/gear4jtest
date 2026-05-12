@@ -8,7 +8,6 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector.Parameter;
 
 public class Step3 implements Operator<String, Map<String, String>> {
-
     private final Parameter<String> param = Parameter.<String>newBuilder().build();
 
     @Override
@@ -24,5 +23,4 @@ public class Step3 implements Operator<String, Map<String, String>> {
     public Parameter<String> getParam() {
         return param;
     }
-
 }

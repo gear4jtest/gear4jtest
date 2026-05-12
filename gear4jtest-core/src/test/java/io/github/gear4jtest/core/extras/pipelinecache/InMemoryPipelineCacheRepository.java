@@ -6,7 +6,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class InMemoryPipelineCacheRepository implements PipelineCacheRepository {
-
     private final Map<PipelineCacheKey, PipelineCacheEntry<?>> entries = new ConcurrentHashMap<>();
 
     @Override

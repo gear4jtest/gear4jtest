@@ -1,7 +1,6 @@
 package io.github.gear4jtest.core.extras.history;
 
 public final class CacheTrackerContext {
-
     private static final ThreadLocal<ExpirableDependencyTracker> TRACKER = new ThreadLocal<>();
 
     private CacheTrackerContext() {

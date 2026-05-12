@@ -14,7 +14,6 @@ import io.github.gear4jtest.core.spi.runner.StationRunner;
  * </p>
  */
 public interface StationWrapperExtension extends RuntimeExtension {
-
     /**
      * Decorates the station runner used for a run.
      *

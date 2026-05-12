@@ -7,7 +7,6 @@ import io.test.gear4jtest.external.api.artifact.ArtifactStore;
 import io.test.gear4jtest.external.api.artifact.DatabaseArtifactStore;
 
 public final class DatabaseArtifactStorePlugin implements ArtifactStorePlugin {
-
     @Override
     public String type() {
         return "DATABASE";

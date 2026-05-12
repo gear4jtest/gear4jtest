@@ -48,7 +48,6 @@ import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.exception.PayloadCloneException;
 
 public final class JacksonPayloadCloner implements PayloadCloner {
-
     private static final Set<Class<?>> KNOWN_IMMUTABLE_TYPES = Set
             .of(String.class, Boolean.class, Byte.class, Short.class, Integer.class, Long.class, Float.class,
                 Double.class, Character.class, BigDecimal.class, BigInteger.class, UUID.class, URI.class, URL.class,
@@ -57,7 +56,6 @@ public final class JacksonPayloadCloner implements PayloadCloner {
                 OffsetTime.class, OffsetDateTime.class, ZonedDateTime.class, Year.class, YearMonth.class,
                 MonthDay.class, ZoneId.class, ZoneOffset.class, DayOfWeek.class, Month.class, HijrahDate.class,
                 JapaneseDate.class, MinguoDate.class, ThaiBuddhistDate.class);
-
     private final ObjectMapper objectMapper;
 
     public JacksonPayloadCloner(ObjectMapper objectMapper) {

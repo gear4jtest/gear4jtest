@@ -6,7 +6,6 @@ import io.github.gear4jtest.core.extras.history.CacheTrackerContext;
 import io.github.gear4jtest.core.extras.history.ExpirableDependencyTracker;
 
 public class TrackingTaskHistoryApi implements TaskHistoryApi {
-
     private final RawTaskHistoryApi delegate;
 
     public TrackingTaskHistoryApi(RawTaskHistoryApi delegate) {

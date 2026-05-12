@@ -23,7 +23,6 @@ import io.github.gear4jtest.core.spi.factory.ResourceFactory;
  * </p>
  */
 public final class ExecutionServices {
-
     private final EventManager eventManager;
     private final ResourceFactory resourceFactory;
     private final StationScopedResourceRegistry stationScopedResources;

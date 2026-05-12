@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
  * </p>
  */
 public final class EventManager {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(EventManager.class);
     private static final Event STOP_EVENT = new Event("__internal__", null, "STOP_EVENT");
     private static final AtomicInteger DISPATCHER_COUNTER = new AtomicInteger();

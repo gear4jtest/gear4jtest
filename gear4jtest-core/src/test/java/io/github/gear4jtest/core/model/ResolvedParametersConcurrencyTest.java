@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ResolvedParametersConcurrencyTest {
-
     @Test
     void resolve_shouldReportCacheHitWhenAnotherThreadWinsTheRace() throws Exception {
         ResolvedParameters resolvedParameters = new ResolvedParameters();

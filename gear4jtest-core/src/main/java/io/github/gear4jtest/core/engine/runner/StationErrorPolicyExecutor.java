@@ -12,7 +12,6 @@ import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 
 public class StationErrorPolicyExecutor {
-
     /**
      * Captures the input/output type variables of an {@link Operator} once, so the
      * unchecked cast on the input is confined to a single place.

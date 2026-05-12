@@ -6,7 +6,6 @@ import io.github.gear4jtest.core.api.station.SignalStation;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class SignalStationStrategy extends AbstractStationStrategy<SignalStation<?>> {
-
     @SuppressWarnings("unchecked")
     private static <I> boolean evaluateCondition(SignalStation<I> station, Object input, StationExecutionContext ctx) {
         return station.getCondition()

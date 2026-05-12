@@ -7,7 +7,6 @@ import io.github.gear4jtest.core.event.EventSubscription;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 
 public final class SideComputeListener {
-
     private SideComputeListener() {
     }
 

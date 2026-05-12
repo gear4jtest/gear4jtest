@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class IteratorStationAccumulatorTest {
-
     @Test
     void listAccumulator_shouldProvideListCollection() {
         IteratorStation.ListAccumulator acc = new IteratorStation.ListAccumulator();

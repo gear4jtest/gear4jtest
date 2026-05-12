@@ -15,9 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RunnerChainFactory {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(RunnerChainFactory.class);
-
     private final StrategyRegistry strategyRegistry;
     private final StationErrorPolicyExecutor stationErrorPolicyExecutor = new StationErrorPolicyExecutor();
 
@@ -57,7 +55,6 @@ public class RunnerChainFactory {
     }
 
     private static final class LateBoundStationRunner implements StationRunner {
-
         private StationRunner delegate;
 
         private void bind(StationRunner delegate) {

@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class JacksonPayloadClonerIntegrationTest {
-
     private static PipelineEngine newEngine(Object payloadCloner) {
         PipelineEngine.Builder builder = PipelineEngine.builder().resourceFactory(resourceFactory())
                 .runnerChainFactory(new RunnerChainFactory(StrategyRegistry.defaultRegistry()))

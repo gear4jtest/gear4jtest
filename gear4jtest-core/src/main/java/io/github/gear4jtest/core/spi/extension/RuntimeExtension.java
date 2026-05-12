@@ -12,7 +12,6 @@ package io.github.gear4jtest.core.spi.extension;
  * </p>
  */
 public interface RuntimeExtension {
-
     /**
      * Returns the extension order.
      *

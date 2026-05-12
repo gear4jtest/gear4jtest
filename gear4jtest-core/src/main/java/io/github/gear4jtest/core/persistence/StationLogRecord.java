@@ -20,7 +20,6 @@ public record StationLogRecord(UUID id,
                                String errorHandlerMessages,
                                Map<String, Object> context,
                                String itemId) {
-
     public static StationLogRecord from(StationLogTrace log) {
         if (log == null) {
             throw new IllegalArgumentException("log must not be null");

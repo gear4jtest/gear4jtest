@@ -25,7 +25,6 @@ import static io.github.gear4jtest.core.api.util.ElementModelBuilders.processing
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PipelineCallStationStrategyTest {
-
     private static PipelineEngine engine() {
         return PipelineEngine.builder().resourceFactory(reflectiveResourceFactory())
                 .extensionResolver(new RuntimeExtensionResolver(null))
@@ -141,7 +140,6 @@ class PipelineCallStationStrategyTest {
     }
 
     public static class ReflectiveResourceFactory implements ResourceFactory {
-
         @Override
         public <T> T getResource(Class<T> clazz) {
             try {
@@ -150,7 +148,6 @@ class PipelineCallStationStrategyTest {
                 throw new IllegalStateException(e);
             }
         }
-
     }
 
     public static class AppendChild implements Operator<String, String> {

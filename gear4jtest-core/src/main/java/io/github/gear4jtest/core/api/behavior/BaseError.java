@@ -2,11 +2,8 @@ package io.github.gear4jtest.core.api.behavior;
 
 public class BaseError<T> {
     protected Class<? extends Throwable> throwableType;
-
     protected SignalType signalType;
-
     protected Condition<T> condition;
-
     protected Runnable action;
 
     private BaseError() {
@@ -31,7 +28,6 @@ public class BaseError<T> {
 
     public static class SafeError<T> extends BaseError<T> {
         public static class Builder<T> {
-
             protected final SafeError<T> managedInstance;
 
             public Builder(SignalType signalType, Class<? extends Throwable> throwableType) {
@@ -58,7 +54,6 @@ public class BaseError<T> {
 
     public static class UnSafeError<T> extends BaseError<T> {
         public static class Builder<T> {
-
             protected final UnSafeError<T> managedInstance;
 
             public Builder(SignalType signalType, Class<? extends Throwable> throwableType) {

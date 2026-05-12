@@ -15,7 +15,6 @@ import java.util.Objects;
  * </p>
  */
 public final class PipelineRuntimeContract {
-
     private final InlinePolicy inlinePolicy;
     private final List<RuntimeRequirement> mandatoryRequirements;
     private final List<RuntimeRequirement> providedRequirements;

@@ -3,7 +3,6 @@ package io.github.gear4jtest.core.event;
 import java.util.UUID;
 
 public class OperationBaseEvent extends Event {
-
     private final String operationId;
     private final Object input;
     private Object output;

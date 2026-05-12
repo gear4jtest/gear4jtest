@@ -20,7 +20,6 @@ import io.github.gear4jtest.core.api.station.PipelineCallStation;
  */
 @FunctionalInterface
 public interface NestedPipelineExecutor {
-
     static NestedPipelineExecutor unsupported() {
         return (station, childPipeline, input, parentContext) -> {
             throw new UnsupportedOperationException(

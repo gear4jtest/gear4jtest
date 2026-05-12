@@ -6,7 +6,6 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
  * Processor hook executed around a station invocation.
  */
 public interface Processor {
-
     <I> void beforeExecution(I input, StationExecutionContext ctx) throws Exception;
 
     void afterExecution(Object result, StationExecutionContext context);

@@ -31,9 +31,7 @@ import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
  * </p>
  */
 public class AssemblyLine<IN, OUT> {
-
     private static final String DEFAULT_VERSION = "1";
-
     private final String id;
     private final String version;
     private final AbstractStation<?, ?> rootStation;
@@ -194,7 +192,6 @@ public class AssemblyLine<IN, OUT> {
      * </p>
      */
     public static class Configuration {
-
         private final PersistenceConfiguration persistence;
         private final EventHandlingDefinition eventHandlingDefinition;
         private final List<RuntimeExtension> defaultExtensions;
@@ -234,7 +231,6 @@ public class AssemblyLine<IN, OUT> {
          * Builder for pipeline-level runtime configuration.
          */
         public static class Builder {
-
             private final List<RuntimeExtension> defaultExtensions = new ArrayList<>();
             private PersistenceConfiguration persistence;
             private EventHandlingDefinition eventHandlingDefinition;

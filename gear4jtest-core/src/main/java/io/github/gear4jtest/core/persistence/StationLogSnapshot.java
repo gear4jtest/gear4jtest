@@ -17,7 +17,6 @@ public record StationLogSnapshot(UUID id,
                                  String errorHandlerMessages,
                                  Map<String, Object> context,
                                  String itemId) {
-
     public static StationLogSnapshot from(StationLog log) {
         if (log == null) {
             throw new IllegalArgumentException("log must not be null");

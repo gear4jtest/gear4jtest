@@ -27,7 +27,6 @@ import io.github.gear4jtest.core.api.station.UnaryWorkStation;
 import io.github.gear4jtest.core.api.station.WorkStation;
 
 public final class ElementModelBuilders {
-
     private ElementModelBuilders() {
     }
 
@@ -140,17 +139,14 @@ public final class ElementModelBuilders {
     }
 
     public static class Type<T> {
-
         private Class<T> clazz;
 
         public Type(Class<T> clazz) {
             this.clazz = clazz;
         }
-
     }
 
     public static class MapType<U, V> extends Type<Map> {
-
         private Class<U> classA;
         private Class<V> classB;
 
@@ -159,7 +155,6 @@ public final class ElementModelBuilders {
             this.classA = classA;
             this.classB = classB;
         }
-
     }
 
     public abstract static class TypeReference<T> {

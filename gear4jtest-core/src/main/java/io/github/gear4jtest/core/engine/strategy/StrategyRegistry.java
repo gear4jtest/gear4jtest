@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 
 public class StrategyRegistry {
-
     private final Map<Class<? extends AbstractStation<?, ?>>, StationExecutionStrategy<?>> cache = new ConcurrentHashMap<>();
     private final List<StationExecutionStrategy<?>> strategies;
 

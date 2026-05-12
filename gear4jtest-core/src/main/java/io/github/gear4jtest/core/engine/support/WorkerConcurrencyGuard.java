@@ -7,7 +7,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import io.github.gear4jtest.core.exception.ConcurrentTransformerUseException;
 
 public final class WorkerConcurrencyGuard {
-
     private final Lock lock = new ReentrantLock();
     private final WorkerConcurrencyStrategy strategy;
 

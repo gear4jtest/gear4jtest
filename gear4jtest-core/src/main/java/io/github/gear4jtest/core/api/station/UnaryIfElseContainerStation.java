@@ -17,7 +17,6 @@ public class UnaryIfElseContainerStation<A> extends ContainerBaseStation<A, A> {
     }
 
     public static class Builder<A> {
-
         private final UnaryIfElseContainerStation<A> managedInstance;
 
         public Builder() {
@@ -39,6 +38,5 @@ public class UnaryIfElseContainerStation<A> extends ContainerBaseStation<A, A> {
             this.managedInstance.elseOp = station;
             return this.managedInstance;
         }
-
     }
 }

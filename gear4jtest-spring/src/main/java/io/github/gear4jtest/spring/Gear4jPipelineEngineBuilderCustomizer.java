@@ -13,6 +13,5 @@ import io.github.gear4jtest.core.engine.PipelineEngine;
  */
 @FunctionalInterface
 public interface Gear4jPipelineEngineBuilderCustomizer {
-
     void customize(PipelineEngine.Builder builder);
 }

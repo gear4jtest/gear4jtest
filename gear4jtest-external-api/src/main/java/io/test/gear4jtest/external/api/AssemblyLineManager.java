@@ -32,7 +32,6 @@ import io.test.gear4jtest.external.api.translator.OperationChainTranslatorResolv
 import static java.util.Objects.requireNonNull;
 
 public class AssemblyLineManager {
-
     private final OperationChainConfigRepository configRepo;
     private final OperationChainObjectRepository objectRepo;
     private final OperationChainTagRepository chainTagRepo;
@@ -42,7 +41,6 @@ public class AssemblyLineManager {
     private final JDTInMemoryCompiler compiler;
     private final DependencyInjector dependencyInjector;
     private final ClassLoader generatedClassParent;
-
     private final Map<String, ArtifactStore> storeCacheByAl = new ConcurrentHashMap<>();
 
     public AssemblyLineManager(OperationChainConfigRepository configRepo,

@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class XmlOperationChainTranslatorTest {
-
     private final XmlOperationChainTranslator translator = new XmlOperationChainTranslator();
 
     private static PipelineEngine engine() {
@@ -135,7 +134,6 @@ class XmlOperationChainTranslatorTest {
     }
 
     private static final class ReflectiveResourceFactory implements ResourceFactory {
-
         @Override
         public <T> T getResource(Class<T> clazz) {
             try {

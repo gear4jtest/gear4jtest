@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class WorkerParamsInjectorEventTest {
-
     @Test
     void should_publish_parameter_resolved_event_when_enabled() {
         CopyOnWriteArrayList<ParameterResolvedEvent> seenEvents = new CopyOnWriteArrayList<>();

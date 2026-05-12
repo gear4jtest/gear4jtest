@@ -23,7 +23,6 @@ import io.github.gear4jtest.core.event.EventReaction;
  * </p>
  */
 public final class ExternalTransportReaction<T extends Event> implements EventReaction<T> {
-
     private final EventEnvelopeMapper mapper;
     private final ExternalEventTransport transport;
 

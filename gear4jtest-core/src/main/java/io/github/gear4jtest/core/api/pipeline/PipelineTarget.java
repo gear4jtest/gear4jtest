@@ -16,7 +16,6 @@ import io.github.gear4jtest.core.api.AssemblyLine;
  */
 public sealed interface PipelineTarget<IN, OUT>
         permits DirectPipelineTarget, ReferencedPipelineTarget, ResolvedPipelineTarget {
-
     PipelineReference declaredReference();
 
     Optional<PipelineReference> getResolvedReference();

@@ -15,7 +15,6 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
  * </p>
  */
 public abstract class AbstractRunHooksExtension implements RunInterceptorExtension {
-
     @Override
     public final <IN, OUT> ExecutionResult<OUT> aroundRun(AssemblyLine<IN, OUT> pipeline,
                                                           RunRequest request,

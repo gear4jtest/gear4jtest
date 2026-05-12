@@ -28,5 +28,4 @@ public class Step6 implements Operator<String, String> {
     // public ChainContext getChainContext() {
     // return chainContext;
     // }
-
 }

@@ -3,7 +3,6 @@ package io.github.gear4jtest.core.event;
 import java.util.UUID;
 
 public abstract class StationEvent extends Event {
-
     private final UUID stationExecutionId;
     private final String operationId;
     private final UUID parentOperationId;

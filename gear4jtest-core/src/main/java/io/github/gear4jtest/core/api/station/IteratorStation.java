@@ -15,7 +15,6 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
  * child sequence for each item.
  */
 public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
-
     private Function<IN, ? extends Iterable<?>> func;
     private SequenceStation<?, ?> chain;
     private ItemIdResolver itemIdResolver;
@@ -61,7 +60,6 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
     }
 
     public static class Builder<IN, OUT> {
-
         private final IteratorStation<IN, OUT> managedInstance;
 
         public Builder(String id) {
@@ -103,7 +101,6 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
     }
 
     public static class Accumulator {
-
         private final CollectionSupplier collectionSupplier;
 
         public Accumulator(CollectionSupplier collectionSupplier) {

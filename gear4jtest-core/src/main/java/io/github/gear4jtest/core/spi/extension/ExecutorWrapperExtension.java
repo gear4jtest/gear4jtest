@@ -14,7 +14,6 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
  * </p>
  */
 public interface ExecutorWrapperExtension extends RuntimeExtension {
-
     /**
      * Returns an executor view used by the runtime for the current run.
      *

@@ -5,7 +5,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public final class WorkerConcurrencyManager {
-
     private final ConcurrentMap<Object, WorkerConcurrencyGuard> guards = new ConcurrentHashMap<>();
 
     public WorkerConcurrencyManager() {

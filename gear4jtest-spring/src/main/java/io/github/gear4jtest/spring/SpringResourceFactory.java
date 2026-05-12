@@ -15,7 +15,6 @@ import org.springframework.context.ApplicationContext;
  * </p>
  */
 public final class SpringResourceFactory implements ResourceFactory {
-
     private final ApplicationContext applicationContext;
 
     public SpringResourceFactory(ApplicationContext applicationContext) {

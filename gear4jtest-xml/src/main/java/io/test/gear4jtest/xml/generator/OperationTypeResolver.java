@@ -19,7 +19,6 @@ import io.test.gear4jtest.xml.model.XmlPipelineDefinition.SignalOperation;
 import io.test.gear4jtest.xml.model.XmlPipelineDefinition.SubLine;
 
 final class OperationTypeResolver {
-
     private final ClassLoader classLoader;
     private final Map<Operation, OperationSignature> signatures = new IdentityHashMap<>();
 

@@ -11,10 +11,8 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 final class JavaTypeName {
-
     static final JavaTypeName OBJECT = raw("java.lang.Object");
     static final JavaTypeName STRING = raw("java.lang.String");
-
     private final String rawType;
     private final List<JavaTypeName> arguments;
     private final boolean wildcard;

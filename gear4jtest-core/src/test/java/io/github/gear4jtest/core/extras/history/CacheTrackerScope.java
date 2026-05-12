@@ -1,7 +1,6 @@
 package io.github.gear4jtest.core.extras.history;
 
 public final class CacheTrackerScope implements AutoCloseable {
-
     private final ExpirableDependencyTracker previous;
 
     private CacheTrackerScope(ExpirableDependencyTracker tracker) {

@@ -11,7 +11,6 @@ package io.github.gear4jtest.core.event.transport;
  * </p>
  */
 public class ExternalTransportPublishException extends RuntimeException {
-
     public ExternalTransportPublishException(String message) {
         super(message);
     }

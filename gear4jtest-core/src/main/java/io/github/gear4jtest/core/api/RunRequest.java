@@ -23,7 +23,6 @@ import io.github.gear4jtest.core.spi.factory.ResourceFactory;
  * </p>
  */
 public class RunRequest {
-
     private final Object input;
     private final Map<String, Object> context;
     private final ResourceFactory resourceFactory;

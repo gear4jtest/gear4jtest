@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class EventManagerTest {
-
     @Test
     void publish_shouldDispatchOnlyMatchingSubscriptions() throws Exception {
         CopyOnWriteArrayList<String> handled = new CopyOnWriteArrayList<>();
@@ -162,5 +161,4 @@ class EventManagerTest {
             sharedExecutor.shutdownNow();
         }
     }
-
 }

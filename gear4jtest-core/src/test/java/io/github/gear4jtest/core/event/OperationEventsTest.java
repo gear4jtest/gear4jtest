@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class OperationEventsTest {
-
     @Test
     void stationStartedEvent_shouldExposeCorrelationFields() {
         UUID executionId = UUID.randomUUID();

@@ -10,10 +10,8 @@ public class Step2 implements Operator<Integer, String> {
     // public Parameter<String> getA() {
     // return string;
     // }
-
     @Override
     public String transform(Integer object, StationExecutionContext operationExecution) {
         return "";
     }
-
 }

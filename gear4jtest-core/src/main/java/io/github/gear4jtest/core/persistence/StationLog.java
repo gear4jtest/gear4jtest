@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.UUID;
 
 public class StationLog {
-
     private transient Object output;
     private transient List<Throwable> throwables;
     private UUID id;

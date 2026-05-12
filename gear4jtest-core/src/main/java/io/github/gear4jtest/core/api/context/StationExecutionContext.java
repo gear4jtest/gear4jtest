@@ -16,7 +16,6 @@ import io.github.gear4jtest.core.execution.trace.StationLogTrace;
  * </p>
  */
 public interface StationExecutionContext {
-
     String getOperationId();
 
     StationKind getKind();

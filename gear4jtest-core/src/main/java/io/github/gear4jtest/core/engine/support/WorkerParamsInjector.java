@@ -17,7 +17,6 @@ import io.github.gear4jtest.core.sidecompute.DefaultSideComputeAccessor;
 import io.github.gear4jtest.core.sidecompute.SideComputeAccessor;
 
 public class WorkerParamsInjector implements Processor {
-
     @Override
     public FailureMode beforeExecutionFailureMode() {
         return FailureMode.FAIL_STATION;
@@ -109,7 +108,6 @@ public class WorkerParamsInjector implements Processor {
     }
 
     public static class Parameters {
-
         private final List<ParameterModel<?, ?>> parameters;
 
         public Parameters() {
@@ -129,7 +127,6 @@ public class WorkerParamsInjector implements Processor {
         }
 
         public static class Builder {
-
             private final Parameters instance = new Parameters();
 
             public <OP extends Operator<?, ?>, T> Builder withParameter(ParameterModel parameter) {
@@ -149,7 +146,6 @@ public class WorkerParamsInjector implements Processor {
     }
 
     public static class Parameter<T> {
-
         private final LifecyclePolicy lifecyclePolicy;
         private final T defaultValue;
         private T value;
@@ -183,7 +179,6 @@ public class WorkerParamsInjector implements Processor {
         }
 
         public static class Builder<T> {
-
             private LifecyclePolicy lifecyclePolicy = LifecyclePolicy.PERSISTENT;
             private T defaultValue;
 
@@ -204,7 +199,6 @@ public class WorkerParamsInjector implements Processor {
     }
 
     public abstract static class ParameterModel<OP extends Operator<?, ?>, T> {
-
         private final WorkStation.ParamRetriever<OP, T> paramRetriever;
 
         protected ParameterModel(WorkStation.ParamRetriever<OP, T> paramRetriever) {
@@ -224,7 +218,6 @@ public class WorkerParamsInjector implements Processor {
 
     public static class InterpretationContextParameterModel<IN, OP extends Operator<?, ?>, T>
             extends ParameterModel<OP, T> {
-
         private final Function<InterpretationContext<IN>, T> resolver;
 
         public InterpretationContextParameterModel(WorkStation.ParamRetriever<OP, T> paramRetriever,
@@ -241,7 +234,6 @@ public class WorkerParamsInjector implements Processor {
     }
 
     public static final class InterpretationContext<IN> {
-
         private final IN item;
         private final ExecutionContext executionContext;
         private final StationExecutionContext stationExecutionContext;

@@ -15,7 +15,6 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
  * </p>
  */
 public interface RunInterceptorExtension extends RuntimeExtension {
-
     /**
      * Wraps a pipeline run.
      *
@@ -38,7 +37,6 @@ public interface RunInterceptorExtension extends RuntimeExtension {
      */
     @FunctionalInterface
     interface RunChain<IN, OUT> {
-
         /**
          * Executes the next interceptor or the runtime body.
          */

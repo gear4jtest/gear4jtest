@@ -1,9 +1,7 @@
 package io.github.gear4jtest.core.api.behavior;
 
 public final class SkipDecision {
-
     private static final SkipDecision DONT_SKIP = new SkipDecision(false, null);
-
     private final boolean skip;
     private final String reason;
 

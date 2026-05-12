@@ -12,7 +12,6 @@ import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.StationKind;
 
 public class PipelineDefinition<IN, OUT> extends AbstractStation<IN, OUT> {
-
     private Function<IN, ? extends Iterable<?>> func;
     private AssemblyLine assemblyLine;
     private Accumulator accumulator;
@@ -76,7 +75,6 @@ public class PipelineDefinition<IN, OUT> extends AbstractStation<IN, OUT> {
     // }
 
     public static class Builder<IN, OUT> {
-
         private final PipelineDefinition<IN, OUT> managedInstance;
 
         public Builder() {
@@ -106,11 +104,9 @@ public class PipelineDefinition<IN, OUT> extends AbstractStation<IN, OUT> {
         public PipelineDefinition<IN, OUT> build() {
             return managedInstance;
         }
-
     }
 
     public static class Accumulator {
-
         private final CollectionSupplier collectionSupplier;
 
         public Accumulator(CollectionSupplier collectionSupplier) {
@@ -133,25 +129,18 @@ public class PipelineDefinition<IN, OUT> extends AbstractStation<IN, OUT> {
             public Supplier<Collection<?>> getSupplier() {
                 return supplier;
             }
-
         }
-
     }
 
     public static class ListAccumulator extends Accumulator {
-
         public ListAccumulator() {
             super(CollectionSupplier.LIST);
         }
-
     }
 
     public static class SetAccumulator extends Accumulator {
-
         public SetAccumulator() {
             super(CollectionSupplier.SET);
         }
-
     }
-
 }

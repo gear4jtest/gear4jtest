@@ -1,7 +1,6 @@
 package io.github.gear4jtest.core.engine.support;
 
 public interface ConcurrencyAwareTransformer {
-
     /**
      * Lets an operator declare whether it is stateful or stateless.
      *

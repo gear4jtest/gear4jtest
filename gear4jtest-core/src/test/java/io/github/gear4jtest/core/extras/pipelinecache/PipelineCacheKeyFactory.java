@@ -8,7 +8,6 @@ import io.github.gear4jtest.core.extras.history.fingerprint.FingerprintContext;
 import io.github.gear4jtest.core.extras.history.fingerprint.FingerprintStrategy;
 
 public final class PipelineCacheKeyFactory {
-
     private final FingerprintStrategy<Object> inputFingerprintStrategy;
     private final ContextFingerprintStrategy contextFingerprintStrategy;
 

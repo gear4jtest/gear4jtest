@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.Objects;
 
 public final class PipelineCacheEntry<OUT> {
-
     private final PipelineCacheKey key;
     private final OUT output;
     private final Instant expiresAt;

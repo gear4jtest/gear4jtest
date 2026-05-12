@@ -10,7 +10,6 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
  */
 @FunctionalInterface
 public interface ExecutorDecorator {
-
     /**
      * Returns the no-op decorator.
      */

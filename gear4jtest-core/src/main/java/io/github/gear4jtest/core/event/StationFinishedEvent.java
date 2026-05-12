@@ -5,7 +5,6 @@ import java.util.UUID;
 import io.github.gear4jtest.core.model.StationLogStatus;
 
 public final class StationFinishedEvent extends StationEvent {
-
     private final StationLogStatus status;
     private final Object output;
     private final Exception error;

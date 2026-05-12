@@ -12,7 +12,6 @@ import io.github.gear4jtest.core.model.StationLogStatus;
  * </p>
  */
 public final class FlowDecider {
-
     private FlowDecider() {
     }
 

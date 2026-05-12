@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class XmlPipelineParserTest {
-
     private final XmlPipelineParser parser = new XmlPipelineParser();
 
     private static java.io.InputStream resource(String name) throws IOException {

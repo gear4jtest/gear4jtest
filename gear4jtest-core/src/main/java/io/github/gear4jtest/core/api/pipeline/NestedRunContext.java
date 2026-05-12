@@ -14,7 +14,6 @@ public record NestedRunContext(UUID parentExecutionId,
                                UUID parentStationLogId,
                                String parentPipelineId,
                                String parentStationId) {
-
     public static NestedRunContext from(StationExecutionContext parentStationContext) {
         AssemblyRunTrace parentRun = parentStationContext.getGlobalContext().getPipelineExecution();
         UUID parentExecutionId = parentRun.getId();

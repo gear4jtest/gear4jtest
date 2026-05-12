@@ -61,7 +61,6 @@ import static org.assertj.core.api.Assertions.tuple;
 
 // handle factory for step / processor... configuration
 public class SimpleChainBuilderTest {
-
     private static StationLogRecord getRecordByOperationId(List<StationLogRecord> logs, String operationId) {
         return logs.stream().filter(log -> operationId.equals(log.operationId())).findFirst()
                 .orElseThrow(() -> new AssertionError("No StationLogRecord found for operationId=" + operationId));
@@ -498,7 +497,6 @@ public class SimpleChainBuilderTest {
     }
 
     public static class TestResourceFactory implements ResourceFactory {
-
         static final Map<Class<?>, Object> BEANS;
 
         static {
@@ -522,7 +520,6 @@ public class SimpleChainBuilderTest {
         public <T> T getResource(Class<T> clazz) {
             return (T) BEANS.get(clazz);
         }
-
     }
 
     public static class TestEventListener {

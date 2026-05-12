@@ -13,7 +13,6 @@ import io.github.gear4jtest.core.api.pipeline.ResolvedPipelineTarget;
  * as a real nested run.
  */
 public final class PipelineCallStation<IN, OUT> extends AbstractStation<IN, OUT> {
-
     private final PipelineTarget<IN, OUT> target;
     private final PipelineExecutionMode executionMode;
 

@@ -11,11 +11,8 @@ import io.test.gear4jtest.xml.parser.XmlPipelineParser;
 import io.test.gear4jtest.xml.validator.AssemblyLineValidator;
 
 public final class XmlOperationChainTranslator implements OperationChainTranslator {
-
     public static final String VENDOR_MEDIA_TYPE = "application/vnd.gear4j.pipeline+xml";
-
     private static final Set<String> SUPPORTED_MEDIA_TYPES = Set.of("application/xml", "text/xml", VENDOR_MEDIA_TYPE);
-
     private final AssemblyLineValidator validator;
     private final XmlPipelineParser parser;
     private final XmlToJavaGenerator generator;

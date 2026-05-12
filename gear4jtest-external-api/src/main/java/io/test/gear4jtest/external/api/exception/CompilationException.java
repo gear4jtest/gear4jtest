@@ -3,7 +3,6 @@ package io.test.gear4jtest.external.api.exception;
 import java.util.List;
 
 public class CompilationException extends RuntimeException {
-
     private final List<String> diagnostics;
 
     public CompilationException(String message) {

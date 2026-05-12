@@ -13,7 +13,6 @@ import io.github.gear4jtest.core.sidecompute.SideComputeAccessor;
  * </p>
  */
 public final class TrackingSideComputeAccessor implements SideComputeAccessor {
-
     private final SideComputeAccessor delegate;
     private final SideComputeExpiryRegistry expiryRegistry;
     private final SideComputeConsumptionTracker tracker;

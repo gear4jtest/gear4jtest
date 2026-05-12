@@ -16,7 +16,6 @@ import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class IteratorStationStrategy extends AbstractStationStrategy<IteratorStation<?, ?>> {
-
     @SuppressWarnings("unchecked")
     private static <A, R> R collectResults(Collection<Object> results, Collector<?, A, R> collector) {
         return results.stream().collect((Collector<? super Object, A, R>) collector);

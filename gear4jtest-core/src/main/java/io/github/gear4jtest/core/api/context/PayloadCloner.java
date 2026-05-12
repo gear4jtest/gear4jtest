@@ -11,7 +11,6 @@ package io.github.gear4jtest.core.api.context;
  * </p>
  */
 public interface PayloadCloner {
-
     /**
      * Returns a payload instance that is safe to use in an isolated branch
      * execution.

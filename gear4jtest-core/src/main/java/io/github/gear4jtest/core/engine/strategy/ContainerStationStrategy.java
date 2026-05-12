@@ -29,7 +29,6 @@ import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class ContainerStationStrategy extends AbstractStationStrategy<ContainerBaseStation<?, ?>> {
-
     private static boolean isBranchConditionSatisfied(ContainerBaseStation.Branch<?> branch,
                                                       Object input,
                                                       StationExecutionContext operationExecution) {

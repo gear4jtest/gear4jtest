@@ -13,16 +13,12 @@ import io.github.gear4jtest.core.api.config.StationConfigurationDefinition;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 
 public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
-
     protected Class<Operator<IN, OUT>> type;
-
     protected List<WorkerParamsInjector.ParameterModel<?, ?>> parameters;
-
     /**
      * Whether the operator instance is reused for the whole pipeline run.
      */
     protected boolean reuseOperatorInstanceWithinRun = false;
-
     private StationConfigurationDefinition operationConfiguration;
 
     WorkStation() {
@@ -51,13 +47,10 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
     @FunctionalInterface
     public interface ParamRetriever<T extends Operator<?, ?>, U> {
-
         WorkerParamsInjector.Parameter<U> getParameterValue(T operation);
-
     }
 
     public static class Builder<IN, OUT, OP extends Operator<IN, OUT>> {
-
         private final WorkStation<IN, OUT> managedInstance;
 
         public Builder() {
@@ -197,11 +190,9 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
     }
 
     public static class UnsafeOperation<IN, OUT, OP extends Operator<IN, OUT>> {
-
         private WorkStation.Builder<IN, OUT, OP> operation;
 
         public static class Builder<IN, OUT, OP extends Operator<IN, OUT>> {
-
             private UnsafeOperation<IN, OUT, OP> managedInstance;
 
             public Builder(WorkStation.Builder<IN, OUT, OP> operation) {
@@ -244,11 +235,9 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
     }
 
     public static class SafeOperation<IN, OUT, OP extends Operator<IN, OUT>> {
-
         private WorkStation.Builder<IN, OUT, OP> operation;
 
         public static class Builder<IN, OUT, OP extends Operator<IN, OUT>> {
-
             private SafeOperation<IN, OUT, OP> managedInstance;
 
             public Builder(WorkStation.Builder<IN, OUT, OP> operation) {

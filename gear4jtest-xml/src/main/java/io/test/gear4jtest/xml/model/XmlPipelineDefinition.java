@@ -8,7 +8,6 @@ public record XmlPipelineDefinition(String id,
                                     List<Operation> operations,
                                     Configuration configuration,
                                     List<Dependency> dependencies) {
-
     public sealed interface Operation
             permits ProcessingOperation, IteratorOperation, ContainerOperation, IfElseOperation, SignalOperation {
         String id();

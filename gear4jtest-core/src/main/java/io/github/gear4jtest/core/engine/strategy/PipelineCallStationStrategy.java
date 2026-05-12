@@ -20,9 +20,7 @@ import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class PipelineCallStationStrategy extends AbstractStationStrategy<PipelineCallStation<?, ?>> {
-
     private static final String CONTEXT_PREFIX = "pipeline.call.";
-
     private final NestedPipelineExecutor nestedPipelineExecutor;
 
     public PipelineCallStationStrategy(NestedPipelineExecutor nestedPipelineExecutor) {

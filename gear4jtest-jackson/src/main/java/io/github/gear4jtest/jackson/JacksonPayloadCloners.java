@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gear4jtest.core.api.context.PayloadCloner;
 
 public final class JacksonPayloadCloners {
-
     private JacksonPayloadCloners() {
         // Utility class
     }

@@ -46,7 +46,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PipelineCacheWithWaitProcessorIT {
-
     @Test
     void should_wait_side_compute_via_processor_and_cache_pipeline_result() {
         InMemoryPipelineCacheRepository cacheRepository = new InMemoryPipelineCacheRepository();
@@ -148,7 +147,6 @@ class PipelineCacheWithWaitProcessorIT {
     static final class JoinUsingContextOperator implements Operator<String, FinalOutput> {
         private final AtomicInteger executions;
         private final TaskHistoryApi taskHistoryApi;
-
         private WorkerParamsInjector.Parameter<CustomerDto> customer = WorkerParamsInjector.Parameter
                 .<CustomerDto>newBuilder().build();
 
@@ -173,7 +171,6 @@ class PipelineCacheWithWaitProcessorIT {
 
     static final class TaskHistoryExpirySideComputeHandler<T>
             implements SideComputeHandler<StationFinishedEvent, TaskHistoryResult<T>> {
-
         @Override
         public void handle(String sideComputeKey,
                            StationFinishedEvent event,
