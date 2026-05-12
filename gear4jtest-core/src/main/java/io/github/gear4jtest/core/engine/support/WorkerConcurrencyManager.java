@@ -19,8 +19,8 @@ public final class WorkerConcurrencyManager {
     }
 
     /**
-     * Permet de libérer les références en fin de vie d'une AssemblyLine /
-     * classloader.
+     * Releases all guard references, typically when a pipeline or classloader is
+     * discarded.
      */
     public void clear() {
         guards.clear();

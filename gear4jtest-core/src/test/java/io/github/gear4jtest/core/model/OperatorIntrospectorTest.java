@@ -63,15 +63,14 @@ class OperatorIntrospectorTest {
     }
 
     /**
-     * Transformer sans déclarer ConcurrencyAwareTransformer et sans champ Parameter
-     * => doit être considéré comme stateless.
+     * Plain operators without parameters should be considered stateless.
      */
     static class PlainTransformer {
-        // pas de Parameter
+        // No Parameter field.
     }
 
     /**
-     * Transformer avec un champ Parameter => doit être détecté comme stateful.
+     * Operators with a Parameter field should be detected as stateful.
      */
     static class StatefulByParameter {
         @SuppressWarnings("unused")
@@ -79,7 +78,7 @@ class OperatorIntrospectorTest {
     }
 
     /**
-     * ConcurrencyAwareTransformer déclarant explicitement STATEFUL.
+     * Operator explicitly declaring itself as stateful.
      */
     static class ExplicitStatefulTransformer implements ConcurrencyAwareTransformer {
         @Override
@@ -89,7 +88,7 @@ class OperatorIntrospectorTest {
     }
 
     /**
-     * ConcurrencyAwareTransformer déclarant explicitement STATELESS.
+     * Operator explicitly declaring itself as stateless.
      */
     static class ExplicitStatelessTransformer implements ConcurrencyAwareTransformer {
         @Override
@@ -99,8 +98,7 @@ class OperatorIntrospectorTest {
     }
 
     /**
-     * ConcurrencyAwareTransformer en AUTO, mais avec un champ Parameter => AUTO +
-     * Parameter => stateful.
+     * AUTO statefulness with a Parameter field should be detected as stateful.
      */
     static class AutoWithParameter implements ConcurrencyAwareTransformer {
         @SuppressWarnings("unused")

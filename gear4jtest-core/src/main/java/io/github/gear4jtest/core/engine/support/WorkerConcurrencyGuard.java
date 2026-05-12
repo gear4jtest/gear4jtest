@@ -16,8 +16,7 @@ public final class WorkerConcurrencyGuard {
     }
 
     /**
-     * À appeler juste avant de démarrer le "cycle de vie" complet de l'opération
-     * (pre-processors + transformer + post-processors) pour ce transformer.
+     * Acquires the guard before the full station lifecycle starts.
      */
     public void beforeUse() {
         if (strategy == WorkerConcurrencyStrategy.IGNORE) {
@@ -33,13 +32,13 @@ public final class WorkerConcurrencyGuard {
             }
             case BLOCK_CALLER -> lock.lock();
             case IGNORE -> {
-                // rien
+                // No guard required.
             }
         }
     }
 
     /**
-     * À appeler juste après la fin du cycle de vie complet de l'opération.
+     * Releases the guard after the full station lifecycle has completed.
      */
     public void afterUse() {
         if (strategy != WorkerConcurrencyStrategy.IGNORE) {

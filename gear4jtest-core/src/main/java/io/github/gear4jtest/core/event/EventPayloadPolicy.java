@@ -15,6 +15,7 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
  * User custom events remain fully user-defined. This policy only affects
  * payloads attached by the core runtime when it publishes built-in station
  * events.
+ * </p>
  */
 public interface EventPayloadPolicy {
 

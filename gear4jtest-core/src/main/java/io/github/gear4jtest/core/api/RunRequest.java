@@ -12,6 +12,16 @@ import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
 import io.github.gear4jtest.core.spi.factory.IdGenerator;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 
+/**
+ * Per-execution input and runtime overrides.
+ *
+ * <p>
+ * A request carries the user input, additional context values and optional
+ * services/extensions that are specific to one run. Pipeline-level defaults
+ * remain on {@link AssemblyLine}; request values are merged by the engine when
+ * the run starts.
+ * </p>
+ */
 public class RunRequest {
 
     private final Object input;
@@ -35,26 +45,6 @@ public class RunRequest {
     public static Builder builder() {
         return new Builder();
     }
-
-    // /**
-    // * Récupère une feature par sa classe.
-    // * Utilisé par les Extensions pour récupérer leur configuration spécifique.
-    // */
-    // public <T extends PipelineFeature> Optional<T> getFeature(Class<T>
-    // featureClass) {
-    // return extensions.values().stream()
-    // .filter(featureClass::isInstance)
-    // .map(featureClass::cast)
-    // .findFirst();
-    // }
-
-    // public boolean hasFeature(String key) {
-    // return extensions.containsKey(key);
-    // }
-    //
-    // public Collection<PipelineFeature> getActiveFeatures() {
-    // return extensions.values();
-    // }
 
     public List<RuntimeExtension> getExtensions() {
         return Collections.unmodifiableList(extensions);
@@ -84,6 +74,9 @@ public class RunRequest {
         return pipelineCallStack;
     }
 
+    /**
+     * Creates a builder initialized with the current request values.
+     */
     public Builder toBuilder() {
         Builder builder = new Builder().input(input).context(context).resourceFactory(resourceFactory)
                 .withIdGenerator(idGenerator).nestedRunContext(nestedRunContext).pipelineCallStack(pipelineCallStack);
@@ -91,6 +84,9 @@ public class RunRequest {
         return builder;
     }
 
+    /**
+     * Builder for per-run request values.
+     */
     public static class Builder {
         private final List<RuntimeExtension> extensions = new ArrayList<>();
         private Object input;
@@ -131,7 +127,7 @@ public class RunRequest {
         }
 
         /**
-         * Active une feature. Ex: .with(new PersistenceFeature(myDbManager))
+         * Adds a run-scoped extension.
          */
         public Builder with(RuntimeExtension extension) {
             Objects.requireNonNull(extension);

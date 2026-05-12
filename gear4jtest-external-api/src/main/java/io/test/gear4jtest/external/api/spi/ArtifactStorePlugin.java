@@ -6,22 +6,25 @@ import io.test.gear4jtest.external.api.artifact.ArtifactStore;
 
 public interface ArtifactStorePlugin {
     /**
-     * Nom canonique du type, ex: "S3", "SFTP", "DATABASE", "FILESYSTEM", "MEMORY"
+     * Returns the canonical store type handled by this plugin, for example
+     * {@code S3} or {@code MEMORY}.
      */
     String type();
 
     /**
-     * Construit un store à partir de props. Aucun type tiers dans la signature.
+     * Builds a store from string properties without exposing backend-specific types
+     * in the SPI signature.
      */
     ArtifactStore build(Map<String, String> props, Context ctx) throws Exception;
 
     /**
-     * Contexte générique pour passer des ressources optionnelles (ex: DataSource,
-     * logger…).
+     * Generic context used to look up optional backend resources such as data
+     * sources or clients.
      */
     interface Context {
         /**
-         * Lookup générique par clé, pour éviter toute dépendance forte dans l’API.
+         * Looks up an optional resource by key without coupling the API to a concrete
+         * backend type.
          */
         Object lookup(String key);
 

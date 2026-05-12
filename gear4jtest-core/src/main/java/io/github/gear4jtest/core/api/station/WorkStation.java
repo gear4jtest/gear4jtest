@@ -14,30 +14,12 @@ import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 
 public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
-    // /**
-    // * Manager de concurrence partagé.
-    // *
-    // * Si tu veux le scoper à un runtime d'AssemblyLine spécifique,
-    // * tu pourras injecter un manager plutôt qu'utiliser ce static.
-    // */
-    // private static final WorkerConcurrencyManager CONCURRENCY_MANAGER =
-    // new WorkerConcurrencyManager();
-    //
-    // /**
-    // * ThreadLocal pour savoir si on a acquis un lock sur CE thread
-    // * pour CETTE exécution, et surtout pour ne pas faire d'afterUse()
-    // * si beforeUse() a échoué.
-    // */
-    // private static final ThreadLocal<WorkerConcurrencyGuard> CURRENT_GUARD =
-    // new ThreadLocal<>();
-
     protected Class<Operator<IN, OUT>> type;
 
     protected List<WorkerParamsInjector.ParameterModel<?, ?>> parameters;
 
     /**
-     * Si true, l'instance d'Operator est réutilisée pour toute la durée d'un run de
-     * pipeline.
+     * Whether the operator instance is reused for the whole pipeline run.
      */
     protected boolean reuseOperatorInstanceWithinRun = false;
 
@@ -104,7 +86,7 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         /**
-         * Paramètre avec valeur fixe.
+         * Binds an operator parameter to a fixed value.
          */
         public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever, A value) {
 
@@ -114,7 +96,7 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         /**
-         * Paramètre avec Supplier (sans dépendance au contexte).
+         * Binds an operator parameter to a context-independent supplier.
          */
         public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever,
                                                   java.util.function.Supplier<A> supplier) {
@@ -126,9 +108,8 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         /**
-         * Paramètre context-aware : accès à l'input + ExecutionContext +
-         * OperationExecutionContext. C'est ici que tu pourras faire du side compute,
-         * etc.
+         * Binds an operator parameter to a resolver that can inspect the current input
+         * and execution context.
          */
         public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever,
                                                   Function<WorkerParamsInjector.InterpretationContext<IN>, A> resolver) {
@@ -153,50 +134,6 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
             }
             managedInstance.parameters.add(parameterModel);
         }
-        //
-        // public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever, A
-        // value) {
-        // addParameterInjectorIfNecessary();
-        // addParameter(new OperationParamsInjector.ValueParameterModel<>(retriever,
-        // value));
-        // return this;
-        // }
-        //
-        // public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever,
-        // Supplier<A> value) {
-        // addParameterInjectorIfNecessary();
-        // addParameter(new OperationParamsInjector.SupplierParameterModel<>(retriever,
-        // value));
-        // return this;
-        // }
-        //
-        // public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever,
-        // Function<OperationParamsInjector.InterpretationContextParameterModel.InterpretationContext,
-        // A> value) {
-        // addParameterInjectorIfNecessary();
-        // addParameter(new
-        // OperationParamsInjector.InterpretationContextParameterModel<>(retriever,
-        // value));
-        // return this;
-        // }
-        //
-        // private void addParameterInjectorIfNecessary() {
-        // if (managedInstance.processors == null) {
-        // managedInstance.processors = new ArrayList<>();
-        // }
-        // if (managedInstance.processors.stream().noneMatch(p -> p instanceof
-        // OperationParamsInjector)) {
-        // managedInstance.processors.add(new OperationParamsInjector());
-        // }
-        // }
-
-        // private void addParameter(OperationParamsInjector.ParameterModel<OP, ?>
-        // parameterModel) {
-        // if (managedInstance.parameters == null) {
-        // managedInstance.parameters = new ArrayList<>();
-        // }
-        // managedInstance.parameters.add(parameterModel);
-        // }
 
         public Builder<IN, OUT, OP> addProcessor(Processor processor) {
             if (this.managedInstance.processors == null) {
@@ -227,18 +164,8 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
             return this;
         }
 
-        // public UnsafeOperation.Builder<IN, OUT, OP> conditional(Condition<IN>
-        // condition) {
-        // if (this.managedInstance.conditions == null) {
-        // this.managedInstance.conditions = new ArrayList<>();
-        // }
-        // this.managedInstance.conditions.add(condition);
-        // return new UnsafeOperation.Builder<>(this);
-        // }
-
         /**
-         * Skipper PRE-Processor. S'évalue très tôt, basé sur l'input et le contexte
-         * global.
+         * Adds a pre-processor skip rule evaluated before station preparation.
          */
         public UnsafeOperation.Builder<IN, OUT, OP> skipIf(StationSkipTest predicate) {
             managedInstance.skipIf(predicate);
@@ -246,8 +173,8 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         /**
-         * Skipper POST-Processor. S'évalue après la résolution des paramètres et
-         * l'attente des side-computes.
+         * Adds a post-processor skip rule evaluated after parameter resolution and
+         * side-compute waits.
          */
         public UnsafeOperation.Builder<IN, OUT, OP> skipIfPost(StationSkipTest predicate) {
             managedInstance.skipIfPost(predicate);
@@ -292,15 +219,8 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
                 return this;
             }
 
-            // public UnsafeOperation.Builder<IN, OUT, OP> conditional(Condition<IN>
-            // condition) {
-            // this.managedInstance.operation.conditional(condition);
-            // return this;
-            // }
-
             /**
-             * Skipper PRE-Processor. S'évalue très tôt, basé sur l'input et le contexte
-             * global.
+             * Adds a pre-processor skip rule evaluated before station preparation.
              */
             public UnsafeOperation.Builder<IN, OUT, OP> skipIf(StationSkipTest predicate) {
                 managedInstance.operation.skipIf(predicate);
@@ -308,8 +228,8 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
             }
 
             /**
-             * Skipper POST-Processor. S'évalue après la résolution des paramètres et
-             * l'attente des side-computes.
+             * Adds a post-processor skip rule evaluated after parameter resolution and
+             * side-compute waits.
              */
             public UnsafeOperation.Builder<IN, OUT, OP> skipIfPost(StationSkipTest predicate) {
                 managedInstance.operation.skipIfPost(predicate);
@@ -346,14 +266,8 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
                 return this;
             }
 
-            // public Builder<IN, OUT, OP> conditional(Condition<IN> condition) {
-            // this.managedInstance.operation.conditional(condition);
-            // return this;
-            // }
-
             /**
-             * Skipper PRE-Processor. S'évalue très tôt, basé sur l'input et le contexte
-             * global.
+             * Adds a pre-processor skip rule evaluated before station preparation.
              */
             public Builder<IN, OUT, OP> skipIf(StationSkipTest predicate) {
                 managedInstance.operation.skipIf(predicate);
@@ -361,8 +275,8 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
             }
 
             /**
-             * Skipper POST-Processor. S'évalue après la résolution des paramètres et
-             * l'attente des side-computes.
+             * Adds a post-processor skip rule evaluated after parameter resolution and
+             * side-compute waits.
              */
             public Builder<IN, OUT, OP> skipIfPost(StationSkipTest predicate) {
                 managedInstance.operation.skipIfPost(predicate);

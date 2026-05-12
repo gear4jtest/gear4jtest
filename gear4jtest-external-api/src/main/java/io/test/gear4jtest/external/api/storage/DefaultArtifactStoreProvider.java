@@ -18,15 +18,14 @@ import io.test.gear4jtest.external.api.spi.ArtifactStorePlugin;
 import io.test.gear4jtest.external.api.spi.ArtifactStoreResolver;
 
 /**
- * Construit un ArtifactStore (primaire + fallbacks) à partir d'une
- * OperationChainConfig, sans dépendre d'aucun backend concret (S3/SFTP/DB/FS).
- * Les providers sont découverts via SPI.
+ * Builds the configured primary {@link ArtifactStore} and optional fallback
+ * stores from an external pipeline configuration.
  *
- * Props supportées côté config (exemples) : - mode.write = PRIMARY_ONLY |
- * SYNC_ALL | ASYNC_FALLBACKS - mode.read = PREFER_PRIMARY | FIRST_AVAILABLE -
- * verifyOnRead = true|false - selfHealing = true|false - fallback.1.type = S3 -
- * fallback.1.props.bucket = my-bucket - fallback.1.props.prefix = prod/ -
- * fallback.2.type = DATABASE - fallback.2.props.table = artifact_store
+ * <p>
+ * Store implementations are resolved through the artifact-store SPI. Supported
+ * properties include read/write mode, self-healing flags and numbered
+ * {@code fallback.N.*} entries.
+ * </p>
  */
 public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider {
 
@@ -35,11 +34,13 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
     private final Executor asyncExec;
 
     /**
-     * @param classLoader ClassLoader pour découvrir les plugins (souvent TCCL).
-     * @param ctx         Contexte facultatif (ex: lookup("datasource.default"),
-     *                    lookup("aws.s3.client"), …)
-     * @param asyncExec   Executor pour l'async (fallbacks) et auto-healing (si
-     *                    activé).
+     * Creates a provider that discovers store plugins through the supplied class
+     * loader.
+     *
+     * @param classLoader class loader used for SPI discovery, usually the thread
+     *                    context class loader
+     * @param ctx         optional lookup context for backend resources
+     * @param asyncExec   executor used by fallback and self-healing stores
      */
     public DefaultArtifactStoreProvider(ClassLoader classLoader, ArtifactStorePlugin.Context ctx, Executor asyncExec) {
         this.resolver = new ArtifactStoreResolver(classLoader);
@@ -47,7 +48,9 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         this.asyncExec = asyncExec != null ? asyncExec : Executors.newCachedThreadPool();
     }
 
-    /** Variante si tu veux injecter un resolver déjà initialisé (tests, DI, …). */
+    /**
+     * Creates a provider with an already initialized resolver.
+     */
     public DefaultArtifactStoreProvider(ArtifactStoreResolver resolver,
                                         ArtifactStorePlugin.Context ctx,
                                         Executor asyncExec) {
@@ -87,10 +90,10 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         Objects.requireNonNull(cfg, "cfg");
         Map<String, String> props = cfg.storeProps();
 
-        // Primaire (type défini par cfg.storeType().name())
+        // Primary store type declared by the pipeline configuration.
         ArtifactStore primary = resolver.resolve(cfg.storeType().name(), props, ctx);
 
-        // Fallbacks (fallback.N.type + fallback.N.props.*)
+        // Numbered fallback stores: fallback.N.type and fallback.N.props.*
         List<ArtifactStore> fallbacks = buildFallbacks(props);
 
         if (fallbacks.isEmpty()) {
@@ -131,7 +134,7 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
             if (type == null || type.isBlank())
                 continue;
 
-            // Extraire props.* vers une map simple
+            // Convert props.* entries into the child store property map.
             Map<String, String> childProps = g.entrySet().stream().filter(en -> en.getKey().startsWith("props."))
                     .collect(Collectors.toMap(en -> en.getKey().substring("props.".length()), Map.Entry::getValue));
 

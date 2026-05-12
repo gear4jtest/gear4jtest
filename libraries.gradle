@@ -11,9 +11,6 @@ ext {
         // compile
         slf4j        : "org.slf4j:slf4j-api:${slf4jVersion}",
         cglib        : "cglib:cglib:3.3.0",
-        aspectjrt    : "org.aspectj:aspectjrt:1.9.8.RC3",
-        aspectjweaver: "org.aspectj:aspectjweaver:1.8.9",
-        mojo         : "org.codehaus.mojo:aspectj-maven-plugin:1.14.0",
         google       : "com.google.guava:guava:33.0.0-jre",
         jackson      : "com.fasterxml.jackson.core:jackson-databind:2.19.0",
 

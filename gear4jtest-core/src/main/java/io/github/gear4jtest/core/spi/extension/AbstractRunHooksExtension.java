@@ -6,9 +6,13 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 /**
- * Base class optionnelle pour écrire des extensions façon "hooks"
- * (onStart/onResult/onException/onEnd) tout en restant compatible avec le
- * modèle middleware.
+ * Convenience base class for writing run extensions as lifecycle hooks.
+ *
+ * <p>
+ * The runtime still sees this class as a {@link RunInterceptorExtension}.
+ * Subclasses override only the hook methods they need while this base class
+ * handles delegation to the next run chain element.
+ * </p>
  */
 public abstract class AbstractRunHooksExtension implements RunInterceptorExtension {
 
@@ -31,12 +35,19 @@ public abstract class AbstractRunHooksExtension implements RunInterceptorExtensi
         }
     }
 
+    /**
+     * Hook called before the wrapped run proceeds.
+     */
     protected void onStart(AssemblyLine<?, ?> pipeline, RunRequest request, ExecutionContext ctx) {
     }
 
     /**
-     * Appelé même si le résultat représente un échec fonctionnel
-     * (ExecutionResult.failure)
+     * Hook called when the wrapped run returns an {@link ExecutionResult}.
+     *
+     * <p>
+     * This hook is also called when the result represents a normalized functional
+     * failure.
+     * </p>
      */
     protected void onResult(AssemblyLine<?, ?> pipeline,
                             RunRequest request,
@@ -45,7 +56,7 @@ public abstract class AbstractRunHooksExtension implements RunInterceptorExtensi
     }
 
     /**
-     * Appelé uniquement sur exception non gérée (crash).
+     * Hook called only when the wrapped run throws a runtime exception.
      */
     protected void onException(AssemblyLine<?, ?> pipeline,
                                RunRequest request,
@@ -53,6 +64,9 @@ public abstract class AbstractRunHooksExtension implements RunInterceptorExtensi
                                RuntimeException error) {
     }
 
+    /**
+     * Hook called in the interceptor {@code finally} block.
+     */
     protected void onEnd(AssemblyLine<?, ?> pipeline, RunRequest request, ExecutionContext ctx) {
     }
 }

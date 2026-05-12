@@ -1,13 +1,13 @@
 package io.github.gear4jtest.core.api.config;
 
 /**
- * Politique à appliquer quand une station enfant termine en {@code STOPPED}.
+ * Policy applied when a child station ends with {@code STOPPED}.
  */
 public enum StopPolicy {
-    /** Arrête et propage le STOP (défaut). */
+    /** Stop the current flow and propagate the stop signal. */
     PROPAGATE_STOP,
-    /** Ignore le STOP, conserve l'input précédent et continue. */
+    /** Ignore the stop signal and continue with the previous input. */
     IGNORE_AND_CONTINUE,
-    /** Transforme un STOP en échec (FAILED). */
+    /** Treat the stop signal as a failure. */
     TREAT_AS_FAILURE
 }

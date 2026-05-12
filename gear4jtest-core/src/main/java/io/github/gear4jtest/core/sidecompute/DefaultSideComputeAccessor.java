@@ -3,8 +3,8 @@ package io.github.gear4jtest.core.sidecompute;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 /**
- * Accesseur par défaut, basé sur le SideComputeContext directement attaché au
- * ExecutionContext.
+ * Default accessor reading resolved side-compute values from the execution
+ * context.
  */
 public final class DefaultSideComputeAccessor implements SideComputeAccessor {
 

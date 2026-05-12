@@ -16,6 +16,7 @@ import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
  *
  * <p>
  * If this extension fails, the failure is considered critical.
+ * </p>
  */
 public class PersistenceExtension implements RunLifecycleExtension, StationLifecycleExtension {
 

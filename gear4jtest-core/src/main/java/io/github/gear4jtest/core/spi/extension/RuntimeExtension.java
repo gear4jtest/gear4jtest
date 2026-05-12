@@ -1,13 +1,29 @@
 package io.github.gear4jtest.core.spi.extension;
 
 /**
- * Contrat pour étendre le comportement du moteur (DryRun, Debug, Premium...).
+ * Base contract for runtime extensions.
+ *
+ * <p>
+ * Extensions are resolved once for a run and then dispatched to narrower SPI
+ * contracts such as {@link RunInterceptorExtension},
+ * {@link StationWrapperExtension}, {@link StationLifecycleExtension} or
+ * {@link ExecutorWrapperExtension}. Keep extension implementations focused on
+ * one concern.
+ * </p>
  */
 public interface RuntimeExtension {
 
     /**
-     * Ordre d'application : PLUS PETIT = PLUS EXTERNE (s'exécute en premier). Ex: 0
-     * = Logging/Tracing, 50 = Métier, 100 = Persistance interne.
+     * Returns the extension order.
+     *
+     * <p>
+     * Lower values are applied first and are generally outermost when extensions
+     * wrap runtime behavior. Typical examples: tracing/logging around order
+     * {@code 0}, application concerns around {@code 50}, infrastructure/persistence
+     * around {@code 100}.
+     * </p>
+     *
+     * @return the extension ordering value
      */
     default int getOrder() {
         return 50;

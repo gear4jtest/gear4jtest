@@ -7,34 +7,34 @@ import io.test.gear4jtest.external.api.ExecutionMode;
 public interface DependencyInjector {
 
     /**
-     * Injecte les dépendances dans une instance
+     * Injects registered dependencies into the supplied instance.
      */
     void injectDependencies(Object instance, ExecutionMode mode) throws InjectionException;
 
     /**
-     * Enregistre un bean dans le contexte
+     * Registers a singleton bean.
      */
     void registerBean(String name, Object bean);
 
     /**
-     * Enregistre un bean avec un scope spécifique
+     * Registers a bean with an explicit scope.
      */
     void registerBean(String name, Object bean, BeanScope scope);
 
     /**
-     * Récupère un bean du contexte
+     * Returns a registered bean matching the requested name and type.
      */
     <T> Optional<T> getBean(String name, Class<T> type);
 
     /**
-     * Scope des beans
+     * Lifetime of a registered bean.
      */
     enum BeanScope {
         SINGLETON, PROTOTYPE, REQUEST, SESSION
     }
 
     /**
-     * Exception d'injection
+     * Raised when dependency injection cannot complete.
      */
     class InjectionException extends Exception {
         public InjectionException(String message) {

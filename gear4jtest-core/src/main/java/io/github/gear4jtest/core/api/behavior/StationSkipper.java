@@ -6,12 +6,13 @@ import java.util.Optional;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 
 /**
- * Skipper déclaratif attaché à une station.
+ * Declarative skip rule attached to a station.
  *
  * <p>
- * PRE : simple (souvent input + global context).
- * <p>
- * POST : dépend de la préparation (processors.beforeExecution).
+ * Pre-processor skippers are evaluated before station preparation.
+ * Post-processor skippers are evaluated after preparation, when station-scoped
+ * context such as resolved parameters is available.
+ * </p>
  */
 public final class StationSkipper {
 
@@ -26,7 +27,7 @@ public final class StationSkipper {
     }
 
     /**
-     * Skipper PRE basé uniquement sur (input, globalCtx).
+     * Creates a pre-processor skipper without a reason.
      */
     public static StationSkipper pre(StationSkipTest predicate) {
         Objects.requireNonNull(predicate, "predicate");
@@ -34,7 +35,7 @@ public final class StationSkipper {
     }
 
     /**
-     * Skipper PRE basé sur (input, globalCtx), avec reason.
+     * Creates a pre-processor skipper with an optional diagnostic reason.
      */
     public static StationSkipper pre(StationSkipTest predicate, String reason) {
         Objects.requireNonNull(predicate, "predicate");
@@ -42,7 +43,7 @@ public final class StationSkipper {
     }
 
     /**
-     * Skipper POST basé sur (input, globalCtx, stationCtx).
+     * Creates a post-processor skipper without a reason.
      */
     public static StationSkipper post(StationSkipTest predicate) {
         Objects.requireNonNull(predicate, "predicate");
@@ -54,7 +55,7 @@ public final class StationSkipper {
     // ------------------------------------------------------------------------
 
     /**
-     * Skipper POST avec reason.
+     * Creates a post-processor skipper with an optional diagnostic reason.
      */
     public static StationSkipper post(StationSkipTest predicate, String reason) {
         Objects.requireNonNull(predicate, "predicate");

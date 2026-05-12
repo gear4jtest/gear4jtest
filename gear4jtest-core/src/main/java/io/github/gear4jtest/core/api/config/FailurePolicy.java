@@ -1,11 +1,13 @@
 package io.github.gear4jtest.core.api.config;
 
-/** Politique à appliquer quand une station enfant termine en {@code FAILED}. */
+/**
+ * Policy applied when a child station ends with {@code FAILED}.
+ */
 public enum FailurePolicy {
-    /** Arrête immédiatement l'orchestration et propage l'échec (défaut). */
+    /** Stop orchestration immediately and propagate the failure. */
     FAIL_FAST,
-    /** Ignore l'échec, conserve l'input précédent et continue. */
+    /** Ignore the failure and continue with the previous input. */
     IGNORE_AND_CONTINUE,
-    /** Continue l'exécution, collecte les erreurs, puis échoue à la fin. */
+    /** Continue execution, collect failures, and fail the container at the end. */
     COLLECT_AND_FAIL
 }

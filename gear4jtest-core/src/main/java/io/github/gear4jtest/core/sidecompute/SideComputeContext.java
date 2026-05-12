@@ -6,8 +6,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Contexte side compute pour une exécution donnée. Stocke des CompletableFuture
- * par clé logique.
+ * Run-scoped registry of side-compute futures keyed by logical side-compute
+ * name.
  */
 public final class SideComputeContext {
 

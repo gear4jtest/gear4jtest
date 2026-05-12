@@ -76,7 +76,8 @@ formatting-only change or report it explicitly.
 
 - Use Java 17.
 - Prefer explicit, boring Java over clever abstractions.
-- Keep public APIs intentional and documented.
+- Keep public APIs intentional and document important API/SPI contracts.
+- Do not add mechanical Javadocs to obvious getters or builders only to satisfy a tool; doclint missing-comment checks are intentionally disabled.
 - Add or update tests for behavior changes.
 - Prefer JUnit 5 and AssertJ.
 - Use `// Given`, `// When`, `// Then` comments in non-trivial tests.

@@ -8,12 +8,16 @@ import java.util.ServiceLoader;
 public final class OperationChainTranslatorResolver {
     private final List<OperationChainTranslator> translators;
 
-    /** Injection explicite (Spring/Guice/tests) */
+    /**
+     * Creates a resolver from explicitly provided translators.
+     */
     public OperationChainTranslatorResolver(List<OperationChainTranslator> translators) {
         this.translators = List.copyOf(Objects.requireNonNull(translators));
     }
 
-    /** Découverte via ServiceLoader (plugins) */
+    /**
+     * Discovers translators through {@link java.util.ServiceLoader}.
+     */
     public static OperationChainTranslatorResolver fromServiceLoader(ClassLoader cl) {
         List<OperationChainTranslator> list = new ArrayList<>();
         ServiceLoader.load(OperationChainTranslator.class, cl).forEach(list::add);

@@ -13,7 +13,7 @@ public class SimpleDependencyInjector implements DependencyInjector {
     public void injectDependencies(Object instance, ExecutionMode mode) throws InjectionException {
         Class<?> clazz = instance.getClass();
 
-        // Injection par annotations (exemple avec des annotations custom)
+        // Annotation-based injection using the external API annotations.
         java.lang.reflect.Field[] fields = clazz.getDeclaredFields();
         for (java.lang.reflect.Field field : fields) {
             if (field.isAnnotationPresent(Inject.class)) {
@@ -26,10 +26,10 @@ public class SimpleDependencyInjector implements DependencyInjector {
                         field.setAccessible(true);
                         field.set(instance, bean.get());
                     } catch (IllegalAccessException e) {
-                        throw new InjectionException("Erreur d'injection pour le champ: " + field.getName(), e);
+                        throw new InjectionException("Dependency injection failed for field: " + field.getName(), e);
                     }
                 } else if (inject.required()) {
-                    throw new InjectionException("Bean requis non trouvé: " + beanName);
+                    throw new InjectionException("Required bean not found: " + beanName);
                 }
             }
         }
@@ -62,7 +62,7 @@ public class SimpleDependencyInjector implements DependencyInjector {
     }
 
     /**
-     * Définition d'un bean
+     * Registered bean definition.
      */
     private static class BeanDefinition {
         private final Object instance;
@@ -74,8 +74,8 @@ public class SimpleDependencyInjector implements DependencyInjector {
         }
 
         public Object getInstance() {
-            // Pour simplifier, on retourne toujours la même instance
-            // Dans une vraie implémentation, on gérerait les différents scopes
+            // Scope handling can be expanded later; today the injector keeps the registered
+            // instance.
             return instance;
         }
 

@@ -37,6 +37,7 @@ import io.github.gear4jtest.core.exception.PayloadCloneException;
  * This cloner only accepts payloads that are known to be immutable. Any other
  * payload type is rejected explicitly so that the engine never gives a false
  * impression of branch isolation.
+ * </p>
  */
 public final class ImmutableAwarePayloadCloner implements PayloadCloner {
 

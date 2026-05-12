@@ -50,6 +50,26 @@ It rejects project hygiene issues such as:
 Add rules progressively. Do not enable broad rules that force unrelated refactors unless the change is intentionally a
 style baseline commit.
 
+## Javadoc policy
+
+The build keeps Javadoc doclint enabled, except for missing-comment checks:
+
+```text
+-Xdoclint:all,-missing
+```
+
+This keeps useful validation for malformed Javadoc, invalid references and bad tags, without forcing low-value comments on
+all getters, builders or obvious implementation details.
+
+Document APIs and SPIs when the contract is important or non-obvious, especially in:
+
+- public entry points under `core/api`;
+- extension interfaces under `core/spi`;
+- runtime contracts around execution, events, persistence and payload isolation;
+- external pipeline loading/generation contracts.
+
+Do not add mechanical comments such as "Gets the id" only to satisfy a tool.
+
 ## IDEs and agents
 
 `.editorconfig` defines editor-level basics only. IDE-specific formatter preferences must not override the Gradle

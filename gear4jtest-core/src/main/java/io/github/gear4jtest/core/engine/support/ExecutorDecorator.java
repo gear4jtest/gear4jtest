@@ -5,14 +5,14 @@ import java.util.concurrent.ExecutorService;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 /**
- * Contrat interne permettant de préparer un ExecutorService pour le framework
- * (ex: propagation du MDC, du Tracing, etc.)
+ * Internal hook used to decorate an {@link ExecutorService} before the engine
+ * submits framework tasks to it.
  */
 @FunctionalInterface
 public interface ExecutorDecorator {
 
     /**
-     * Implémentation par défaut qui ne fait rien (No-Op).
+     * Returns the no-op decorator.
      */
     static ExecutorDecorator noOp() {
         return (raw, ctx) -> raw;

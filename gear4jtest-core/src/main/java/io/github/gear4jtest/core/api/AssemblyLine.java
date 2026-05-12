@@ -15,6 +15,21 @@ import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.SequenceStation;
 import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
 
+/**
+ * Definition of a Gear4J pipeline.
+ *
+ * <p>
+ * An {@code AssemblyLine} describes what should be executed: its identity,
+ * version, root station, default context and default runtime configuration. It
+ * is intentionally separate from a single execution. Per-run input and
+ * overrides belong to {@link RunRequest}; mutable run state belongs to the
+ * execution context created by the engine.
+ * </p>
+ *
+ * <p>
+ * Instances are usually created through {@link #builder(String)}.
+ * </p>
+ */
 public class AssemblyLine<IN, OUT> {
 
     private static final String DEFAULT_VERSION = "1";
@@ -37,6 +52,15 @@ public class AssemblyLine<IN, OUT> {
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
     }
 
+    /**
+     * Starts building a pipeline definition.
+     *
+     * @param id    stable pipeline identifier used in traces, generated root
+     *              station ids and external references
+     * @param <IN>  input type accepted by the first station
+     * @param <OUT> output type produced by the current end of the pipeline
+     * @return a new builder
+     */
     public static <IN, OUT> Builder<IN, OUT> builder(String id) {
         return new Builder<>(id);
     }
@@ -61,6 +85,15 @@ public class AssemblyLine<IN, OUT> {
         return defaultContext;
     }
 
+    /**
+     * Fluent builder used by the Java DSL and generated pipeline definitions.
+     *
+     * <p>
+     * Each call to {@link #then(AbstractStation)} appends one station to the
+     * pipeline. Multiple stations are wrapped in a synthetic root
+     * {@link SequenceStation}; a single station becomes the root directly.
+     * </p>
+     */
     public static class Builder<IN, OUT> {
         private final String id;
         private final List<AbstractStation<?, ?>> operations = new ArrayList<>();
@@ -125,6 +158,10 @@ public class AssemblyLine<IN, OUT> {
             return this;
         }
 
+        /**
+         * Appends a station and narrows the builder output type to the appended station
+         * output type.
+         */
         @SuppressWarnings("unchecked")
         public <T> Builder<IN, T> then(AbstractStation<OUT, T> operation) {
             Objects.requireNonNull(operation);
@@ -137,7 +174,6 @@ public class AssemblyLine<IN, OUT> {
             Configuration finalConfig = this.configBuilder.build();
             AbstractStation<?, ?> root;
             if (operations.isEmpty()) {
-                // Pipeline vide : on crée une sequence root vide (SUCCEEDED avec input)
                 root = SequenceStation.syntheticRoot(id + ":root", List.of(), FlowConfig.DEFAULT);
             } else if (operations.size() == 1) {
                 root = operations.get(0);
@@ -148,6 +184,15 @@ public class AssemblyLine<IN, OUT> {
         }
     }
 
+    /**
+     * Default runtime configuration attached to a pipeline definition.
+     *
+     * <p>
+     * This configuration is part of the pipeline contract. Per-run overrides still
+     * belong to {@link RunRequest}. If any runtime service is configured here, the
+     * default runtime contract becomes nested-run-only unless explicitly set.
+     * </p>
+     */
     public static class Configuration {
 
         private final PersistenceConfiguration persistence;
@@ -185,6 +230,9 @@ public class AssemblyLine<IN, OUT> {
             return runtimeContract;
         }
 
+        /**
+         * Builder for pipeline-level runtime configuration.
+         */
         public static class Builder {
 
             private final List<RuntimeExtension> defaultExtensions = new ArrayList<>();

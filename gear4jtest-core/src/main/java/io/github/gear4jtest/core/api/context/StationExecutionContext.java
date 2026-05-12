@@ -7,10 +7,13 @@ import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 
 /**
- * Contexte runtime d'une exécution d'opération. - Porte l'identité de
- * l'opération - Le type logique (kind) - Le contexte global du pipeline - Le
- * record d'exécution (trace) - Des "capabilities" typées pour les besoins
- * spécifiques (transformer, params, etc.)
+ * Runtime context of a single station execution.
+ *
+ * <p>
+ * The context exposes the station identity, station kind, global run context,
+ * station trace, framework support and typed capabilities used by
+ * station-specific features.
+ * </p>
  */
 public interface StationExecutionContext {
 
@@ -29,8 +32,7 @@ public interface StationExecutionContext {
     ExecutionSupport getSupport();
 
     /**
-     * Capabilities typées, optionnelles, utilisées pour les besoins spécifiques
-     * (transformer, paramètres d'injection, profils, etc.).
+     * Returns an optional typed capability attached to this station execution.
      */
     <T> Optional<T> getCapability(Class<T> type);
 

@@ -1,23 +1,18 @@
 package io.github.gear4jtest.core.persistence;
 
 public enum ExecutionStatus {
-    // --- PHASE : EN ATTENTE / DÉMARRAGE ---
+    // Active states before execution starts.
     PENDING(StatusCategory.ACTIVE), INITIALIZING(StatusCategory.ACTIVE),
 
-    // --- PHASE : EN COURS ---
-    RUNNING(StatusCategory.ACTIVE), PAUSED(StatusCategory.ACTIVE), // On considère que "Pause" est un état actif
-    // (non-fini)
+    // Active states while execution is in progress.
+    RUNNING(StatusCategory.ACTIVE), PAUSED(StatusCategory.ACTIVE),
 
-    // --- PHASE : TERMINÉ (Succès) ---
+    // Successful terminal state.
     SUCCEEDED(StatusCategory.TERMINAL),
 
-    // --- PHASE : TERMINÉ (Arrêts & Erreurs) ---
+    // Terminal stop and failure states.
     FAILED(StatusCategory.TERMINAL), STOPPED(StatusCategory.TERMINAL), CANCELLED(StatusCategory.TERMINAL),
     SKIPPED(StatusCategory.TERMINAL);
-
-    // --------------------------------------------------------
-    // Le Champ Final (La Source de Vérité)
-    // --------------------------------------------------------
 
     private final StatusCategory category;
 
@@ -25,41 +20,37 @@ public enum ExecutionStatus {
         this.category = category;
     }
 
-    // --------------------------------------------------------
-    // Les Helpers (L'API Publique)
-    // --------------------------------------------------------
-
     /**
-     * Est-ce que le run est fini ?
+     * Returns whether this status is terminal.
      */
     public boolean isTerminal() {
         return this.category == StatusCategory.TERMINAL;
     }
 
     /**
-     * Est-ce que le run est vivant ? (En cours, en pause ou en attente)
+     * Returns whether this status still represents an active execution.
      */
     public boolean isActive() {
         return this.category == StatusCategory.ACTIVE;
     }
 
     /**
-     * Est-ce un succès franc ?
+     * Returns whether this status represents a successful completion.
      */
     public boolean isSuccess() {
         return this == SUCCEEDED;
     }
 
     /**
-     * Est-ce que ça s'est mal passé ? (Technique ou Timeout) Utile pour le
-     * monitoring / alerting.
+     * Returns whether this status should be treated as an error for monitoring or
+     * alerting.
      */
     public boolean isError() {
         return this == FAILED || this == CANCELLED;
     }
 
     /**
-     * Est-ce un arrêt fonctionnel volontaire ?
+     * Returns whether this status represents a functional stop.
      */
     public boolean isStopped() {
         return this == STOPPED;
@@ -67,14 +58,12 @@ public enum ExecutionStatus {
 
     public enum StatusCategory {
         /**
-         * Le processus est vivant. Il consomme des ressources (RUNNING) ou attend de le
-         * faire (PENDING/PAUSED). Il n'a pas encore produit de résultat final.
+         * Execution has not produced a final result yet.
          */
         ACTIVE,
 
         /**
-         * Le processus est fini. Il ne changera plus d'état. Il a un résultat (Succès,
-         * Echec ou Stop).
+         * Execution has produced a final result and should no longer change state.
          */
         TERMINAL
     }

@@ -8,6 +8,7 @@ package io.github.gear4jtest.core.api.context;
  * Implementations may return the same instance only when the provided payload
  * type is known to be immutable and therefore safe to share. Mutable payloads
  * must be deeply cloned.
+ * </p>
  */
 public interface PayloadCloner {
 

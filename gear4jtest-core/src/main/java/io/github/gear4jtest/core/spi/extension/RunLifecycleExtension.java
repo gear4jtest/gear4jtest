@@ -8,6 +8,7 @@ import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
  *
  * <p>
  * These hooks are invoked by the engine outside the measured runtime scope:
+ * </p>
  *
  * <ul>
  * <li>{@link #onRunStarted(ExecutionContext, AssemblyRunTrace)} is called
@@ -19,6 +20,7 @@ import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
  *
  * <p>
  * Implementations must not mutate the lifecycle semantics of the run.
+ * </p>
  */
 public interface RunLifecycleExtension extends RuntimeExtension {
 

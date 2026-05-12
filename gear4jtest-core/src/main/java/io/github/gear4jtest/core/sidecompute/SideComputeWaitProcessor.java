@@ -61,18 +61,19 @@ public final class SideComputeWaitProcessor implements Processor {
                     execCtx.getContext().put(SideComputeKeys.valueKey(key), fb);
                 }
                 case IGNORE -> {
-                    // Ne rien faire : pas de valeur résolue, le param verra que rien n'est là.
+                    // Leave the value unresolved; parameter resolution can observe its absence.
                 }
             }
         } catch (Exception ex) {
-            // Autres problèmes sur le future : on laisse remonter ou on wrappe
+            // Other future failures are wrapped as side-compute execution failures.
             throw new SideComputeExecutionException(key, ex);
         }
     }
 
     @Override
     public void afterExecution(Object result, StationExecutionContext context) {
-        // Rien ici – la valeur est dans le context global, dispo pour les paramètres.
+        // Nothing to do: the resolved value is stored in the global context for
+        // parameters to consume.
     }
 
     public enum OnTimeout {

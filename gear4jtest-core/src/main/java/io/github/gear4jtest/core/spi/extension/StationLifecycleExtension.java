@@ -10,6 +10,7 @@ import io.github.gear4jtest.core.persistence.StationLogRecord;
  * <p>
  * These hooks are observers of station execution. They are invoked by the
  * engine:
+ * </p>
  * <ul>
  * <li>once the station scope has been initialized, before delegate
  * execution,</li>
@@ -18,6 +19,7 @@ import io.github.gear4jtest.core.persistence.StationLogRecord;
  *
  * <p>
  * Implementations are intended for persistence, tracing, metrics, audit, etc.
+ * </p>
  */
 public interface StationLifecycleExtension extends RuntimeExtension {
 

@@ -19,16 +19,13 @@ import io.github.gear4jtest.core.spi.runner.StationRunner;
 public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, ?>> {
 
     /**
-     * Manager de concurrence partagé.
-     *
-     * Si tu veux le scoper à un runtime d'AssemblyLine spécifique, tu pourras
-     * injecter un manager plutôt qu'utiliser ce static.
+     * Shared concurrency manager used to protect stateful operators during station
+     * execution.
      */
     private static final WorkerConcurrencyManager CONCURRENCY_MANAGER = new WorkerConcurrencyManager();
 
     /**
-     * ThreadLocal pour savoir si on a acquis un lock sur CE thread pour CETTE
-     * exécution, et surtout pour ne pas faire d'afterUse() si beforeUse() a échoué.
+     * Thread-local guard acquired for the current execution, if any.
      */
     private static final ThreadLocal<WorkerConcurrencyGuard> CURRENT_GUARD = new ThreadLocal<>();
 
@@ -66,8 +63,8 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
 
         WorkerConcurrencyGuard guard = CONCURRENCY_MANAGER.guardFor(operation, concurrencyStrategy());
 
-        // Si beforeUse() FAIL_FAST et échoue, il va jeter avant qu'on pose le
-        // ThreadLocal.
+        // If FAIL_FAST cannot acquire the guard, beforeUse() throws before the
+        // ThreadLocal is set.
         guard.beforeUse();
         CURRENT_GUARD.set(guard);
     }
@@ -95,16 +92,19 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
                 }
             }
         } finally {
-            // Nettoyage du ThreadLocal pour éviter les fuites sur les pools de threads
+            // Clear the ThreadLocal to avoid leaks on pooled threads.
             CURRENT_GUARD.remove();
-            // Et on laisse la super-classe faire son éventuel cleanup
+            // Delegate remaining cleanup to the base strategy.
             super.release(station, result, context, errors);
         }
     }
 
     /**
-     * Indique si cette opération est stateful. Par défaut, on déduit cela
-     * automatiquement depuis le transformer.
+     * Returns whether the bound operator is considered stateful.
+     *
+     * <p>
+     * By default the strategy derives this from the operator itself.
+     * </p>
      */
     protected boolean isStateful(StationExecutionContext operationExecution) {
         var transformer = StationContextUtils.getTransformer(operationExecution);
@@ -112,8 +112,7 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
     }
 
     /**
-     * Stratégie de concurrence utilisée lorsque cette opération est exécutée de
-     * manière concurrente (iteration parallèle, containers parallélisés, etc.).
+     * Returns the concurrency strategy used when this station can run concurrently.
      */
     protected WorkerConcurrencyStrategy concurrencyStrategy() {
         return WorkerConcurrencyStrategy.BLOCK_CALLER;

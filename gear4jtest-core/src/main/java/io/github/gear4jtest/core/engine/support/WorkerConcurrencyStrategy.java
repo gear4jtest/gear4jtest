@@ -3,20 +3,19 @@ package io.github.gear4jtest.core.engine.support;
 public enum WorkerConcurrencyStrategy {
 
     /**
-     * Si le transformer est déjà en cours d'utilisation, on échoue immédiatement en
-     * levant une ConcurrentTransformerUseException.
+     * Fail immediately when the operator is already being used by another
+     * execution.
      */
     FAIL_FAST,
 
     /**
-     * Si le transformer est déjà en cours d'utilisation, on bloque le thread
-     * appelant jusqu'à ce qu'il soit à nouveau disponible.
+     * Block the caller until the operator is available again.
      */
     BLOCK_CALLER,
 
     /**
-     * Aucun verrou n'est pris, le transformer peut être utilisé en parallèle. À
-     * n'utiliser que si le transformer est réellement thread-safe / stateless.
+     * Do not guard operator use. Only use this for truly thread-safe or stateless
+     * operators.
      */
     IGNORE
 }

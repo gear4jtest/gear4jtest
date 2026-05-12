@@ -1,12 +1,13 @@
 package io.github.gear4jtest.core.api.config;
 
 /**
- * Configuration de flux pour une station "conteneur" (sequence, iterator,
- * parallel, ...).
+ * Flow policy used by container-like stations such as sequences, iterators and
+ * parallel containers.
  *
  * <p>
- * La station peut surcharger cette config; sinon on utilise un défaut au niveau
- * du run.
+ * A station may override this configuration. Otherwise the execution falls back
+ * to the run-level default.
+ * </p>
  */
 public record FlowConfig(FailurePolicy failurePolicy, StopPolicy stopPolicy, CancelPolicy cancelPolicy) {
 

@@ -27,6 +27,7 @@ public final class StationContextUtils {
      * be confined to a single, deliberate place. Use
      * {@link #applyTransformer(Object, StationExecutionContext)} when you actually
      * need to invoke the transformer with an {@code Object} input.
+     * </p>
      */
     public static Optional<Operator<?, ?>> getTransformer(StationExecutionContext ctx) {
         return ctx.getCapability(Operator.class).map(raw -> (Operator<?, ?>) raw);
@@ -39,6 +40,7 @@ public final class StationContextUtils {
      * Captures the operator's {@code <IN, OUT>} type variables locally so the
      * necessary unchecked cast on {@code input} stays in this single helper instead
      * of leaking into every caller.
+     * </p>
      */
     public static Optional<Object> applyTransformer(Object input, StationExecutionContext ctx) {
         return getTransformer(ctx).map(op -> invokeTransformer(op, input, ctx));

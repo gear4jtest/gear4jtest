@@ -5,15 +5,18 @@ import java.util.UUID;
 import io.github.gear4jtest.core.util.DefaultUuidGenerator;
 
 /**
- * Point d'extension pour la génération d'identifiants (Runs, Logs). *
- * L'implémentation par défaut utilise un algorithme UUID v7 Time-Ordered
- * thread-safe et sans dépendance.
+ * Extension point used to generate run and station identifiers.
+ *
+ * <p>
+ * The default implementation is a dependency-free, thread-safe UUIDv7
+ * generator.
+ * </p>
  */
 @FunctionalInterface
 public interface IdGenerator {
 
     /**
-     * Retourne le générateur par défaut (UUID v7, ~4M ops/sec).
+     * Returns the default UUIDv7 generator.
      */
     static IdGenerator defaultGenerator() {
         return DefaultUuidGenerator::generate;

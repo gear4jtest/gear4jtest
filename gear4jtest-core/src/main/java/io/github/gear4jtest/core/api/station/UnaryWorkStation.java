@@ -34,7 +34,7 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
         }
 
         /**
-         * Paramètre avec valeur fixe.
+         * Binds an operator parameter to a fixed value.
          */
         public <A> Builder<INOUT, OP> parameter(WorkStation.ParamRetriever<OP, A> retriever, A value) {
 
@@ -45,7 +45,7 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
         }
 
         /**
-         * Paramètre avec Supplier (sans dépendance au contexte).
+         * Binds an operator parameter to a context-independent supplier.
          */
         public <A> Builder<INOUT, OP> parameter(WorkStation.ParamRetriever<OP, A> retriever,
                                                 java.util.function.Supplier<A> supplier) {
@@ -57,7 +57,8 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
         }
 
         /**
-         * Paramètre context-aware.
+         * Binds an operator parameter to a resolver that can inspect the current input
+         * and execution context.
          */
         public <A> Builder<INOUT, OP> parameter(WorkStation.ParamRetriever<OP, A> retriever,
                                                 java.util.function.Function<WorkerParamsInjector.InterpretationContext<INOUT>, A> resolver) {
@@ -76,39 +77,6 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
                 managedInstance.processors.add(new WorkerParamsInjector());
             }
         }
-        //
-        // public <A> Builder<INOUT, OP> parameter(ParamRetriever<OP, A> retriever, A
-        // value) {
-        // addParameterInjectorIfNecessary();
-        // managedInstance.parameters.add(new
-        // OperationParamsInjector.ValueParameterModel<>(retriever, value));
-        // return this;
-        // }
-        //
-        // public <A> Builder<INOUT, OP> parameter(ParamRetriever<OP, A> retriever,
-        // Supplier<A> value) {
-        // addParameterInjectorIfNecessary();
-        // managedInstance.parameters.add(new
-        // OperationParamsInjector.SupplierParameterModel<>(retriever, value));
-        // return this;
-        // }
-        //
-        // public <A> Builder<INOUT, OP> parameter(ParamRetriever<OP, A> retriever,
-        // Function<OperationParamsInjector.InterpretationContextParameterModel.InterpretationContext,
-        // A> value) {
-        // addParameterInjectorIfNecessary();
-        // managedInstance.parameters.add(new
-        // OperationParamsInjector.InterpretationContextParameterModel<>(retriever,
-        // value));
-        // return this;
-        // }
-        //
-        // private void addParameterInjectorIfNecessary() {
-        // if (managedInstance.processors.stream().noneMatch(p -> p instanceof
-        // OperationParamsInjector)) {
-        // managedInstance.processors.add(new OperationParamsInjector());
-        // }
-        // }
 
         public Builder<INOUT, OP> onError(BaseError.SafeError<INOUT> onError) {
             this.managedInstance.onErrors.add(onError);

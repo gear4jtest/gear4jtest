@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Configuration;
  * <p>
  * This module intentionally focuses on plain Spring integration only.
  * Boot-specific auto-configuration should live in a dedicated starter module.
+ * </p>
  */
 @Configuration(proxyBeanMethods = false)
 public class Gear4jSpringConfiguration {

@@ -1,13 +1,13 @@
 package io.github.gear4jtest.core.api.config;
 
 /**
- * Politique à appliquer quand une station enfant termine en {@code CANCELLED}.
+ * Policy applied when a child station ends with {@code CANCELLED}.
  */
 public enum CancelPolicy {
-    /** Arrête et propage l'annulation (défaut). */
+    /** Stop the current flow and propagate cancellation. */
     PROPAGATE_CANCEL,
-    /** Ignore l'annulation et continue (rare). */
+    /** Ignore cancellation and continue with the previous input. */
     IGNORE_AND_CONTINUE,
-    /** Transforme une annulation en échec (FAILED). */
+    /** Treat cancellation as a failure. */
     TREAT_AS_FAILURE
 }

@@ -14,6 +14,7 @@ import io.github.gear4jtest.core.event.EventReaction;
  * {@link EventEnvelope} and publishes it. If the external transport is
  * unavailable, overloaded or rejects the envelope, the failure is surfaced as a
  * reaction failure and handled by the current asynchronous runtime.
+ * </p>
  *
  * <p>
  * Important: using this reaction through the current core event runtime does

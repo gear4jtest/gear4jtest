@@ -12,6 +12,7 @@ import org.springframework.context.ApplicationContext;
  * <p>
  * This allows Gear4J operators, processors or any other engine resource to be
  * resolved directly from the Spring container.
+ * </p>
  */
 public final class SpringResourceFactory implements ResourceFactory {
 

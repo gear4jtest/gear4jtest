@@ -6,9 +6,11 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 public interface StationSkipTest {
 
     /**
-     * @param input      input courant de la station
-     * @param stationCtx StationExecutionContext (capabilities : params cache,
-     *                   operator, etc.)
+     * Evaluates whether the current station execution should be skipped.
+     *
+     * @param input      current station input
+     * @param stationCtx current station execution context
+     * @return {@code true} when the station should be skipped
      */
     boolean test(Object input, StationExecutionContext stationCtx);
 }

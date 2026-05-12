@@ -11,9 +11,8 @@ import io.github.gear4jtest.core.api.config.FlowConfig;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 /**
- * Itérateur d'opérations : - conserve le builder et les accumulateurs d'origine
- * - n'utilise plus ExecutionReport / OperationResult - branche sur
- * PipelineExecutionManager + IteratorBatch / OperationExecutionRecord
+ * Station that iterates over elements produced from the input and executes a
+ * child sequence for each item.
  */
 public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
 

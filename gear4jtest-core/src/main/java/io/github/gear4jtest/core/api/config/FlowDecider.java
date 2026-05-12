@@ -4,11 +4,12 @@ import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 
 /**
- * Normalise un {@link StationLogTrace} enfant en une {@link FlowDecision} selon
- * une {@link FlowConfig}.
+ * Converts a child {@link StationLogTrace} into the {@link FlowDecision}
+ * dictated by a {@link FlowConfig}.
  *
  * <p>
- * Ce composant est stateless, pur et facilement testable.
+ * This component is stateless, deterministic and easy to test.
+ * </p>
  */
 public final class FlowDecider {
 
@@ -32,7 +33,7 @@ public final class FlowDecider {
             };
         }
 
-        // 3) STOPPED (fonctionnel)
+        // 3) STOPPED (functional stop)
         if (status == StationLogStatus.STOPPED) {
             return switch (config.stopPolicy()) {
                 case PROPAGATE_STOP, TREAT_AS_FAILURE -> FlowDecision.INTERRUPT;
@@ -40,7 +41,7 @@ public final class FlowDecider {
             };
         }
 
-        // 4) CANCELLED (technique)
+        // 4) CANCELLED (technical cancellation)
         if (status == StationLogStatus.CANCELLED) {
             return switch (config.cancelPolicy()) {
                 case PROPAGATE_CANCEL, TREAT_AS_FAILURE -> FlowDecision.INTERRUPT;
@@ -48,7 +49,7 @@ public final class FlowDecider {
             };
         }
 
-        // Sécurité : on n'a pas de sémantique pour ce status -> on interrompt.
+        // Safety fallback: unknown child statuses interrupt the current flow.
         return FlowDecision.INTERRUPT;
     }
 }

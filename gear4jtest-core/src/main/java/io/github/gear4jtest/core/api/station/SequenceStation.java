@@ -18,11 +18,12 @@ public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
     }
 
     /**
-     * Crée une sequence "synthetic root" à partir d'une liste de steps.
+     * Creates a synthetic root sequence from already collected steps.
      *
      * <p>
-     * Utile pour le builder d'{@link AssemblyLine} : l'utilisateur construit une
-     * liste de stations, et l'engine exécute un unique root.
+     * This is used by {@link AssemblyLine}: users append stations through the
+     * builder while the engine executes one root station.
+     * </p>
      */
     public static SequenceStation<Object, Object> syntheticRoot(String id,
                                                                 List<AbstractStation<?, ?>> steps,

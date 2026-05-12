@@ -4,11 +4,13 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Générateur UUID v7 par défaut pour Gear4j. * Performance : ~4 Millions
- * IDs/sec (limité par synchronized). C'est largement suffisant pour saturer
- * n'importe quelle base de données relationnelle. * Si un utilisateur a besoin
- * de plus, il doit implémenter l'interface IdGenerator et utiliser une
- * librairie spécialisée (ex: uuid-creator).
+ * Default dependency-free UUIDv7 generator used by Gear4J.
+ *
+ * <p>
+ * The implementation favors monotonic, time-ordered identifiers without
+ * introducing an external dependency. Users who need different throughput or
+ * generation semantics can provide their own {@code IdGenerator}.
+ * </p>
  */
 public final class DefaultUuidGenerator {
 
@@ -30,7 +32,7 @@ public final class DefaultUuidGenerator {
             } else {
                 ts = lastTimestampMs;
                 counter++;
-                // Protection overflow (4096 IDs/ms)
+                // Guard against sequence overflow within the same millisecond.
                 if (counter > 0x0FFF) {
                     while (ts <= lastTimestampMs) {
                         Thread.onSpinWait(); // Java 9+ hint

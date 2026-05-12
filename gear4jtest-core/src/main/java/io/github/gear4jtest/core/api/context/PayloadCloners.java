@@ -18,6 +18,7 @@ public final class PayloadCloners {
      * <p>
      * This implementation only shares references for known immutable payloads and
      * fails explicitly for any other type.
+     * </p>
      */
     public static PayloadCloner immutableAware() {
         return IMMUTABLE_AWARE;
@@ -30,6 +31,7 @@ public final class PayloadCloners {
      * <p>
      * This should only be used intentionally in legacy scenarios where the caller
      * fully controls payload mutability.
+     * </p>
      */
     public static PayloadCloner noOpUnsafe() {
         return NO_OP_UNSAFE;

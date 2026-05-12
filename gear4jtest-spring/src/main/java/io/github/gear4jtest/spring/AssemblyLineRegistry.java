@@ -11,6 +11,7 @@ import io.github.gear4jtest.core.api.AssemblyLine;
  * <p>
  * This registry is useful for diagnostics, administration, testing, or for
  * selecting a pipeline by bean name in an application service layer.
+ * </p>
  */
 public interface AssemblyLineRegistry {
 

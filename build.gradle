@@ -8,7 +8,6 @@ plugins {
     id "me.champeau.gradle.jmh" version "0.5.3"
     id 'org.asciidoctor.convert' version '2.4.0'
     id 'idea'
-    id 'io.freefair.aspectj' version '8.0.1'
     id 'jacoco-report-aggregation'
 }
 
@@ -118,6 +117,12 @@ configure(project.coreProjects) {
         }
     }
 
+    tasks.withType(Javadoc).configureEach {
+        options.encoding = 'UTF-8'
+        options.addBooleanOption('Xdoclint:all,-missing', true)
+        options.addBooleanOption('quiet', true)
+    }
+
     tasks.named('check') {
         dependsOn 'spotlessCheck'
     }
@@ -141,18 +146,13 @@ configure(project.coreProjects) {
 configure(project.coreProjects.stream().filter { !it.name.contains("gradle") }.collect(Collectors.toList())) {
     apply plugin: 'java-library'
     apply plugin: 'me.champeau.gradle.jmh'
-    apply plugin: 'io.freefair.aspectj'
     apply from: "${rootDir}/publishing.gradle"
 
     dependencies {
         implementation(libraries.slf4j)
         implementation(libraries.cglib)
-        implementation(libraries.aspectjrt)
         implementation(libraries.google)
         implementation(libraries.jackson)
-//        implementation(libraries.aspectjweaver)
-
-        //compileOnly(libraries.mojo)
 
         testImplementation(libraries.junit)
         testImplementation(libraries.assertj)

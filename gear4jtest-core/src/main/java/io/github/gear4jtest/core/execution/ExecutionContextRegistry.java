@@ -7,16 +7,20 @@ import java.util.concurrent.ConcurrentMap;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 /**
- * Registry simple pour mapper un executionId (String) vers un ExecutionContext.
- * À alimenter au moment du démarrage d'une exécution de pipeline, et à nettoyer
- * une fois l'exécution terminée.
+ * Thread-safe registry mapping execution identifiers to their active
+ * {@link ExecutionContext}.
+ *
+ * <p>
+ * Contexts are registered when a pipeline starts and removed when the execution
+ * completes.
+ * </p>
  */
 public final class ExecutionContextRegistry {
 
     private final ConcurrentMap<UUID, ExecutionContext> contexts = new ConcurrentHashMap<>();
 
     /**
-     * Enregistre un ExecutionContext pour un executionId donné.
+     * Registers the provided context when it has an execution id.
      */
     public void register(ExecutionContext ctx) {
         if (ctx == null || ctx.getExecutionId() == null) {
@@ -26,7 +30,8 @@ public final class ExecutionContextRegistry {
     }
 
     /**
-     * Récupère le contexte associé à l'executionId, ou null si absent.
+     * Returns the context associated with the execution id, or {@code null} when
+     * none is registered.
      */
     public ExecutionContext get(UUID executionId) {
         if (executionId == null) {
@@ -36,8 +41,7 @@ public final class ExecutionContextRegistry {
     }
 
     /**
-     * Supprime le contexte associé à l'executionId. À appeler lorsqu'une exécution
-     * de pipeline est terminée.
+     * Removes the context associated with the execution id.
      */
     public void remove(UUID executionId) {
         if (executionId == null) {

@@ -1,8 +1,8 @@
 package io.github.gear4jtest.core.api.station;
 
 /**
- * Type logique d'opération (processing, container, iterator, signal, ...).
- * Permet aux processors de filtrer proprement sans instanceof.
+ * Logical station type used by processors and strategies to filter behavior
+ * without relying on {@code instanceof}.
  */
 public enum StationKind {
     PROCESSING, CONTAINER, ITERATOR, SIGNAL, PIPELINE, OTHER

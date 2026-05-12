@@ -16,7 +16,7 @@ public final class JdtFormatter {
 
     public static String format(String src) {
         Map<String, String> opts = DefaultCodeFormatterConstants.getEclipseDefaultSettings();
-        // Réglages clés (adapte à ton style) :
+        // Key defaults for generated Java source.
         opts.put(JavaCore.COMPILER_SOURCE, JavaCore.VERSION_17);
         opts.put(DefaultCodeFormatterConstants.FORMATTER_TAB_CHAR, JavaCore.SPACE);
         opts.put(DefaultCodeFormatterConstants.FORMATTER_TAB_SIZE, "4");
@@ -26,7 +26,7 @@ public final class JdtFormatter {
         CodeFormatter cf = ToolFactory.createCodeFormatter(opts);
         TextEdit edit = cf.format(CodeFormatter.K_COMPILATION_UNIT, src, 0, src.length(), 0, System.lineSeparator());
         if (edit == null)
-            return src; // en cas d’erreur, retourne brut
+            return src; // Return the raw source when the formatter cannot build an edit.
 
         IDocument doc = new Document(src);
         try {

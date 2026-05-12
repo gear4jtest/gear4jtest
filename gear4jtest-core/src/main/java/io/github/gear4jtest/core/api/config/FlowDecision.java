@@ -1,14 +1,13 @@
 package io.github.gear4jtest.core.api.config;
 
 /**
- * Décision de contrôle de flux à appliquer à un résultat enfant.
+ * Flow-control decision produced from a child station result.
  *
  * <ul>
- * <li>{@link #PROCEED} : on continue normalement</li>
- * <li>{@link #INTERRUPT} : on interrompt immédiatement (stop/fail/cancel
- * propagé)</li>
- * <li>{@link #MARK_AND_PROCEED} : on note un échec (collect) mais on
- * continue</li>
+ * <li>{@link #PROCEED}: continue normally.</li>
+ * <li>{@link #INTERRUPT}: interrupt immediately and propagate stop, failure or
+ * cancellation.</li>
+ * <li>{@link #MARK_AND_PROCEED}: record a collected failure and continue.</li>
  * </ul>
  */
 public enum FlowDecision {

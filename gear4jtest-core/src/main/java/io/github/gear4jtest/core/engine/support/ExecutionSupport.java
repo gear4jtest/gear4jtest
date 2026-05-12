@@ -28,7 +28,8 @@ public final class ExecutionSupport {
     }
 
     /**
-     * Fournit un ExecutorService prêt à l'emploi pour le framework.
+     * Returns the executor that should be used by the framework for the current
+     * run.
      */
     public ExecutorService executorFor(ExecutorService rawExecutor, ExecutionContext ctx) {
         if (rawExecutor == null) {

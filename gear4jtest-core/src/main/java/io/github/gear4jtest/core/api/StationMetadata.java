@@ -3,8 +3,12 @@ package io.github.gear4jtest.core.api;
 import java.util.Optional;
 
 /**
- * Metadata typed attachée à une station (définition), pour porter des
- * policies/flags.
+ * Typed metadata attached to a station definition.
+ *
+ * <p>
+ * Metadata is intended for declarative policies and flags that should travel
+ * with the station model without adding dedicated fields to every station type.
+ * </p>
  */
 public interface StationMetadata {
 

@@ -2,15 +2,9 @@ package io.github.gear4jtest.core.api.config;
 
 public class PersistenceConfiguration {
 
-    // On garde ça : Est-ce qu'on veut stocker le JSON du résultat final ?
-    // C'est un choix métier (coût stockage vs auditabilité).
+    // Business choice: storing the final result improves auditability at the cost
+    // of storage.
     private final boolean storeResultObject;
-
-    // On pourrait ajouter d'autres options de "tuning" ici :
-    // private final boolean storeIntermediateSteps; (Garder le détail des
-    // opérations ou juste le résumé ?)
-    // private final int flushThreshold; (Pour la performance spécifique de ce
-    // pipeline)
 
     private PersistenceConfiguration(boolean storeResultObject) {
         this.storeResultObject = storeResultObject;
@@ -25,7 +19,7 @@ public class PersistenceConfiguration {
     }
 
     public static class Builder {
-        private boolean storeResultObject = true; // Valeur par défaut
+        private boolean storeResultObject = true;
 
         public Builder storeResultObject(boolean storeResultObject) {
             this.storeResultObject = storeResultObject;

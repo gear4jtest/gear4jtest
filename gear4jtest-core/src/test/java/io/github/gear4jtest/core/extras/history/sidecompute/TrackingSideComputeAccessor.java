@@ -5,11 +5,12 @@ import java.time.Instant;
 import io.github.gear4jtest.core.sidecompute.SideComputeAccessor;
 
 /**
- * Décorateur qui track les side-computes réellement consommés.
+ * Decorator that tracks the side-compute values actually consumed by code under
+ * test.
  *
  * <p>
- * Le TTL est résolu via SideComputeExpiryRegistry (publié par les
- * side-computes).
+ * Expiration is resolved through {@link SideComputeExpiryRegistry}.
+ * </p>
  */
 public final class TrackingSideComputeAccessor implements SideComputeAccessor {
 

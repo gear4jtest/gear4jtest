@@ -3,17 +3,17 @@ package io.github.gear4jtest.core.engine.support;
 public enum WorkerStatefulness {
 
     /**
-     * L'état (stateful/stateless) est déduit automatiquement par introspection.
+     * Derive statefulness through runtime introspection.
      */
     AUTO,
 
     /**
-     * Le transformer est explicitement déclaré comme stateful.
+     * The operator is explicitly stateful.
      */
     STATEFUL,
 
     /**
-     * Le transformer est explicitement déclaré comme stateless.
+     * The operator is explicitly stateless.
      */
     STATELESS
 }

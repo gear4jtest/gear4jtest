@@ -72,8 +72,13 @@ public class DefaultStationExecutionContext implements StationExecutionContext {
     }
 
     /**
-     * API interne pour enrichir le contexte avec des capabilities typées. À
-     * utiliser depuis les OperationDefinition concrètes.
+     * Adds a typed capability to this station execution context.
+     *
+     * <p>
+     * Capabilities are an internal extension channel used by concrete station
+     * definitions and strategies to expose station-scoped data without adding
+     * public fields for every feature.
+     * </p>
      */
     public <T> void addCapability(Class<T> type, T instance) {
         capabilities.put(type, instance);
