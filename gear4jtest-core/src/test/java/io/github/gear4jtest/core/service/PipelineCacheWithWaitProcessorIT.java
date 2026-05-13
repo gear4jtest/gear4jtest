@@ -81,13 +81,11 @@ class PipelineCacheWithWaitProcessorIT {
                 .addHandler(new TaskHistoryExpirySideComputeHandler<>()).map(TaskHistoryResult::value).build();
 
         WorkStation<String, String> triggerStation = ElementModelBuilders
-                .<String, String, TriggerSideComputeOperator>processingOperation("trigger-customer-fetch",
-                                                                                 TriggerSideComputeOperator.class)
+                .processingOperation("trigger-customer-fetch", TriggerSideComputeOperator.class)
                 .build();
 
         WorkStation<String, FinalOutput> joinStation = ElementModelBuilders
-                .<String, FinalOutput, JoinUsingContextOperator>processingOperation("join-sidecompute-and-taskhistory",
-                                                                                    JoinUsingContextOperator.class)
+                .processingOperation("join-sidecompute-and-taskhistory", JoinUsingContextOperator.class)
                 .addProcessor(SideComputeWaitProcessor.builder("customer-profile").build())
                 .parameter(JoinUsingContextOperator::getCustomerParam,
                            (Function<WorkerParamsInjector.InterpretationContext<String>, CustomerDto>) iCtx -> iCtx
@@ -97,21 +95,28 @@ class PipelineCacheWithWaitProcessorIT {
         AssemblyLine<String, FinalOutput> pipeline = ElementModelBuilders
                 .<String>createAssemblyLine("customer-enrichment").version("1.0.0")
                 .configuration(AssemblyLine.Configuration.builder()
-                        .eventHandling(EventHandlingDefinition.builder().sideComputer(sideComputer)
+                        .eventHandling(EventHandlingDefinition.builder()
+                                .sideComputer(sideComputer)
                                 .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
                                         .reactionExecutorFactory(Executors::newSingleThreadExecutor)
-                                        .shutdownTimeout(Duration.ofSeconds(2)).build())
+                                        .shutdownTimeout(Duration.ofSeconds(2))
+                                        .build())
                                 .build())
                         .build())
-                .then(triggerStation).then(joinStation).build();
+                .then(triggerStation)
+                .then(joinStation)
+                .build();
 
         PipelineEngine pipelineEngine = PipelineEngine.builder()
                 .runnerChainFactory(new RunnerChainFactory(StrategyRegistry.defaultRegistry()))
                 .resourceFactory(resourceFactory).extensionResolver(new RuntimeExtensionResolver(List.of()))
                 .executionContextRegistry(executionContextRegistry).build();
 
-        RunRequest request = RunRequest.builder().input("42").context(Map.of("tenantId", "tenant-a"))
-                .with(cacheExtension).build();
+        RunRequest request = RunRequest.builder()
+                .input("42")
+                .context(Map.of("tenantId", "tenant-a"))
+                .with(cacheExtension)
+                .build();
 
         ExecutionResult<FinalOutput> firstResult = pipelineEngine.execute(pipeline, request);
 

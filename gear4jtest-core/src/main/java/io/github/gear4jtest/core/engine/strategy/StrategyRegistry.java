@@ -40,7 +40,9 @@ public class StrategyRegistry {
     public <S extends AbstractStation<?, ?>> StationExecutionStrategy<S> getStrategy(S station) {
         return (StationExecutionStrategy<S>) cache
                 .computeIfAbsent((Class<? extends AbstractStation<?, ?>>) station.getClass(),
-                                 type -> strategies.stream().filter(s -> s.supports(type)).findFirst()
+                                 type -> strategies.stream()
+                                         .filter(s -> s.supports(type))
+                                         .findFirst()
                                          .orElseThrow(() -> new IllegalStateException("No strategy for " + type)));
     }
 }

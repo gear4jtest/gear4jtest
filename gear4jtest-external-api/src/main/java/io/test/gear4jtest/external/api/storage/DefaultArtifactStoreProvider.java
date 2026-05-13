@@ -123,7 +123,8 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
             groups.computeIfAbsent(idx, __ -> new HashMap<>()).put(tail, e.getValue());
         }
 
-        var ordered = groups.keySet().stream().sorted(Comparator.comparingInt(Integer::parseInt))
+        var ordered = groups.keySet().stream()
+                .sorted(Comparator.comparingInt(Integer::parseInt))
                 .collect(Collectors.toList());
 
         List<ArtifactStore> out = new ArrayList<>();
@@ -134,7 +135,8 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
                 continue;
 
             // Convert props.* entries into the child store property map.
-            Map<String, String> childProps = g.entrySet().stream().filter(en -> en.getKey().startsWith("props."))
+            Map<String, String> childProps = g.entrySet().stream()
+                    .filter(en -> en.getKey().startsWith("props."))
                     .collect(Collectors.toMap(en -> en.getKey().substring("props.".length()), Map.Entry::getValue));
 
             out.add(resolver.resolve(type, childProps, ctx));

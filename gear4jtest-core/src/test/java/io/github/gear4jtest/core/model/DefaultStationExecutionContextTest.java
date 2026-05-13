@@ -1,55 +1,62 @@
-// package io.github.gear4jtest.core.model;
-//
-// import java.util.UUID;
-//
-// import static org.assertj.core.api.Assertions.assertThat;
-//
-// import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
-// import io.github.gear4jtest.core.api.context.ExecutionContext;
-// import io.github.gear4jtest.core.api.station.StationKind;
-// import org.junit.jupiter.api.Test;
-//
-// import io.github.gear4jtest.core.execution.trace.StationLogTrace;
-//
-// class DefaultStationExecutionContextTest {
-//
-// @Test
-// void constructor_shouldExposeOperationAndGlobalContext() {
-// ExecutionContext global =
-// new ExecutionContext(UUID.randomUUID(), "pipeline-1", null, null, null,
-// null);
-// StationLogTrace record =
-// StationLogTrace.start("exec-1", "op-1", null);
-//
-// DefaultStationExecutionContext ctx =
-// new DefaultStationExecutionContext("op-1", StationKind.PROCESSING, global,
-// record);
-//
-// assertThat(ctx.getOperationId()).isEqualTo("op-1");
-// assertThat(ctx.getKind()).isEqualTo(StationKind.PROCESSING);
-// assertThat(ctx.getGlobalContext()).isSameAs(global);
-// assertThat(ctx.getRecord()).isSameAs(record);
-// }
-//
-// @Test
-// void capabilities_shouldBeEmptyByDefaultAndReturnValueWhenAdded() {
-// ExecutionContext global =
-// new ExecutionContext(UUID.randomUUID(), "pipeline-1", null, null, null,
-// null);
-// StationLogTrace record =
-// StationLogTrace.start("exec-1", "op-1", null);
-//
-// DefaultStationExecutionContext ctx =
-// new DefaultStationExecutionContext("op-1", StationKind.PROCESSING, global,
-// record);
-//
-// assertThat(ctx.getCapability(String.class)).isEmpty();
-//
-// ctx.addCapability(String.class, "value");
-// ctx.addCapability(Integer.class, 42);
-//
-// assertThat(ctx.getCapability(String.class)).contains("value");
-// assertThat(ctx.getCapability(Integer.class)).contains(42);
-// assertThat(ctx.getCapability(Long.class)).isEmpty();
-// }
-// }
+package io.github.gear4jtest.core.model;
+
+import java.util.Map;
+import java.util.UUID;
+
+import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionServices;
+import io.github.gear4jtest.core.api.context.ResolvedParameters;
+import io.github.gear4jtest.core.api.station.StationKind;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.spi.factory.ResourceFactory;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class DefaultStationExecutionContextTest {
+    @Test
+    void addCapability_shouldExposeTypedCapability() {
+        // Given
+        DefaultStationExecutionContext context = newContext("station-1");
+
+        // When
+        context.addCapability(String.class, "value");
+
+        // Then
+        assertThat(context.getCapability(String.class)).contains("value");
+        assertThat(context.getCapability(Integer.class)).isEmpty();
+    }
+
+    @Test
+    void getResolvedParameters_shouldCreateAndReuseStationScopedCache() {
+        // Given
+        DefaultStationExecutionContext context = newContext("station-1");
+
+        // When
+        ResolvedParameters first = context.getResolvedParameters();
+        ResolvedParameters second = context.getResolvedParameters();
+
+        // Then
+        assertThat(first).isSameAs(second);
+        assertThat(context.getCapability(ResolvedParameters.class)).contains(first);
+    }
+
+    private static DefaultStationExecutionContext newContext(String operationId) {
+        ExecutionContext globalContext = new ExecutionContext(UUID.randomUUID(), "pipeline-1",
+                new ExecutionServices(null, noResources()),
+                new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of()));
+        StationLogTrace record = StationLogTrace.start(globalContext.getExecutionId(), operationId, null);
+        return new DefaultStationExecutionContext(operationId, StationKind.PROCESSING, globalContext, record, null);
+    }
+
+    private static ResourceFactory noResources() {
+        return new ResourceFactory() {
+            @Override
+            public <T> T getResource(Class<T> clazz) {
+                return null;
+            }
+        };
+    }
+}

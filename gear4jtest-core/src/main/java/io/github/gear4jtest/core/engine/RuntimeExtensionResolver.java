@@ -23,7 +23,10 @@ public final class RuntimeExtensionResolver {
     }
 
     private static <T extends RuntimeExtension> List<T> filter(List<RuntimeExtension> extensions, Class<T> type) {
-        return extensions.stream().filter(type::isInstance).map(type::cast).toList();
+        return extensions.stream()
+                .filter(type::isInstance)
+                .map(type::cast)
+                .toList();
     }
 
     public ResolvedExtensions resolve(AssemblyLine<?, ?> pipeline, RunRequest request) {
@@ -38,7 +41,9 @@ public final class RuntimeExtensionResolver {
             merged.addAll(request.getExtensions());
         }
 
-        List<RuntimeExtension> ordered = merged.stream().sorted(ORDERING).toList();
+        List<RuntimeExtension> ordered = merged.stream()
+                .sorted(ORDERING)
+                .toList();
 
         return new ResolvedExtensions(ordered, filter(ordered, RunInterceptorExtension.class),
                 filter(ordered, RunLifecycleExtension.class), filter(ordered, StationWrapperExtension.class),

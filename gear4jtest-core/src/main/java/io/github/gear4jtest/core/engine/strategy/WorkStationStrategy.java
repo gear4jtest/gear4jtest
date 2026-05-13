@@ -50,8 +50,9 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
 
         ((DefaultStationExecutionContext) operationExecution).addCapability(Operator.class, operation);
         var parameters = WorkerParamsInjector.Parameters.newBuilder();
-        Optional.ofNullable(station.getParameters()).stream().flatMap(List::stream)
-                .forEach(a -> parameters.withParameter((WorkerParamsInjector.ParameterModel) a));
+        Optional.ofNullable(station.getParameters()).stream()
+                .flatMap(List::stream)
+                .forEach(parameters::withParameter);
         ((DefaultStationExecutionContext) operationExecution).addCapability(WorkerParamsInjector.Parameters.class,
                                                                             parameters.build());
 

@@ -15,7 +15,9 @@ public final class SideComputeListener {
         if (computers == null || computers.isEmpty()) {
             return List.of();
         }
-        return computers.stream().map(computer -> computer.toSubscription(registry))
-                .map(subscription -> (EventSubscription<?>) subscription).collect(Collectors.toList());
+        return computers.stream()
+                .map(computer -> computer.toSubscription(registry))
+                .map(subscription -> (EventSubscription<?>) subscription)
+                .collect(Collectors.toList());
     }
 }

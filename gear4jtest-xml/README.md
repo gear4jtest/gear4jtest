@@ -91,7 +91,6 @@ Useful focused tasks:
 ```bash
 ./gradlew :gear4jtest-xml:test
 ./gradlew :gear4jtest-xml:test --tests '*XmlOperationChainTranslatorTest'
-./gradlew :gear4jtest-xml:test --tests '*AssemblyLineGeneratorTest'
 ```
 
 For meaningful XML changes, tests should cover the full path: validate, parse, generate, compile, instantiate, inject

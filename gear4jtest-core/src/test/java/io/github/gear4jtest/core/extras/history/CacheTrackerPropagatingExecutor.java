@@ -60,11 +60,13 @@ public final class CacheTrackerPropagatingExecutor extends AbstractExecutorServi
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
         ExpirableDependencyTracker snapshot = CacheTrackerContext.get();
 
-        List<Callable<T>> wrapped = tasks.stream().map(task -> (Callable<T>) () -> {
-            try (CacheTrackerScope ignored = CacheTrackerScope.open(snapshot)) {
-                return task.call();
-            }
-        }).collect(Collectors.toList());
+        List<Callable<T>> wrapped = tasks.stream()
+                .map(task -> (Callable<T>) () -> {
+                    try (CacheTrackerScope ignored = CacheTrackerScope.open(snapshot)) {
+                        return task.call();
+                    }
+                })
+                .collect(Collectors.toList());
 
         return delegate.invokeAll(wrapped);
     }

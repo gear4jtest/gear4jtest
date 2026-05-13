@@ -1,88 +1,72 @@
-// package io.github.gear4jtest.core.model;
-//
-// import static org.assertj.core.api.Assertions.assertThat;
-//
-// import java.util.Optional;
-// import java.util.UUID;
-//
-// import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
-// import io.github.gear4jtest.core.api.context.ExecutionContext;
-// import io.github.gear4jtest.core.api.behavior.Operator;
-// import io.github.gear4jtest.core.api.context.StationContextUtils;
-// import io.github.gear4jtest.core.api.context.StationExecutionContext;
-// import io.github.gear4jtest.core.api.station.StationKind;
-// import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
-// import org.junit.jupiter.api.Test;
-//
-// import io.github.gear4jtest.core.execution.trace.StationLogTrace;
-//
-// class StationContextUtilsTest {
-//
-// static class StringLengthOperator implements Operator<String, Integer> {
-// @Override
-// public Integer transform(String input,
-// ExecutionContext context,
-// StationExecutionContext operationExecution) {
-// return input != null ? input.length() : 0;
-// }
-// }
-//
-// @Test
-// void isProcessing_shouldReturnTrueOnlyForProcessingKind() {
-// ExecutionContext global =
-// new ExecutionContext(UUID.randomUUID(), "pipe", null, null, null, null);
-// StationLogTrace record =
-// StationLogTrace.start("exec", "op", null);
-//
-// DefaultStationExecutionContext ctxProcessing =
-// new DefaultStationExecutionContext("op", StationKind.PROCESSING, global,
-// record);
-// DefaultStationExecutionContext ctxIterator =
-// new DefaultStationExecutionContext("op", StationKind.ITERATOR, global,
-// record);
-//
-// assertThat(StationContextUtils.isProcessing(ctxProcessing)).isTrue();
-// assertThat(StationContextUtils.isProcessing(ctxIterator)).isFalse();
-// }
-//
-// @Test
-// void getRawAndTypedTransformer_shouldReadFromCapabilities() {
-// ExecutionContext global =
-// new ExecutionContext(UUID.randomUUID(), "pipe", null, null, null, null);
-// StationLogTrace record =
-// StationLogTrace.start("exec", "op", null);
-// DefaultStationExecutionContext ctx =
-// new DefaultStationExecutionContext("op", StationKind.PROCESSING, global,
-// record);
-//
-// StringLengthOperator transformer = new StringLengthOperator();
-// ctx.addCapability(Operator.class, transformer);
-//
-// Optional<Operator<?, ?>> raw = StationContextUtils.getRawTransformer(ctx);
-// Optional<Operator<String, Integer>> typed =
-// StationContextUtils.getTypedTransformer(ctx);
-//
-// assertThat(raw).contains(transformer);
-// assertThat(typed).contains(transformer);
-// }
-//
-// @Test
-// void getProcessingParameters_shouldReturnParametersCapabilityIfPresent() {
-// ExecutionContext global =
-// new ExecutionContext(UUID.randomUUID(), "pipe", null, null, null, null);
-// StationLogTrace record =
-// StationLogTrace.start("exec", "op", null);
-// DefaultStationExecutionContext ctx =
-// new DefaultStationExecutionContext("op", StationKind.PROCESSING, global,
-// record);
-//
-// assertThat(StationContextUtils.getProcessingParameters(ctx)).isEmpty();
-//
-// WorkerParamsInjector.Parameters params =
-// WorkerParamsInjector.Parameters.newBuilder().build();
-// ctx.addCapability(WorkerParamsInjector.Parameters.class, params);
-//
-// assertThat(StationContextUtils.getProcessingParameters(ctx))
-// .contains(params);
-// }
-// }
+package io.github.gear4jtest.core.model;
+
+import java.util.Map;
+import java.util.UUID;
+
+import io.github.gear4jtest.core.api.behavior.Operator;
+import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionServices;
+import io.github.gear4jtest.core.api.context.StationContextUtils;
+import io.github.gear4jtest.core.api.station.StationKind;
+import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.spi.factory.ResourceFactory;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class StationContextUtilsTest {
+    @Test
+    void getTransformer_shouldReturnEmptyWhenNoOperatorIsBound() {
+        // Given
+        DefaultStationExecutionContext context = newContext("station-1");
+
+        // When / Then
+        assertThat(StationContextUtils.getTransformer(context)).isEmpty();
+        assertThat(StationContextUtils.applyTransformer("input", context)).isEmpty();
+    }
+
+    @Test
+    void applyTransformer_shouldInvokeBoundOperator() {
+        // Given
+        DefaultStationExecutionContext context = newContext("station-1");
+        Operator<String, String> operator = (input, ctx) -> input.toUpperCase();
+        context.addCapability(Operator.class, operator);
+
+        // When / Then
+        assertThat(StationContextUtils.getTransformer(context)).contains(operator);
+        assertThat(StationContextUtils.applyTransformer("gear4j", context)).contains("GEAR4J");
+    }
+
+    @Test
+    void getProcessingParameters_shouldReturnBoundParametersCapability() {
+        // Given
+        DefaultStationExecutionContext context = newContext("station-1");
+        WorkerParamsInjector.Parameters parameters = new WorkerParamsInjector.Parameters();
+
+        // When
+        context.addCapability(WorkerParamsInjector.Parameters.class, parameters);
+
+        // Then
+        assertThat(StationContextUtils.getProcessingParameters(context)).contains(parameters);
+    }
+
+    private static DefaultStationExecutionContext newContext(String operationId) {
+        ExecutionContext globalContext = new ExecutionContext(UUID.randomUUID(), "pipeline-1",
+                new ExecutionServices(null, noResources()),
+                new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of()));
+        StationLogTrace record = StationLogTrace.start(globalContext.getExecutionId(), operationId, null);
+        return new DefaultStationExecutionContext(operationId, StationKind.PROCESSING, globalContext, record, null);
+    }
+
+    private static ResourceFactory noResources() {
+        return new ResourceFactory() {
+            @Override
+            public <T> T getResource(Class<T> clazz) {
+                return null;
+            }
+        };
+    }
+}

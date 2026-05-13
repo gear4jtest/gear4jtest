@@ -65,7 +65,9 @@ public final class XmlPipelineParser {
     }
 
     private static List<Element> childrenNamed(Element parent, String name) {
-        return children(parent).stream().filter(child -> name.equals(localName(child))).toList();
+        return children(parent).stream()
+                .filter(child -> name.equals(localName(child)))
+                .toList();
     }
 
     private static List<Element> children(Element parent) {
@@ -134,7 +136,9 @@ public final class XmlPipelineParser {
             String outputType = optional(root, "outputType");
 
             Element operationsElement = requiredChild(root, "operations");
-            List<Operation> operations = children(operationsElement).stream().map(this::parseOperation).toList();
+            List<Operation> operations = children(operationsElement).stream()
+                    .map(this::parseOperation)
+                    .toList();
 
             Configuration configuration = parseConfiguration(child(root, "configuration"));
             List<Dependency> dependencies = parseDependencies(child(root, "dependencies"));

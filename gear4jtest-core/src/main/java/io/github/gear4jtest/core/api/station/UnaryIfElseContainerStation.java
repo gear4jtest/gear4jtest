@@ -30,7 +30,10 @@ public class UnaryIfElseContainerStation<A> extends ContainerBaseStation<A, A> {
 
         public Builder<A> conditionally(AbstractStation<A, A> operationDefinition, Condition<A> condition) {
             this.managedInstance.pipelines
-                    .add(new Branch.Builder<A>().withCondition(condition).withOperation(operationDefinition).build());
+                    .add(new Branch.Builder<A>()
+                            .withCondition(condition)
+                            .withOperation(operationDefinition)
+                            .build());
             return this;
         }
 

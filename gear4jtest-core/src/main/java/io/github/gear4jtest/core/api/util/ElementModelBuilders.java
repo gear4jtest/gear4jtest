@@ -1,6 +1,5 @@
 package io.github.gear4jtest.core.api.util;
 
-import java.lang.reflect.ParameterizedType;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
@@ -12,7 +11,6 @@ import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition.EventConfiguration;
 import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
-import io.github.gear4jtest.core.api.config.StationConfigurationDefinition;
 import io.github.gear4jtest.core.api.pipeline.PipelineExecutionMode;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
@@ -48,10 +46,6 @@ public final class ElementModelBuilders {
 
     public static EventHandlingDefinition.Builder eventHandling() {
         return new EventHandlingDefinition.Builder();
-    }
-
-    public static <T, U> MapType<T, U> typeMap(Class<T> clazzA, Class<U> classB) {
-        return new MapType<>(clazzA, classB);
     }
 
     public static <T> AssemblyLine.Builder<T, T> createAssemblyLine(String identifier) {
@@ -96,10 +90,6 @@ public final class ElementModelBuilders {
         return new Configuration.Builder();
     }
 
-    public static StationConfigurationDefinition.Builder operationConfiguration() {
-        return new StationConfigurationDefinition.Builder();
-    }
-
     public static PersistenceConfiguration.Builder persistenceConfiguration() {
         return new PersistenceConfiguration.Builder();
     }
@@ -123,12 +113,6 @@ public final class ElementModelBuilders {
         return PipelineCallStation.<IN, OUT>builder(id).executionMode(PipelineExecutionMode.NESTED_RUN)
                 .directTarget(childPipeline).build();
     }
-
-    // public static <IN, OUT> PipelineOperation.Builder<IN, OUT>
-    // pipelineOperation(String id,
-    // AssemblyLine<IN, OUT> subPipeline) {
-    // return new PipelineOperation.Builder<>(id, subPipeline);
-    // }
 
     public static ListAccumulator toList() {
         return new ListAccumulator();
@@ -154,22 +138,6 @@ public final class ElementModelBuilders {
             super(Map.class);
             this.classA = classA;
             this.classB = classB;
-        }
-    }
-
-    public abstract static class TypeReference<T> {
-        protected final java.lang.reflect.Type _type;
-
-        public TypeReference() {
-            java.lang.reflect.Type superClass = getClass().getGenericSuperclass();
-            if (superClass instanceof Class<?>) { // sanity check, should never happen
-                throw new IllegalArgumentException(
-                        "Internal error: TypeReference constructed without actual type information");
-            }
-            _type = ((ParameterizedType) superClass).getActualTypeArguments()[0];
-            System.out.println(this.getClass());
-            // ParameterizedType type = this.getClass();
-            // java.lang.reflect.Type[] argumentsTypes = type.getActualTypeArguments();
         }
     }
 }

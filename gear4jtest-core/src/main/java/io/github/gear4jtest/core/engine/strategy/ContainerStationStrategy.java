@@ -438,7 +438,9 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
     }
 
     private Object returns(ContainerBaseStation<?, ?> station, List<StationLogTrace> executions) {
-        Object[] returnedObjects = executions.stream().map(StationLogTrace::getOutput).toArray();
+        Object[] returnedObjects = executions.stream()
+                .map(StationLogTrace::getOutput)
+                .toArray();
 
         if (station.getFunc() != null) {
             return station.getFunc().apply(returnedObjects);

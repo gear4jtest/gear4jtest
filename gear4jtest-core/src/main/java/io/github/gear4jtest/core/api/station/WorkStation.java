@@ -9,7 +9,6 @@ import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
 import io.github.gear4jtest.core.api.behavior.StationSkipTest;
 import io.github.gear4jtest.core.api.config.OperationAdditionalModel;
-import io.github.gear4jtest.core.api.config.StationConfigurationDefinition;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 
 public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
@@ -19,7 +18,6 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
      * Whether the operator instance is reused for the whole pipeline run.
      */
     protected boolean reuseOperatorInstanceWithinRun = false;
-    private StationConfigurationDefinition operationConfiguration;
 
     WorkStation() {
         super("", StationKind.PROCESSING);
@@ -31,10 +29,6 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
     public void setParameters(List<WorkerParamsInjector.ParameterModel<?, ?>> parameters) {
         this.parameters = parameters;
-    }
-
-    public StationConfigurationDefinition getOperationConfiguration() {
-        return operationConfiguration;
     }
 
     public Class<Operator<IN, OUT>> getType() {

@@ -92,7 +92,8 @@ public final class PipelineRuntimeContractValidator {
                 : new HashSet<>(parentContract.getProvidedRequirements());
 
         List<RuntimeRequirement> missing = childContract.getMandatoryRequirements().stream()
-                .filter(requirement -> !provided.contains(requirement)).toList();
+                .filter(requirement -> !provided.contains(requirement))
+                .toList();
 
         if (!missing.isEmpty()) {
             throw new IllegalStateException("Pipeline '" + childPipeline.getId() + ":" + childPipeline.getVersion()

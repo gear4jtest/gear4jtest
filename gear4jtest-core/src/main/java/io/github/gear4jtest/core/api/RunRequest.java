@@ -77,8 +77,13 @@ public class RunRequest {
      * Creates a builder initialized with the current request values.
      */
     public Builder toBuilder() {
-        Builder builder = new Builder().input(input).context(context).resourceFactory(resourceFactory)
-                .withIdGenerator(idGenerator).nestedRunContext(nestedRunContext).pipelineCallStack(pipelineCallStack);
+        Builder builder = new Builder()
+                .input(input)
+                .context(context)
+                .resourceFactory(resourceFactory)
+                .withIdGenerator(idGenerator)
+                .nestedRunContext(nestedRunContext)
+                .pipelineCallStack(pipelineCallStack);
         extensions.forEach(builder::with);
         return builder;
     }

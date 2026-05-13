@@ -52,6 +52,7 @@ Potential future work:
 
 Potential future work:
 
+- Dry-run execution and mock scenarios for BO-driven pipeline validation. See [dry-run and mock configuration](dry-run-and-mock-configuration.md).
 - JSON translator module.
 - Better dependency tracking for pipeline references.
 - Alias invalidation events.

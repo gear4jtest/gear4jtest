@@ -52,8 +52,10 @@ public class Gear4jSpringConfiguration {
     @Bean
     public RuntimeExtensionResolver gear4jRuntimeExtensionResolver(ObjectProvider<RuntimeExtension> runtimeExtensionsProvider) {
 
-        List<RuntimeExtension> runtimeExtensions = runtimeExtensionsProvider.orderedStream().sorted(Comparator
-                .comparingInt(RuntimeExtension::getOrder).thenComparing(extension -> extension.getClass().getName()))
+        List<RuntimeExtension> runtimeExtensions = runtimeExtensionsProvider.orderedStream()
+                .sorted(Comparator
+                        .comparingInt(RuntimeExtension::getOrder)
+                        .thenComparing(extension -> extension.getClass().getName()))
                 .toList();
 
         return new RuntimeExtensionResolver(runtimeExtensions);

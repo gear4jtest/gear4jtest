@@ -52,7 +52,8 @@ public class SimpleEventBus implements EventBus {
 
     @Override
     public void acceptEvent(Event event) {
-        if (filters == null || filters.stream().allMatch(filter -> filter.isEligible(event))) {
+        if (filters == null || filters.stream()
+                .allMatch(filter -> filter.isEligible(event))) {
             eventQueue.add(event);
         }
     }

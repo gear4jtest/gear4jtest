@@ -42,12 +42,4 @@ CREATE TABLE operation_chain_tag
     PRIMARY KEY (al_id, tag)
 );
 
-CREATE TABLE operation_chain_object_tag
-(
-    object_id BIGINT       NOT NULL,
-    tag       VARCHAR(100) NOT NULL,
-    PRIMARY KEY (object_id, tag)
-);
-
 CREATE INDEX idx_tag_value ON operation_chain_tag (tag);
-CREATE INDEX idx_obj_tag_value ON operation_chain_object_tag (tag);

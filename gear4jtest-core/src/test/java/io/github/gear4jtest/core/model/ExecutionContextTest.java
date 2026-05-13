@@ -1,61 +1,84 @@
-// package io.github.gear4jtest.core.model;
-//
-// import static org.assertj.core.api.Assertions.assertThat;
-//
-// import java.util.UUID;
-//
-// import org.junit.jupiter.api.Test;
-// import org.junit.jupiter.api.extension.ExtendWith;
-// import org.mockito.Mock;
-// import org.mockito.junit.jupiter.MockitoExtension;
-//
-// import io.github.gear4jtest.core.event.EventManager;
-// import io.github.gear4jtest.core.execution.AssemblyRunManager;
-// import io.github.gear4jtest.core.spi.factory.ResourceFactory;
-//
-// @ExtendWith(MockitoExtension.class)
-// class ExecutionContextTest {
-//
-// @Mock
-// private EventManager eventManager;
-//
-// @Mock
-// private ResourceFactory resourceFactory;
-//
-// @Mock
-// private AssemblyRunManager assemblyRunManager;
-//
-// @Test
-// void constructor_shouldInitializeExecutionIdAndPipelineIdAndDependencies() {
-// String pipelineId = "pipe-123";
-//
-// ExecutionContext context =
-// new ExecutionContext(UUID.randomUUID(), pipelineId, eventManager,
-// resourceFactory, assemblyRunManager, null);
-//
-// assertThat(context.getPipelineId()).isEqualTo(pipelineId);
-// assertThat(context.getExecutionId()).isNotNull()
-// .isInstanceOf(UUID.class);
-//
-// assertThat(context.getEventManager()).isSameAs(eventManager);
-// assertThat(context.getResourceFactory()).isSameAs(resourceFactory);
-// assertThat(context.getAssemblyRunManager()).isSameAs(assemblyRunManager);
-// assertThat(context.getContext()).isNotNull().isEmpty();
-// }
-//
-// @Test
-// void putAndGet_shouldStoreAndRetrieveTypedValues() {
-// ExecutionContext context =
-// new ExecutionContext(UUID.randomUUID(), "pipe", eventManager,
-// resourceFactory, assemblyRunManager, null);
-//
-// context.put("int", 42);
-// context.put("str", "hello");
-//
-// Integer intVal = context.get("int", Integer.class);
-// String strVal = context.get("str", String.class);
-//
-// assertThat(intVal).isEqualTo(42);
-// assertThat(strVal).isEqualTo("hello");
-// }
-// }
+package io.github.gear4jtest.core.model;
+
+import java.util.Map;
+import java.util.UUID;
+
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionServices;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.spi.factory.ResourceFactory;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class ExecutionContextTest {
+    @Test
+    void putAndGet_shouldStoreTypedValuesInRunContext() {
+        // Given
+        ExecutionContext context = newContext();
+
+        // When
+        context.put("tenant", "tenant-a");
+        context.put("attempt", 2);
+
+        // Then
+        assertThat(context.get("tenant", String.class)).isEqualTo("tenant-a");
+        assertThat(context.get("attempt", Integer.class)).isEqualTo(2);
+        assertThat(context.getContext()).containsEntry("tenant", "tenant-a");
+    }
+
+    @Test
+    void currentItemId_shouldBeThreadLocalAndClearable() {
+        // Given
+        ExecutionContext context = newContext();
+
+        // When
+        context.setCurrentItemId("item-1");
+
+        // Then
+        assertThat(context.getCurrentItemId()).isEqualTo("item-1");
+
+        // When
+        context.setCurrentItemId(null);
+
+        // Then
+        assertThat(context.getCurrentItemId()).isNull();
+    }
+
+    @Test
+    void parentOperationStack_shouldExposeCurrentParentId() {
+        // Given
+        ExecutionContext context = newContext();
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+
+        // When / Then
+        assertThat(context.getCurrentParentOperationId()).isNull();
+
+        context.pushParentOperationId(first);
+        assertThat(context.getCurrentParentOperationId()).isEqualTo(first);
+
+        context.pushParentOperationId(second);
+        assertThat(context.getCurrentParentOperationId()).isEqualTo(second);
+
+        context.popParentOperationId();
+        assertThat(context.getCurrentParentOperationId()).isEqualTo(first);
+
+        context.popParentOperationId();
+        assertThat(context.getCurrentParentOperationId()).isNull();
+    }
+
+    private static ExecutionContext newContext() {
+        return new ExecutionContext(UUID.randomUUID(), "pipeline-1", new ExecutionServices(null, noResources()),
+                new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of()));
+    }
+
+    private static ResourceFactory noResources() {
+        return new ResourceFactory() {
+            @Override
+            public <T> T getResource(Class<T> clazz) {
+                return null;
+            }
+        };
+    }
+}

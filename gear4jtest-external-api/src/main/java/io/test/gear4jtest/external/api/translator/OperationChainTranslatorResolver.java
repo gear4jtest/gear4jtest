@@ -26,13 +26,15 @@ public final class OperationChainTranslatorResolver {
 
     public OperationChainTranslator resolve(String mediaType) {
         String mt = (mediaType == null || mediaType.isBlank()) ? "application/xml" : mediaType;
-        return translators.stream().filter(c -> {
-            try {
-                return c.supports(mt);
-            } catch (Throwable t) {
-                return false;
-            }
-        }).findFirst()
+        return translators.stream()
+                .filter(c -> {
+                    try {
+                        return c.supports(mt);
+                    } catch (Throwable t) {
+                        return false;
+                    }
+                })
+                .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No OperationChainTranslator found for mediaType=" + mt));
     }
 }

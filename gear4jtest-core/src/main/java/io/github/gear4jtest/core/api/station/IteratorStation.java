@@ -78,12 +78,6 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
             return (Builder<IN, A>) this;
         }
 
-        // public <A> Builder<IN, A> operation(AbstractOperationDefinition<OUT, A>
-        // operation) {
-        // managedInstance.operation = operation;
-        // return (Builder<IN, A>) this;
-        // }
-
         public Builder<IN, OUT> accumulator(Accumulator accumulator) {
             managedInstance.accumulator = accumulator;
             return this;

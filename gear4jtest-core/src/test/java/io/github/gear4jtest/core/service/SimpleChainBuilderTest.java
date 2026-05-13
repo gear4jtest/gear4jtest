@@ -62,7 +62,9 @@ import static org.assertj.core.api.Assertions.tuple;
 // handle factory for step / processor... configuration
 public class SimpleChainBuilderTest {
     private static StationLogRecord getRecordByOperationId(List<StationLogRecord> logs, String operationId) {
-        return logs.stream().filter(log -> operationId.equals(log.operationId())).findFirst()
+        return logs.stream()
+                .filter(log -> operationId.equals(log.operationId()))
+                .findFirst()
                 .orElseThrow(() -> new AssertionError("No StationLogRecord found for operationId=" + operationId));
     }
 
@@ -75,14 +77,13 @@ public class SimpleChainBuilderTest {
                                 .condition((input, ctx) -> ctx.getContext().containsKey("a"))
                                 .action(() -> System.out.println("Error occurred!")).build())
                         .skipIf((input, ctx) -> input.equals("a")).transformer((a, ctx) -> new HashMap<>()).build())
-                // .then(fatalSignal(typeMap(String.class, String.class))
-                // .condition(ctx -> ctx.getItem().containsKey("a"))
-                // .build())
                 .then(processingOperation("step8", Step8.class).build())
                 .then(processingOperation("step9", Step9.class).build())
-                .then(ElementModelBuilders.<List<Integer>>iterate("iterator").iterableFunction(Function.identity())
+                .then(ElementModelBuilders.<List<Integer>>iterate("iterator")
+                        .iterableFunction(Function.identity())
                         .pipeline(chain("sequence", processingOperation("step10", Step10.class).build()).build())
-                        .collector(Collectors.toList()).build())
+                        .collector(Collectors.toList())
+                        .build())
                 .configuration(configuration().eventHandling(eventHandling()
                         .subscription(EventSubscription.on(Event.class, new TestEventListener()::handleEvent))
                         .globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build()).build())
@@ -99,21 +100,31 @@ public class SimpleChainBuilderTest {
         RunnerChainFactory runnerChainFactory = new RunnerChainFactory(StrategyRegistry.defaultRegistry());
         ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
         ResourceFactory resourceFactory = new TestResourceFactory();
-        PipelineEngine engine = PipelineEngine.builder().runnerChainFactory(runnerChainFactory)
+        PipelineEngine engine = PipelineEngine.builder()
+                .runnerChainFactory(runnerChainFactory)
                 .resourceFactory(resourceFactory).extensionResolver(runtimeExtensionResolver)
                 .executionContextRegistry(executionContextRegistry).build();
 
-        var request = RunRequest.builder().input("b").context(context).resourceFactory(resourceFactory).build();
+        var request = RunRequest.builder()
+                .input("b")
+                .context(context)
+                .resourceFactory(resourceFactory)
+                .build();
 
         // When
         ExecutionResult<List<List<String>>> result = engine.execute(assemblyLine, request);
-        // ExecutionResult<List<List<String>>> result = assemblyLine.execute("b",
-        // context, new TestResourceFactory(),
-        // new InMemoryExecutionManager());
 
         // Then
-        assertThat(result).isNotNull().extracting(ExecutionResult::getResult).isInstanceOf(List.class).asList()
-                .hasSize(1).first().isInstanceOf(List.class).asList().contains("");
+        assertThat(result)
+                .isNotNull()
+                .extracting(ExecutionResult::getResult)
+                .isInstanceOf(List.class)
+                .asList()
+                .hasSize(1)
+                .first()
+                .isInstanceOf(List.class)
+                .asList()
+                .contains("");
     }
 
     @Test
@@ -126,9 +137,6 @@ public class SimpleChainBuilderTest {
                                 .condition((input, ctx) -> ctx.getContext().containsKey("a"))
                                 .action(() -> System.out.println("Error occurred!")).build())
                         .skipIf((input, ctx) -> input.equals("a")).transformer((a, ctx) -> new HashMap<>()).build())
-                // .then(fatalSignal(typeMap(String.class, String.class))
-                // .condition(ctx -> ctx.getItem().containsKey("a"))
-                // .build())
                 .then(processingOperation("step8", Step8.class).build())
                 .then(processingOperation("step9", Step9.class).build())
                 .then(ElementModelBuilders.<List<Integer>>iterate("iterator").iterableFunction(Function.identity())
@@ -158,9 +166,6 @@ public class SimpleChainBuilderTest {
 
         // When
         ExecutionResult<List<List<String>>> result = engine.execute(assemblyLine, request);
-        // ExecutionResult<List<List<String>>> result = assemblyLine.execute("b",
-        // context, new TestResourceFactory(),
-        // new InMemoryExecutionManager());
 
         // Then
         assertThat(result).isNotNull().extracting(ExecutionResult::getResult).isInstanceOf(List.class).asList()
@@ -185,9 +190,6 @@ public class SimpleChainBuilderTest {
                                 .condition((input, ctx) -> ctx.getContext().containsKey("a"))
                                 .action(() -> System.out.println("Error occurred!")).build())
                         .skipIf((input, ctx) -> input.equals("a")).transformer((a, ctx) -> new HashMap<>()).build())
-                // .then(fatalSignal(typeMap(String.class, String.class))
-                // .condition(ctx -> ctx.getItem().containsKey("a"))
-                // .build())
                 .then(processingOperation("step8", Step8.class).build())
                 .then(processingOperation("step9", Step9.class).build())
                 .then(ElementModelBuilders.<List<Integer>>iterate("iterator").iterableFunction(Function.identity())
@@ -218,9 +220,6 @@ public class SimpleChainBuilderTest {
 
         // When
         ExecutionResult<List<List<String>>> result = engine.execute(assemblyLine, request);
-        // ExecutionResult<List<List<String>>> result =
-        // assemblyLine.execute("b", context, new TestResourceFactory(), new
-        // DatabaseExecutionManager(dataSource));
 
         // Then
         assertThat(result).isNotNull().extracting(ExecutionResult::getResult).isInstanceOf(List.class).asList()
@@ -330,9 +329,6 @@ public class SimpleChainBuilderTest {
 
         // When
         ExecutionResult<List<String>> result = engine.execute(assemblyLine, request);
-        // ExecutionResult<List<String>> result = assemblyLine.execute("b", context, new
-        // TestResourceFactory(), new
-        // InMemoryExecutionManager());
 
         // Then
         assertThat(result).isNotNull().extracting(ExecutionResult::getResult).isInstanceOf(List.class).asList()
@@ -376,9 +372,6 @@ public class SimpleChainBuilderTest {
 
         // When
         ExecutionResult<List<String>> result = engine.execute(assemblyLine, request);
-        // ExecutionResult<List<String>> result = assemblyLine.execute("b", context, new
-        // TestResourceFactory(), new
-        // InMemoryExecutionManager());
 
         // Then
         assertThat(result).isNotNull().extracting(ExecutionResult::getResult).isInstanceOf(List.class).asList()
@@ -420,9 +413,6 @@ public class SimpleChainBuilderTest {
 
         // When
         ExecutionResult<String> result = engine.execute(assemblyLine, request);
-        // ExecutionResult<String> result = assemblyLine.execute("b", context, new
-        // TestResourceFactory(), new
-        // InMemoryExecutionManager());
 
         // Then
         assertThat(result).isNotNull().extracting(ExecutionResult::getResult).isEqualTo("c");
@@ -501,9 +491,6 @@ public class SimpleChainBuilderTest {
 
         static {
             BEANS = new HashMap<>();
-            // Gear4j itself should handle the initialization of its proper beans...
-            // BEANS.put(OperationParamsInjector.class, new OperationParamsInjector());
-            // BEANS.put(OperationRetriever.class, new OperationRetriever());
             BEANS.put(Step3.class, new Step3());
             BEANS.put(Step7.class, new Step7());
             BEANS.put(Step8.class, new Step8());

@@ -66,7 +66,8 @@ public interface EventPayloadPolicy {
         Set<Class<?>> allowed = Arrays.stream(allowedTypes).filter(Objects::nonNull)
                 .collect(Collectors.toUnmodifiableSet());
         return keepIf(value -> value != null
-                && allowed.stream().anyMatch(allowedType -> allowedType.isAssignableFrom(value.getClass())));
+                && allowed.stream()
+                        .anyMatch(allowedType -> allowedType.isAssignableFrom(value.getClass())));
     }
 
     Object mapStationInput(Object input, StationExecutionContext stationExecutionContext);
