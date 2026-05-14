@@ -168,6 +168,7 @@ xmlns:tns="http://github.com/gear4jtest/core/model" elementFormDefault="qualifie
 <xs:element name="condition" type="tns:ConditionType"/>
 <xs:element name="operation" type="tns:ProcessingOperationType"/>
 </xs:sequence>
+<xs:attribute name="id" type="xs:string" use="required"/>
 </xs:complexType><!-- Signal -->
 <xs:complexType name="SignalType">
 <xs:sequence>

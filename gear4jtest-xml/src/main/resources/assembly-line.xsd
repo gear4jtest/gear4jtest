@@ -202,6 +202,7 @@
         <xs:element name="operation" type="tns:ProcessingOperationType"/>
       </xs:choice>
     </xs:sequence>
+    <xs:attribute name="id" type="xs:string" use="required"/>
   </xs:complexType>
 
   <xs:complexType name="SignalType">

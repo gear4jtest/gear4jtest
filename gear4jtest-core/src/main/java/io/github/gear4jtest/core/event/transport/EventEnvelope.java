@@ -27,5 +27,4 @@ public record EventEnvelope(UUID eventId,
                             byte[] payload,
                             String contentType,
                             String partitionKey,
-                            String schemaVersion) {
-}
+                            String schemaVersion) {}

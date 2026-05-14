@@ -24,8 +24,7 @@ public record XmlPipelineDefinition(String id,
                                       List<ErrorHandler> errorHandlers,
                                       List<Condition> conditions,
                                       Transformer fallbackTransformer)
-            implements Operation {
-    }
+            implements Operation {}
 
     public record IteratorOperation(String id,
                                     String inputType,
@@ -34,8 +33,7 @@ public record XmlPipelineDefinition(String id,
                                     Operation operation,
                                     String accumulator,
                                     String collector)
-            implements Operation {
-    }
+            implements Operation {}
 
     public record ContainerOperation(String id,
                                      String inputType,
@@ -44,63 +42,46 @@ public record XmlPipelineDefinition(String id,
                                      Integer threadPoolSize,
                                      List<SubLine> subLines,
                                      String returnsFunction)
-            implements Operation {
-    }
+            implements Operation {}
 
     public record IfElseOperation(String id,
                                   String inputType,
                                   String outputType,
                                   List<ConditionalOperation> conditionalOperations,
                                   ProcessingOperation elseOperation)
-            implements Operation {
-    }
+            implements Operation {}
 
-    public record SignalOperation(String id, String type, String inputType, Condition condition) implements Operation {
-    }
+    public record SignalOperation(String id, String type, String inputType, Condition condition) implements Operation {}
 
-    public record Parameters(List<Parameter> parameters) {
-    }
+    public record Parameters(List<Parameter> parameters) {}
 
-    public record ValueParameter(String retriever, String value, String valueType) implements Parameter {
-    }
+    public record ValueParameter(String retriever, String value, String valueType) implements Parameter {}
 
-    public record SupplierParameter(String retriever, String supplier) implements Parameter {
-    }
+    public record SupplierParameter(String retriever, String supplier) implements Parameter {}
 
-    public record ContextParameter(String retriever, String function) implements Parameter {
-    }
+    public record ContextParameter(String retriever, String function) implements Parameter {}
 
     public record ErrorHandler(boolean safe,
                                String signalType,
                                String throwableType,
                                Condition condition,
-                               Action action) {
-    }
+                               Action action) {}
 
-    public record Condition(String expression, String description) {
-    }
+    public record Condition(String expression, String description) {}
 
-    public record Action(String expression, String description) {
-    }
+    public record Action(String expression, String description) {}
 
-    public record Transformer(String expression, String inputType, String outputType) {
-    }
+    public record Transformer(String expression, String inputType, String outputType) {}
 
-    public record SubLine(String id, Condition condition, Operation operation) {
-    }
+    public record SubLine(String id, Condition condition, Operation operation) {}
 
-    public record ConditionalOperation(Condition condition, ProcessingOperation operation) {
-    }
+    public record ConditionalOperation(String id, Condition condition, ProcessingOperation operation) {}
 
-    public record Configuration(EventHandling eventHandling, Persistence persistence) {
-    }
+    public record Configuration(EventHandling eventHandling, Persistence persistence) {}
 
-    public record EventHandling(Boolean eventOnParameterChanged) {
-    }
+    public record EventHandling(Boolean eventOnParameterChanged) {}
 
-    public record Persistence(Boolean storeResultObject) {
-    }
+    public record Persistence(Boolean storeResultObject) {}
 
-    public record Dependency(String name, String type) {
-    }
+    public record Dependency(String name, String type) {}
 }

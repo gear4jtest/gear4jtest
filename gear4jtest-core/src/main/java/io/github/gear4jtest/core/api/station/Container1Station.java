@@ -1,13 +1,17 @@
 package io.github.gear4jtest.core.api.station;
 
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 import io.github.gear4jtest.core.api.behavior.BranchCondition;
 import io.github.gear4jtest.core.api.behavior.Condition;
+import io.github.gear4jtest.core.api.config.FlowConfig;
 
 public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT> {
     private Container1Station() {
-        super(new ArrayList<>(1), null);
+        super(List.of(), null);
     }
 
     @FunctionalInterface
@@ -27,59 +31,70 @@ public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT>
     }
 
     public static class Builder<IN, OUT, A> {
-        private final Container1Station<IN, OUT, A> managedInstance;
+        final List<Branch<IN>> branches = new ArrayList<>();
+        boolean isParallel;
+        ExecutorService executorService;
+        FlowConfig flowConfig;
+        Duration awaitTimeout;
 
-        public Builder(ContainerBaseStation<IN, OUT> parentDefinition, Branch<IN> branch) {
-            managedInstance = new Container1Station<>();
-            managedInstance.pipelines.add(branch);
-            managedInstance.executorService = parentDefinition.getExecutorService();
-            managedInstance.isParallel = parentDefinition.isParallel();
-            managedInstance.setFlowConfig(parentDefinition.getFlowConfig());
-            managedInstance.setAwaitTimeout(parentDefinition.getAwaitTimeout());
+        public Builder(ContainerBaseStation.Builder<IN, OUT> parent, Branch<IN> branch) {
+            this.branches.addAll(parent.branches);
+            this.branches.add(branch);
+            this.isParallel = parent.isParallel;
+            this.executorService = parent.executorService;
+            this.flowConfig = parent.flowConfig;
+            this.awaitTimeout = parent.awaitTimeout;
         }
 
         public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(String id,
                                                                         AbstractStation<IN, B> operationDefinition) {
-            var branch = new Branch.Builder<IN>().withId(id).withOperation(operationDefinition).build();
-            return new Container2Station.Builder<>(managedInstance, branch);
+            var branch = new Branch.Builder<IN>()
+                    .withId(id)
+                    .withOperation(operationDefinition)
+                    .build();
+            return new Container2Station.Builder<>(this, branch);
         }
 
         public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(String id,
                                                                         AbstractStation<IN, B> operationDefinition,
                                                                         Condition<IN> condition) {
-            var branch = new Branch.Builder<IN>().withId(id).withCondition(condition).withOperation(operationDefinition)
+            var branch = new Branch.Builder<IN>()
+                    .withId(id)
+                    .withCondition(condition)
+                    .withOperation(operationDefinition)
                     .build();
-            return new Container2Station.Builder<>(managedInstance, branch);
+            return new Container2Station.Builder<>(this, branch);
         }
 
         public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(String id,
                                                                         AbstractStation<IN, B> operationDefinition,
                                                                         BranchCondition<IN> siblingCondition) {
-            var branch = new Branch.Builder<IN>().withId(id).withSiblingCondition(siblingCondition)
-                    .withOperation(operationDefinition).build();
-            return new Container2Station.Builder<>(managedInstance, branch);
+            var branch = new Branch.Builder<IN>()
+                    .withId(id)
+                    .withSiblingCondition(siblingCondition)
+                    .withOperation(operationDefinition)
+                    .build();
+            return new Container2Station.Builder<>(this, branch);
         }
 
         public <B> Container2Station.Builder<IN, OUT, A, B> withSubLine(String id,
                                                                         AbstractStation<IN, B> operationDefinition,
                                                                         Condition<IN> condition,
                                                                         BranchCondition<IN> siblingCondition) {
-            var branch = new Branch.Builder<IN>().withId(id).withCondition(condition)
-                    .withSiblingCondition(siblingCondition).withOperation(operationDefinition).build();
-            return new Container2Station.Builder<>(managedInstance, branch);
+            var branch = new Branch.Builder<IN>()
+                    .withId(id)
+                    .withCondition(condition)
+                    .withSiblingCondition(siblingCondition)
+                    .withOperation(operationDefinition).build();
+            return new Container2Station.Builder<>(this, branch);
         }
 
-        @SuppressWarnings({ "unchecked", "rawtypes" })
         public <C> ContainerBaseStation<IN, C> returns(Container1DFunction<A, C> func) {
-            ContainerBaseStation.validateUniqueBranchIds(managedInstance.getPipelines());
-            managedInstance.func = (ContainerFunction) func;
-            return (ContainerBaseStation<IN, C>) this.managedInstance;
+            return buildStation(branches, isParallel, executorService, flowConfig, awaitTimeout, func);
         }
 
-        @SuppressWarnings("unchecked")
         public ContainerBaseStation<IN, Void> build() {
-            ContainerBaseStation.validateUniqueBranchIds(managedInstance.getPipelines());
-            return (ContainerBaseStation<IN, Void>) this.managedInstance;
+            return buildStation(branches, isParallel, executorService, flowConfig, awaitTimeout, null);
         }
     }
 }

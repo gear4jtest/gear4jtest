@@ -15,7 +15,7 @@
                      inputType="java.lang.String"
                      outputType="java.lang.String">
       <conditionalOperations>
-        <conditionalOperation>
+        <conditionalOperation id="when-a">
           <condition expression="input.endsWith(&quot;a&quot;)"/>
           <processingOperation id="step11_c" type="com.myorg.operation.Step11">
             <parameters>
@@ -23,7 +23,7 @@
             </parameters>
           </processingOperation>
         </conditionalOperation>
-        <conditionalOperation>
+        <conditionalOperation id="when-z">
           <condition expression="input.endsWith(&quot;z&quot;)"/>
           <processingOperation id="step11_cd" type="com.myorg.operation.Step11">
             <parameters>

@@ -22,8 +22,24 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
     private Accumulator accumulator;
     private Collector<?, ?, ?> collector;
 
-    public IteratorStation(String id) {
+    private IteratorStation(String id) {
         super(id, StationKind.ITERATOR);
+    }
+
+    private IteratorStation(String id,
+                            Function<IN, ? extends Iterable<?>> func,
+                            SequenceStation<?, ?> chain,
+                            ItemIdResolver itemIdResolver,
+                            FlowConfig flowConfig,
+                            Accumulator accumulator,
+                            Collector<?, ?, ?> collector) {
+        this(id);
+        this.func = func;
+        this.chain = chain;
+        this.itemIdResolver = itemIdResolver;
+        this.flowConfig = flowConfig;
+        this.accumulator = accumulator;
+        this.collector = collector;
     }
 
     public Function<IN, ? extends Iterable<?>> getFunc() {
@@ -60,37 +76,50 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
     }
 
     public static class Builder<IN, OUT> {
-        private final IteratorStation<IN, OUT> managedInstance;
+        private final String id;
+        private Function<IN, ? extends Iterable<?>> func;
+        private SequenceStation<?, ?> chain;
+        private ItemIdResolver itemIdResolver;
+        private FlowConfig flowConfig;
+        private Accumulator accumulator;
+        private Collector<?, ?, ?> collector;
 
         public Builder(String id) {
-            managedInstance = new IteratorStation<>(id);
+            this.id = id;
         }
 
-        @SuppressWarnings("unchecked")
+        private <PREVIOUS_OUT> Builder(Builder<IN, PREVIOUS_OUT> source) {
+            this.id = source.id;
+            this.func = source.func;
+            this.chain = source.chain;
+            this.itemIdResolver = source.itemIdResolver;
+            this.flowConfig = source.flowConfig;
+            this.accumulator = source.accumulator;
+            this.collector = source.collector;
+        }
+
         public <A> Builder<IN, A> iterableFunction(Function<IN, ? extends Iterable<A>> func) {
-            managedInstance.func = func;
-            return (Builder<IN, A>) this;
+            this.func = func;
+            return new Builder<>(this);
         }
 
-        @SuppressWarnings("unchecked")
         public <A> Builder<IN, A> pipeline(SequenceStation<OUT, A> sequenceStation) {
-            managedInstance.chain = sequenceStation;
-            return (Builder<IN, A>) this;
+            this.chain = sequenceStation;
+            return new Builder<>(this);
         }
 
         public Builder<IN, OUT> accumulator(Accumulator accumulator) {
-            managedInstance.accumulator = accumulator;
+            this.accumulator = accumulator;
             return this;
         }
 
-        @SuppressWarnings("unchecked")
         public <C> Builder<IN, C> collector(Collector<OUT, ?, C> collector) {
-            managedInstance.collector = collector;
-            return (Builder<IN, C>) this;
+            this.collector = collector;
+            return new Builder<>(this);
         }
 
         public IteratorStation<IN, OUT> build() {
-            return managedInstance;
+            return new IteratorStation<>(id, func, chain, itemIdResolver, flowConfig, accumulator, collector);
         }
     }
 

@@ -9,7 +9,7 @@
                      inputType="java.lang.String"
                      outputType="java.lang.String">
       <conditionalOperations>
-        <conditionalOperation>
+        <conditionalOperation id="when-starts-with-a">
           <condition expression="input.startsWith(&quot;a&quot;)"/>
           <processingOperation id="append_true" type="com.myorg.operation.Step11">
             <parameters>

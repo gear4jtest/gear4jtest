@@ -231,8 +231,7 @@ public class EventHandlingDefinition {
             WAIT_FOR_DRAIN, DETACH_AND_DRAIN, CANCEL_PENDING_TASKS
         }
 
-        public record ExecutorHandle(ExecutorService executorService, boolean shutdownOnClose) {
-        }
+        public record ExecutorHandle(ExecutorService executorService, boolean shutdownOnClose) {}
 
         private static final class Gear4jEventThreadFactory implements ThreadFactory {
             private static final AtomicInteger COUNTER = new AtomicInteger();

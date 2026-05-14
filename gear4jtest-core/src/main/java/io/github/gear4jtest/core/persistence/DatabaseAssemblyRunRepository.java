@@ -21,9 +21,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.gear4jtest.core.model.StationLogStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseAssemblyRunRepository.class);
     private static final String SCRIPT_POSTGRES = "/io/github/gear4j/db/postgresql/gear4j_schema.sql";
     private static final String SCRIPT_MYSQL = "/io/github/gear4j/db/mysql/gear4j_schema.sql";
     private static final String SCRIPT_H2 = "/io/github/gear4j/db/h2/gear4j_schema.sql";
@@ -50,7 +55,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             }
 
             String scriptPath = resolveScriptPath(conn);
-            System.out.println("[Gear4J] Initializing schema using script: " + scriptPath);
+            LOGGER.info("[Gear4J] Initializing schema using script: {}", scriptPath);
             executeScript(conn, scriptPath);
         } catch (SQLException | IOException e) {
             throw new RuntimeException("Error while initializing Gear4J schema", e);
@@ -337,21 +342,34 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     private AssemblyRunRecord mapExecution(ResultSet rs) throws SQLException {
-        return new AssemblyRunRecord(rs.getObject("id", UUID.class), rs.getString("pipeline_id"),
-                fromJson(rs.getString("context"), Map.class), fromJson(rs.getString("input_parameters"), Map.class),
-                fromJson(rs.getString("result"), Object.class), ExecutionStatus.valueOf(rs.getString("status")),
-                toInstant(rs.getTimestamp("start_time")), toInstant(rs.getTimestamp("end_time")),
-                rs.getString("error_message"), rs.getObject("parent_execution_id", UUID.class),
-                rs.getObject("root_execution_id", UUID.class), rs.getObject("parent_station_log_id", UUID.class));
+        return new AssemblyRunRecord(
+                rs.getObject("id", UUID.class),
+                rs.getString("pipeline_id"),
+                fromJson(rs.getString("context"), new TypeReference<>() {}),
+                fromJson(rs.getString("input_parameters"), Map.class),
+                fromJson(rs.getString("result"), Object.class),
+                ExecutionStatus.valueOf(rs.getString("status")),
+                toInstant(rs.getTimestamp("start_time")),
+                toInstant(rs.getTimestamp("end_time")),
+                rs.getString("error_message"),
+                rs.getObject("parent_execution_id", UUID.class),
+                rs.getObject("root_execution_id", UUID.class),
+                rs.getObject("parent_station_log_id", UUID.class));
     }
 
     private StationLogRecord mapOperation(ResultSet rs) throws SQLException {
-        return new StationLogRecord(rs.getObject("id", UUID.class), rs.getObject("pipeline_execution_id", UUID.class),
-                rs.getString("operation_id"), rs.getObject("parent_log_id", UUID.class),
-                io.github.gear4jtest.core.model.StationLogStatus.valueOf(rs.getString("status")),
-                toInstant(rs.getTimestamp("start_time")), toInstant(rs.getTimestamp("end_time")),
-                rs.getString("error_message"), rs.getString("error_handler_messages"),
-                fromJson(rs.getString("context"), Map.class), rs.getString("item_id"));
+        return new StationLogRecord(
+                rs.getObject("id", UUID.class),
+                rs.getObject("pipeline_execution_id", UUID.class),
+                rs.getString("operation_id"),
+                rs.getObject("parent_log_id", UUID.class),
+                StationLogStatus.valueOf(rs.getString("status")),
+                toInstant(rs.getTimestamp("start_time")),
+                toInstant(rs.getTimestamp("end_time")),
+                rs.getString("error_message"),
+                rs.getString("error_handler_messages"),
+                fromJson(rs.getString("context"), new TypeReference<>() {}),
+                rs.getString("item_id"));
     }
 
     private java.time.Instant toInstant(Timestamp timestamp) {
@@ -369,6 +387,14 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     private <T> T fromJson(String json, Class<T> clazz) {
         try {
             return json != null ? objectMapper.readValue(json, clazz) : null;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private <T> T fromJson(String json, TypeReference<T> type) {
+        try {
+            return json != null ? objectMapper.readValue(json, type) : null;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

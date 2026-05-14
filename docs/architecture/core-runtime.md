@@ -73,6 +73,10 @@ Examples:
 - `PipelineCallStationStrategy` executes child pipelines.
 - `SignalStationStrategy` produces flow signals.
 
+Container branches must have explicit, stable branch identifiers. Branch ids are used as functional keys for sibling
+outcomes in sequential containers, not only as trace labels. The runtime must not generate random branch ids, because
+branch ids need to remain deterministic across runs, tests, logs and future BO visualizations.
+
 ## Flow decisions
 
 Flow decisions should be based on runtime station outcomes and explicit flow configuration.

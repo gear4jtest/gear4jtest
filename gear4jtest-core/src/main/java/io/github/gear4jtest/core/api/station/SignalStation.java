@@ -22,29 +22,31 @@ public class SignalStation<IN> extends AbstractStation<IN, IN> {
     }
 
     public static class Builder<IN> {
-        private final SignalStation<IN> managedInstance;
-
-        public Builder() {
-            managedInstance = new SignalStation<>();
-        }
+        private String id = "";
+        private SignalType signalType;
+        private Predicate<SignalInterpretationContext<IN>> condition;
 
         public Builder<IN> id(String id) {
-            managedInstance.id = java.util.Objects.requireNonNull(id, "id is required");
+            this.id = java.util.Objects.requireNonNull(id, "id is required");
             return this;
         }
 
         public Builder<IN> type(SignalType signalType) {
-            managedInstance.signalType = signalType;
+            this.signalType = signalType;
             return this;
         }
 
         public Builder<IN> condition(Predicate<SignalInterpretationContext<IN>> condition) {
-            managedInstance.condition = condition;
+            this.condition = condition;
             return this;
         }
 
         public SignalStation<IN> build() {
-            return managedInstance;
+            SignalStation<IN> station = new SignalStation<>();
+            station.id = id;
+            station.signalType = signalType;
+            station.condition = condition;
+            return station;
         }
     }
 

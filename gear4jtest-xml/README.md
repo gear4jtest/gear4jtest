@@ -47,6 +47,11 @@ Typical path:
 5. `JdtFormatter` formats the generated source.
 6. `AssemblyLineManager` compiles and loads the generated class through the external API module.
 
+## Branch ids
+
+Container `subLine` elements and `ifElseContainer` conditional operations must define explicit branch ids. Branch ids
+are functional keys used by sibling outcomes and generated Java must preserve them deterministically.
+
 ## Current generation direction
 
 Generated Java should be readable enough for debugging.

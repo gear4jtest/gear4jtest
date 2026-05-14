@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.api.station;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import io.github.gear4jtest.core.api.behavior.Condition;
@@ -13,59 +14,75 @@ public class UnaryContainerStation<A> extends ContainerBaseStation<A, A> {
     }
 
     public static class Builder<A> {
-        private final UnaryContainerStation<A> managedInstance;
-
-        public Builder() {
-            managedInstance = new UnaryContainerStation<>();
-        }
+        private final List<Branch<A>> branches = new ArrayList<>();
+        private boolean isParallel;
+        private ExecutorService executorService;
+        private FlowConfig flowConfig;
+        private Duration awaitTimeout;
+        private ContainerFunction<A> function;
 
         public Builder<A> parallel(ExecutorService executorService) {
-            this.managedInstance.isParallel = true;
-            this.managedInstance.executorService = executorService;
+            this.isParallel = true;
+            this.executorService = executorService;
             return this;
         }
 
         public Builder<A> flowConfig(FlowConfig flowConfig) {
-            this.managedInstance.setFlowConfig(flowConfig);
+            this.flowConfig = flowConfig;
             return this;
         }
 
         public Builder<A> awaitTimeout(Duration awaitTimeout) {
-            this.managedInstance.setAwaitTimeout(awaitTimeout);
+            this.awaitTimeout = awaitTimeout;
             return this;
         }
 
-        public Builder<A> withOneLine(AbstractStation<A, A> operationDefinition) {
-            var branch = new Branch.Builder<A>().withOperation(operationDefinition).build();
-            this.managedInstance.pipelines.add(branch);
-            this.managedInstance.func = Container1Station.Container1DFunction.identity();
+        public Builder<A> withOneLine(String id, AbstractStation<A, A> operationDefinition) {
+            var branch = new Branch.Builder<A>().withId(id).withOperation(operationDefinition).build();
+            this.branches.add(branch);
+            this.function = Container1Station.Container1DFunction.identity();
             return this;
         }
 
-        public Builder<A> withOneLine(AbstractStation<A, A> operationDefinition,
+        public Builder<A> withOneLine(String id,
+                                      AbstractStation<A, A> operationDefinition,
                                       Container1Station.Container1DFunction<A, A> function) {
-            var branch = new Branch.Builder<A>().withOperation(operationDefinition).build();
-            this.managedInstance.pipelines.add(branch);
-            this.managedInstance.func = function;
+            var branch = new Branch.Builder<A>().withId(id).withOperation(operationDefinition).build();
+            this.branches.add(branch);
+            this.function = function;
             return this;
         }
 
-        public Builder<A> withOneLine(AbstractStation<A, A> operationDefinition,
+        public Builder<A> withOneLine(String id,
+                                      AbstractStation<A, A> operationDefinition,
                                       Condition<A> condition,
                                       Container1Station.Container1DFunction<A, A> function) {
-            var branch = new Branch.Builder<A>().withOperation(operationDefinition).withCondition(condition).build();
-            this.managedInstance.pipelines.add(branch);
-            this.managedInstance.func = function;
+            var branch = new Branch.Builder<A>().withId(id).withOperation(operationDefinition).withCondition(condition)
+                    .build();
+            this.branches.add(branch);
+            this.function = function;
             return this;
         }
 
         public Builder<A> withTwoLines(Branch<A> operationDefinition,
                                        Branch<A> operationDefinition2,
                                        Container2Station.Container2DFunction<A, A, A> function) {
-            this.managedInstance.pipelines.add(operationDefinition);
-            this.managedInstance.pipelines.add(operationDefinition2);
-            this.managedInstance.func = function;
+            this.branches.add(operationDefinition);
+            this.branches.add(operationDefinition2);
+            this.function = function;
             return this;
+        }
+
+        public UnaryContainerStation<A> build() {
+            ContainerBaseStation.validateUniqueBranchIds(branches);
+            UnaryContainerStation<A> station = new UnaryContainerStation<>();
+            station.pipelines.addAll(branches);
+            station.func = function;
+            station.isParallel = isParallel;
+            station.executorService = executorService;
+            station.setFlowConfig(flowConfig);
+            station.setAwaitTimeout(awaitTimeout);
+            return station;
         }
     }
 }

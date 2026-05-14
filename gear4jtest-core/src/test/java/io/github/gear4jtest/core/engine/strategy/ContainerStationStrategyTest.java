@@ -35,6 +35,7 @@ import io.github.gear4jtest.core.spi.runner.StationRunner;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -91,6 +92,17 @@ class ContainerStationStrategyTest {
 
     private static DummyStation station(String id) {
         return new DummyStation(id);
+    }
+
+    @Test
+    void should_reject_branch_without_explicit_id() {
+        // Given
+        DummyStation station = station("station");
+
+        // When / Then
+        assertThatThrownBy(() -> new ContainerBaseStation.Branch.Builder<>().withOperation(station).build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("branch id is required");
     }
 
     @Test

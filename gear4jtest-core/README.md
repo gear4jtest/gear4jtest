@@ -89,6 +89,9 @@ Main station kinds:
 - `SignalStation`: emits STOP, CANCEL or FATAL-like flow signals.
 - `PipelineCallStation`: calls another pipeline either inline or as a nested run.
 
+Container branch ids are explicit and stable. They are used by sibling outcome conditions, so they are functional
+identifiers rather than cosmetic labels. Do not rely on station ids or random generated ids for branches.
+
 ## Flow and error semantics
 
 Important principles:

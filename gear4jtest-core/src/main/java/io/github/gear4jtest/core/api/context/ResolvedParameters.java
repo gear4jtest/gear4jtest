@@ -39,6 +39,5 @@ public final class ResolvedParameters {
         return this.<T>resolve(rawModel, interpretationCtx).value();
     }
 
-    public record Resolution<T>(T value, boolean cacheHit) {
-    }
+    public record Resolution<T>(T value, boolean cacheHit) {}
 }

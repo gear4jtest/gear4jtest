@@ -220,8 +220,7 @@ final class OperationTypeResolver {
         return type;
     }
 
-    private record OperatorSignature(JavaTypeName inputType, JavaTypeName outputType) {
-    }
+    private record OperatorSignature(JavaTypeName inputType, JavaTypeName outputType) {}
 
     private record ResolvedParameterizedType(Class<?> rawType, Type[] actualTypeArguments, Type ownerType)
             implements ParameterizedType {

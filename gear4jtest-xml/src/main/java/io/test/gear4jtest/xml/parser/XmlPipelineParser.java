@@ -220,7 +220,7 @@ public final class XmlPipelineParser {
                 throw new IllegalArgumentException(
                         "ifElse conditionalOperation currently supports processing operations only");
             }
-            conditionalOperations.add(new ConditionalOperation(
+            conditionalOperations.add(new ConditionalOperation(required(conditionalOperation, "id"),
                     parseCondition(requiredChild(conditionalOperation, "condition")), processingOperation));
         }
 

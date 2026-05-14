@@ -94,13 +94,24 @@ public class AssemblyLine<IN, OUT> {
      */
     public static class Builder<IN, OUT> {
         private final String id;
-        private final List<AbstractStation<?, ?>> operations = new ArrayList<>();
-        private final Map<String, Object> defaultContext = new HashMap<>();
-        private final Configuration.Builder configBuilder = Configuration.builder();
+        private final List<AbstractStation<?, ?>> operations;
+        private final Map<String, Object> defaultContext;
+        private final Configuration.Builder configBuilder;
         private String version;
 
         private Builder(String id) {
             this.id = id;
+            this.operations = new ArrayList<>();
+            this.defaultContext = new HashMap<>();
+            this.configBuilder = Configuration.builder();
+        }
+
+        private <PREVIOUS_OUT> Builder(Builder<IN, PREVIOUS_OUT> source) {
+            this.id = source.id;
+            this.operations = source.operations;
+            this.defaultContext = source.defaultContext;
+            this.configBuilder = source.configBuilder;
+            this.version = source.version;
         }
 
         public Builder<IN, OUT> version(String version) {
@@ -160,11 +171,10 @@ public class AssemblyLine<IN, OUT> {
          * Appends a station and narrows the builder output type to the appended station
          * output type.
          */
-        @SuppressWarnings("unchecked")
         public <T> Builder<IN, T> then(AbstractStation<OUT, T> operation) {
             Objects.requireNonNull(operation);
             this.operations.add(operation);
-            return (Builder<IN, T>) this;
+            return new Builder<>(this);
         }
 
         public AssemblyLine<IN, OUT> build() {

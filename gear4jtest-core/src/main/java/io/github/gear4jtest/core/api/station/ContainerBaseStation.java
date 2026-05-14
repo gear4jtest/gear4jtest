@@ -36,7 +36,7 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
             String branchId = branch.getEffectiveId();
             if (branchId == null || branchId.isBlank()) {
-                throw new IllegalArgumentException("Container contains a branch without stable id");
+                throw new IllegalArgumentException("Container contains a branch without explicit id");
             }
 
             if (!ids.add(branchId)) {
@@ -83,32 +83,34 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
     }
 
     public static class Builder<IN, OUT> {
-        private final ContainerBaseStation<IN, OUT> managedInstance;
+        final List<Branch<IN>> branches = new ArrayList<>();
+        boolean isParallel;
+        ExecutorService executorService;
+        FlowConfig flowConfig;
+        Duration awaitTimeout;
 
         public Builder() {
-            this.managedInstance = new ContainerBaseStation<>(new ArrayList<>(), null);
         }
 
         public Builder(ExecutorService executorService) {
-            this();
-            this.managedInstance.isParallel = true;
-            this.managedInstance.executorService = executorService;
+            this.isParallel = true;
+            this.executorService = executorService;
         }
 
         public Builder<IN, OUT> flowConfig(FlowConfig flowConfig) {
-            this.managedInstance.flowConfig = flowConfig;
+            this.flowConfig = flowConfig;
             return this;
         }
 
         public Builder<IN, OUT> awaitTimeout(Duration awaitTimeout) {
-            this.managedInstance.awaitTimeout = awaitTimeout;
+            this.awaitTimeout = awaitTimeout;
             return this;
         }
 
         public <A> Container1Station.Builder<IN, OUT, A> withSubLine(String id,
                                                                      AbstractStation<IN, A> startingElement) {
             var branch = new Branch.Builder<IN>().withId(id).withOperation(startingElement).build();
-            return new Container1Station.Builder<>(this.managedInstance, branch);
+            return new Container1Station.Builder<>(this, branch);
         }
 
         public <A> Container1Station.Builder<IN, OUT, A> withSubLine(String id,
@@ -116,7 +118,7 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
                                                                      Condition<IN> condition) {
             var branch = new Branch.Builder<IN>().withId(id).withCondition(condition).withOperation(startingElement)
                     .build();
-            return new Container1Station.Builder<>(this.managedInstance, branch);
+            return new Container1Station.Builder<>(this, branch);
         }
 
         public <A> Container1Station.Builder<IN, OUT, A> withSubLine(String id,
@@ -124,7 +126,7 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
                                                                      BranchCondition<IN> siblingCondition) {
             var branch = new Branch.Builder<IN>().withId(id).withSiblingCondition(siblingCondition)
                     .withOperation(startingElement).build();
-            return new Container1Station.Builder<>(this.managedInstance, branch);
+            return new Container1Station.Builder<>(this, branch);
         }
 
         public <A> Container1Station.Builder<IN, OUT, A> withSubLine(String id,
@@ -133,8 +135,23 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
                                                                      BranchCondition<IN> siblingCondition) {
             var branch = new Branch.Builder<IN>().withId(id).withCondition(condition)
                     .withSiblingCondition(siblingCondition).withOperation(startingElement).build();
-            return new Container1Station.Builder<>(this.managedInstance, branch);
+            return new Container1Station.Builder<>(this, branch);
         }
+    }
+
+    static <IN, OUT> ContainerBaseStation<IN, OUT> buildStation(List<Branch<IN>> branches,
+                                                                boolean isParallel,
+                                                                ExecutorService executorService,
+                                                                FlowConfig flowConfig,
+                                                                Duration awaitTimeout,
+                                                                ContainerFunction<OUT> function) {
+        validateUniqueBranchIds(branches);
+        ContainerBaseStation<IN, OUT> station = new ContainerBaseStation<>(new ArrayList<>(branches), function);
+        station.executorService = executorService;
+        station.isParallel = isParallel;
+        station.setFlowConfig(flowConfig);
+        station.setAwaitTimeout(awaitTimeout);
+        return station;
     }
 
     public static class Branch<I> {
@@ -151,7 +168,7 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         public String getEffectiveId() {
-            return (id != null && !id.isBlank()) ? id : station.getId();
+            return id;
         }
 
         public AbstractStation<I, ?> getStation() {
@@ -167,38 +184,43 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         public static class Builder<I> {
-            private final Branch<I> managedInstance;
-
-            public Builder() {
-                this.managedInstance = new Branch<>();
-            }
+            private String id;
+            private AbstractStation<I, ?> station;
+            private Condition<I> condition;
+            private BranchCondition<I> siblingCondition;
 
             public Builder<I> withId(String id) {
-                this.managedInstance.id = id;
+                this.id = id;
                 return this;
             }
 
             public Builder<I> withOperation(AbstractStation<I, ?> operation) {
-                this.managedInstance.station = operation;
+                this.station = operation;
                 return this;
             }
 
             public Builder<I> withCondition(Condition<I> condition) {
-                this.managedInstance.condition = condition;
+                this.condition = condition;
                 return this;
             }
 
             public Builder<I> withSiblingCondition(BranchCondition<I> siblingCondition) {
-                this.managedInstance.siblingCondition = siblingCondition;
+                this.siblingCondition = siblingCondition;
                 return this;
             }
 
             public Branch<I> build() {
-                Objects.requireNonNull(managedInstance.station, "branch station is required");
-                if (managedInstance.id == null || managedInstance.id.isBlank()) {
-                    managedInstance.id = managedInstance.station.getId();
+                Objects.requireNonNull(station, "branch station is required");
+                if (id == null || id.isBlank()) {
+                    throw new IllegalArgumentException("branch id is required");
                 }
-                return this.managedInstance;
+
+                Branch<I> branch = new Branch<>();
+                branch.station = station;
+                branch.id = id;
+                branch.condition = condition;
+                branch.siblingCondition = siblingCondition;
+                return branch;
             }
         }
     }

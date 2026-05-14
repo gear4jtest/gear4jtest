@@ -13,55 +13,79 @@ import io.github.gear4jtest.core.api.station.StationKind;
 
 public class PipelineDefinition<IN, OUT> extends AbstractStation<IN, OUT> {
     private Function<IN, ? extends Iterable<?>> func;
-    private AssemblyLine assemblyLine;
+    private AssemblyLine<?, ?> assemblyLine;
     private Accumulator accumulator;
-    private Collector collector;
+    private Collector<?, ?, ?> collector;
 
     private PipelineDefinition() {
         super("", StationKind.OTHER);
+    }
+
+    private PipelineDefinition(Function<IN, ? extends Iterable<?>> func,
+                               AssemblyLine<?, ?> assemblyLine,
+                               Accumulator accumulator,
+                               Collector<?, ?, ?> collector) {
+        this();
+        this.func = func;
+        this.assemblyLine = assemblyLine;
+        this.accumulator = accumulator;
+        this.collector = collector;
     }
 
     public Function<IN, ? extends Iterable<?>> getFunc() {
         return func;
     }
 
+    public AssemblyLine<?, ?> getAssemblyLine() {
+        return assemblyLine;
+    }
+
     public Accumulator getAccumulator() {
         return accumulator;
     }
 
-    public Collector getCollector() {
+    public Collector<?, ?, ?> getCollector() {
         return collector;
     }
 
     public static class Builder<IN, OUT> {
-        private final PipelineDefinition<IN, OUT> managedInstance;
+        private Function<IN, ? extends Iterable<?>> func;
+        private AssemblyLine<?, ?> assemblyLine;
+        private Accumulator accumulator;
+        private Collector<?, ?, ?> collector;
 
         public Builder() {
-            managedInstance = new PipelineDefinition<>();
+        }
+
+        private <PREVIOUS_OUT> Builder(Builder<IN, PREVIOUS_OUT> source) {
+            this.func = source.func;
+            this.assemblyLine = source.assemblyLine;
+            this.accumulator = source.accumulator;
+            this.collector = source.collector;
         }
 
         public <A> Builder<IN, A> iterableFunction(Function<IN, ? extends Iterable<A>> func) {
-            managedInstance.func = func;
-            return (Builder<IN, A>) this;
+            this.func = func;
+            return new Builder<>(this);
         }
 
         public <A> Builder<IN, A> pipeline(AssemblyLine<OUT, A> assemblyLine) {
-            managedInstance.assemblyLine = assemblyLine;
-            return (Builder<IN, A>) this;
+            this.assemblyLine = assemblyLine;
+            return new Builder<>(this);
         }
 
         public Builder<IN, OUT> accumulator(Accumulator accumulator) {
-            managedInstance.accumulator = accumulator;
+            this.accumulator = accumulator;
             return this;
         }
 
         public <C> Builder<IN, C> collector(Collector<OUT, ?, C> collector) {
-            managedInstance.collector = collector;
-            return (Builder<IN, C>) this;
+            this.collector = collector;
+            return new Builder<>(this);
         }
 
         public PipelineDefinition<IN, OUT> build() {
-            return managedInstance;
+            return new PipelineDefinition<>(func, assemblyLine, accumulator, collector);
         }
     }
 

@@ -247,14 +247,11 @@ class PipelineCacheWithSideComputeIntegrationTest {
         }
     }
 
-    private record CustomerDto(String name) {
-    }
+    private record CustomerDto(String name) {}
 
-    private record FinalOutput(String customerName, String orderName) {
-    }
+    private record FinalOutput(String customerName, String orderName) {}
 
-    private record RichCustomerPayload(CustomerDto value, Instant expiresAt) {
-    }
+    private record RichCustomerPayload(CustomerDto value, Instant expiresAt) {}
 
     private static final class RichCustomerPayloadExpiryHandler
             implements SideComputeHandler<StationFinishedEvent, RichCustomerPayload> {

@@ -14,5 +14,4 @@ public record ResolvedExtensions(List<RuntimeExtension> allExtensions,
                                  List<RunLifecycleExtension> runLifecycleExtensions,
                                  List<StationWrapperExtension> stationWrappers,
                                  List<StationLifecycleExtension> stationLifecycleExtensions,
-                                 List<ExecutorWrapperExtension> executorWrappers) {
-}
+                                 List<ExecutorWrapperExtension> executorWrappers) {}

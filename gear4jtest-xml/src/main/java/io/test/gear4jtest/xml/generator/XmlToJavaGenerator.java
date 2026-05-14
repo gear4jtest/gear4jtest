@@ -529,8 +529,10 @@ public final class XmlToJavaGenerator {
                 .append(")\n");
 
         for (XmlPipelineDefinition.ConditionalOperation conditionalOperation : operation.conditionalOperations()) {
-            code.append("                .conditionally(").append(methodName(conditionalOperation.operation()))
-                    .append("(), ").append(conditionLambda(conditionalOperation.condition(), imports)).append(")\n");
+            code.append("                .conditionally(\"").append(escapeJava(conditionalOperation.id()))
+                    .append("\", ")
+                    .append(methodName(conditionalOperation.operation())).append("(), ")
+                    .append(conditionLambda(conditionalOperation.condition(), imports)).append(")\n");
         }
 
         if (operation.elseOperation() == null) {
@@ -538,7 +540,8 @@ public final class XmlToJavaGenerator {
                     "ifElseContainer requires an elseOperation because the current core builder has no build() method");
         }
 
-        code.append("                .elseOp(").append(methodName(operation.elseOperation())).append("());\n");
+        code.append("                .elseOp(\"").append(escapeJava(operation.elseOperation().id())).append("\", ")
+                .append(methodName(operation.elseOperation())).append("());\n");
         code.append("    }\n\n");
     }
 

@@ -237,12 +237,9 @@ class PipelineCacheWithWaitProcessorIT {
         }
     }
 
-    record CustomerDto(String name) {
-    }
+    record CustomerDto(String name) {}
 
-    record OrderDto(String orderCode) {
-    }
+    record OrderDto(String orderCode) {}
 
-    record FinalOutput(String customerName, String orderCode) {
-    }
+    record FinalOutput(String customerName, String orderCode) {}
 }

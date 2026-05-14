@@ -25,7 +25,6 @@ import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
 import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventSubscription;
-import io.github.gear4jtest.core.exception.AssemblyLineException;
 import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
@@ -59,7 +58,6 @@ import static io.github.gear4jtest.core.api.util.ElementModelBuilders.processing
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-// handle factory for step / processor... configuration
 public class SimpleChainBuilderTest {
     private static StationLogRecord getRecordByOperationId(List<StationLogRecord> logs, String operationId) {
         return logs.stream()
@@ -69,7 +67,7 @@ public class SimpleChainBuilderTest {
     }
 
     @Test
-    public void test_v2() throws AssemblyLineException {
+    public void test_v2() {
         // Given
         var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
                 .then(processingOperation("step3", Step3.class).parameter(Step3::getParam, "a")
@@ -128,7 +126,7 @@ public class SimpleChainBuilderTest {
     }
 
     @Test
-    public void test_v2_event_management() throws AssemblyLineException, InterruptedException {
+    public void test_v2_event_management() throws InterruptedException {
         // Given
         var testEventListener = new TestEventListener();
         var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
@@ -336,7 +334,7 @@ public class SimpleChainBuilderTest {
     }
 
     @Test
-    public void test_container_two_paralleled_sublines() throws AssemblyLineException {
+    public void test_container_two_paralleled_sublines() {
         // Given
         var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
                 .then(processingOperation("step11", Step11.class).parameter(Step11::getParam, "a").build())
@@ -379,16 +377,21 @@ public class SimpleChainBuilderTest {
     }
 
     @Test
-    public void test_container_if_else_container() throws AssemblyLineException {
+    public void test_container_if_else_container() {
         // Given
         var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
                 .then(processingOperation("step11", Step11.class).parameter(Step11::getParam, "a").build())
                 .then(ifElseContainer(String.class)
-                        .conditionally(processingOperation("step11", Step11.class).parameter(Step11::getParam, "c")
-                                .build(), (input, ctx) -> input.equals("a"))
-                        .conditionally(processingOperation("step11", Step11.class).parameter(Step11::getParam, "cd")
-                                .build(), (input, ctx) -> input.equals("a"))
-                        .elseOp(processingOperation("step11", Step11.class).parameter(Step11::getParam, "b").build()))
+                        .conditionally("when-a-c",
+                                       processingOperation("step11", Step11.class).parameter(Step11::getParam, "c")
+                                               .build(),
+                                       (input, ctx) -> input.equals("a"))
+                        .conditionally("when-a-cd",
+                                       processingOperation("step11", Step11.class).parameter(Step11::getParam, "cd")
+                                               .build(),
+                                       (input, ctx) -> input.equals("a"))
+                        .elseOp("otherwise",
+                                processingOperation("step11", Step11.class).parameter(Step11::getParam, "b").build()))
                 .configuration(configuration().eventHandling(eventHandling()
                         .subscription(EventSubscription.on(Event.class, new TestEventListener()::handleEvent))
                         .globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build()).build())

@@ -1,12 +1,15 @@
 package io.github.gear4jtest.core.api.station;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+
+import io.github.gear4jtest.core.api.config.FlowConfig;
 
 public class Container2Station<IN, OUT, A, B> extends ContainerBaseStation<IN, OUT> {
-    private Container2Station(List<Branch<IN>> subLines) {
-        super(new ArrayList<>(2), null);
-        this.pipelines.add(subLines.get(0));
+    private Container2Station() {
+        super(java.util.List.of(), null);
     }
 
     @FunctionalInterface
@@ -22,28 +25,37 @@ public class Container2Station<IN, OUT, A, B> extends ContainerBaseStation<IN, O
     }
 
     public static class Builder<IN, OUT, A, B> {
-        private final Container2Station<IN, OUT, A, B> managedInstance;
+        private final List<Branch<IN>> branches = new ArrayList<>();
+        private final boolean isParallel;
+        private final ExecutorService executorService;
+        private final FlowConfig flowConfig;
+        private final Duration awaitTimeout;
 
-        public Builder(ContainerBaseStation<IN, OUT> parentDefinition, Branch<IN> newLine) {
-            managedInstance = new Container2Station<>(parentDefinition.pipelines);
-            managedInstance.pipelines.add(newLine);
-            managedInstance.executorService = parentDefinition.getExecutorService();
-            managedInstance.isParallel = parentDefinition.isParallel();
-            managedInstance.setFlowConfig(parentDefinition.getFlowConfig());
-            managedInstance.setAwaitTimeout(parentDefinition.getAwaitTimeout());
+        public Builder(Container1Station.Builder<IN, OUT, A> parent, Branch<IN> branch) {
+            this.branches.addAll(parent.branches);
+            this.branches.add(branch);
+            this.isParallel = parent.isParallel;
+            this.executorService = parent.executorService;
+            this.flowConfig = parent.flowConfig;
+            this.awaitTimeout = parent.awaitTimeout;
         }
 
-        @SuppressWarnings({ "unchecked", "rawtypes" })
         public <C> ContainerBaseStation<IN, C> returns(Container2DFunction<A, B, C> func) {
-            ContainerBaseStation.validateUniqueBranchIds(managedInstance.getPipelines());
-            managedInstance.func = (ContainerBaseStation.ContainerFunction) func;
-            return (ContainerBaseStation<IN, C>) this.managedInstance;
+            return ContainerBaseStation.buildStation(branches,
+                                                     isParallel,
+                                                     executorService,
+                                                     flowConfig,
+                                                     awaitTimeout,
+                                                     func);
         }
 
-        @SuppressWarnings("unchecked")
         public ContainerBaseStation<IN, Void> build() {
-            ContainerBaseStation.validateUniqueBranchIds(managedInstance.getPipelines());
-            return (ContainerBaseStation<IN, Void>) this.managedInstance;
+            return ContainerBaseStation.buildStation(branches,
+                                                     isParallel,
+                                                     executorService,
+                                                     flowConfig,
+                                                     awaitTimeout,
+                                                     null);
         }
     }
 }

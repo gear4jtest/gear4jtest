@@ -27,5 +27,4 @@ public record EventRuntimeStats(long publishedEvents,
                                 long submittedReactions,
                                 long completedReactions,
                                 long droppedReactions,
-                                long failedReactions) {
-}
+                                long failedReactions) {}

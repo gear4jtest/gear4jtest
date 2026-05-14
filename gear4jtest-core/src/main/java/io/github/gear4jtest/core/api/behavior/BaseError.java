@@ -28,52 +28,66 @@ public class BaseError<T> {
 
     public static class SafeError<T> extends BaseError<T> {
         public static class Builder<T> {
-            protected final SafeError<T> managedInstance;
+            private final SignalType signalType;
+            private final Class<? extends Throwable> throwableType;
+            private Condition<T> condition;
+            private Runnable action;
 
             public Builder(SignalType signalType, Class<? extends Throwable> throwableType) {
-                managedInstance = new SafeError<>();
-                managedInstance.signalType = signalType;
-                managedInstance.throwableType = throwableType;
+                this.signalType = signalType;
+                this.throwableType = throwableType;
             }
 
             public Builder<T> condition(Condition<T> condition) {
-                managedInstance.condition = condition;
+                this.condition = condition;
                 return this;
             }
 
             public Builder<T> action(Runnable action) {
-                managedInstance.action = action;
+                this.action = action;
                 return this;
             }
 
             public SafeError<T> build() {
-                return managedInstance;
+                SafeError<T> error = new SafeError<>();
+                error.signalType = signalType;
+                error.throwableType = throwableType;
+                error.condition = condition;
+                error.action = action;
+                return error;
             }
         }
     }
 
     public static class UnSafeError<T> extends BaseError<T> {
         public static class Builder<T> {
-            protected final UnSafeError<T> managedInstance;
+            private final SignalType signalType;
+            private final Class<? extends Throwable> throwableType;
+            private Condition<T> condition;
+            private Runnable action;
 
             public Builder(SignalType signalType, Class<? extends Throwable> throwableType) {
-                managedInstance = new UnSafeError<>();
-                managedInstance.signalType = signalType;
-                managedInstance.throwableType = throwableType;
+                this.signalType = signalType;
+                this.throwableType = throwableType;
             }
 
             public Builder<T> condition(Condition<T> condition) {
-                managedInstance.condition = condition;
+                this.condition = condition;
                 return this;
             }
 
             public Builder<T> action(Runnable action) {
-                managedInstance.action = action;
+                this.action = action;
                 return this;
             }
 
             public UnSafeError<T> build() {
-                return managedInstance;
+                UnSafeError<T> error = new UnSafeError<>();
+                error.signalType = signalType;
+                error.throwableType = throwableType;
+                error.condition = condition;
+                error.action = action;
+                return error;
             }
         }
     }

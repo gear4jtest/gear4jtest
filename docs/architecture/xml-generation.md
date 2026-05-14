@@ -34,6 +34,11 @@ Generated code should:
 - use imports and static imports when they improve readability safely;
 - remain deterministic across runs.
 
+## Branch id generation
+
+XML branch ids must be carried into generated Java builder calls. Generated code should never invent random branch ids or
+fall back silently to station ids for container branches.
+
 ## Validation rules
 
 Validation should happen before Java generation.
