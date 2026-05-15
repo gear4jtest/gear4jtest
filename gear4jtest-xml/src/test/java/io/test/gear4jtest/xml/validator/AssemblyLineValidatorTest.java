@@ -39,6 +39,26 @@ class AssemblyLineValidatorTest {
     }
 
     @Test
+    void should_reject_missing_subline_id() throws IOException {
+        // Given
+        byte[] xml = resource("/samples/bad-missing-subline-id.xml");
+
+        // When / Then
+        assertThatThrownBy(() -> validator.validate(xml)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid Gear4J XML pipeline definition");
+    }
+
+    @Test
+    void should_reject_doctype_declarations() throws IOException {
+        // Given
+        byte[] xml = resource("/samples/bad-doctype.xml");
+
+        // When / Then
+        assertThatThrownBy(() -> validator.validate(xml)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid Gear4J XML pipeline definition");
+    }
+
+    @Test
     void should_reject_ifelse_without_else_operation() throws IOException {
         // Given
         byte[] xml = resource("/samples/bad-missing-else-operation.xml");

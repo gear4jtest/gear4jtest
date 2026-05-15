@@ -16,6 +16,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -33,18 +34,15 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     private static final String SCRIPT_MYSQL = "/io/github/gear4j/db/mysql/gear4j_schema.sql";
     private static final String SCRIPT_H2 = "/io/github/gear4j/db/h2/gear4j_schema.sql";
     private final DataSource dataSource;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     public DatabaseAssemblyRunRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
+        this(dataSource, new ObjectMapper());
     }
 
-    public static String toJson(Map<String, Object> map) {
-        try {
-            return new ObjectMapper().writeValueAsString(map);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public DatabaseAssemblyRunRepository(DataSource dataSource, ObjectMapper objectMapper) {
+        this.dataSource = Objects.requireNonNull(dataSource, "dataSource must not be null");
+        this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
     }
 
     @Override
@@ -83,7 +81,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         } else if (dbProductName.contains("h2")) {
             return SCRIPT_H2;
         } else {
-            System.err.println("[Gear4J] Unknown database '" + dbProductName + "'. Falling back to H2 script.");
+            LOGGER.warn("[Gear4J] Unknown database '{}'. Falling back to H2 script.", dbProductName);
             return SCRIPT_H2;
         }
     }
@@ -208,6 +206,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     @Override
     public void delete(UUID id) {
         try (Connection conn = dataSource.getConnection()) {
+            boolean previousAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false);
             try (PreparedStatement stmt1 = conn
                     .prepareStatement("DELETE FROM station_log WHERE pipeline_execution_id = ?");
@@ -218,8 +217,10 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 stmt2.executeUpdate();
                 conn.commit();
             } catch (SQLException e) {
-                conn.rollback();
+                rollback(conn, e);
                 throw e;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -294,26 +295,94 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             return;
         }
 
-        String sql = "INSERT INTO station_log (id, pipeline_execution_id, operation_id, parent_log_id, status, start_time, end_time, error_message, error_handler_messages, context, item_id) VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status, end_time = EXCLUDED.end_time, error_message = EXCLUDED.error_message, error_handler_messages = EXCLUDED.error_handler_messages, context = EXCLUDED.context, item_id = EXCLUDED.item_id WHERE station_log.end_time IS NULL";
-
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-            for (StationLogRecord rec : records) {
-                stmt.setObject(1, rec.id());
-                stmt.setObject(2, rec.pipelineExecutionId());
-                stmt.setString(3, rec.operationId());
-                stmt.setObject(4, rec.parentOperationId());
-                stmt.setString(5, rec.status().toString());
-                stmt.setTimestamp(6, rec.startedAt() != null ? Timestamp.from(rec.startedAt()) : null);
-                stmt.setTimestamp(7, rec.endedAt() != null ? Timestamp.from(rec.endedAt()) : null);
-                stmt.setString(8, rec.errorMessage());
-                stmt.setString(9, rec.errorHandlerMessages());
-                stmt.setObject(10, toJson(rec.context()), Types.OTHER);
-                stmt.setString(11, rec.itemId());
-                stmt.addBatch();
+        try (Connection conn = dataSource.getConnection()) {
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                for (StationLogRecord rec : records) {
+                    saveOperationRecord(conn, rec);
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                rollback(conn, e);
+                throw e;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
             }
-            stmt.executeBatch();
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void saveOperationRecord(Connection conn, StationLogRecord rec) throws SQLException {
+        if (updateOpenStationLog(conn, rec) > 0) {
+            return;
+        }
+
+        try {
+            insertStationLog(conn, rec);
+        } catch (SQLException e) {
+            if (!isUniqueViolation(e)) {
+                throw e;
+            }
+            // The row already exists, either because another writer inserted it or because
+            // the log is already finalized. Try one last open-row update; if it still
+            // updates zero rows, keep the existing finalized record unchanged.
+            updateOpenStationLog(conn, rec);
+        }
+    }
+
+    private int updateOpenStationLog(Connection conn, StationLogRecord rec) throws SQLException {
+        String sql = "UPDATE station_log SET status=?, end_time=?, error_message=?, error_handler_messages=?, context=?, item_id=? "
+                + "WHERE id=? AND end_time IS NULL";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, rec.status().toString());
+            stmt.setTimestamp(2, rec.endedAt() != null ? Timestamp.from(rec.endedAt()) : null);
+            stmt.setString(3, rec.errorMessage());
+            stmt.setString(4, rec.errorHandlerMessages());
+            stmt.setObject(5, toJson(rec.context()), Types.OTHER);
+            stmt.setString(6, rec.itemId());
+            stmt.setObject(7, rec.id());
+            return stmt.executeUpdate();
+        }
+    }
+
+    private void insertStationLog(Connection conn, StationLogRecord rec) throws SQLException {
+        String sql = "INSERT INTO station_log (id, pipeline_execution_id, operation_id, parent_log_id, status, start_time, end_time, error_message, error_handler_messages, context, item_id) "
+                + "VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, rec.id());
+            stmt.setObject(2, rec.pipelineExecutionId());
+            stmt.setString(3, rec.operationId());
+            stmt.setObject(4, rec.parentOperationId());
+            stmt.setString(5, rec.status().toString());
+            stmt.setTimestamp(6, rec.startedAt() != null ? Timestamp.from(rec.startedAt()) : null);
+            stmt.setTimestamp(7, rec.endedAt() != null ? Timestamp.from(rec.endedAt()) : null);
+            stmt.setString(8, rec.errorMessage());
+            stmt.setString(9, rec.errorHandlerMessages());
+            stmt.setObject(10, toJson(rec.context()), Types.OTHER);
+            stmt.setString(11, rec.itemId());
+            stmt.executeUpdate();
+        }
+    }
+
+    private static boolean isUniqueViolation(SQLException e) {
+        String state = e.getSQLState();
+        int code = e.getErrorCode();
+        if ("23505".equals(state)) {
+            return true;
+        }
+        if (code == 1062) {
+            return true;
+        }
+        return e.getMessage() != null && e.getMessage().toLowerCase().contains("duplicate");
+    }
+
+    private static void rollback(Connection conn, SQLException original) {
+        try {
+            conn.rollback();
+        } catch (SQLException rollbackFailure) {
+            original.addSuppressed(rollbackFailure);
         }
     }
 

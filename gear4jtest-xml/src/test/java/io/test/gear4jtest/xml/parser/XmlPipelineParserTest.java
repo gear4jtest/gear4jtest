@@ -9,6 +9,7 @@ import io.test.gear4jtest.xml.model.XmlPipelineDefinition.SignalOperation;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class XmlPipelineParserTest {
     private final XmlPipelineParser parser = new XmlPipelineParser();
@@ -51,6 +52,22 @@ class XmlPipelineParserTest {
             assertThat(container.threadPoolSize()).isEqualTo(2);
             assertThat(container.subLines()).hasSize(2);
         });
+    }
+
+    @Test
+    void should_reject_missing_subline_id() throws IOException {
+        // Given / When / Then
+        assertThatThrownBy(() -> parser.parse(resource("/samples/bad-missing-subline-id.xml")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Missing required attribute 'id' on <subLine>");
+    }
+
+    @Test
+    void should_reject_doctype_declarations() throws IOException {
+        // Given / When / Then
+        assertThatThrownBy(() -> parser.parse(resource("/samples/bad-doctype.xml")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unable to parse Gear4J XML pipeline");
     }
 
     @Test

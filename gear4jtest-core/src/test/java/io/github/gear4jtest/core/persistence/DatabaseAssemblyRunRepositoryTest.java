@@ -1,0 +1,78 @@
+package io.github.gear4jtest.core.persistence;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+import javax.sql.DataSource;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.gear4jtest.core.model.StationLogStatus;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class DatabaseAssemblyRunRepositoryTest {
+    @Test
+    void delete_shouldRestorePreviousAutoCommit() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement deleteLogs = mock(PreparedStatement.class);
+        PreparedStatement deleteRun = mock(PreparedStatement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.getAutoCommit()).thenReturn(false);
+        when(connection.prepareStatement("DELETE FROM station_log WHERE pipeline_execution_id = ?"))
+                .thenReturn(deleteLogs);
+        when(connection.prepareStatement("DELETE FROM assembly_run WHERE id = ?")).thenReturn(deleteRun);
+
+        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource);
+
+        // When
+        repository.delete(UUID.randomUUID());
+
+        // Then
+        InOrder order = inOrder(connection, deleteLogs, deleteRun);
+        order.verify(connection).setAutoCommit(false);
+        order.verify(deleteLogs).executeUpdate();
+        order.verify(deleteRun).executeUpdate();
+        order.verify(connection).commit();
+        order.verify(connection).setAutoCommit(false);
+    }
+
+    @Test
+    void saveOperationRecordsBatch_shouldIgnoreDuplicateInsertForAlreadyFinalizedLog() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement update = mock(PreparedStatement.class);
+        PreparedStatement insert = mock(PreparedStatement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.getAutoCommit()).thenReturn(true);
+        when(connection.prepareStatement(anyString())).thenAnswer(invocation -> {
+            String sql = invocation.getArgument(0, String.class);
+            return sql.startsWith("UPDATE station_log") ? update : insert;
+        });
+        when(update.executeUpdate()).thenReturn(0);
+        SQLException duplicate = new SQLException("duplicate key", "23505");
+        when(insert.executeUpdate()).thenThrow(duplicate);
+
+        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource, new ObjectMapper());
+        StationLogRecord record = new StationLogRecord(UUID.randomUUID(), UUID.randomUUID(), "step", null,
+                StationLogStatus.SUCCEEDED, Instant.now(), Instant.now(), null, null, Map.of(), "item-1");
+
+        // When
+        repository.saveOperationRecordsBatch(java.util.List.of(record));
+
+        // Then
+        verify(connection).commit();
+        verify(connection).setAutoCommit(true);
+    }
+}

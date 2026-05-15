@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.function.Function;
 
 import io.github.gear4jtest.core.api.behavior.BaseError;
-import io.github.gear4jtest.core.api.behavior.Condition;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
@@ -21,14 +20,12 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
         private final List<WorkerParamsInjector.ParameterModel<?, ?>> parameters;
         private final List<Processor> processors;
         private final List<BaseError<INOUT>> onErrors;
-        private final List<Condition<INOUT>> conditions;
         private Operator<?, ?> fallbackOperator;
 
         public Builder() {
             this.parameters = new ArrayList<>();
             this.processors = new ArrayList<>();
             this.onErrors = new ArrayList<>();
-            this.conditions = new ArrayList<>();
         }
 
         private <PREVIOUS_OP extends Operator<INOUT, INOUT>> Builder(Builder<INOUT, PREVIOUS_OP> source) {
@@ -37,7 +34,6 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
             this.parameters = source.parameters;
             this.processors = source.processors;
             this.onErrors = source.onErrors;
-            this.conditions = source.conditions;
             this.fallbackOperator = source.fallbackOperator;
         }
 
@@ -111,11 +107,6 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
             return this;
         }
 
-        public UnsafeOperation.Builder<INOUT, OP> conditional(Condition<INOUT> condition) {
-            conditions.add(condition);
-            return new UnsafeOperation.Builder<>(this);
-        }
-
         public UnaryWorkStation<INOUT> build() {
             UnaryWorkStation<INOUT> station = new UnaryWorkStation<>();
             applyBuilder(station, this);
@@ -138,11 +129,6 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
 
             public Builder<INOUT, OP> onError(BaseError.UnSafeError<INOUT> onError) {
                 operation.onError(onError);
-                return this;
-            }
-
-            public Builder<INOUT, OP> conditional(Condition<INOUT> condition) {
-                operation.conditional(condition);
                 return this;
             }
 
@@ -171,11 +157,6 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
                 return this;
             }
 
-            public Builder<INOUT, OP> conditional(Condition<INOUT> condition) {
-                operation.conditional(condition);
-                return this;
-            }
-
             public UnaryWorkStation.Builder<INOUT, OP> transformer(Operator<INOUT, INOUT> operator) {
                 operation.fallback(operator);
                 return operation;
@@ -196,7 +177,6 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
         station.processors = builder.processors.isEmpty() ? null : new ArrayList<>(builder.processors);
         station.parameters = builder.parameters.isEmpty() ? null : new ArrayList<>(builder.parameters);
         station.onErrors = builder.onErrors.isEmpty() ? null : new ArrayList<>(builder.onErrors);
-        station.conditions = builder.conditions.isEmpty() ? null : new ArrayList<>(builder.conditions);
         station.fallbackOperator = (Operator<INOUT, INOUT>) builder.fallbackOperator;
     }
 }

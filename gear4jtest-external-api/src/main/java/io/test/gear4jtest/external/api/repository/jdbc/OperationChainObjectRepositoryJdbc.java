@@ -1,9 +1,12 @@
 package io.test.gear4jtest.external.api.repository.jdbc;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.sql.Types;
+import java.time.Instant;
 import java.util.Optional;
 import javax.sql.DataSource;
 
@@ -13,18 +16,29 @@ import io.test.gear4jtest.external.api.repository.OperationChainObjectRepository
 
 public final class OperationChainObjectRepositoryJdbc implements OperationChainObjectRepository {
     private final DataSource ds;
-    private final JdbcDialect dialect;
 
     public OperationChainObjectRepositoryJdbc(DataSource ds, JdbcDialect dialect) {
         this.ds = ds;
-        this.dialect = dialect;
+    }
+
+    private static Instant instantOrNull(ResultSet rs, String column) throws SQLException {
+        Timestamp timestamp = rs.getTimestamp(column);
+        return timestamp == null ? null : timestamp.toInstant();
+    }
+
+    private static void setTimestamp(PreparedStatement ps, int index, Instant instant) throws SQLException {
+        if (instant == null) {
+            ps.setNull(index, Types.TIMESTAMP);
+        } else {
+            ps.setTimestamp(index, Timestamp.from(instant));
+        }
     }
 
     private static Optional<OperationChainObject> map(ResultSet rs) throws SQLException {
         return Optional.of(new OperationChainObject(rs.getLong("id"), rs.getString("al_id"), rs.getString("version"),
                 ExecutionMode.valueOf(rs.getString("mode")), rs.getString("content_hash"), rs.getLong("size_bytes"),
-                rs.getString("mime_type"), rs.getTimestamp("created_at").toInstant(), rs.getString("created_by"),
-                rs.getTimestamp("published_at").toInstant()));
+                rs.getString("mime_type"), instantOrNull(rs, "created_at"), rs.getString("created_by"),
+                instantOrNull(rs, "published_at")));
     }
 
     @Override
@@ -38,9 +52,9 @@ public final class OperationChainObjectRepositoryJdbc implements OperationChainO
             ps.setString(4, o.contentHash());
             ps.setLong(5, o.sizeBytes());
             ps.setString(6, o.mimeType());
-            ps.setTimestamp(7, Timestamp.from(o.createdAt()));
+            setTimestamp(ps, 7, o.createdAt());
             ps.setString(8, o.createdBy());
-            ps.setTimestamp(9, Timestamp.from(o.publishedAt()));
+            setTimestamp(ps, 9, o.publishedAt());
             ps.executeUpdate();
             try (var rs = ps.getGeneratedKeys()) {
                 return rs.next() ? rs.getLong(1) : -1L;

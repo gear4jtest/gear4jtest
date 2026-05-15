@@ -488,8 +488,7 @@ public final class XmlToJavaGenerator {
         }
 
         for (SubLine subLine : operation.subLines()) {
-            String subLineId = subLine.id() == null || subLine.id().isBlank() ? subLine.operation().id() : subLine.id();
-            code.append("                .withSubLine(\"").append(escapeJava(subLineId)).append("\", ")
+            code.append("                .withSubLine(\"").append(escapeJava(subLine.id())).append("\", ")
                     .append(methodName(subLine.operation())).append("()");
             if (subLine.condition() != null) {
                 code.append(", ").append(conditionLambda(subLine.condition(), imports));

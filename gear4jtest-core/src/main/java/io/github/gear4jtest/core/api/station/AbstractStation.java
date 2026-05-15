@@ -8,7 +8,6 @@ import java.util.Objects;
 import io.github.gear4jtest.core.api.MutableStationMetadata;
 import io.github.gear4jtest.core.api.StationMetadata;
 import io.github.gear4jtest.core.api.behavior.BaseError;
-import io.github.gear4jtest.core.api.behavior.Condition;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
 import io.github.gear4jtest.core.api.behavior.StationSkipTest;
@@ -31,7 +30,6 @@ public abstract class AbstractStation<I, O> {
     protected StationKind kind;
     protected List<Processor> processors;
     protected List<BaseError<I>> onErrors;
-    protected List<Condition<I>> conditions;
     protected Operator<I, O> fallbackOperator;
     protected Boolean unary;
 

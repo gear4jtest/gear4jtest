@@ -29,6 +29,7 @@ Potential future work:
 - Avoid a single bottleneck thread for all pipelines if that becomes a real limit.
 - Consider local durable append before remote DB flush for stronger crash behavior.
 - Add Micrometer metrics once the runtime surface is stable.
+- Consider a dedicated Gear4J `DataSource` / connection pool for persistence isolation. See [dedicated persistence datasource](dedicated-persistence-datasource.md).
 
 ## Eventing
 
@@ -58,6 +59,7 @@ Potential future work:
 - Alias invalidation events.
 - Cache staleness and TTL rules.
 - BO-facing metadata model.
+- Revisit iterator item identity semantics. See [iterator item id model](item-id-model.md).
 
 ## Documentation
 

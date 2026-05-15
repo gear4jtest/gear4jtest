@@ -26,6 +26,7 @@ public final class AssemblyLineValidator {
                 throw new IllegalArgumentException("Schema resource not found: " + schemaResourcePath);
             }
             SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             factory.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
             return factory.newSchema(new StreamSource(schemaStream));
@@ -42,7 +43,10 @@ public final class AssemblyLineValidator {
     public void validate(InputStream xml) {
         Objects.requireNonNull(xml, "xml");
         try {
-            schema.newValidator().validate(new StreamSource(xml));
+            var validator = schema.newValidator();
+            validator.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            validator.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+            validator.validate(new StreamSource(xml));
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid Gear4J XML pipeline definition", e);
         }

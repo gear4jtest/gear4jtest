@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import io.test.gear4jtest.xml.model.XmlPipelineDefinition;
@@ -31,6 +32,7 @@ import io.test.gear4jtest.xml.model.XmlPipelineDefinition.ValueParameter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.xml.sax.SAXParseException;
 
 public final class XmlPipelineParser {
     private static Element firstOperationChild(Element parent) {
@@ -119,11 +121,17 @@ public final class XmlPipelineParser {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(true);
             factory.setExpandEntityReferences(false);
+            factory.setXIncludeAware(false);
+            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
             factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
             factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
 
-            Document document = factory.newDocumentBuilder().parse(inputStream);
+            var builder = factory.newDocumentBuilder();
+            builder.setErrorHandler(ThrowingErrorHandler.INSTANCE);
+            Document document = builder.parse(inputStream);
             Element root = document.getDocumentElement();
 
             if (!"assemblyLine".equals(localName(root))) {
@@ -198,7 +206,7 @@ public final class XmlPipelineParser {
 
         for (Element subLine : childrenNamed(subLinesElement, "subLine")) {
             Element operationElement = firstOperationChild(subLine);
-            subLines.add(new SubLine(optional(subLine, "id"), parseCondition(child(subLine, "condition")),
+            subLines.add(new SubLine(required(subLine, "id"), parseCondition(child(subLine, "condition")),
                     parseOperation(operationElement)));
         }
 
@@ -342,5 +350,24 @@ public final class XmlPipelineParser {
             dependencies.add(new Dependency(required(dependency, "name"), required(dependency, "type")));
         }
         return List.copyOf(dependencies);
+    }
+
+    private enum ThrowingErrorHandler implements org.xml.sax.ErrorHandler {
+        INSTANCE;
+
+        @Override
+        public void warning(SAXParseException exception) throws SAXParseException {
+            throw exception;
+        }
+
+        @Override
+        public void error(SAXParseException exception) throws SAXParseException {
+            throw exception;
+        }
+
+        @Override
+        public void fatalError(SAXParseException exception) throws SAXParseException {
+            throw exception;
+        }
     }
 }

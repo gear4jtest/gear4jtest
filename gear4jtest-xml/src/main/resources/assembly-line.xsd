@@ -170,7 +170,7 @@
         <xs:element name="operation" type="tns:OperationChoiceType"/>
       </xs:choice>
     </xs:sequence>
-    <xs:attribute name="id" type="xs:string"/>
+    <xs:attribute name="id" type="xs:string" use="required"/>
   </xs:complexType>
 
   <xs:complexType name="ContainerFunctionType">

@@ -52,7 +52,14 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
                     ? station.getItemIdResolver().resolve(element, index, operationExecution.getGlobalContext())
                     : station.getId() + "#item-" + index;
 
-            StationLogTrace chainResult = runner.run(element, station.getChain(), operationExecution);
+            String previousItemId = operationExecution.getGlobalContext().getCurrentItemId();
+            StationLogTrace chainResult;
+            operationExecution.getGlobalContext().setCurrentItemId(itemId);
+            try {
+                chainResult = runner.run(element, station.getChain(), operationExecution);
+            } finally {
+                operationExecution.getGlobalContext().setCurrentItemId(previousItemId);
+            }
 
             FlowDecision decision = FlowDecider.decide(chainResult, config);
             switch (decision) {
