@@ -87,8 +87,6 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
             mainException = e;
             throw StationExecutionException.wrap(e);
         } finally {
-            context.getGlobalContext().popParentOperationId();
-
             try {
                 List<Throwable> errorsForRelease = buildErrorListForRelease(context.getRecord(), mainException);
                 release(station, result, context, errorsForRelease);

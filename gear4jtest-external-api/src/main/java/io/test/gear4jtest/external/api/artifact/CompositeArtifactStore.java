@@ -5,9 +5,14 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class CompositeArtifactStore implements ArtifactStore {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CompositeArtifactStore.class);
+
     private final ArtifactStore primary;
     private final java.util.List<ArtifactStore> fallbacks;
     private final WriteMode writeMode;
@@ -29,7 +34,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
         this.readMode = readMode == null ? ReadMode.PREFER_PRIMARY : readMode;
         this.verifyOnRead = verifyOnRead;
         this.selfHealing = selfHealing;
-        this.asyncExec = asyncExec != null ? asyncExec : Executors.newCachedThreadPool();
+        this.asyncExec = asyncExec != null ? asyncExec : ForkJoinPool.commonPool();
     }
 
     @Override
@@ -50,7 +55,8 @@ public final class CompositeArtifactStore implements ArtifactStore {
                     asyncExec.execute(() -> {
                         try {
                             fb.put(fallbackContent);
-                        } catch (IOException ignored) {
+                        } catch (IOException e) {
+                            LOGGER.warn("Asynchronous fallback artifact write failed.", e);
                         }
                     });
                 }
@@ -62,20 +68,6 @@ public final class CompositeArtifactStore implements ArtifactStore {
     @Override
     public Optional<Artifact> get(String hashHex) throws IOException {
         String hash = Hashing.requireSha256Hex(hashHex);
-        if (readMode == ReadMode.PREFER_PRIMARY) {
-            var artifact = primary.get(hash);
-            if (artifact.isPresent()) {
-                return maybeVerifyAndHeal(hash, artifact.get(), true);
-            }
-            for (var fallback : fallbacks) {
-                var fallbackArtifact = fallback.get(hash);
-                if (fallbackArtifact.isPresent()) {
-                    return maybeVerifyAndHeal(hash, fallbackArtifact.get(), false);
-                }
-            }
-            return Optional.empty();
-        }
-
         var artifact = primary.get(hash);
         if (artifact.isPresent()) {
             return maybeVerifyAndHeal(hash, artifact.get(), true);
@@ -121,7 +113,8 @@ public final class CompositeArtifactStore implements ArtifactStore {
                         if (!primary.exists(hash)) {
                             primary.put(healed);
                         }
-                    } catch (IOException ignored) {
+                    } catch (IOException e) {
+                        LOGGER.warn("Asynchronous artifact self-healing write failed.", e);
                     }
                 });
             }
@@ -134,6 +127,10 @@ public final class CompositeArtifactStore implements ArtifactStore {
     }
 
     public enum ReadMode {
-        PREFER_PRIMARY, FIRST_AVAILABLE
+        /**
+         * Read from the primary store first, then fall back to configured fallback
+         * stores.
+         */
+        PREFER_PRIMARY
     }
 }

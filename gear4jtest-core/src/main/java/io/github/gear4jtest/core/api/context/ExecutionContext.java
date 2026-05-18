@@ -17,6 +17,7 @@ import io.github.gear4jtest.core.spi.factory.IdGenerator;
 
 public class ExecutionContext {
     private final ThreadLocal<String> currentItemId = new ThreadLocal<>();
+    private final ThreadLocal<String> currentBranchId = new ThreadLocal<>();
     private final ThreadLocal<Deque<UUID>> parentStack = ThreadLocal.withInitial(ArrayDeque::new);
     private final UUID executionId;
     private final String pipelineId;
@@ -134,6 +135,30 @@ public class ExecutionContext {
         }
     }
 
+    public Scope enterItem(String itemId) {
+        String previous = currentItemId.get();
+        setCurrentItemId(itemId);
+        return () -> setCurrentItemId(previous);
+    }
+
+    public String getCurrentBranchId() {
+        return currentBranchId.get();
+    }
+
+    public Scope enterBranch(String branchId) {
+        String previous = currentBranchId.get();
+        setCurrentBranchId(branchId);
+        return () -> setCurrentBranchId(previous);
+    }
+
+    private void setCurrentBranchId(String branchId) {
+        if (branchId == null) {
+            currentBranchId.remove();
+        } else {
+            currentBranchId.set(branchId);
+        }
+    }
+
     public UUID getCurrentParentOperationId() {
         Deque<UUID> stack = parentStack.get();
         return stack.isEmpty() ? null : stack.peek();
@@ -143,11 +168,32 @@ public class ExecutionContext {
         parentStack.get().push(operationId);
     }
 
+    public Scope enterParentOperation(UUID operationId) {
+        if (operationId == null) {
+            return Scope.noop();
+        }
+        pushParentOperationId(operationId);
+        return this::popParentOperationId;
+    }
+
     public void popParentOperationId() {
         Deque<UUID> stack = parentStack.get();
         if (!stack.isEmpty()) {
             stack.pop();
         }
+    }
+
+    @FunctionalInterface
+    public interface Scope extends AutoCloseable {
+        Scope NOOP = () -> {
+        };
+
+        static Scope noop() {
+            return NOOP;
+        }
+
+        @Override
+        void close();
     }
 
     public static final class EventRuntimeOptions {

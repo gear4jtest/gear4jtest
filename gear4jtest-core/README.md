@@ -153,6 +153,21 @@ Do not hard-code Jackson into this module. Use `gear4jtest-jackson` when mutable
 
 A running pipeline graph must remain stable for the duration of the run.
 
+## JDBC persistence support
+
+The built-in JDBC persistence is intentionally provider-scoped rather than advertised as generic JDBC support.
+
+Supported for the MVP:
+
+- PostgreSQL;
+- MySQL 8;
+- MariaDB through the MySQL-compatible script and dialect path;
+- H2 for tests and local development.
+
+Unsupported providers fail fast during dialect detection instead of falling back to the H2 schema. Extending support for
+a new provider should add a dedicated `Gear4jJdbcDialect` entry, a schema script, and integration tests for run and
+station-log persistence.
+
 ## Testing
 
 Use JUnit 5 and AssertJ. Prefer tests that cover actual runtime behavior, not only object construction.

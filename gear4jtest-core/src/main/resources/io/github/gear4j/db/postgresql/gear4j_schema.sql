@@ -40,6 +40,10 @@ CREATE TABLE IF NOT EXISTS station_log
     255
 ) NOT NULL,
     parent_log_id UUID,
+    branch_id VARCHAR
+(
+    255
+),
     status VARCHAR
 (
     50

@@ -4,11 +4,14 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -106,6 +109,66 @@ class EventManagerTest {
         release.countDown();
         handle.completion().join();
         assertThat(handle.completion()).isCompleted();
+    }
+
+    @Test
+    void shutdown_shouldCompleteWhenCancelModeDropsQueuedReactionBeforeStart() throws Exception {
+        CountDownLatch firstReactionStarted = new CountDownLatch(1);
+        CountDownLatch releaseFirstReaction = new CountDownLatch(1);
+        AtomicBoolean secondReactionRan = new AtomicBoolean(false);
+
+        ThreadPoolExecutor sharedExecutor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>());
+
+        EventHandlingDefinition definition = EventHandlingDefinition.builder()
+                .subscription(EventSubscription.on(Event.class, event -> {
+                    firstReactionStarted.countDown();
+                    assertThat(releaseFirstReaction.await(2, TimeUnit.SECONDS)).isTrue();
+                }))
+                .subscription(EventSubscription.on(Event.class, event -> secondReactionRan.set(true)))
+                .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                        .sharedReactionExecutor(sharedExecutor)
+                        .shutdownMode(EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.CANCEL_PENDING_TASKS)
+                        .shutdownTimeout(Duration.ofSeconds(2)).build())
+                .build();
+
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+        try {
+            manager.publish(new Event("pipe", UUID.randomUUID(), "CANCEL"));
+
+            assertThat(firstReactionStarted.await(2, TimeUnit.SECONDS)).isTrue();
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+            while (manager.snapshotStats().submittedReactions() < 2 && System.nanoTime() < deadline) {
+                Thread.sleep(10);
+            }
+            assertThat(manager.snapshotStats().submittedReactions()).isEqualTo(2);
+
+            CompletableFuture<EventManager.ShutdownHandle> shutdown = CompletableFuture.supplyAsync(manager::shutdown);
+            try {
+                // Wait until shutdown has actually marked the queued task as dropped before
+                // releasing the running one.
+                // Otherwise the single-thread executor may legitimately run the second reaction
+                // first.
+                deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+                while (manager.snapshotStats().droppedReactions() < 1 && System.nanoTime() < deadline) {
+                    Thread.sleep(10);
+                }
+                assertThat(manager.snapshotStats().droppedReactions()).isEqualTo(1);
+            } finally {
+                releaseFirstReaction.countDown();
+            }
+            shutdown.get(2, TimeUnit.SECONDS);
+
+            EventRuntimeStats stats = manager.snapshotStats();
+            assertThat(secondReactionRan).isFalse();
+            assertThat(stats.submittedReactions()).isEqualTo(2);
+            assertThat(stats.completedReactions()).isEqualTo(1);
+            assertThat(stats.droppedReactions()).isEqualTo(1);
+        } finally {
+            releaseFirstReaction.countDown();
+            manager.shutdown();
+            sharedExecutor.shutdownNow();
+        }
     }
 
     @Test

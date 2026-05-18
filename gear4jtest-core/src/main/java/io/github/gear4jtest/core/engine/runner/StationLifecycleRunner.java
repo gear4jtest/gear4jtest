@@ -55,8 +55,9 @@ public class StationLifecycleRunner implements StationRunner {
         StationLogTrace record = stationCtx.getRecord();
         runCtx.getServices().getEventManager()
                 .publish(new StationStartedEvent(runCtx.getPipelineId(), runCtx.getExecutionId(), record.getId(),
-                        stationCtx.getOperationId(), record.getParentOperationId(), record.getItemId(),
-                        runCtx.getEventRuntimeOptions().getEventPayloadPolicy().mapStationInput(input, stationCtx)));
+                        stationCtx.getOperationId(), record.getParentOperationId(), record.getBranchId(),
+                        record.getItemId(), runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
+                                .mapStationInput(input, stationCtx)));
     }
 
     private void publishFinishedEvent(ExecutionContext runCtx,
@@ -68,8 +69,9 @@ public class StationLifecycleRunner implements StationRunner {
         }
         runCtx.getServices().getEventManager()
                 .publish(new StationFinishedEvent(runCtx.getPipelineId(), runCtx.getExecutionId(), result.getId(),
-                        stationCtx.getOperationId(), result.getParentOperationId(), result.getItemId(),
-                        runCtx.getEventRuntimeOptions().getEventPayloadPolicy().mapStationInput(input, stationCtx),
+                        stationCtx.getOperationId(), result.getParentOperationId(), result.getBranchId(),
+                        result.getItemId(), runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
+                                .mapStationInput(input, stationCtx),
                         result.getStatus(), runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
                                 .mapStationOutput(result.getOutput(), stationCtx),
                         extractPrimaryError(result)));

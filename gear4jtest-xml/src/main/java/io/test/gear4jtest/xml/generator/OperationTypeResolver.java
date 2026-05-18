@@ -6,6 +6,7 @@ import java.lang.reflect.TypeVariable;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.test.gear4jtest.xml.model.XmlPipelineDefinition;
@@ -21,6 +22,7 @@ import io.test.gear4jtest.xml.model.XmlPipelineDefinition.SubLine;
 final class OperationTypeResolver {
     private final ClassLoader classLoader;
     private final Map<Operation, OperationSignature> signatures = new IdentityHashMap<>();
+    private final Map<ResolutionKey, OperationSignature> cache = new HashMap<>();
 
     OperationTypeResolver(ClassLoader classLoader) {
         this.classLoader = classLoader != null ? classLoader : ClassLoader.getSystemClassLoader();
@@ -40,8 +42,10 @@ final class OperationTypeResolver {
     }
 
     private OperationSignature resolve(Operation operation, JavaTypeName currentInput) {
-        OperationSignature existing = signatures.get(operation);
+        ResolutionKey cacheKey = new ResolutionKey(operation, currentInput);
+        OperationSignature existing = cache.get(cacheKey);
         if (existing != null) {
+            signatures.put(operation, existing);
             return existing;
         }
 
@@ -60,6 +64,7 @@ final class OperationTypeResolver {
             throw new IllegalArgumentException("Unsupported operation type: " + operation);
         }
 
+        cache.put(cacheKey, signature);
         signatures.put(operation, signature);
         return signature;
     }
@@ -68,7 +73,7 @@ final class OperationTypeResolver {
         OperatorSignature operatorSignature = resolveOperatorSignature(operation.type());
         JavaTypeName declaredInput = parseNullable(operation.inputType());
         JavaTypeName effectiveInput = declaredInput != null ? declaredInput : operatorSignature.inputType();
-        if (effectiveInput == JavaTypeName.OBJECT && currentInput != null) {
+        if (JavaTypeName.OBJECT.equals(effectiveInput) && currentInput != null) {
             effectiveInput = currentInput;
         }
 
@@ -86,14 +91,9 @@ final class OperationTypeResolver {
             effectiveInput = JavaTypeName.OBJECT;
         }
 
-        OperationSignature childSignature = resolve(operation.operation(), null);
-        JavaTypeName itemType = childSignature.inputType();
-        if (JavaTypeName.OBJECT.equals(itemType) && effectiveInput.isIterableLike()) {
-            itemType = effectiveInput.firstArgumentOrObject();
-        }
-
-        OperationSignature refinedChildSignature = resolve(operation.operation(), itemType);
-        JavaTypeName childOutput = refinedChildSignature.outputType();
+        JavaTypeName childInput = effectiveInput.isIterableLike() ? effectiveInput.firstArgumentOrObject() : null;
+        OperationSignature childSignature = resolve(operation.operation(), childInput);
+        JavaTypeName childOutput = childSignature.outputType();
         JavaTypeName outputType = resolveIteratorOutput(operation, childOutput);
         return new OperationSignature(effectiveInput, outputType);
     }
@@ -218,6 +218,32 @@ final class OperationTypeResolver {
                     parameterizedType.getOwnerType());
         }
         return type;
+    }
+
+    private static final class ResolutionKey {
+        private final Operation operation;
+        private final JavaTypeName currentInput;
+
+        private ResolutionKey(Operation operation, JavaTypeName currentInput) {
+            this.operation = operation;
+            this.currentInput = currentInput;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof ResolutionKey other)) {
+                return false;
+            }
+            return operation == other.operation && Objects.equals(currentInput, other.currentInput);
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * System.identityHashCode(operation) + Objects.hashCode(currentInput);
+        }
     }
 
     private record OperatorSignature(JavaTypeName inputType, JavaTypeName outputType) {}

@@ -20,12 +20,13 @@ public class ScopeInitializingRunner implements StationRunner {
                                                            station.getId(),
                                                            parentCtx.getGlobalContext().getCurrentParentOperationId());
         stationLog.setItemId(parentCtx.getGlobalContext().getCurrentItemId());
+        stationLog.setBranchId(parentCtx.getGlobalContext().getCurrentBranchId());
         stationLog.setStatus(StationLogStatus.RUNNING);
 
         StationExecutionContext currentCtx = new DefaultStationExecutionContext(station.getId(), station.getKind(),
                 parentCtx.getGlobalContext(), stationLog, parentCtx.getSupport());
-        parentCtx.getGlobalContext().pushParentOperationId(stationLog.getId());
-
-        return delegate.run(input, station, currentCtx);
+        try (var ignored = parentCtx.getGlobalContext().enterParentOperation(stationLog.getId())) {
+            return delegate.run(input, station, currentCtx);
+        }
     }
 }

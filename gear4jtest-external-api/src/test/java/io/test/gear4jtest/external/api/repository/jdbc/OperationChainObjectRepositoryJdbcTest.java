@@ -28,14 +28,13 @@ class OperationChainObjectRepositoryJdbcTest {
         when(resultSet.getString("al_id")).thenReturn("pipeline");
         when(resultSet.getString("version")).thenReturn("1.0.0");
         when(resultSet.getString("mode")).thenReturn("RUN");
-        when(resultSet.getString("content_hash")).thenReturn("abc");
+        when(resultSet.getString("content_hash")).thenReturn("a".repeat(64));
         when(resultSet.getLong("size_bytes")).thenReturn(123L);
         when(resultSet.getString("mime_type")).thenReturn("application/xml");
         when(resultSet.getTimestamp("created_at")).thenReturn(null);
         when(resultSet.getTimestamp("published_at")).thenReturn(null);
 
-        OperationChainObjectRepositoryJdbc repository = new OperationChainObjectRepositoryJdbc(dataSource,
-                JdbcDialect.POSTGRES);
+        OperationChainObjectRepositoryJdbc repository = new OperationChainObjectRepositoryJdbc(dataSource);
 
         // When
         var result = repository.find("pipeline", "1.0.0", ExecutionMode.RUN).orElseThrow();

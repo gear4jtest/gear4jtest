@@ -64,6 +64,23 @@ Prefer:
 - explicit generic types where generated code otherwise fails compilation;
 - deterministic output so tests remain stable.
 
+
+## Generated source formatting
+
+Generated Java is formatted through the `JavaSourceFormatter` abstraction. The default `XmlToJavaGenerator` uses a
+small built-in Eclipse JDT profile aimed at readable generated code. Applications embedding the generator may provide
+another formatter, including one created from an Eclipse formatter XML profile:
+
+```java
+var generator = new XmlToJavaGenerator(
+        "com.myorg.generated",
+        classLoader,
+        JdtFormatter.fromEclipseProfile(Path.of("config/formatter/eclipse-java-formatter.xml"), "MyProject"));
+```
+
+This keeps user-generated classes aligned with the consuming project when desired, without coupling them to Gear4J's
+own repository formatter.
+
 ## ServiceLoader registration
 
 The module registers:

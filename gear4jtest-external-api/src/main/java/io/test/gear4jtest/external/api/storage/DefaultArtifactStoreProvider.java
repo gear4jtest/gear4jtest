@@ -8,7 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 import io.test.gear4jtest.external.api.artifact.ArtifactStore;
@@ -44,7 +44,7 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
     public DefaultArtifactStoreProvider(ClassLoader classLoader, ArtifactStorePlugin.Context ctx, Executor asyncExec) {
         this.resolver = new ArtifactStoreResolver(classLoader);
         this.ctx = ctx != null ? ctx : key -> null;
-        this.asyncExec = asyncExec != null ? asyncExec : Executors.newCachedThreadPool();
+        this.asyncExec = asyncExec != null ? asyncExec : ForkJoinPool.commonPool();
     }
 
     /**
@@ -55,24 +55,32 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
                                         Executor asyncExec) {
         this.resolver = Objects.requireNonNull(resolver);
         this.ctx = ctx != null ? ctx : key -> null;
-        this.asyncExec = asyncExec != null ? asyncExec : Executors.newCachedThreadPool();
+        this.asyncExec = asyncExec != null ? asyncExec : ForkJoinPool.commonPool();
     }
 
-    private static CompositeArtifactStore.WriteMode parseWriteMode(String s) {
-        try {
-            return CompositeArtifactStore.WriteMode.valueOf(s.toUpperCase(Locale.ROOT));
-        } catch (Exception e) {
-            return CompositeArtifactStore.WriteMode.PRIMARY_ONLY;
-        }
+    private static CompositeArtifactStore.WriteMode parseWriteMode(String value) {
+        return parseEnum(value, CompositeArtifactStore.WriteMode.PRIMARY_ONLY, CompositeArtifactStore.WriteMode.class,
+                         "mode.write");
     }
 
     // ---------- helpers ----------
 
-    private static CompositeArtifactStore.ReadMode parseReadMode(String s) {
+    private static CompositeArtifactStore.ReadMode parseReadMode(String value) {
+        return parseEnum(value, CompositeArtifactStore.ReadMode.PREFER_PRIMARY, CompositeArtifactStore.ReadMode.class,
+                         "mode.read");
+    }
+
+    private static <E extends Enum<E>> E parseEnum(String value,
+                                                   E defaultValue,
+                                                   Class<E> enumType,
+                                                   String propertyName) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
         try {
-            return CompositeArtifactStore.ReadMode.valueOf(s.toUpperCase(Locale.ROOT));
-        } catch (Exception e) {
-            return CompositeArtifactStore.ReadMode.PREFER_PRIMARY;
+            return Enum.valueOf(enumType, value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid artifact store property '" + propertyName + "': " + value, e);
         }
     }
 
@@ -84,10 +92,23 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         return m.get(k);
     }
 
+    private static int parseFallbackIndex(String index) {
+        try {
+            return Integer.parseInt(index);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid artifact fallback index '" + index + "'. Expected integer.", e);
+        }
+    }
+
     @Override
     public ArtifactStore forConfig(OperationChainConfig cfg) {
         Objects.requireNonNull(cfg, "cfg");
         Map<String, String> props = cfg.storeProps();
+
+        CompositeArtifactStore.WriteMode writeMode = parseWriteMode(props.get("mode.write"));
+        CompositeArtifactStore.ReadMode readMode = parseReadMode(props.get("mode.read"));
+        boolean verifyOnRead = isTrue(props.get("verifyOnRead"));
+        boolean selfHealing = isTrue(props.get("selfHealing"));
 
         // Primary store type declared by the pipeline configuration.
         ArtifactStore primary = resolver.resolve(cfg.storeType().name(), props, ctx);
@@ -98,11 +119,6 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         if (fallbacks.isEmpty()) {
             return primary;
         }
-
-        CompositeArtifactStore.WriteMode writeMode = parseWriteMode(props.getOrDefault("mode.write", "PRIMARY_ONLY"));
-        CompositeArtifactStore.ReadMode readMode = parseReadMode(props.getOrDefault("mode.read", "PREFER_PRIMARY"));
-        boolean verifyOnRead = isTrue(props.get("verifyOnRead"));
-        boolean selfHealing = isTrue(props.get("selfHealing"));
 
         return new CompositeArtifactStore(primary, fallbacks, writeMode, readMode, verifyOnRead, selfHealing,
                 asyncExec);
@@ -124,7 +140,7 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         }
 
         var ordered = groups.keySet().stream()
-                .sorted(Comparator.comparingInt(Integer::parseInt))
+                .sorted(Comparator.comparingInt(DefaultArtifactStoreProvider::parseFallbackIndex))
                 .collect(Collectors.toList());
 
         List<ArtifactStore> out = new ArrayList<>();

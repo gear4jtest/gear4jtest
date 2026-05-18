@@ -1,7 +1,8 @@
 package io.github.gear4jtest.core.api;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,7 +47,9 @@ public class AssemblyLine<IN, OUT> {
         this.id = id;
         this.version = version != null ? version : DEFAULT_VERSION;
         this.rootStation = Objects.requireNonNull(rootStation, "rootStation must not be null");
-        this.defaultContext = defaultContext != null ? new HashMap<>(defaultContext) : new HashMap<>();
+        this.defaultContext = defaultContext != null
+                ? Collections.unmodifiableMap(new LinkedHashMap<>(defaultContext))
+                : Map.of();
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
     }
 
@@ -102,15 +105,15 @@ public class AssemblyLine<IN, OUT> {
         private Builder(String id) {
             this.id = id;
             this.operations = new ArrayList<>();
-            this.defaultContext = new HashMap<>();
+            this.defaultContext = new LinkedHashMap<>();
             this.configBuilder = Configuration.builder();
         }
 
         private <PREVIOUS_OUT> Builder(Builder<IN, PREVIOUS_OUT> source) {
             this.id = source.id;
-            this.operations = source.operations;
-            this.defaultContext = source.defaultContext;
-            this.configBuilder = source.configBuilder;
+            this.operations = new ArrayList<>(source.operations);
+            this.defaultContext = new LinkedHashMap<>(source.defaultContext);
+            this.configBuilder = new Configuration.Builder(source.configBuilder);
             this.version = source.version;
         }
 
@@ -245,6 +248,16 @@ public class AssemblyLine<IN, OUT> {
             private PersistenceConfiguration persistence;
             private EventHandlingDefinition eventHandlingDefinition;
             private PipelineRuntimeContract runtimeContract;
+
+            public Builder() {
+            }
+
+            private Builder(Builder source) {
+                this.persistence = source.persistence;
+                this.eventHandlingDefinition = source.eventHandlingDefinition;
+                this.defaultExtensions.addAll(source.defaultExtensions);
+                this.runtimeContract = source.runtimeContract;
+            }
 
             public Builder persistence(PersistenceConfiguration persistence) {
                 this.persistence = persistence;

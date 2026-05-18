@@ -27,6 +27,7 @@ public final class XmlToJavaGenerator {
     public static final String DEFAULT_PACKAGE = "io.test.gear4jtest.xml.generated";
     private final String packageName;
     private final ClassLoader classLoader;
+    private final JavaSourceFormatter formatter;
 
     public XmlToJavaGenerator() {
         this(DEFAULT_PACKAGE);
@@ -37,8 +38,13 @@ public final class XmlToJavaGenerator {
     }
 
     public XmlToJavaGenerator(String packageName, ClassLoader classLoader) {
+        this(packageName, classLoader, JdtFormatter.defaultFormatter());
+    }
+
+    public XmlToJavaGenerator(String packageName, ClassLoader classLoader, JavaSourceFormatter formatter) {
         this.packageName = Objects.requireNonNull(packageName, "packageName");
         this.classLoader = classLoader != null ? classLoader : contextClassLoader();
+        this.formatter = Objects.requireNonNull(formatter, "formatter must not be null");
     }
 
     private static String valueExpression(ValueParameter parameter) {
@@ -203,7 +209,7 @@ public final class XmlToJavaGenerator {
         code.append(imports.renderImports());
         code.append(body);
 
-        return new OperationChainTranslator.GenerationResult(fqcn, JdtFormatter.format(code.toString()));
+        return new OperationChainTranslator.GenerationResult(fqcn, formatter.format(code.toString()));
     }
 
     private void addStaticImports(JavaImportManager imports) {

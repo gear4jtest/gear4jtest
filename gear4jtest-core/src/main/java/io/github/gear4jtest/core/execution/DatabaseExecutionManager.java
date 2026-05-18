@@ -1,5 +1,6 @@
 package io.github.gear4jtest.core.execution;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public class DatabaseExecutionManager implements AssemblyRunManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseExecutionManager.class);
+    private static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
     private final DatabaseAssemblyRunRepository repository;
     private final Map<UUID, RunBuffer> buffers = new ConcurrentHashMap<>();
     private final ExecutorService flushExecutor;
@@ -136,6 +139,15 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
 
     @Override
     public void shutdown() {
+        shutdown(DEFAULT_SHUTDOWN_TIMEOUT);
+    }
+
+    public void shutdown(Duration timeout) {
+        Objects.requireNonNull(timeout, "timeout must not be null");
+        if (timeout.isNegative()) {
+            throw new IllegalArgumentException("timeout must not be negative");
+        }
+
         for (RunBuffer buffer : buffers.values()) {
             try {
                 buffer.closed.set(true);
@@ -147,6 +159,22 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
 
         buffers.clear();
         flushExecutor.shutdown();
+        awaitFlushExecutorTermination(timeout);
+    }
+
+    private void awaitFlushExecutorTermination(Duration timeout) {
+        try {
+            if (!flushExecutor.awaitTermination(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
+                List<Runnable> droppedTasks = flushExecutor.shutdownNow();
+                throw new ExecutionPersistenceException("Timed out while waiting for Gear4J persistence flush "
+                        + "executor to terminate. droppedTasks=" + droppedTasks.size());
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            List<Runnable> droppedTasks = flushExecutor.shutdownNow();
+            throw new ExecutionPersistenceException("Interrupted while waiting for Gear4J persistence flush "
+                    + "executor to terminate. droppedTasks=" + droppedTasks.size(), e);
+        }
     }
 
     private void scheduleAsyncFlush(RunBuffer buffer, boolean drainCompletely) {

@@ -28,7 +28,7 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
     }
 
     @Override
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings("unchecked")
     public Object doExecute(IteratorStation<?, ?> station,
                             Object input,
                             StationRunner runner,
@@ -52,13 +52,9 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
                     ? station.getItemIdResolver().resolve(element, index, operationExecution.getGlobalContext())
                     : station.getId() + "#item-" + index;
 
-            String previousItemId = operationExecution.getGlobalContext().getCurrentItemId();
             StationLogTrace chainResult;
-            operationExecution.getGlobalContext().setCurrentItemId(itemId);
-            try {
+            try (var ignored = operationExecution.getGlobalContext().enterItem(itemId)) {
                 chainResult = runner.run(element, station.getChain(), operationExecution);
-            } finally {
-                operationExecution.getGlobalContext().setCurrentItemId(previousItemId);
             }
 
             FlowDecision decision = FlowDecider.decide(chainResult, config);

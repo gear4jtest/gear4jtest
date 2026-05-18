@@ -47,43 +47,50 @@ class TaskFactoryTest {
         UUID parentOperationId = UUID.randomUUID();
         globalContext.setCurrentItemId("outer-item");
         globalContext.pushParentOperationId(parentOperationId);
+        try (var ignored = globalContext.enterBranch("outer-branch")) {
+            StationLogTrace parentRecord = StationLogTrace.start(globalContext.getExecutionId(), "parent", null);
+            parentRecord.setContext(new HashMap<>());
+            parentRecord.setStatus(StationLogStatus.RUNNING);
 
-        StationLogTrace parentRecord = StationLogTrace.start(globalContext.getExecutionId(), "parent", null);
-        parentRecord.setContext(new HashMap<>());
-        parentRecord.setStatus(StationLogStatus.RUNNING);
+            StationExecutionContext operationExecution = new DefaultStationExecutionContext("parent",
+                    StationKind.CONTAINER,
+                    globalContext, parentRecord, support);
 
-        StationExecutionContext operationExecution = new DefaultStationExecutionContext("parent", StationKind.CONTAINER,
-                globalContext, parentRecord, support);
+            DummyStation child = new DummyStation("child");
 
-        DummyStation child = new DummyStation("child");
+            AtomicReference<String> seenItemId = new AtomicReference<>();
+            AtomicReference<String> seenBranchId = new AtomicReference<>();
+            AtomicReference<UUID> seenParentOperationId = new AtomicReference<>();
 
-        AtomicReference<String> seenItemId = new AtomicReference<>();
-        AtomicReference<UUID> seenParentOperationId = new AtomicReference<>();
+            StationRunner runner = (input, station, ctx) -> {
+                seenItemId.set(ctx.getGlobalContext().getCurrentItemId());
+                seenBranchId.set(ctx.getGlobalContext().getCurrentBranchId());
+                seenParentOperationId.set(ctx.getGlobalContext().getCurrentParentOperationId());
 
-        StationRunner runner = (input, station, ctx) -> {
-            seenItemId.set(ctx.getGlobalContext().getCurrentItemId());
-            seenParentOperationId.set(ctx.getGlobalContext().getCurrentParentOperationId());
+                StationLogTrace childLog = StationLogTrace.start(ctx.getGlobalContext().getExecutionId(),
+                                                                 station.getId(),
+                                                                 null);
+                childLog.setContext(new HashMap<>());
+                childLog.markSuccess("ok");
+                return childLog;
+            };
 
-            StationLogTrace childLog = StationLogTrace.start(ctx.getGlobalContext().getExecutionId(), station.getId(),
-                                                             null);
-            childLog.setContext(new HashMap<>());
-            childLog.markSuccess("ok");
-            return childLog;
-        };
+            Callable<StationLogTrace> task = taskFactory.createTask(() -> "payload", child, runner, operationExecution,
+                                                                    "child-item", "child-branch");
 
-        Callable<StationLogTrace> task = taskFactory.createTask(() -> "payload", child, runner, operationExecution,
-                                                                "child-item");
+            // When
+            StationLogTrace result = task.call();
 
-        // When
-        StationLogTrace result = task.call();
+            // Then
+            assertThat(result.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
+            assertThat(seenItemId.get()).isEqualTo("child-item");
+            assertThat(seenBranchId.get()).isEqualTo("child-branch");
+            assertThat(seenParentOperationId.get()).isEqualTo(parentOperationId);
 
-        // Then
-        assertThat(result.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
-        assertThat(seenItemId.get()).isEqualTo("child-item");
-        assertThat(seenParentOperationId.get()).isEqualTo(parentOperationId);
-
-        assertThat(globalContext.getCurrentItemId()).isEqualTo("outer-item");
-        assertThat(globalContext.getCurrentParentOperationId()).isEqualTo(parentOperationId);
+            assertThat(globalContext.getCurrentItemId()).isEqualTo("outer-item");
+            assertThat(globalContext.getCurrentBranchId()).isEqualTo("outer-branch");
+            assertThat(globalContext.getCurrentParentOperationId()).isEqualTo(parentOperationId);
+        }
     }
 
     private static final class DummyStation extends AbstractStation<Object, Object> {

@@ -35,4 +35,20 @@ class FilesystemArtifactStoreTest {
         assertThat(new String(store.get(hash).orElseThrow().openStream().readAllBytes(),
                 java.nio.charset.StandardCharsets.UTF_8)).isEqualTo("hello");
     }
+
+    @Test
+    void put_shouldStoreDefensiveCopyOfContent() throws Exception {
+        // Given
+        FilesystemArtifactStore store = new FilesystemArtifactStore(tempDir);
+        byte[] content = "hello".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        // When
+        String hash = store.put(content);
+        content[0] = 'j';
+
+        // Then
+        assertThat(new String(store.get(hash).orElseThrow().openStream().readAllBytes(),
+                java.nio.charset.StandardCharsets.UTF_8)).isEqualTo("hello");
+    }
+
 }

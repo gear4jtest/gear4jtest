@@ -17,6 +17,7 @@ public class StationLogTrace {
     private UUID pipelineExecutionId;
     private String operationId;
     private UUID parentOperationId;
+    private String branchId;
     private StationLogStatus status;
     private Instant startedAt;
     private Instant endedAt;
@@ -139,6 +140,14 @@ public class StationLogTrace {
 
     public void setParentOperationId(UUID parentOperationId) {
         this.parentOperationId = parentOperationId;
+    }
+
+    public String getBranchId() {
+        return branchId;
+    }
+
+    public void setBranchId(String branchId) {
+        this.branchId = branchId;
     }
 
     public StationLogStatus getStatus() {

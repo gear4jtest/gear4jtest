@@ -4,8 +4,10 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -13,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -46,7 +49,9 @@ public final class EventManager {
     private final BlockingQueue<Event> queue = new LinkedBlockingQueue<>();
     private final Object submissionMonitor = new Object();
     private final AtomicBoolean dispatcherStopped = new AtomicBoolean(false);
+    private final AtomicInteger acceptedReactions = new AtomicInteger();
     private final AtomicInteger inFlightReactions = new AtomicInteger();
+    private final Set<ReactionTask> activeReactions = ConcurrentHashMap.newKeySet();
     private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
     private final AtomicLong publishedEvents = new AtomicLong();
     private final AtomicLong dispatchedEvents = new AtomicLong();
@@ -178,13 +183,15 @@ public final class EventManager {
             Thread.currentThread().interrupt();
         } catch (Throwable throwable) {
             terminationFuture.completeExceptionally(throwable);
-            return;
         } finally {
             dispatcherStopped.set(true);
-            if (shutdownExecutorOnClose && reactionExecutor != null) {
+            if (reactionExecutor != null) {
                 if (shutdownMode == EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.CANCEL_PENDING_TASKS) {
-                    reactionExecutor.shutdownNow();
-                } else {
+                    if (shutdownExecutorOnClose) {
+                        reactionExecutor.shutdownNow();
+                    }
+                    cancelPendingReactions();
+                } else if (shutdownExecutorOnClose) {
                     reactionExecutor.shutdown();
                 }
             }
@@ -197,22 +204,22 @@ public final class EventManager {
             if (!subscription.accepts(event)) {
                 continue;
             }
-            inFlightReactions.incrementAndGet();
+            ReactionTask task = new ReactionTask(subscription, event);
+            activeReactions.add(task);
+            acceptedReactions.incrementAndGet();
             try {
-                reactionExecutor.submit(() -> invokeSafely(subscription, event));
+                reactionExecutor.execute(task);
                 submittedReactions.incrementAndGet();
             } catch (RejectedExecutionException rejectedExecutionException) {
-                inFlightReactions.decrementAndGet();
-                droppedReactions.incrementAndGet();
-                LOGGER.warn("Dropping event reaction because the reaction executor rejected the submission, typically because it is saturated or shutting down. eventType={}, subscriptionType={}",
+                markReactionDroppedBeforeExecution(task);
+                LOGGER.warn("Dropping event reaction because the reaction executor rejected the submission. "
+                        + "eventType={}, subscriptionType={}",
                             event.getName(), subscription.eventType().getName(), rejectedExecutionException);
-                tryCompleteTermination();
             } catch (RuntimeException runtimeException) {
-                inFlightReactions.decrementAndGet();
-                droppedReactions.incrementAndGet();
-                LOGGER.error("Dropping event reaction because submitting it to the reaction executor failed unexpectedly. eventType={}, subscriptionType={}",
+                markReactionDroppedBeforeExecution(task);
+                LOGGER.error("Dropping event reaction because submitting it to the reaction executor failed unexpectedly. "
+                        + "eventType={}, subscriptionType={}",
                              event.getName(), subscription.eventType().getName(), runtimeException);
-                tryCompleteTermination();
             }
         }
     }
@@ -226,10 +233,31 @@ public final class EventManager {
             failedReactions.incrementAndGet();
             LOGGER.error("Asynchronous event reaction failed. eventType={}, subscriptionType={}", event.getName(),
                          subscription.eventType().getName(), exception);
-        } finally {
+        }
+    }
+
+    private void markReactionCompleted(ReactionTask task) {
+        if (task.markCompleted()) {
             completedReactions.incrementAndGet();
             inFlightReactions.decrementAndGet();
+            acceptedReactions.decrementAndGet();
+            activeReactions.remove(task);
             tryCompleteTermination();
+        }
+    }
+
+    private void markReactionDroppedBeforeExecution(ReactionTask task) {
+        if (task.markCancelledBeforeStart()) {
+            droppedReactions.incrementAndGet();
+            acceptedReactions.decrementAndGet();
+            activeReactions.remove(task);
+            tryCompleteTermination();
+        }
+    }
+
+    private void cancelPendingReactions() {
+        for (ReactionTask task : activeReactions) {
+            markReactionDroppedBeforeExecution(task);
         }
     }
 
@@ -248,7 +276,7 @@ public final class EventManager {
     }
 
     private void tryCompleteTermination() {
-        if (dispatcherStopped.get() && inFlightReactions.get() == 0) {
+        if (dispatcherStopped.get() && acceptedReactions.get() == 0) {
             terminationFuture.complete(null);
         }
     }
@@ -263,6 +291,7 @@ public final class EventManager {
                     LOGGER.warn("Timed out while waiting for the per-run event reaction executor to terminate. timeout={}",
                                 shutdownTimeout);
                     reactionExecutor.shutdownNow();
+                    cancelPendingReactions();
                     reactionExecutor.awaitTermination(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
                 }
             }
@@ -270,13 +299,51 @@ public final class EventManager {
             Thread.currentThread().interrupt();
             if (shutdownExecutorOnClose && reactionExecutor != null) {
                 reactionExecutor.shutdownNow();
+                cancelPendingReactions();
             }
         } catch (RuntimeException runtimeException) {
             LOGGER.warn("Asynchronous event runtime terminated with an error.", runtimeException);
             if (shutdownExecutorOnClose && reactionExecutor != null) {
                 reactionExecutor.shutdownNow();
+                cancelPendingReactions();
             }
         }
+    }
+
+    private final class ReactionTask implements Runnable {
+        private final EventSubscription<?> subscription;
+        private final Event event;
+        private final AtomicReference<ReactionTaskState> state = new AtomicReference<>(ReactionTaskState.NEW);
+
+        private ReactionTask(EventSubscription<?> subscription, Event event) {
+            this.subscription = subscription;
+            this.event = event;
+        }
+
+        @Override
+        public void run() {
+            if (!state.compareAndSet(ReactionTaskState.NEW, ReactionTaskState.RUNNING)) {
+                return;
+            }
+            inFlightReactions.incrementAndGet();
+            try {
+                invokeSafely(subscription, event);
+            } finally {
+                markReactionCompleted(this);
+            }
+        }
+
+        private boolean markCompleted() {
+            return state.compareAndSet(ReactionTaskState.RUNNING, ReactionTaskState.FINISHED);
+        }
+
+        private boolean markCancelledBeforeStart() {
+            return state.compareAndSet(ReactionTaskState.NEW, ReactionTaskState.CANCELLED);
+        }
+    }
+
+    private enum ReactionTaskState {
+        NEW, RUNNING, FINISHED, CANCELLED
     }
 
     public record ShutdownHandle(boolean detached, CompletableFuture<Void> completion) {

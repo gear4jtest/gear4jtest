@@ -3,6 +3,7 @@ package io.test.gear4jtest.external.api.artifact;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -37,7 +38,7 @@ public final class DatabaseArtifactStore implements ArtifactStore {
         if (code == 1062) {
             return true;
         }
-        return e.getMessage() != null && e.getMessage().toLowerCase().contains("duplicate");
+        return e.getMessage() != null && e.getMessage().toLowerCase(Locale.ROOT).contains("duplicate");
     }
 
     @Override

@@ -2,6 +2,7 @@ package io.test.gear4jtest.external.api.repository.jdbc;
 
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import javax.sql.DataSource;
 
@@ -14,8 +15,8 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
     private final JdbcDialect dialect;
 
     public OperationChainConfigRepositoryJdbc(DataSource ds, JdbcDialect dialect) {
-        this.ds = ds;
-        this.dialect = dialect;
+        this.ds = Objects.requireNonNull(ds, "ds must not be null");
+        this.dialect = Objects.requireNonNull(dialect, "dialect must not be null");
     }
 
     private static String toJson(Map<String, String> map) {
@@ -95,7 +96,8 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
             case POSTGRES -> {
                 String sql = "INSERT INTO operation_chain_config(al_id, allow_run_publication_without_test, store_type, store_props) "
                         + "VALUES (?,?,?,to_jsonb(?::json)) "
-                        + "ON CONFLICT (al_id) DO UPDATE SET allow_run_publication_without_test=EXCLUDED.allow_run_publication_without_test, "
+                        + "ON CONFLICT (al_id) DO UPDATE SET "
+                        + "allow_run_publication_without_test=EXCLUDED.allow_run_publication_without_test, "
                         + "store_type=EXCLUDED.store_type, store_props=EXCLUDED.store_props";
                 try (var c = ds.getConnection(); var ps = c.prepareStatement(sql)) {
                     ps.setString(1, cfg.alId());
@@ -107,9 +109,9 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
                     throw new RuntimeException(e);
                 }
             }
-            case MYSQL8 -> {
+            case MYSQL8, MARIADB -> {
                 String sql = "INSERT INTO operation_chain_config(al_id, allow_run_publication_without_test, store_type, store_props) "
-                        + "VALUES (?,?,?,CAST(? AS JSON)) "
+                        + "VALUES (?,?,?,?) "
                         + "ON DUPLICATE KEY UPDATE allow_run_publication_without_test=VALUES(allow_run_publication_without_test), "
                         + "store_type=VALUES(store_type), store_props=VALUES(store_props)";
                 try (var c = ds.getConnection(); var ps = c.prepareStatement(sql)) {
@@ -140,8 +142,8 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
     @Override
     public void updateStore(String alId, StoreType storeType, Map<String, String> storeProps) {
         String sqlPg = "UPDATE operation_chain_config SET store_type=?, store_props=to_jsonb(?::json) WHERE al_id=?";
-        String sqlMy = "UPDATE operation_chain_config SET store_type=?, store_props=CAST(? AS JSON) WHERE al_id=?";
-        String sql = dialect == JdbcDialect.POSTGRES ? sqlPg : sqlMy;
+        String sqlMy = "UPDATE operation_chain_config SET store_type=?, store_props=? WHERE al_id=?";
+        String sql = dialect.isPostgres() ? sqlPg : sqlMy;
         try (var c = ds.getConnection(); var ps = c.prepareStatement(sql)) {
             ps.setString(1, storeType.name());
             ps.setString(2, toJson(storeProps));

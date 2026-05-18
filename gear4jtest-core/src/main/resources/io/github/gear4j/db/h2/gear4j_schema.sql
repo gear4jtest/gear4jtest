@@ -52,6 +52,10 @@ CREATE TABLE IF NOT EXISTS station_log
 (
     36
 ),
+    branch_id VARCHAR
+(
+    255
+),
     status VARCHAR
 (
     50

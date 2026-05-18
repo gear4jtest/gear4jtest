@@ -46,6 +46,39 @@ class ExecutionContextTest {
     }
 
     @Test
+    void enterItem_shouldRestorePreviousItemId() {
+        // Given
+        ExecutionContext context = newContext();
+        context.setCurrentItemId("outer-item");
+
+        // When
+        try (var ignored = context.enterItem("inner-item")) {
+            assertThat(context.getCurrentItemId()).isEqualTo("inner-item");
+        }
+
+        // Then
+        assertThat(context.getCurrentItemId()).isEqualTo("outer-item");
+    }
+
+    @Test
+    void enterBranch_shouldRestorePreviousBranchId() {
+        // Given
+        ExecutionContext context = newContext();
+
+        // When
+        try (var outer = context.enterBranch("outer-branch")) {
+            assertThat(context.getCurrentBranchId()).isEqualTo("outer-branch");
+            try (var inner = context.enterBranch("inner-branch")) {
+                assertThat(context.getCurrentBranchId()).isEqualTo("inner-branch");
+            }
+            assertThat(context.getCurrentBranchId()).isEqualTo("outer-branch");
+        }
+
+        // Then
+        assertThat(context.getCurrentBranchId()).isNull();
+    }
+
+    @Test
     void parentOperationStack_shouldExposeCurrentParentId() {
         // Given
         ExecutionContext context = newContext();

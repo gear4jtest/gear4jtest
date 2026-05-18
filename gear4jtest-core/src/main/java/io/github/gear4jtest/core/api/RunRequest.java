@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.api;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,7 +34,8 @@ public class RunRequest {
 
     private RunRequest(Builder builder) {
         this.input = builder.input;
-        this.context = builder.context;
+        this.context = builder.context == null ? Map.of()
+                : Collections.unmodifiableMap(new LinkedHashMap<>(builder.context));
         this.resourceFactory = builder.resourceFactory;
         this.extensions = List.copyOf(builder.extensions);
         this.idGenerator = builder.idGenerator;
@@ -106,7 +108,7 @@ public class RunRequest {
         }
 
         public Builder context(Map<String, Object> context) {
-            this.context = context;
+            this.context = context == null ? null : new LinkedHashMap<>(context);
             return this;
         }
 

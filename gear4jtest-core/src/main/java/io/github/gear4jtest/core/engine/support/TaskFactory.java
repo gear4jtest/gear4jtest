@@ -16,36 +16,26 @@ public class TaskFactory {
                                                 StationRunner runner,
                                                 StationExecutionContext ctx,
                                                 String itemId) {
+        return createTask(inputSupplier, station, runner, ctx, itemId, ctx.getGlobalContext().getCurrentBranchId());
+    }
+
+    public Callable<StationLogTrace> createTask(Supplier<?> inputSupplier,
+                                                AbstractStation<?, ?> station,
+                                                StationRunner runner,
+                                                StationExecutionContext ctx,
+                                                String itemId,
+                                                String branchId) {
 
         UUID parentOperationId = ctx.getGlobalContext().getCurrentParentOperationId();
 
-        return () -> withItemId(itemId, ctx.getGlobalContext(),
-                                () -> withParentOperationId(parentOperationId, ctx.getGlobalContext(), () -> {
-                                    Object safeInput = inputSupplier.get();
-                                    return runner.run(safeInput, station, ctx);
-                                }));
-    }
-
-    private <T> T withItemId(String itemId, ExecutionContext context, Supplier<T> action) {
-        String previous = context.getCurrentItemId();
-        context.setCurrentItemId(itemId);
-        try {
-            return action.get();
-        } finally {
-            context.setCurrentItemId(previous);
-        }
-    }
-
-    private <T> T withParentOperationId(UUID parentOperationId, ExecutionContext context, Supplier<T> action) {
-        if (parentOperationId == null) {
-            return action.get();
-        }
-
-        context.pushParentOperationId(parentOperationId);
-        try {
-            return action.get();
-        } finally {
-            context.popParentOperationId();
-        }
+        return () -> {
+            ExecutionContext context = ctx.getGlobalContext();
+            try (var ignoredItem = context.enterItem(itemId);
+                    var ignoredBranch = context.enterBranch(branchId);
+                    var ignoredParent = context.enterParentOperation(parentOperationId)) {
+                Object safeInput = inputSupplier.get();
+                return runner.run(safeInput, station, ctx);
+            }
+        };
     }
 }

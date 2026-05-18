@@ -121,7 +121,9 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
                 childLog = buildConditionSkippedBranchLog(branch, operationExecution);
             } else {
                 Object newObject = clonePayload(input, operationExecution);
-                childLog = runner.run(newObject, branch.getStation(), operationExecution);
+                try (var ignored = operationExecution.getGlobalContext().enterBranch(branch.getEffectiveId())) {
+                    childLog = runner.run(newObject, branch.getStation(), operationExecution);
+                }
             }
 
             results.add(childLog);
@@ -172,7 +174,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
 
             Callable<StationLogTrace> task = operationExecution.getSupport().getTaskFactory()
                     .createTask(() -> clonePayload(input, operationExecution), branch.getStation(), runner,
-                                operationExecution, currentItemId);
+                                operationExecution, currentItemId, branch.getEffectiveId());
 
             int finalIndex = index;
             Future<BranchExecution> future = completionService
@@ -415,6 +417,9 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
         }
 
         childLog.setParentOperationId(operationExecution.getRecord().getId());
+        if (childLog.getBranchId() == null) {
+            childLog.setBranchId(branch.getEffectiveId());
+        }
         return childLog;
     }
 
@@ -512,6 +517,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
                                                     operationExecution.getRecord().getId());
 
         log.setItemId(operationExecution.getGlobalContext().getCurrentItemId());
+        log.setBranchId(branch.getEffectiveId());
         log.setContext(new HashMap<>());
         return log;
     }

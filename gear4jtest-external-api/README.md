@@ -89,6 +89,15 @@ Do not add:
 - durable distributed cache invalidation;
 - runtime engine behavior that belongs in `gear4jtest-core`.
 
+## JDBC repository support
+
+The built-in JDBC repositories are currently scoped to PostgreSQL, MySQL 8 and MariaDB. They are not a generic
+provider-agnostic SQL layer. Unsupported databases should fail explicitly through dialect selection instead of silently
+using a different provider script.
+
+Adding another provider should be done by adding a dialect entry, matching schema/migration resources and integration
+tests for the object/config repositories.
+
 ## Testing
 
 Useful focused tasks:

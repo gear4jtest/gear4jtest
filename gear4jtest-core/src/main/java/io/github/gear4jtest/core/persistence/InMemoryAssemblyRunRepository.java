@@ -75,7 +75,7 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
         }
 
         return byLogId.values().stream()
-                .filter(record -> parentLogId.equals(record.parentOperationId()))
+                .filter(record -> java.util.Objects.equals(parentLogId, record.parentOperationId()))
                 .count();
     }
 

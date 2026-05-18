@@ -19,7 +19,22 @@ public final class StationFinishedEvent extends StationEvent {
                                 StationLogStatus status,
                                 Object output,
                                 Exception error) {
-        super(pipelineId, executionId, stationExecutionId, operationId, parentOperationId, itemId, input);
+        this(pipelineId, executionId, stationExecutionId, operationId, parentOperationId, null, itemId, input, status,
+                output, error);
+    }
+
+    public StationFinishedEvent(String pipelineId,
+                                UUID executionId,
+                                UUID stationExecutionId,
+                                String operationId,
+                                UUID parentOperationId,
+                                String branchId,
+                                String itemId,
+                                Object input,
+                                StationLogStatus status,
+                                Object output,
+                                Exception error) {
+        super(pipelineId, executionId, stationExecutionId, operationId, parentOperationId, branchId, itemId, input);
         this.status = status;
         this.output = output;
         this.error = error;

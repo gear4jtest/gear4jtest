@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -23,13 +24,14 @@ public final class FilesystemArtifactStore implements ArtifactStore {
 
     @Override
     public String put(byte[] content) throws IOException {
-        String hash = Hashing.sha256Hex(content);
+        byte[] stored = Arrays.copyOf(Objects.requireNonNull(content, "content must not be null"), content.length);
+        String hash = Hashing.sha256Hex(stored);
         Path target = pathForValidatedHash(hash);
         if (!Files.exists(target)) {
             Files.createDirectories(target.getParent());
             Path tmp = Files.createTempFile(root, "artifact-", ".tmp");
             try {
-                Files.write(tmp, content);
+                Files.write(tmp, stored);
                 Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
             } finally {
                 try {
