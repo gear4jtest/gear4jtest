@@ -179,15 +179,18 @@ public class EventHandlingDefinition {
         private final Supplier<ExecutorService> perRunReactionExecutorFactory;
         private final ExecutorService sharedReactionExecutor;
         private final Duration shutdownTimeout;
+        private final Duration detachCleanupTimeout;
         private final ShutdownMode shutdownMode;
 
         private RuntimeConfiguration(Supplier<ExecutorService> perRunReactionExecutorFactory,
                                      ExecutorService sharedReactionExecutor,
                                      Duration shutdownTimeout,
+                                     Duration detachCleanupTimeout,
                                      ShutdownMode shutdownMode) {
             this.perRunReactionExecutorFactory = perRunReactionExecutorFactory;
             this.sharedReactionExecutor = sharedReactionExecutor;
             this.shutdownTimeout = shutdownTimeout != null ? shutdownTimeout : Duration.ofSeconds(10);
+            this.detachCleanupTimeout = detachCleanupTimeout != null ? detachCleanupTimeout : this.shutdownTimeout;
             this.shutdownMode = shutdownMode != null ? shutdownMode : ShutdownMode.WAIT_FOR_DRAIN;
         }
 
@@ -220,6 +223,10 @@ public class EventHandlingDefinition {
             return shutdownTimeout;
         }
 
+        public Duration getDetachCleanupTimeout() {
+            return detachCleanupTimeout;
+        }
+
         public ShutdownMode getShutdownMode() {
             return shutdownMode;
         }
@@ -248,6 +255,7 @@ public class EventHandlingDefinition {
             private Supplier<ExecutorService> perRunReactionExecutorFactory;
             private ExecutorService sharedReactionExecutor;
             private Duration shutdownTimeout;
+            private Duration detachCleanupTimeout;
             private ShutdownMode shutdownMode;
 
             /**
@@ -299,6 +307,21 @@ public class EventHandlingDefinition {
             }
 
             /**
+             * Configures the maximum time detached shutdown may keep run-scoped resources
+             * alive after the pipeline result has already been returned.
+             *
+             * <p>
+             * This timeout is only used by {@link ShutdownMode#DETACH_AND_DRAIN}. Once it
+             * expires, the engine forces cleanup of run-scoped resources even if some
+             * best-effort event reactions are still running or stuck.
+             * </p>
+             */
+            public Builder detachCleanupTimeout(Duration detachCleanupTimeout) {
+                this.detachCleanupTimeout = detachCleanupTimeout;
+                return this;
+            }
+
+            /**
              * Configures how shutdown behaves once the pipeline itself has completed.
              *
              * <p>
@@ -314,7 +337,7 @@ public class EventHandlingDefinition {
 
             public RuntimeConfiguration build() {
                 return new RuntimeConfiguration(perRunReactionExecutorFactory, sharedReactionExecutor, shutdownTimeout,
-                        shutdownMode);
+                        detachCleanupTimeout, shutdownMode);
             }
         }
     }

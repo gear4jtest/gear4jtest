@@ -193,10 +193,9 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
     }
 
     private void flushBufferBlocking(RunBuffer buffer, boolean drainCompletely) {
-        assertHealthy(buffer);
-
         buffer.flushLock.lock();
         try {
+            assertHealthy(buffer);
             do {
                 List<StationLogRecord> batch = drainBatch(buffer);
                 if (batch.isEmpty()) {

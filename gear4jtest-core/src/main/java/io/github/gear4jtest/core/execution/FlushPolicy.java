@@ -16,15 +16,30 @@ public final class FlushPolicy {
     }
 
     public static FlushPolicy byCount(int count) {
+        if (count <= 0) {
+            throw new IllegalArgumentException("count must be > 0");
+        }
         return new FlushPolicy(Type.BY_COUNT, count, null, 0);
     }
 
+    /**
+     * Time-based flushing is not implemented by {@link DatabaseExecutionManager}
+     * yet. Use {@link #byCount(int)} for the current persistence runtime.
+     */
+    @Deprecated(since = "1.0.0", forRemoval = false)
     public static FlushPolicy byTime(Duration every) {
-        return new FlushPolicy(Type.BY_TIME, 0, every, 0);
+        throw new UnsupportedOperationException(
+                "Time-based flushing is not implemented yet. Use FlushPolicy.byCount(int).");
     }
 
+    /**
+     * Memory-based flushing is not implemented by {@link DatabaseExecutionManager}
+     * yet. Use {@link #byCount(int)} for the current persistence runtime.
+     */
+    @Deprecated(since = "1.0.0", forRemoval = false)
     public static FlushPolicy byMemory(long approxBytes) {
-        return new FlushPolicy(Type.BY_MEMORY, 0, null, approxBytes);
+        throw new UnsupportedOperationException(
+                "Memory-based flushing is not implemented yet. Use FlushPolicy.byCount(int).");
     }
 
     public Type type() {
@@ -44,6 +59,18 @@ public final class FlushPolicy {
     }
 
     public enum Type {
-        BY_COUNT, BY_TIME, BY_MEMORY
+        BY_COUNT,
+        /**
+         * Not implemented yet by {@link DatabaseExecutionManager}. Kept only to avoid
+         * source-breaking callers that may already reference the enum constant.
+         */
+        @Deprecated(since = "1.0.0", forRemoval = false)
+        BY_TIME,
+        /**
+         * Not implemented yet by {@link DatabaseExecutionManager}. Kept only to avoid
+         * source-breaking callers that may already reference the enum constant.
+         */
+        @Deprecated(since = "1.0.0", forRemoval = false)
+        BY_MEMORY
     }
 }

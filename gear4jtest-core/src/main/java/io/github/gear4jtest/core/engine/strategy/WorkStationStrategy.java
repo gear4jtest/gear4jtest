@@ -1,6 +1,7 @@
 package io.github.gear4jtest.core.engine.strategy;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
@@ -9,19 +10,47 @@ import io.github.gear4jtest.core.api.context.StationContextUtils;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.WorkStation;
+import io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfiguration;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyGuard;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyManager;
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyStrategy;
+import io.github.gear4jtest.core.engine.support.WorkerConcurrencyPolicy;
 import io.github.gear4jtest.core.engine.support.WorkerIntrospector;
+import io.github.gear4jtest.core.engine.support.WorkerLockAcquisitionPolicy;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, ?>> {
-    /**
-     * Shared concurrency manager used to protect stateful operators during station
-     * execution.
-     */
-    private static final WorkerConcurrencyManager CONCURRENCY_MANAGER = new WorkerConcurrencyManager();
+    private final WorkerConcurrencyManager concurrencyManager;
+    private final WorkerConcurrencyConfiguration concurrencyConfiguration;
+
+    public WorkStationStrategy() {
+        this(WorkerConcurrencyManager.global(), WorkerConcurrencyConfiguration.defaults());
+    }
+
+    public WorkStationStrategy(WorkerConcurrencyManager concurrencyManager) {
+        this(concurrencyManager, WorkerConcurrencyConfiguration.defaults()
+                .withConcurrencyPolicy(WorkerConcurrencyPolicy.ENGINE_LOCAL_LOCK_PER_WORKER_INSTANCE));
+    }
+
+    public WorkStationStrategy(WorkerConcurrencyManager concurrencyManager, WorkerConcurrencyPolicy concurrencyPolicy) {
+        this(concurrencyManager, WorkerConcurrencyConfiguration.defaults().withConcurrencyPolicy(concurrencyPolicy));
+    }
+
+    public WorkStationStrategy(WorkerConcurrencyManager concurrencyManager,
+                               WorkerConcurrencyPolicy concurrencyPolicy,
+                               WorkerLockAcquisitionPolicy lockAcquisitionPolicy) {
+        this(concurrencyManager, WorkerConcurrencyConfiguration.defaults()
+                .withConcurrencyPolicy(concurrencyPolicy)
+                .withLockAcquisitionPolicy(lockAcquisitionPolicy));
+    }
+
+    public WorkStationStrategy(WorkerConcurrencyManager concurrencyManager,
+                               WorkerConcurrencyConfiguration concurrencyConfiguration) {
+        this.concurrencyManager = Objects.requireNonNull(concurrencyManager, "concurrencyManager must not be null");
+        this.concurrencyConfiguration = Objects.requireNonNull(concurrencyConfiguration,
+                                                               "concurrencyConfiguration must not be null");
+    }
+
     /**
      * Thread-local guard acquired for the current execution, if any.
      */
@@ -56,15 +85,20 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
         ((DefaultStationExecutionContext) operationExecution).addCapability(WorkerParamsInjector.Parameters.class,
                                                                             parameters.build());
 
-        if (!isStateful(operationExecution)) {
+        if (!isStateful(operationExecution)
+                || concurrencyPolicy() == WorkerConcurrencyPolicy.ALLOW_PARALLEL_INVOCATIONS) {
             return;
         }
 
-        WorkerConcurrencyGuard guard = CONCURRENCY_MANAGER.guardFor(operation, concurrencyStrategy());
-
-        // If FAIL_FAST cannot acquire the guard, beforeUse() throws before the
-        // ThreadLocal is set.
-        guard.beforeUse();
+        WorkerConcurrencyGuard guard = concurrencyManager.guardFor(operation);
+        try {
+            guard.beforeUse(lockAcquisitionPolicy(), concurrencyConfiguration.lockWaitTimeout());
+        } catch (IllegalStateException e) {
+            throw new IllegalStateException("Worker instance cannot be invoked concurrently: "
+                    + operation.getClass().getName() + ". Concurrent invocation is protected by "
+                    + concurrencyPolicy() + " with " + lockAcquisitionPolicy() + " and timeout "
+                    + concurrencyConfiguration.lockWaitTimeout() + ". " + lockFailureAdvice(), e);
+        }
         CURRENT_GUARD.set(guard);
     }
 
@@ -111,9 +145,34 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
     }
 
     /**
-     * Returns the concurrency strategy used when this station can run concurrently.
+     * Returns the concurrency policy used when a stateful worker can run
+     * concurrently.
      */
-    protected WorkerConcurrencyStrategy concurrencyStrategy() {
-        return WorkerConcurrencyStrategy.BLOCK_CALLER;
+
+    private String lockFailureAdvice() {
+        if (lockAcquisitionPolicy() == WorkerLockAcquisitionPolicy.FAIL_FAST) {
+            return "Use " + WorkerLockAcquisitionPolicy.BLOCK_CALLER + " to wait up to the configured timeout, "
+                    + "increase the lock wait timeout when blocking is enabled, or use "
+                    + WorkerConcurrencyPolicy.ALLOW_PARALLEL_INVOCATIONS
+                    + " only when the worker is thread-safe.";
+        }
+        return "Increase the lock wait timeout, use " + WorkerLockAcquisitionPolicy.FAIL_FAST
+                + " to fail immediately, or use " + WorkerConcurrencyPolicy.ALLOW_PARALLEL_INVOCATIONS
+                + " only when the worker is thread-safe.";
+    }
+
+    protected WorkerConcurrencyPolicy concurrencyPolicy() {
+        return concurrencyConfiguration.concurrencyPolicy();
+    }
+
+    /**
+     * Returns how the strategy behaves when a protected worker is already in use.
+     */
+    protected WorkerLockAcquisitionPolicy lockAcquisitionPolicy() {
+        return concurrencyConfiguration.lockAcquisitionPolicy();
+    }
+
+    protected WorkerConcurrencyConfiguration concurrencyConfiguration() {
+        return concurrencyConfiguration;
     }
 }

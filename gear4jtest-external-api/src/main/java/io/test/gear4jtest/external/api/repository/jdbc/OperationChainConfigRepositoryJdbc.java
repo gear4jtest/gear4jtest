@@ -6,68 +6,47 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.sql.DataSource;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.test.gear4jtest.external.api.StoreType;
 import io.test.gear4jtest.external.api.model.OperationChainConfig;
 import io.test.gear4jtest.external.api.repository.OperationChainConfigRepository;
 
 public final class OperationChainConfigRepositoryJdbc implements OperationChainConfigRepository {
+    private static final TypeReference<Map<String, String>> STRING_MAP_TYPE = new TypeReference<>() {};
+
     private final DataSource ds;
     private final JdbcDialect dialect;
+    private final ObjectMapper objectMapper;
 
     public OperationChainConfigRepositoryJdbc(DataSource ds, JdbcDialect dialect) {
+        this(ds, dialect, new ObjectMapper());
+    }
+
+    public OperationChainConfigRepositoryJdbc(DataSource ds, JdbcDialect dialect, ObjectMapper objectMapper) {
         this.ds = Objects.requireNonNull(ds, "ds must not be null");
         this.dialect = Objects.requireNonNull(dialect, "dialect must not be null");
+        this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
     }
 
-    private static String toJson(Map<String, String> map) {
-        var sb = new StringBuilder("{");
-        boolean first = true;
-        for (var e : map.entrySet()) {
-            if (!first) {
-                sb.append(',');
-            }
-            first = false;
-            sb.append('"').append(escape(e.getKey())).append("\":");
-            sb.append('"').append(escape(e.getValue())).append('"');
+    private String toJson(Map<String, String> map) {
+        try {
+            return objectMapper.writeValueAsString(map == null ? Map.of() : map);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid store properties map", e);
         }
-        sb.append('}');
-        return sb.toString();
     }
 
-    private static Map<String, String> readJsonMap(String json) {
+    private Map<String, String> readJsonMap(String json) {
         if (json == null || json.isBlank()) {
-            return java.util.Map.of();
+            return Map.of();
         }
-        Map<String, String> out = new java.util.HashMap<>();
-        String s = json.trim();
-        if (s.startsWith("{") && s.endsWith("}")) {
-            s = s.substring(1, s.length() - 1);
+        try {
+            Map<String, String> result = objectMapper.readValue(json, STRING_MAP_TYPE);
+            return result == null ? Map.of() : Map.copyOf(result);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid JSON map: " + json, e);
         }
-        if (s.isBlank()) {
-            return java.util.Map.of();
-        }
-        for (String pair : s.split(",")) {
-            int colon = pair.indexOf(':');
-            if (colon < 0) {
-                continue;
-            }
-            String k = strip(pair.substring(0, colon));
-            String v = strip(pair.substring(colon + 1));
-            out.put(unq(k), unq(v));
-        }
-        return out;
-    }
-
-    private static String strip(String s) {
-        return s.trim();
-    }
-
-    private static String unq(String s) {
-        return s.replaceAll("^\\\"|\\\"$", "").replace("\\\"", "\"");
-    }
-
-    private static String escape(String s) {
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     @Override

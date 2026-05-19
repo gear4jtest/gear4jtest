@@ -1,11 +1,12 @@
 package io.github.gear4jtest.core.model;
 
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyGuard;
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyStrategy;
-import io.github.gear4jtest.core.exception.ConcurrentTransformerUseException;
+import io.github.gear4jtest.core.engine.support.WorkerLockAcquisitionPolicy;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -13,43 +14,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class OperatorConcurrencyGuardTest {
     @Test
-    void failFast_shouldThrowOnConcurrentUseFromAnotherThread() throws Exception {
-        WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard(WorkerConcurrencyStrategy.FAIL_FAST);
-
-        CountDownLatch locked = new CountDownLatch(1);
-        CountDownLatch release = new CountDownLatch(1);
-
-        Thread t1 = new Thread(() -> {
-            guard.beforeUse();
-            locked.countDown();
-            try {
-                // On garde le lock pendant un petit moment
-                release.await(2, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            } finally {
-                guard.afterUse();
-            }
-        });
-
-        t1.start();
-
-        // On attend que le premier thread ait bien pris le lock
-        locked.await(2, TimeUnit.SECONDS);
-
-        // Ici on est dans un autre thread que t1 -> tryLock doit échouer
-        assertThatThrownBy(guard::beforeUse).isInstanceOf(ConcurrentTransformerUseException.class)
-                .hasMessageContaining("Transformer is already in use");
-
-        // On libère le premier thread proprement
-        release.countDown();
-
-        t1.join();
-    }
-
-    @Test
-    void blockCaller_shouldBlockUntilLockIsReleased() throws Exception {
-        WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard(WorkerConcurrencyStrategy.BLOCK_CALLER);
+    void beforeUse_shouldBlockUntilLockIsReleased() throws Exception {
+        WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard();
 
         CountDownLatch locked = new CountDownLatch(1);
 
@@ -57,7 +23,6 @@ class OperatorConcurrencyGuardTest {
             guard.beforeUse();
             locked.countDown();
             try {
-                // garde le lock ~200ms
                 Thread.sleep(200);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -71,30 +36,62 @@ class OperatorConcurrencyGuardTest {
         locked.await(2, TimeUnit.SECONDS);
 
         long before = System.nanoTime();
-        // On est dans un autre thread que t1, lock.lock() doit bloquer
         guard.beforeUse();
         long after = System.nanoTime();
         guard.afterUse();
 
         long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(after - before);
 
-        // On tolère large pour éviter les flaky tests
-        assertThat(elapsedMillis).as("BLOCK_CALLER should block at least ~150ms").isGreaterThanOrEqualTo(150);
+        assertThat(elapsedMillis).as("guard should block at least ~150ms").isGreaterThanOrEqualTo(150);
 
         t1.join();
     }
 
     @Test
-    void ignore_shouldNotLockAndNeverThrow() {
-        WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard(WorkerConcurrencyStrategy.IGNORE);
+    void beforeUse_shouldFailFastWhenLockIsAlreadyHeld() throws Exception {
+        WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
 
-        // Appels répétés, aucune exception attendue
-        for (int i = 0; i < 1000; i++) {
-            guard.beforeUse();
+        guard.beforeUse();
+
+        try {
+            Thread contender = new Thread(() -> {
+                try {
+                    guard.beforeUse(WorkerLockAcquisitionPolicy.FAIL_FAST);
+                    guard.afterUse();
+                } catch (Throwable e) {
+                    failure.set(e);
+                }
+            });
+
+            contender.start();
+            contender.join(2_000);
+
+            assertThat(failure.get()).isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("Worker lock is already held");
+        } finally {
             guard.afterUse();
         }
-
-        // Si on arrive ici, le test est OK (aucune exception)
-        assertThat(true).isTrue();
     }
+
+    @Test
+    void beforeUse_shouldTimeoutWhenBlockCallerWaitsTooLong() throws Exception {
+        WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard();
+
+        guard.beforeUse();
+
+        try {
+            long before = System.nanoTime();
+
+            assertThatThrownBy(() -> guard.beforeUse(WorkerLockAcquisitionPolicy.BLOCK_CALLER, Duration.ofMillis(50)))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("Timed out after PT0.05S while waiting for worker lock");
+
+            long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - before);
+            assertThat(elapsedMillis).isGreaterThanOrEqualTo(40);
+        } finally {
+            guard.afterUse();
+        }
+    }
+
 }

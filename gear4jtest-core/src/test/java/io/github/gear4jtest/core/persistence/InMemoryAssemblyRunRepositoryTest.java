@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class InMemoryAssemblyRunRepositoryTest {
     @Test
     void saveAndFind_shouldStorePipelineExecution() {
-        InMemoryAssemblyRunRepository repo = InMemoryAssemblyRunRepository.INSTANCE;
+        InMemoryAssemblyRunRepository repo = new InMemoryAssemblyRunRepository();
 
         UUID id = UUID.randomUUID();
         AssemblyRunRecord exec = AssemblyRunRecord.from(new AssemblyRunTrace(id, "pipe", Map.of()));
@@ -26,7 +26,7 @@ class InMemoryAssemblyRunRepositoryTest {
 
     @Test
     void update_shouldOverrideExistingExecution() {
-        InMemoryAssemblyRunRepository repo = InMemoryAssemblyRunRepository.INSTANCE;
+        InMemoryAssemblyRunRepository repo = new InMemoryAssemblyRunRepository();
 
         UUID id = UUID.randomUUID();
         AssemblyRunRecord v1 = AssemblyRunRecord.from(new AssemblyRunTrace(id, "pipe", Map.of()));
@@ -36,5 +36,19 @@ class InMemoryAssemblyRunRepositoryTest {
         repo.update(v2);
 
         assertThat(repo.findById(id).get().pipelineId()).isEqualTo("pipe2");
+    }
+
+    @Test
+    void clear_shouldRemoveStoredExecutionsAndLogs() {
+        InMemoryAssemblyRunRepository repo = new InMemoryAssemblyRunRepository();
+
+        UUID id = UUID.randomUUID();
+        AssemblyRunRecord exec = AssemblyRunRecord.from(new AssemblyRunTrace(id, "pipe", Map.of()));
+
+        repo.save(exec);
+        repo.clear();
+
+        assertThat(repo.findById(id)).isEmpty();
+        assertThat(repo.findAllLogsByRunId(id)).isEmpty();
     }
 }

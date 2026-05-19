@@ -1,5 +1,6 @@
 package io.github.gear4jtest.core.api.context;
 
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
@@ -199,15 +200,19 @@ public class ExecutionContext {
     public static final class EventRuntimeOptions {
         private final boolean parameterResolvedEventsEnabled;
         private final EventPayloadPolicy eventPayloadPolicy;
+        private final Duration detachCleanupTimeout;
 
-        private EventRuntimeOptions(boolean parameterResolvedEventsEnabled, EventPayloadPolicy eventPayloadPolicy) {
+        private EventRuntimeOptions(boolean parameterResolvedEventsEnabled,
+                                    EventPayloadPolicy eventPayloadPolicy,
+                                    Duration detachCleanupTimeout) {
             this.parameterResolvedEventsEnabled = parameterResolvedEventsEnabled;
             this.eventPayloadPolicy = eventPayloadPolicy != null ? eventPayloadPolicy
                     : EventPayloadPolicy.passthrough();
+            this.detachCleanupTimeout = detachCleanupTimeout;
         }
 
         public static EventRuntimeOptions disabled() {
-            return new EventRuntimeOptions(false, EventPayloadPolicy.passthrough());
+            return new EventRuntimeOptions(false, EventPayloadPolicy.passthrough(), Duration.ofSeconds(10));
         }
 
         public static EventRuntimeOptions from(EventHandlingDefinition definition) {
@@ -215,8 +220,9 @@ public class ExecutionContext {
                 return disabled();
             }
             EventHandlingDefinition.EventConfiguration configuration = definition.getGlobalEventConfiguration();
+            EventHandlingDefinition.RuntimeConfiguration runtimeConfiguration = definition.getRuntimeConfiguration();
             return new EventRuntimeOptions(configuration.isEventOnParameterChanged(),
-                    configuration.getEventPayloadPolicy());
+                    configuration.getEventPayloadPolicy(), runtimeConfiguration.getDetachCleanupTimeout());
         }
 
         public boolean isParameterResolvedEventsEnabled() {
@@ -225,6 +231,10 @@ public class ExecutionContext {
 
         public EventPayloadPolicy getEventPayloadPolicy() {
             return eventPayloadPolicy;
+        }
+
+        public Duration detachCleanupTimeout() {
+            return detachCleanupTimeout;
         }
     }
 }

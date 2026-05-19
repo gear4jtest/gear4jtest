@@ -54,6 +54,9 @@ Potential future work:
 Potential future work:
 
 - Dry-run execution and mock scenarios for BO-driven pipeline validation. See [dry-run and mock configuration](dry-run-and-mock-configuration.md).
+- Introduce a small JSON map codec abstraction for external persistence repositories. The MVP currently lets
+  `OperationChainConfigRepositoryJdbc` use Jackson directly inside `external-api`, but a future extraction should let the
+  repository depend on a `JsonMapCodec` contract and move the Jackson implementation to a dedicated integration module.
 - JSON translator module.
 - Better dependency tracking for pipeline references.
 - Alias invalidation events.

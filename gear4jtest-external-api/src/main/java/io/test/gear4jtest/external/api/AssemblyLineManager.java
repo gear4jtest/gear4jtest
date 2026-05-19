@@ -41,7 +41,7 @@ public class AssemblyLineManager {
     private final JDTInMemoryCompiler compiler;
     private final DependencyInjector dependencyInjector;
     private final ClassLoader generatedClassParent;
-    private final Map<String, ArtifactStore> storeCacheByAl = new ConcurrentHashMap<>();
+    private final Map<String, StoreCacheEntry> storeCacheByAl = new ConcurrentHashMap<>();
 
     public AssemblyLineManager(OperationChainConfigRepository configRepo,
                                OperationChainObjectRepository objectRepo,
@@ -189,11 +189,17 @@ public class AssemblyLineManager {
     }
 
     private ArtifactStore resolveStoreForAl(String alId) {
-        return storeCacheByAl.computeIfAbsent(alId, id -> {
-            var cfg = configRepo.findByAssemblyLineId(id)
-                    .orElseThrow(() -> new NoSuchElementException("Config not found for alId=" + id));
-            return storeProvider.forConfig(cfg);
-        });
+        var cfg = configRepo.findByAssemblyLineId(alId)
+                .orElseThrow(() -> new NoSuchElementException("Config not found for alId=" + alId));
+        StoreFingerprint fingerprint = StoreFingerprint.from(cfg);
+        StoreCacheEntry cached = storeCacheByAl.get(alId);
+        if (cached != null && cached.fingerprint().equals(fingerprint)) {
+            return cached.store();
+        }
+
+        ArtifactStore store = storeProvider.forConfig(cfg);
+        storeCacheByAl.put(alId, new StoreCacheEntry(fingerprint, store));
+        return store;
     }
 
     private GeneratedAssemblyLine loadOrCompile(String alId, OperationChainObject obj) throws IOException {
@@ -263,6 +269,14 @@ public class AssemblyLineManager {
     private void registerLatestAliasIfNeeded(String alId, OperationChainObject obj, String internalLoaderId) {
         if (obj.mode() == ExecutionMode.RUN) {
             classLoaderRegistry.setAlias(latestAlias(alId), internalLoaderId);
+        }
+    }
+
+    private record StoreCacheEntry(StoreFingerprint fingerprint, ArtifactStore store) {}
+
+    private record StoreFingerprint(StoreType storeType, Map<String, String> storeProps) {
+        private static StoreFingerprint from(OperationChainConfig config) {
+            return new StoreFingerprint(config.storeType(), Map.copyOf(config.storeProps()));
         }
     }
 

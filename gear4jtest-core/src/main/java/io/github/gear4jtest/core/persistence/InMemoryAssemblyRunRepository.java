@@ -13,7 +13,12 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
     private final Map<UUID, AssemblyRunRecord> executions = new ConcurrentHashMap<>();
     private final Map<UUID, Map<UUID, StationLogRecord>> stationLogsByRunId = new ConcurrentHashMap<>();
 
-    private InMemoryAssemblyRunRepository() {
+    public InMemoryAssemblyRunRepository() {
+    }
+
+    public void clear() {
+        executions.clear();
+        stationLogsByRunId.clear();
     }
 
     @Override

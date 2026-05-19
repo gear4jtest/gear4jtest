@@ -1,38 +1,45 @@
 package io.github.gear4jtest.core.engine.support;
 
+import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import io.github.gear4jtest.core.exception.ConcurrentTransformerUseException;
-
 public final class WorkerConcurrencyGuard {
-    private final Lock lock = new ReentrantLock();
-    private final WorkerConcurrencyStrategy strategy;
+    private final ReentrantLock monitor = new ReentrantLock();
+    private final Condition available = monitor.newCondition();
+    private boolean inUse;
+    private Thread owner;
 
-    public WorkerConcurrencyGuard(WorkerConcurrencyStrategy strategy) {
-        this.strategy = Objects.requireNonNull(strategy, "strategy must not be null");
+    /**
+     * Acquires the guard before the full station lifecycle starts, blocking until
+     * the worker becomes available or the default timeout elapses.
+     */
+    public void beforeUse() {
+        beforeUse(WorkerLockAcquisitionPolicy.BLOCK_CALLER,
+                  WorkerConcurrencyConfiguration.DEFAULT_LOCK_WAIT_TIMEOUT);
     }
 
     /**
      * Acquires the guard before the full station lifecycle starts.
      */
-    public void beforeUse() {
-        if (strategy == WorkerConcurrencyStrategy.IGNORE) {
-            return;
+    public void beforeUse(WorkerLockAcquisitionPolicy acquisitionPolicy) {
+        beforeUse(acquisitionPolicy, WorkerConcurrencyConfiguration.DEFAULT_LOCK_WAIT_TIMEOUT);
+    }
+
+    /**
+     * Acquires the guard before the full station lifecycle starts.
+     */
+    public void beforeUse(WorkerLockAcquisitionPolicy acquisitionPolicy, Duration lockWaitTimeout) {
+        Objects.requireNonNull(acquisitionPolicy, "acquisitionPolicy must not be null");
+        Objects.requireNonNull(lockWaitTimeout, "lockWaitTimeout must not be null");
+        if (lockWaitTimeout.isZero() || lockWaitTimeout.isNegative()) {
+            throw new IllegalArgumentException("lockWaitTimeout must be strictly positive");
         }
 
-        switch (strategy) {
-            case FAIL_FAST -> {
-                boolean acquired = lock.tryLock();
-                if (!acquired) {
-                    throw new ConcurrentTransformerUseException("Transformer is already in use by another execution");
-                }
-            }
-            case BLOCK_CALLER -> lock.lock();
-            case IGNORE -> {
-                // No guard required.
-            }
+        switch (acquisitionPolicy) {
+            case BLOCK_CALLER -> lockWithTimeout(lockWaitTimeout);
+            case FAIL_FAST -> lockFailFast();
         }
     }
 
@@ -40,8 +47,59 @@ public final class WorkerConcurrencyGuard {
      * Releases the guard after the full station lifecycle has completed.
      */
     public void afterUse() {
-        if (strategy != WorkerConcurrencyStrategy.IGNORE) {
-            lock.unlock();
+        monitor.lock();
+        try {
+            if (!inUse) {
+                throw new IllegalStateException("Worker lock is not held");
+            }
+            if (owner != Thread.currentThread()) {
+                throw new IllegalStateException("Worker lock is held by another thread");
+            }
+
+            inUse = false;
+            owner = null;
+            available.signal();
+        } finally {
+            monitor.unlock();
         }
+    }
+
+    private void lockFailFast() {
+        monitor.lock();
+        try {
+            if (inUse) {
+                throw new IllegalStateException("Worker lock is already held");
+            }
+            markInUseByCurrentThread();
+        } finally {
+            monitor.unlock();
+        }
+    }
+
+    private void lockWithTimeout(Duration lockWaitTimeout) {
+        long remainingNanos = lockWaitTimeout.toNanos();
+        monitor.lock();
+        try {
+            while (inUse) {
+                if (remainingNanos <= 0L) {
+                    throw new IllegalStateException("Timed out after " + lockWaitTimeout
+                            + " while waiting for worker lock");
+                }
+                try {
+                    remainingNanos = available.awaitNanos(remainingNanos);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("Interrupted while waiting for worker lock", e);
+                }
+            }
+            markInUseByCurrentThread();
+        } finally {
+            monitor.unlock();
+        }
+    }
+
+    private void markInUseByCurrentThread() {
+        inUse = true;
+        owner = Thread.currentThread();
     }
 }

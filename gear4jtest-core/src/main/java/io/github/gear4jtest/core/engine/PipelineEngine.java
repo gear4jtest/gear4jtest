@@ -1,12 +1,16 @@
 package io.github.gear4jtest.core.engine;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.ExecutionResult;
@@ -29,6 +33,11 @@ import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.engine.support.ExecutorDecorator;
 import io.github.gear4jtest.core.engine.support.TaskFactory;
+import io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfiguration;
+import io.github.gear4jtest.core.engine.support.WorkerConcurrencyManager;
+import io.github.gear4jtest.core.engine.support.WorkerConcurrencyPolicy;
+import io.github.gear4jtest.core.engine.support.WorkerConcurrencyRegistryConfiguration;
+import io.github.gear4jtest.core.engine.support.WorkerLockAcquisitionPolicy;
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
@@ -53,6 +62,8 @@ public class PipelineEngine implements PipelineExecutor {
     private final IdGenerator defaultIdGenerator;
     private final TaskFactory taskFactory;
     private final PayloadCloner payloadCloner;
+    private final WorkerConcurrencyManager workerConcurrencyManager;
+    private final WorkerConcurrencyConfiguration workerConcurrencyConfiguration;
 
     private PipelineEngine(Builder builder) {
         this.resourceFactory = Objects.requireNonNull(builder.resourceFactory, "ResourceFactory must not be null");
@@ -63,8 +74,45 @@ public class PipelineEngine implements PipelineExecutor {
         this.defaultIdGenerator = builder.idGenerator != null ? builder.idGenerator : IdGenerator.defaultGenerator();
         this.taskFactory = builder.taskFactory != null ? builder.taskFactory : new TaskFactory();
         this.payloadCloner = builder.payloadCloner != null ? builder.payloadCloner : PayloadCloners.immutableAware();
+        this.workerConcurrencyConfiguration = effectiveWorkerConcurrencyConfiguration(builder);
+        this.workerConcurrencyManager = builder.workerConcurrencyManager != null ? builder.workerConcurrencyManager
+                : defaultWorkerConcurrencyManager(this.workerConcurrencyConfiguration);
         this.runnerChainFactory = builder.runnerChainFactory != null ? builder.runnerChainFactory
-                : new RunnerChainFactory(StrategyRegistry.defaultRegistry(this::executeNestedPipeline));
+                : new RunnerChainFactory(
+                        StrategyRegistry.defaultRegistry(this::executeNestedPipeline, this.workerConcurrencyManager,
+                                                         this.workerConcurrencyConfiguration));
+    }
+
+    private static WorkerConcurrencyConfiguration effectiveWorkerConcurrencyConfiguration(Builder builder) {
+        WorkerConcurrencyConfiguration configuration = builder.workerConcurrencyConfiguration != null
+                ? builder.workerConcurrencyConfiguration
+                : WorkerConcurrencyConfiguration.defaults();
+
+        if (builder.workerConcurrencyPolicy != null) {
+            configuration = configuration.withConcurrencyPolicy(builder.workerConcurrencyPolicy);
+        } else if (builder.workerConcurrencyConfiguration == null && builder.workerConcurrencyManager != null) {
+            configuration = configuration
+                    .withConcurrencyPolicy(WorkerConcurrencyPolicy.ENGINE_LOCAL_LOCK_PER_WORKER_INSTANCE);
+        }
+
+        if (builder.workerLockAcquisitionPolicy != null) {
+            configuration = configuration.withLockAcquisitionPolicy(builder.workerLockAcquisitionPolicy);
+        }
+        if (builder.workerLockWaitTimeout != null) {
+            configuration = configuration.withLockWaitTimeout(builder.workerLockWaitTimeout);
+        }
+        if (builder.workerConcurrencyRegistryConfiguration != null) {
+            configuration = configuration.withRegistryConfiguration(builder.workerConcurrencyRegistryConfiguration);
+        }
+        return configuration;
+    }
+
+    private static WorkerConcurrencyManager defaultWorkerConcurrencyManager(WorkerConcurrencyConfiguration configuration) {
+        return switch (configuration.concurrencyPolicy()) {
+            case LOCK_PER_WORKER_INSTANCE -> WorkerConcurrencyManager.global();
+            case ENGINE_LOCAL_LOCK_PER_WORKER_INSTANCE, ALLOW_PARALLEL_INVOCATIONS -> new WorkerConcurrencyManager(
+                    configuration.registryConfiguration());
+        };
     }
 
     private static void applyNestedRunContext(AssemblyRunTrace execution, NestedRunContext nestedRunContext) {
@@ -291,11 +339,36 @@ public class PipelineEngine implements PipelineExecutor {
             };
 
             if (shutdownHandle.detached()) {
-                shutdownHandle.completion().whenComplete((ignored, error) -> cleanup.run());
+                scheduleDetachedCleanup(cleanup, shutdownHandle.completion(),
+                                        eventRuntimeOptions.detachCleanupTimeout());
             } else {
                 cleanup.run();
             }
         }
+    }
+
+    private void scheduleDetachedCleanup(Runnable cleanup,
+                                         CompletableFuture<Void> completion,
+                                         Duration detachCleanupTimeout) {
+        AtomicBoolean cleanupDone = new AtomicBoolean(false);
+        Runnable cleanupOnce = () -> {
+            if (cleanupDone.compareAndSet(false, true)) {
+                cleanup.run();
+            }
+        };
+
+        completion.whenComplete((ignored, error) -> cleanupOnce.run());
+
+        if (detachCleanupTimeout == null || detachCleanupTimeout.isNegative() || detachCleanupTimeout.isZero()) {
+            return;
+        }
+
+        CompletableFuture.delayedExecutor(detachCleanupTimeout.toMillis(), TimeUnit.MILLISECONDS).execute(() -> {
+            if (cleanupDone.compareAndSet(false, true)) {
+                LOGGER.warn("Forcing detached event runtime cleanup after timeout. timeout={}", detachCleanupTimeout);
+                cleanup.run();
+            }
+        });
     }
 
     private void invokeRunStartedSafely(RunLifecycleExtension lifecycleExtension,
@@ -340,6 +413,12 @@ public class PipelineEngine implements PipelineExecutor {
         private IdGenerator idGenerator;
         private TaskFactory taskFactory;
         private PayloadCloner payloadCloner;
+        private WorkerConcurrencyManager workerConcurrencyManager;
+        private WorkerConcurrencyConfiguration workerConcurrencyConfiguration;
+        private WorkerConcurrencyPolicy workerConcurrencyPolicy;
+        private WorkerLockAcquisitionPolicy workerLockAcquisitionPolicy;
+        private Duration workerLockWaitTimeout;
+        private WorkerConcurrencyRegistryConfiguration workerConcurrencyRegistryConfiguration;
 
         public Builder resourceFactory(ResourceFactory resourceFactory) {
             this.resourceFactory = resourceFactory;
@@ -373,6 +452,37 @@ public class PipelineEngine implements PipelineExecutor {
 
         public Builder payloadCloner(PayloadCloner payloadCloner) {
             this.payloadCloner = payloadCloner;
+            return this;
+        }
+
+        public Builder workerConcurrencyManager(WorkerConcurrencyManager workerConcurrencyManager) {
+            this.workerConcurrencyManager = workerConcurrencyManager;
+            return this;
+        }
+
+        public Builder workerConcurrencyConfiguration(WorkerConcurrencyConfiguration workerConcurrencyConfiguration) {
+            this.workerConcurrencyConfiguration = workerConcurrencyConfiguration;
+            return this;
+        }
+
+        public Builder workerConcurrencyPolicy(WorkerConcurrencyPolicy workerConcurrencyPolicy) {
+            this.workerConcurrencyPolicy = workerConcurrencyPolicy;
+            return this;
+        }
+
+        public Builder workerLockAcquisitionPolicy(WorkerLockAcquisitionPolicy workerLockAcquisitionPolicy) {
+            this.workerLockAcquisitionPolicy = workerLockAcquisitionPolicy;
+            return this;
+        }
+
+        public Builder workerLockWaitTimeout(Duration workerLockWaitTimeout) {
+            this.workerLockWaitTimeout = workerLockWaitTimeout;
+            return this;
+        }
+
+        public Builder workerConcurrencyRegistryConfiguration(
+                                                              WorkerConcurrencyRegistryConfiguration workerConcurrencyRegistryConfiguration) {
+            this.workerConcurrencyRegistryConfiguration = workerConcurrencyRegistryConfiguration;
             return this;
         }
 

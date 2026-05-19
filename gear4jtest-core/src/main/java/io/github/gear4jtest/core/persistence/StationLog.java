@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public class StationLog {
     private transient Object output;
-    private transient List<Throwable> throwables;
+    private final transient List<Throwable> throwables = Collections.synchronizedList(new ArrayList<>());
     private UUID id;
     private UUID pipelineExecutionId;
     private String operationId;
@@ -82,16 +82,13 @@ public class StationLog {
         }
     }
 
-    public void addErrorHandlerException(Exception e) {
+    public synchronized void addErrorHandlerException(Exception e) {
         if (e == null) {
             return;
         }
         String msg = e.getMessage();
         if (msg == null) {
             return;
-        }
-        if (this.throwables == null) {
-            this.throwables = new ArrayList<>();
         }
         this.throwables.add(e);
         if (this.errorHandlerMessages == null || this.errorHandlerMessages.isBlank()) {
@@ -214,7 +211,9 @@ public class StationLog {
     }
 
     public List<Throwable> getThrowables() {
-        return throwables;
+        synchronized (throwables) {
+            return List.copyOf(throwables);
+        }
     }
 
     public String getItemId() {
