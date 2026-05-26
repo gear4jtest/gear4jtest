@@ -1,7 +1,6 @@
 package io.test.gear4jtest.xml.generator;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -192,12 +191,16 @@ public final class XmlToJavaGenerator {
         body.append("public final class ").append(simpleClassName).append(" implements ")
                 .append(imports.use("io.test.gear4jtest.external.api.loader.GeneratedAssemblyLine")).append(" {\n\n");
 
-        appendDependencies(body, imports, definition);
-        appendConstructor(body, simpleClassName);
+        Map<ContainerOperation, String> parallelExecutorFields = collectParallelExecutorFields(definition);
 
-        List<String> emittedMethods = new ArrayList<>();
+        appendDependencies(body, imports, definition);
+        appendParallelExecutorDependencies(body, imports, parallelExecutorFields);
+        appendConstructor(body, simpleClassName);
+        appendRequireExecutorServiceMethod(body, imports, parallelExecutorFields);
+
+        Map<String, Operation> emittedMethods = new LinkedHashMap<>();
         for (Operation operation : definition.operations()) {
-            appendOperationMethod(body, imports, operation, emittedMethods, signatures);
+            appendOperationMethod(body, imports, operation, emittedMethods, parallelExecutorFields, signatures);
         }
 
         appendConfigurationMethod(body, imports, definition);
@@ -223,6 +226,96 @@ public final class XmlToJavaGenerator {
             code.append("    private ").append(JavaTypeName.parse(dependency.type()).render(imports)).append(" ")
                     .append(toFieldName(dependency.name())).append(";\n\n");
         }
+    }
+
+    private void appendParallelExecutorDependencies(StringBuilder code,
+                                                    JavaImportManager imports,
+                                                    Map<ContainerOperation, String> executorFields) {
+        if (executorFields.isEmpty()) {
+            return;
+        }
+
+        String inject = imports.use("io.test.gear4jtest.external.api.loader.Inject");
+        String executorService = imports.use("java.util.concurrent.ExecutorService");
+        for (Map.Entry<ContainerOperation, String> entry : executorFields.entrySet()) {
+            code.append("    @").append(inject).append("(\"")
+                    .append(escapeJava(parallelExecutorBeanName(entry.getKey()))).append("\")\n");
+            code.append("    private ").append(executorService).append(" ").append(entry.getValue())
+                    .append(";\n\n");
+        }
+    }
+
+    private void appendRequireExecutorServiceMethod(StringBuilder code,
+                                                    JavaImportManager imports,
+                                                    Map<ContainerOperation, String> executorFields) {
+        if (executorFields.isEmpty()) {
+            return;
+        }
+
+        String executorService = imports.use("java.util.concurrent.ExecutorService");
+        code.append("    private static ").append(executorService)
+                .append(" requireExecutorService(").append(executorService)
+                .append(" executorService, String beanName) {\n");
+        code.append("        if (executorService == null) {\n");
+        code.append("            throw new IllegalStateException(\"Missing required ExecutorService bean '\" + beanName + \"' for parallel XML container\");\n");
+        code.append("        }\n");
+        code.append("        return executorService;\n");
+        code.append("    }\n\n");
+    }
+
+    private Map<ContainerOperation, String> collectParallelExecutorFields(XmlPipelineDefinition definition) {
+        Map<ContainerOperation, String> executorFields = new LinkedHashMap<>();
+        Map<String, ContainerOperation> ownersByField = new LinkedHashMap<>();
+
+        for (Operation operation : definition.operations()) {
+            collectParallelExecutorField(operation, executorFields, ownersByField);
+        }
+
+        return new LinkedHashMap<>(executorFields);
+    }
+
+    private void collectParallelExecutorField(Operation operation,
+                                              Map<ContainerOperation, String> executorFields,
+                                              Map<String, ContainerOperation> ownersByField) {
+        if (operation instanceof ContainerOperation containerOperation) {
+            if (containerOperation.parallel()) {
+                String fieldName = parallelExecutorFieldName(containerOperation);
+                ContainerOperation previousOwner = ownersByField.putIfAbsent(fieldName, containerOperation);
+                if (previousOwner != null && !previousOwner.equals(containerOperation)) {
+                    throw new IllegalArgumentException("Parallel XML containers '" + previousOwner.id() + "' and '"
+                            + containerOperation.id() + "' generate the same executor field '" + fieldName
+                            + "'. Use ids that remain unique after Java identifier normalization.");
+                }
+                executorFields.putIfAbsent(containerOperation, fieldName);
+            }
+            for (SubLine subLine : containerOperation.subLines()) {
+                collectParallelExecutorField(subLine.operation(), executorFields, ownersByField);
+            }
+            return;
+        }
+
+        if (operation instanceof IteratorOperation iteratorOperation) {
+            collectParallelExecutorField(iteratorOperation.operation(), executorFields, ownersByField);
+            return;
+        }
+
+        if (operation instanceof IfElseOperation ifElseOperation) {
+            for (XmlPipelineDefinition.ConditionalOperation conditionalOperation : ifElseOperation
+                    .conditionalOperations()) {
+                collectParallelExecutorField(conditionalOperation.operation(), executorFields, ownersByField);
+            }
+            if (ifElseOperation.elseOperation() != null) {
+                collectParallelExecutorField(ifElseOperation.elseOperation(), executorFields, ownersByField);
+            }
+        }
+    }
+
+    private static String parallelExecutorBeanName(ContainerOperation operation) {
+        return "gear4j.executor." + operation.id();
+    }
+
+    private static String parallelExecutorFieldName(ContainerOperation operation) {
+        return "gear4j" + toTypeName(operation.id()) + "ExecutorService";
     }
 
     private void appendConstructor(StringBuilder code, String simpleClassName) {
@@ -310,22 +403,29 @@ public final class XmlToJavaGenerator {
     private void appendOperationMethod(StringBuilder code,
                                        JavaImportManager imports,
                                        Operation operation,
-                                       List<String> emittedMethods,
+                                       Map<String, Operation> emittedMethods,
+                                       Map<ContainerOperation, String> parallelExecutorFields,
                                        Map<Operation, OperationSignature> signatures) {
         String methodName = methodName(operation);
-        if (emittedMethods.contains(methodName)) {
-            return;
+        Operation previousOperation = emittedMethods.putIfAbsent(methodName, operation);
+        if (previousOperation != null) {
+            if (previousOperation.equals(operation)) {
+                return;
+            }
+            throw new IllegalArgumentException("Generated method name collision for method '" + methodName
+                    + "' between operations '" + previousOperation.id() + "' and '" + operation.id()
+                    + "'. Use ids that remain unique after Java identifier normalization.");
         }
-        emittedMethods.add(methodName);
 
         if (operation instanceof ProcessingOperation processingOperation) {
             appendProcessingMethod(code, imports, processingOperation, signatures.get(processingOperation));
         } else if (operation instanceof IteratorOperation iteratorOperation) {
-            appendIteratorMethod(code, imports, iteratorOperation, emittedMethods, signatures);
+            appendIteratorMethod(code, imports, iteratorOperation, emittedMethods, parallelExecutorFields, signatures);
         } else if (operation instanceof ContainerOperation containerOperation) {
-            appendContainerMethod(code, imports, containerOperation, emittedMethods, signatures);
+            appendContainerMethod(code, imports, containerOperation, emittedMethods, parallelExecutorFields,
+                                  signatures);
         } else if (operation instanceof IfElseOperation ifElseOperation) {
-            appendIfElseMethod(code, imports, ifElseOperation, emittedMethods, signatures);
+            appendIfElseMethod(code, imports, ifElseOperation, emittedMethods, parallelExecutorFields, signatures);
         } else if (operation instanceof SignalOperation signalOperation) {
             appendSignalMethod(code, imports, signalOperation, signatures.get(signalOperation));
         } else {
@@ -420,9 +520,10 @@ public final class XmlToJavaGenerator {
     private void appendIteratorMethod(StringBuilder code,
                                       JavaImportManager imports,
                                       IteratorOperation operation,
-                                      List<String> emittedMethods,
+                                      Map<String, Operation> emittedMethods,
+                                      Map<ContainerOperation, String> parallelExecutorFields,
                                       Map<Operation, OperationSignature> signatures) {
-        appendOperationMethod(code, imports, operation.operation(), emittedMethods, signatures);
+        appendOperationMethod(code, imports, operation.operation(), emittedMethods, parallelExecutorFields, signatures);
 
         OperationSignature signature = signatures.get(operation);
         OperationSignature childSignature = signatures.get(operation.operation());
@@ -463,10 +564,12 @@ public final class XmlToJavaGenerator {
     private void appendContainerMethod(StringBuilder code,
                                        JavaImportManager imports,
                                        ContainerOperation operation,
-                                       List<String> emittedMethods,
+                                       Map<String, Operation> emittedMethods,
+                                       Map<ContainerOperation, String> parallelExecutorFields,
                                        Map<Operation, OperationSignature> signatures) {
         for (SubLine subLine : operation.subLines()) {
-            appendOperationMethod(code, imports, subLine.operation(), emittedMethods, signatures);
+            appendOperationMethod(code, imports, subLine.operation(), emittedMethods, parallelExecutorFields,
+                                  signatures);
         }
 
         OperationSignature signature = signatures.get(operation);
@@ -479,15 +582,14 @@ public final class XmlToJavaGenerator {
                 .append("() {\n");
 
         if (operation.parallel()) {
-            if (operation.threadPoolSize() != null) {
-                code.append("        return container(").append(signature.inputType().renderClassLiteral(imports))
-                        .append(", ").append(imports.use("java.util.concurrent.Executors"))
-                        .append(".newFixedThreadPool(").append(operation.threadPoolSize()).append("))\n");
-            } else {
-                code.append("        return container(").append(signature.inputType().renderClassLiteral(imports))
-                        .append(", ").append(imports.use("java.util.concurrent.Executors"))
-                        .append(".newCachedThreadPool())\n");
+            String executorField = parallelExecutorFields.get(operation);
+            if (executorField == null) {
+                throw new IllegalArgumentException("Parallel container '" + operation.id()
+                        + "' has no generated executor dependency");
             }
+            code.append("        return container(").append(signature.inputType().renderClassLiteral(imports))
+                    .append(", requireExecutorService(").append(executorField).append(", \"")
+                    .append(escapeJava(parallelExecutorBeanName(operation))).append("\"))\n");
         } else {
             code.append("        return container(").append(signature.inputType().renderClassLiteral(imports))
                     .append(")\n");
@@ -515,13 +617,17 @@ public final class XmlToJavaGenerator {
     private void appendIfElseMethod(StringBuilder code,
                                     JavaImportManager imports,
                                     IfElseOperation operation,
-                                    List<String> emittedMethods,
+                                    Map<String, Operation> emittedMethods,
+                                    Map<ContainerOperation, String> parallelExecutorFields,
                                     Map<Operation, OperationSignature> signatures) {
         for (XmlPipelineDefinition.ConditionalOperation conditionalOperation : operation.conditionalOperations()) {
-            appendOperationMethod(code, imports, conditionalOperation.operation(), emittedMethods, signatures);
+            appendOperationMethod(code, imports, conditionalOperation.operation(), emittedMethods,
+                                  parallelExecutorFields,
+                                  signatures);
         }
         if (operation.elseOperation() != null) {
-            appendOperationMethod(code, imports, operation.elseOperation(), emittedMethods, signatures);
+            appendOperationMethod(code, imports, operation.elseOperation(), emittedMethods, parallelExecutorFields,
+                                  signatures);
         }
 
         OperationSignature signature = signatures.get(operation);

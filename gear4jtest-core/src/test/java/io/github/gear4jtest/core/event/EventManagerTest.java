@@ -224,4 +224,35 @@ class EventManagerTest {
             sharedExecutor.shutdownNow();
         }
     }
+
+    @Test
+    void shutdown_shouldRespectTimeoutWhenRunningReactionDoesNotComplete() throws Exception {
+        CountDownLatch reactionStarted = new CountDownLatch(1);
+        CountDownLatch releaseReaction = new CountDownLatch(1);
+
+        ThreadPoolExecutor sharedExecutor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>());
+
+        EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
+            reactionStarted.countDown();
+            releaseReaction.await();
+        }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                .sharedReactionExecutor(sharedExecutor).shutdownTimeout(Duration.ofMillis(100)).build()).build();
+
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+        try {
+            manager.publish(new Event("pipe", UUID.randomUUID(), "BLOCK"));
+            assertThat(reactionStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+            CompletableFuture<EventManager.ShutdownHandle> shutdown = CompletableFuture.supplyAsync(manager::shutdown);
+
+            assertThat(shutdown.get(1, TimeUnit.SECONDS).detached()).isFalse();
+            assertThat(manager.snapshotStats().completedReactions()).isZero();
+        } finally {
+            releaseReaction.countDown();
+            manager.shutdown();
+            sharedExecutor.shutdownNow();
+        }
+    }
+
 }

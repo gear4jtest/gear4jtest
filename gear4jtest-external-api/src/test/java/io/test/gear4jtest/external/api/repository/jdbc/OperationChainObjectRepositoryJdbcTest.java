@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import javax.sql.DataSource;
 
+import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
 import io.test.gear4jtest.external.api.ExecutionMode;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +35,8 @@ class OperationChainObjectRepositoryJdbcTest {
         when(resultSet.getTimestamp("created_at")).thenReturn(null);
         when(resultSet.getTimestamp("published_at")).thenReturn(null);
 
-        OperationChainObjectRepositoryJdbc repository = new OperationChainObjectRepositoryJdbc(dataSource);
+        OperationChainObjectRepositoryJdbc repository = new OperationChainObjectRepositoryJdbc(dataSource,
+                Gear4jDatabaseDialect.POSTGRESQL);
 
         // When
         var result = repository.find("pipeline", "1.0.0", ExecutionMode.RUN).orElseThrow();

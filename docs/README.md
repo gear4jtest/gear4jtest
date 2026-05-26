@@ -10,6 +10,7 @@ future-direction notes that should survive individual refactors.
 - `architecture/`: durable explanations of runtime, extension, event, external-pipeline and XML-generation architecture.
 - `decisions/`: decision records and future-direction notes.
 - `roadmap/`: known work items, review notes and non-MVP ideas.
+- `runtime/`: implemented runtime semantics and execution contracts.
 
 ## Status vocabulary
 

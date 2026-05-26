@@ -31,30 +31,18 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseAssemblyRunRepository.class);
     private final DataSource dataSource;
     private final ObjectMapper objectMapper;
-    private final Gear4jJdbcDialect jdbcDialect;
+    private final Gear4jDatabaseDialect databaseDialect;
 
-    public DatabaseAssemblyRunRepository(DataSource dataSource) {
-        this(dataSource, resolveDialect(dataSource), new ObjectMapper());
-    }
-
-    public DatabaseAssemblyRunRepository(DataSource dataSource, ObjectMapper objectMapper) {
-        this(dataSource, resolveDialect(dataSource), objectMapper);
-    }
-
-    public DatabaseAssemblyRunRepository(DataSource dataSource, Gear4jJdbcDialect jdbcDialect) {
-        this(dataSource, jdbcDialect, new ObjectMapper());
+    public DatabaseAssemblyRunRepository(DataSource dataSource, Gear4jDatabaseDialect databaseDialect) {
+        this(dataSource, databaseDialect, new ObjectMapper());
     }
 
     public DatabaseAssemblyRunRepository(DataSource dataSource,
-                                         Gear4jJdbcDialect jdbcDialect,
+                                         Gear4jDatabaseDialect databaseDialect,
                                          ObjectMapper objectMapper) {
         this.dataSource = Objects.requireNonNull(dataSource, "dataSource must not be null");
-        this.jdbcDialect = Objects.requireNonNull(jdbcDialect, "jdbcDialect must not be null");
+        this.databaseDialect = Objects.requireNonNull(databaseDialect, "databaseDialect must not be null");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
-    }
-
-    public static DatabaseAssemblyRunRepository autoDetecting(DataSource dataSource) {
-        return new DatabaseAssemblyRunRepository(dataSource);
     }
 
     @Override
@@ -64,8 +52,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 return;
             }
 
-            String scriptPath = jdbcDialect.schemaScriptPath();
-            LOGGER.info("[Gear4J] Initializing schema using script: {} ({})", scriptPath, jdbcDialect);
+            String scriptPath = databaseDialect.schemaScriptPath();
+            LOGGER.info("[Gear4J] Initializing schema using script: {} ({})", scriptPath, databaseDialect);
             executeScript(conn, scriptPath);
         } catch (SQLException | IOException e) {
             throw new RuntimeException("Error while initializing Gear4J schema", e);
@@ -80,15 +68,6 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     private boolean tableExists(DatabaseMetaData meta, String tableName) throws SQLException {
         try (ResultSet rs = meta.getTables(null, null, tableName, null)) {
             return rs.next();
-        }
-    }
-
-    private static Gear4jJdbcDialect resolveDialect(DataSource dataSource) {
-        Objects.requireNonNull(dataSource, "dataSource must not be null");
-        try (Connection conn = dataSource.getConnection()) {
-            return Gear4jJdbcDialect.from(conn.getMetaData());
-        } catch (SQLException e) {
-            throw new RuntimeException("Could not resolve Gear4J JDBC dialect", e);
         }
     }
 
@@ -118,7 +97,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     @Override
     public void save(AssemblyRunRecord execution) {
         try (Connection conn = dataSource.getConnection()) {
-            Gear4jJdbcDialect dialect = jdbcDialect;
+            Gear4jDatabaseDialect dialect = databaseDialect;
             String sql = "INSERT INTO assembly_run (id, pipeline_id, input_parameters, context, result, "
                     + "status, start_time, end_time, error_message, parent_execution_id, root_execution_id, "
                     + "parent_station_log_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
@@ -145,7 +124,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     @Override
     public void update(AssemblyRunRecord execution) {
         try (Connection conn = dataSource.getConnection()) {
-            Gear4jJdbcDialect dialect = jdbcDialect;
+            Gear4jDatabaseDialect dialect = databaseDialect;
             String sql = "UPDATE assembly_run SET context=?, result=?, status=?, end_time=?, error_message=?, "
                     + "parent_execution_id=?, root_execution_id=?, parent_station_log_id=? WHERE id=?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -168,7 +147,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     @Override
     public Optional<AssemblyRunRecord> findById(UUID id) {
         try (Connection conn = dataSource.getConnection()) {
-            Gear4jJdbcDialect dialect = jdbcDialect;
+            Gear4jDatabaseDialect dialect = databaseDialect;
             String sql = "SELECT * FROM assembly_run WHERE id = ?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 dialect.setUuid(stmt, 1, id);
@@ -195,7 +174,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             String sql = "SELECT * FROM assembly_run WHERE pipeline_id = ? ORDER BY start_time DESC";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, pipelineId);
-                return executeQuery(stmt, jdbcDialect);
+                return executeQuery(stmt, databaseDialect);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -208,7 +187,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             String sql = "SELECT * FROM assembly_run WHERE status = ? ORDER BY start_time DESC";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, status.name());
-                return executeQuery(stmt, jdbcDialect);
+                return executeQuery(stmt, databaseDialect);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -218,7 +197,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     @Override
     public void delete(UUID id) {
         try (Connection conn = dataSource.getConnection()) {
-            Gear4jJdbcDialect dialect = jdbcDialect;
+            Gear4jDatabaseDialect dialect = databaseDialect;
             boolean previousAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false);
             try (PreparedStatement stmt1 = conn
@@ -245,7 +224,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         try (Connection conn = dataSource.getConnection()) {
             String sql = "SELECT * FROM assembly_run";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                return executeQuery(stmt, jdbcDialect);
+                return executeQuery(stmt, databaseDialect);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -256,7 +235,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public List<StationLogRecord> findRootLogsByRunId(UUID runId) {
         String sql = "SELECT * FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id IS NULL ORDER BY start_time, id";
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-            Gear4jJdbcDialect dialect = jdbcDialect;
+            Gear4jDatabaseDialect dialect = databaseDialect;
             dialect.setUuid(stmt, 1, runId);
             return executeLogQuery(stmt, dialect);
         } catch (SQLException e) {
@@ -268,7 +247,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public List<StationLogRecord> findChildLogsByRunId(UUID runId, UUID parentLogId) {
         String sql = "SELECT * FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id = ? ORDER BY start_time, id";
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-            Gear4jJdbcDialect dialect = jdbcDialect;
+            Gear4jDatabaseDialect dialect = databaseDialect;
             dialect.setUuid(stmt, 1, runId);
             dialect.setUuid(stmt, 2, parentLogId);
             return executeLogQuery(stmt, dialect);
@@ -283,7 +262,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 ? "SELECT COUNT(*) FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id IS NULL"
                 : "SELECT COUNT(*) FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id = ?";
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-            Gear4jJdbcDialect dialect = jdbcDialect;
+            Gear4jDatabaseDialect dialect = databaseDialect;
             dialect.setUuid(stmt, 1, runId);
             if (parentLogId != null) {
                 dialect.setUuid(stmt, 2, parentLogId);
@@ -303,7 +282,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public List<StationLogRecord> findAllLogsByRunId(UUID runId) {
         String sql = "SELECT * FROM station_log WHERE pipeline_execution_id = ? ORDER BY start_time, id";
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-            Gear4jJdbcDialect dialect = jdbcDialect;
+            Gear4jDatabaseDialect dialect = databaseDialect;
             dialect.setUuid(stmt, 1, runId);
             return executeLogQuery(stmt, dialect);
         } catch (SQLException e) {
@@ -317,7 +296,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         }
 
         try (Connection conn = dataSource.getConnection()) {
-            Gear4jJdbcDialect dialect = jdbcDialect;
+            Gear4jDatabaseDialect dialect = databaseDialect;
             boolean previousAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false);
             try {
@@ -336,7 +315,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         }
     }
 
-    private void saveOperationRecord(Connection conn, Gear4jJdbcDialect dialect, StationLogRecord rec)
+    private void saveOperationRecord(Connection conn, Gear4jDatabaseDialect dialect, StationLogRecord rec)
             throws SQLException {
         if (updateOpenStationLog(conn, dialect, rec) > 0) {
             return;
@@ -355,7 +334,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         }
     }
 
-    private int updateOpenStationLog(Connection conn, Gear4jJdbcDialect dialect, StationLogRecord rec)
+    private int updateOpenStationLog(Connection conn, Gear4jDatabaseDialect dialect, StationLogRecord rec)
             throws SQLException {
         String sql = "UPDATE station_log SET branch_id=?, status=?, end_time=?, error_message=?, "
                 + "error_handler_messages=?, context=?, item_id=? WHERE id=? AND end_time IS NULL";
@@ -372,7 +351,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         }
     }
 
-    private void insertStationLog(Connection conn, Gear4jJdbcDialect dialect, StationLogRecord rec)
+    private void insertStationLog(Connection conn, Gear4jDatabaseDialect dialect, StationLogRecord rec)
             throws SQLException {
         String sql = "INSERT INTO station_log (id, pipeline_execution_id, operation_id, parent_log_id, branch_id, "
                 + "status, start_time, end_time, error_message, error_handler_messages, context, item_id) "
@@ -406,7 +385,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         saveOperationRecordsBatch(List.of(record));
     }
 
-    private List<AssemblyRunRecord> executeQuery(PreparedStatement stmt, Gear4jJdbcDialect dialect)
+    private List<AssemblyRunRecord> executeQuery(PreparedStatement stmt, Gear4jDatabaseDialect dialect)
             throws SQLException {
         try (ResultSet rs = stmt.executeQuery()) {
             List<AssemblyRunRecord> executions = new ArrayList<>();
@@ -417,7 +396,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         }
     }
 
-    private List<StationLogRecord> executeLogQuery(PreparedStatement stmt, Gear4jJdbcDialect dialect)
+    private List<StationLogRecord> executeLogQuery(PreparedStatement stmt, Gear4jDatabaseDialect dialect)
             throws SQLException {
         try (ResultSet rs = stmt.executeQuery()) {
             List<StationLogRecord> logs = new ArrayList<>();
@@ -428,7 +407,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         }
     }
 
-    private AssemblyRunRecord mapExecution(ResultSet rs, Gear4jJdbcDialect dialect) throws SQLException {
+    private AssemblyRunRecord mapExecution(ResultSet rs, Gear4jDatabaseDialect dialect) throws SQLException {
         return new AssemblyRunRecord(
                 dialect.getUuid(rs, "id"),
                 rs.getString("pipeline_id"),
@@ -444,7 +423,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 dialect.getUuid(rs, "parent_station_log_id"));
     }
 
-    private StationLogRecord mapOperation(ResultSet rs, Gear4jJdbcDialect dialect) throws SQLException {
+    private StationLogRecord mapOperation(ResultSet rs, Gear4jDatabaseDialect dialect) throws SQLException {
         return new StationLogRecord(
                 dialect.getUuid(rs, "id"),
                 dialect.getUuid(rs, "pipeline_execution_id"),

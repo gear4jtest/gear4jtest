@@ -8,10 +8,12 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -283,30 +285,49 @@ public final class EventManager {
 
     private void awaitCompletion(CompletableFuture<Void> completion) {
         try {
-            completion.join();
-            if (shutdownExecutorOnClose && reactionExecutor != null) {
-                boolean terminated = reactionExecutor.awaitTermination(shutdownTimeout.toMillis(),
-                                                                       TimeUnit.MILLISECONDS);
-                if (!terminated) {
-                    LOGGER.warn("Timed out while waiting for the per-run event reaction executor to terminate. timeout={}",
-                                shutdownTimeout);
-                    reactionExecutor.shutdownNow();
-                    cancelPendingReactions();
-                    reactionExecutor.awaitTermination(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
-                }
-            }
+            completion.get(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
+            awaitOwnedExecutorTermination();
+        } catch (TimeoutException timeoutException) {
+            LOGGER.warn("Timed out while waiting for the asynchronous event runtime to terminate. timeout={}",
+                        shutdownTimeout);
+            cancelPendingReactions();
+            forceShutdownOwnedExecutor();
         } catch (InterruptedException interruptedException) {
             Thread.currentThread().interrupt();
-            if (shutdownExecutorOnClose && reactionExecutor != null) {
-                reactionExecutor.shutdownNow();
-                cancelPendingReactions();
-            }
-        } catch (RuntimeException runtimeException) {
-            LOGGER.warn("Asynchronous event runtime terminated with an error.", runtimeException);
-            if (shutdownExecutorOnClose && reactionExecutor != null) {
-                reactionExecutor.shutdownNow();
-                cancelPendingReactions();
-            }
+            cancelPendingReactions();
+            forceShutdownOwnedExecutor();
+        } catch (ExecutionException executionException) {
+            LOGGER.warn("Asynchronous event runtime terminated with an error.", executionException.getCause());
+            cancelPendingReactions();
+            forceShutdownOwnedExecutor();
+        }
+    }
+
+    private void awaitOwnedExecutorTermination() throws InterruptedException {
+        if (!shutdownExecutorOnClose || reactionExecutor == null) {
+            return;
+        }
+
+        boolean terminated = reactionExecutor.awaitTermination(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
+        if (!terminated) {
+            LOGGER.warn("Timed out while waiting for the per-run event reaction executor to terminate. timeout={}",
+                        shutdownTimeout);
+            cancelPendingReactions();
+            reactionExecutor.shutdownNow();
+            reactionExecutor.awaitTermination(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private void forceShutdownOwnedExecutor() {
+        if (!shutdownExecutorOnClose || reactionExecutor == null) {
+            return;
+        }
+
+        reactionExecutor.shutdownNow();
+        try {
+            reactionExecutor.awaitTermination(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException interruptedException) {
+            Thread.currentThread().interrupt();
         }
     }
 

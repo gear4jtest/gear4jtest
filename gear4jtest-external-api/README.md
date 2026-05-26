@@ -91,12 +91,22 @@ Do not add:
 
 ## JDBC repository support
 
-The built-in JDBC repositories are currently scoped to PostgreSQL, MySQL 8 and MariaDB. They are not a generic
-provider-agnostic SQL layer. Unsupported databases should fail explicitly through dialect selection instead of silently
-using a different provider script.
+The built-in JDBC repositories and the database artifact store are provider-scoped rather than a generic
+provider-agnostic SQL layer. Supported providers are PostgreSQL, MySQL, MariaDB and Oracle; H2 is also supported for
+local and integration testing.
 
-Adding another provider should be done by adding a dialect entry, matching schema/migration resources and integration
-tests for the object/config repositories.
+All JDBC entrypoints require the single shared `Gear4jDatabaseDialect` value from `gear4jtest-core`. Gear4J deliberately
+does not auto-detect the database through JDBC metadata. For example:
+
+```java
+new OperationChainTagRepositoryJdbc(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
+new DatabaseArtifactStore(dataSource, "artifact_store", Gear4jDatabaseDialect.POSTGRESQL);
+```
+
+The `DATABASE` artifact-store plugin similarly requires a `dialect` property such as `POSTGRESQL` or `ORACLE`.
+Provider-specific statements such as PostgreSQL `ON CONFLICT`, MySQL/MariaDB `ON DUPLICATE KEY UPDATE` and Oracle/H2
+`MERGE` are intentional, but must remain isolated behind `ExternalRepositorySqlDialect`. Adding another provider
+requires an enum value, matching schema/migration resources and integration tests for every JDBC-backed component.
 
 ## Testing
 

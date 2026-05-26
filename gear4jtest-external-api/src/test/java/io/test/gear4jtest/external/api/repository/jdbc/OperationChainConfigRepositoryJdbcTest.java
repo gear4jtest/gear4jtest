@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import javax.sql.DataSource;
 
+import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
 import io.test.gear4jtest.external.api.StoreType;
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +31,7 @@ class OperationChainConfigRepositoryJdbcTest {
         when(resultSet.getString(4)).thenReturn("{\"path\":\"hello, world\",\"quoted\":\"a\\\"b\"}");
 
         OperationChainConfigRepositoryJdbc repository = new OperationChainConfigRepositoryJdbc(dataSource,
-                JdbcDialect.POSTGRES);
+                Gear4jDatabaseDialect.POSTGRESQL);
 
         // When
         var result = repository.findByAssemblyLineId("pipeline").orElseThrow();
@@ -40,4 +41,24 @@ class OperationChainConfigRepositoryJdbcTest {
         assertThat(result.storeProps()).containsEntry("path", "hello, world")
                 .containsEntry("quoted", "a\"b");
     }
+
+    @Test
+    void dialect_shouldProvideProviderSpecificUpsertSyntax() {
+        // When / Then
+        assertThat(ExternalRepositorySqlDialect.upsertOperationChainConfigSql(Gear4jDatabaseDialect.POSTGRESQL))
+                .contains("ON CONFLICT").contains("JSONB");
+        assertThat(ExternalRepositorySqlDialect.upsertOperationChainConfigSql(Gear4jDatabaseDialect.MYSQL))
+                .contains("ON DUPLICATE KEY UPDATE");
+        assertThat(ExternalRepositorySqlDialect.upsertOperationChainConfigSql(Gear4jDatabaseDialect.MARIADB))
+                .contains("ON DUPLICATE KEY UPDATE");
+        assertThat(ExternalRepositorySqlDialect.upsertOperationChainConfigSql(Gear4jDatabaseDialect.ORACLE))
+                .contains("MERGE INTO").contains("FROM dual");
+        assertThat(ExternalRepositorySqlDialect.upsertOperationChainConfigSql(Gear4jDatabaseDialect.H2))
+                .contains("MERGE INTO").contains("KEY(al_id)");
+        assertThat(ExternalRepositorySqlDialect.updateOperationChainStoreSql(Gear4jDatabaseDialect.POSTGRESQL))
+                .contains("CAST(? AS JSONB)");
+        assertThat(ExternalRepositorySqlDialect.updateOperationChainStoreSql(Gear4jDatabaseDialect.ORACLE))
+                .doesNotContain("JSONB");
+    }
+
 }

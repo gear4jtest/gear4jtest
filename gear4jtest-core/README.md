@@ -162,11 +162,22 @@ Supported for the MVP:
 - PostgreSQL;
 - MySQL 8;
 - MariaDB through the MySQL-compatible script and dialect path;
+- Oracle through its dedicated schema and JDBC dialect path;
 - H2 for tests and local development.
 
-Unsupported providers fail fast during dialect detection instead of falling back to the H2 schema. Extending support for
-a new provider should add a dedicated `Gear4jJdbcDialect` entry, a schema script, and integration tests for run and
-station-log persistence.
+Applications must explicitly supply a `Gear4jDatabaseDialect` when constructing JDBC persistence components. Gear4J
+does not infer the dialect from `DatabaseMetaData`: dialect selection controls schema scripts, SQL syntax and JDBC
+bindings, so configuration must be deterministic before a run starts.
+
+For example:
+
+```java
+new DatabaseExecutionManager(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
+new DatabaseAssemblyRunRepository(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
+```
+
+Extending support for a new provider should add a `Gear4jDatabaseDialect` entry, a schema script, and integration tests
+for run and station-log persistence.
 
 ## Testing
 

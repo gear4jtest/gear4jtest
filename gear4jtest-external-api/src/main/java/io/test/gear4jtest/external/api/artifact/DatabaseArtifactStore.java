@@ -3,12 +3,14 @@ package io.test.gear4jtest.external.api.artifact;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
+
+import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
+import io.test.gear4jtest.external.api.repository.jdbc.ExternalRepositorySqlDialect;
 
 public final class DatabaseArtifactStore implements ArtifactStore {
     private static final Pattern SQL_IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]{0,63}");
@@ -16,10 +18,12 @@ public final class DatabaseArtifactStore implements ArtifactStore {
 
     private final DataSource ds;
     private final String table;
+    private final Gear4jDatabaseDialect databaseDialect;
 
-    public DatabaseArtifactStore(DataSource ds, String table) {
+    public DatabaseArtifactStore(DataSource ds, String table, Gear4jDatabaseDialect databaseDialect) {
         this.ds = Objects.requireNonNull(ds, "ds must not be null");
         this.table = requireSqlIdentifier(table == null ? DEFAULT_TABLE : table, "table name");
+        this.databaseDialect = Objects.requireNonNull(databaseDialect, "databaseDialect must not be null");
     }
 
     private static String requireSqlIdentifier(String value, String label) {
@@ -29,31 +33,19 @@ public final class DatabaseArtifactStore implements ArtifactStore {
         return value;
     }
 
-    private static boolean isUniqueViolation(SQLException e) {
-        String state = e.getSQLState();
-        int code = e.getErrorCode();
-        if ("23505".equals(state)) {
-            return true;
-        }
-        if (code == 1062) {
-            return true;
-        }
-        return e.getMessage() != null && e.getMessage().toLowerCase(Locale.ROOT).contains("duplicate");
-    }
-
     @Override
     public String put(byte[] content) throws IOException {
         byte[] stored = Objects.requireNonNull(content, "content must not be null").clone();
         String hash = Hashing.sha256Hex(stored);
-        try (var c = ds.getConnection()) {
-            try (var ps = c
-                    .prepareStatement("INSERT INTO " + table + "(hash_hex,size_bytes,content) VALUES (?,?,?)")) {
-                ps.setString(1, hash);
-                ps.setLong(2, stored.length);
-                ps.setBytes(3, stored);
+        try (var c = ds.getConnection();
+                var ps = c.prepareStatement("INSERT INTO " + table + "(hash_hex,size_bytes,content) VALUES (?,?,?)")) {
+            ps.setString(1, hash);
+            ps.setLong(2, stored.length);
+            ps.setBinaryStream(3, new ByteArrayInputStream(stored), stored.length);
+            try {
                 ps.executeUpdate();
             } catch (SQLException e) {
-                if (!isUniqueViolation(e)) {
+                if (!ExternalRepositorySqlDialect.isUniqueViolation(databaseDialect, e)) {
                     throw e;
                 }
             }

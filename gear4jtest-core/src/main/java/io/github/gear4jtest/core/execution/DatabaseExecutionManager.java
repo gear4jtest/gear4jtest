@@ -20,6 +20,7 @@ import javax.sql.DataSource;
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.persistence.DatabaseAssemblyRunRepository;
+import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,13 +33,17 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
     private final ExecutorService flushExecutor;
     private final int flushThreshold;
 
-    public DatabaseExecutionManager(DataSource dataSource) {
-        this(dataSource, 500, true);
+    public DatabaseExecutionManager(DataSource dataSource, Gear4jDatabaseDialect databaseDialect) {
+        this(dataSource, databaseDialect, 500, true);
     }
 
-    public DatabaseExecutionManager(DataSource dataSource, int flushThreshold, boolean autoCreateTables) {
-        this(new DatabaseAssemblyRunRepository(Objects.requireNonNull(dataSource, "dataSource must not be null")),
-                flushThreshold, autoCreateTables, Executors.newSingleThreadExecutor(new Gear4jFlushThreadFactory()));
+    public DatabaseExecutionManager(DataSource dataSource,
+                                    Gear4jDatabaseDialect databaseDialect,
+                                    int flushThreshold,
+                                    boolean autoCreateTables) {
+        this(new DatabaseAssemblyRunRepository(Objects.requireNonNull(dataSource, "dataSource must not be null"),
+                Objects.requireNonNull(databaseDialect, "databaseDialect must not be null")), flushThreshold,
+                autoCreateTables, Executors.newSingleThreadExecutor(new Gear4jFlushThreadFactory()));
     }
 
     public DatabaseExecutionManager(DatabaseAssemblyRunRepository repository,

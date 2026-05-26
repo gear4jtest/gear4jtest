@@ -1,4 +1,4 @@
--- MySQL 8 minimal schema + tags
+-- MariaDB minimal schema + tags
 
 CREATE TABLE artifact_store
 (

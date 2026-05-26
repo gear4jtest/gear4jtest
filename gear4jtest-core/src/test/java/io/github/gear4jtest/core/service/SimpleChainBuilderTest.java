@@ -33,6 +33,7 @@ import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 import io.github.gear4jtest.core.persistence.AssemblyRunView;
 import io.github.gear4jtest.core.persistence.DatabaseAssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
+import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.service.steps.Step10;
@@ -214,7 +215,9 @@ public class SimpleChainBuilderTest {
                 .executionContextRegistry(executionContextRegistry).build();
 
         var request = RunRequest.builder().input("b").context(context).resourceFactory(resourceFactory)
-                .with(new PersistenceExtension(new DatabaseExecutionManager(dataSource))).build();
+                .with(new PersistenceExtension(
+                        new DatabaseExecutionManager(dataSource, Gear4jDatabaseDialect.POSTGRESQL)))
+                .build();
 
         // When
         ExecutionResult<List<List<String>>> result = engine.execute(assemblyLine, request);
@@ -223,7 +226,8 @@ public class SimpleChainBuilderTest {
         assertThat(result).isNotNull().extracting(ExecutionResult::getResult).isInstanceOf(List.class).asList()
                 .hasSize(1).first().isInstanceOf(List.class).asList().contains("");
 
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource);
+        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
+                Gear4jDatabaseDialect.POSTGRESQL);
 
         var pipelineExecution = repository.findById(result.getExecution().getId());
         assertThat(pipelineExecution).isPresent().get()

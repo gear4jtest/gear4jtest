@@ -25,6 +25,21 @@ public class PersistenceExtension implements RunLifecycleExtension, StationLifec
         this.manager = Objects.requireNonNull(manager, "manager must not be null");
     }
 
+    /**
+     * Persistence observes the normalized terminal state after ordinary lifecycle
+     * observers had an opportunity to affect the station outcome.
+     *
+     * <p>
+     * If another critical completion observer fails, its {@code FAILED} status must
+     * be present in the snapshot appended by this extension. A persistence failure
+     * itself cannot, by definition, durably record its own failure.
+     * </p>
+     */
+    @Override
+    public int getOrder() {
+        return Integer.MAX_VALUE;
+    }
+
     @Override
     public LifecycleFailureMode failureMode() {
         return LifecycleFailureMode.CRITICAL;

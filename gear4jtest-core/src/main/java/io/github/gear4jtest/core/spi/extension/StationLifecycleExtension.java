@@ -18,7 +18,13 @@ import io.github.gear4jtest.core.persistence.StationLogRecord;
  * </ul>
  *
  * <p>
- * Implementations are intended for persistence, tracing, metrics, audit, etc.
+ * Implementations are intended for persistence, tracing, metrics, audit, etc. A
+ * {@link LifecycleFailureMode#BEST_EFFORT} hook failure is logged and ignored.
+ * A {@link LifecycleFailureMode#CRITICAL} hook failure is recorded by turning
+ * an otherwise running/successful/skipped station log into a failed station
+ * log. It is then interpreted by the existing parent flow policy, just like any
+ * other failed child station. It is not thrown directly to the API consumer by
+ * this wrapper.
  * </p>
  */
 public interface StationLifecycleExtension extends RuntimeExtension {

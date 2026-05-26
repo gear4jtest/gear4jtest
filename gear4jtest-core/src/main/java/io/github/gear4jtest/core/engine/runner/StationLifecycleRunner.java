@@ -8,8 +8,11 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.event.StationFinishedEvent;
 import io.github.gear4jtest.core.event.StationStartedEvent;
+import io.github.gear4jtest.core.exception.StationLifecycleException;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
+import io.github.gear4jtest.core.spi.extension.LifecycleFailureMode;
 import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 import org.slf4j.Logger;
@@ -32,18 +35,21 @@ public class StationLifecycleRunner implements StationRunner {
 
         publishStartedEvent(runCtx, ctx, input);
 
+        boolean criticalStartFailure = false;
         for (StationLifecycleExtension extension : lifecycleExtensions) {
-            invokeStartedSafely(extension, runCtx, ctx, startedSnapshot);
+            criticalStartFailure |= invokeStartedSafely(extension, runCtx, ctx, startedSnapshot);
         }
 
-        StationLogTrace result = delegate.run(input, station, ctx);
-        StationLogRecord completedSnapshot = StationLogRecord.from(result);
+        StationLogTrace result = criticalStartFailure ? ctx.getRecord() : delegate.run(input, station, ctx);
 
+        for (StationLifecycleExtension extension : lifecycleExtensions) {
+            invokeCompletedSafely(extension, runCtx, ctx, result);
+        }
+
+        // Completion hooks may change a successful/skipped station into a failed
+        // station
+        // when a CRITICAL observer fails. Publish only the normalized final status.
         publishFinishedEvent(runCtx, ctx, input, result);
-
-        for (StationLifecycleExtension extension : lifecycleExtensions) {
-            invokeCompletedSafely(extension, runCtx, ctx, completedSnapshot);
-        }
 
         return result;
     }
@@ -88,31 +94,62 @@ public class StationLifecycleRunner implements StationRunner {
         return new RuntimeException(throwable);
     }
 
-    private void invokeStartedSafely(StationLifecycleExtension extension,
-                                     ExecutionContext runCtx,
-                                     StationExecutionContext stationCtx,
-                                     StationLogRecord snapshot) {
+    private boolean invokeStartedSafely(StationLifecycleExtension extension,
+                                        ExecutionContext runCtx,
+                                        StationExecutionContext stationCtx,
+                                        StationLogRecord snapshot) {
         try {
             extension.onStationStarted(runCtx, stationCtx, snapshot);
+            return false;
         } catch (Error error) {
             throw error;
         } catch (Exception exception) {
-            LOGGER.error("StationLifecycleExtension failed during onStationStarted. extension={}, stationId={}",
-                         extension.getClass().getName(), snapshot.operationId(), exception);
+            return handleLifecycleFailure(extension, stationCtx.getRecord(), snapshot.operationId(),
+                                          "onStationStarted", exception);
         }
     }
 
     private void invokeCompletedSafely(StationLifecycleExtension extension,
                                        ExecutionContext runCtx,
                                        StationExecutionContext stationCtx,
-                                       StationLogRecord snapshot) {
+                                       StationLogTrace result) {
         try {
-            extension.onStationCompleted(runCtx, stationCtx, snapshot);
+            extension.onStationCompleted(runCtx, stationCtx, StationLogRecord.from(result));
         } catch (Error error) {
             throw error;
         } catch (Exception exception) {
-            LOGGER.error("StationLifecycleExtension failed during onStationCompleted. extension={}, stationId={}",
-                         extension.getClass().getName(), snapshot.operationId(), exception);
+            handleLifecycleFailure(extension, result, result.getOperationId(), "onStationCompleted", exception);
         }
+    }
+
+    /**
+     * Records lifecycle observer failures on the station itself instead of leaking
+     * a raw infrastructure exception out of the station runner chain. A parent
+     * strategy can consequently apply its usual {@code FlowConfig} to the failed
+     * child log.
+     */
+    private boolean handleLifecycleFailure(StationLifecycleExtension extension,
+                                           StationLogTrace stationLog,
+                                           String operationId,
+                                           String lifecycleCallback,
+                                           Exception exception) {
+        LOGGER.error("StationLifecycleExtension failed during {}. extension={}, stationId={}", lifecycleCallback,
+                     extension.getClass().getName(), operationId, exception);
+        if (extension.failureMode() != LifecycleFailureMode.CRITICAL) {
+            return false;
+        }
+
+        StationLifecycleException recordedFailure = new StationLifecycleException(lifecycleCallback,
+                extension.getClass(), exception);
+        StationLogStatus status = stationLog.getStatus();
+        if (status == StationLogStatus.RUNNING || status == StationLogStatus.SUCCEEDED
+                || status == StationLogStatus.SKIPPED) {
+            stationLog.markFailed(recordedFailure);
+        } else {
+            // Do not erase an earlier FAILED/STOPPED/CANCELLED terminal outcome.
+            // Retain the lifecycle failure as additional diagnostic material.
+            stationLog.addErrorHandlerException(recordedFailure);
+        }
+        return true;
     }
 }
