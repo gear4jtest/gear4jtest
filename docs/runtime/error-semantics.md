@@ -41,3 +41,8 @@ Fatal `Error` instances are not normalized into station failures. They continue 
 ## Open follow-up: run lifecycle hooks
 
 `RunLifecycleExtension` currently has separate behavior and must be reviewed against the same principle, in particular for failures from `onRunStarted` and `onRunCompleted`. This is deliberately recorded as a follow-up rather than silently changing run-persistence semantics in the station-lifecycle fix.
+
+
+## Public terminal outcomes
+
+The public `ExecutionResult` exposes `SUCCEEDED`, `FAILED`, `STOPPED` and `CANCELLED`. `isSuccess()` returns true only for a normally completed run. This prevents a caller from interpreting an intentionally stopped or technically cancelled run as a completed business success.

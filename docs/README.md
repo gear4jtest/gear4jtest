@@ -7,10 +7,12 @@ future-direction notes that should survive individual refactors.
 
 ## Structure
 
-- `architecture/`: durable explanations of runtime, extension, event, external-pipeline and XML-generation architecture.
+- `architecture/`: durable explanations of runtime, extension, event, external-pipeline, XML-generation, JDBC migration, Boot and observability architecture.
 - `decisions/`: decision records and future-direction notes.
-- `roadmap/`: known work items, review notes and non-MVP ideas.
+- `roadmap/`: known work items, review notes and non-MVP ideas, including kernel-driven cancellation and Gear4J expression language.
 - `runtime/`: implemented runtime semantics and execution contracts.
+- `security/`: supply-chain and runtime security guidance.
+- `releasing.md`: release workflow and Maven Central publication checklist.
 
 ## Status vocabulary
 

@@ -1,16 +1,9 @@
 package io.github.gear4jtest.core.persistence;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,12 +11,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gear4jtest.core.model.StationLogStatus;
+import io.github.gear4jtest.core.persistence.migration.JdbcSchemaMigrator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,51 +40,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     @Override
     public void initialize() {
-        try (Connection conn = dataSource.getConnection()) {
-            if (isSchemaInitialized(conn)) {
-                return;
-            }
-
-            String scriptPath = databaseDialect.schemaScriptPath();
-            LOGGER.info("[Gear4J] Initializing schema using script: {} ({})", scriptPath, databaseDialect);
-            executeScript(conn, scriptPath);
-        } catch (SQLException | IOException e) {
-            throw new RuntimeException("Error while initializing Gear4J schema", e);
-        }
-    }
-
-    private boolean isSchemaInitialized(Connection conn) throws SQLException {
-        DatabaseMetaData meta = conn.getMetaData();
-        return tableExists(meta, "assembly_run") || tableExists(meta, "ASSEMBLY_RUN");
-    }
-
-    private boolean tableExists(DatabaseMetaData meta, String tableName) throws SQLException {
-        try (ResultSet rs = meta.getTables(null, null, tableName, null)) {
-            return rs.next();
-        }
-    }
-
-    private void executeScript(Connection conn, String scriptPath) throws IOException, SQLException {
-        try (InputStream is = getClass().getResourceAsStream(scriptPath)) {
-            if (is == null) {
-                throw new IOException("Script file not found in classpath: " + scriptPath);
-            }
-
-            String scriptContent;
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-                scriptContent = reader.lines().collect(Collectors.joining("\n"));
-            }
-
-            String[] statements = scriptContent.split(";");
-            try (Statement stmt = conn.createStatement()) {
-                for (String raw : statements) {
-                    String sql = raw.trim();
-                    if (!sql.isEmpty()) {
-                        stmt.execute(sql);
-                    }
-                }
-            }
-        }
+        LOGGER.info("[Gear4J] Applying core schema migrations for {}", databaseDialect);
+        JdbcSchemaMigrator.core(databaseDialect).migrate(dataSource);
     }
 
     @Override
@@ -182,11 +132,43 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     @Override
+    public List<AssemblyRunRecord> findByPipelineId(String pipelineId, PageRequest pageRequest) {
+        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        try (Connection conn = dataSource.getConnection()) {
+            String sql = databaseDialect.pagedSql(
+                                                  "SELECT * FROM assembly_run WHERE pipeline_id = ? ORDER BY start_time DESC");
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, pipelineId);
+                databaseDialect.bindPage(stmt, 2, pageRequest);
+                return executeQuery(stmt, databaseDialect);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public List<AssemblyRunRecord> findByStatus(ExecutionStatus status) {
         try (Connection conn = dataSource.getConnection()) {
             String sql = "SELECT * FROM assembly_run WHERE status = ? ORDER BY start_time DESC";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, status.name());
+                return executeQuery(stmt, databaseDialect);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<AssemblyRunRecord> findByStatus(ExecutionStatus status, PageRequest pageRequest) {
+        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        try (Connection conn = dataSource.getConnection()) {
+            String sql = databaseDialect.pagedSql(
+                                                  "SELECT * FROM assembly_run WHERE status = ? ORDER BY start_time DESC");
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, status.name());
+                databaseDialect.bindPage(stmt, 2, pageRequest);
                 return executeQuery(stmt, databaseDialect);
             }
         } catch (SQLException e) {
@@ -232,12 +214,41 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     @Override
+    public List<AssemblyRunRecord> findAll(PageRequest pageRequest) {
+        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        try (Connection conn = dataSource.getConnection()) {
+            String sql = databaseDialect.pagedSql("SELECT * FROM assembly_run ORDER BY start_time DESC");
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                databaseDialect.bindPage(stmt, 1, pageRequest);
+                return executeQuery(stmt, databaseDialect);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public List<StationLogRecord> findRootLogsByRunId(UUID runId) {
         String sql = "SELECT * FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id IS NULL ORDER BY start_time, id";
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             Gear4jDatabaseDialect dialect = databaseDialect;
             dialect.setUuid(stmt, 1, runId);
             return executeLogQuery(stmt, dialect);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<StationLogRecord> findRootLogsByRunId(UUID runId, PageRequest pageRequest) {
+        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        String base = "SELECT * FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id IS NULL "
+                + "ORDER BY start_time, id";
+        String sql = databaseDialect.pagedSql(base);
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            databaseDialect.setUuid(stmt, 1, runId);
+            databaseDialect.bindPage(stmt, 2, pageRequest);
+            return executeLogQuery(stmt, databaseDialect);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -251,6 +262,22 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             dialect.setUuid(stmt, 1, runId);
             dialect.setUuid(stmt, 2, parentLogId);
             return executeLogQuery(stmt, dialect);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<StationLogRecord> findChildLogsByRunId(UUID runId, UUID parentLogId, PageRequest pageRequest) {
+        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        String base = "SELECT * FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id = ? "
+                + "ORDER BY start_time, id";
+        String sql = databaseDialect.pagedSql(base);
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            databaseDialect.setUuid(stmt, 1, runId);
+            databaseDialect.setUuid(stmt, 2, parentLogId);
+            databaseDialect.bindPage(stmt, 3, pageRequest);
+            return executeLogQuery(stmt, databaseDialect);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

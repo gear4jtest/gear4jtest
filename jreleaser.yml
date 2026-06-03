@@ -1,0 +1,35 @@
+project:
+  name: gear4jtest
+  description: Gear4J Java pipeline orchestration library
+  longDescription: Gear4J is a Java 17 library for building, executing and observing typed operation pipelines.
+  website: https://github.com/gear4jtest/gear4jtest
+  authors:
+    - Gear4J contributors
+  license: Apache-2.0
+  links:
+    homepage: https://github.com/gear4jtest/gear4jtest
+    documentation: https://github.com/gear4jtest/gear4jtest/tree/master/docs
+    license: https://www.apache.org/licenses/LICENSE-2.0.txt
+  java:
+    groupId: io.github.gear4jtest
+    version: 17
+
+signing:
+  active: RELEASE
+  armored: true
+  verify: true
+
+release:
+  github:
+    enabled: false
+    overwrite: false
+
+deploy:
+  maven:
+    mavenCentral:
+      sonatype:
+        active: RELEASE
+        url: https://central.sonatype.com/api/v1/publisher
+        applyMavenCentralRules: true
+        stagingRepositories:
+          - build/staging-deploy

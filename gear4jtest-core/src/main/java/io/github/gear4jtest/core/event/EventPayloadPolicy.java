@@ -7,6 +7,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.spi.security.RedactionTarget;
+import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 
 /**
  * Controls which built-in station event payloads are exposed to asynchronous
@@ -57,6 +59,22 @@ public interface EventPayloadPolicy {
             @Override
             public Object mapStationOutput(Object output, StationExecutionContext stationExecutionContext) {
                 return predicate.test(output) ? output : null;
+            }
+        };
+    }
+
+    static EventPayloadPolicy redacting(EventPayloadPolicy delegate, SensitiveDataRedactor redactor) {
+        Objects.requireNonNull(delegate, "delegate");
+        Objects.requireNonNull(redactor, "redactor");
+        return new EventPayloadPolicy() {
+            @Override
+            public Object mapStationInput(Object input, StationExecutionContext context) {
+                return redactor.redact(RedactionTarget.EVENT_INPUT, delegate.mapStationInput(input, context));
+            }
+
+            @Override
+            public Object mapStationOutput(Object output, StationExecutionContext context) {
+                return redactor.redact(RedactionTarget.EVENT_OUTPUT, delegate.mapStationOutput(output, context));
             }
         };
     }

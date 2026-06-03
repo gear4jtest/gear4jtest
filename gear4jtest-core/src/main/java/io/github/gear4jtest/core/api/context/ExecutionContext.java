@@ -30,6 +30,7 @@ public class ExecutionContext {
     private final PipelineRuntimeContract runtimeContract;
     private final PipelineCallStack pipelineCallStack;
     private final IdGenerator idGenerator;
+    private final CancellationToken cancellationToken;
 
     public ExecutionContext(UUID executionId,
                             String pipelineId,
@@ -55,7 +56,7 @@ public class ExecutionContext {
                             PipelineRuntimeContract runtimeContract,
                             PipelineCallStack pipelineCallStack) {
         this(executionId, pipelineId, services, assemblyRun, eventRuntimeOptions, runtimeContract, pipelineCallStack,
-                null);
+                null, null);
     }
 
     public ExecutionContext(UUID executionId,
@@ -66,6 +67,19 @@ public class ExecutionContext {
                             PipelineRuntimeContract runtimeContract,
                             PipelineCallStack pipelineCallStack,
                             IdGenerator idGenerator) {
+        this(executionId, pipelineId, services, assemblyRun, eventRuntimeOptions, runtimeContract, pipelineCallStack,
+                idGenerator, null);
+    }
+
+    public ExecutionContext(UUID executionId,
+                            String pipelineId,
+                            ExecutionServices services,
+                            AssemblyRunTrace assemblyRun,
+                            EventRuntimeOptions eventRuntimeOptions,
+                            PipelineRuntimeContract runtimeContract,
+                            PipelineCallStack pipelineCallStack,
+                            IdGenerator idGenerator,
+                            CancellationToken cancellationToken) {
         this.pipelineId = pipelineId;
         this.executionId = executionId;
         this.services = Objects.requireNonNull(services, "services");
@@ -74,6 +88,7 @@ public class ExecutionContext {
         this.runtimeContract = runtimeContract != null ? runtimeContract : PipelineRuntimeContract.inlineConfigless();
         this.pipelineCallStack = pipelineCallStack != null ? pipelineCallStack : new PipelineCallStack();
         this.idGenerator = idGenerator;
+        this.cancellationToken = cancellationToken != null ? cancellationToken : new CancellationToken();
     }
 
     public String getPipelineId() {
@@ -122,6 +137,11 @@ public class ExecutionContext {
 
     public IdGenerator getIdGenerator() {
         return idGenerator;
+    }
+
+    /** Returns the cooperative cancellation token shared by this run. */
+    public CancellationToken getCancellationToken() {
+        return cancellationToken;
     }
 
     public String getCurrentItemId() {

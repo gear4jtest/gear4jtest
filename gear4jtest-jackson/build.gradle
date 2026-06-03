@@ -9,4 +9,4 @@ dependencies {
     testImplementation group: "org.assertj", name: "assertj-core", version: "3.14.0"
 }
 
-ext.moduleName = 'io.test.gear4jtest.jackson'
+ext.moduleName = 'io.github.gear4jtest.jackson'

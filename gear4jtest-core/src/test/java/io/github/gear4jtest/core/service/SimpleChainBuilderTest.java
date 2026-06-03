@@ -25,15 +25,9 @@ import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
 import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventSubscription;
-import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
 import io.github.gear4jtest.core.model.StationLogStatus;
-import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
-import io.github.gear4jtest.core.persistence.AssemblyRunView;
-import io.github.gear4jtest.core.persistence.DatabaseAssemblyRunRepository;
-import io.github.gear4jtest.core.persistence.ExecutionStatus;
-import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.service.steps.Step10;
@@ -46,7 +40,6 @@ import io.github.gear4jtest.core.service.steps.Step8;
 import io.github.gear4jtest.core.service.steps.Step9;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
-import org.postgresql.ds.PGSimpleDataSource;
 
 import static io.github.gear4jtest.core.api.util.ElementModelBuilders.chain;
 import static io.github.gear4jtest.core.api.util.ElementModelBuilders.configuration;
@@ -54,7 +47,6 @@ import static io.github.gear4jtest.core.api.util.ElementModelBuilders.container;
 import static io.github.gear4jtest.core.api.util.ElementModelBuilders.eventConfiguration;
 import static io.github.gear4jtest.core.api.util.ElementModelBuilders.eventHandling;
 import static io.github.gear4jtest.core.api.util.ElementModelBuilders.ifElseContainer;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.persistenceConfiguration;
 import static io.github.gear4jtest.core.api.util.ElementModelBuilders.processingOperation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -172,126 +164,6 @@ public class SimpleChainBuilderTest {
 
         TimeUnit.MILLISECONDS.sleep(500);
         assertThat(testEventListener.getCounter()).isEqualTo(15);
-    }
-
-    @Test
-    public void test_v2_with_datasource() {
-        // Given
-        PGSimpleDataSource dataSource = new PGSimpleDataSource();
-        dataSource.setUser("postgres");
-        dataSource.setPassword("postgres");
-        dataSource.setUrl("jdbc:postgresql://localhost:5432/gear4jtest");
-        dataSource.setDatabaseName("gear4jtest");
-
-        var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
-                .then(processingOperation("step3", Step3.class).parameter(Step3::getParam, "a")
-                        .onError(ElementModelBuilders.<String>ignore(Exception.class)
-                                .condition((input, ctx) -> ctx.getContext().containsKey("a"))
-                                .action(() -> System.out.println("Error occurred!")).build())
-                        .skipIf((input, ctx) -> input.equals("a")).transformer((a, ctx) -> new HashMap<>()).build())
-                .then(processingOperation("step8", Step8.class).build())
-                .then(processingOperation("step9", Step9.class).build())
-                .then(ElementModelBuilders.<List<Integer>>iterate("iterator").iterableFunction(Function.identity())
-                        .pipeline(chain("sequence", processingOperation("step10", Step10.class).build()).build())
-                        .collector(Collectors.toList()).build())
-                .configuration(configuration().eventHandling(eventHandling()
-                        .subscription(EventSubscription.on(Event.class, new TestEventListener()::handleEvent))
-                        .globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build()).build())
-                        .persistence(persistenceConfiguration().storeResultObject(true).build()).build())
-                .build();
-
-        Map<String, Object> context = new HashMap<>() {
-            {
-                put("a", 45612);
-            }
-        };
-
-        RuntimeExtensionResolver runtimeExtensionResolver = new RuntimeExtensionResolver(null);
-        RunnerChainFactory runnerChainFactory = new RunnerChainFactory(StrategyRegistry.defaultRegistry());
-        ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
-        ResourceFactory resourceFactory = new TestResourceFactory();
-        PipelineEngine engine = PipelineEngine.builder().runnerChainFactory(runnerChainFactory)
-                .resourceFactory(resourceFactory).extensionResolver(runtimeExtensionResolver)
-                .executionContextRegistry(executionContextRegistry).build();
-
-        var request = RunRequest.builder().input("b").context(context).resourceFactory(resourceFactory)
-                .with(new PersistenceExtension(
-                        new DatabaseExecutionManager(dataSource, Gear4jDatabaseDialect.POSTGRESQL)))
-                .build();
-
-        // When
-        ExecutionResult<List<List<String>>> result = engine.execute(assemblyLine, request);
-
-        // Then
-        assertThat(result).isNotNull().extracting(ExecutionResult::getResult).isInstanceOf(List.class).asList()
-                .hasSize(1).first().isInstanceOf(List.class).asList().contains("");
-
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL);
-
-        var pipelineExecution = repository.findById(result.getExecution().getId());
-        assertThat(pipelineExecution).isPresent().get()
-                .extracting(AssemblyRunRecord::id, AssemblyRunRecord::pipelineId, AssemblyRunRecord::inputParams,
-                            AssemblyRunRecord::context, AssemblyRunRecord::result, AssemblyRunRecord::status)
-                .containsExactly(result.getExecution().getId(), "test", context, context, List.of(List.of("")),
-                                 ExecutionStatus.SUCCEEDED);
-
-        var pipelineDetails = repository.findViewById(result.getExecution().getId());
-        assertThat(pipelineDetails).isPresent().get().extracting(AssemblyRunView::getRootOperations).asList().hasSize(1)
-                .first().asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(StationLogRecord.class))
-                .extracting(StationLogRecord::pipelineExecutionId, StationLogRecord::operationId,
-                            StationLogRecord::parentOperationId, StationLogRecord::status, StationLogRecord::context)
-                .containsExactly(result.getExecution().getId(), "test:root", null, StationLogStatus.SUCCEEDED,
-                                 Map.of());
-
-        List<StationLogRecord> rootLogs = repository.findRootLogsByRunId(result.getExecution().getId());
-        var rootSequenceExecutionRecord = getRecordByOperationId(rootLogs, "test:root");
-
-        List<StationLogRecord> rootChildren = repository.findChildLogsByRunId(result.getExecution().getId(),
-                                                                              rootSequenceExecutionRecord.id());
-
-        assertThat(rootChildren)
-                .extracting(StationLogRecord::pipelineExecutionId, StationLogRecord::operationId,
-                            StationLogRecord::parentOperationId, StationLogRecord::status, StationLogRecord::context)
-                .containsExactly(tuple(result.getExecution().getId(), "step3", rootSequenceExecutionRecord.id(),
-                                       StationLogStatus.SUCCEEDED, Map.of()),
-                                 tuple(result.getExecution().getId(), "step8", rootSequenceExecutionRecord.id(),
-                                       StationLogStatus.SUCCEEDED, Map.of()),
-                                 tuple(result.getExecution().getId(), "step9", rootSequenceExecutionRecord.id(),
-                                       StationLogStatus.SUCCEEDED, Map.of()),
-                                 tuple(result.getExecution().getId(), "iterator", rootSequenceExecutionRecord.id(),
-                                       StationLogStatus.SUCCEEDED, Map.of()));
-
-        assertThat(repository.countChildLogsByRunId(result.getExecution().getId(), rootSequenceExecutionRecord.id()))
-                .isEqualTo(4);
-
-        var iteratorExecutionRecord = getRecordByOperationId(rootChildren, "iterator");
-
-        List<StationLogRecord> iteratorChildren = repository.findChildLogsByRunId(result.getExecution().getId(),
-                                                                                  iteratorExecutionRecord.id());
-
-        assertThat(iteratorChildren)
-                .extracting(StationLogRecord::pipelineExecutionId, StationLogRecord::operationId,
-                            StationLogRecord::parentOperationId, StationLogRecord::status, StationLogRecord::context)
-                .containsExactly(tuple(result.getExecution().getId(), "sequence", iteratorExecutionRecord.id(),
-                                       StationLogStatus.SUCCEEDED, Map.of()));
-
-        assertThat(repository.countChildLogsByRunId(result.getExecution().getId(), iteratorExecutionRecord.id()))
-                .isEqualTo(1);
-
-        var sequenceExecutionRecord = getRecordByOperationId(iteratorChildren, "sequence");
-
-        List<StationLogRecord> sequenceChildren = repository.findChildLogsByRunId(result.getExecution().getId(),
-                                                                                  sequenceExecutionRecord.id());
-
-        assertThat(sequenceChildren)
-                .extracting(StationLogRecord::pipelineExecutionId, StationLogRecord::operationId,
-                            StationLogRecord::parentOperationId, StationLogRecord::status, StationLogRecord::context)
-                .containsExactly(tuple(result.getExecution().getId(), "step10", sequenceExecutionRecord.id(),
-                                       StationLogStatus.SUCCEEDED, Map.of()));
-
-        assertThat(repository.countChildLogsByRunId(result.getExecution().getId(), sequenceExecutionRecord.id()))
-                .isEqualTo(1);
     }
 
     @Test

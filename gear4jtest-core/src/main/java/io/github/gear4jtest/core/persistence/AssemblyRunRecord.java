@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.spi.security.RedactionTarget;
+import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 
 public record AssemblyRunRecord(UUID id,
                                 String pipelineId,
@@ -20,15 +22,32 @@ public record AssemblyRunRecord(UUID id,
                                 UUID rootExecutionId,
                                 UUID parentStationLogId) {
     public static AssemblyRunRecord from(AssemblyRunTrace trace) {
+        return from(trace, SensitiveDataRedactor.none());
+    }
+
+    @SuppressWarnings("unchecked")
+    public static AssemblyRunRecord from(AssemblyRunTrace trace, SensitiveDataRedactor redactor) {
         if (trace == null) {
             throw new IllegalArgumentException("trace must not be null");
         }
-
-        return new AssemblyRunRecord(trace.getId(), trace.getPipelineId(),
-                trace.getContext() == null ? Map.of() : Map.copyOf(new LinkedHashMap<>(trace.getContext())),
-                trace.getInputParams(), trace.getResult(), trace.getStatus(), trace.getStartTime(), trace.getEndTime(),
-                trace.getErrorMessage(), trace.getParentExecutionId(), trace.getRootExecutionId(),
+        SensitiveDataRedactor effective = redactor != null ? redactor : SensitiveDataRedactor.none();
+        Map<String, Object> context = trace.getContext() == null ? Map.of()
+                : Map.copyOf(new LinkedHashMap<>(trace.getContext()));
+        Object redactedContext = effective.redact(RedactionTarget.RUN_CONTEXT, context);
+        Map<String, Object> storedContext = redactedContext instanceof Map<?, ?> map
+                ? Map.copyOf((Map<String, Object>) map) : Map.of();
+        return new AssemblyRunRecord(trace.getId(), trace.getPipelineId(), storedContext,
+                effective.redact(RedactionTarget.RUN_INPUT, trace.getInputParams()),
+                effective.redact(RedactionTarget.RUN_RESULT, trace.getResult()), trace.getStatus(),
+                trace.getStartTime(),
+                trace.getEndTime(), stringValue(effective.redact(RedactionTarget.RUN_ERROR_MESSAGE,
+                                                                 trace.getErrorMessage())),
+                trace.getParentExecutionId(), trace.getRootExecutionId(),
                 trace.getParentStationLogId());
+    }
+
+    private static String stringValue(Object value) {
+        return value != null ? value.toString() : null;
     }
 
     public AssemblyRunTrace toTrace() {

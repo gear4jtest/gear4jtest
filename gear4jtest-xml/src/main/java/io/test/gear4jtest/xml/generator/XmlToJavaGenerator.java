@@ -27,6 +27,7 @@ public final class XmlToJavaGenerator {
     private final String packageName;
     private final ClassLoader classLoader;
     private final JavaSourceFormatter formatter;
+    private final XmlJavaSourcePolicy sourcePolicy;
 
     public XmlToJavaGenerator() {
         this(DEFAULT_PACKAGE);
@@ -41,19 +42,29 @@ public final class XmlToJavaGenerator {
     }
 
     public XmlToJavaGenerator(String packageName, ClassLoader classLoader, JavaSourceFormatter formatter) {
+        this(packageName, classLoader, formatter, XmlJavaSourcePolicy.trusted());
+    }
+
+    public XmlToJavaGenerator(String packageName,
+                              ClassLoader classLoader,
+                              JavaSourceFormatter formatter,
+                              XmlJavaSourcePolicy sourcePolicy) {
+        this.sourcePolicy = XmlJavaSourcePolicy.require(sourcePolicy);
+        this.sourcePolicy.validatePackageName(packageName);
         this.packageName = Objects.requireNonNull(packageName, "packageName");
         this.classLoader = classLoader != null ? classLoader : contextClassLoader();
         this.formatter = Objects.requireNonNull(formatter, "formatter must not be null");
     }
 
-    private static String valueExpression(ValueParameter parameter) {
+    private String valueExpression(ValueParameter parameter) {
         if ("java.lang.String".equals(parameter.valueType()) || "String".equals(parameter.valueType())) {
             return "\"" + escapeJava(parameter.value()) + "\"";
         }
+        sourcePolicy.validateJavaExpression(parameter.value());
         return parameter.value();
     }
 
-    private static String conditionLambda(Condition condition, JavaImportManager imports) {
+    private String conditionLambda(Condition condition, JavaImportManager imports) {
         String expression = normalizeExpression(condition.expression().trim(), imports);
         if (expression.contains("->")) {
             return expression;
@@ -61,9 +72,9 @@ public final class XmlToJavaGenerator {
         return "(input, ctx) -> " + expression;
     }
 
-    private static String signalConditionLambda(Condition condition,
-                                                JavaTypeName inputType,
-                                                JavaImportManager imports) {
+    private String signalConditionLambda(Condition condition,
+                                         JavaTypeName inputType,
+                                         JavaImportManager imports) {
         if (condition == null) {
             return "sig -> true";
         }
@@ -78,22 +89,24 @@ public final class XmlToJavaGenerator {
                 + expression + "; " + "}";
     }
 
-    private static String actionStatement(Action action, JavaImportManager imports) {
+    private String actionStatement(Action action, JavaImportManager imports) {
         String statement = normalizeExpression(action.expression().trim(), imports);
         return statement.endsWith(";") ? statement : statement + ";";
     }
 
-    private static String normalizeRetriever(String retriever, JavaTypeName operationType, JavaImportManager imports) {
+    private String normalizeRetriever(String retriever, JavaTypeName operationType, JavaImportManager imports) {
         if (retriever == null) {
             return null;
         }
+        sourcePolicy.validateJavaExpression(retriever);
         return retriever.replace(operationType.canonical() + "::", operationType.render(imports) + "::");
     }
 
-    private static String normalizeExpression(String expression, JavaImportManager imports) {
+    private String normalizeExpression(String expression, JavaImportManager imports) {
         if (expression == null) {
             return null;
         }
+        sourcePolicy.validateJavaExpression(expression);
         String normalized = expression.trim();
         if (normalized.contains("java.util.function.Function.identity()")) {
             imports.addStatic("java.util.function.Function.identity");

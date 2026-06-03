@@ -28,6 +28,8 @@ Gear4J aims to provide:
 | `gear4jtest-gradle-xml2java` | Gradle plugin that generates Java pipeline classes from XML files at build time.                                                                               |
 | `gear4jtest-jackson`         | Optional Jackson-backed `PayloadCloner` implementation.                                                                                                        |
 | `gear4jtest-spring`          | Lightweight Spring integration for resource lookup, engine creation and extension discovery.                                                                   |
+| `gear4jtest-micrometer`      | Optional Micrometer lifecycle metrics for runs, stations and JDBC persistence.                                                                                 |
+| `gear4jtest-spring-boot-starter` | Spring Boot auto-configuration with validated `gear4j.*` properties, optional JDBC persistence and Micrometer wiring.                                    |
 
 ## Core concepts
 
@@ -51,9 +53,16 @@ Common commands:
 ```bash
 ./gradlew clean test
 ./gradlew check
+./gradlew integrationCheck
+./gradlew dependencyCheckAggregate
+./gradlew stageMavenCentral -PprojectVersion=1.0.0
 ./gradlew :gear4jtest-core:test
 ./gradlew :gear4jtest-xml:test
 ```
+
+Unit tests live under `src/test`. Docker-backed tests live under `src/integrationTest` and are executed by the
+`integrationTest` tasks. Maven Central staging writes artifacts under `build/staging-deploy`; deployment is handled by
+JReleaser from the `release.yml` GitHub Actions workflow.
 
 The Gradle wrapper must be complete in the working copy: `gradlew`, `gradle/wrapper/gradle-wrapper.jar` and
 `gradle/wrapper/gradle-wrapper.properties`.
@@ -100,6 +109,8 @@ deterministic output, but transient generated files should not be edited directl
 - `docs/contributing/code-style.md`: style, formatter and Checkstyle rules.
 - `docs/decisions/`: decision records and future-direction notes.
 - `docs/roadmap/future-work.md`: known work items and non-MVP ideas.
+- `docs/releasing.md`: Maven Central release process.
+- `docs/security/dependency-supply-chain.md`: dependency locking, verification and SCA guidance.
 - `AGENTS.md`: instructions for coding agents such as Codex, Claude, Gemini or IDE assistants.
 - `CLAUDE.md`: Claude-specific entrypoint that delegates to `AGENTS.md`.
 - `.github/copilot-instructions.md`: GitHub Copilot guidance.

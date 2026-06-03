@@ -28,14 +28,14 @@ Potential future work:
 - Improve persistence flushing strategy.
 - Avoid a single bottleneck thread for all pipelines if that becomes a real limit.
 - Consider local durable append before remote DB flush for stronger crash behavior.
-- Add Micrometer metrics once the runtime surface is stable.
+- Enrich the Micrometer module with durations, failures, cancellations, event stats and an explicit tag policy. See [Micrometer observability](../architecture/micrometer-observability.md).
 - Consider a dedicated Gear4J `DataSource` / connection pool for persistence isolation. See [dedicated persistence datasource](dedicated-persistence-datasource.md).
 
 ## Eventing
 
 Potential future work:
 
-- Durable event subsystem separate from `EventManager`.
+- Durable event subsystem separate from `EventManager`; SPI exists, JDBC outbox implementation remains future work.
 - JDBC outbox or local durable queue.
 - Explicit transport envelope SPI.
 - Retry and dead-letter strategy.
@@ -45,9 +45,17 @@ Potential future work:
 
 Potential future work:
 
-- Add cooperative cancellation visible to user operators/processors.
-- Define a clear cancellation token API.
-- Document which runtime operations are interrupt-driven, status-driven or cooperative.
+- Move from scattered cancellation checks to a kernel-driven execution control model. See [kernel-driven cancellation](kernel-driven-cancellation.md).
+- Define `RUN` vs `BRANCH` cancellation scopes.
+- Define cancellation policy phases: soft stop, interrupt, logical abandon and hard cancellation for isolated workers.
+- Keep user-facing checkpoints only for long-running or blocking user code that cannot be controlled by framework boundaries.
+
+## XML and expressions
+
+Potential future work:
+
+- Introduce a safe Gear4J expression language for BO-authored and untrusted XML definitions. See [Gear4J expression language](gear-expression-language.md).
+- Keep inline Java as a trusted developer/admin feature only.
 
 ## External pipelines
 

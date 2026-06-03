@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.persistence;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Map;
@@ -102,4 +103,53 @@ class DatabaseAssemblyRunRepositoryTest {
         // Then
         verifyNoInteractions(dataSource);
     }
+
+    @Test
+    void findAllPage_shouldBindPostgresqlLimitThenOffset() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        ResultSet resultSet = mock(ResultSet.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(
+                                         "SELECT * FROM assembly_run ORDER BY start_time DESC LIMIT ? OFFSET ?"))
+                .thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(false);
+        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
+                Gear4jDatabaseDialect.POSTGRESQL);
+
+        // When
+        repository.findAll(new PageRequest(20, 10));
+
+        // Then
+        verify(statement).setInt(1, 10);
+        verify(statement).setInt(2, 20);
+    }
+
+    @Test
+    void findAllPage_shouldBindOracleOffsetThenFetchSize() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        ResultSet resultSet = mock(ResultSet.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(
+                                         "SELECT * FROM assembly_run ORDER BY start_time DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY"))
+                .thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(false);
+        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
+                Gear4jDatabaseDialect.ORACLE);
+
+        // When
+        repository.findAll(new PageRequest(20, 10));
+
+        // Then
+        verify(statement).setInt(1, 20);
+        verify(statement).setInt(2, 10);
+    }
+
 }

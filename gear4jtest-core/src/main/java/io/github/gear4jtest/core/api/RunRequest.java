@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import io.github.gear4jtest.core.api.context.CancellationToken;
 import io.github.gear4jtest.core.api.pipeline.NestedRunContext;
 import io.github.gear4jtest.core.api.pipeline.PipelineCallStack;
 import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
@@ -31,6 +32,7 @@ public class RunRequest {
     private final IdGenerator idGenerator;
     private final NestedRunContext nestedRunContext;
     private final PipelineCallStack pipelineCallStack;
+    private final CancellationToken cancellationToken;
 
     private RunRequest(Builder builder) {
         this.input = builder.input;
@@ -41,6 +43,7 @@ public class RunRequest {
         this.idGenerator = builder.idGenerator;
         this.nestedRunContext = builder.nestedRunContext;
         this.pipelineCallStack = builder.pipelineCallStack;
+        this.cancellationToken = builder.cancellationToken;
     }
 
     public static Builder builder() {
@@ -75,6 +78,10 @@ public class RunRequest {
         return pipelineCallStack;
     }
 
+    public CancellationToken getCancellationToken() {
+        return cancellationToken;
+    }
+
     /**
      * Creates a builder initialized with the current request values.
      */
@@ -85,7 +92,8 @@ public class RunRequest {
                 .resourceFactory(resourceFactory)
                 .withIdGenerator(idGenerator)
                 .nestedRunContext(nestedRunContext)
-                .pipelineCallStack(pipelineCallStack);
+                .pipelineCallStack(pipelineCallStack)
+                .cancellationToken(cancellationToken);
         extensions.forEach(builder::with);
         return builder;
     }
@@ -101,6 +109,7 @@ public class RunRequest {
         private IdGenerator idGenerator;
         private NestedRunContext nestedRunContext;
         private PipelineCallStack pipelineCallStack;
+        private CancellationToken cancellationToken;
 
         public Builder input(Object input) {
             this.input = input;
@@ -129,6 +138,15 @@ public class RunRequest {
 
         public Builder pipelineCallStack(PipelineCallStack pipelineCallStack) {
             this.pipelineCallStack = pipelineCallStack;
+            return this;
+        }
+
+        /**
+         * Supplies a token that allows callers and long-running operators to cooperate
+         * on cancellation.
+         */
+        public Builder cancellationToken(CancellationToken cancellationToken) {
+            this.cancellationToken = cancellationToken;
             return this;
         }
 

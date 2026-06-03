@@ -7,7 +7,7 @@ behavior, external transport systems or storage-specific assumptions.
 
 ## What this module owns
 
-- `AssemblyLine`, `RunRequest` and `ExecutionResult`.
+- `AssemblyLine`, `RunRequest`, `ExecutionResult` and explicit terminal outcomes.
 - Station models and builders.
 - Runtime execution through `PipelineEngine`.
 - Station strategies and runner chain construction.
@@ -65,7 +65,8 @@ Flow decisions must be driven by runtime state and station outcomes, not by pers
 - runtime contract;
 - call stack;
 - runtime trace;
-- event runtime options.
+- event runtime options;
+- a cooperative `CancellationToken` for long-running user operators.
 
 `ExecutionServices` owns run-scoped services:
 
@@ -98,6 +99,7 @@ Important principles:
 
 - `FlowConfig` and `FlowDecider` decide how station outcomes affect the rest of the run.
 - STOP and CANCEL are flow outcomes, not generic exceptions used for short-circuiting.
+- `ExecutionResult.isSuccess()` is true only for `SUCCEEDED`; use `getOutcome()` to distinguish `STOPPED`, `CANCELLED` and `FAILED`.
 - JVM `Error` should not be treated as an ordinary recoverable pipeline failure.
 - Station-level error policies belong at the station boundary, not scattered through every strategy.
 - Persistence traces and logs are observability artifacts, not control-flow inputs.
@@ -172,11 +174,21 @@ bindings, so configuration must be deterministic before a run starts.
 For example:
 
 ```java
-new DatabaseExecutionManager(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
+var persistenceRuntime = PersistenceRuntimeConfiguration.builder()
+        .batchSize(500)
+        .maxPendingLogsPerRun(10_000)
+        .flushInterval(Duration.ofSeconds(1))
+        .build();
+new DatabaseExecutionManager(dataSource, Gear4jDatabaseDialect.POSTGRESQL,
+        persistenceRuntime, true);
 new DatabaseAssemblyRunRepository(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
 ```
 
-Extending support for a new provider should add a `Gear4jDatabaseDialect` entry, a schema script, and integration tests
+`DatabaseExecutionManager` keeps station-log buffers bounded, periodically flushes low-volume runs and exposes
+`PersistenceRuntimeStats`. If an application supplies executors to it, those executors remain owned by the application.
+Use `SensitiveDataRedactor` for persisted values that can contain secrets or personal information.
+
+Extending support for a new provider should add a `Gear4jDatabaseDialect` entry, versioned migration resources, and integration tests
 for run and station-log persistence.
 
 ## Testing
@@ -190,7 +202,12 @@ Useful focused tasks:
 ./gradlew :gear4jtest-core:test --tests '*EventManagerTest'
 ./gradlew :gear4jtest-core:test --tests '*PipelineCallStationStrategyTest'
 ./gradlew :gear4jtest-core:test --tests '*ContainerStationStrategyTest'
+./gradlew :gear4jtest-core:integrationTest
 ```
+
+Unit tests no longer start Docker Compose automatically. Docker-backed tests live under `src/integrationTest/java` and
+run through `integrationTest`, which owns the Docker-backed database lifecycle. Tags may still be used for secondary
+classification, but not for separating unit and integration test source sets.
 
 ## Code style
 

@@ -4,13 +4,15 @@ ext {
     junitVersion = '5.9.3'
     slf4jVersion = '1.7.26'
     assertjVersion = '3.24.2'
-    logbackVersion = '1.2.3'
+    logbackVersion = '1.2.13'
     mockitoVersion = '4.6.0'
+    micrometerVersion = '1.15.1'
+    springBootVersion = '3.5.3'
+    jakartaValidationVersion = '3.1.1'
 
     libraries = [
         // compile
         slf4j        : "org.slf4j:slf4j-api:${slf4jVersion}",
-        cglib        : "cglib:cglib:3.3.0",
         google       : "com.google.guava:guava:33.0.0-jre",
         jackson      : "com.fasterxml.jackson.core:jackson-databind:2.19.0",
 
@@ -20,6 +22,10 @@ ext {
         logback      : "ch.qos.logback:logback-classic:${logbackVersion}",
         mockito      : "org.mockito:mockito-core:${mockitoVersion}",
         mockitoJunit : "org.mockito:mockito-junit-jupiter:${mockitoVersion}",
-        postgresql   : "org.postgresql:postgresql:42.7.7"
+        postgresql   : "org.postgresql:postgresql:42.7.7",
+        micrometer   : "io.micrometer:micrometer-core:${micrometerVersion}",
+        springBootAutoconfigure : "org.springframework.boot:spring-boot-autoconfigure:${springBootVersion}",
+        springBootConfigurationProcessor : "org.springframework.boot:spring-boot-configuration-processor:${springBootVersion}",
+        jakartaValidation : "jakarta.validation:jakarta.validation-api:${jakartaValidationVersion}"
     ]
 }

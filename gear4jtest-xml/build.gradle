@@ -6,4 +6,4 @@ dependencies {
     implementation group: 'org.eclipse.platform', name: 'org.eclipse.text', version: '3.14.400'
 }
 
-ext.moduleName = 'io.test.gear4jtest.xml'
+ext.moduleName = 'io.github.gear4jtest.xml'

@@ -11,10 +11,10 @@ dependencies {
 gradlePlugin {
     plugins {
         create("gear4jXmlAssemblyLineGenerator") {
-            id = "io.test.gear4jtest.xml2java"
+            id = "io.github.gear4jtest.gradle.xml2java"
             implementationClass = "io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPlugin"
         }
     }
 }
 
-ext.moduleName = 'io.test.gear4jtest.xml2java'
+ext.moduleName = 'io.github.gear4jtest.gradle.xml2java'

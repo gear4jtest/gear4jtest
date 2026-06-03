@@ -13,10 +13,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
+import io.github.gear4jtest.core.api.ExecutionOutcome;
 import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.PipelineExecutor;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
 import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
@@ -64,6 +66,7 @@ public class PipelineEngine implements PipelineExecutor {
     private final PayloadCloner payloadCloner;
     private final WorkerConcurrencyManager workerConcurrencyManager;
     private final WorkerConcurrencyConfiguration workerConcurrencyConfiguration;
+    private final ParallelExecutionConfiguration parallelExecutionConfiguration;
 
     private PipelineEngine(Builder builder) {
         this.resourceFactory = Objects.requireNonNull(builder.resourceFactory, "ResourceFactory must not be null");
@@ -77,10 +80,13 @@ public class PipelineEngine implements PipelineExecutor {
         this.workerConcurrencyConfiguration = effectiveWorkerConcurrencyConfiguration(builder);
         this.workerConcurrencyManager = builder.workerConcurrencyManager != null ? builder.workerConcurrencyManager
                 : defaultWorkerConcurrencyManager(this.workerConcurrencyConfiguration);
+        this.parallelExecutionConfiguration = builder.parallelExecutionConfiguration != null
+                ? builder.parallelExecutionConfiguration : ParallelExecutionConfiguration.defaults();
         this.runnerChainFactory = builder.runnerChainFactory != null ? builder.runnerChainFactory
                 : new RunnerChainFactory(
                         StrategyRegistry.defaultRegistry(this::executeNestedPipeline, this.workerConcurrencyManager,
-                                                         this.workerConcurrencyConfiguration));
+                                                         this.workerConcurrencyConfiguration,
+                                                         this.parallelExecutionConfiguration));
     }
 
     private static WorkerConcurrencyConfiguration effectiveWorkerConcurrencyConfiguration(Builder builder) {
@@ -141,10 +147,20 @@ public class PipelineEngine implements PipelineExecutor {
                 execution.setResult(result);
                 yield (ExecutionResult<OUT>) ExecutionResult.success(result, execution);
             }
-            case STOPPED, CANCELLED -> {
+            case STOPPED -> {
                 execution.setStatus(ExecutionStatus.STOPPED);
                 execution.setResult(result);
-                yield (ExecutionResult<OUT>) ExecutionResult.success(result, execution);
+                yield (ExecutionResult<OUT>) ExecutionResult.stopped(result, execution);
+            }
+            case CANCELLED -> {
+                Exception cancellation = rootLog.getErrorMessage() != null
+                        ? new RuntimeException(rootLog.getErrorMessage()) : null;
+                execution.setStatus(ExecutionStatus.CANCELLED);
+                execution.setResult(result);
+                if (cancellation != null) {
+                    execution.setError(cancellation);
+                }
+                yield (ExecutionResult<OUT>) ExecutionResult.cancelled(result, execution, cancellation);
             }
             case FAILED, RUNNING -> {
                 Exception failure = new RuntimeException(
@@ -174,13 +190,16 @@ public class PipelineEngine implements PipelineExecutor {
             execution.setErrorMessage("CRITICAL JVM ERROR: " + fatalError);
         } else if (result != null) {
             execution.setResult(result.getResult());
-            if (!result.isSuccess()) {
-                execution.setStatus(ExecutionStatus.FAILED);
+            switch (result.getOutcome()) {
+                case SUCCEEDED -> execution.setStatus(ExecutionStatus.SUCCEEDED);
+                case STOPPED -> execution.setStatus(ExecutionStatus.STOPPED);
+                case CANCELLED -> execution.setStatus(ExecutionStatus.CANCELLED);
+                case FAILED -> execution.setStatus(ExecutionStatus.FAILED);
+            }
+            if (result.getOutcome() == ExecutionOutcome.FAILED || result.getOutcome() == ExecutionOutcome.CANCELLED) {
                 if (result.getError() != null) {
                     execution.setError(asException(result.getError()));
                 }
-            } else if (execution.getStatus() == null || execution.getStatus() == ExecutionStatus.RUNNING) {
-                execution.setStatus(ExecutionStatus.SUCCEEDED);
             }
         } else {
             execution.setStatus(ExecutionStatus.FAILED);
@@ -230,7 +249,8 @@ public class PipelineEngine implements PipelineExecutor {
                 .withIdGenerator(Optional.ofNullable(parentContext.getGlobalContext().getIdGenerator())
                         .orElse(defaultIdGenerator))
                 .nestedRunContext(nestedRunContext)
-                .pipelineCallStack(parentContext.getGlobalContext().getPipelineCallStack()).build();
+                .pipelineCallStack(parentContext.getGlobalContext().getPipelineCallStack())
+                .cancellationToken(parentContext.getGlobalContext().getCancellationToken()).build();
 
         return execute((AssemblyLine) childPipeline, childRequest);
     }
@@ -280,7 +300,8 @@ public class PipelineEngine implements PipelineExecutor {
                 new StationScopedResourceRegistry());
 
         var ctx = new ExecutionContext(executionId, pipeline.getId(), services, execution, eventRuntimeOptions,
-                pipeline.getConfiguration().getRuntimeContract(), callStack, effectiveGenerator);
+                pipeline.getConfiguration().getRuntimeContract(), callStack, effectiveGenerator,
+                request.getCancellationToken());
         ctx.getContext().putAll(effectiveContext);
 
         executionContextRegistry.register(ctx);
@@ -419,6 +440,7 @@ public class PipelineEngine implements PipelineExecutor {
         private WorkerLockAcquisitionPolicy workerLockAcquisitionPolicy;
         private Duration workerLockWaitTimeout;
         private WorkerConcurrencyRegistryConfiguration workerConcurrencyRegistryConfiguration;
+        private ParallelExecutionConfiguration parallelExecutionConfiguration;
 
         public Builder resourceFactory(ResourceFactory resourceFactory) {
             this.resourceFactory = resourceFactory;
@@ -483,6 +505,11 @@ public class PipelineEngine implements PipelineExecutor {
         public Builder workerConcurrencyRegistryConfiguration(
                                                               WorkerConcurrencyRegistryConfiguration workerConcurrencyRegistryConfiguration) {
             this.workerConcurrencyRegistryConfiguration = workerConcurrencyRegistryConfiguration;
+            return this;
+        }
+
+        public Builder parallelExecutionConfiguration(ParallelExecutionConfiguration parallelExecutionConfiguration) {
+            this.parallelExecutionConfiguration = parallelExecutionConfiguration;
             return this;
         }
 

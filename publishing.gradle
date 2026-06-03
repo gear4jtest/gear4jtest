@@ -1,19 +1,25 @@
-import java.text.SimpleDateFormat
+def projectArtifactId = project.name
+def projectDisplayName = projectArtifactId
+        .replace('gear4jtest-', 'Gear4J ')
+        .replace('-', ' ')
 
-Date buildTimeAndDate = new Date()
-ext {
-    buildDate = new SimpleDateFormat('yyyy-MM-dd').format(buildTimeAndDate)
-    buildTime = new SimpleDateFormat('HH:mm:ss.SSSZ').format(buildTimeAndDate)
+def projectDescription = project.description ?: 'Gear4J Java pipeline orchestration library.'
+
+def projectHomepage = 'https://github.com/gear4jtest/gear4jtest'
+
+def stagingRepositoryDir = rootProject.layout.buildDirectory.dir('staging-deploy')
+
+java {
+    withSourcesJar()
+    withJavadocJar()
 }
-
-def projectArtifactId = 'gear4jtest'
-def url = "https://gear4jtest.readme.io"
 
 normalization {
     runtimeClasspath {
         metaInf {
-            ignoreAttribute("Build-Time")
-            ignoreAttribute("Build-Date")
+            ignoreAttribute('Created-By')
+            ignoreAttribute('Implementation-Version')
+            ignoreAttribute('Specification-Version')
         }
     }
 }
@@ -21,70 +27,56 @@ normalization {
 jar {
     manifest {
         attributes(
-            'Built-By': 'Quentin Lebreil',
-            'Created-By': System.properties['java.version'] + " (" + System.properties['java.vendor'] + " " + System.properties['java.vm.version'] + ")",
-            'Build-Date': project.buildDate,
-            'Build-Time': project.buildTime,
+            'Created-By': System.properties['java.version'] + ' (' + System.properties['java.vendor'] + ')',
             'Specification-Title': projectArtifactId,
             'Specification-Version': project.version,
             'Implementation-Title': projectArtifactId,
             'Implementation-Version': project.version,
+            'Automatic-Module-Name': project.findProperty('moduleName') ?: project.name.replace('-', '.')
         )
     }
 }
 
-task sourcesJar(type: Jar) {
-    from sourceSets.main.allSource
-    archiveClassifier = 'sources'
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    archiveClassifier = 'javadoc'
-    from javadoc.destinationDir
-}
-
-artifacts {
-    archives sourcesJar
-    archives javadocJar
-}
-
-tasks.withType(Sign) {
-    onlyIf { !version.endsWith("SNAPSHOT") }
-}
-
-/*signing {
-    sign publishing.publications
-}*/
 publishing {
+    repositories {
+        maven {
+            name = 'mavenCentralStaging'
+            url = stagingRepositoryDir
+        }
+    }
+
     publications {
-        gear4j(MavenPublication) {
+        mavenJava(MavenPublication) {
             from components.java
-            pom.withXml {
-                def devs = ['quleb': 'Quentin Lebreil']
-                def root = asNode()
+            artifactId = projectArtifactId
 
-                root.appendNode('name', "${projectArtifactId}")
-                root.appendNode('packaging', 'jar')
-                root.appendNode('url', "${url}")
-                root.appendNode('description', project.description)
+            pom {
+                name = projectDisplayName
+                description = projectDescription
+                url = projectHomepage
 
-                def license = root.appendNode('licenses').appendNode('license')
-                license.appendNode('name', 'Apache-2.0')
-                license.appendNode('url', 'https://github.com/resilience4j/resilience4j/blob/master/LICENSE.txt')
-                // à revoir
-                license.appendNode('distribution', 'repo')
+                licenses {
+                    license {
+                        name = 'Apache License, Version 2.0'
+                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution = 'repo'
+                    }
+                }
 
-                root.appendNode('scm').appendNode('url', 'https://github.com/gear4jtest/g.git')
+                developers {
+                    developer {
+                        id = 'gear4jtest'
+                        name = 'Gear4J contributors'
+                    }
+                }
 
-                def developers = root.appendNode('developers')
-                devs.each {
-                    def d = developers.appendNode('developer')
-                    d.appendNode('id', it.key)
-                    d.appendNode('name', it.value)
+                scm {
+                    connection = 'scm:git:https://github.com/gear4jtest/gear4jtest.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/gear4jtest/gear4jtest.git'
+                    url = projectHomepage
+                    tag = project.version.toString().endsWith('-SNAPSHOT') ? 'HEAD' : "v${project.version}"
                 }
             }
-            artifact sourcesJar
-            artifact javadocJar
         }
     }
 }

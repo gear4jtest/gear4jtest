@@ -20,24 +20,28 @@ import java.util.UUID;
  * </p>
  */
 public enum Gear4jDatabaseDialect {
-    POSTGRESQL("PostgreSQL", "/io/github/gear4j/db/postgresql/gear4j_schema.sql", true),
-    MYSQL("MySQL", "/io/github/gear4j/db/mysql/gear4j_schema.sql", false),
-    MARIADB("MariaDB", "/io/github/gear4j/db/mysql/gear4j_schema.sql", false),
-    ORACLE("Oracle", "/io/github/gear4j/db/oracle/gear4j_schema.sql", false),
-    H2("H2", "/io/github/gear4j/db/h2/gear4j_schema.sql", false);
+    POSTGRESQL("PostgreSQL", "postgresql", true),
+    MYSQL("MySQL", "mysql", false),
+    MARIADB("MariaDB", "mysql", false),
+    ORACLE("Oracle", "oracle", false),
+    H2("H2", "h2", false);
 
     private final String displayName;
-    private final String schemaScriptPath;
+    private final String resourceDirectory;
     private final boolean nativeUuid;
 
-    Gear4jDatabaseDialect(String displayName, String schemaScriptPath, boolean nativeUuid) {
+    Gear4jDatabaseDialect(String displayName, String resourceDirectory, boolean nativeUuid) {
         this.displayName = displayName;
-        this.schemaScriptPath = schemaScriptPath;
+        this.resourceDirectory = resourceDirectory;
         this.nativeUuid = nativeUuid;
     }
 
-    String schemaScriptPath() {
-        return schemaScriptPath;
+    /**
+     * Returns the resource directory used by Gear4J internal migrations for this
+     * dialect.
+     */
+    public String resourceDirectory() {
+        return resourceDirectory;
     }
 
     void setJson(PreparedStatement stmt, int index, String json) throws SQLException {
@@ -84,6 +88,21 @@ public enum Gear4jDatabaseDialect {
 
         String value = rs.getString(column);
         return value == null || value.isBlank() ? null : UUID.fromString(value);
+    }
+
+    String pagedSql(String orderedSql) {
+        return this == ORACLE ? orderedSql + " OFFSET ? ROWS FETCH NEXT ? ROWS ONLY"
+                : orderedSql + " LIMIT ? OFFSET ?";
+    }
+
+    void bindPage(PreparedStatement stmt, int firstParameterIndex, PageRequest pageRequest) throws SQLException {
+        if (this == ORACLE) {
+            stmt.setInt(firstParameterIndex, pageRequest.offset());
+            stmt.setInt(firstParameterIndex + 1, pageRequest.limit());
+        } else {
+            stmt.setInt(firstParameterIndex, pageRequest.limit());
+            stmt.setInt(firstParameterIndex + 1, pageRequest.offset());
+        }
     }
 
     boolean isUniqueViolation(SQLException exception) {

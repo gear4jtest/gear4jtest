@@ -8,12 +8,14 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import io.github.gear4jtest.core.api.config.CancelPolicy;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.config.FailurePolicy;
 import io.github.gear4jtest.core.api.config.FlowConfig;
+import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
 import io.github.gear4jtest.core.api.config.StopPolicy;
 import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
@@ -356,6 +358,57 @@ class ContainerStationStrategyTest {
         } finally {
             executorService.shutdownNow();
         }
+    }
+
+    @Test
+    void should_apply_engine_default_timeout_when_parallel_station_has_no_override() {
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
+        try {
+            // Given
+            ContainerStationStrategy strategy = new ContainerStationStrategy(
+                    ParallelExecutionConfiguration.withDefaultAwaitTimeout(Duration.ofMillis(30)));
+            DummyStation slow = station("slow");
+            var container = new ContainerBaseStation.Builder<Object, Object>(executorService).withSubLine("1", slow)
+                    .returns(Arrays::asList);
+            StationExecutionContext context = newOperationExecutionContext("container");
+            StationRunner runner = (input, station, ctx) -> {
+                try {
+                    Thread.sleep(250L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                return successLog("slow", "A");
+            };
+
+            // When
+            strategy.doExecute(container, "input", runner, context);
+
+            // Then
+            assertThat(context.getRecord().getStatus()).isEqualTo(StationLogStatus.CANCELLED);
+        } finally {
+            executorService.shutdownNow();
+        }
+    }
+
+    @Test
+    void should_mark_container_failed_when_executor_rejects_branch_submission() {
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        executorService.shutdownNow();
+        // Given
+        ContainerStationStrategy strategy = new ContainerStationStrategy();
+        DummyStation branch = station("rejected");
+        var container = new ContainerBaseStation.Builder<Object, Object>(executorService).withSubLine("1", branch)
+                .returns(Arrays::asList);
+        StationExecutionContext context = newOperationExecutionContext("container");
+
+        // When
+        Object result = strategy.doExecute(container, "input", (input, station, ctx) -> successLog("ignored", "A"),
+                                           context);
+
+        // Then
+        assertThat(result).isNull();
+        assertThat(context.getRecord().getStatus()).isEqualTo(StationLogStatus.FAILED);
+        assertThat(context.getRecord().getThrowables()).anyMatch(RejectedExecutionException.class::isInstance);
     }
 
     private static final class DummyStation extends AbstractStation<Object, Object> {

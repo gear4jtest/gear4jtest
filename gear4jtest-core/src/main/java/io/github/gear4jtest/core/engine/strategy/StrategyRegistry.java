@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfiguration;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyManager;
@@ -34,14 +35,15 @@ public class StrategyRegistry {
 
     public static StrategyRegistry defaultRegistry(NestedPipelineExecutor nestedPipelineExecutor) {
         return defaultRegistry(nestedPipelineExecutor, WorkerConcurrencyManager.global(),
-                               WorkerConcurrencyConfiguration.defaults());
+                               WorkerConcurrencyConfiguration.defaults(), ParallelExecutionConfiguration.defaults());
     }
 
     public static StrategyRegistry defaultRegistry(NestedPipelineExecutor nestedPipelineExecutor,
                                                    WorkerConcurrencyManager workerConcurrencyManager) {
         return defaultRegistry(nestedPipelineExecutor, workerConcurrencyManager,
                                WorkerConcurrencyConfiguration.defaults()
-                                       .withConcurrencyPolicy(WorkerConcurrencyPolicy.ENGINE_LOCAL_LOCK_PER_WORKER_INSTANCE));
+                                       .withConcurrencyPolicy(WorkerConcurrencyPolicy.ENGINE_LOCAL_LOCK_PER_WORKER_INSTANCE),
+                               ParallelExecutionConfiguration.defaults());
     }
 
     public static StrategyRegistry defaultRegistry(NestedPipelineExecutor nestedPipelineExecutor,
@@ -49,7 +51,8 @@ public class StrategyRegistry {
                                                    WorkerConcurrencyPolicy workerConcurrencyPolicy) {
         return defaultRegistry(nestedPipelineExecutor, workerConcurrencyManager,
                                WorkerConcurrencyConfiguration.defaults()
-                                       .withConcurrencyPolicy(workerConcurrencyPolicy));
+                                       .withConcurrencyPolicy(workerConcurrencyPolicy),
+                               ParallelExecutionConfiguration.defaults());
     }
 
     public static StrategyRegistry defaultRegistry(NestedPipelineExecutor nestedPipelineExecutor,
@@ -59,20 +62,30 @@ public class StrategyRegistry {
         return defaultRegistry(nestedPipelineExecutor, workerConcurrencyManager,
                                WorkerConcurrencyConfiguration.defaults()
                                        .withConcurrencyPolicy(workerConcurrencyPolicy)
-                                       .withLockAcquisitionPolicy(lockAcquisitionPolicy));
+                                       .withLockAcquisitionPolicy(lockAcquisitionPolicy),
+                               ParallelExecutionConfiguration.defaults());
     }
 
     public static StrategyRegistry defaultRegistry(NestedPipelineExecutor nestedPipelineExecutor,
                                                    WorkerConcurrencyManager workerConcurrencyManager,
                                                    WorkerConcurrencyConfiguration workerConcurrencyConfiguration) {
+        return defaultRegistry(nestedPipelineExecutor, workerConcurrencyManager, workerConcurrencyConfiguration,
+                               ParallelExecutionConfiguration.defaults());
+    }
+
+    public static StrategyRegistry defaultRegistry(NestedPipelineExecutor nestedPipelineExecutor,
+                                                   WorkerConcurrencyManager workerConcurrencyManager,
+                                                   WorkerConcurrencyConfiguration workerConcurrencyConfiguration,
+                                                   ParallelExecutionConfiguration parallelExecutionConfiguration) {
         Objects.requireNonNull(nestedPipelineExecutor, "nestedPipelineExecutor must not be null");
         Objects.requireNonNull(workerConcurrencyManager, "workerConcurrencyManager must not be null");
         Objects.requireNonNull(workerConcurrencyConfiguration, "workerConcurrencyConfiguration must not be null");
+        Objects.requireNonNull(parallelExecutionConfiguration, "parallelExecutionConfiguration must not be null");
         return new StrategyRegistry(
                 List.of(new WorkStationStrategy(workerConcurrencyManager, workerConcurrencyConfiguration),
                         new SequenceStationStrategy(), new IteratorStationStrategy(),
                         new IfElseContainerStationStrategy(),
-                        new ContainerStationStrategy(), new SignalStationStrategy(),
+                        new ContainerStationStrategy(parallelExecutionConfiguration), new SignalStationStrategy(),
                         new PipelineCallStationStrategy(nestedPipelineExecutor)));
     }
 

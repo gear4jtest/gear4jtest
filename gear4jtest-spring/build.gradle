@@ -9,4 +9,4 @@ dependencies {
     testImplementation 'org.springframework:spring-test:6.2.8'
 }
 
-ext.moduleName = 'io.test.gear4jtest.spring'
+ext.moduleName = 'io.github.gear4jtest.spring'

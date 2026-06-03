@@ -31,6 +31,12 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
         Object result = null;
         Exception mainException = null;
         try {
+            if (context.getGlobalContext().getCancellationToken().isCancellationRequested()) {
+                context.getRecord().markCancelled(context.getGlobalContext().getCancellationToken()
+                        .cancellationCause().orElse(null));
+                return context.getRecord();
+            }
+
             setUp(station, input, context);
 
             SkipDecision preCause = runSkippers(station, input, context, SkipPhase.PRE_PROCESSORS);
