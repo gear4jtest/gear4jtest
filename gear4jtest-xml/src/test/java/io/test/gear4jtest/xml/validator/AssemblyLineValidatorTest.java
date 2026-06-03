@@ -1,46 +1,70 @@
 package io.test.gear4jtest.xml.validator;
 
-import io.test.gear4test.xml.validator.AssemblyLineValidator;
+import java.io.IOException;
+
 import org.junit.jupiter.api.Test;
-import org.xml.sax.SAXParseException;
 
-import java.io.InputStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AssemblyLineValidatorTest {
+    private final AssemblyLineValidator validator = new AssemblyLineValidator();
 
-//    @Test
-//    void testXsdValidationSuccessful() {
-//        // Given
-//        InputStream io = getClass().getResourceAsStream("/samples/good-assembly-line.xml");
-//
-//        // When
-//        AssemblyLineValidator.FileParserReport report = AssemblyLineValidator.validate(io);
-//
-//        // Then
-//        assertThat(report)
-//                .as("Should have be successfully validated")
-//                .extracting(
-//                        AssemblyLineValidator.FileParserReport::getStatus,
-//                        AssemblyLineValidator.FileParserReport::getThrowable)
-//                .containsExactly(AssemblyLineValidator.FileParserReport.Status.SUCCEEDED, null);
-//    }
+    private static byte[] resource(String name) throws IOException {
+        try (var input = AssemblyLineValidatorTest.class.getResourceAsStream(name)) {
+            if (input == null) {
+                throw new IOException("Missing test resource: " + name);
+            }
+            return input.readAllBytes();
+        }
+    }
 
     @Test
-    void testXsdValidationFailed() {
+    void should_validate_current_xml_contract() throws IOException {
         // Given
-        InputStream io = getClass().getResourceAsStream("/samples/bad-assembly-line.xml");
+        byte[] xml = resource("/samples/assembly-line-iterator.xml");
 
-        // When
-        AssemblyLineValidator.FileParserReport report = AssemblyLineValidator.validate(io);
+        // When / Then
+        assertThatCode(() -> validator.validate(xml)).doesNotThrowAnyException();
+    }
 
-        // Then
-        assertThat(report.getStatus())
-                .as("Validation should have failed")
-                .isEqualTo(AssemblyLineValidator.FileParserReport.Status.FAILED);
-        assertThat(report.getThrowable())
-                .as("Throwable should have been filled")
-                .isInstanceOf(SAXParseException.class);
+    @Test
+    void should_reject_invalid_xml_contract() throws IOException {
+        // Given
+        byte[] xml = resource("/samples/bad-assembly-line.xml");
+
+        // When / Then
+        assertThatThrownBy(() -> validator.validate(xml)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid Gear4J XML pipeline definition");
+    }
+
+    @Test
+    void should_reject_missing_subline_id() throws IOException {
+        // Given
+        byte[] xml = resource("/samples/bad-missing-subline-id.xml");
+
+        // When / Then
+        assertThatThrownBy(() -> validator.validate(xml)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid Gear4J XML pipeline definition");
+    }
+
+    @Test
+    void should_reject_doctype_declarations() throws IOException {
+        // Given
+        byte[] xml = resource("/samples/bad-doctype.xml");
+
+        // When / Then
+        assertThatThrownBy(() -> validator.validate(xml)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid Gear4J XML pipeline definition");
+    }
+
+    @Test
+    void should_reject_ifelse_without_else_operation() throws IOException {
+        // Given
+        byte[] xml = resource("/samples/bad-missing-else-operation.xml");
+
+        // When / Then
+        assertThatThrownBy(() -> validator.validate(xml)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid Gear4J XML pipeline definition");
     }
 }

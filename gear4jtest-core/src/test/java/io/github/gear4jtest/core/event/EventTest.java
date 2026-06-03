@@ -1,23 +1,21 @@
 package io.github.gear4jtest.core.event;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-class EventTest {
+import static org.assertj.core.api.Assertions.assertThat;
 
+class EventTest {
     @Test
     void constructor_shouldInitializeAllFields() {
         String pipelineId = "pipeline-1";
-        String executionId = "exec-1";
+        var executionId = UUID.randomUUID();
         String type = "MY_EVENT";
 
         Event event = new Event(pipelineId, executionId, type);
 
-        assertThat(event.getId()).isNotNull()
-                                 .isInstanceOf(UUID.class);
+        assertThat(event.getId()).isNotNull().isInstanceOf(UUID.class);
         assertThat(event.getPipelineId()).isEqualTo(pipelineId);
         assertThat(event.getExecutionId()).isEqualTo(executionId);
         assertThat(event.getName()).isEqualTo(type);
@@ -25,8 +23,9 @@ class EventTest {
 
     @Test
     void eachEventShouldHaveADifferentId() {
-        Event e1 = new Event("p", "e", "TYPE");
-        Event e2 = new Event("p", "e", "TYPE");
+        var executionId = UUID.randomUUID();
+        Event e1 = new Event("p", executionId, "TYPE");
+        Event e2 = new Event("p", executionId, "TYPE");
 
         assertThat(e1.getId()).isNotEqualTo(e2.getId());
     }

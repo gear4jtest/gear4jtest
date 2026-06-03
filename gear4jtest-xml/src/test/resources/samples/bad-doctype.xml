@@ -1,0 +1,10 @@
+<!DOCTYPE assemblyLine [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model" id="bad_doctype" inputType="java.lang.String" outputType="java.lang.String">
+  <operations>
+    <processingOperation id="step" type="com.myorg.operation.Step11">
+      <parameters>
+        <valueParameter retriever="getParam" value="&xxe;"/>
+      </parameters>
+    </processingOperation>
+  </operations>
+</assemblyLine>

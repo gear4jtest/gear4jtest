@@ -1,14 +1,13 @@
 package io.github.gear4jtest.core.sidecompute;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.jupiter.api.Test;
 
-class SideComputeContextTest {
+import static org.assertj.core.api.Assertions.assertThat;
 
+class SideComputeContextTest {
     @Test
     void getOrCreateFuture_shouldReturnSameInstanceForSameKey() {
         SideComputeContext ctx = new SideComputeContext();
@@ -47,7 +46,6 @@ class SideComputeContextTest {
         RuntimeException ex = new RuntimeException("boom");
         future.completeExceptionally(ex);
 
-        assertThat(future)
-                .isCompletedExceptionally();
+        assertThat(future).isCompletedExceptionally();
     }
 }

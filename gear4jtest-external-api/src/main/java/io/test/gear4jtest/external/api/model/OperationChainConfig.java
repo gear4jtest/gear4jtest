@@ -12,7 +12,10 @@ public final class OperationChainConfig {
     private final StoreType storeType;
     private final Map<String, String> storeProps;
 
-    public OperationChainConfig(String alId, Boolean allowRunPublicationWithoutTest, StoreType storeType, Map<String, String> storeProps) {
+    public OperationChainConfig(String alId,
+                                Boolean allowRunPublicationWithoutTest,
+                                StoreType storeType,
+                                Map<String, String> storeProps) {
         this.alId = alId;
         this.allowRunPublicationWithoutTest = allowRunPublicationWithoutTest;
         this.storeType = requireNonNull(storeType, "storeType");

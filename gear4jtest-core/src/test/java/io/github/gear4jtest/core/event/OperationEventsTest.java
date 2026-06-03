@@ -1,57 +1,50 @@
 package io.github.gear4jtest.core.event;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.UUID;
 
+import io.github.gear4jtest.core.model.StationLogStatus;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class OperationEventsTest {
-
     @Test
-    void operationBaseEvent_shouldExtendEventAndStorePipelineAndExecution() {
-        OperationBaseEvent event = new OperationBaseEvent(
-                "pipeline-1",
-                "exec-1",
-                "CUSTOM_TYPE",
-                "operation-1",
-                "input"
-        );
+    void stationStartedEvent_shouldExposeCorrelationFields() {
+        UUID executionId = UUID.randomUUID();
+        UUID stationExecutionId = UUID.randomUUID();
+        UUID parentOperationId = UUID.randomUUID();
 
-        assertThat(event).isInstanceOf(Event.class);
+        StationStartedEvent event = new StationStartedEvent("pipeline-1", executionId, stationExecutionId,
+                "operation-1", parentOperationId, "item-42", "input");
+
         assertThat(event.getPipelineId()).isEqualTo("pipeline-1");
-        assertThat(event.getExecutionId()).isEqualTo("exec-1");
-        assertThat(event.getName()).isEqualTo("CUSTOM_TYPE");
-    }
-
-    @Test
-    void operationStartedEvent_shouldHaveTypeOperationStarted() {
-        String pipelineId = "pipeline-1";
-        String executionId = "exec-1";
-        String operationId = "op-42";
-
-        OperationStartedEvent event =
-                new OperationStartedEvent(pipelineId, executionId, operationId, "input");
-
-        assertThat(event.getPipelineId()).isEqualTo(pipelineId);
         assertThat(event.getExecutionId()).isEqualTo(executionId);
-        // Comportement ATTENDU :
-        assertThat(event.getName()).isEqualTo("OPERATION_STARTED");
+        assertThat(event.getStationExecutionId()).isEqualTo(stationExecutionId);
+        assertThat(event.getOperationId()).isEqualTo("operation-1");
+        assertThat(event.getParentOperationId()).isEqualTo(parentOperationId);
+        assertThat(event.getItemId()).isEqualTo("item-42");
+        assertThat(event.getInput()).isEqualTo("input");
+        assertThat(event.getName()).isEqualTo("StationStartedEvent");
     }
 
     @Test
-    void operationCompletedEvent_shouldHaveTypeOperationCompleted() {
-        OperationCompletedEvent event =
-                new OperationCompletedEvent("pipeline", "exec", "op", "in", "out");
+    void stationFinishedEvent_shouldExposeFinalStatusAndError() {
+        RuntimeException boom = new RuntimeException("boom");
+        StationFinishedEvent event = new StationFinishedEvent("pipeline-1", UUID.randomUUID(), UUID.randomUUID(),
+                "operation-1", null, "item-42", "input", StationLogStatus.FAILED, null, boom);
 
-        assertThat(event.getName()).isEqualTo("OPERATION_COMPLETED");
+        assertThat(event.getStatus()).isEqualTo(StationLogStatus.FAILED);
+        assertThat(event.getError()).isSameAs(boom);
+        assertThat(event.isSuccessful()).isFalse();
     }
 
     @Test
-    void operationErrorEvent_shouldHaveTypeOperationError() {
-        Exception cause = new RuntimeException("boom");
-        OperationErrorEvent event =
-                new OperationErrorEvent("pipeline", "exec", "op", "input", cause);
+    void parameterResolvedEvent_shouldExposeResolutionMetadata() {
+        ParameterResolvedEvent event = new ParameterResolvedEvent("pipeline-1", UUID.randomUUID(), UUID.randomUUID(),
+                "operation-1", null, "item-42", "customer-param", true, String.class.getName());
 
-        assertThat(event.getName()).isEqualTo("OPERATION_ERROR");
-        // Pas de getter sur exception pour l’instant, donc on ne peut pas l’asserter proprement.
+        assertThat(event.getParameterDescriptor()).isEqualTo("customer-param");
+        assertThat(event.isCacheHit()).isTrue();
+        assertThat(event.getValueType()).isEqualTo(String.class.getName());
     }
 }

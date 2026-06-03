@@ -1,71 +1,48 @@
-<assembly-line>
-    <definition>
-        <line>
-            <operators>
-                <operation>
-                    <type>com.myorg.operation.Step11</type>
-                    <parameters>
-                        <parameter>
-                            <retriever>getParam</retriever>
-                            <value>"a"</value>
-                        </parameter>
-                    </parameters>
-                </operation>
-                <container>
-                    <sub-line>
-                        <line starting-point="java.lang.String">
-                            <operators>
-                                <operation>
-                                    <type>com.myorg.operation.Step11</type>
-                                    <parameters>
-                                        <parameter>
-                                            <retriever>getParam</retriever>
-                                            <value>"b"</value>
-                                        </parameter>
-                                    </parameters>
-                                </operation>
-                            </operators>
-                        </line>
-                    </sub-line>
-                    <sub-line>
-                        <line starting-point="java.lang.String">
-                            <operators>
-                                <operation>
-                                    <type>com.myorg.operation.Step11</type>
-                                    <parameters>
-                                        <parameter>
-                                            <retriever>getParam</retriever>
-                                            <value>"c"</value>
-                                        </parameter>
-                                    </parameters>
-                                </operation>
-                            </operators>
-                        </line>
-                    </sub-line>
-                    <returns>(a, b) -> Arrays.asList(a, b)</returns>
-                </container>
-            </operators>
-        </line>
-    </definition>
+<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="test_iterator"
+              inputType="java.lang.String"
+              outputType="java.util.List&lt;java.util.List&lt;java.lang.String&gt;&gt;">
 
-    <configuration>
-        <step-default-configuration>
-            <pre-processors>
-                <processor>com.myorg.processor.MyProcessor</processor>
-                <processor>com.myorg.processor.MyProcessor2</processor>
-            </pre-processors>
-            <post-processors>
-                <processor>com.myorg.processor.MyProcessor</processor>
-                <processor>com.myorg.processor.MyProcessor2</processor>
-            </post-processors>
-        </step-default-configuration>
-        <event-handling-definition>
-            <queue>
-                <event-listener>com.myorg.listener.TestEventListener</event-listener>
-            </queue>
-            <global-event-configuration>
-                <event-on-parameter-changed>true</event-on-parameter-changed>
-            </global-event-configuration>
-        </event-handling-definition>
-    </configuration>
-</assembly-line>
+  <operations>
+    <processingOperation id="step3" type="com.myorg.operation.Step3">
+      <parameters>
+        <valueParameter retriever="com.myorg.operation.Step3::getParam" value="a" valueType="java.lang.String"/>
+      </parameters>
+      <onErrors>
+        <unsafeError signalType="IGNORE" throwableType="java.lang.Exception">
+          <condition expression="ctx.getContext().containsKey(&quot;a&quot;)"/>
+          <action expression="System.out.println(&quot;Error occurred!&quot;)"/>
+        </unsafeError>
+      </onErrors>
+      <conditions>
+        <condition expression="input.equals(modelsService.getModel(&quot;fjeifj&quot;))"/>
+      </conditions>
+      <fallbackTransformer expression="new java.util.HashMap&lt;String, String&gt;()"/>
+    </processingOperation>
+
+    <processingOperation id="step8" type="com.myorg.operation.Step8"/>
+
+    <processingOperation id="step9" type="com.myorg.operation.Step9"/>
+
+    <iterator id="iterator" inputType="java.util.List&lt;java.lang.Integer&gt;"
+              outputType="java.util.List&lt;java.util.List&lt;java.lang.String&gt;&gt;">
+      <iterableFunction expression="java.util.function.Function.identity()"/>
+      <operation>
+        <processingOperation id="step10" type="com.myorg.operation.Step10"/>
+      </operation>
+      <collector expression="java.util.stream.Collectors.toList()"/>
+    </iterator>
+  </operations>
+
+  <configuration>
+    <eventHandling>
+      <globalEventConfiguration eventOnParameterChanged="true"/>
+    </eventHandling>
+    <persistence storeResultObject="true"/>
+  </configuration>
+
+  <dependencies>
+    <dependency name="modelsService" type="com.myorg.services.ModelsService"/>
+  </dependencies>
+</assemblyLine>

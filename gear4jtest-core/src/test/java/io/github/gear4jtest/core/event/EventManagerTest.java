@@ -1,123 +1,258 @@
 package io.github.gear4jtest.core.event;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-
+import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-import io.github.gear4jtest.core.model.refactor.EventBus;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(MockitoExtension.class)
 class EventManagerTest {
-
-    @Mock
-    private EventBus eventBus1;
-
-    @Mock
-    private EventBus eventBus2;
-
     @Test
-    void publish_shouldSendEventToAllBusses() {
-        EventManager manager = new EventManager(List.of(eventBus1, eventBus2));
-        Event event = new Event("pipe", "exec", "TYPE");
+    void publish_shouldDispatchOnlyMatchingSubscriptions() throws Exception {
+        CopyOnWriteArrayList<String> handled = new CopyOnWriteArrayList<>();
+        CountDownLatch latch = new CountDownLatch(2);
 
-        manager.publish(event);
+        EventHandlingDefinition definition = EventHandlingDefinition.builder()
+                .subscription(EventSubscription.on(StationStartedEvent.class, event -> {
+                    handled.add("started:" + event.getOperationId());
+                    latch.countDown();
+                })).subscription(EventSubscription.on(ParameterResolvedEvent.class, event -> {
+                    handled.add("param:" + event.getParameterDescriptor());
+                    latch.countDown();
+                }))
+                .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                        .reactionExecutorFactory(Executors::newSingleThreadExecutor)
+                        .shutdownTimeout(Duration.ofSeconds(2)).build())
+                .build();
 
-        verify(eventBus1).acceptEvent(event);
-        verify(eventBus2).acceptEvent(event);
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+        UUID executionId = UUID.randomUUID();
+
+        try {
+            manager.publish(new StationStartedEvent("pipe", executionId, UUID.randomUUID(), "step-1", null, "item-1",
+                    "input"));
+            manager.publish(new ParameterResolvedEvent("pipe", executionId, UUID.randomUUID(), "step-1", null, "item-1",
+                    "customer", false, String.class.getName()));
+            manager.publish(new Event("pipe", executionId));
+
+            assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(handled).containsExactlyInAnyOrder("started:step-1", "param:customer");
+        } finally {
+            manager.shutdown();
+        }
     }
 
     @Test
-    void publish_shouldDoNothingIfNoBusConfigured() {
-        EventManager manager = new EventManager(List.of());
-        Event event = new Event("pipe", "exec", "TYPE");
+    void shutdown_shouldDrainAlreadyQueuedEvents() throws Exception {
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch completed = new CountDownLatch(1);
+        List<String> handled = new CopyOnWriteArrayList<>();
 
-        manager.publish(event);
+        EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
+            started.countDown();
+            Thread.sleep(150);
+            handled.add(event.getName());
+            completed.countDown();
+        }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                .reactionExecutorFactory(Executors::newSingleThreadExecutor).shutdownTimeout(Duration.ofSeconds(2))
+                .build()).build();
 
-        // aucun bus => aucune interaction possible
-        // (le test est surtout là pour vérifier qu'il n'y a pas d'exception)
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+        try {
+            manager.publish(new Event("pipe", UUID.randomUUID(), "FIRST"));
+            assertThat(started.await(2, TimeUnit.SECONDS)).isTrue();
+
+            manager.shutdown();
+
+            assertThat(completed.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(handled).containsExactly("FIRST");
+        } finally {
+            manager.shutdown();
+        }
+    }
+
+    @Test
+    void shutdown_shouldSupportDetachAndDrain() throws Exception {
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+
+        EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
+            started.countDown();
+            assertThat(release.await(2, TimeUnit.SECONDS)).isTrue();
+        }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                .reactionExecutorFactory(Executors::newSingleThreadExecutor).shutdownTimeout(Duration.ofSeconds(2))
+                .shutdownMode(EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.DETACH_AND_DRAIN).build())
+                .build();
+
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+        manager.publish(new Event("pipe", UUID.randomUUID(), "FIRST"));
+        assertThat(started.await(2, TimeUnit.SECONDS)).isTrue();
+
+        EventManager.ShutdownHandle handle = manager.shutdown();
+
+        assertThat(handle.detached()).isTrue();
+        assertThat(handle.completion().isDone()).isFalse();
+
+        release.countDown();
+        handle.completion().join();
+        assertThat(handle.completion()).isCompleted();
+    }
+
+    @Test
+    void shutdown_shouldCompleteWhenCancelModeDropsQueuedReactionBeforeStart() throws Exception {
+        CountDownLatch firstReactionStarted = new CountDownLatch(1);
+        CountDownLatch releaseFirstReaction = new CountDownLatch(1);
+        AtomicBoolean secondReactionRan = new AtomicBoolean(false);
+
+        ThreadPoolExecutor sharedExecutor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>());
+
+        EventHandlingDefinition definition = EventHandlingDefinition.builder()
+                .subscription(EventSubscription.on(Event.class, event -> {
+                    firstReactionStarted.countDown();
+                    assertThat(releaseFirstReaction.await(2, TimeUnit.SECONDS)).isTrue();
+                }))
+                .subscription(EventSubscription.on(Event.class, event -> secondReactionRan.set(true)))
+                .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                        .sharedReactionExecutor(sharedExecutor)
+                        .shutdownMode(EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.CANCEL_PENDING_TASKS)
+                        .shutdownTimeout(Duration.ofSeconds(2)).build())
+                .build();
+
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+        try {
+            manager.publish(new Event("pipe", UUID.randomUUID(), "CANCEL"));
+
+            assertThat(firstReactionStarted.await(2, TimeUnit.SECONDS)).isTrue();
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+            while (manager.snapshotStats().submittedReactions() < 2 && System.nanoTime() < deadline) {
+                Thread.sleep(10);
+            }
+            assertThat(manager.snapshotStats().submittedReactions()).isEqualTo(2);
+
+            CompletableFuture<EventManager.ShutdownHandle> shutdown = CompletableFuture.supplyAsync(manager::shutdown);
+            try {
+                // Wait until shutdown has actually marked the queued task as dropped before
+                // releasing the running one.
+                // Otherwise the single-thread executor may legitimately run the second reaction
+                // first.
+                deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+                while (manager.snapshotStats().droppedReactions() < 1 && System.nanoTime() < deadline) {
+                    Thread.sleep(10);
+                }
+                assertThat(manager.snapshotStats().droppedReactions()).isEqualTo(1);
+            } finally {
+                releaseFirstReaction.countDown();
+            }
+            shutdown.get(2, TimeUnit.SECONDS);
+
+            EventRuntimeStats stats = manager.snapshotStats();
+            assertThat(secondReactionRan).isFalse();
+            assertThat(stats.submittedReactions()).isEqualTo(2);
+            assertThat(stats.completedReactions()).isEqualTo(1);
+            assertThat(stats.droppedReactions()).isEqualTo(1);
+        } finally {
+            releaseFirstReaction.countDown();
+            manager.shutdown();
+            sharedExecutor.shutdownNow();
+        }
+    }
+
+    @Test
+    void publish_shouldDoNothingWhenDefinitionHasNoSubscriptions() {
+        EventManager manager = new EventManager(EventHandlingDefinition.builder().build(),
+                new ExecutionContextRegistry());
+        manager.publish(new Event("pipe", UUID.randomUUID(), "IGNORED"));
+        manager.shutdown();
         assertThat(true).isTrue();
     }
 
-    /**
-     * Test plus “réel” sur la méthode shutdown :
-     * - on démarre un EventBus qui bloque dans run()
-     * - shutdown() doit appeler stopBus() et débloquer le thread proprement.
-     */
     @Test
-    void shutdown_shouldCallStopBusOnAliveThreads() throws Exception {
-        BlockingTestEventBus bus = new BlockingTestEventBus();
+    void snapshotStats_shouldExposeDroppedAndFailedReactionsUnderSaturation() throws Exception {
+        CountDownLatch firstReactionStarted = new CountDownLatch(1);
+        CountDownLatch releaseFirstReaction = new CountDownLatch(1);
 
-        EventManager manager = new EventManager(List.of(bus));
+        ThreadPoolExecutor sharedExecutor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(1), new ThreadPoolExecutor.AbortPolicy());
 
-        // On attend que run() ait effectivement démarré et bloque
-        boolean started = bus.awaitStarted(2, TimeUnit.SECONDS);
-        assertThat(started).isTrue();
-
-        manager.shutdown();
-
-        assertThat(bus.isStopCalled()).isTrue();
-        // le thread associé doit finalement se terminer (sinon le test bloque)
-        boolean finished = bus.awaitFinished(2, TimeUnit.SECONDS);
-        assertThat(finished).isTrue();
-    }
-
-    /**
-     * Implémentation de test d'un EventBus qui :
-     * - signale quand run() commence
-     * - se bloque jusqu'à l'appel de stopBus()
-     * - signale quand run() se termine
-     */
-    private static class BlockingTestEventBus implements EventBus {
-
-        private final CountDownLatch startedLatch = new CountDownLatch(1);
-        private final CountDownLatch stopSignal = new CountDownLatch(1);
-        private final CountDownLatch finishedLatch = new CountDownLatch(1);
-        private volatile boolean stopCalled = false;
-
-        @Override
-        public void run() {
-            startedLatch.countDown();
-            try {
-                // attend le stop
-                stopSignal.await();
-            } catch (InterruptedException e) {
-                // on laisse sortir
-                Thread.currentThread().interrupt();
-            } finally {
-                finishedLatch.countDown();
+        EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
+            if ("BLOCK".equals(event.getName())) {
+                firstReactionStarted.countDown();
+                assertThat(releaseFirstReaction.await(2, TimeUnit.SECONDS)).isTrue();
+                return;
             }
-        }
+            if ("FAIL".equals(event.getName())) {
+                throw new IllegalStateException("boom");
+            }
+        }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                .sharedReactionExecutor(sharedExecutor).shutdownTimeout(Duration.ofSeconds(2)).build()).build();
 
-        @Override
-        public void stopBus() {
-            stopCalled = true;
-            stopSignal.countDown();
-        }
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+        try {
+            UUID executionId = UUID.randomUUID();
+            manager.publish(new Event("pipe", executionId, "BLOCK"));
+            manager.publish(new Event("pipe", executionId, "FAIL"));
+            manager.publish(new Event("pipe", executionId, "DROP"));
 
-        @Override
-        public void acceptEvent(Event event) {
-            // pas nécessaire pour ce test
-        }
+            assertThat(firstReactionStarted.await(2, TimeUnit.SECONDS)).isTrue();
+            releaseFirstReaction.countDown();
 
-        boolean isStopCalled() {
-            return stopCalled;
-        }
+            manager.shutdown();
 
-        boolean awaitStarted(long timeout, TimeUnit unit) throws InterruptedException {
-            return startedLatch.await(timeout, unit);
-        }
-
-        boolean awaitFinished(long timeout, TimeUnit unit) throws InterruptedException {
-            return finishedLatch.await(timeout, unit);
+            EventRuntimeStats stats = manager.snapshotStats();
+            assertThat(stats.publishedEvents()).isEqualTo(3);
+            assertThat(stats.dispatchedEvents()).isEqualTo(3);
+            assertThat(stats.submittedReactions()).isEqualTo(2);
+            assertThat(stats.completedReactions()).isEqualTo(2);
+            assertThat(stats.droppedReactions()).isEqualTo(1);
+            assertThat(stats.failedReactions()).isEqualTo(1);
+        } finally {
+            manager.shutdown();
+            sharedExecutor.shutdownNow();
         }
     }
+
+    @Test
+    void shutdown_shouldRespectTimeoutWhenRunningReactionDoesNotComplete() throws Exception {
+        CountDownLatch reactionStarted = new CountDownLatch(1);
+        CountDownLatch releaseReaction = new CountDownLatch(1);
+
+        ThreadPoolExecutor sharedExecutor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>());
+
+        EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
+            reactionStarted.countDown();
+            releaseReaction.await();
+        }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                .sharedReactionExecutor(sharedExecutor).shutdownTimeout(Duration.ofMillis(100)).build()).build();
+
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+        try {
+            manager.publish(new Event("pipe", UUID.randomUUID(), "BLOCK"));
+            assertThat(reactionStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+            CompletableFuture<EventManager.ShutdownHandle> shutdown = CompletableFuture.supplyAsync(manager::shutdown);
+
+            assertThat(shutdown.get(1, TimeUnit.SECONDS).detached()).isFalse();
+            assertThat(manager.snapshotStats().completedReactions()).isZero();
+        } finally {
+            releaseReaction.countDown();
+            manager.shutdown();
+            sharedExecutor.shutdownNow();
+        }
+    }
+
 }

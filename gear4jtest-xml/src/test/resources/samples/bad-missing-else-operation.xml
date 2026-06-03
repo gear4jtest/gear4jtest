@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="bad_ifelse"
+              inputType="java.lang.String"
+              outputType="java.lang.String">
+  <operations>
+    <ifElseContainer id="choice" inputType="java.lang.String" outputType="java.lang.String">
+      <conditionalOperations>
+        <conditionalOperation id="when-starts-with-a">
+          <condition expression="input.startsWith(&quot;a&quot;)"/>
+          <processingOperation id="append_true" type="com.myorg.operation.Step11"/>
+        </conditionalOperation>
+      </conditionalOperations>
+    </ifElseContainer>
+  </operations>
+</assemblyLine>

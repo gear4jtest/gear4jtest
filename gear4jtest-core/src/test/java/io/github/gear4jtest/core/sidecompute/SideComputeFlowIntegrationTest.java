@@ -2,94 +2,85 @@ package io.github.gear4jtest.core.sidecompute;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import io.github.gear4jtest.core.event.EventManager;
-import io.github.gear4jtest.core.event.OperationCompletedEvent;
+import io.github.gear4jtest.core.api.AssemblyLine;
+import io.github.gear4jtest.core.api.ExecutionResult;
+import io.github.gear4jtest.core.api.RunRequest;
+import io.github.gear4jtest.core.api.behavior.Operator;
+import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.engine.PipelineEngine;
+import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
+import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
+import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.model.ElementModelBuilders;
-import io.github.gear4jtest.core.model.refactor.DefaultOperationExecutionContext;
-import io.github.gear4jtest.core.model.refactor.EventBus;
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationKind;
-import io.github.gear4jtest.core.model.refactor.OperationParamsInjector;
-import io.github.gear4jtest.core.persistence.OperationExecutionRecord;
+import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SideComputeFlowIntegrationTest {
-
     @Test
-    void fullFlow_shouldPublishEvent_computeInBackground_andInjectValue() throws Exception {
-        // 1) Event bus + listener + registry
-        ExecutionContextRegistry registry = new ExecutionContextRegistry();
+    void failing_required_processor_should_abort_station_before_operator_execution() {
+        AtomicInteger operatorExecutions = new AtomicInteger();
 
-        SideComputer<String> sc = SideComputer.of(
-                "step-op",
-                "bigStuff",
-                ev -> "call-" + ev.getOutput()
-        );
-
-        SideComputeListener listener = new SideComputeListener(List.of(sc), registry);
-        EventBus sideBus = ElementModelBuilders.simpleBus("sideCompute")
-                .eventListener(listener)
+        AssemblyLine<String, String> pipeline = ElementModelBuilders.<String>createAssemblyLine("required-processor")
+                .configuration(AssemblyLine.Configuration.builder()
+                        .eventHandling(EventHandlingDefinition.builder()
+                                .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                                        .reactionExecutorFactory(Executors::newSingleThreadExecutor)
+                                        .shutdownTimeout(Duration.ofSeconds(2)).build())
+                                .build())
+                        .build())
+                .then(ElementModelBuilders
+                        .<String, String, CountingOperator>processingOperation("step-1", CountingOperator.class)
+                        .addProcessor(SideComputeWaitProcessor.builder("missing-key").timeout(Duration.ofMillis(50))
+                                .onTimeoutFail().build())
+                        .build())
                 .build();
 
-        EventManager eventManager = new EventManager(List.of(sideBus));
+        PipelineEngine engine = PipelineEngine.builder()
+                .runnerChainFactory(new RunnerChainFactory(StrategyRegistry.defaultRegistry()))
+                .resourceFactory(new CountingResourceFactory(new CountingOperator(operatorExecutions)))
+                .extensionResolver(new RuntimeExtensionResolver(List.of()))
+                .executionContextRegistry(new ExecutionContextRegistry()).build();
 
-        // 2) ExecutionContext enregistré
-        ExecutionContext execCtx = new ExecutionContext(
-                UUID.randomUUID(),
-                "pipeline-test",
-                eventManager,
-                null, // ResourceFactory mocké/absent ici
-                null,  // PipelineExecutionManager mocké/absent ici
-                null
-        );
-        registry.register(execCtx);
+        ExecutionResult<String> result = engine.execute(pipeline, RunRequest.builder().input("hello").build());
 
-        // 3) On simule une opération qui va consommer bigStuff via param
-        OperationExecutionRecord record = OperationExecutionRecord.start(
-                execCtx.getExecutionId().toString(),
-                "step-op",
-                null
-        );
-        OperationExecutionContext opCtx =
-                new DefaultOperationExecutionContext("step-op", OperationKind.PROCESSING, execCtx, record);
+        assertThat(result.isSuccess()).isFalse();
+        assertThat(result.getError()).isNotNull();
+        assertThat(result.getExecution().getErrorMessage()).contains("missing-key");
+        assertThat(operatorExecutions).hasValue(0);
+    }
 
-        // 4) On publie l'événement de fin d'opération
-        OperationCompletedEvent event = new OperationCompletedEvent(
-                "pipeline-test",
-                execCtx.getExecutionId().toString(),
-                "step-op",
-                "in",
-                "OUT"
-        );
-        eventManager.publish(event);
+    static final class CountingOperator implements Operator<String, String> {
+        private final AtomicInteger executions;
 
-        // 5) On attend un tout petit peu que le bus traite l'événement
-        Thread.sleep(100);
+        CountingOperator(AtomicInteger executions) {
+            this.executions = executions;
+        }
 
-        // 6) Waiter : on unwrap dans le contexte
-        SideComputeWaitProcessor waiter = SideComputeWaitProcessor.builder("bigStuff")
-                .timeout(Duration.ofSeconds(1))
-                .onTimeoutFail()
-                .build();
+        @Override
+        public String transform(String input, StationExecutionContext operationExecution) {
+            executions.incrementAndGet();
+            return input.toUpperCase();
+        }
+    }
 
-        waiter.beforeExecution("input", opCtx);
+    static final class CountingResourceFactory implements ResourceFactory {
+        private final CountingOperator operator;
 
-        // 7) Param resolver context-aware
-        OperationParamsInjector.InterpretationContext<String> paramCtx =
-                new OperationParamsInjector.InterpretationContext<>(
-                        "input",
-                        execCtx,
-                        opCtx
-                );
+        CountingResourceFactory(CountingOperator operator) {
+            this.operator = operator;
+        }
 
-        String value = paramCtx.getSideCompute().get("bigStuff", String.class);
-
-        assertThat(value).isEqualTo("call-OUT");
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T getResource(Class<T> clazz) {
+            return (T) operator;
+        }
     }
 }

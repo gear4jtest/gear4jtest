@@ -1,7 +1,9 @@
 package io.test.gear4jtest.external.api.artifact;
 
 import java.io.ByteArrayInputStream;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -10,20 +12,26 @@ public final class InMemoryArtifactStore implements ArtifactStore {
 
     @Override
     public String put(byte[] content) {
-        String hash = Hashing.sha256Hex(content);
-        map.putIfAbsent(hash, content);
+        byte[] stored = Arrays.copyOf(Objects.requireNonNull(content, "content must not be null"), content.length);
+        String hash = Hashing.sha256Hex(stored);
+        map.putIfAbsent(hash, stored);
         return hash;
     }
 
     @Override
     public Optional<Artifact> get(String hashHex) {
-        byte[] data = map.get(hashHex);
-        if (data == null) return Optional.empty();
-        return Optional.of(new Artifact(hashHex, data.length, Map.of(), () -> new ByteArrayInputStream(data)));
+        String hash = Hashing.requireSha256Hex(hashHex);
+        byte[] data = map.get(hash);
+        if (data == null) {
+            return Optional.empty();
+        }
+        byte[] snapshot = Arrays.copyOf(data, data.length);
+        return Optional.of(new Artifact(hash, snapshot.length, Map.of(), () -> new ByteArrayInputStream(snapshot)));
     }
 
     @Override
     public boolean exists(String hashHex) {
-        return map.containsKey(hashHex);
+        String hash = Hashing.requireSha256Hex(hashHex);
+        return map.containsKey(hash);
     }
 }

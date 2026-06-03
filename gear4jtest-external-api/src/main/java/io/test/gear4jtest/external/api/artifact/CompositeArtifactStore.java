@@ -1,14 +1,17 @@
 package io.test.gear4jtest.external.api.artifact;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class CompositeArtifactStore implements ArtifactStore {
-
-    public enum WriteMode { PRIMARY_ONLY, SYNC_ALL, ASYNC_FALLBACKS }
-    public enum ReadMode  { PREFER_PRIMARY, FIRST_AVAILABLE }
+    private static final Logger LOGGER = LoggerFactory.getLogger(CompositeArtifactStore.class);
 
     private final ArtifactStore primary;
     private final java.util.List<ArtifactStore> fallbacks;
@@ -28,20 +31,35 @@ public final class CompositeArtifactStore implements ArtifactStore {
         this.primary = Objects.requireNonNull(primary);
         this.fallbacks = java.util.List.copyOf(Objects.requireNonNull(fallbacks));
         this.writeMode = writeMode == null ? WriteMode.PRIMARY_ONLY : writeMode;
-        this.readMode  = readMode  == null ? ReadMode.PREFER_PRIMARY : readMode;
+        this.readMode = readMode == null ? ReadMode.PREFER_PRIMARY : readMode;
         this.verifyOnRead = verifyOnRead;
-        this.selfHealing  = selfHealing;
-        this.asyncExec = asyncExec != null ? asyncExec : Executors.newCachedThreadPool();
+        this.selfHealing = selfHealing;
+        this.asyncExec = asyncExec != null ? asyncExec : ForkJoinPool.commonPool();
     }
 
     @Override
     public String put(byte[] content) throws IOException {
-        String hash = primary.put(content);
+        byte[] stored = Arrays.copyOf(Objects.requireNonNull(content, "content must not be null"), content.length);
+        String hash = primary.put(stored);
         switch (writeMode) {
-            case PRIMARY_ONLY -> {}
-            case SYNC_ALL -> { for (var fb : fallbacks) fb.put(content); }
+            case PRIMARY_ONLY -> {
+            }
+            case SYNC_ALL -> {
+                for (var fb : fallbacks) {
+                    fb.put(stored);
+                }
+            }
             case ASYNC_FALLBACKS -> {
-                for (var fb : fallbacks) asyncExec.execute(() -> { try { fb.put(content); } catch (IOException ignored) {} });
+                for (var fb : fallbacks) {
+                    byte[] fallbackContent = Arrays.copyOf(stored, stored.length);
+                    asyncExec.execute(() -> {
+                        try {
+                            fb.put(fallbackContent);
+                        } catch (IOException e) {
+                            LOGGER.warn("Asynchronous fallback artifact write failed.", e);
+                        }
+                    });
+                }
             }
         }
         return hash;
@@ -49,42 +67,70 @@ public final class CompositeArtifactStore implements ArtifactStore {
 
     @Override
     public Optional<Artifact> get(String hashHex) throws IOException {
-        if (readMode == ReadMode.PREFER_PRIMARY) {
-            var a = primary.get(hashHex);
-            if (a.isPresent()) return maybeVerifyAndHeal(hashHex, a.get(), true);
-            for (var fb : fallbacks) {
-                var b = fb.get(hashHex);
-                if (b.isPresent()) return maybeVerifyAndHeal(hashHex, b.get(), false);
-            }
-            return Optional.empty();
-        } else {
-            var a = primary.get(hashHex);
-            if (a.isPresent()) return maybeVerifyAndHeal(hashHex, a.get(), true);
-            for (var fb : fallbacks) {
-                var b = fb.get(hashHex);
-                if (b.isPresent()) return maybeVerifyAndHeal(hashHex, b.get(), false);
-            }
-            return Optional.empty();
+        String hash = Hashing.requireSha256Hex(hashHex);
+        var artifact = primary.get(hash);
+        if (artifact.isPresent()) {
+            return maybeVerifyAndHeal(hash, artifact.get(), true);
         }
+        for (var fallback : fallbacks) {
+            var fallbackArtifact = fallback.get(hash);
+            if (fallbackArtifact.isPresent()) {
+                return maybeVerifyAndHeal(hash, fallbackArtifact.get(), false);
+            }
+        }
+        return Optional.empty();
     }
 
     @Override
     public boolean exists(String hashHex) throws IOException {
-        if (primary.exists(hashHex)) return true;
-        for (var fb : fallbacks) if (fb.exists(hashHex)) return true;
+        String hash = Hashing.requireSha256Hex(hashHex);
+        if (primary.exists(hash)) {
+            return true;
+        }
+        for (var fallback : fallbacks) {
+            if (fallback.exists(hash)) {
+                return true;
+            }
+        }
         return false;
     }
 
-    private Optional<Artifact> maybeVerifyAndHeal(String hash, Artifact a, boolean fromPrimary) throws IOException {
-        if (!verifyOnRead) return Optional.of(a);
-        try (var in = a.openStream()) {
-            var data = in.readAllBytes();
+    private Optional<Artifact> maybeVerifyAndHeal(String hash, Artifact artifact, boolean fromPrimary)
+            throws IOException {
+        if (!verifyOnRead) {
+            return Optional.of(artifact);
+        }
+        try (var in = artifact.openStream()) {
+            byte[] data = in.readAllBytes();
             String rehash = Hashing.sha256Hex(data);
-            if (!rehash.equalsIgnoreCase(hash)) throw new IOException("Corrupt artifact: " + hash);
+            if (!rehash.equals(hash)) {
+                throw new IOException("Corrupt artifact: " + hash);
+            }
             if (!fromPrimary && selfHealing) {
-                asyncExec.execute(() -> { try { if (!primary.exists(hash)) primary.put(data); } catch (IOException ignored) {} });
+                byte[] healed = Arrays.copyOf(data, data.length);
+                asyncExec.execute(() -> {
+                    try {
+                        if (!primary.exists(hash)) {
+                            primary.put(healed);
+                        }
+                    } catch (IOException e) {
+                        LOGGER.warn("Asynchronous artifact self-healing write failed.", e);
+                    }
+                });
             }
         }
-        return Optional.of(a);
+        return Optional.of(artifact);
+    }
+
+    public enum WriteMode {
+        PRIMARY_ONLY, SYNC_ALL, ASYNC_FALLBACKS
+    }
+
+    public enum ReadMode {
+        /**
+         * Read from the primary store first, then fall back to configured fallback
+         * stores.
+         */
+        PREFER_PRIMARY
     }
 }

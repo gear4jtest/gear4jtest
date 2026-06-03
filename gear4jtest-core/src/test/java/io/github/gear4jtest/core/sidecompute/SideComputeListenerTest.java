@@ -1,95 +1,70 @@
 package io.github.gear4jtest.core.sidecompute;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.time.Duration;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Executors;
 
+import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.event.Event;
-import io.github.gear4jtest.core.event.OperationCompletedEvent;
+import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class SideComputeListenerTest {
-
     @Test
-    void handleEvent_shouldIgnoreNonOperationCompletedEvent() {
-        ExecutionContextRegistry registry = mock(ExecutionContextRegistry.class);
-        SideComputer<String> sc = mock(SideComputer.class);
+    void sideComputer_shouldSupportCustomUserEvents() {
+        ExecutionContextRegistry registry = new ExecutionContextRegistry();
 
-        SideComputeListener listener = new SideComputeListener(List.of(sc), registry);
+        SideComputer<CustomEvent, String, String> sideComputer = SideComputer
+                .<CustomEvent, String>onEvent(CustomEvent.class, "custom-key").computer(CustomEvent::getPayload)
+                .map(String::toUpperCase).build();
 
-        Event e = mock(Event.class);
-        listener.handleEvent(e);
+        EventManager eventManager = new EventManager(EventHandlingDefinition.builder().sideComputer(sideComputer)
+                .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                        .reactionExecutorFactory(Executors::newSingleThreadExecutor)
+                        .shutdownTimeout(Duration.ofSeconds(2)).build())
+                .build(), registry);
 
-        verifyNoInteractions(registry, sc);
+        ExecutionContext executionContext = new ExecutionContext(UUID.randomUUID(), "pipe",
+                new ExecutionServices(eventManager, new NoOpResourceFactory()),
+                new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of()));
+        registry.register(executionContext);
+
+        try {
+            eventManager.publish(new CustomEvent("pipe", executionContext.getExecutionId(), "hello"));
+
+            assertThat(executionContext.getSideComputeContext().<String>getOrCreateFuture("custom-key").join())
+                    .isEqualTo("HELLO");
+        } finally {
+            eventManager.shutdown();
+            registry.remove(executionContext.getExecutionId());
+        }
     }
 
-    @Test
-    void handleEvent_shouldDoNothingWhenExecutionContextNotFound() {
-        ExecutionContextRegistry registry = mock(ExecutionContextRegistry.class);
-        SideComputer<String> sc = mock(SideComputer.class);
-        OperationCompletedEvent event = new OperationCompletedEvent("pipe", "exec-1", "op-1", "in", "out");
+    private static final class CustomEvent extends Event {
+        private final String payload;
 
-        when(registry.get("exec-1")).thenReturn(null);
+        private CustomEvent(String pipelineId, UUID executionId, String payload) {
+            super(pipelineId, executionId);
+            this.payload = payload;
+        }
 
-        SideComputeListener listener = new SideComputeListener(List.of(sc), registry);
-
-        listener.handleEvent(event);
-
-        verify(registry).get("exec-1");
-        verifyNoMoreInteractions(registry);
-        verifyNoInteractions(sc);
+        public String getPayload() {
+            return payload;
+        }
     }
 
-    @Test
-    void handleEvent_shouldRunMatchingSideComputerAndCompleteFuture() {
-        ExecutionContextRegistry registry = mock(ExecutionContextRegistry.class);
-        ExecutionContext execCtx = mock(ExecutionContext.class);
-        SideComputeContext scCtx = new SideComputeContext();
-
-        when(registry.get("exec-1")).thenReturn(execCtx);
-        when(execCtx.getSideComputeContext()).thenReturn(scCtx);
-
-        OperationCompletedEvent event = new OperationCompletedEvent("pipe", "exec-1", "op-1", "in", "out");
-
-        // SideComputer réel
-        SideComputer<String> sc = SideComputer.of("op-1", "key1", ev -> "computed-" + ev.getExecutionId());
-
-        SideComputeListener listener = new SideComputeListener(List.of(sc), registry);
-
-        listener.handleEvent(event);
-
-        CompletableFuture<String> future = scCtx.getOrCreateFuture("key1");
-        assertThat(future)
-                .isCompletedWithValue("computed-exec-1");
-    }
-
-    @Test
-    void handleEvent_shouldCompleteFutureExceptionallyWhenComputerThrows() {
-        ExecutionContextRegistry registry = mock(ExecutionContextRegistry.class);
-        ExecutionContext execCtx = mock(ExecutionContext.class);
-        SideComputeContext scCtx = new SideComputeContext();
-
-        when(registry.get("exec-1")).thenReturn(execCtx);
-        when(execCtx.getSideComputeContext()).thenReturn(scCtx);
-
-        OperationCompletedEvent event = new OperationCompletedEvent("pipe", "exec-1", "op-1", "in", "out");
-
-        RuntimeException boom = new RuntimeException("boom");
-        SideComputer<String> sc = SideComputer.of("op-1", "key1", ev -> { throw boom; });
-
-        SideComputeListener listener = new SideComputeListener(List.of(sc), registry);
-        listener.handleEvent(event);
-
-        CompletableFuture<String> future = scCtx.getOrCreateFuture("key1");
-
-        assertThat(future)
-                .isCompletedExceptionally();
+    private static final class NoOpResourceFactory implements ResourceFactory {
+        @Override
+        public <T> T getResource(Class<T> clazz) {
+            return null;
+        }
     }
 }

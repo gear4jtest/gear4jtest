@@ -13,5 +13,5 @@ public interface OperationChainConfigRepository {
 
     void setAllowRunPublicationWithoutTest(String assemblyLineId, boolean allowed);
 
-    void updateStore(String assemblyLineId, StoreType storeType, Map<String,String> storeProps);
+    void updateStore(String assemblyLineId, StoreType storeType, Map<String, String> storeProps);
 }

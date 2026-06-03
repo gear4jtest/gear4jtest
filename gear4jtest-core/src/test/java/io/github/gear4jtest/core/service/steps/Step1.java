@@ -3,33 +3,23 @@ package io.github.gear4jtest.core.service.steps;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationExecutionContext;
-import io.github.gear4jtest.core.model.refactor.Transformer;
+import io.github.gear4jtest.core.api.behavior.Operator;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
 
-public class Step1 implements Transformer<String, Integer> {
+public class Step1 implements Operator<String, Integer> {
+    private final Map<String, Object> chainContext = new HashMap<>();
+    private String b;
 
-//	private Parameter<String> string = Parameter.of();
+    public String getB() {
+        return b;
+    }
 
-	private final Map<String, Object> chainContext = new HashMap<>();
+    @Override
+    public Integer transform(String object, StationExecutionContext operationExecution) {
+        return 1;
+    }
 
-//	public Parameter<String> getA() {
-//		return string;
-//	}
-
-	private String b;
-	
-	public String getB() {
-		return b;
-	}
-	
-	@Override
-	public Integer transform(String object, ExecutionContext context, OperationExecutionContext operationExecution) {
-		return 1;
-	}
-
-	public Map<String, Object> getChainContext() {
-		return chainContext;
-	}
-	
+    public Map<String, Object> getChainContext() {
+        return chainContext;
+    }
 }

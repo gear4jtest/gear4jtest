@@ -1,45 +1,40 @@
 package io.github.gear4jtest.core.event;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
-import java.util.List;
-import java.util.concurrent.*;
-
-import io.github.gear4jtest.core.model.refactor.SimpleEventBus;
+import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class SimpleEventBusThreadingTest {
-
-    static class CollectListener implements EventListener<Event> {
-        final BlockingQueue<Event> queue = new LinkedBlockingQueue<>();
-        @Override public void handleEvent(Event e) {
-            queue.add(e);
-        }
-        Event await(long ms) throws InterruptedException {
-            return queue.poll(ms, TimeUnit.MILLISECONDS);
-        }
-    }
-
     @Test
-    void eventBus_shouldRunInSeparateThread_acceptEvents_filter_andStop() throws Exception {
-        CollectListener listener = new CollectListener();
-        EventBusFilter onlyFoo = e -> e.getName().equals("FOO");
+    void reactions_shouldRunOffThePublishingThread() throws Exception {
+        AtomicReference<String> threadName = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
 
-        SimpleEventBus bus = new SimpleEventBus("bus", List.of(onlyFoo), List.of(listener));
+        EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
+            threadName.set(Thread.currentThread().getName());
+            latch.countDown();
+        }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                .reactionExecutorFactory(Executors::newSingleThreadExecutor).shutdownTimeout(Duration.ofSeconds(2))
+                .build()).build();
 
-        Thread t = new Thread(bus::run);
-        t.start();
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+        try {
+            String publishingThread = Thread.currentThread().getName();
+            manager.publish(new Event("pipe", java.util.UUID.randomUUID(), "FOO"));
 
-        bus.acceptEvent(new Event("p", "e", "BAR")); // filtered out
-        bus.acceptEvent(new Event("p", "e", "FOO"));
-
-        Event received = listener.await(2000);
-        assertThat(received).isNotNull();
-        assertThat(received.getName()).isEqualTo("FOO");
-
-        bus.stopBus();
-        t.join(2000);
-
-        assertThat(t.isAlive()).isFalse();
+            assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(threadName.get()).isNotBlank();
+            assertThat(threadName.get()).isNotEqualTo(publishingThread);
+        } finally {
+            manager.shutdown();
+        }
     }
 }

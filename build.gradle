@@ -1,28 +1,80 @@
 import java.util.stream.Collectors
 
 plugins {
+    id "com.diffplug.spotless" version "8.4.0" apply false
+    id "com.avast.gradle.docker-compose" version "0.17.12"
     id "org.sonarqube" version "3.5.0.2730"
-    id "io.github.gradle-nexus.publish-plugin" version "1.1.0"
+    id "org.jreleaser" version "1.24.0"
+    id "org.owasp.dependencycheck" version "12.2.2"
 //    id "com.jfrog.artifactory" version "4.18.3"
     id "me.champeau.gradle.jmh" version "0.5.3"
     id 'org.asciidoctor.convert' version '2.4.0'
     id 'idea'
-    id 'io.freefair.aspectj' version '8.0.1'
     id 'jacoco-report-aggregation'
 }
 
 ext {
-    releaseVersion = '1.0.0'
+    defaultProjectVersion = findProperty('projectVersion') ?: '1.0.0-SNAPSHOT'
 }
 
 apply from: "${rootDir}/libraries.gradle"
 
+apply plugin: 'com.diffplug.spotless'
+
+dockerCompose {
+    useComposeFiles = ["${rootDir}/docker-compose.yml"]
+    projectName = "gear4jtest"
+    removeContainers = true
+    stopContainers = true
+    captureContainersOutput = false
+}
+
+spotless {
+    format 'rootMisc', {
+        target '*.gradle',
+            '*.md',
+            '.editorconfig',
+            '.gitattributes',
+            '.gitignore',
+            'docker-compose.yml',
+            '.github/**/*.md',
+            'config/**/*.xml',
+            'config/**/*.md',
+            'docs/**/*.md'
+
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+tasks.named('check') {
+    dependsOn 'spotlessCheck'
+}
+
+tasks.register('verifySupplyChainConfiguration') {
+    group = 'verification'
+    description = 'Checks that dependency locking is enabled and documents dependency verification bootstrap.'
+    doLast {
+        if (!file('gradle.lockfile').exists()) {
+            logger.lifecycle('No root gradle.lockfile found yet. Generate locks with: ./gradlew dependencies --write-locks')
+        }
+        if (!file('gradle/verification-metadata.xml').exists()) {
+            logger.lifecycle('No Gradle dependency verification metadata found yet. Bootstrap with: ./gradlew --write-verification-metadata sha256 help')
+        }
+    }
+}
+
+
 allprojects {
     apply plugin: 'jacoco'
 
-    version = '1.0.0-SNAPSHOT'
-    group = 'io.test.gear4test'
-    description = 'Gear4jTest'
+    dependencyLocking {
+        lockAllConfigurations()
+    }
+
+    version = rootProject.defaultProjectVersion
+    group = 'io.github.gear4jtest'
+    description = 'Gear4J Java pipeline orchestration library.'
 
     repositories {
         mavenCentral()
@@ -46,16 +98,97 @@ dependencies {
 configure(project.coreProjects) {
     apply plugin: 'java'
     apply plugin: 'maven-publish'
+    apply plugin: 'checkstyle'
+    apply plugin: 'com.diffplug.spotless'
 //    apply plugin: 'com.jfrog.bintray'
 //    apply plugin: 'com.jfrog.artifactory'
+
+    spotless {
+        java {
+            target 'src/*/java/**/*.java'
+            targetExclude 'build/**', '**/generated/**'
+
+            importOrder('java|javax', '', '\\#')
+            removeUnusedImports()
+            eclipse()
+                .configFile(rootProject.file('config/formatter/eclipse-java-formatter.xml'))
+
+            formatAnnotations()
+        }
+
+        format 'moduleMisc', {
+            target '*.gradle',
+                '*.md',
+                'src/**/*.xml',
+                'src/**/*.xsd',
+                'src/**/*.sql',
+                'src/**/*.properties',
+                'src/**/*.kt',
+                'src/**/*.groovy'
+
+            trimTrailingWhitespace()
+            endWithNewline()
+        }
+    }
+
+    checkstyle {
+        toolVersion = '10.26.1'
+        configFile = rootProject.file('config/checkstyle/checkstyle.xml')
+        configDirectory.set(rootProject.layout.projectDirectory.dir('config/checkstyle'))
+    }
+
+    tasks.withType(Checkstyle).configureEach {
+        exclude '**/generated/**'
+        reports {
+            xml.required = true
+            html.required = true
+        }
+    }
+
+    tasks.withType(Javadoc).configureEach {
+        options.encoding = 'UTF-8'
+        options.addBooleanOption('Xdoclint:all,-missing', true)
+        options.addBooleanOption('quiet', true)
+    }
+
+    tasks.named('check') {
+        dependsOn 'spotlessCheck'
+    }
 
     dependencies {
         testImplementation(libraries.junit)
         testImplementation(libraries.assertj)
     }
 
+    sourceSets {
+        integrationTest {
+            java.srcDir file('src/integrationTest/java')
+            resources.srcDir file('src/integrationTest/resources')
+            compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+            runtimeClasspath += output + compileClasspath
+        }
+    }
+
+    configurations {
+        integrationTestImplementation.extendsFrom testImplementation
+        integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+    }
+
     test {
         useJUnitPlatform()
+    }
+
+    tasks.register('integrationTest', Test) {
+        description = 'Runs integration tests requiring external services such as Docker databases.'
+        group = 'verification'
+        testClassesDirs = sourceSets.integrationTest.output.classesDirs
+        classpath = sourceSets.integrationTest.runtimeClasspath
+        useJUnitPlatform()
+        shouldRunAfter tasks.named('test')
+    }
+
+    if (project.name == 'gear4jtest-core') {
+        rootProject.dockerCompose.isRequiredBy(tasks.named('integrationTest'))
     }
 
     jacocoTestReport {
@@ -68,20 +201,12 @@ configure(project.coreProjects) {
 configure(project.coreProjects.stream().filter { !it.name.contains("gradle") }.collect(Collectors.toList())) {
     apply plugin: 'java-library'
     apply plugin: 'me.champeau.gradle.jmh'
-    apply plugin: 'io.freefair.aspectj'
     apply from: "${rootDir}/publishing.gradle"
 
     dependencies {
         implementation(libraries.slf4j)
-        implementation(libraries.log4jApi)
-        implementation(libraries.log4jCore)
-        implementation(libraries.cglib)
-        implementation(libraries.aspectjrt)
         implementation(libraries.google)
         implementation(libraries.jackson)
-//        implementation(libraries.aspectjweaver)
-
-        //compileOnly(libraries.mojo)
 
         testImplementation(libraries.junit)
         testImplementation(libraries.assertj)
@@ -103,13 +228,15 @@ configure(project.coreProjects.stream().filter { !it.name.contains("gradle") }.c
         jar {
             inputs.property('moduleName', moduleName)
             manifest.attributes(
-                    'Automatic-Module-Name': moduleName
+                'Automatic-Module-Name': moduleName
             )
         }
     }
 
     test {
-        systemProperty "jdk.internal.lambda.dumpProxyClasses", "/tmp/proxies/"
+        if (project.hasProperty('dumpLambdaProxies')) {
+            systemProperty "jdk.internal.lambda.dumpProxyClasses", "${buildDir}/lambda-proxies"
+        }
     }
 }
 
@@ -126,12 +253,39 @@ sonarqube {
         property "sonar.projectName", "gear4jtest"
         property "sonar.projectKey", "gear4jtest_gear4jtest"
         property "sonar.links.homepage", "https://github.com/gear4jtest/gear4jtest"
-        property "sonar.links.ci", "https://travis-ci.org/gear4jtest/gear4jtest"
+        property "sonar.links.ci", "https://github.com/gear4jtest/gear4jtest/actions"
         property "sonar.links.scm", "https://github.com/gear4jtest/gear4jtest"
         property "sonar.links.issue", "https://github.com/gear4jtest/gear4jtest/issues"
         property "sonar.language", "java"
         property "sonar.coverage.jacoco.xmlReportPaths", allTestCoverageFile
     }
+}
+
+
+jreleaser {
+    configFile = file('jreleaser.yml')
+}
+
+dependencyCheck {
+    failBuildOnCVSS = 9.0
+    formats = ['HTML', 'JSON']
+    analyzers {
+        assemblyEnabled = false
+    }
+    if (System.getenv('NVD_API_KEY')) {
+        nvd {
+            apiKey = System.getenv('NVD_API_KEY')
+        }
+    }
+}
+
+tasks.register('stageMavenCentral') {
+    group = 'publishing'
+    description = 'Stages all Maven publications under build/staging-deploy for JReleaser.'
+    dependsOn coreProjects.stream()
+            .filter { !it.name.contains('gradle') }
+            .map { it.tasks.named('publishAllPublicationsToMavenCentralStagingRepository') }
+            .collect(Collectors.toList())
 }
 
 task jacocoRootTestReport(type: JacocoReport) {
@@ -142,7 +296,9 @@ task jacocoRootTestReport(type: JacocoReport) {
     additionalSourceDirs.from = coreProjects.sourceSets.main.allSource.srcDirs
     sourceDirectories.from = coreProjects.sourceSets.main.allSource.srcDirs
     classDirectories.from = coreProjects.sourceSets.main.output
-    executionData.setFrom project.fileTree(dir: '.', include: '**/build/jacoco/test.exec')
+    executionData.setFrom coreProjects.collect { testedProject ->
+        testedProject.layout.buildDirectory.file('jacoco/test.exec')
+    }
 
     dependsOn subprojects.collect { it.tasks.withType(Javadoc) }
 
@@ -160,3 +316,15 @@ task jacocoRootTestReport(type: JacocoReport) {
 
 tasks.check.dependsOn tasks.jacocoRootTestReport
 tasks.jacocoRootTestReport.dependsOn tasks.test
+
+tasks.register('integrationCheck') {
+    group = 'verification'
+    description = 'Runs Docker-backed integration tests for every module.'
+    dependsOn coreProjects.collect { it.tasks.named('integrationTest') }
+}
+
+tasks.register('releaseCheck') {
+    group = 'verification'
+    description = 'Runs the checks expected before staging a Maven Central release.'
+    dependsOn tasks.named('check'), tasks.named('integrationCheck'), tasks.named('dependencyCheckAggregate'), tasks.named('verifySupplyChainConfiguration')
+}

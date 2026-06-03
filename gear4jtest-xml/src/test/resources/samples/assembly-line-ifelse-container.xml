@@ -4,51 +4,39 @@
               inputType="java.lang.String"
               outputType="java.lang.String">
 
-    <operations>
-        <processingOperation id="step11_init" type="Step11">
+  <operations>
+    <processingOperation id="step11_init" type="com.myorg.operation.Step11">
+      <parameters>
+        <valueParameter retriever="com.myorg.operation.Step11::getParam" value="a"/>
+      </parameters>
+    </processingOperation>
+
+    <ifElseContainer id="choice"
+                     inputType="java.lang.String"
+                     outputType="java.lang.String">
+      <conditionalOperations>
+        <conditionalOperation id="when-a">
+          <condition expression="input.endsWith(&quot;a&quot;)"/>
+          <processingOperation id="step11_c" type="com.myorg.operation.Step11">
             <parameters>
-                <valueParameter retriever="Step11::getParam" value="a"/>
+              <valueParameter retriever="com.myorg.operation.Step11::getParam" value="c"/>
             </parameters>
-        </processingOperation>
-
-        <ifElseContainer inputType="java.lang.String" outputType="java.lang.String">
-            <conditionalOperations>
-                <conditionalOperation>
-                    <condition expression="(input, ctx) -> input.equals(&quot;a&quot;)"/>
-                    <operation id="step11_c" type="Step11">
-                        <parameters>
-                            <valueParameter retriever="Step11::getParam" value="c"/>
-                        </parameters>
-                    </operation>
-                </conditionalOperation>
-                <conditionalOperation>
-                    <condition expression="(input, ctx) -> input.equals(&quot;a&quot;)"/>
-                    <operation id="step11_cd" type="Step11">
-                        <parameters>
-                            <valueParameter retriever="Step11::getParam" value="cd"/>
-                        </parameters>
-                    </operation>
-                </conditionalOperation>
-            </conditionalOperations>
-            <elseOperation id="step11_else" type="Step11">
-                <parameters>
-                    <valueParameter retriever="Step11::getParam" value="b"/>
-                </parameters>
-            </elseOperation>
-        </ifElseContainer>
-    </operations>
-
-    <configuration>
-        <operationDefaultConfiguration/>
-        <eventHandling>
-            <eventBuses>
-                <eventBus name="main">
-                    <eventListeners>
-                        <eventListener class="TestEventListener"/>
-                    </eventListeners>
-                </eventBus>
-            </eventBuses>
-            <globalEventConfiguration eventOnParameterChanged="true"/>
-        </eventHandling>
-    </configuration>
+          </processingOperation>
+        </conditionalOperation>
+        <conditionalOperation id="when-z">
+          <condition expression="input.endsWith(&quot;z&quot;)"/>
+          <processingOperation id="step11_cd" type="com.myorg.operation.Step11">
+            <parameters>
+              <valueParameter retriever="com.myorg.operation.Step11::getParam" value="cd"/>
+            </parameters>
+          </processingOperation>
+        </conditionalOperation>
+      </conditionalOperations>
+      <elseOperation id="step11_else" type="com.myorg.operation.Step11">
+        <parameters>
+          <valueParameter retriever="com.myorg.operation.Step11::getParam" value="b"/>
+        </parameters>
+      </elseOperation>
+    </ifElseContainer>
+  </operations>
 </assemblyLine>

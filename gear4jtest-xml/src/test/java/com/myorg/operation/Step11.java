@@ -1,21 +1,18 @@
 package com.myorg.operation;
 
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationParamsInjector.Parameter;
-import io.github.gear4jtest.core.model.refactor.Transformer;
+import io.github.gear4jtest.core.api.behavior.Operator;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.engine.support.WorkerParamsInjector.Parameter;
 
-public class Step11 implements Transformer<String, String> {
+public class Step11 implements Operator<String, String> {
+    private Parameter<String> param = Parameter.<String>newBuilder().build();
 
-	private Parameter<String> param = Parameter.<String>newBuilder().build();
+    @Override
+    public String transform(String object, StationExecutionContext operationExecution) {
+        return object + param.getValue();
+    }
 
-	@Override
-	public String transform(String object, ExecutionContext context, OperationExecutionContext operationExecution) {
-		return param.getValue();
-	}
-
-	public Parameter<String> getParam() {
-		return param;
-	}
-
+    public Parameter<String> getParam() {
+        return param;
+    }
 }

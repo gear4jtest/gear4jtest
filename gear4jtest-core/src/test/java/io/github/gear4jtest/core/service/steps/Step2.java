@@ -1,21 +1,11 @@
 package io.github.gear4jtest.core.service.steps;
 
-import io.github.gear4jtest.core.model.refactor.ExecutionContext;
-import io.github.gear4jtest.core.model.refactor.OperationExecutionContext;
-import io.github.gear4jtest.core.model.refactor.Transformer;
+import io.github.gear4jtest.core.api.behavior.Operator;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
 
-public class Step2 implements Transformer<Integer, String> {
-
-//	private Parameter<String> string;
-	
-//	public Parameter<String> getA() {
-//		return string;
-//	}
-	
-	
-	@Override
-	public String transform(Integer object, ExecutionContext context, OperationExecutionContext operationExecution) {
-		return "";
-	}
-
+public class Step2 implements Operator<Integer, String> {
+    @Override
+    public String transform(Integer object, StationExecutionContext operationExecution) {
+        return "";
+    }
 }

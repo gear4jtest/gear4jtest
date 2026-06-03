@@ -1,0 +1,27 @@
+{
+  "editor.formatOnSave": false,
+  "editor.insertSpaces": true,
+  "editor.tabSize": 4,
+  "editor.rulers": [
+    120
+  ],
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "java.format.enabled": true,
+  "java.format.settings.profile": "Gear4J",
+  "java.format.settings.url": "config/formatter/eclipse-java-formatter.xml",
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "[json]": {
+    "editor.tabSize": 2
+  },
+  "[markdown]": {
+    "files.trimTrailingWhitespace": false
+  },
+  "[xml]": {
+    "editor.tabSize": 2
+  },
+  "[yaml]": {
+    "editor.tabSize": 2
+  }
+}

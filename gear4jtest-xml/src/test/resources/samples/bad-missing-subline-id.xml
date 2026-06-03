@@ -1,0 +1,15 @@
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model" id="bad_missing_subline_id" inputType="java.lang.String" outputType="java.lang.String">
+  <operations>
+    <container id="parallelContainer" inputType="java.lang.String" outputType="java.lang.String" parallel="true">
+      <subLines>
+        <subLine>
+          <processingOperation id="step11_a" type="com.myorg.operation.Step11">
+            <parameters>
+              <valueParameter retriever="getParam" value="a"/>
+            </parameters>
+          </processingOperation>
+        </subLine>
+      </subLines>
+    </container>
+  </operations>
+</assemblyLine>

@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
-
     private final Map<String, Holder> byId = new ConcurrentHashMap<>();
     private final Map<String, String> aliasToId = new ConcurrentHashMap<>();
 

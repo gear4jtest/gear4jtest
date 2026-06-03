@@ -3,4 +3,9 @@ include 'gear4jtest-core'
 include 'gear4jtest-external-api'
 include 'gear4jtest-xml'
 include 'gear4jtest-gradle-xml2java'
+include 'gear4jtest-jackson'
+include 'gear4jtest-spring'
 
+include 'gear4jtest-micrometer'
+
+include 'gear4jtest-spring-boot-starter'

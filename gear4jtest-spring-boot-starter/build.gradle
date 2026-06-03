@@ -1,0 +1,12 @@
+dependencies {
+    api project(':gear4jtest-spring')
+    implementation project(':gear4jtest-micrometer')
+    implementation libraries.springBootAutoconfigure
+    implementation libraries.jakartaValidation
+
+    annotationProcessor libraries.springBootConfigurationProcessor
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:3.5.3'
+}
+
+ext.moduleName = 'io.github.gear4jtest.spring.boot.starter'

@@ -1,38 +1,14 @@
-<assembly-line>
-    <definition>
-        <line>
-            <operators>
-                <operation>
-                    <type>com.myorg.operation.Step11</type>
-                    <parameters>
-                        <parameter>
-                            <retriever>getParam</retriever>
-                            <value>"a"</value>
-                        </parameter>
-                    </parameters>
-                </operation>
-            </operators>
-        </line>
-    </definition>
+<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="simple_line"
+              inputType="java.lang.String"
+              outputType="java.lang.String">
 
-    <configuration>
-        <step-default-configuration>
-            <pre-processors>
-                <processor>com.myorg.processor.MyProcessor</processor>
-                <processor>com.myorg.processor.MyProcessor2</processor>
-            </pre-processors>
-            <post-processors>
-                <processor>com.myorg.processor.MyProcessor</processor>
-                <processor>com.myorg.processor.MyProcessor2</processor>
-            </post-processors>
-        </step-default-configuration>
-        <event-handling-definition>
-            <queue>
-                <event-listener>com.myorg.listener.TestEventListener</event-listener>
-            </queue>
-            <global-event-configuration>
-                <event-on-parameter-changed>true</event-on-parameter-changed>
-            </global-event-configuration>
-        </event-handling-definition>
-    </configuration>
-</assembly-line>
+  <operations>
+    <processingOperation id="append_a" type="com.myorg.operation.Step11">
+      <parameters>
+        <valueParameter retriever="com.myorg.operation.Step11::getParam" value="a"/>
+      </parameters>
+    </processingOperation>
+  </operations>
+</assemblyLine>
