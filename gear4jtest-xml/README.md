@@ -30,7 +30,7 @@ belong to `gear4jtest-external-api` and `gear4jtest-core`.
 The generated Java source must:
 
 - be fully-qualified;
-- implement `io.test.gear4jtest.external.api.loader.GeneratedAssemblyLine`;
+- implement `io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine`;
 - expose a no-arg constructor;
 - build an `AssemblyLine` using the current core Java API;
 - generate dependency fields annotated with `@Inject` when XML references external services;
@@ -86,7 +86,7 @@ own repository formatter.
 The module registers:
 
 ```text
-META-INF/services/io.test.gear4jtest.external.api.translator.OperationChainTranslator
+META-INF/services/io.github.gear4jtest.external.api.translator.OperationChainTranslator
 ```
 
 This allows `OperationChainTranslatorResolver.fromServiceLoader(...)` to discover the XML translator.

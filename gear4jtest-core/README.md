@@ -168,8 +168,8 @@ Supported for the MVP:
 - H2 for tests and local development.
 
 Applications must explicitly supply a `Gear4jDatabaseDialect` when constructing JDBC persistence components. Gear4J
-does not infer the dialect from `DatabaseMetaData`: dialect selection controls schema scripts, SQL syntax and JDBC
-bindings, so configuration must be deterministic before a run starts.
+does not infer the dialect from `DatabaseMetaData`: dialect selection controls migration resources, SQL syntax and
+JDBC bindings, so configuration must be deterministic before a run starts.
 
 For example:
 

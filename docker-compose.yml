@@ -1,9 +1,9 @@
 services:
   postgres:
-    image: postgres:11.5-alpine
+    image: postgres:16-alpine
     ports:
       - "5432:5432"
     environment:
       - POSTGRES_DB=gear4jtest
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}

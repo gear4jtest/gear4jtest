@@ -14,7 +14,7 @@ import java.util.UUID;
  *
  * <p>
  * Gear4J deliberately does not infer the dialect from JDBC metadata. The chosen
- * dialect controls schema scripts, SQL syntax and JDBC bindings; making it
+ * dialect controls migration resources, SQL syntax and JDBC bindings; making it
  * mandatory keeps startup deterministic and prevents an ambiguous driver or
  * proxy from silently selecting an incompatible SQL path.
  * </p>
@@ -37,7 +37,7 @@ public enum Gear4jDatabaseDialect {
     }
 
     /**
-     * Returns the resource directory used by Gear4J internal migrations for this
+     * Returns the resource directory containing Gear4J internal migrations for this
      * dialect.
      */
     public String resourceDirectory() {

@@ -182,7 +182,9 @@ public class PipelineEngine implements PipelineExecutor {
 
         try {
             execution.setContext(new HashMap<>(ctx.getContext()));
-        } catch (Throwable ignored) {
+        } catch (Throwable throwable) {
+            LOGGER.warn("Failed to capture execution context for run {}. The run trace will keep its previous context.",
+                        execution.getId(), throwable);
         }
 
         if (fatalError != null) {

@@ -10,6 +10,7 @@ import java.util.UUID;
 import javax.sql.DataSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -23,6 +24,57 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class DatabaseAssemblyRunRepositoryTest {
+
+    @Test
+    void save_shouldCommitAndRestorePreviousAutoCommit() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.getAutoCommit()).thenReturn(true);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
+                Gear4jDatabaseDialect.POSTGRESQL);
+        AssemblyRunRecord run = runRecord();
+
+        // When
+        repository.save(run);
+
+        // Then
+        InOrder order = inOrder(connection, statement);
+        order.verify(connection).setAutoCommit(false);
+        order.verify(statement).executeUpdate();
+        order.verify(connection).commit();
+        order.verify(connection).setAutoCommit(true);
+    }
+
+    @Test
+    void update_shouldRollbackAndRestorePreviousAutoCommitOnSqlFailure() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        SQLException failure = new SQLException("boom");
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.getAutoCommit()).thenReturn(true);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeUpdate()).thenThrow(failure);
+        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
+                Gear4jDatabaseDialect.POSTGRESQL);
+        AssemblyRunRecord run = runRecord();
+
+        // When / Then
+        assertThatThrownBy(() -> repository.update(run))
+                .isInstanceOf(ExecutionPersistenceException.class)
+                .hasMessageContaining("Failed to update assembly run " + run.id());
+        InOrder order = inOrder(connection, statement);
+        order.verify(connection).setAutoCommit(false);
+        order.verify(statement).executeUpdate();
+        order.verify(connection).rollback();
+        order.verify(connection).setAutoCommit(true);
+    }
+
     @Test
     void delete_shouldRestorePreviousAutoCommit() throws Exception {
         // Given
@@ -150,6 +202,12 @@ class DatabaseAssemblyRunRepositoryTest {
         // Then
         verify(statement).setInt(1, 20);
         verify(statement).setInt(2, 10);
+    }
+
+    private static AssemblyRunRecord runRecord() {
+        return new AssemblyRunRecord(UUID.randomUUID(), "checkout", Map.of("tenant", "demo"), Map.of("input", "x"),
+                Map.of("result", "ok"), ExecutionStatus.SUCCEEDED, Instant.now(), Instant.now(), null, null, null,
+                null);
     }
 
 }

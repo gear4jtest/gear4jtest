@@ -13,7 +13,7 @@ This module owns XML validation, parsing and Java source generation.
 
 Generated Java should:
 
-- implement `io.test.gear4jtest.external.api.loader.GeneratedAssemblyLine`;
+- implement `io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine`;
 - be no-arg constructible;
 - use `@Inject` fields for XML-declared external services;
 - prefer imports/static imports where safe;

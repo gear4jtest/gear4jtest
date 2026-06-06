@@ -14,23 +14,22 @@ import java.util.UUID;
  *
  * <p>
  * This is intentionally not a generic SQL abstraction layer. It only captures
- * the database-specific behavior Gear4J actually needs today: schema script
- * resolution, JSON binding, UUID binding and duplicate-key detection.
+ * the database-specific behavior Gear4J actually needs today: JSON binding,
+ * UUID binding and duplicate-key detection. Schema creation is handled by the
+ * migration resources associated with {@link Gear4jDatabaseDialect}.
  * </p>
  */
 public enum Gear4jJdbcDialect {
-    POSTGRESQL("PostgreSQL", "/io/github/gear4j/db/postgresql/gear4j_schema.sql", true),
-    MYSQL("MySQL", "/io/github/gear4j/db/mysql/gear4j_schema.sql", false),
-    MARIADB("MariaDB", "/io/github/gear4j/db/mysql/gear4j_schema.sql", false),
-    H2("H2", "/io/github/gear4j/db/h2/gear4j_schema.sql", false);
+    POSTGRESQL("PostgreSQL", true),
+    MYSQL("MySQL", false),
+    MARIADB("MariaDB", false),
+    H2("H2", false);
 
     private final String displayName;
-    private final String schemaScriptPath;
     private final boolean nativeUuid;
 
-    Gear4jJdbcDialect(String displayName, String schemaScriptPath, boolean nativeUuid) {
+    Gear4jJdbcDialect(String displayName, boolean nativeUuid) {
         this.displayName = displayName;
-        this.schemaScriptPath = schemaScriptPath;
         this.nativeUuid = nativeUuid;
     }
 
@@ -60,10 +59,6 @@ public enum Gear4jJdbcDialect {
         throw new UnsupportedOperationException("Unsupported Gear4J database provider. productName='" + productName
                 + "', driverName='" + driverName + "', url='" + url
                 + "'. Supported providers are PostgreSQL, MySQL 8, MariaDB and H2.");
-    }
-
-    String schemaScriptPath() {
-        return schemaScriptPath;
     }
 
     void setJson(PreparedStatement stmt, int index, String json) throws SQLException {

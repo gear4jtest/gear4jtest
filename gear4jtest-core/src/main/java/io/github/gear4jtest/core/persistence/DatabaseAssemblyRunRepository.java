@@ -15,6 +15,7 @@ import javax.sql.DataSource;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.persistence.migration.JdbcSchemaMigrator;
 import org.slf4j.Logger;
@@ -48,6 +49,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public void save(AssemblyRunRecord execution) {
         try (Connection conn = dataSource.getConnection()) {
             Gear4jDatabaseDialect dialect = databaseDialect;
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
             String sql = "INSERT INTO assembly_run (id, pipeline_id, input_parameters, context, result, "
                     + "status, start_time, end_time, error_message, parent_execution_id, root_execution_id, "
                     + "parent_station_log_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
@@ -65,9 +68,15 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 dialect.setUuid(stmt, 11, execution.rootExecutionId());
                 dialect.setUuid(stmt, 12, execution.parentStationLogId());
                 stmt.executeUpdate();
+                conn.commit();
+            } catch (SQLException e) {
+                rollback(conn, e);
+                throw e;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new ExecutionPersistenceException("Failed to save assembly run " + execution.id(), e);
         }
     }
 
@@ -75,6 +84,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public void update(AssemblyRunRecord execution) {
         try (Connection conn = dataSource.getConnection()) {
             Gear4jDatabaseDialect dialect = databaseDialect;
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
             String sql = "UPDATE assembly_run SET context=?, result=?, status=?, end_time=?, error_message=?, "
                     + "parent_execution_id=?, root_execution_id=?, parent_station_log_id=? WHERE id=?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -88,9 +99,15 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 dialect.setUuid(stmt, 8, execution.parentStationLogId());
                 dialect.setUuid(stmt, 9, execution.id());
                 stmt.executeUpdate();
+                conn.commit();
+            } catch (SQLException e) {
+                rollback(conn, e);
+                throw e;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new ExecutionPersistenceException("Failed to update assembly run " + execution.id(), e);
         }
     }
 

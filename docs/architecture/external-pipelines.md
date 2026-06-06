@@ -68,3 +68,26 @@ When aliasing is involved, future code should preserve both:
 - `resolvedReference`: the concrete version that was actually loaded.
 
 This is important for BO display, dependency tracking, invalidation and traceability.
+
+## Trust model for generated Java
+
+External definitions are not a sandbox boundary.
+
+XML parsing is hardened against XXE, but the XML module can still translate a definition into Java source, compile it,
+load it into the current JVM and execute it with the same permissions as the hosting application. Inline Java snippets,
+generated Java source and dynamically loaded classes must therefore be treated as application code.
+
+Only compile and execute external definitions that come from trusted provenance, such as reviewed source control,
+controlled build artifacts or an administration workflow with equivalent review rules. Do not expose runtime compilation
+of arbitrary XML or Java snippets to untrusted users.
+
+Using Eclipse JDT or the JDK `JavaCompiler` does not change this security model. A compiler API can change build-time
+stability and dependency choices, but it does not sandbox the resulting bytecode.
+
+Operational guidance:
+
+- prefer build-time generation for externally maintained definitions when possible;
+- keep runtime loading for trusted internal definitions;
+- make any future `trusted` / inline-Java mode explicit rather than implicit;
+- validate generated class names and packages before compilation;
+- document that handler code must be reviewed with the same care as handwritten Java operators.

@@ -9,7 +9,7 @@ Java source at build time instead of being compiled dynamically at application r
 ## Plugin id
 
 ```text
-io.test.gear4jtest.xml2java
+io.github.gear4jtest.xml2java
 ```
 
 ## Responsibilities

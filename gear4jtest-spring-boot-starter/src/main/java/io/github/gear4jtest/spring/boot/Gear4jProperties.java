@@ -42,8 +42,14 @@ public class Gear4jProperties {
     }
 
     public static final class PersistenceProperties {
+        /** Enables JDBC persistence for run and station traces. Default: false. */
         private boolean enabled;
+        /** Required when JDBC persistence is enabled. */
         private Gear4jDatabaseDialect dialect;
+        /**
+         * Lets Gear4J create and migrate its internal schema automatically. Default:
+         * false.
+         */
         private boolean autoCreateTables;
         @Min(1) private int batchSize = 500;
         @Min(1) private int maxPendingLogsPerRun = 10_000;

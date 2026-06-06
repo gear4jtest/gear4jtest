@@ -157,6 +157,7 @@ configure(project.coreProjects) {
 
     dependencies {
         testImplementation(libraries.junit)
+        testRuntimeOnly(libraries.junitPlatformLauncher)
         testImplementation(libraries.assertj)
     }
 

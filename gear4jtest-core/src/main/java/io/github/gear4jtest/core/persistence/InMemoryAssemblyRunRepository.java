@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.persistence;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,10 +45,20 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     @Override
+    public List<AssemblyRunRecord> findByPipelineId(String pipelineId, PageRequest pageRequest) {
+        return window(findByPipelineId(pipelineId), pageRequest);
+    }
+
+    @Override
     public List<AssemblyRunRecord> findByStatus(ExecutionStatus status) {
         return executions.values().stream()
                 .filter(e -> status.equals(e.status()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AssemblyRunRecord> findByStatus(ExecutionStatus status, PageRequest pageRequest) {
+        return window(findByStatus(status), pageRequest);
     }
 
     @Override
@@ -63,13 +74,28 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     @Override
+    public List<AssemblyRunRecord> findAll(PageRequest pageRequest) {
+        return window(findAll(), pageRequest);
+    }
+
+    @Override
     public List<StationLogRecord> findRootLogsByRunId(UUID runId) {
         return findLogsByParent(runId, null);
     }
 
     @Override
+    public List<StationLogRecord> findRootLogsByRunId(UUID runId, PageRequest pageRequest) {
+        return window(findRootLogsByRunId(runId), pageRequest);
+    }
+
+    @Override
     public List<StationLogRecord> findChildLogsByRunId(UUID runId, UUID parentLogId) {
         return findLogsByParent(runId, parentLogId);
+    }
+
+    @Override
+    public List<StationLogRecord> findChildLogsByRunId(UUID runId, UUID parentLogId, PageRequest pageRequest) {
+        return window(findChildLogsByRunId(runId, parentLogId), pageRequest);
     }
 
     @Override
@@ -135,5 +161,10 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
     private Comparator<StationLogRecord> recordComparator() {
         return Comparator.comparing(StationLogRecord::startedAt, Comparator.nullsLast(Comparator.naturalOrder()))
                 .thenComparing(StationLogRecord::id, Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    private static <T> List<T> window(List<T> values, PageRequest pageRequest) {
+        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        return values.stream().skip(pageRequest.offset()).limit(pageRequest.limit()).toList();
     }
 }
