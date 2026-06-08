@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
 import io.github.gear4jtest.core.model.StationLogStatus;
@@ -19,8 +20,10 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class DatabaseExecutionManagerTest {
     @Test
@@ -92,6 +95,52 @@ class DatabaseExecutionManagerTest {
     }
 
     @Test
+    void failedAsyncFlush_shouldRestoreDrainedRecordsForLaterRetry() throws Exception {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        AtomicInteger attempts = new AtomicInteger();
+        CountDownLatch failedOnce = new CountDownLatch(1);
+        CountDownLatch succeededOnce = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            if (attempts.incrementAndGet() == 1) {
+                failedOnce.countDown();
+                throw new ExecutionPersistenceException("temporary database outage");
+            }
+            succeededOnce.countDown();
+            return null;
+        }).when(repository).saveOperationRecordsBatch(anyList());
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder().batchSize(2)
+                .maxPendingLogsPerRun(10).flushInterval(Duration.ofDays(1)).build();
+        DatabaseExecutionManager manager = new DatabaseExecutionManager(repository, configuration, false,
+                flushExecutor, scheduler);
+        UUID runId = UUID.randomUUID();
+
+        try {
+            // When
+            manager.append(record(runId));
+            manager.append(record(runId));
+
+            // Then
+            assertThat(failedOnce.await(2, TimeUnit.SECONDS)).as("first asynchronous flush should fail").isTrue();
+            awaitStats(manager, 1L, 2);
+
+            // When
+            manager.flush(runId);
+
+            // Then
+            assertThat(succeededOnce.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(manager.snapshotStats().bufferedStationLogs()).isZero();
+            verify(repository, atLeast(2)).saveOperationRecordsBatch(anyList());
+        } finally {
+            manager.shutdown(Duration.ofSeconds(1));
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
     void shutdown_shouldNotShutdownCallerManagedExecutors() {
         // Given
         DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
@@ -111,6 +160,26 @@ class DatabaseExecutionManagerTest {
             flushExecutor.shutdownNow();
             scheduler.shutdownNow();
         }
+    }
+
+    private static void awaitStats(DatabaseExecutionManager manager,
+                                   long expectedFailedFlushes,
+                                   int expectedBufferedLogs)
+            throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        PersistenceRuntimeStats stats;
+        do {
+            stats = manager.snapshotStats();
+            if (stats.failedFlushes() == expectedFailedFlushes
+                    && stats.bufferedStationLogs() == expectedBufferedLogs) {
+                return;
+            }
+            TimeUnit.MILLISECONDS.sleep(10);
+        } while (System.nanoTime() < deadline);
+
+        assertThat(stats.failedFlushes()).isEqualTo(expectedFailedFlushes);
+        assertThat(stats.bufferedStationLogs()).as("failed flush must not lose the drained records")
+                .isEqualTo(expectedBufferedLogs);
     }
 
     private static StationLogRecord record(UUID runId) {

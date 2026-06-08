@@ -7,6 +7,8 @@ import java.util.function.Function;
 import io.github.gear4jtest.core.api.behavior.BaseError;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
+import io.github.gear4jtest.core.api.behavior.StationSkipTest;
+import io.github.gear4jtest.core.api.behavior.StationSkipper;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 
 public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
@@ -20,12 +22,14 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
         private final List<WorkerParamsInjector.ParameterModel<?, ?>> parameters;
         private final List<Processor> processors;
         private final List<BaseError<INOUT>> onErrors;
+        private final List<StationSkipper> skippers;
         private Operator<?, ?> fallbackOperator;
 
         public Builder() {
             this.parameters = new ArrayList<>();
             this.processors = new ArrayList<>();
             this.onErrors = new ArrayList<>();
+            this.skippers = new ArrayList<>();
         }
 
         private <PREVIOUS_OP extends Operator<INOUT, INOUT>> Builder(Builder<INOUT, PREVIOUS_OP> source) {
@@ -34,6 +38,7 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
             this.parameters = source.parameters;
             this.processors = source.processors;
             this.onErrors = source.onErrors;
+            this.skippers = source.skippers;
             this.fallbackOperator = source.fallbackOperator;
         }
 
@@ -107,6 +112,29 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
             return this;
         }
 
+        /**
+         * Adds a pre-processor skip rule evaluated before station preparation.
+         *
+         * <p>
+         * Unary stations do not need a fallback transformer to remain type-safe when
+         * skipped: the input can be carried forward unchanged while the station trace
+         * remains {@code SKIPPED}.
+         * </p>
+         */
+        public Builder<INOUT, OP> skipIf(StationSkipTest predicate) {
+            skippers.add(StationSkipper.pre(predicate));
+            return this;
+        }
+
+        /**
+         * Adds a post-processor skip rule evaluated after parameter resolution and
+         * side-compute waits.
+         */
+        public Builder<INOUT, OP> skipIfPost(StationSkipTest predicate) {
+            skippers.add(StationSkipper.post(predicate));
+            return this;
+        }
+
         public UnaryWorkStation<INOUT> build() {
             UnaryWorkStation<INOUT> station = new UnaryWorkStation<>();
             applyBuilder(station, this);
@@ -162,6 +190,23 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
                 return operation;
             }
 
+            /**
+             * Adds a pre-processor skip rule evaluated before station preparation.
+             */
+            public Builder<INOUT, OP> skipIf(StationSkipTest predicate) {
+                operation.skipIf(predicate);
+                return this;
+            }
+
+            /**
+             * Adds a post-processor skip rule evaluated after parameter resolution and
+             * side-compute waits.
+             */
+            public Builder<INOUT, OP> skipIfPost(StationSkipTest predicate) {
+                operation.skipIfPost(predicate);
+                return this;
+            }
+
             public UnaryWorkStation<INOUT> build() {
                 return operation.build();
             }
@@ -178,5 +223,6 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
         station.parameters = builder.parameters.isEmpty() ? null : new ArrayList<>(builder.parameters);
         station.onErrors = builder.onErrors.isEmpty() ? null : new ArrayList<>(builder.onErrors);
         station.fallbackOperator = (Operator<INOUT, INOUT>) builder.fallbackOperator;
+        builder.skippers.forEach(station::addSkipper);
     }
 }

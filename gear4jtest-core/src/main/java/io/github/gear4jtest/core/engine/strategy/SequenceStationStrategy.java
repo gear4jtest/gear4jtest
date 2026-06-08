@@ -35,7 +35,8 @@ public class SequenceStationStrategy extends AbstractStationStrategy<SequenceSta
             FlowDecision decision = FlowDecider.decide(childLog, config);
             switch (decision) {
                 case PROCEED -> {
-                    if (childLog.getStatus() == StationLogStatus.SUCCEEDED) {
+                    if (childLog.getStatus() == StationLogStatus.SUCCEEDED
+                            || childLog.getStatus() == StationLogStatus.SKIPPED) {
                         currentInput = childLog.getOutput();
                     }
                 }

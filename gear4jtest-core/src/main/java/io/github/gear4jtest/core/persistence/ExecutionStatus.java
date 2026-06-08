@@ -42,6 +42,13 @@ public enum ExecutionStatus {
     }
 
     /**
+     * Returns whether this status represents an execution skipped by runtime rules.
+     */
+    public boolean isSkipped() {
+        return this == SKIPPED;
+    }
+
+    /**
      * Returns whether this status should be treated as an error for monitoring or
      * alerting.
      */

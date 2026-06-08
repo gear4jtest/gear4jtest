@@ -129,7 +129,8 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
         if (station.getFallbackOperator() != null) {
             try {
                 Object res = invokeFallback(station.getFallbackOperator(), input, ctx);
-                record.markSuccess(res);
+                markSkipped(record, reason);
+                record.setOutput(res);
                 return res;
             } catch (Exception e) {
                 record.addErrorHandlerException(e);
@@ -139,16 +140,21 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
         }
 
         if (Boolean.TRUE.equals(station.getUnary())) {
-            record.markSuccess(input);
+            markSkipped(record, reason);
+            record.setOutput(input);
             return input;
         }
 
+        markSkipped(record, reason);
+        return null;
+    }
+
+    private void markSkipped(StationLogTrace record, String reason) {
         if (reason != null) {
             record.markSkipped(reason);
         } else {
             record.markSkipped();
         }
-        return null;
     }
 
     protected List<Throwable> buildErrorListForRelease(StationLogTrace record, Exception mainException) {

@@ -11,11 +11,14 @@ import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
  * </p>
  *
  * <ul>
- * <li>{@link #onRunStarted(ExecutionContext, AssemblyRunTrace)} is called
- * before the engine starts the runtime timer.</li>
+ * <li>{@link #onRunStarted(ExecutionContext, AssemblyRunTrace)} is called after
+ * the run trace has been marked {@code RUNNING} and after its {@code startTime}
+ * has been assigned.</li>
  * <li>{@link #onRunCompleted(ExecutionContext, AssemblyRunTrace)} is called
  * after the engine has fully finalized the run (status, result, error, final
- * context, end time).</li>
+ * context, end time). A critical completion failure is normalized back into a
+ * failed {@code ExecutionResult} instead of escaping as a raw hook
+ * exception.</li>
  * </ul>
  *
  * <p>

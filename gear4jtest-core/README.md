@@ -99,7 +99,7 @@ Important principles:
 
 - `FlowConfig` and `FlowDecider` decide how station outcomes affect the rest of the run.
 - STOP and CANCEL are flow outcomes, not generic exceptions used for short-circuiting.
-- `ExecutionResult.isSuccess()` is true only for `SUCCEEDED`; use `getOutcome()` to distinguish `STOPPED`, `CANCELLED` and `FAILED`.
+- `ExecutionResult.isSuccess()` is true only for `SUCCEEDED`; use `getOutcome()` to distinguish `SKIPPED`, `STOPPED`, `CANCELLED` and `FAILED`.
 - JVM `Error` should not be treated as an ordinary recoverable pipeline failure.
 - Station-level error policies belong at the station boundary, not scattered through every strategy.
 - Persistence traces and logs are observability artifacts, not control-flow inputs.

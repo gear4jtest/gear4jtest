@@ -142,10 +142,15 @@ public class PipelineEngine implements PipelineExecutor {
         Object result = rootLog.getOutput();
 
         return switch (rootLog.getStatus()) {
-            case SUCCEEDED, SKIPPED -> {
+            case SUCCEEDED -> {
                 execution.setStatus(ExecutionStatus.SUCCEEDED);
                 execution.setResult(result);
                 yield (ExecutionResult<OUT>) ExecutionResult.success(result, execution);
+            }
+            case SKIPPED -> {
+                execution.setStatus(ExecutionStatus.SKIPPED);
+                execution.setResult(result);
+                yield (ExecutionResult<OUT>) ExecutionResult.skipped(result, execution);
             }
             case STOPPED -> {
                 execution.setStatus(ExecutionStatus.STOPPED);
@@ -194,6 +199,7 @@ public class PipelineEngine implements PipelineExecutor {
             execution.setResult(result.getResult());
             switch (result.getOutcome()) {
                 case SUCCEEDED -> execution.setStatus(ExecutionStatus.SUCCEEDED);
+                case SKIPPED -> execution.setStatus(ExecutionStatus.SKIPPED);
                 case STOPPED -> execution.setStatus(ExecutionStatus.STOPPED);
                 case CANCELLED -> execution.setStatus(ExecutionStatus.CANCELLED);
                 case FAILED -> execution.setStatus(ExecutionStatus.FAILED);
@@ -309,47 +315,56 @@ public class PipelineEngine implements PipelineExecutor {
         executionContextRegistry.register(ctx);
 
         try {
-            for (RunLifecycleExtension lifecycleExtension : resolvedExtensions.runLifecycleExtensions()) {
-                invokeRunStartedSafely(lifecycleExtension, ctx, execution);
-            }
-
             execution.setStartTime(Instant.now());
             execution.setStatus(ExecutionStatus.RUNNING);
-
-            StationRunner rootRunner = runnerChainFactory.createRootRunner(pipeline, request, ctx, resolvedExtensions);
-            StationExecutionContext rootContext = new DefaultStationExecutionContext("root-invoker", ctx, support);
-
-            List<RunInterceptorExtension> interceptors = resolvedExtensions.runInterceptors();
-            RunChain<IN, OUT> chain = () -> doExecuteInternal(pipeline, request, rootRunner, rootContext, ctx,
-                                                              execution);
-
-            for (int i = interceptors.size() - 1; i >= 0; i--) {
-                RunInterceptorExtension interceptor = interceptors.get(i);
-                RunChain<IN, OUT> next = chain;
-                chain = () -> interceptor.aroundRun(pipeline, request, ctx, next);
-            }
 
             ExecutionResult<OUT> result = null;
             Throwable fatalError = null;
             try {
+                for (RunLifecycleExtension lifecycleExtension : resolvedExtensions.runLifecycleExtensions()) {
+                    invokeRunStartedSafely(lifecycleExtension, ctx, execution);
+                }
+
+                StationRunner rootRunner = runnerChainFactory.createRootRunner(pipeline, request, ctx,
+                                                                               resolvedExtensions);
+                StationExecutionContext rootContext = new DefaultStationExecutionContext("root-invoker", ctx, support);
+
+                List<RunInterceptorExtension> interceptors = resolvedExtensions.runInterceptors();
+                RunChain<IN, OUT> chain = () -> doExecuteInternal(pipeline, request, rootRunner, rootContext, ctx,
+                                                                  execution);
+
+                for (int i = interceptors.size() - 1; i >= 0; i--) {
+                    RunInterceptorExtension interceptor = interceptors.get(i);
+                    RunChain<IN, OUT> next = chain;
+                    chain = () -> interceptor.aroundRun(pipeline, request, ctx, next);
+                }
+
                 result = chain.proceed();
-                return result;
             } catch (Exception e) {
                 LOGGER.error("Error while executing pipeline", e);
                 execution.setStatus(ExecutionStatus.FAILED);
                 execution.setError(asException(e));
-                result = ExecutionResult.failure(e, execution);
-                return result;
+                result = ExecutionResult.failure(asException(e), execution);
             } catch (Throwable t) {
                 fatalError = t;
                 throw t;
             } finally {
                 finalizeRunFromResult(ctx, execution, result, fatalError);
-
-                for (RunLifecycleExtension lifecycleExtension : resolvedExtensions.runLifecycleExtensions()) {
-                    invokeRunCompletedSafely(lifecycleExtension, ctx, execution);
+                if (result == null && fatalError == null) {
+                    Exception failure = execution.getError() != null ? execution.getError()
+                            : new IllegalStateException("Pipeline execution returned no result");
+                    result = ExecutionResult.failure(failure, execution);
+                }
+                Exception completionFailure = invokeRunCompletedExtensions(resolvedExtensions.runLifecycleExtensions(),
+                                                                           ctx, execution);
+                if (completionFailure != null && fatalError == null) {
+                    execution.setEndTime(Instant.now());
+                    execution.setStatus(ExecutionStatus.FAILED);
+                    execution.setError(completionFailure);
+                    result = ExecutionResult.failure(completionFailure, execution);
                 }
             }
+            return result;
         } finally {
             EventManager.ShutdownHandle shutdownHandle = eventManager.shutdown();
             Runnable cleanup = () -> {
@@ -411,20 +426,42 @@ public class PipelineEngine implements PipelineExecutor {
         }
     }
 
-    private void invokeRunCompletedSafely(RunLifecycleExtension lifecycleExtension,
-                                          ExecutionContext ctx,
-                                          AssemblyRunTrace execution) {
+    private Exception invokeRunCompletedExtensions(List<RunLifecycleExtension> lifecycleExtensions,
+                                                   ExecutionContext ctx,
+                                                   AssemblyRunTrace execution) {
+        Exception firstCriticalFailure = null;
+        for (RunLifecycleExtension lifecycleExtension : lifecycleExtensions) {
+            Exception failure = invokeRunCompletedSafely(lifecycleExtension, ctx, execution);
+            if (failure != null) {
+                if (firstCriticalFailure == null) {
+                    firstCriticalFailure = failure;
+                }
+                execution.setEndTime(Instant.now());
+                execution.setStatus(ExecutionStatus.FAILED);
+                execution.setError(failure);
+            }
+        }
+        return firstCriticalFailure;
+    }
+
+    private Exception invokeRunCompletedSafely(RunLifecycleExtension lifecycleExtension,
+                                               ExecutionContext ctx,
+                                               AssemblyRunTrace execution) {
         try {
             lifecycleExtension.onRunCompleted(ctx, execution);
+            return null;
         } catch (Error error) {
             throw error;
         } catch (Exception e) {
             if (lifecycleExtension.failureMode() == LifecycleFailureMode.CRITICAL) {
-                throw e instanceof RuntimeException runtimeException ? runtimeException : new RuntimeException(e);
+                LOGGER.error("A critical RunLifecycleExtension failed during onRunCompleted. extension={}",
+                             lifecycleExtension.getClass().getName(), e);
+                return e;
             }
 
             LOGGER.error("A RunLifecycleExtension failed during onRunCompleted. Ignoring. extension={}",
                          lifecycleExtension.getClass().getName(), e);
+            return null;
         }
     }
 

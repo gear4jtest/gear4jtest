@@ -8,9 +8,9 @@ import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
  * Public result returned after a pipeline execution reaches a terminal state.
  *
  * <p>
- * A result distinguishes normal completion, functional stop, technical
- * cancellation and normalized failure. Fatal JVM errors are not expected to be
- * converted into this type.
+ * A result distinguishes normal completion, functional skip, functional stop,
+ * technical cancellation and normalized failure. Fatal JVM errors are not
+ * expected to be converted into this type.
  * </p>
  */
 public class ExecutionResult<T> {
@@ -41,6 +41,11 @@ public class ExecutionResult<T> {
         return new ExecutionResult<>(result, ExecutionOutcome.SUCCEEDED, exec, null);
     }
 
+    /** Creates a functionally skipped execution result. */
+    public static <OUT> ExecutionResult<OUT> skipped(OUT result, AssemblyRunTrace exec) {
+        return new ExecutionResult<>(result, ExecutionOutcome.SKIPPED, exec, null);
+    }
+
     /** Creates a functionally stopped execution result. */
     public static <OUT> ExecutionResult<OUT> stopped(OUT result, AssemblyRunTrace exec) {
         return new ExecutionResult<>(result, ExecutionOutcome.STOPPED, exec, null);
@@ -67,6 +72,10 @@ public class ExecutionResult<T> {
 
     public boolean isStopped() {
         return outcome == ExecutionOutcome.STOPPED;
+    }
+
+    public boolean isSkipped() {
+        return outcome == ExecutionOutcome.SKIPPED;
     }
 
     public boolean isCancelled() {

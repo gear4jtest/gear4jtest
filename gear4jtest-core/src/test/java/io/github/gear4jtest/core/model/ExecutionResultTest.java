@@ -16,8 +16,21 @@ class ExecutionResultTest {
         assertThat(executionResult.getResult()).isEqualTo("ok");
         assertThat(executionResult.getOutcome()).isEqualTo(ExecutionOutcome.SUCCEEDED);
         assertThat(executionResult.isSuccess()).isTrue();
+        assertThat(executionResult.isSkipped()).isFalse();
         assertThat(executionResult.isStopped()).isFalse();
         assertThat(executionResult.isCancelled()).isFalse();
+    }
+
+    @Test
+    void skipped_shouldNotBeReportedAsSuccess() {
+        // Given / When
+        ExecutionResult<String> executionResult = ExecutionResult.skipped(null, null);
+
+        // Then
+        assertThat(executionResult.getOutcome()).isEqualTo(ExecutionOutcome.SKIPPED);
+        assertThat(executionResult.isSkipped()).isTrue();
+        assertThat(executionResult.isSuccess()).isFalse();
+        assertThat(executionResult.isFailed()).isFalse();
     }
 
     @Test

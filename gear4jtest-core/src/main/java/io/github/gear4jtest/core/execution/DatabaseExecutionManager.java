@@ -154,17 +154,25 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
         RunBuffer buffer = buffers.computeIfAbsent(runId,
                                                    id -> new RunBuffer(id, configuration.maxPendingLogsPerRun()));
         assertHealthy(buffer);
-        if (buffer.closed.get()) {
-            throw new ExecutionPersistenceException("Cannot append station log to a closed run buffer. runId=" + runId
-                    + ", stationLogId=" + record.id());
+        boolean shouldScheduleFlush;
+        buffer.flushLock.lock();
+        try {
+            assertHealthy(buffer);
+            if (buffer.closed.get()) {
+                throw new ExecutionPersistenceException(
+                        "Cannot append station log to a closed run buffer. runId=" + runId
+                                + ", stationLogId=" + record.id());
+            }
+            if (!buffer.queue.offer(record)) {
+                rejectedAppends.incrementAndGet();
+                throw new ExecutionPersistenceException("Station log persistence buffer is full. runId=" + runId
+                        + ", maxPendingLogsPerRun=" + configuration.maxPendingLogsPerRun());
+            }
+            shouldScheduleFlush = buffer.pendingCount.incrementAndGet() >= configuration.batchSize();
+        } finally {
+            buffer.flushLock.unlock();
         }
-        if (!buffer.queue.offer(record)) {
-            rejectedAppends.incrementAndGet();
-            throw new ExecutionPersistenceException("Station log persistence buffer is full. runId=" + runId
-                    + ", maxPendingLogsPerRun=" + configuration.maxPendingLogsPerRun());
-        }
-        buffer.pendingCount.incrementAndGet();
-        if (buffer.pendingCount.get() >= configuration.batchSize()) {
+        if (shouldScheduleFlush) {
             scheduleAsyncFlush(buffer, false);
         }
     }
@@ -288,7 +296,9 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
                     completedFlushes.incrementAndGet();
                 } catch (Exception e) {
                     failedFlushes.incrementAndGet();
-                    recordFailure(buffer, e);
+                    if (drainCompletely || buffer.closed.get()) {
+                        recordFailure(buffer, e);
+                    }
                     LOGGER.error("Asynchronous station log flush failed. runId={}", buffer.runId, e);
                 }
             });
@@ -310,11 +320,16 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
                 if (batch.isEmpty()) {
                     return;
                 }
-                repository.saveOperationRecordsBatch(batch);
+                try {
+                    repository.saveOperationRecordsBatch(batch);
+                } catch (Exception e) {
+                    restoreDrainedBatch(buffer, batch);
+                    if (drainCompletely || buffer.closed.get()) {
+                        recordFailure(buffer, e);
+                    }
+                    throw e;
+                }
             } while (drainCompletely);
-        } catch (Exception e) {
-            recordFailure(buffer, e);
-            throw e;
         } finally {
             buffer.flushScheduled.set(false);
             buffer.flushLock.unlock();
@@ -331,6 +346,21 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
             buffer.pendingCount.addAndGet(-batch.size());
         }
         return batch;
+    }
+
+    private void restoreDrainedBatch(RunBuffer buffer, List<StationLogRecord> batch) {
+        if (batch == null || batch.isEmpty()) {
+            return;
+        }
+        for (StationLogRecord record : batch) {
+            if (!buffer.queue.offer(record)) {
+                recordFailure(buffer, new ExecutionPersistenceException(
+                        "Could not requeue drained station log after failed persistence flush. runId=" + buffer.runId
+                                + ", stationLogId=" + record.id()));
+                break;
+            }
+            buffer.pendingCount.incrementAndGet();
+        }
     }
 
     private void recordFailure(RunBuffer buffer, Exception failure) {
