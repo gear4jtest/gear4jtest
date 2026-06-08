@@ -126,6 +126,10 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
         this.ownsFlushExecutor = ownsFlushExecutor;
         this.ownsMaintenanceExecutor = ownsMaintenanceExecutor;
         this.redactor = redactor != null ? redactor : SensitiveDataRedactor.none();
+        if (SensitiveDataRedactor.isNone(this.redactor)) {
+            LOGGER.warn("[Gear4J] JDBC persistence is enabled with no SensitiveDataRedactor. "
+                    + "Pipeline payloads, contexts and results will be persisted as-is.");
+        }
         if (autoCreateTables) {
             this.repository.initialize();
         }

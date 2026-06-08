@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS assembly_run
 (
     50
 ) NOT NULL,
-    start_time TIMESTAMP,
-    end_time TIMESTAMP,
+    start_time TIMESTAMPTZ,
+    end_time TIMESTAMPTZ,
     error_message TEXT,
     parent_execution_id UUID,
     root_execution_id UUID,
@@ -48,8 +48,8 @@ CREATE TABLE IF NOT EXISTS station_log
 (
     50
 ) NOT NULL,
-    start_time TIMESTAMP NOT NULL,
-    end_time TIMESTAMP,
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time TIMESTAMPTZ,
     error_message TEXT,
     error_handler_messages TEXT,
     context JSONB,

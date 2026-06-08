@@ -11,26 +11,20 @@ public interface DependencyInjector {
     void injectDependencies(Object instance, ExecutionMode mode) throws InjectionException;
 
     /**
-     * Registers a singleton bean.
+     * Registers a named singleton bean instance.
+     *
+     * <p>
+     * The lightweight external injector does not implement scopes. Callers that
+     * need prototype, request or session semantics should adapt Gear4J to their DI
+     * container and expose the resolved dependency as a concrete instance here.
+     * </p>
      */
     void registerBean(String name, Object bean);
-
-    /**
-     * Registers a bean with an explicit scope.
-     */
-    void registerBean(String name, Object bean, BeanScope scope);
 
     /**
      * Returns a registered bean matching the requested name and type.
      */
     <T> Optional<T> getBean(String name, Class<T> type);
-
-    /**
-     * Lifetime of a registered bean.
-     */
-    enum BeanScope {
-        SINGLETON, PROTOTYPE, REQUEST, SESSION
-    }
 
     /**
      * Raised when dependency injection cannot complete.

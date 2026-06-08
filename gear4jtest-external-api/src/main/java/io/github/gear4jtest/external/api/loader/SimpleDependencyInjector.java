@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import io.github.gear4jtest.external.api.ExecutionMode;
 
 public class SimpleDependencyInjector implements DependencyInjector {
-    private final Map<String, BeanDefinition> beans = new ConcurrentHashMap<>();
+    private final Map<String, Object> beans = new ConcurrentHashMap<>();
 
     @Override
     public void injectDependencies(Object instance, ExecutionMode mode) throws InjectionException {
@@ -37,50 +37,16 @@ public class SimpleDependencyInjector implements DependencyInjector {
 
     @Override
     public void registerBean(String name, Object bean) {
-        registerBean(name, bean, BeanScope.SINGLETON);
-    }
-
-    @Override
-    public void registerBean(String name, Object bean, BeanScope scope) {
-        beans.put(name, new BeanDefinition(bean, scope));
+        beans.put(name, bean);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T> Optional<T> getBean(String name, Class<T> type) {
-        BeanDefinition definition = beans.get(name);
-        if (definition == null) {
+        Object bean = beans.get(name);
+        if (bean == null || !type.isInstance(bean)) {
             return Optional.empty();
         }
-
-        Object bean = definition.getInstance();
-        if (type.isInstance(bean)) {
-            return Optional.of((T) bean);
-        }
-
-        return Optional.empty();
-    }
-
-    /**
-     * Registered bean definition.
-     */
-    private static class BeanDefinition {
-        private final Object instance;
-        private final BeanScope scope;
-
-        public BeanDefinition(Object instance, BeanScope scope) {
-            this.instance = instance;
-            this.scope = scope;
-        }
-
-        public Object getInstance() {
-            // Scope handling can be expanded later; today the injector keeps the registered
-            // instance.
-            return instance;
-        }
-
-        public BeanScope getScope() {
-            return scope;
-        }
+        return Optional.of((T) bean);
     }
 }

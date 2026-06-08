@@ -134,6 +134,24 @@ class DatabaseAssemblyRunRepositoryTest {
     }
 
     @Test
+    void findById_shouldWrapSqlFailureWithRepositoryContext() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        SQLException failure = new SQLException("connection refused");
+        UUID runId = UUID.randomUUID();
+        when(dataSource.getConnection()).thenThrow(failure);
+        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
+                Gear4jDatabaseDialect.POSTGRESQL);
+
+        // When / Then
+        assertThatThrownBy(() -> repository.findById(runId))
+                .isInstanceOf(ExecutionPersistenceException.class)
+                .hasMessageContaining("Failed to find assembly run " + runId)
+                .hasMessageContaining("PostgreSQL")
+                .hasCause(failure);
+    }
+
+    @Test
     void constructor_shouldRequireAnExplicitDialect() {
         // Given
         DataSource dataSource = mock(DataSource.class);
@@ -164,9 +182,7 @@ class DatabaseAssemblyRunRepositoryTest {
         PreparedStatement statement = mock(PreparedStatement.class);
         ResultSet resultSet = mock(ResultSet.class);
         when(dataSource.getConnection()).thenReturn(connection);
-        when(connection.prepareStatement(
-                                         "SELECT * FROM assembly_run ORDER BY start_time DESC LIMIT ? OFFSET ?"))
-                .thenReturn(statement);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
         when(statement.executeQuery()).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(false);
         DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
@@ -188,9 +204,7 @@ class DatabaseAssemblyRunRepositoryTest {
         PreparedStatement statement = mock(PreparedStatement.class);
         ResultSet resultSet = mock(ResultSet.class);
         when(dataSource.getConnection()).thenReturn(connection);
-        when(connection.prepareStatement(
-                                         "SELECT * FROM assembly_run ORDER BY start_time DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY"))
-                .thenReturn(statement);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
         when(statement.executeQuery()).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(false);
         DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,

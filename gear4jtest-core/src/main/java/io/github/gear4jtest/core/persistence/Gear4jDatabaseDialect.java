@@ -4,7 +4,11 @@ import java.io.StringReader;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -60,6 +64,27 @@ public enum Gear4jDatabaseDialect {
 
     String getJson(ResultSet rs, String column) throws SQLException {
         return rs.getString(column);
+    }
+
+    void setInstant(PreparedStatement stmt, int index, Instant value) throws SQLException {
+        if (value == null) {
+            stmt.setNull(index, this == POSTGRESQL ? Types.TIMESTAMP_WITH_TIMEZONE : Types.TIMESTAMP);
+            return;
+        }
+        if (this == POSTGRESQL) {
+            stmt.setObject(index, value.atOffset(ZoneOffset.UTC));
+        } else {
+            stmt.setTimestamp(index, Timestamp.from(value));
+        }
+    }
+
+    Instant getInstant(ResultSet rs, String column) throws SQLException {
+        if (this == POSTGRESQL) {
+            OffsetDateTime value = rs.getObject(column, OffsetDateTime.class);
+            return value != null ? value.toInstant() : null;
+        }
+        Timestamp value = rs.getTimestamp(column);
+        return value != null ? value.toInstant() : null;
     }
 
     void setUuid(PreparedStatement stmt, int index, UUID value) throws SQLException {

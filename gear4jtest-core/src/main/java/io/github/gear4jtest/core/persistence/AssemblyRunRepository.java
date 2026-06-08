@@ -4,7 +4,29 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Repository contract for persisted pipeline runs and their station logs.
+ *
+ * <p>
+ * Implementations may be called by the runtime persistence extension while runs
+ * are executing and by application code for read/navigation use cases. Database
+ * implementations should provide real bounded pagination for every method that
+ * accepts a {@link PageRequest}; these methods must not silently load the full
+ * history into memory.
+ * </p>
+ *
+ * <p>
+ * Implementations should be thread-safe if they are shared between concurrent
+ * pipeline runs. Failures should be reported with a persistence-specific
+ * runtime exception containing the operation context when possible.
+ * </p>
+ */
 public interface AssemblyRunRepository {
+    /**
+     * Initializes the backing store if the implementation owns schema creation or
+     * migration. Implementations that rely on an application-owned migrator may
+     * keep this as a no-op.
+     */
     default void initialize() {
     }
 
@@ -39,7 +61,8 @@ public interface AssemblyRunRepository {
     long countChildLogsByRunId(UUID runId, UUID parentLogId);
 
     /**
-     * Helper debug/test uniquement.
+     * Helper intended for diagnostics and tests. Production navigation should
+     * prefer paged root/child traversal for large runs.
      */
     List<StationLogRecord> findAllLogsByRunId(UUID runId);
 

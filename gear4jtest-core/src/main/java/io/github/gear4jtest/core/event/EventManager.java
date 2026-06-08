@@ -66,6 +66,7 @@ public final class EventManager {
     private final Thread dispatcherThread;
     private final Duration shutdownTimeout;
     private final EventHandlingDefinition.RuntimeConfiguration.ShutdownMode shutdownMode;
+    /** Guarded by {@link #submissionMonitor}. */
     private boolean accepting;
 
     public EventManager(EventHandlingDefinition definition, ExecutionContextRegistry registry) {

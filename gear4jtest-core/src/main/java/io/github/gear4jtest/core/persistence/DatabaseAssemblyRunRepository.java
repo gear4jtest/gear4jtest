@@ -4,8 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,6 +23,11 @@ import org.slf4j.LoggerFactory;
 
 public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseAssemblyRunRepository.class);
+    private static final String ASSEMBLY_RUN_COLUMNS = "id, pipeline_id, input_parameters, context, result, "
+            + "status, start_time, end_time, error_message, parent_execution_id, root_execution_id, "
+            + "parent_station_log_id";
+    private static final String STATION_LOG_COLUMNS = "id, pipeline_execution_id, operation_id, parent_log_id, "
+            + "branch_id, status, start_time, end_time, error_message, error_handler_messages, context, item_id";
     private final DataSource dataSource;
     private final ObjectMapper objectMapper;
     private final Gear4jDatabaseDialect databaseDialect;
@@ -61,8 +66,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 dialect.setJson(stmt, 4, toJson(execution.context()));
                 dialect.setJson(stmt, 5, toJson(execution.result()));
                 stmt.setString(6, execution.status().name());
-                stmt.setTimestamp(7, execution.startTime() != null ? Timestamp.from(execution.startTime()) : null);
-                stmt.setTimestamp(8, execution.endTime() != null ? Timestamp.from(execution.endTime()) : null);
+                dialect.setInstant(stmt, 7, execution.startTime());
+                dialect.setInstant(stmt, 8, execution.endTime());
                 stmt.setString(9, execution.errorMessage());
                 dialect.setUuid(stmt, 10, execution.parentExecutionId());
                 dialect.setUuid(stmt, 11, execution.rootExecutionId());
@@ -92,7 +97,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 dialect.setJson(stmt, 1, toJson(execution.context()));
                 dialect.setJson(stmt, 2, toJson(execution.result()));
                 stmt.setString(3, execution.status().name());
-                stmt.setTimestamp(4, execution.endTime() != null ? Timestamp.from(execution.endTime()) : null);
+                dialect.setInstant(stmt, 4, execution.endTime());
                 stmt.setString(5, execution.errorMessage());
                 dialect.setUuid(stmt, 6, execution.parentExecutionId());
                 dialect.setUuid(stmt, 7, execution.rootExecutionId());
@@ -115,7 +120,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public Optional<AssemblyRunRecord> findById(UUID id) {
         try (Connection conn = dataSource.getConnection()) {
             Gear4jDatabaseDialect dialect = databaseDialect;
-            String sql = "SELECT * FROM assembly_run WHERE id = ?";
+            String sql = "SELECT " + ASSEMBLY_RUN_COLUMNS + " FROM assembly_run WHERE id = ?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 dialect.setUuid(stmt, 1, id);
                 try (ResultSet rs = stmt.executeQuery()) {
@@ -125,7 +130,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 }
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("find assembly run " + id, e);
         }
         return Optional.empty();
     }
@@ -138,13 +143,14 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     @Override
     public List<AssemblyRunRecord> findByPipelineId(String pipelineId) {
         try (Connection conn = dataSource.getConnection()) {
-            String sql = "SELECT * FROM assembly_run WHERE pipeline_id = ? ORDER BY start_time DESC";
+            String sql = "SELECT " + ASSEMBLY_RUN_COLUMNS
+                    + " FROM assembly_run WHERE pipeline_id = ? ORDER BY start_time DESC";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, pipelineId);
                 return executeQuery(stmt, databaseDialect);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("find assembly runs for pipeline " + pipelineId, e);
         }
     }
 
@@ -153,27 +159,29 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
         try (Connection conn = dataSource.getConnection()) {
             String sql = databaseDialect.pagedSql(
-                                                  "SELECT * FROM assembly_run WHERE pipeline_id = ? ORDER BY start_time DESC");
+                                                  "SELECT " + ASSEMBLY_RUN_COLUMNS
+                                                          + " FROM assembly_run WHERE pipeline_id = ? ORDER BY start_time DESC");
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, pipelineId);
                 databaseDialect.bindPage(stmt, 2, pageRequest);
                 return executeQuery(stmt, databaseDialect);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("find paged assembly runs for pipeline " + pipelineId, e);
         }
     }
 
     @Override
     public List<AssemblyRunRecord> findByStatus(ExecutionStatus status) {
         try (Connection conn = dataSource.getConnection()) {
-            String sql = "SELECT * FROM assembly_run WHERE status = ? ORDER BY start_time DESC";
+            String sql = "SELECT " + ASSEMBLY_RUN_COLUMNS
+                    + " FROM assembly_run WHERE status = ? ORDER BY start_time DESC";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, status.name());
                 return executeQuery(stmt, databaseDialect);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("find assembly runs with status " + status, e);
         }
     }
 
@@ -182,14 +190,15 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
         try (Connection conn = dataSource.getConnection()) {
             String sql = databaseDialect.pagedSql(
-                                                  "SELECT * FROM assembly_run WHERE status = ? ORDER BY start_time DESC");
+                                                  "SELECT " + ASSEMBLY_RUN_COLUMNS
+                                                          + " FROM assembly_run WHERE status = ? ORDER BY start_time DESC");
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, status.name());
                 databaseDialect.bindPage(stmt, 2, pageRequest);
                 return executeQuery(stmt, databaseDialect);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("find paged assembly runs with status " + status, e);
         }
     }
 
@@ -214,19 +223,19 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 conn.setAutoCommit(previousAutoCommit);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("delete assembly run " + id, e);
         }
     }
 
     @Override
     public List<AssemblyRunRecord> findAll() {
         try (Connection conn = dataSource.getConnection()) {
-            String sql = "SELECT * FROM assembly_run";
+            String sql = "SELECT " + ASSEMBLY_RUN_COLUMNS + " FROM assembly_run";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 return executeQuery(stmt, databaseDialect);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("find all assembly runs", e);
         }
     }
 
@@ -234,32 +243,35 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public List<AssemblyRunRecord> findAll(PageRequest pageRequest) {
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
         try (Connection conn = dataSource.getConnection()) {
-            String sql = databaseDialect.pagedSql("SELECT * FROM assembly_run ORDER BY start_time DESC");
+            String sql = databaseDialect
+                    .pagedSql("SELECT " + ASSEMBLY_RUN_COLUMNS + " FROM assembly_run ORDER BY start_time DESC");
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 databaseDialect.bindPage(stmt, 1, pageRequest);
                 return executeQuery(stmt, databaseDialect);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("find paged assembly runs", e);
         }
     }
 
     @Override
     public List<StationLogRecord> findRootLogsByRunId(UUID runId) {
-        String sql = "SELECT * FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id IS NULL ORDER BY start_time, id";
+        String sql = "SELECT " + STATION_LOG_COLUMNS + " FROM station_log WHERE pipeline_execution_id = ? "
+                + "AND parent_log_id IS NULL ORDER BY start_time, id";
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             Gear4jDatabaseDialect dialect = databaseDialect;
             dialect.setUuid(stmt, 1, runId);
             return executeLogQuery(stmt, dialect);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("find root station logs for run " + runId, e);
         }
     }
 
     @Override
     public List<StationLogRecord> findRootLogsByRunId(UUID runId, PageRequest pageRequest) {
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
-        String base = "SELECT * FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id IS NULL "
+        String base = "SELECT " + STATION_LOG_COLUMNS
+                + " FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id IS NULL "
                 + "ORDER BY start_time, id";
         String sql = databaseDialect.pagedSql(base);
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -267,27 +279,29 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             databaseDialect.bindPage(stmt, 2, pageRequest);
             return executeLogQuery(stmt, databaseDialect);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("find paged root station logs for run " + runId, e);
         }
     }
 
     @Override
     public List<StationLogRecord> findChildLogsByRunId(UUID runId, UUID parentLogId) {
-        String sql = "SELECT * FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id = ? ORDER BY start_time, id";
+        String sql = "SELECT " + STATION_LOG_COLUMNS + " FROM station_log WHERE pipeline_execution_id = ? "
+                + "AND parent_log_id = ? ORDER BY start_time, id";
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             Gear4jDatabaseDialect dialect = databaseDialect;
             dialect.setUuid(stmt, 1, runId);
             dialect.setUuid(stmt, 2, parentLogId);
             return executeLogQuery(stmt, dialect);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("find child station logs for run " + runId + " and parent " + parentLogId, e);
         }
     }
 
     @Override
     public List<StationLogRecord> findChildLogsByRunId(UUID runId, UUID parentLogId, PageRequest pageRequest) {
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
-        String base = "SELECT * FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id = ? "
+        String base = "SELECT " + STATION_LOG_COLUMNS
+                + " FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id = ? "
                 + "ORDER BY start_time, id";
         String sql = databaseDialect.pagedSql(base);
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -296,7 +310,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             databaseDialect.bindPage(stmt, 3, pageRequest);
             return executeLogQuery(stmt, databaseDialect);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("find paged child station logs for run " + runId + " and parent " + parentLogId,
+                                     e);
         }
     }
 
@@ -318,19 +333,20 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 return 0L;
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("count child station logs for run " + runId + " and parent " + parentLogId, e);
         }
     }
 
     @Override
     public List<StationLogRecord> findAllLogsByRunId(UUID runId) {
-        String sql = "SELECT * FROM station_log WHERE pipeline_execution_id = ? ORDER BY start_time, id";
+        String sql = "SELECT " + STATION_LOG_COLUMNS
+                + " FROM station_log WHERE pipeline_execution_id = ? ORDER BY start_time, id";
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             Gear4jDatabaseDialect dialect = databaseDialect;
             dialect.setUuid(stmt, 1, runId);
             return executeLogQuery(stmt, dialect);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("find all station logs for run " + runId, e);
         }
     }
 
@@ -355,8 +371,22 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 conn.setAutoCommit(previousAutoCommit);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw persistenceFailure("save station log batch " + describeRecords(records), e);
         }
+    }
+
+    private String describeRecords(List<StationLogRecord> records) {
+        LinkedHashSet<UUID> runIds = new LinkedHashSet<>();
+        LinkedHashSet<UUID> logIds = new LinkedHashSet<>();
+        for (StationLogRecord record : records) {
+            if (record.pipelineExecutionId() != null && runIds.size() < 5) {
+                runIds.add(record.pipelineExecutionId());
+            }
+            if (record.id() != null && logIds.size() < 5) {
+                logIds.add(record.id());
+            }
+        }
+        return "size=" + records.size() + ", runIds=" + runIds + ", stationLogIds=" + logIds;
     }
 
     private void saveOperationRecord(Connection conn, Gear4jDatabaseDialect dialect, StationLogRecord rec)
@@ -385,7 +415,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, rec.branchId());
             stmt.setString(2, rec.status().toString());
-            stmt.setTimestamp(3, rec.endedAt() != null ? Timestamp.from(rec.endedAt()) : null);
+            dialect.setInstant(stmt, 3, rec.endedAt());
             stmt.setString(4, rec.errorMessage());
             stmt.setString(5, rec.errorHandlerMessages());
             dialect.setJson(stmt, 6, toJson(rec.context()));
@@ -407,8 +437,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             dialect.setUuid(stmt, 4, rec.parentOperationId());
             stmt.setString(5, rec.branchId());
             stmt.setString(6, rec.status().toString());
-            stmt.setTimestamp(7, rec.startedAt() != null ? Timestamp.from(rec.startedAt()) : null);
-            stmt.setTimestamp(8, rec.endedAt() != null ? Timestamp.from(rec.endedAt()) : null);
+            dialect.setInstant(stmt, 7, rec.startedAt());
+            dialect.setInstant(stmt, 8, rec.endedAt());
             stmt.setString(9, rec.errorMessage());
             stmt.setString(10, rec.errorHandlerMessages());
             dialect.setJson(stmt, 11, toJson(rec.context()));
@@ -459,8 +489,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 fromJson(dialect.getJson(rs, "input_parameters"), Map.class),
                 fromJson(dialect.getJson(rs, "result"), Object.class),
                 ExecutionStatus.valueOf(rs.getString("status")),
-                toInstant(rs.getTimestamp("start_time")),
-                toInstant(rs.getTimestamp("end_time")),
+                dialect.getInstant(rs, "start_time"),
+                dialect.getInstant(rs, "end_time"),
                 rs.getString("error_message"),
                 dialect.getUuid(rs, "parent_execution_id"),
                 dialect.getUuid(rs, "root_execution_id"),
@@ -475,23 +505,19 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 dialect.getUuid(rs, "parent_log_id"),
                 rs.getString("branch_id"),
                 StationLogStatus.valueOf(rs.getString("status")),
-                toInstant(rs.getTimestamp("start_time")),
-                toInstant(rs.getTimestamp("end_time")),
+                dialect.getInstant(rs, "start_time"),
+                dialect.getInstant(rs, "end_time"),
                 rs.getString("error_message"),
                 rs.getString("error_handler_messages"),
                 fromJson(dialect.getJson(rs, "context"), new TypeReference<>() {}),
                 rs.getString("item_id"));
     }
 
-    private java.time.Instant toInstant(Timestamp timestamp) {
-        return timestamp != null ? timestamp.toInstant() : null;
-    }
-
     private String toJson(Object obj) {
         try {
             return obj != null ? objectMapper.writeValueAsString(obj) : null;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ExecutionPersistenceException("Failed to serialize persistence payload", e);
         }
     }
 
@@ -499,7 +525,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         try {
             return json != null ? objectMapper.readValue(json, clazz) : null;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ExecutionPersistenceException("Failed to deserialize persistence payload as " + clazz.getName(),
+                    e);
         }
     }
 
@@ -507,7 +534,11 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         try {
             return json != null ? objectMapper.readValue(json, type) : null;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ExecutionPersistenceException("Failed to deserialize persistence payload", e);
         }
+    }
+
+    private ExecutionPersistenceException persistenceFailure(String operation, SQLException cause) {
+        return new ExecutionPersistenceException("Failed to " + operation + " using " + databaseDialect, cause);
     }
 }

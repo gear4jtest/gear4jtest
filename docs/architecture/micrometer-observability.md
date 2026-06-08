@@ -9,9 +9,10 @@ yet the complete production observability module.
 
 ## Current scope
 
-The current module registers low-cardinality lifecycle and persistence signals.
-It is useful to confirm that Gear4J is active and that persistence buffers are
-not silently accumulating.
+The current module registers low-cardinality lifecycle, duration and persistence
+signals. It is useful to confirm that Gear4J is active, understand completed
+run/station latency and verify that persistence buffers are not silently
+accumulating.
 
 See the module README for the exact metric names:
 
@@ -19,14 +20,16 @@ See the module README for the exact metric names:
 gear4jtest-micrometer/README.md
 ```
 
+The built-in duration timers are recorded only when both start and end
+timestamps are present and consistent. Missing or inverted timestamps are
+ignored rather than emitting misleading zero or negative durations.
+
 ## Future production metric surface
 
 A richer module should expose counters and timers for:
 
 - pipeline outcomes: succeeded, failed, stopped, cancelled;
-- pipeline duration by outcome;
 - station outcomes: succeeded, failed, skipped, stopped, cancelled;
-- station duration by status and station kind;
 - timeout and cancellation counts;
 - event reaction results: completed, failed, dropped;
 - persistence flush duration, failures and backlog;

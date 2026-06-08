@@ -20,14 +20,17 @@ The initial metric surface focuses on low-cardinality runtime signals:
 ```text
 gear4j.runs.started
 gear4j.runs.completed
+gear4j.runs.duration
 gear4j.stations.started
 gear4j.stations.completed
+gear4j.stations.duration
 gear4j.persistence.buffered.station.logs
 gear4j.persistence.active.runs
 ```
 
-These metrics are useful to confirm that Gear4J is active and that persistence is
-not silently accumulating logs, but they are intentionally conservative.
+These metrics are useful to confirm that Gear4J is active, track completed run
+and station latency, and ensure that persistence is not silently accumulating
+logs. They are still intentionally conservative.
 
 ## Why the current surface is conservative
 
@@ -47,13 +50,7 @@ A more complete Micrometer module should add:
 gear4j.pipeline.runs
   tags: pipeline.id, pipeline.version, outcome
 
-gear4j.pipeline.duration
-  tags: pipeline.id, pipeline.version, outcome
-
 gear4j.station.executions
-  tags: station.kind, operation.type, status
-
-gear4j.station.duration
   tags: station.kind, operation.type, status
 
 gear4j.event.reactions

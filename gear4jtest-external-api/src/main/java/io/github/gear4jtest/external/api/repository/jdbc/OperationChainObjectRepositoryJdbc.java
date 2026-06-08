@@ -6,6 +6,8 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -30,20 +32,28 @@ public final class OperationChainObjectRepositoryJdbc implements OperationChainO
         this.databaseDialect = Objects.requireNonNull(databaseDialect, "databaseDialect must not be null");
     }
 
-    private static Instant instantOrNull(ResultSet rs, String column) throws SQLException {
+    private Instant instantOrNull(ResultSet rs, String column) throws SQLException {
+        if (databaseDialect == Gear4jDatabaseDialect.POSTGRESQL) {
+            OffsetDateTime value = rs.getObject(column, OffsetDateTime.class);
+            return value != null ? value.toInstant() : null;
+        }
         Timestamp timestamp = rs.getTimestamp(column);
         return timestamp == null ? null : timestamp.toInstant();
     }
 
-    private static void setTimestamp(PreparedStatement ps, int index, Instant instant) throws SQLException {
+    private void setTimestamp(PreparedStatement ps, int index, Instant instant) throws SQLException {
         if (instant == null) {
-            ps.setNull(index, Types.TIMESTAMP);
+            ps.setNull(index, databaseDialect == Gear4jDatabaseDialect.POSTGRESQL
+                    ? Types.TIMESTAMP_WITH_TIMEZONE
+                    : Types.TIMESTAMP);
+        } else if (databaseDialect == Gear4jDatabaseDialect.POSTGRESQL) {
+            ps.setObject(index, instant.atOffset(ZoneOffset.UTC));
         } else {
             ps.setTimestamp(index, Timestamp.from(instant));
         }
     }
 
-    private static OperationChainObject map(ResultSet rs) throws SQLException {
+    private OperationChainObject map(ResultSet rs) throws SQLException {
         return new OperationChainObject(rs.getLong("id"), rs.getString("al_id"), rs.getString("version"),
                 ExecutionMode.valueOf(rs.getString("mode")), requireContentHash(rs.getString("content_hash")),
                 rs.getLong("size_bytes"), rs.getString("mime_type"), instantOrNull(rs, "created_at"),

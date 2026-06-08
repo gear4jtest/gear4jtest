@@ -8,6 +8,13 @@ import io.github.gear4jtest.core.util.DefaultUuidGenerator;
  * Extension point used to generate run and station identifiers.
  *
  * <p>
+ * Implementations are called from the execution engine and may be invoked
+ * concurrently. Custom implementations must return non-null identifiers and
+ * should make collisions practically impossible within the repository namespace
+ * they write to.
+ * </p>
+ *
+ * <p>
  * The default implementation is a dependency-free, thread-safe UUIDv7
  * generator.
  * </p>
@@ -21,5 +28,8 @@ public interface IdGenerator {
         return DefaultUuidGenerator::generate;
     }
 
+    /**
+     * Generates a new unique identifier for a run or station log.
+     */
     UUID generate();
 }

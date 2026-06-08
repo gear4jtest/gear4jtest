@@ -23,3 +23,9 @@ gear4j:
 
 Persistence is opt-in. When enabled, `gear4j.persistence.dialect` is mandatory.
 Gear4J never auto-detects the database dialect.
+
+`gear4j.persistence.auto-create-tables` defaults to `false`. With the default,
+Gear4J expects the core schema to already exist, typically because the host
+application applied the SQL resources through Flyway, Liquibase or another
+migration process. Set it to `true` only when Gear4J should create and migrate
+its own internal schema at startup.

@@ -13,8 +13,6 @@ import io.github.gear4jtest.micrometer.PersistenceMetricsBinder;
 import io.github.gear4jtest.spring.Gear4jPipelineEngineBuilderCustomizer;
 import io.github.gear4jtest.spring.Gear4jSpringConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -30,8 +28,6 @@ import org.springframework.context.annotation.Import;
 @EnableConfigurationProperties(Gear4jProperties.class)
 @Import(Gear4jSpringConfiguration.class)
 public class Gear4jAutoConfiguration {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Gear4jAutoConfiguration.class);
-
     @Bean
     @ConditionalOnMissingBean(name = "gear4jParallelExecutionCustomizer")
     Gear4jPipelineEngineBuilderCustomizer gear4jParallelExecutionCustomizer(Gear4jProperties properties) {
@@ -54,14 +50,8 @@ public class Gear4jAutoConfiguration {
                 .flushInterval(persistence.getFlushInterval())
                 .shutdownTimeout(persistence.getShutdownTimeout())
                 .build();
-        SensitiveDataRedactor redactor = redactorProvider.getIfAvailable();
-        if (redactor == null) {
-            LOGGER.warn("[Gear4J] JDBC persistence is enabled with no SensitiveDataRedactor bean. "
-                    + "Pipeline payloads, contexts and results will be persisted as-is.");
-            redactor = SensitiveDataRedactor.none();
-        }
         return new DatabaseExecutionManager(dataSource, persistence.getDialect(), runtimeConfiguration,
-                persistence.isAutoCreateTables(), redactor);
+                persistence.isAutoCreateTables(), redactorProvider.getIfAvailable());
     }
 
     @Bean

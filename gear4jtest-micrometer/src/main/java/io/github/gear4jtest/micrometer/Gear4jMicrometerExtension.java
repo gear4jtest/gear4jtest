@@ -1,5 +1,7 @@
 package io.github.gear4jtest.micrometer;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 
 import io.github.gear4jtest.core.api.context.ExecutionContext;
@@ -11,6 +13,7 @@ import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
 import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 
 /** Micrometer lifecycle observer for Gear4J runs and station executions. */
 public final class Gear4jMicrometerExtension implements RunLifecycleExtension, StationLifecycleExtension {
@@ -43,11 +46,14 @@ public final class Gear4jMicrometerExtension implements RunLifecycleExtension, S
 
     @Override
     public void onRunCompleted(ExecutionContext ctx, AssemblyRunTrace run) {
+        String[] tags = { "pipeline.id", safe(run.getPipelineId()), "status", safe(run.getStatus()) };
         Counter.builder("gear4j.runs.completed")
                 .description("Number of Gear4J pipeline runs completed")
-                .tags("pipeline.id", safe(run.getPipelineId()), "status", safe(run.getStatus()))
+                .tags(tags)
                 .register(meterRegistry)
                 .increment();
+        recordTimer("gear4j.runs.duration", "Duration of completed Gear4J pipeline runs", run.getStartTime(),
+                    run.getEndTime(), tags);
     }
 
     @Override
@@ -56,7 +62,7 @@ public final class Gear4jMicrometerExtension implements RunLifecycleExtension, S
                                  StationLogRecord snapshot) {
         Counter.builder("gear4j.stations.started")
                 .description("Number of Gear4J station executions started")
-                .tags(stationTagArray(snapshot))
+                .tags(stationStartedTags(snapshot))
                 .register(meterRegistry)
                 .increment();
     }
@@ -65,16 +71,34 @@ public final class Gear4jMicrometerExtension implements RunLifecycleExtension, S
     public void onStationCompleted(ExecutionContext runCtx,
                                    StationExecutionContext stationCtx,
                                    StationLogRecord snapshot) {
+        String[] tags = stationCompletedTags(snapshot);
         Counter.builder("gear4j.stations.completed")
                 .description("Number of Gear4J station executions completed")
-                .tags("operation.id", safe(snapshot.operationId()), "branch.id", safe(snapshot.branchId()),
-                      "status", safe(snapshot.status()))
+                .tags(tags)
                 .register(meterRegistry)
                 .increment();
+        recordTimer("gear4j.stations.duration", "Duration of completed Gear4J station executions",
+                    snapshot.startedAt(), snapshot.endedAt(), tags);
     }
 
-    private static String[] stationTagArray(StationLogRecord snapshot) {
+    private void recordTimer(String name, String description, Instant start, Instant end, String... tags) {
+        if (start == null || end == null || end.isBefore(start)) {
+            return;
+        }
+        Timer.builder(name)
+                .description(description)
+                .tags(tags)
+                .register(meterRegistry)
+                .record(Duration.between(start, end));
+    }
+
+    private static String[] stationStartedTags(StationLogRecord snapshot) {
         return new String[] { "operation.id", safe(snapshot.operationId()), "branch.id", safe(snapshot.branchId()) };
+    }
+
+    private static String[] stationCompletedTags(StationLogRecord snapshot) {
+        return new String[] { "operation.id", safe(snapshot.operationId()), "branch.id", safe(snapshot.branchId()),
+                "status", safe(snapshot.status()) };
     }
 
     private static String safe(Object value) {
