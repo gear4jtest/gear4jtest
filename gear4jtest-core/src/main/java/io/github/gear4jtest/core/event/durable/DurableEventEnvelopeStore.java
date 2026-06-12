@@ -13,6 +13,12 @@ import io.github.gear4jtest.core.event.transport.EventEnvelope;
  * Implementations should persist envelopes before they are considered accepted
  * and must expect at-least-once dispatch semantics.
  * </p>
+ *
+ * <p>
+ * This package is still an experimental extension point. The core currently
+ * provides the contracts and dispatcher scaffolding, not a full production
+ * outbox implementation with a built-in JDBC store.
+ * </p>
  */
 public interface DurableEventEnvelopeStore {
     StoredEventEnvelope append(EventEnvelope envelope);
@@ -22,6 +28,19 @@ public interface DurableEventEnvelopeStore {
     void markPublished(String storeId, String transportMessageId);
 
     void markFailed(String storeId, Throwable failure, boolean retryable);
+
+    /**
+     * Records a failed dispatch attempt and optionally makes the envelope available
+     * again after the supplied retry delay.
+     *
+     * <p>
+     * Implementations that do not support delayed retries may ignore the delay and
+     * delegate to {@link #markFailed(String, Throwable, boolean)}.
+     * </p>
+     */
+    default void markFailed(String storeId, Throwable failure, boolean retryable, Duration retryDelay) {
+        markFailed(storeId, failure, retryable);
+    }
 
     void releaseExpiredClaims();
 }

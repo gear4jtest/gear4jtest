@@ -9,11 +9,13 @@ public final class PersistenceRuntimeConfiguration {
     private static final int DEFAULT_MAX_PENDING_LOGS_PER_RUN = 10_000;
     private static final Duration DEFAULT_FLUSH_INTERVAL = Duration.ofSeconds(1);
     private static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
+    private static final int DEFAULT_FLUSH_THREAD_COUNT = 1;
 
     private final int batchSize;
     private final int maxPendingLogsPerRun;
     private final Duration flushInterval;
     private final Duration shutdownTimeout;
+    private final int flushThreadCount;
 
     private PersistenceRuntimeConfiguration(Builder builder) {
         this.batchSize = positive(builder.batchSize, "batchSize");
@@ -23,6 +25,7 @@ public final class PersistenceRuntimeConfiguration {
         }
         this.flushInterval = positive(builder.flushInterval, "flushInterval");
         this.shutdownTimeout = positive(builder.shutdownTimeout, "shutdownTimeout");
+        this.flushThreadCount = positive(builder.flushThreadCount, "flushThreadCount");
     }
 
     public static Builder builder() {
@@ -49,6 +52,10 @@ public final class PersistenceRuntimeConfiguration {
         return shutdownTimeout;
     }
 
+    public int flushThreadCount() {
+        return flushThreadCount;
+    }
+
     private static int positive(int value, String name) {
         if (value <= 0) {
             throw new IllegalArgumentException(name + " must be > 0");
@@ -69,6 +76,7 @@ public final class PersistenceRuntimeConfiguration {
         private int maxPendingLogsPerRun = DEFAULT_MAX_PENDING_LOGS_PER_RUN;
         private Duration flushInterval = DEFAULT_FLUSH_INTERVAL;
         private Duration shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
+        private int flushThreadCount = DEFAULT_FLUSH_THREAD_COUNT;
 
         public Builder batchSize(int batchSize) {
             this.batchSize = batchSize;
@@ -87,6 +95,11 @@ public final class PersistenceRuntimeConfiguration {
 
         public Builder shutdownTimeout(Duration shutdownTimeout) {
             this.shutdownTimeout = shutdownTimeout;
+            return this;
+        }
+
+        public Builder flushThreadCount(int flushThreadCount) {
+            this.flushThreadCount = flushThreadCount;
             return this;
         }
 

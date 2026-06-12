@@ -9,7 +9,7 @@ yet the complete production observability module.
 
 ## Current scope
 
-The current module registers low-cardinality lifecycle, duration and persistence
+The current module registers lifecycle, duration and persistence
 signals. It is useful to confirm that Gear4J is active, understand completed
 run/station latency and verify that persistence buffers are not silently
 accumulating.
@@ -71,3 +71,12 @@ gear4j:
       include-operation-type: true
       include-error-category: true
 ```
+
+
+## Tag cardinality
+
+The default Micrometer extension keeps the historical tags such as `pipeline.id`,
+`operation.id`, `branch.id` and `status`. Applications that generate dynamic
+pipeline or operation identifiers should avoid exporting unbounded-cardinality
+tags. They can provide a custom `Gear4jMeterTagPolicy` bean to control the exact
+set of tags emitted by the Micrometer extension.

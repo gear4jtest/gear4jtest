@@ -8,6 +8,7 @@ import io.github.gear4jtest.core.execution.AssemblyRunManager;
 import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.core.execution.PersistenceRuntimeConfiguration;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
+import io.github.gear4jtest.micrometer.Gear4jMeterTagPolicy;
 import io.github.gear4jtest.micrometer.Gear4jMicrometerExtension;
 import io.github.gear4jtest.micrometer.PersistenceMetricsBinder;
 import io.github.gear4jtest.spring.Gear4jPipelineEngineBuilderCustomizer;
@@ -49,6 +50,7 @@ public class Gear4jAutoConfiguration {
                 .maxPendingLogsPerRun(persistence.getMaxPendingLogsPerRun())
                 .flushInterval(persistence.getFlushInterval())
                 .shutdownTimeout(persistence.getShutdownTimeout())
+                .flushThreadCount(persistence.getFlushThreads())
                 .build();
         return new DatabaseExecutionManager(dataSource, persistence.getDialect(), runtimeConfiguration,
                 persistence.isAutoCreateTables(), redactorProvider.getIfAvailable());
@@ -66,8 +68,10 @@ public class Gear4jAutoConfiguration {
     @ConditionalOnBean(MeterRegistry.class)
     @ConditionalOnMissingBean(Gear4jMicrometerExtension.class)
     @ConditionalOnProperty(prefix = "gear4j.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
-    Gear4jMicrometerExtension gear4jMicrometerExtension(MeterRegistry meterRegistry) {
-        return new Gear4jMicrometerExtension(meterRegistry);
+    Gear4jMicrometerExtension gear4jMicrometerExtension(MeterRegistry meterRegistry,
+                                                        ObjectProvider<Gear4jMeterTagPolicy> tagPolicyProvider) {
+        return new Gear4jMicrometerExtension(meterRegistry,
+                tagPolicyProvider.getIfAvailable(Gear4jMeterTagPolicy::defaults));
     }
 
     @Bean

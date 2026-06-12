@@ -81,7 +81,7 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
                                     SensitiveDataRedactor redactor) {
         this(new DatabaseAssemblyRunRepository(Objects.requireNonNull(dataSource, "dataSource must not be null"),
                 Objects.requireNonNull(databaseDialect, "databaseDialect must not be null")), configuration,
-                autoCreateTables, Executors.newSingleThreadExecutor(new Gear4jFlushThreadFactory()),
+                autoCreateTables, createFlushExecutor(configuration),
                 Executors.newSingleThreadScheduledExecutor(new Gear4jMaintenanceThreadFactory()), true, true,
                 redactor);
     }
@@ -208,13 +208,17 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
         RunBuffer buffer = buffers.computeIfAbsent(runId,
                                                    id -> new RunBuffer(id, configuration.maxPendingLogsPerRun()));
         buffer.closed.set(true);
+        boolean completed = false;
         try {
             assertHealthy(buffer);
             flushBufferBlocking(buffer, true);
             assertHealthy(buffer);
             repository.update(AssemblyRunRecord.from(finalExecution, redactor));
+            completed = true;
         } finally {
-            buffers.remove(runId);
+            if (completed) {
+                buffers.remove(runId);
+            }
         }
     }
 
@@ -254,6 +258,15 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
             flushExecutor.shutdown();
             awaitFlushExecutorTermination(timeout);
         }
+    }
+
+    private static ExecutorService createFlushExecutor(PersistenceRuntimeConfiguration configuration) {
+        Objects.requireNonNull(configuration, "configuration must not be null");
+        int flushThreadCount = configuration.flushThreadCount();
+        if (flushThreadCount == 1) {
+            return Executors.newSingleThreadExecutor(new Gear4jFlushThreadFactory());
+        }
+        return Executors.newFixedThreadPool(flushThreadCount, new Gear4jFlushThreadFactory());
     }
 
     private void ensureOpen() {

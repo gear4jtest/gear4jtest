@@ -15,6 +15,7 @@ gear4j:
     auto-create-tables: false
     batch-size: 500
     max-pending-logs-per-run: 10000
+    flush-threads: 1
     flush-interval: 1s
     shutdown-timeout: 30s
   metrics:
@@ -29,3 +30,9 @@ Gear4J expects the core schema to already exist, typically because the host
 application applied the SQL resources through Flyway, Liquibase or another
 migration process. Set it to `true` only when Gear4J should create and migrate
 its own internal schema at startup.
+
+
+`gear4j.persistence.flush-threads` defaults to `1`, which keeps JDBC persistence
+ordering simple and conservative. Higher-throughput applications may increase it
+when the database and repository implementation can absorb concurrent batch
+flushes.

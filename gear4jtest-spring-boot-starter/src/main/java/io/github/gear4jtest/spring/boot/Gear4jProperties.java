@@ -53,6 +53,11 @@ public class Gear4jProperties {
         private boolean autoCreateTables;
         @Min(1) private int batchSize = 500;
         @Min(1) private int maxPendingLogsPerRun = 10_000;
+        /**
+         * Number of worker threads used for asynchronous JDBC station-log flushes.
+         * Default: 1.
+         */
+        @Min(1) private int flushThreads = 1;
         @NotNull private Duration flushInterval = Duration.ofSeconds(1);
         @NotNull private Duration shutdownTimeout = Duration.ofSeconds(30);
 
@@ -94,6 +99,14 @@ public class Gear4jProperties {
 
         public void setMaxPendingLogsPerRun(int maxPendingLogsPerRun) {
             this.maxPendingLogsPerRun = maxPendingLogsPerRun;
+        }
+
+        public int getFlushThreads() {
+            return flushThreads;
+        }
+
+        public void setFlushThreads(int flushThreads) {
+            this.flushThreads = flushThreads;
         }
 
         public Duration getFlushInterval() {

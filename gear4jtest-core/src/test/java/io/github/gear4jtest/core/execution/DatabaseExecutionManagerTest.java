@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.persistence.DatabaseAssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
@@ -19,9 +20,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -133,6 +136,43 @@ class DatabaseExecutionManagerTest {
             assertThat(succeededOnce.await(2, TimeUnit.SECONDS)).isTrue();
             assertThat(manager.snapshotStats().bufferedStationLogs()).isZero();
             verify(repository, atLeast(2)).saveOperationRecordsBatch(anyList());
+        } finally {
+            manager.shutdown(Duration.ofSeconds(1));
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void end_shouldKeepRunBufferWhenFinalUpdateFailsSoCallerCanRetry() {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        doThrow(new ExecutionPersistenceException("database update failed"))
+                .doNothing()
+                .when(repository).update(any());
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        DatabaseExecutionManager manager = new DatabaseExecutionManager(repository,
+                PersistenceRuntimeConfiguration.defaults(), false, flushExecutor, scheduler);
+        UUID runId = UUID.randomUUID();
+        AssemblyRunTrace trace = new AssemblyRunTrace(runId, "pipeline", Map.of());
+        trace.markSuccess("ok");
+
+        try {
+            manager.append(record(runId));
+
+            // When / Then
+            assertThatThrownBy(() -> manager.end(trace))
+                    .isInstanceOf(ExecutionPersistenceException.class)
+                    .hasMessageContaining("database update failed");
+            assertThat(manager.snapshotStats().activeRuns()).as("failed final update must keep retry state")
+                    .isEqualTo(1);
+
+            // When
+            manager.end(trace);
+
+            // Then
+            assertThat(manager.snapshotStats().activeRuns()).isZero();
         } finally {
             manager.shutdown(Duration.ofSeconds(1));
             flushExecutor.shutdownNow();

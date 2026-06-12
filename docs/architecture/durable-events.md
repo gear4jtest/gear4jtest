@@ -109,3 +109,17 @@ Claiming must be dialect-aware. PostgreSQL can use `FOR UPDATE SKIP LOCKED`, but
 other databases require different SQL. This is another reason durable delivery
 must remain a dedicated subsystem rather than a hidden behavior of the current
 best-effort runtime.
+
+
+## Retry and dead-letter policy
+
+`OutboxDispatcher` now accepts an `OutboxDispatchPolicy`. The default policy is
+still deliberately small: it retries retryable failures up to a bounded number of
+attempts with exponential backoff metadata. Stores that support delayed retry can
+use the `retryDelay` argument passed to `markFailed(...)`; simpler stores can
+ignore it and only use the retryable/terminal flag.
+
+This is still not a full broker. A production durable event module must provide a
+real store implementation, claim ownership rules, dead-letter visibility,
+idempotency guidance and operational cleanup. Until then, the durable event API
+should be treated as experimental.

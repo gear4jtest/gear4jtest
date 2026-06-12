@@ -79,6 +79,48 @@ class Gear4jMicrometerExtensionTest {
     }
 
     @Test
+    void should_use_custom_tag_policy() {
+        // Given
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        Gear4jMeterTagPolicy tagPolicy = new Gear4jMeterTagPolicy() {
+            @Override
+            public String[] runStartedTags(AssemblyRunTrace run) {
+                return new String[] { "scope", "low-cardinality" };
+            }
+
+            @Override
+            public String[] runCompletedTags(AssemblyRunTrace run) {
+                return new String[] { "scope", "low-cardinality", "status",
+                        Gear4jMeterTagPolicy.safe(run.getStatus()) };
+            }
+
+            @Override
+            public String[] stationStartedTags(StationLogRecord station) {
+                return new String[] { "scope", "low-cardinality" };
+            }
+
+            @Override
+            public String[] stationCompletedTags(StationLogRecord station) {
+                return new String[] { "scope", "low-cardinality", "status",
+                        Gear4jMeterTagPolicy.safe(station.status()) };
+            }
+        };
+        Gear4jMicrometerExtension extension = new Gear4jMicrometerExtension(meterRegistry, tagPolicy);
+        AssemblyRunTrace run = new AssemblyRunTrace(UUID.randomUUID(), "dynamic-user-pipeline", Map.of());
+
+        // When
+        extension.onRunStarted(null, run);
+
+        // Then
+        assertThat(meterRegistry.counter("gear4j.runs.started", "scope", "low-cardinality").count())
+                .as("custom tag policy should control emitted tags")
+                .isEqualTo(1.0d);
+        assertThat(meterRegistry.find("gear4j.runs.started").tag("pipeline.id", "dynamic-user-pipeline").counter())
+                .as("default high-cardinality pipeline tag should not be emitted by custom policy")
+                .isNull();
+    }
+
+    @Test
     void should_not_record_duration_when_timestamps_are_incomplete() {
         // Given
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
