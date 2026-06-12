@@ -12,6 +12,48 @@ Java source at build time instead of being compiled dynamically at application r
 io.github.gear4jtest.xml2java
 ```
 
+A temporary legacy alias is also registered for compatibility with early local experiments:
+
+```text
+io.github.gear4jtest.gradle.xml2java
+```
+
+## Default behavior
+
+When the plugin is applied to a Java project, it:
+
+- creates the `xmlAssemblyLineGenerator` extension;
+- creates the `xmlGenerateAssemblyLine` task;
+- reads `**/*.xml` under `src/main/gear4j` by default;
+- writes generated Java sources to `build/generated/sources/gear4j/xml2java/main`;
+- adds that directory to the main Java source set;
+- makes `compileJava` depend on `xmlGenerateAssemblyLine`.
+
+## Example usage
+
+```groovy
+plugins {
+    id 'java'
+    id 'io.github.gear4jtest.xml2java'
+}
+
+xmlAssemblyLineGenerator {
+    inputDir 'src/main/gear4j'
+    outputDir = layout.buildDirectory.dir('generated/sources/gear4j/xml2java/main').get().asFile
+}
+```
+
+You can also add explicit files or collections:
+
+```groovy
+xmlAssemblyLineGenerator {
+    xmlFiles file('pipelines/checkout.xml')
+    xmlFiles fileTree('more-pipelines') { include '**/*.xml' }
+}
+```
+
+Older local builds that used `filePaths = '...'` are still supported as an alias for `inputDir`.
+
 ## Responsibilities
 
 This module owns:
@@ -20,16 +62,9 @@ This module owns:
 - plugin extension properties;
 - wiring XML inputs to generated Java outputs;
 - integration with `gear4jtest-xml` generation code;
-- Gradle TestKit coverage.
+- Gradle plugin tests.
 
 It should not duplicate XML parsing or generation logic. That belongs in `gear4jtest-xml`.
-
-## Expected usage shape
-
-A consumer build should apply the plugin, configure XML input locations and generated source output, then compile the
-generated Java together with the rest of the project.
-
-Exact extension names and defaults should be documented here whenever the plugin API stabilizes.
 
 ## Testing
 
@@ -38,8 +73,6 @@ Useful focused task:
 ```bash
 ./gradlew :gear4jtest-gradle-xml2java:test
 ```
-
-Prefer Gradle TestKit tests for behavior that affects real consumer builds.
 
 ## Code style
 

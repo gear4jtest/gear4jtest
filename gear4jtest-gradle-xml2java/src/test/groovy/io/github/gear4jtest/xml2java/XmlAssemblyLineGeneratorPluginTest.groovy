@@ -1,0 +1,85 @@
+package io.github.gear4jtest.xml2java
+
+import org.gradle.api.plugins.JavaPlugin
+import org.gradle.testfixtures.ProjectBuilder
+import org.junit.jupiter.api.Test
+
+import static org.assertj.core.api.Assertions.assertThat
+
+class XmlAssemblyLineGeneratorPluginTest {
+
+    @Test
+    void should_register_generation_task_and_extension() {
+        // Given
+        def project = ProjectBuilder.builder()
+            .withName('my-library')
+            .build()
+
+        // When
+        project.plugins.apply(XmlAssemblyLineGeneratorPlugin)
+
+        // Then
+        assertThat(project.extensions.findByName(XmlAssemblyLineGeneratorPlugin.EXTENSION_NAME))
+            .isInstanceOf(XmlAssemblyLineGeneratorExtension)
+        assertThat(project.tasks.findByName(XmlAssemblyLineGeneratorPlugin.TASK_NAME))
+            .isInstanceOf(XmlAssemblyLineGenerateTask)
+    }
+
+    @Test
+    void should_wire_generation_task_before_java_compilation() {
+        // Given
+        def project = ProjectBuilder.builder()
+            .withName('my-library')
+            .build()
+
+        // When
+        project.plugins.apply(JavaPlugin)
+        project.plugins.apply(XmlAssemblyLineGeneratorPlugin)
+
+        // Then
+        def compileJava = project.tasks.getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME)
+        assertThat(compileJava.taskDependencies.getDependencies(compileJava))
+            .extracting('name')
+            .contains(XmlAssemblyLineGeneratorPlugin.TASK_NAME)
+    }
+
+    @Test
+    void should_generate_java_sources_from_configured_xml_files() {
+        // Given
+        def project = ProjectBuilder.builder()
+            .withName('my-library')
+            .build()
+        project.plugins.apply(XmlAssemblyLineGeneratorPlugin)
+
+        def xmlDir = new File(project.projectDir, 'src/main/gear4j')
+        assertThat(xmlDir.mkdirs()).isTrue()
+        new File(xmlDir, 'simple-line.xml').text = '''<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="simple_line"
+              inputType="java.lang.String"
+              outputType="java.lang.String">
+  <operations>
+    <processingOperation id="append_a" type="com.myorg.operation.Step11">
+      <parameters>
+        <valueParameter retriever="com.myorg.operation.Step11::getParam" value="a"/>
+      </parameters>
+    </processingOperation>
+  </operations>
+</assemblyLine>
+'''
+        def outputDir = new File(project.buildDir, 'generated-test')
+        project.extensions.getByType(XmlAssemblyLineGeneratorExtension).setOutputDir(outputDir)
+
+        // When
+        project.tasks.getByName(XmlAssemblyLineGeneratorPlugin.TASK_NAME).generate()
+
+        // Then
+        def generated = new File(outputDir, 'io/github/gear4jtest/xml/generated/Simple_lineLine.java')
+        assertThat(generated)
+            .as('generated Java source must be written under the package path')
+            .exists()
+        assertThat(generated.text)
+            .contains('public final class Simple_lineLine')
+            .contains('implements GeneratedAssemblyLine')
+    }
+}

@@ -18,16 +18,6 @@ public final class ExternalRepositorySqlDialect {
     private ExternalRepositorySqlDialect() {
     }
 
-    static String schemaResource(Gear4jDatabaseDialect dialect) {
-        return switch (requireDialect(dialect)) {
-            case POSTGRESQL -> "postgres-schema.sql";
-            case MYSQL -> "mysql-schema.sql";
-            case MARIADB -> "mariadb-schema.sql";
-            case ORACLE -> "oracle-schema.sql";
-            case H2 -> "h2-schema.sql";
-        };
-    }
-
     static String insertTagIfAbsentSql(Gear4jDatabaseDialect dialect) {
         return switch (requireDialect(dialect)) {
             case POSTGRESQL -> "INSERT INTO operation_chain_tag(al_id, tag) VALUES (?,?) "
