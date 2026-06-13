@@ -49,7 +49,7 @@ Typical flow:
 | `JDTInMemoryCompiler`              | Compiles generated Java source without writing class files to disk.               |
 | `ClassLoaderRegistry`              | Tracks generated classloaders and aliases.                                        |
 | `DependencyInjector`               | Injects external dependencies into generated pipeline instances.                  |
-| `ArtifactStore`                    | Stores raw external pipeline artifacts by content hash.                           |
+| `ArtifactStore`                    | Stores raw external pipeline artifacts by content hash; supports bounded streaming writes. |
 
 ## Publication modes
 
@@ -59,6 +59,11 @@ External definitions use `ExecutionMode`:
 - `RUN`: a runnable definition selected by exact version or latest RUN lookup.
 
 Direct RUN publication is guarded by configuration. The normal flow can publish TEST first and then promote to RUN.
+
+Latest RUN lookups are cached through a mutable classloader alias named `al/<id>/RUN/latest`. Publishing a RUN object or
+promoting a TEST object to RUN through `AssemblyLineManager` clears that alias. The next latest lookup resolves the
+repository again and points the alias to the concrete compiled loader id. Exact version loaders remain cached; already
+running graphs are not mutated. This is local cache invalidation, not a distributed cross-JVM protocol.
 
 ## Dependency injection contract
 

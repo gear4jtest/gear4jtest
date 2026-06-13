@@ -46,7 +46,9 @@ Gear4J aims to provide:
 
 ## Build and test
 
-The repository is a multi-module Gradle project.
+The repository is a multi-module Gradle project. Dependency coordinates are centralized in the Gradle version catalog at
+`gradle/libs.versions.toml`; module build files should use typed catalog accessors such as `libs.junit` or `libs.spring.boot.autoconfigure` rather than hard-coded dependency versions
+versions.
 
 Common commands:
 
@@ -119,3 +121,6 @@ deterministic output, but transient generated files should not be edited directl
 
 The project is in active design and implementation. Prefer small, well-tested changes. When in doubt, keep the core
 simple and move optional integrations to dedicated modules.
+
+
+See `docs/production-readiness.md` before using Gear4J operationally.

@@ -2,6 +2,9 @@ package io.github.gear4jtest.external.api.artifact;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Objects;
@@ -35,24 +38,61 @@ public final class DatabaseArtifactStore implements ArtifactStore {
 
     @Override
     public String put(byte[] content) throws IOException {
-        byte[] stored = Objects.requireNonNull(content, "content must not be null").clone();
-        String hash = Hashing.sha256Hex(stored);
-        try (var c = ds.getConnection();
-                var ps = c.prepareStatement("INSERT INTO " + table + "(hash_hex,size_bytes,content) VALUES (?,?,?)")) {
-            ps.setString(1, hash);
-            ps.setLong(2, stored.length);
-            ps.setBinaryStream(3, new ByteArrayInputStream(stored), stored.length);
-            try {
-                ps.executeUpdate();
-            } catch (SQLException e) {
-                if (!ExternalRepositorySqlDialect.isUniqueViolation(databaseDialect, e)) {
-                    throw e;
-                }
+        Objects.requireNonNull(content, "content must not be null");
+        return put(new ByteArrayInputStream(content), content.length);
+    }
+
+    @Override
+    public String put(InputStream in, long maxBytes) throws IOException {
+        Objects.requireNonNull(in, "input stream must not be null");
+        Path tmp = Files.createTempFile("gear4j-artifact-", ".bin");
+        try {
+            long size = spoolToTempFile(in, tmp, maxBytes);
+            String hash;
+            try (InputStream digestInput = Files.newInputStream(tmp)) {
+                hash = Hashing.sha256Hex(digestInput, ArtifactStore.UNLIMITED_SIZE).hashHex();
             }
-            return hash;
-        } catch (SQLException e) {
-            throw new IOException("DB error", e);
+            try (var c = ds.getConnection();
+                    var ps = c.prepareStatement("INSERT INTO " + table
+                            + "(hash_hex,size_bytes,content) VALUES (?,?,?)")) {
+                ps.setString(1, hash);
+                ps.setLong(2, size);
+                try (InputStream content = Files.newInputStream(tmp)) {
+                    ps.setBinaryStream(3, content, size);
+                    try {
+                        ps.executeUpdate();
+                    } catch (SQLException e) {
+                        if (!ExternalRepositorySqlDialect.isUniqueViolation(databaseDialect, e)) {
+                            throw e;
+                        }
+                    }
+                }
+                return hash;
+            } catch (SQLException e) {
+                throw new IOException("DB error", e);
+            }
+        } finally {
+            try {
+                Files.deleteIfExists(tmp);
+            } catch (Exception ignored) {
+            }
         }
+    }
+
+    private static long spoolToTempFile(InputStream in, Path target, long maxBytes) throws IOException {
+        byte[] buffer = new byte[8192];
+        long total = 0L;
+        try (var out = Files.newOutputStream(target)) {
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                total += read;
+                if (maxBytes >= 0 && total > maxBytes) {
+                    throw new IOException("Artifact size exceeds configured limit. maxBytes=" + maxBytes);
+                }
+                out.write(buffer, 0, read);
+            }
+        }
+        return total;
     }
 
     @Override

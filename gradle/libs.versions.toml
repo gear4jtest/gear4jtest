@@ -1,0 +1,33 @@
+[versions]
+junit = "5.12.2"
+junit-platform = "1.12.2"
+slf4j = "2.0.17"
+assertj = "3.27.3"
+logback = "1.5.18"
+mockito = "5.17.0"
+micrometer = "1.15.1"
+spring-boot = "3.5.3"
+guava = "33.0.0-jre"
+jackson = "2.19.0"
+postgresql = "42.7.7"
+spring-framework = "6.2.8"
+
+[libraries]
+slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+google = { module = "com.google.guava:guava", version.ref = "guava" }
+jackson = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+junit = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
+assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+mockito = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockito-junit = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+micrometer = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
+spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "spring-boot" }
+spring-boot-test = { module = "org.springframework.boot:spring-boot-test", version.ref = "spring-boot" }
+spring-test = { module = "org.springframework:spring-test", version.ref = "spring-framework" }
+spring-context = { module = "org.springframework:spring-context", version.ref = "spring-framework" }
+spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor", version.ref = "spring-boot" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation", version.ref = "spring-boot" }
+spring-boot-actuator = { module = "org.springframework.boot:spring-boot-actuator", version.ref = "spring-boot" }

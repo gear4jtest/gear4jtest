@@ -18,6 +18,10 @@ This module owns:
 It should not own artifact storage, publication workflow, classloader caching or runtime execution. Those concerns
 belong to `gear4jtest-external-api` and `gear4jtest-core`.
 
+The module also contains the first minimal Gear Expression Language (GEL) parser/evaluator under
+`io.github.gear4jtest.xml.expression`. GEL is the intended safe alternative to inline Java for future untrusted or
+BO-authored expressions. XML generation still uses trusted Java snippets today.
+
 ## Supported media types
 
 - `application/xml`

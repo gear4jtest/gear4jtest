@@ -1,7 +1,7 @@
 dependencies {
     api project(':gear4jtest-core')
 
-    implementation libraries.jackson
+    implementation libs.jackson
 }
 
 ext.moduleName = 'io.github.gear4jtest.jackson'

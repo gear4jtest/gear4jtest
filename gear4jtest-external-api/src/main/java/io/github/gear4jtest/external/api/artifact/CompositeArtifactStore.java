@@ -101,12 +101,12 @@ public final class CompositeArtifactStore implements ArtifactStore {
             return Optional.of(artifact);
         }
         try (var in = artifact.openStream()) {
-            byte[] data = in.readAllBytes();
-            String rehash = Hashing.sha256Hex(data);
-            if (!rehash.equals(hash)) {
-                throw new IOException("Corrupt artifact: " + hash);
-            }
             if (!fromPrimary && selfHealing) {
+                byte[] data = in.readAllBytes();
+                String rehash = Hashing.sha256Hex(data);
+                if (!rehash.equals(hash)) {
+                    throw new IOException("Corrupt artifact: " + hash);
+                }
                 byte[] healed = Arrays.copyOf(data, data.length);
                 asyncExec.execute(() -> {
                     try {
@@ -117,6 +117,11 @@ public final class CompositeArtifactStore implements ArtifactStore {
                         LOGGER.warn("Asynchronous artifact self-healing write failed.", e);
                     }
                 });
+            } else {
+                String rehash = Hashing.sha256Hex(in, ArtifactStore.UNLIMITED_SIZE).hashHex();
+                if (!rehash.equals(hash)) {
+                    throw new IOException("Corrupt artifact: " + hash);
+                }
             }
         }
         return Optional.of(artifact);

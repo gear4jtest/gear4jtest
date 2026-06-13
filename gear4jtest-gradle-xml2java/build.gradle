@@ -4,9 +4,9 @@ dependencies {
     implementation project(':gear4jtest-xml')
 
     testImplementation gradleTestKit()
-    testImplementation(libraries.junit)
-    testRuntimeOnly(libraries.junitPlatformLauncher)
-    testImplementation(libraries.assertj)
+    testImplementation(libs.junit)
+    testRuntimeOnly(libs.junit.platform.launcher)
+    testImplementation(libs.assertj)
 }
 
 gradlePlugin {

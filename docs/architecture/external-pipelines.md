@@ -59,10 +59,15 @@ A generated class should:
 
 Pinned version references are stable.
 
-Mutable aliases such as `latest` need future cache invalidation rules. Until that is fully implemented, avoid assuming
-that alias invalidation is durable or distributed.
+Mutable aliases such as `latest` are invalidated at the loader/cache boundary. When a RUN object is published or a TEST
+object is promoted to RUN through `AssemblyLineManager`, the `al/<id>/RUN/latest` classloader alias is cleared. The next
+latest lookup resolves the current repository state and registers a fresh alias to the concrete compiled loader id.
 
-When aliasing is involved, future code should preserve both:
+Pinned version lookups remain stable and are not evicted by alias invalidation. Already-running pipeline graphs are never
+mutated; invalidation only affects future latest lookups. This cache invalidation is local to the manager/classloader
+registry instance. It is not a distributed invalidation protocol across JVMs.
+
+The core pipeline-call model already supports both:
 
 - `declaredReference`: what the external definition asked for;
 - `resolvedReference`: the concrete version that was actually loaded.
@@ -91,3 +96,14 @@ Operational guidance:
 - make any future `trusted` / inline-Java mode explicit rather than implicit;
 - validate generated class names and packages before compilation;
 - document that handler code must be reviewed with the same care as handwritten Java operators.
+
+## Artifact size limits
+
+External pipeline artifacts are expected to be small XML/source bundles. The
+artifact APIs now expose bounded read helpers (`ArtifactStore.put(InputStream,
+maxBytes)` and `ArtifactStore.readAllBytes(...)`) so applications can reject
+unexpectedly large inputs before loading them fully in memory.
+
+`AssemblyLineManager` keeps backwards-compatible unlimited behavior by default,
+but advanced constructors can set `maxArtifactSizeBytes` to fail fast during
+registration and runtime artifact loading.

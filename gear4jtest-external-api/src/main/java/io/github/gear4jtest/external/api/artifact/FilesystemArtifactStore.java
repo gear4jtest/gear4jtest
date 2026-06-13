@@ -1,10 +1,12 @@
 package io.github.gear4jtest.external.api.artifact;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -24,23 +26,47 @@ public final class FilesystemArtifactStore implements ArtifactStore {
 
     @Override
     public String put(byte[] content) throws IOException {
-        byte[] stored = Arrays.copyOf(Objects.requireNonNull(content, "content must not be null"), content.length);
-        String hash = Hashing.sha256Hex(stored);
-        Path target = pathForValidatedHash(hash);
-        if (!Files.exists(target)) {
-            Files.createDirectories(target.getParent());
-            Path tmp = Files.createTempFile(root, "artifact-", ".tmp");
-            try {
-                Files.write(tmp, stored);
-                Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            } finally {
-                try {
-                    Files.deleteIfExists(tmp);
-                } catch (Exception ignored) {
+        Objects.requireNonNull(content, "content must not be null");
+        return put(new java.io.ByteArrayInputStream(content), content.length);
+    }
+
+    @Override
+    public String put(InputStream in, long maxBytes) throws IOException {
+        Objects.requireNonNull(in, "input stream must not be null");
+        Files.createDirectories(root);
+        Path tmp = Files.createTempFile(root, "artifact-", ".tmp");
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            long total = 0L;
+            byte[] buffer = new byte[8192];
+            try (var out = Files.newOutputStream(tmp)) {
+                int read;
+                while ((read = in.read(buffer)) != -1) {
+                    total += read;
+                    if (maxBytes >= 0 && total > maxBytes) {
+                        throw new IOException("Artifact size exceeds configured limit. maxBytes=" + maxBytes);
+                    }
+                    digest.update(buffer, 0, read);
+                    out.write(buffer, 0, read);
                 }
             }
+            String hash = HexFormat.of().formatHex(digest.digest());
+            Path target = pathForValidatedHash(hash);
+            if (!Files.exists(target)) {
+                Files.createDirectories(target.getParent());
+                Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            }
+            return hash;
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("Unable to write filesystem artifact", e);
+        } finally {
+            try {
+                Files.deleteIfExists(tmp);
+            } catch (Exception ignored) {
+            }
         }
-        return hash;
     }
 
     @Override

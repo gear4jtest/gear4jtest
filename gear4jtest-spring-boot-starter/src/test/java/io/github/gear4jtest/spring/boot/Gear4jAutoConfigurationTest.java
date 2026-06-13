@@ -6,8 +6,10 @@ import io.github.gear4jtest.core.engine.PipelineEngine;
 import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.micrometer.Gear4jMicrometerExtension;
+import io.github.gear4jtest.spring.boot.actuate.Gear4jActuatorAutoConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -16,7 +18,8 @@ import static org.mockito.Mockito.mock;
 
 class Gear4jAutoConfigurationTest {
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(Gear4jAutoConfiguration.class));
+            .withConfiguration(AutoConfigurations.of(Gear4jAutoConfiguration.class,
+                                                     Gear4jActuatorAutoConfiguration.class));
 
     @Test
     void should_create_core_runtime_beans_by_default() {
@@ -42,6 +45,16 @@ class Gear4jAutoConfigurationTest {
         contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
                 .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
                 .run(context -> assertThat(context).hasSingleBean(DatabaseExecutionManager.class));
+    }
+
+    @Test
+    void should_create_persistence_health_indicator_when_actuator_and_persistence_are_available() {
+        // Given / When / Then
+        contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> assertThat(context).hasBean("gear4jPersistenceHealthIndicator")
+                        .getBean("gear4jPersistenceHealthIndicator")
+                        .isInstanceOf(HealthIndicator.class));
     }
 
     @Test

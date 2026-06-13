@@ -43,9 +43,15 @@ it is not a replacement for the full build. The full build should still run:
 ./gradlew --no-daemon check verifySupplyChainConfiguration
 ```
 
-`verifySupplyChainConfiguration` verifies that the expected supply-chain files
-are present or clearly reported. It is intentionally separated from `check` so CI
-can make this policy visible.
+`verifySupplyChainConfiguration` reports missing supply-chain files by default. To resume strict enforcement later without
+rewriting the task, run it with:
+
+```bash
+./gradlew verifySupplyChainConfiguration -Pgear4j.enforceSupplyChain=true
+```
+
+With this property enabled, missing `gradle.lockfile` or `gradle/verification-metadata.xml` fails the build. It remains
+separate from `check` so CI/release policy can decide when to make the hardening mandatory.
 
 ## SCA
 

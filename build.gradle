@@ -17,8 +17,6 @@ ext {
     defaultProjectVersion = findProperty('projectVersion') ?: '1.0.0-SNAPSHOT'
 }
 
-apply from: "${rootDir}/libraries.gradle"
-
 apply plugin: 'com.diffplug.spotless'
 
 dockerCompose {
@@ -53,14 +51,23 @@ tasks.named('check') {
 
 tasks.register('verifySupplyChainConfiguration') {
     group = 'verification'
-    description = 'Checks that dependency locking is enabled and documents dependency verification bootstrap.'
+    description = 'Checks dependency locking and optional Gradle dependency verification metadata.'
     doLast {
+        boolean enforceSupplyChain = providers.gradleProperty('gear4j.enforceSupplyChain')
+            .map { it.toBoolean() }
+            .orElse(false)
+            .get()
+        def missing = []
         if (!file('gradle.lockfile').exists()) {
-            logger.lifecycle('No root gradle.lockfile found yet. Generate locks with: ./gradlew dependencies --write-locks')
+            missing << 'gradle.lockfile (generate with: ./gradlew dependencies --write-locks)'
         }
         if (!file('gradle/verification-metadata.xml').exists()) {
-            logger.lifecycle('No Gradle dependency verification metadata found yet. Bootstrap with: ./gradlew --write-verification-metadata sha256 help')
+            missing << 'gradle/verification-metadata.xml (bootstrap with: ./gradlew --write-verification-metadata sha256 help)'
         }
+        if (!missing.isEmpty() && enforceSupplyChain) {
+            throw new GradleException('Supply-chain enforcement is enabled but required files are missing: ' + missing.join(', '))
+        }
+        missing.each { logger.lifecycle('Optional supply-chain hardening file missing: ' + it) }
     }
 }
 
@@ -156,9 +163,9 @@ configure(project.coreProjects) {
     }
 
     dependencies {
-        testImplementation(libraries.junit)
-        testRuntimeOnly(libraries.junitPlatformLauncher)
-        testImplementation(libraries.assertj)
+        testImplementation(libs.junit)
+        testRuntimeOnly(libs.junit.platform.launcher)
+        testImplementation(libs.assertj)
     }
 
     sourceSets {
@@ -205,16 +212,16 @@ configure(project.coreProjects.stream().filter { !it.name.contains("gradle") }.c
     apply from: "${rootDir}/publishing.gradle"
 
     dependencies {
-        implementation(libraries.slf4j)
-        implementation(libraries.google)
-        implementation(libraries.jackson)
+        implementation(libs.slf4j)
+        implementation(libs.google)
+        implementation(libs.jackson)
 
-        testImplementation(libraries.junit)
-        testImplementation(libraries.assertj)
-        testImplementation(libraries.logback)
-        testImplementation(libraries.mockito)
-        testImplementation(libraries.mockitoJunit)
-        testImplementation(libraries.postgresql)
+        testImplementation(libs.junit)
+        testImplementation(libs.assertj)
+        testImplementation(libs.logback)
+        testImplementation(libs.mockito)
+        testImplementation(libs.mockito.junit)
+        testImplementation(libs.postgresql)
     }
 
     tasks.withType(JavaCompile) {

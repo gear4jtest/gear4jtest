@@ -1,1 +1,2 @@
 io.github.gear4jtest.spring.boot.Gear4jAutoConfiguration
+io.github.gear4jtest.spring.boot.actuate.Gear4jActuatorAutoConfiguration

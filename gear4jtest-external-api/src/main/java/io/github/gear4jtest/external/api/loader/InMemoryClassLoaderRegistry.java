@@ -26,7 +26,16 @@ public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
 
     @Override
     public void setAlias(String alias, String id) {
-        aliasToId.put(alias, id);
+        if (id == null) {
+            aliasToId.remove(alias);
+        } else {
+            aliasToId.put(alias, id);
+        }
+    }
+
+    @Override
+    public void clearAlias(String alias) {
+        aliasToId.remove(alias);
     }
 
     @Override

@@ -2,7 +2,8 @@
 
 ## Status
 
-Future direction. Not implemented.
+Partially implemented for local `latest` classloader aliases in `AssemblyLineManager`. Distributed invalidation and
+compiled dependency indexes remain future work.
 
 ## Context
 
@@ -16,7 +17,7 @@ invalidation when `latest` later points to `1.3.0`.
 
 ## Decision
 
-Future external pipeline loading should distinguish:
+External pipeline loading distinguishes, and future external formats should continue to distinguish:
 
 - `declaredReference`: the reference written by the pipeline definition;
 - `resolvedReference`: the concrete version selected at compile/load time.
@@ -40,12 +41,13 @@ Alias reference:
 risk-scoring:latest
 ```
 
-If the alias resolution changes, cached compiled graphs depending on that declared reference should be marked stale and
-reloaded or recompiled before the next run.
+When a RUN publication or promotion can change `latest`, `AssemblyLineManager` clears the local latest classloader alias.
+The next latest lookup resolves the repository again and points the alias to the newly resolved concrete loader id.
+Pinned concrete loaders remain cached.
 
 ## Dependency index
 
-A loader or compiler should eventually track dependencies such as:
+A loader or compiler should eventually track transitive compiled dependencies such as:
 
 ```text
 checkout:2.0.0 depends on risk-scoring:latest resolved as risk-scoring:1.2.0
@@ -56,8 +58,9 @@ This index enables targeted invalidation.
 
 ## Traceability
 
-Execution traces should eventually record both declared and resolved references so historical runs remain explainable
-after aliases move.
+Core pipeline-call traces record declared and resolved references when a `ResolvedPipelineTarget` is used, so historical
+runs can remain explainable after aliases move. External formats should emit resolved targets when they support nested
+pipeline references.
 
 ## Non-goal
 

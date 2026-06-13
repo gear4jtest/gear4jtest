@@ -25,3 +25,5 @@ Use these status markers consistently:
 - `Non-goal`: intentionally out of scope for the current subsystem.
 
 Do not describe future-direction ideas as current behavior.
+
+- [Production readiness checklist](production-readiness.md)

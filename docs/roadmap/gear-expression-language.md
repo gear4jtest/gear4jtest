@@ -2,10 +2,10 @@
 
 ## Status
 
-Future direction.
+MVP parser/evaluator implemented in `io.github.gear4jtest.xml.expression`; XML integration remains future work. The
+security-boundary decision is captured in `docs/decisions/0008-gear-expression-language-is-security-boundary.md`.
 
-This note captures a possible replacement for inline Java expressions in XML or
-BO-authored pipeline definitions. It is not implemented yet.
+This note captures the target direction for replacing inline Java expressions in XML or BO-authored pipeline definitions.
 
 ## Problem
 
@@ -49,12 +49,17 @@ sealed interface GearExpression permits BinaryExpression, LiteralExpression,
 }
 ```
 
-Supported expression nodes could include:
+Implemented MVP nodes currently include:
 
 - literals: string, number, boolean, null;
-- path access: `input.foo`, `context.bar`, `param("x")`;
-- comparisons: `==`, `!=`, `<`, `<=`, `>`, `>=`;
-- boolean operators: `and`, `or`, `not`;
+- path access: `input.foo`, `variables.bar` / `context.bar`;
+- equality comparisons: `==`, `!=`;
+- boolean operators: `&&`, `||`, `!`;
+- parentheses.
+
+Future nodes can include:
+
+- ordered comparisons: `<`, `<=`, `>`, `>=`;
 - limited functions: `isNull`, `isBlank`, `contains`, `matches`, `hasCapability`;
 - station references for BO/debug use, if trace data is available.
 

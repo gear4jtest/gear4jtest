@@ -42,6 +42,7 @@ public class AssemblyLineManager {
     private final DependencyInjector dependencyInjector;
     private final ClassLoader generatedClassParent;
     private final Map<String, StoreCacheEntry> storeCacheByAl = new ConcurrentHashMap<>();
+    private final long maxArtifactSizeBytes;
 
     public AssemblyLineManager(OperationChainConfigRepository configRepo,
                                OperationChainObjectRepository objectRepo,
@@ -50,7 +51,8 @@ public class AssemblyLineManager {
                                ClassLoaderRegistry classLoaderRegistry,
                                OperationChainTranslatorResolver translatorResolver) {
         this(configRepo, objectRepo, chainTagRepo, storeProvider, classLoaderRegistry, translatorResolver,
-                new JDTInMemoryCompiler(contextClassLoader()), new SimpleDependencyInjector(), contextClassLoader());
+                new JDTInMemoryCompiler(contextClassLoader()), new SimpleDependencyInjector(), contextClassLoader(),
+                ArtifactStore.UNLIMITED_SIZE);
     }
 
     public AssemblyLineManager(OperationChainConfigRepository configRepo,
@@ -62,6 +64,20 @@ public class AssemblyLineManager {
                                JDTInMemoryCompiler compiler,
                                DependencyInjector dependencyInjector,
                                ClassLoader generatedClassParent) {
+        this(configRepo, objectRepo, chainTagRepo, storeProvider, classLoaderRegistry, translatorResolver, compiler,
+                dependencyInjector, generatedClassParent, ArtifactStore.UNLIMITED_SIZE);
+    }
+
+    public AssemblyLineManager(OperationChainConfigRepository configRepo,
+                               OperationChainObjectRepository objectRepo,
+                               OperationChainTagRepository chainTagRepo,
+                               ArtifactStoreProvider storeProvider,
+                               ClassLoaderRegistry classLoaderRegistry,
+                               OperationChainTranslatorResolver translatorResolver,
+                               JDTInMemoryCompiler compiler,
+                               DependencyInjector dependencyInjector,
+                               ClassLoader generatedClassParent,
+                               long maxArtifactSizeBytes) {
         this.configRepo = requireNonNull(configRepo);
         this.objectRepo = requireNonNull(objectRepo);
         this.chainTagRepo = requireNonNull(chainTagRepo);
@@ -71,6 +87,7 @@ public class AssemblyLineManager {
         this.generatedClassParent = generatedClassParent != null ? generatedClassParent : contextClassLoader();
         this.compiler = compiler != null ? compiler : new JDTInMemoryCompiler(this.generatedClassParent);
         this.dependencyInjector = dependencyInjector != null ? dependencyInjector : new SimpleDependencyInjector();
+        this.maxArtifactSizeBytes = requireValidArtifactSize(maxArtifactSizeBytes);
     }
 
     /**
@@ -90,6 +107,20 @@ public class AssemblyLineManager {
 
     private static String normalizeMediaType(String mediaType) {
         return (mediaType == null || mediaType.isBlank()) ? "application/xml" : mediaType;
+    }
+
+    private static long requireValidArtifactSize(long maxArtifactSizeBytes) {
+        if (maxArtifactSizeBytes < ArtifactStore.UNLIMITED_SIZE) {
+            throw new IllegalArgumentException("maxArtifactSizeBytes must be -1 or >= 0");
+        }
+        return maxArtifactSizeBytes;
+    }
+
+    private void requireAllowedArtifactSize(long sizeBytes, String description) throws IOException {
+        if (maxArtifactSizeBytes >= 0 && sizeBytes > maxArtifactSizeBytes) {
+            throw new IOException(description + " exceeds configured maxArtifactSizeBytes=" + maxArtifactSizeBytes
+                    + ". actualSizeBytes=" + sizeBytes);
+        }
     }
 
     private static String toInternalLoaderId(OperationChainObject obj) {
@@ -128,12 +159,16 @@ public class AssemblyLineManager {
             }
         }
 
+        requireAllowedArtifactSize(content.length, "Assembly line artifact");
         ArtifactStore store = resolveStoreForAl(alId);
         String hash = store.put(content);
 
         OperationChainObject obj = new OperationChainObject(null, alId, version, mode, hash, content.length,
                 normalizeMediaType(mediaType), Instant.now(), createdBy, Instant.now());
         objectRepo.insert(obj);
+        if (mode == ExecutionMode.RUN) {
+            invalidateLatestRun(alId);
+        }
 
         if (tags != null && !tags.isEmpty()) {
             for (String tag : tags) {
@@ -156,6 +191,23 @@ public class AssemblyLineManager {
         var runObj = new OperationChainObject(null, alId, version, ExecutionMode.RUN, testObj.contentHash(),
                 testObj.sizeBytes(), testObj.mimeType(), Instant.now(), promotedBy, Instant.now());
         objectRepo.insert(runObj);
+        invalidateLatestRun(alId);
+    }
+
+    public void invalidateLatestRun(String alId) {
+        classLoaderRegistry.clearAlias(latestAlias(requireNonNull(alId)));
+    }
+
+    public String resolveLatestRunLoaderId(String alId) {
+        return classLoaderRegistry.resolveAlias(latestAlias(requireNonNull(alId)));
+    }
+
+    private void clearLatestAliasIfResolutionChanged(String alId, String resolvedLoaderId) {
+        String alias = latestAlias(alId);
+        String current = classLoaderRegistry.resolveAlias(alias);
+        if (current != null && !current.equals(resolvedLoaderId)) {
+            classLoaderRegistry.clearAlias(alias);
+        }
     }
 
     public GeneratedAssemblyLine getOperationChain(String alId, String version, ExecutionMode mode) throws IOException {
@@ -173,6 +225,7 @@ public class AssemblyLineManager {
         }
         var latest = objectRepo.findLatestRun(alId)
                 .orElseThrow(() -> new NoSuchElementException("No RUN object found for alId=" + alId));
+        clearLatestAliasIfResolutionChanged(alId, toInternalLoaderId(latest));
         return loadOrCompile(alId, latest);
     }
 
@@ -243,8 +296,9 @@ public class AssemblyLineManager {
         ArtifactStore store = resolveStoreForAl(alId);
         Artifact art = store.get(obj.contentHash())
                 .orElseThrow(() -> new IOException("Artifact not found for hash=" + obj.contentHash()));
+        requireAllowedArtifactSize(art.size(), "Assembly line artifact " + obj.contentHash());
         try (InputStream in = art.openStream()) {
-            return in.readAllBytes();
+            return ArtifactStore.readAllBytes(in, maxArtifactSizeBytes);
         }
     }
 

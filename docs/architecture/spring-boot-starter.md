@@ -36,3 +36,12 @@ its own internal schema at startup.
 ordering simple and conservative. Higher-throughput applications may increase it
 when the database and repository implementation can absorb concurrent batch
 flushes.
+
+## Actuator health
+
+If Spring Boot Actuator is on the classpath and JDBC persistence is enabled, the
+starter contributes a `gear4jPersistenceHealthIndicator` bean. The indicator is
+`UP` when persistence statistics can be read and includes the current number of
+active run buffers, buffered station logs, scheduled/completed/failed flushes and
+rejected appends. If the manager cannot expose its snapshot, the indicator is
+`DOWN` with the thrown exception.

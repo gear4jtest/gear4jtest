@@ -51,4 +51,34 @@ class FilesystemArtifactStoreTest {
                 java.nio.charset.StandardCharsets.UTF_8)).isEqualTo("hello");
     }
 
+    @Test
+    void put_shouldStreamInputDirectlyToFilesystemStore() throws Exception {
+        // Given
+        FilesystemArtifactStore store = new FilesystemArtifactStore(tempDir);
+
+        // When
+        String hash = store
+                .put(new java.io.ByteArrayInputStream("streamed".getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+                     64);
+
+        // Then
+        assertThat(store.get(hash).orElseThrow().size()).as("artifact size is captured during streaming write")
+                .isEqualTo(8);
+        assertThat(new String(store.get(hash).orElseThrow().openStream().readAllBytes(),
+                java.nio.charset.StandardCharsets.UTF_8)).isEqualTo("streamed");
+    }
+
+    @Test
+    void put_shouldRejectStreamAboveConfiguredLimitBeforePublishingTargetFile() {
+        // Given
+        FilesystemArtifactStore store = new FilesystemArtifactStore(tempDir);
+
+        // When / Then
+        assertThatThrownBy(() -> store
+                .put(new java.io.ByteArrayInputStream("too-large".getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+                     3))
+                .as("streaming writes must enforce max artifact size")
+                .isInstanceOf(java.io.IOException.class)
+                .hasMessageContaining("maxBytes=3");
+    }
 }

@@ -1,8 +1,8 @@
 dependencies {
     api project(':gear4jtest-core')
-    api libraries.micrometer
+    api libs.micrometer
 
-    testImplementation libraries.mockito
+    testImplementation libs.mockito
 }
 
 ext.moduleName = 'io.github.gear4jtest.micrometer'
