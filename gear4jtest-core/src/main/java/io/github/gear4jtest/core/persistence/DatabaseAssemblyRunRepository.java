@@ -103,7 +103,12 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
                 dialect.setUuid(stmt, 7, execution.rootExecutionId());
                 dialect.setUuid(stmt, 8, execution.parentStationLogId());
                 dialect.setUuid(stmt, 9, execution.id());
-                stmt.executeUpdate();
+                int updatedRows = stmt.executeUpdate();
+                if (updatedRows != 1) {
+                    conn.rollback();
+                    throw new ExecutionPersistenceException("Expected to update exactly one assembly run "
+                            + execution.id() + " but updated " + updatedRows + " rows");
+                }
                 conn.commit();
             } catch (SQLException e) {
                 rollback(conn, e);

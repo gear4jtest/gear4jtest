@@ -7,6 +7,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -18,6 +19,9 @@ import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 class EventManagerTest {
     @Test
@@ -168,6 +172,43 @@ class EventManagerTest {
             releaseFirstReaction.countDown();
             manager.shutdown();
             sharedExecutor.shutdownNow();
+        }
+    }
+
+    @Test
+    void publish_shouldDropEventsWhenEventQueueIsFull() throws Exception {
+        CountDownLatch executeStarted = new CountDownLatch(1);
+        CountDownLatch releaseExecute = new CountDownLatch(1);
+        ExecutorService sharedExecutor = mock(ExecutorService.class);
+        doAnswer(invocation -> {
+            executeStarted.countDown();
+            assertThat(releaseExecute.await(2, TimeUnit.SECONDS)).isTrue();
+            Runnable task = invocation.getArgument(0, Runnable.class);
+            task.run();
+            return null;
+        }).when(sharedExecutor).execute(any(Runnable.class));
+
+        EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
+        }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                .sharedReactionExecutor(sharedExecutor).eventQueueCapacity(1).shutdownTimeout(Duration.ofSeconds(2))
+                .build()).build();
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+
+        try {
+            UUID executionId = UUID.randomUUID();
+            manager.publish(new Event("pipe", executionId, "FIRST"));
+            assertThat(executeStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+            manager.publish(new Event("pipe", executionId, "SECOND"));
+            manager.publish(new Event("pipe", executionId, "DROPPED"));
+
+            EventRuntimeStats saturatedStats = manager.snapshotStats();
+            assertThat(saturatedStats.publishedEvents()).isEqualTo(2);
+            assertThat(saturatedStats.droppedEvents()).isEqualTo(1);
+            assertThat(saturatedStats.queuedEvents()).isEqualTo(1);
+        } finally {
+            releaseExecute.countDown();
+            manager.shutdown();
         }
     }
 

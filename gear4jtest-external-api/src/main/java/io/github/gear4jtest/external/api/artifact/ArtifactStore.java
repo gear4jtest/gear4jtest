@@ -12,11 +12,12 @@ import java.util.Optional;
  */
 public interface ArtifactStore {
     long UNLIMITED_SIZE = -1L;
+    long DEFAULT_MAX_ARTIFACT_SIZE_BYTES = 5L * 1024L * 1024L;
 
     String put(byte[] content) throws IOException;
 
     default String put(InputStream in) throws IOException {
-        return put(in, UNLIMITED_SIZE);
+        return put(in, DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
     }
 
     default String put(InputStream in, long maxBytes) throws IOException {

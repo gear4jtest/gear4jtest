@@ -42,7 +42,7 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
         project.delete(destination)
         destination.mkdirs()
 
-        XmlOperationChainTranslator translator = new XmlOperationChainTranslator()
+        XmlOperationChainTranslator translator = XmlOperationChainTranslator.trusted()
         xmlFiles.files
             .findAll { File file -> file.isFile() && file.name.endsWith('.xml') }
             .sort { File file -> file.path }

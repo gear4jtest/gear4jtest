@@ -34,6 +34,19 @@ class ArtifactStoreTest {
     }
 
     @Test
+    void put_shouldRejectInputStreamAboveDefaultLimit() {
+        // Given
+        InMemoryArtifactStore store = new InMemoryArtifactStore();
+        byte[] input = new byte[(int) ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES + 1];
+
+        // When / Then
+        assertThatThrownBy(() -> store.put(new ByteArrayInputStream(input)))
+                .as("default InputStream writes should be bounded")
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("maxBytes=" + ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
+    }
+
+    @Test
     void put_shouldSupportInputStreamWithExplicitLimit() throws IOException {
         // Given
         InMemoryArtifactStore store = new InMemoryArtifactStore();

@@ -48,7 +48,7 @@ public final class EventManager {
     private static final Event STOP_EVENT = new Event("__internal__", null, "STOP_EVENT");
     private static final AtomicInteger DISPATCHER_COUNTER = new AtomicInteger();
     private final List<EventSubscription<?>> subscriptions;
-    private final BlockingQueue<Event> queue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Event> queue;
     private final Object submissionMonitor = new Object();
     private final AtomicBoolean dispatcherStopped = new AtomicBoolean(false);
     private final AtomicInteger acceptedReactions = new AtomicInteger();
@@ -57,6 +57,7 @@ public final class EventManager {
     private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
     private final AtomicLong publishedEvents = new AtomicLong();
     private final AtomicLong dispatchedEvents = new AtomicLong();
+    private final AtomicLong droppedEvents = new AtomicLong();
     private final AtomicLong submittedReactions = new AtomicLong();
     private final AtomicLong completedReactions = new AtomicLong();
     private final AtomicLong droppedReactions = new AtomicLong();
@@ -73,9 +74,12 @@ public final class EventManager {
         EventHandlingDefinition effectiveDefinition = definition != null ? definition
                 : EventHandlingDefinition.builder().build();
 
+        EventHandlingDefinition.RuntimeConfiguration runtimeConfiguration = effectiveDefinition
+                .getRuntimeConfiguration();
         this.subscriptions = buildSubscriptions(effectiveDefinition, registry);
-        this.shutdownTimeout = effectiveDefinition.getRuntimeConfiguration().getShutdownTimeout();
-        this.shutdownMode = effectiveDefinition.getRuntimeConfiguration().getShutdownMode();
+        this.shutdownTimeout = runtimeConfiguration.getShutdownTimeout();
+        this.shutdownMode = runtimeConfiguration.getShutdownMode();
+        this.queue = new LinkedBlockingQueue<>(runtimeConfiguration.getEventQueueCapacity());
 
         if (subscriptions.isEmpty()) {
             this.reactionExecutor = null;
@@ -86,8 +90,8 @@ public final class EventManager {
             return;
         }
 
-        EventHandlingDefinition.RuntimeConfiguration.ExecutorHandle executorHandle = effectiveDefinition
-                .getRuntimeConfiguration().acquireReactionExecutor();
+        EventHandlingDefinition.RuntimeConfiguration.ExecutorHandle executorHandle = runtimeConfiguration
+                .acquireReactionExecutor();
         this.reactionExecutor = executorHandle.executorService();
         this.shutdownExecutorOnClose = executorHandle.shutdownOnClose();
         this.accepting = true;
@@ -123,8 +127,13 @@ public final class EventManager {
             if (!accepting) {
                 return;
             }
-            queue.offer(event);
-            publishedEvents.incrementAndGet();
+            if (queue.offer(event)) {
+                publishedEvents.incrementAndGet();
+            } else {
+                droppedEvents.incrementAndGet();
+                LOGGER.warn("Dropping event because the in-memory event queue is full. eventType={}, capacity={}",
+                            event.getName(), queue.remainingCapacity() + queue.size());
+            }
         }
     }
 
@@ -149,7 +158,7 @@ public final class EventManager {
                 if (shutdownMode == EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.CANCEL_PENDING_TASKS) {
                     queue.clear();
                 }
-                queue.offer(STOP_EVENT);
+                enqueueStopEvent();
             }
         }
 
@@ -162,6 +171,21 @@ public final class EventManager {
         }
 
         return handle;
+    }
+
+    private void enqueueStopEvent() {
+        try {
+            if (!queue.offer(STOP_EVENT, shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
+                queue.clear();
+                queue.offer(STOP_EVENT);
+                LOGGER.warn("Timed out while enqueueing the event-runtime stop signal. Pending events were discarded. "
+                        + "timeout={}", shutdownTimeout);
+            }
+        } catch (InterruptedException interruptedException) {
+            Thread.currentThread().interrupt();
+            queue.clear();
+            queue.offer(STOP_EVENT);
+        }
     }
 
     private void dispatchLoop() {
@@ -269,13 +293,14 @@ public final class EventManager {
      *
      * <p>
      * This is primarily intended for observability. In particular,
-     * {@code droppedReactions} lets callers detect saturation or shutdown-related
-     * rejections without relying solely on log inspection.
+     * {@code droppedEvents} and {@code droppedReactions} let callers detect queue
+     * or executor saturation without relying solely on log inspection.
      * </p>
      */
     public EventRuntimeStats snapshotStats() {
         return new EventRuntimeStats(publishedEvents.get(), dispatchedEvents.get(), submittedReactions.get(),
-                completedReactions.get(), droppedReactions.get(), failedReactions.get());
+                completedReactions.get(), droppedReactions.get(), failedReactions.get(), droppedEvents.get(),
+                queue.size());
     }
 
     private void tryCompleteTermination() {

@@ -24,9 +24,10 @@ import io.github.gear4jtest.external.api.loader.SimpleDependencyInjector;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class XmlOperationChainTranslatorTest {
-    private final XmlOperationChainTranslator translator = new XmlOperationChainTranslator();
+    private final XmlOperationChainTranslator translator = XmlOperationChainTranslator.trusted();
 
     private static PipelineEngine engine() {
         return PipelineEngine.builder().resourceFactory(reflectiveResourceFactory())
@@ -46,6 +47,18 @@ class XmlOperationChainTranslatorTest {
             }
             return input.readAllBytes();
         }
+    }
+
+    @Test
+    void defaultTranslator_shouldRejectInlineJavaExpressions() throws IOException {
+        // Given
+        byte[] xml = resource("/samples/assembly-line-signal.xml");
+        XmlOperationChainTranslator safeTranslator = new XmlOperationChainTranslator();
+
+        // When / Then
+        assertThatThrownBy(() -> safeTranslator.translate(xml, "application/xml"))
+                .isInstanceOf(SecurityException.class)
+                .hasMessageContaining("Inline Java expressions are not allowed");
     }
 
     @Test

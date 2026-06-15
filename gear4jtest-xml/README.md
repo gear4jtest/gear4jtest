@@ -76,14 +76,17 @@ small built-in Eclipse JDT profile aimed at readable generated code. Application
 another formatter, including one created from an Eclipse formatter XML profile:
 
 ```java
-var generator = new XmlToJavaGenerator(
+var generator = XmlToJavaGenerator.trusted(
         "com.myorg.generated",
         classLoader,
         JdtFormatter.fromEclipseProfile(Path.of("config/formatter/eclipse-java-formatter.xml"), "MyProject"));
 ```
 
-This keeps user-generated classes aligned with the consuming project when desired, without coupling them to Gear4J's
-own repository formatter.
+The default `new XmlToJavaGenerator(...)` policy rejects inline Java snippets.
+Use `XmlToJavaGenerator.trusted(...)` only for reviewed XML definitions that are
+allowed to generate Java source. This keeps user-generated classes aligned with
+the consuming project when desired, without coupling them to Gear4J's own
+repository formatter.
 
 ## ServiceLoader registration
 
@@ -93,7 +96,9 @@ The module registers:
 META-INF/services/io.github.gear4jtest.external.api.translator.OperationChainTranslator
 ```
 
-This allows `OperationChainTranslatorResolver.fromServiceLoader(...)` to discover the XML translator.
+This allows `OperationChainTranslatorResolver.fromServiceLoader(...)` to discover the XML translator. The discovered
+translator uses the restrictive no-inline-Java policy by default. For reviewed build-time or trusted runtime generation,
+inject `XmlOperationChainTranslator.trusted()` explicitly.
 
 ## Samples
 

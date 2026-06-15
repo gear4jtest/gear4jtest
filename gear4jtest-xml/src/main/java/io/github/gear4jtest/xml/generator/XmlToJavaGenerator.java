@@ -42,7 +42,25 @@ public final class XmlToJavaGenerator {
     }
 
     public XmlToJavaGenerator(String packageName, ClassLoader classLoader, JavaSourceFormatter formatter) {
-        this(packageName, classLoader, formatter, XmlJavaSourcePolicy.trusted());
+        this(packageName, classLoader, formatter, XmlJavaSourcePolicy.forbidInlineJava());
+    }
+
+    public static XmlToJavaGenerator trusted() {
+        return trusted(DEFAULT_PACKAGE);
+    }
+
+    public static XmlToJavaGenerator trusted(String packageName) {
+        return trusted(packageName, contextClassLoader(), JdtFormatter.defaultFormatter());
+    }
+
+    public static XmlToJavaGenerator trusted(String packageName,
+                                             ClassLoader classLoader,
+                                             JavaSourceFormatter formatter) {
+        return new XmlToJavaGenerator(packageName, classLoader, formatter, XmlJavaSourcePolicy.trusted());
+    }
+
+    public static XmlToJavaGenerator untrusted() {
+        return new XmlToJavaGenerator();
     }
 
     public XmlToJavaGenerator(String packageName,

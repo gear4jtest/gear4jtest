@@ -90,10 +90,14 @@ Using Eclipse JDT or the JDK `JavaCompiler` does not change this security model.
 stability and dependency choices, but it does not sandbox the resulting bytecode.
 
 Operational guidance:
+The XML translator discovered through `ServiceLoader` uses the restrictive no-inline-Java policy by default. Trusted
+runtime loading must inject an explicitly trusted translator, for example `XmlOperationChainTranslator.trusted()`, instead
+of relying on implicit defaults.
+
 
 - prefer build-time generation for externally maintained definitions when possible;
 - keep runtime loading for trusted internal definitions;
-- make any future `trusted` / inline-Java mode explicit rather than implicit;
+- keep `trusted` / inline-Java mode explicit rather than implicit;
 - validate generated class names and packages before compilation;
 - document that handler code must be reviewed with the same care as handwritten Java operators.
 
@@ -104,6 +108,11 @@ artifact APIs now expose bounded read helpers (`ArtifactStore.put(InputStream,
 maxBytes)` and `ArtifactStore.readAllBytes(...)`) so applications can reject
 unexpectedly large inputs before loading them fully in memory.
 
-`AssemblyLineManager` keeps backwards-compatible unlimited behavior by default,
-but advanced constructors can set `maxArtifactSizeBytes` to fail fast during
-registration and runtime artifact loading.
+`ArtifactStore.put(InputStream)` and `AssemblyLineManager` now apply a bounded
+default of `ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES` /
+`AssemblyLineManager.DEFAULT_MAX_ARTIFACT_SIZE_BYTES` (5 MiB). Composite-store
+read verification uses the same default bound. Applications that intentionally
+need larger generated definitions must pass an explicit limit to the advanced
+manager constructor or call `ArtifactStore.put(InputStream, maxBytes)` directly.
+`ArtifactStore.UNLIMITED_SIZE` remains available only as an explicit opt-in for
+trusted deployments.

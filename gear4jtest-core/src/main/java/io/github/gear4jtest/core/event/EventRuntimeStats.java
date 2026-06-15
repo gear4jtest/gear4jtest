@@ -21,10 +21,16 @@ package io.github.gear4jtest.core.event;
  *                           typically due to executor saturation or shutdown
  * @param failedReactions    number of reactions that started execution and
  *                           failed with an exception
+ * @param droppedEvents      number of events rejected before dispatch because
+ *                           the in-memory event queue was full
+ * @param queuedEvents       current number of events still waiting in the
+ *                           in-memory dispatcher queue
  */
 public record EventRuntimeStats(long publishedEvents,
                                 long dispatchedEvents,
                                 long submittedReactions,
                                 long completedReactions,
                                 long droppedReactions,
-                                long failedReactions) {}
+                                long failedReactions,
+                                long droppedEvents,
+                                long queuedEvents) {}

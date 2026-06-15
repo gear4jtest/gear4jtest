@@ -51,6 +51,16 @@ Typical flow:
 | `DependencyInjector`               | Injects external dependencies into generated pipeline instances.                  |
 | `ArtifactStore`                    | Stores raw external pipeline artifacts by content hash; supports bounded streaming writes. |
 
+## Artifact size policy
+
+External definitions are expected to be small source/configuration artifacts.
+`ArtifactStore.put(InputStream)`, composite-store verification and
+`AssemblyLineManager` enforce a 5 MiB default limit. Use
+`ArtifactStore.put(InputStream, maxBytes)` and the advanced manager constructor
+with `maxArtifactSizeBytes` to set a stricter or larger application-specific
+limit. Passing `ArtifactStore.UNLIMITED_SIZE` is an explicit trusted-deployment
+opt-in.
+
 ## Publication modes
 
 External definitions use `ExecutionMode`:

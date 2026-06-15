@@ -32,6 +32,8 @@ import io.github.gear4jtest.external.api.translator.OperationChainTranslatorReso
 import static java.util.Objects.requireNonNull;
 
 public class AssemblyLineManager {
+    public static final long DEFAULT_MAX_ARTIFACT_SIZE_BYTES = ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES;
+
     private final OperationChainConfigRepository configRepo;
     private final OperationChainObjectRepository objectRepo;
     private final OperationChainTagRepository chainTagRepo;
@@ -52,7 +54,7 @@ public class AssemblyLineManager {
                                OperationChainTranslatorResolver translatorResolver) {
         this(configRepo, objectRepo, chainTagRepo, storeProvider, classLoaderRegistry, translatorResolver,
                 new JDTInMemoryCompiler(contextClassLoader()), new SimpleDependencyInjector(), contextClassLoader(),
-                ArtifactStore.UNLIMITED_SIZE);
+                DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
     }
 
     public AssemblyLineManager(OperationChainConfigRepository configRepo,
@@ -65,7 +67,7 @@ public class AssemblyLineManager {
                                DependencyInjector dependencyInjector,
                                ClassLoader generatedClassParent) {
         this(configRepo, objectRepo, chainTagRepo, storeProvider, classLoaderRegistry, translatorResolver, compiler,
-                dependencyInjector, generatedClassParent, ArtifactStore.UNLIMITED_SIZE);
+                dependencyInjector, generatedClassParent, DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
     }
 
     public AssemblyLineManager(OperationChainConfigRepository configRepo,

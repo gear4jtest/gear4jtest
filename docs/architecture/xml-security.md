@@ -3,30 +3,38 @@
 Gear4J XML generation can embed Java expressions into generated source code.
 This is powerful, but it means trusted XML is effectively code.
 
-## Trusted XML
+## Default policy: untrusted / no inline Java
 
-For trusted XML, use the default generator policy:
+The default generator policy is restrictive:
 
 ```java
 new XmlToJavaGenerator();
 ```
 
-This mode is intended for XML authored and reviewed by trusted developers or by a
-trusted build process.
+This rejects inline Java expressions and is the right default for untrusted XML,
+user-edited XML or BO-authored XML.
 
-## Untrusted XML
+## Trusted XML
 
-For untrusted XML, user-edited XML or BO-authored XML, use a restrictive policy:
+Trusted XML must now opt in explicitly:
+
+```java
+XmlToJavaGenerator.trusted();
+```
+
+or, for custom package/formatter settings:
 
 ```java
 new XmlToJavaGenerator(
         "io.example.generated",
         Thread.currentThread().getContextClassLoader(),
         JdtFormatter.defaultFormatter(),
-        XmlJavaSourcePolicy.forbidInlineJava());
+        XmlJavaSourcePolicy.trusted());
 ```
 
-The restrictive policy rejects inline Java expressions.
+This mode is intended only for XML authored and reviewed by trusted developers or
+by a trusted build process. The restrictive policy is also available explicitly
+through `XmlJavaSourcePolicy.forbidInlineJava()`.
 
 ## Why Gear4J does not provide "safe Java inline" today
 

@@ -40,12 +40,13 @@ Reactions may be lost if:
 
 - the JVM crashes;
 - the process is killed;
+- the bounded in-memory event queue rejects new publications;
 - the executor rejects submissions;
 - shutdown cancels pending work;
 - the reaction itself fails.
 
-Dropped and failed reactions should be observable through runtime stats and logs, but those stats are not durable audit
-records.
+Dropped events, dropped reactions and failed reactions should be observable through runtime stats and logs, but those
+stats are not durable audit records.
 
 ## Future direction
 

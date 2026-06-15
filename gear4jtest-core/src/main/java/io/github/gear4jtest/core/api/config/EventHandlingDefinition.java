@@ -175,23 +175,27 @@ public class EventHandlingDefinition {
      * </p>
      */
     public static class RuntimeConfiguration {
+        public static final int DEFAULT_EVENT_QUEUE_CAPACITY = 4096;
         private static final ExecutorService DEFAULT_SHARED_REACTION_EXECUTOR = createDefaultSharedReactionExecutor();
         private final Supplier<ExecutorService> perRunReactionExecutorFactory;
         private final ExecutorService sharedReactionExecutor;
         private final Duration shutdownTimeout;
         private final Duration detachCleanupTimeout;
         private final ShutdownMode shutdownMode;
+        private final int eventQueueCapacity;
 
         private RuntimeConfiguration(Supplier<ExecutorService> perRunReactionExecutorFactory,
                                      ExecutorService sharedReactionExecutor,
                                      Duration shutdownTimeout,
                                      Duration detachCleanupTimeout,
-                                     ShutdownMode shutdownMode) {
+                                     ShutdownMode shutdownMode,
+                                     Integer eventQueueCapacity) {
             this.perRunReactionExecutorFactory = perRunReactionExecutorFactory;
             this.sharedReactionExecutor = sharedReactionExecutor;
             this.shutdownTimeout = shutdownTimeout != null ? shutdownTimeout : Duration.ofSeconds(10);
             this.detachCleanupTimeout = detachCleanupTimeout != null ? detachCleanupTimeout : this.shutdownTimeout;
             this.shutdownMode = shutdownMode != null ? shutdownMode : ShutdownMode.WAIT_FOR_DRAIN;
+            this.eventQueueCapacity = requirePositiveEventQueueCapacity(eventQueueCapacity);
         }
 
         public static Builder builder() {
@@ -231,6 +235,18 @@ public class EventHandlingDefinition {
             return shutdownMode;
         }
 
+        public int getEventQueueCapacity() {
+            return eventQueueCapacity;
+        }
+
+        private static int requirePositiveEventQueueCapacity(Integer eventQueueCapacity) {
+            int capacity = eventQueueCapacity != null ? eventQueueCapacity : DEFAULT_EVENT_QUEUE_CAPACITY;
+            if (capacity < 1) {
+                throw new IllegalArgumentException("eventQueueCapacity must be >= 1");
+            }
+            return capacity;
+        }
+
         /**
          * Shutdown behavior for the asynchronous event runtime.
          */
@@ -257,6 +273,7 @@ public class EventHandlingDefinition {
             private Duration shutdownTimeout;
             private Duration detachCleanupTimeout;
             private ShutdownMode shutdownMode;
+            private Integer eventQueueCapacity;
 
             /**
              * Backward-compatible alias for configuring one dedicated executor per run.
@@ -335,9 +352,18 @@ public class EventHandlingDefinition {
                 return this;
             }
 
+            /**
+             * Configures the maximum number of events that may wait in memory before the
+             * best-effort runtime starts dropping new publications.
+             */
+            public Builder eventQueueCapacity(int eventQueueCapacity) {
+                this.eventQueueCapacity = eventQueueCapacity;
+                return this;
+            }
+
             public RuntimeConfiguration build() {
                 return new RuntimeConfiguration(perRunReactionExecutorFactory, sharedReactionExecutor, shutdownTimeout,
-                        detachCleanupTimeout, shutdownMode);
+                        detachCleanupTimeout, shutdownMode, eventQueueCapacity);
             }
         }
     }

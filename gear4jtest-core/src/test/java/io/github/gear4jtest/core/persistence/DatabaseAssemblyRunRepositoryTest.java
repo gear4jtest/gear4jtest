@@ -76,6 +76,32 @@ class DatabaseAssemblyRunRepositoryTest {
     }
 
     @Test
+    void update_shouldRollbackWhenNoAssemblyRunIsUpdated() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.getAutoCommit()).thenReturn(true);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeUpdate()).thenReturn(0);
+        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
+                Gear4jDatabaseDialect.POSTGRESQL);
+        AssemblyRunRecord run = runRecord();
+
+        // When / Then
+        assertThatThrownBy(() -> repository.update(run))
+                .isInstanceOf(ExecutionPersistenceException.class)
+                .hasMessageContaining("Expected to update exactly one assembly run " + run.id())
+                .hasMessageContaining("but updated 0 rows");
+        InOrder order = inOrder(connection, statement);
+        order.verify(connection).setAutoCommit(false);
+        order.verify(statement).executeUpdate();
+        order.verify(connection).rollback();
+        order.verify(connection).setAutoCommit(true);
+    }
+
+    @Test
     void delete_shouldRestorePreviousAutoCommit() throws Exception {
         // Given
         DataSource dataSource = mock(DataSource.class);

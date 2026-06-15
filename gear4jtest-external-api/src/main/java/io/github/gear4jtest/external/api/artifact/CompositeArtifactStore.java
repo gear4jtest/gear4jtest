@@ -102,7 +102,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
         }
         try (var in = artifact.openStream()) {
             if (!fromPrimary && selfHealing) {
-                byte[] data = in.readAllBytes();
+                byte[] data = ArtifactStore.readAllBytes(in, ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
                 String rehash = Hashing.sha256Hex(data);
                 if (!rehash.equals(hash)) {
                     throw new IOException("Corrupt artifact: " + hash);
@@ -118,7 +118,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
                     }
                 });
             } else {
-                String rehash = Hashing.sha256Hex(in, ArtifactStore.UNLIMITED_SIZE).hashHex();
+                String rehash = Hashing.sha256Hex(in, ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES).hashHex();
                 if (!rehash.equals(hash)) {
                     throw new IOException("Corrupt artifact: " + hash);
                 }

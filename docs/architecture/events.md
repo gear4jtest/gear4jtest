@@ -22,11 +22,11 @@ The current runtime is deliberately best-effort.
 The event path is:
 
 1. a station publishes an event;
-2. `EventManager` puts it in an in-memory queue;
+2. `EventManager` attempts to put it in a bounded in-memory queue;
 3. the dispatcher thread takes the event;
 4. matching subscriptions are submitted to an `ExecutorService`;
 5. accepted reactions run asynchronously;
-6. rejected reactions are logged and counted as dropped.
+6. events rejected by the bounded queue and reactions rejected by the executor are logged and counted as dropped.
 
 There is no durable hand-off, replay log or persistent acknowledgement.
 
@@ -49,6 +49,8 @@ The current event runtime does not provide:
 - published events;
 - dispatched events;
 - submitted reactions;
+- dropped events;
+- queued events;
 - completed reactions;
 - dropped reactions;
 - failed reactions.

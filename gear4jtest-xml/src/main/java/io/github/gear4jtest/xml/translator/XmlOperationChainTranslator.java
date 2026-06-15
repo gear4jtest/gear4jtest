@@ -18,7 +18,12 @@ public final class XmlOperationChainTranslator implements OperationChainTranslat
     private final XmlToJavaGenerator generator;
 
     public XmlOperationChainTranslator() {
-        this(new AssemblyLineValidator(), new XmlPipelineParser(), new XmlToJavaGenerator());
+        this(new AssemblyLineValidator(), new XmlPipelineParser(), XmlToJavaGenerator.untrusted());
+    }
+
+    public static XmlOperationChainTranslator trusted() {
+        return new XmlOperationChainTranslator(new AssemblyLineValidator(), new XmlPipelineParser(),
+                XmlToJavaGenerator.trusted());
     }
 
     public XmlOperationChainTranslator(AssemblyLineValidator validator,

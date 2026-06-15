@@ -8,6 +8,7 @@ import io.github.gear4jtest.core.event.EventSubscription;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class EventHandlingDefinitionTest {
     @Test
@@ -41,5 +42,21 @@ class EventHandlingDefinitionTest {
         assertThat(first.shutdownOnClose()).isFalse();
         assertThat(second.shutdownOnClose()).isFalse();
         assertThat(first.executorService()).isSameAs(second.executorService());
+    }
+
+    @Test
+    void runtimeConfiguration_shouldUseBoundedEventQueueByDefault() {
+        EventHandlingDefinition.RuntimeConfiguration configuration = EventHandlingDefinition.RuntimeConfiguration
+                .builder().build();
+
+        assertThat(configuration.getEventQueueCapacity())
+                .isEqualTo(EventHandlingDefinition.RuntimeConfiguration.DEFAULT_EVENT_QUEUE_CAPACITY);
+    }
+
+    @Test
+    void runtimeConfiguration_shouldRejectInvalidEventQueueCapacity() {
+        assertThatThrownBy(() -> EventHandlingDefinition.RuntimeConfiguration.builder().eventQueueCapacity(0).build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("eventQueueCapacity must be >= 1");
     }
 }

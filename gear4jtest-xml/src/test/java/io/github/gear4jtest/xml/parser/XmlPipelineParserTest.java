@@ -1,6 +1,8 @@
 package io.github.gear4jtest.xml.parser;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContainerOperation;
 import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IteratorOperation;
@@ -66,6 +68,26 @@ class XmlPipelineParserTest {
     void should_reject_doctype_declarations() throws IOException {
         // Given / When / Then
         assertThatThrownBy(() -> parser.parse(resource("/samples/bad-doctype.xml")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unable to parse Gear4J XML pipeline");
+    }
+
+    @Test
+    void should_reject_external_entity_declarations() {
+        // Given
+        String xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <!DOCTYPE assemblyLine [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+                <assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+                              id="xxe"
+                              inputType="java.lang.String"
+                              outputType="java.lang.String">
+                  <operations/>
+                </assemblyLine>
+                """;
+
+        // When / Then
+        assertThatThrownBy(() -> parser.parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unable to parse Gear4J XML pipeline");
     }

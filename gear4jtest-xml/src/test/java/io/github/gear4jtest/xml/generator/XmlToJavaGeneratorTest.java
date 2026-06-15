@@ -19,8 +19,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class XmlToJavaGeneratorTest {
-    private final XmlToJavaGenerator generator = new XmlToJavaGenerator("io.test.generated",
-            XmlToJavaGeneratorTest.class.getClassLoader(), JavaSourceFormatter.none());
+    private final XmlToJavaGenerator generator = XmlToJavaGenerator.trusted("io.test.generated",
+                                                                            XmlToJavaGeneratorTest.class
+                                                                                    .getClassLoader(),
+                                                                            JavaSourceFormatter.none());
+
+    @Test
+    void generate_shouldRejectInlineJavaByDefault() {
+        // Given
+        IfElseOperation ifElse = new IfElseOperation("choice", "java.lang.String", "java.lang.String",
+                List.of(new ConditionalOperation("when-a", new Condition("input.endsWith(\"a\")", null),
+                        processingOperation("then-operation"))),
+                processingOperation("else-operation"));
+        XmlPipelineDefinition definition = definition(ifElse);
+        XmlToJavaGenerator safeGenerator = new XmlToJavaGenerator("io.test.generated",
+                XmlToJavaGeneratorTest.class.getClassLoader(), JavaSourceFormatter.none());
+
+        // When / Then
+        assertThatThrownBy(() -> safeGenerator.generate(definition)).isInstanceOf(SecurityException.class)
+                .hasMessageContaining("Inline Java expressions are not allowed");
+    }
 
     @Test
     void generate_shouldRequireInjectedExecutorForParallelContainer() {

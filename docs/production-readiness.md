@@ -6,10 +6,11 @@ production application, review the following operational boundaries.
 ## Runtime events
 
 The default event runtime is in-memory and best-effort. It is appropriate for
-local observers, metrics enrichment and non-critical side-compute reactions. It
-must not be used as a business-critical delivery guarantee. If durable delivery
-is required, use a dedicated outbox or external broker design and keep handlers
-idempotent.
+local observers, metrics enrichment and non-critical side-compute reactions. Its
+dispatch queue is bounded by default; saturated runtimes drop new events and
+expose the drop count through `EventManager.snapshotStats()`. It must not be used
+as a business-critical delivery guarantee. If durable delivery is required, use a
+dedicated outbox or external broker design and keep handlers idempotent.
 
 ## XML and generated Java
 
@@ -40,10 +41,12 @@ When JDBC persistence is enabled:
 ## Artifacts
 
 Generated pipeline artifacts are generally expected to be small XML/source
-bundles. Do not use the default artifact APIs for unbounded large files without a
-size policy. The `ArtifactStore.put(InputStream, maxBytes)` API and
-`AssemblyLineManager` constructor with `maxArtifactSizeBytes` are available to
-fail fast when an artifact exceeds the application limit.
+bundles. `ArtifactStore.put(InputStream)`, composite-store verification and
+`AssemblyLineManager` enforce a 5 MiB default artifact limit. Use
+`ArtifactStore.put(InputStream, maxBytes)` and the manager constructor with
+`maxArtifactSizeBytes` to choose a stricter or larger application limit.
+`ArtifactStore.UNLIMITED_SIZE` should be an explicit trusted-deployment choice,
+not an accidental default.
 
 ## Metrics and health
 
