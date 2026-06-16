@@ -80,6 +80,7 @@ class XmlToJavaGeneratorTest {
         assertThat(source).contains("@Inject(\"gear4j.executor.parallel-container\")")
                 .contains("private ExecutorService gear4jParallel_containerExecutorService;")
                 .contains("requireExecutorService(gear4jParallel_containerExecutorService, \"gear4j.executor.parallel-container\")")
+                .contains("throw new IllegalStateException(\"Missing required ExecutorService bean '\" + beanName + \"' for parallel XML container\")")
                 .doesNotContain("newFixedThreadPool")
                 .doesNotContain("newCachedThreadPool")
                 .doesNotContain("java.util.concurrent.Executors");

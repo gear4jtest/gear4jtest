@@ -1,0 +1,308 @@
+package io.github.gear4jtest.xml.generator;
+
+import java.util.Locale;
+
+import io.github.gear4jtest.xml.model.XmlPipelineDefinition;
+import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Condition;
+import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContainerOperation;
+import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContextParameter;
+import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ErrorHandler;
+import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IfElseOperation;
+import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IteratorOperation;
+import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Operation;
+import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Parameter;
+import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ProcessingOperation;
+import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SignalOperation;
+import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SubLine;
+import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SupplierParameter;
+import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ValueParameter;
+
+final class XmlOperationMethodRenderer {
+    void appendOperationMethod(StringBuilder code, Operation operation, XmlGenerationContext context) {
+        String methodName = XmlGeneratedNames.operationMethodName(operation);
+        Operation previousOperation = context.emittedMethods().putIfAbsent(methodName, operation);
+        if (previousOperation != null) {
+            if (previousOperation.equals(operation)) {
+                return;
+            }
+            throw new IllegalArgumentException("Generated method name collision for method '" + methodName
+                    + "' between operations '" + previousOperation.id() + "' and '" + operation.id()
+                    + "'. Use ids that remain unique after Java identifier normalization.");
+        }
+
+        if (operation instanceof ProcessingOperation processingOperation) {
+            appendProcessingMethod(code, processingOperation, context);
+        } else if (operation instanceof IteratorOperation iteratorOperation) {
+            appendIteratorMethod(code, iteratorOperation, context);
+        } else if (operation instanceof ContainerOperation containerOperation) {
+            appendContainerMethod(code, containerOperation, context);
+        } else if (operation instanceof IfElseOperation ifElseOperation) {
+            appendIfElseMethod(code, ifElseOperation, context);
+        } else if (operation instanceof SignalOperation signalOperation) {
+            appendSignalMethod(code, signalOperation, context);
+        } else {
+            throw new IllegalArgumentException("Unsupported operation type: " + operation);
+        }
+    }
+
+    private void appendProcessingMethod(StringBuilder code,
+                                        ProcessingOperation operation,
+                                        XmlGenerationContext context) {
+        JavaImportManager imports = context.imports();
+        XmlExpressionRenderer expressions = context.expressions();
+        OperationSignature signature = context.signatures().get(operation);
+        JavaTypeName operationType = JavaTypeName.parse(operation.type());
+        String workStation = imports.use("io.github.gear4jtest.core.api.station.WorkStation");
+        imports.addStatic("io.github.gear4jtest.core.api.util.ElementModelBuilders.processingOperation");
+
+        code.append("    private ").append(workStation).append("<").append(signature.inputType().render(imports))
+                .append(", ").append(signature.outputType().render(imports)).append("> ")
+                .append(XmlGeneratedNames.operationMethodName(operation))
+                .append("() {\n");
+        code.append("        ").append(workStation).append(".Builder<").append(signature.inputType().render(imports))
+                .append(", ").append(signature.outputType().render(imports)).append(", ")
+                .append(operationType.render(imports)).append("> builder = processingOperation(\"")
+                .append(JavaStringEscaper.escapeJava(operation.id())).append("\", ")
+                .append(operationType.renderClassLiteral(imports))
+                .append(");\n");
+
+        for (Parameter parameter : operation.parameters().parameters()) {
+            if (parameter instanceof ValueParameter valueParameter) {
+                code.append("        builder.parameter(")
+                        .append(expressions.normalizeRetriever(valueParameter.retriever(), operationType, imports))
+                        .append(", ")
+                        .append(expressions.valueExpression(valueParameter)).append(");\n");
+            } else if (parameter instanceof SupplierParameter supplierParameter) {
+                code.append("        builder.parameter(")
+                        .append(expressions.normalizeRetriever(supplierParameter.retriever(), operationType, imports))
+                        .append(", ")
+                        .append(expressions.normalizeExpression(supplierParameter.supplier(), imports)).append(");\n");
+            } else if (parameter instanceof ContextParameter contextParameter) {
+                code.append("        builder.parameter(")
+                        .append(expressions.normalizeRetriever(contextParameter.retriever(), operationType, imports))
+                        .append(", ")
+                        .append(expressions.normalizeExpression(contextParameter.function(), imports)).append(");\n");
+            }
+        }
+
+        for (ErrorHandler errorHandler : operation.errorHandlers()) {
+            appendErrorHandler(code, errorHandler, signature.inputType(), context);
+        }
+
+        for (Condition condition : operation.conditions()) {
+            code.append("        builder.skipIf(").append(expressions.conditionLambda(condition, imports))
+                    .append(");\n");
+        }
+
+        if (operation.fallbackTransformer() != null) {
+            code.append("        builder.fallback((input, ctx) -> ")
+                    .append(expressions.normalizeExpression(operation.fallbackTransformer().expression(), imports))
+                    .append(");\n");
+        }
+
+        code.append("        return builder.build();\n");
+        code.append("    }\n\n");
+    }
+
+    private void appendErrorHandler(StringBuilder code,
+                                    ErrorHandler errorHandler,
+                                    JavaTypeName inputType,
+                                    XmlGenerationContext context) {
+        JavaImportManager imports = context.imports();
+        XmlExpressionRenderer expressions = context.expressions();
+        String builder = switch (errorHandler.signalType().toUpperCase(Locale.ROOT)) {
+            case "FATAL" -> "fatal";
+            case "STOP" -> "stop";
+            case "IGNORE" -> "ignore";
+            default ->
+                throw new IllegalArgumentException("Unsupported error signal type: " + errorHandler.signalType());
+        };
+
+        if (!"IGNORE".equals(errorHandler.signalType().toUpperCase(Locale.ROOT))) {
+            imports.addStatic("io.github.gear4jtest.core.api.util.ElementModelBuilders." + builder);
+        }
+
+        String elementModelBuilders = imports.use("io.github.gear4jtest.core.api.util.ElementModelBuilders");
+        code.append("        builder.onError(").append(elementModelBuilders).append(".<")
+                .append(inputType.render(imports)).append(">").append(builder).append("(")
+                .append(JavaTypeName.parse(errorHandler.throwableType()).renderClassLiteral(imports)).append(")\n");
+
+        if (errorHandler.condition() != null) {
+            code.append("                .condition(")
+                    .append(expressions.conditionLambda(errorHandler.condition(), imports))
+                    .append(")\n");
+        }
+
+        if (errorHandler.action() != null) {
+            code.append("                .action(() -> { ")
+                    .append(expressions.actionStatement(errorHandler.action(), imports))
+                    .append(" })\n");
+        }
+
+        code.append("                .build());\n");
+    }
+
+    private void appendIteratorMethod(StringBuilder code,
+                                      IteratorOperation operation,
+                                      XmlGenerationContext context) {
+        appendOperationMethod(code, operation.operation(), context);
+
+        JavaImportManager imports = context.imports();
+        XmlExpressionRenderer expressions = context.expressions();
+        OperationSignature signature = context.signatures().get(operation);
+        OperationSignature childSignature = context.signatures().get(operation.operation());
+        String iteratorStation = imports.use("io.github.gear4jtest.core.api.station.IteratorStation");
+        imports.addStatic("io.github.gear4jtest.core.api.util.ElementModelBuilders.chain");
+
+        code.append("    private ").append(iteratorStation).append("<").append(signature.inputType().render(imports))
+                .append(", ").append(signature.outputType().render(imports)).append("> ")
+                .append(XmlGeneratedNames.operationMethodName(operation))
+                .append("() {\n");
+        String elementModelBuilders = imports.use("io.github.gear4jtest.core.api.util.ElementModelBuilders");
+        code.append("        return ").append(elementModelBuilders).append(".<")
+                .append(signature.inputType().render(imports)).append(">iterate(\"")
+                .append(JavaStringEscaper.escapeJava(operation.id()))
+                .append("\")\n");
+        code.append("                .iterableFunction(")
+                .append(expressions.normalizeExpression(operation.iterableFunction(), imports)).append(")\n");
+        code.append("                .pipeline(chain(\"").append(JavaStringEscaper.escapeJava(operation.id()))
+                .append(":chain\", ")
+                .append(XmlGeneratedNames.operationMethodName(operation.operation())).append("()).build())\n");
+
+        if (operation.accumulator() != null) {
+            String accumulator = switch (operation.accumulator().toUpperCase(Locale.ROOT)) {
+                case "LIST" -> imports.use("io.github.gear4jtest.core.api.util.ElementModelBuilders") + ".toList()";
+                case "SET" -> imports.use("io.github.gear4jtest.core.api.util.ElementModelBuilders") + ".toSet()";
+                default -> throw new IllegalArgumentException("Unsupported accumulator: " + operation.accumulator());
+            };
+            code.append("                .accumulator(").append(accumulator).append(")\n");
+        } else if (operation.collector() != null) {
+            code.append("                .collector(")
+                    .append(expressions.normalizeExpression(operation.collector(), imports))
+                    .append(")\n");
+        } else if (!signature.outputType().equals(childSignature.outputType())) {
+            throw new IllegalArgumentException("Iterator '" + operation.id()
+                    + "' has no collector/accumulator but output type differs from child output type");
+        }
+
+        code.append("                .build();\n");
+        code.append("    }\n\n");
+    }
+
+    private void appendContainerMethod(StringBuilder code,
+                                       ContainerOperation operation,
+                                       XmlGenerationContext context) {
+        for (SubLine subLine : operation.subLines()) {
+            appendOperationMethod(code, subLine.operation(), context);
+        }
+
+        JavaImportManager imports = context.imports();
+        XmlExpressionRenderer expressions = context.expressions();
+        OperationSignature signature = context.signatures().get(operation);
+        String containerBaseStation = imports.use("io.github.gear4jtest.core.api.station.ContainerBaseStation");
+        imports.addStatic("io.github.gear4jtest.core.api.util.ElementModelBuilders.container");
+
+        code.append("    private ").append(containerBaseStation).append("<")
+                .append(signature.inputType().render(imports)).append(", ")
+                .append(signature.outputType().render(imports)).append("> ")
+                .append(XmlGeneratedNames.operationMethodName(operation))
+                .append("() {\n");
+
+        if (operation.parallel()) {
+            String executorField = context.parallelExecutorFields().get(operation);
+            if (executorField == null) {
+                throw new IllegalArgumentException("Parallel container '" + operation.id()
+                        + "' has no generated executor dependency");
+            }
+            code.append("        return container(").append(signature.inputType().renderClassLiteral(imports))
+                    .append(", requireExecutorService(").append(executorField).append(", \"")
+                    .append(JavaStringEscaper.escapeJava(XmlGeneratedNames.parallelExecutorBeanName(operation)))
+                    .append("\"))\n");
+        } else {
+            code.append("        return container(").append(signature.inputType().renderClassLiteral(imports))
+                    .append(")\n");
+        }
+
+        for (SubLine subLine : operation.subLines()) {
+            code.append("                .withSubLine(\"").append(JavaStringEscaper.escapeJava(subLine.id()))
+                    .append("\", ")
+                    .append(XmlGeneratedNames.operationMethodName(subLine.operation())).append("()");
+            if (subLine.condition() != null) {
+                code.append(", ").append(expressions.conditionLambda(subLine.condition(), imports));
+            }
+            code.append(")\n");
+        }
+
+        if (operation.returnsFunction() != null) {
+            code.append("                .returns(")
+                    .append(expressions.normalizeExpression(operation.returnsFunction(), imports))
+                    .append(");\n");
+        } else {
+            code.append("                .build();\n");
+        }
+
+        code.append("    }\n\n");
+    }
+
+    private void appendIfElseMethod(StringBuilder code,
+                                    IfElseOperation operation,
+                                    XmlGenerationContext context) {
+        for (XmlPipelineDefinition.ConditionalOperation conditionalOperation : operation.conditionalOperations()) {
+            appendOperationMethod(code, conditionalOperation.operation(), context);
+        }
+        if (operation.elseOperation() != null) {
+            appendOperationMethod(code, operation.elseOperation(), context);
+        }
+
+        JavaImportManager imports = context.imports();
+        XmlExpressionRenderer expressions = context.expressions();
+        OperationSignature signature = context.signatures().get(operation);
+        String unaryIfElse = imports.use("io.github.gear4jtest.core.api.station.UnaryIfElseContainerStation");
+        imports.addStatic("io.github.gear4jtest.core.api.util.ElementModelBuilders.ifElseContainer");
+
+        code.append("    private ").append(unaryIfElse).append("<").append(signature.inputType().render(imports))
+                .append("> ").append(XmlGeneratedNames.operationMethodName(operation)).append("() {\n");
+        code.append("        return ifElseContainer(").append(signature.inputType().renderClassLiteral(imports))
+                .append(")\n");
+
+        for (XmlPipelineDefinition.ConditionalOperation conditionalOperation : operation.conditionalOperations()) {
+            code.append("                .conditionally(\"")
+                    .append(JavaStringEscaper.escapeJava(conditionalOperation.id()))
+                    .append("\", ")
+                    .append(XmlGeneratedNames.operationMethodName(conditionalOperation.operation())).append("(), ")
+                    .append(expressions.conditionLambda(conditionalOperation.condition(), imports)).append(")\n");
+        }
+
+        if (operation.elseOperation() == null) {
+            throw new IllegalArgumentException(
+                    "ifElseContainer requires an elseOperation because the current core builder has no build() method");
+        }
+
+        code.append("                .elseOp(\"").append(JavaStringEscaper.escapeJava(operation.elseOperation().id()))
+                .append("\", ")
+                .append(XmlGeneratedNames.operationMethodName(operation.elseOperation())).append("());\n");
+        code.append("    }\n\n");
+    }
+
+    private void appendSignalMethod(StringBuilder code,
+                                    SignalOperation operation,
+                                    XmlGenerationContext context) {
+        JavaImportManager imports = context.imports();
+        XmlExpressionRenderer expressions = context.expressions();
+        OperationSignature signature = context.signatures().get(operation);
+        String signalStation = imports.use("io.github.gear4jtest.core.api.station.SignalStation");
+        code.append("    private ").append(signalStation).append("<").append(signature.inputType().render(imports))
+                .append("> ").append(XmlGeneratedNames.operationMethodName(operation)).append("() {\n");
+        code.append("        ").append(signalStation).append(".Builder<").append(signature.inputType().render(imports))
+                .append("> builder = new ").append(signalStation).append(".Builder<")
+                .append(signature.inputType().render(imports)).append(">()\n");
+        code.append("                .id(\"").append(JavaStringEscaper.escapeJava(operation.id())).append("\")\n");
+        code.append("                .type(").append(imports.use("io.github.gear4jtest.core.api.behavior.SignalType"))
+                .append(".").append(operation.type().toUpperCase(Locale.ROOT)).append(");\n");
+        code.append("        builder.condition(")
+                .append(expressions.signalConditionLambda(operation.condition(), signature.inputType(), imports))
+                .append(");\n");
+        code.append("        return builder.build();\n");
+        code.append("    }\n\n");
+    }
+}
