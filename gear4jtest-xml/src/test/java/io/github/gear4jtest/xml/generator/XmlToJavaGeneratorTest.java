@@ -41,6 +41,28 @@ class XmlToJavaGeneratorTest {
     }
 
     @Test
+    void generate_shouldAllowGelConditionWithDefaultUntrustedGenerator() {
+        // Given
+        IfElseOperation ifElse = new IfElseOperation("choice", "java.lang.String", "java.lang.String",
+                List.of(new ConditionalOperation("when-a",
+                        new Condition("input == \"a\"", Condition.LANGUAGE_GEL, null),
+                        processingOperation("then-operation"))),
+                processingOperation("else-operation"));
+        XmlPipelineDefinition definition = definition(ifElse);
+        XmlToJavaGenerator safeGenerator = new XmlToJavaGenerator("io.test.generated",
+                XmlToJavaGeneratorTest.class.getClassLoader(), JavaSourceFormatter.none());
+
+        // When
+        String source = safeGenerator.generate(definition).formattedSource();
+
+        // Then
+        assertThat(source).contains("private static final Map<String, GearExpression> GEL_EXPRESSIONS")
+                .contains("evaluateGel(\"input == \\\"a\\\"\", input, ctx)")
+                .contains("GearExpressionParser::parse")
+                .doesNotContain("input.endsWith");
+    }
+
+    @Test
     void generate_shouldRequireInjectedExecutorForParallelContainer() {
         // Given
         ProcessingOperation first = processingOperation("first");

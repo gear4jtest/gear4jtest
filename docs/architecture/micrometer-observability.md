@@ -4,15 +4,15 @@
 
 Partially implemented.
 
-The `gear4jtest-micrometer` module is an initial optional integration. It is not
-yet the complete production observability module.
+The `gear4jtest-micrometer` module is an optional integration. It provides
+lifecycle counters/timers plus low-level gauges for persistence and event runtime
+backlogs. It is still not a complete production observability module.
 
 ## Current scope
 
-The current module registers lifecycle, duration and persistence
-signals. It is useful to confirm that Gear4J is active, understand completed
-run/station latency and verify that persistence buffers are not silently
-accumulating.
+The current module registers lifecycle, duration and persistence signals. It is
+useful to confirm that Gear4J is active, understand completed run/station latency
+and verify that persistence buffers are not silently accumulating.
 
 See the module README for the exact metric names:
 
@@ -20,9 +20,19 @@ See the module README for the exact metric names:
 gear4jtest-micrometer/README.md
 ```
 
-The built-in duration timers are recorded only when both start and end
-timestamps are present and consistent. Missing or inverted timestamps are
-ignored rather than emitting misleading zero or negative durations.
+The built-in duration timers are recorded only when both start and end timestamps
+are present and consistent. Missing or inverted timestamps are ignored rather than
+emitting misleading zero or negative durations.
+
+`PersistenceMetricsBinder` exposes all fields from `PersistenceRuntimeStats`:
+active run buffers, buffered station logs, scheduled/completed/failed flushes and
+rejected appends.
+
+`EventMetricsBinder` can be bound manually to an `EventManager` to expose the
+best-effort in-memory event runtime counters: published/dispatched/dropped/queued
+events and submitted/completed/dropped/failed reactions. Because `EventManager`
+is currently per-run runtime state rather than a singleton Spring bean, this
+binder is intentionally explicit instead of auto-registered globally.
 
 ## Future production metric surface
 
@@ -31,8 +41,10 @@ A richer module should expose counters and timers for:
 - pipeline outcomes: succeeded, failed, stopped, cancelled;
 - station outcomes: succeeded, failed, skipped, stopped, cancelled;
 - timeout and cancellation counts;
-- event reaction results: completed, failed, dropped;
-- persistence flush duration, failures and backlog;
+- persistence flush duration and latency distribution;
+- generated-source translation and compilation duration;
+- classloader cache hit/miss and alias invalidation counts;
+- artifact read/write size and failures;
 - parallel branch rejections and branch durations.
 
 ## Error categorization
@@ -71,7 +83,6 @@ gear4j:
       include-operation-type: true
       include-error-category: true
 ```
-
 
 ## Tag cardinality
 

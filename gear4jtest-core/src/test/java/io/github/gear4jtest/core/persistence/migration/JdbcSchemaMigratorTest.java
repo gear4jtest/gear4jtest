@@ -1,8 +1,28 @@
 package io.github.gear4jtest.core.persistence.migration;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
+
+import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class JdbcSchemaMigratorTest {
     @Test
@@ -52,5 +72,110 @@ class JdbcSchemaMigratorTest {
         assertThat(statements.get(1))
                 .as("statement after the function should still be parsed")
                 .isEqualTo("CREATE TABLE after_function(id INT)");
+    }
+
+    @Test
+    void migrate_shouldUseTransactionAndSchemaLockWhenConnectionOwnsAutoCommit() throws Exception {
+        // Given
+        Connection connection = mock(Connection.class);
+        DatabaseMetaData metadata = mock(DatabaseMetaData.class);
+        PreparedStatement insertLock = mock(PreparedStatement.class);
+        PreparedStatement selectLock = mock(PreparedStatement.class);
+        PreparedStatement updateLock = mock(PreparedStatement.class);
+        ResultSet lockRow = resultSet(true);
+        when(connection.getAutoCommit()).thenReturn(true);
+        when(connection.getMetaData()).thenReturn(metadata);
+        when(metadata.getTables(isNull(), isNull(), anyString(), isNull())).thenAnswer(invocation -> resultSet(true));
+        when(connection.prepareStatement("INSERT INTO gear4j_schema_lock(lock_name, locked_at) VALUES (?,?) "
+                + "ON CONFLICT (lock_name) DO NOTHING"))
+                .thenReturn(insertLock);
+        when(connection.prepareStatement("SELECT lock_name FROM gear4j_schema_lock WHERE lock_name = ? FOR UPDATE"))
+                .thenReturn(selectLock);
+        when(selectLock.executeQuery()).thenReturn(lockRow);
+        when(connection.prepareStatement("UPDATE gear4j_schema_lock SET locked_at = ? WHERE lock_name = ?"))
+                .thenReturn(updateLock);
+        var migrator = new JdbcSchemaMigrator("gear4j-core", Gear4jDatabaseDialect.POSTGRESQL,
+                "db/migrations.list", "assembly_run", resources(Map.of("db/migrations.list", "")));
+
+        // When
+        migrator.migrate(connection);
+
+        // Then
+        InOrder order = inOrder(connection, selectLock);
+        order.verify(connection).setAutoCommit(false);
+        verify(selectLock).setQueryTimeout(30);
+        order.verify(selectLock).executeQuery();
+        order.verify(connection).commit();
+        order.verify(connection).setAutoCommit(true);
+    }
+
+    @Test
+    void migrate_shouldRollbackWhenBaselineSchemaIsIncomplete() throws Exception {
+        // Given
+        Connection connection = mock(Connection.class);
+        DatabaseMetaData metadata = mock(DatabaseMetaData.class);
+        PreparedStatement insertLock = mock(PreparedStatement.class);
+        PreparedStatement selectLock = mock(PreparedStatement.class);
+        PreparedStatement updateLock = mock(PreparedStatement.class);
+        PreparedStatement hasHistory = mock(PreparedStatement.class);
+        ResultSet selectedLock = resultSet(true);
+        ResultSet emptyHistory = resultSet(false);
+        when(connection.getAutoCommit()).thenReturn(true);
+        when(connection.getMetaData()).thenReturn(metadata);
+        when(metadata.getTables(isNull(), isNull(), anyString(), isNull())).thenAnswer(invocation -> {
+            String table = invocation.getArgument(2, String.class);
+            boolean exists = List.of("gear4j_schema_history", "gear4j_schema_lock", "assembly_run")
+                    .contains(table.toLowerCase());
+            return resultSet(exists);
+        });
+        when(connection.prepareStatement("INSERT INTO gear4j_schema_lock(lock_name, locked_at) VALUES (?,?) "
+                + "ON CONFLICT (lock_name) DO NOTHING"))
+                .thenReturn(insertLock);
+        when(connection.prepareStatement("SELECT lock_name FROM gear4j_schema_lock WHERE lock_name = ? FOR UPDATE"))
+                .thenReturn(selectLock);
+        when(selectLock.executeQuery()).thenReturn(selectedLock);
+        when(connection.prepareStatement("UPDATE gear4j_schema_lock SET locked_at = ? WHERE lock_name = ?"))
+                .thenReturn(updateLock);
+        when(connection.prepareStatement("SELECT 1 FROM gear4j_schema_history WHERE module_id=?"))
+                .thenReturn(hasHistory);
+        when(hasHistory.executeQuery()).thenReturn(emptyHistory);
+        var resources = Map.of(
+                               "db/migrations.list", "V1__create_execution_schema.sql\n",
+                               "db/V1__create_execution_schema.sql",
+                               """
+                                       CREATE TABLE assembly_run(id VARCHAR(36), pipeline_id VARCHAR(255), status VARCHAR(50), start_time TIMESTAMP);
+                                       CREATE TABLE station_log(id VARCHAR(36), pipeline_execution_id VARCHAR(36), operation_id VARCHAR(255), status VARCHAR(50), start_time TIMESTAMP);
+                                       """);
+        var migrator = new JdbcSchemaMigrator("gear4j-core", Gear4jDatabaseDialect.POSTGRESQL,
+                "db/migrations.list", "assembly_run", resources(resources));
+
+        // When / Then
+        assertThatThrownBy(() -> migrator.migrate(connection))
+                .isInstanceOf(SchemaMigrationException.class)
+                .hasMessageContaining("Missing expected table(s)")
+                .hasMessageContaining("station_log");
+        InOrder order = inOrder(connection);
+        order.verify(connection).setAutoCommit(false);
+        order.verify(connection).rollback();
+        order.verify(connection).setAutoCommit(true);
+    }
+
+    private static ResultSet resultSet(boolean next) throws SQLException {
+        ResultSet resultSet = mock(ResultSet.class);
+        when(resultSet.next()).thenReturn(next, false);
+        return resultSet;
+    }
+
+    private static ClassLoader resources(Map<String, String> resources) {
+        return new ClassLoader(null) {
+            @Override
+            public InputStream getResourceAsStream(String name) {
+                String content = resources.get(name);
+                if (content == null) {
+                    return null;
+                }
+                return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
+            }
+        };
     }
 }

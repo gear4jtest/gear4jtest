@@ -19,16 +19,6 @@ public class ExecutionResult<T> {
     private final AssemblyRunTrace execution;
     private final Exception error;
 
-    /**
-     * Legacy constructor maintained for source compatibility. Prefer the factory
-     * methods or
-     * {@link #ExecutionResult(Object, ExecutionOutcome, AssemblyRunTrace, Exception)}.
-     */
-    @Deprecated(since = "1.0.0", forRemoval = false)
-    public ExecutionResult(T result, boolean success, AssemblyRunTrace execution, Exception error) {
-        this(result, success ? ExecutionOutcome.SUCCEEDED : ExecutionOutcome.FAILED, execution, error);
-    }
-
     public ExecutionResult(T result, ExecutionOutcome outcome, AssemblyRunTrace execution, Exception error) {
         this.result = result;
         this.outcome = Objects.requireNonNull(outcome, "outcome must not be null");

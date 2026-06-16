@@ -63,6 +63,10 @@ public final class XmlToJavaGenerator {
         return new XmlToJavaGenerator();
     }
 
+    public static XmlToJavaGenerator gelOnly() {
+        return untrusted();
+    }
+
     public XmlToJavaGenerator(String packageName,
                               ClassLoader classLoader,
                               JavaSourceFormatter formatter,
@@ -100,6 +104,7 @@ public final class XmlToJavaGenerator {
         appendDependencies(body, imports, definition);
         appendParallelExecutorDependencies(body, imports, parallelExecutorFields);
         appendConstructor(body, simpleClassName);
+        appendGelHelper(body, imports, definition);
         appendRequireExecutorServiceMethod(body, imports, parallelExecutorFields);
 
         Map<String, Operation> emittedMethods = new LinkedHashMap<>();
@@ -121,6 +126,62 @@ public final class XmlToJavaGenerator {
 
     private void addStaticImports(JavaImportManager imports) {
         // Static imports are registered lazily by the snippets that actually use them.
+    }
+
+    private void appendGelHelper(StringBuilder code, JavaImportManager imports, XmlPipelineDefinition definition) {
+        if (!usesGel(definition)) {
+            return;
+        }
+        String map = imports.use("java.util.Map");
+        String concurrentHashMap = imports.use("java.util.concurrent.ConcurrentHashMap");
+        String gearExpression = imports.use("io.github.gear4jtest.xml.expression.GearExpression");
+        String gearExpressionContext = imports.use("io.github.gear4jtest.xml.expression.GearExpressionContext");
+        String gearExpressionParser = imports.use("io.github.gear4jtest.xml.expression.GearExpressionParser");
+        String executionContext = imports.use("io.github.gear4jtest.core.api.context.ExecutionContext");
+        code.append("    private static final ").append(map).append("<String, ").append(gearExpression)
+                .append("> GEL_EXPRESSIONS = new ").append(concurrentHashMap).append("<>();\n\n");
+        code.append("    private static boolean evaluateGel(String expression, Object input, ")
+                .append(executionContext).append(" ctx) {\n");
+        code.append("        return GEL_EXPRESSIONS.computeIfAbsent(expression, ")
+                .append(gearExpressionParser).append("::parse)\n");
+        code.append("                .evaluateBoolean(new ").append(gearExpressionContext)
+                .append("(input, ctx == null ? null : ctx.getContext()));\n");
+        code.append("    }\n\n");
+    }
+
+    private static boolean usesGel(XmlPipelineDefinition definition) {
+        for (Operation operation : definition.operations()) {
+            if (usesGel(operation)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean usesGel(Operation operation) {
+        if (operation instanceof ProcessingOperation processingOperation) {
+            return processingOperation.conditions().stream().anyMatch(Condition::isGel)
+                    || processingOperation.errorHandlers().stream()
+                            .anyMatch(handler -> handler.condition() != null && handler.condition().isGel());
+        }
+        if (operation instanceof IteratorOperation iteratorOperation) {
+            return usesGel(iteratorOperation.operation());
+        }
+        if (operation instanceof ContainerOperation containerOperation) {
+            return containerOperation.subLines().stream()
+                    .anyMatch(subLine -> (subLine.condition() != null && subLine.condition().isGel())
+                            || usesGel(subLine.operation()));
+        }
+        if (operation instanceof IfElseOperation ifElseOperation) {
+            return ifElseOperation.conditionalOperations().stream()
+                    .anyMatch(conditionalOperation -> conditionalOperation.condition().isGel()
+                            || usesGel(conditionalOperation.operation()))
+                    || (ifElseOperation.elseOperation() != null && usesGel(ifElseOperation.elseOperation()));
+        }
+        if (operation instanceof SignalOperation signalOperation) {
+            return signalOperation.condition() != null && signalOperation.condition().isGel();
+        }
+        return false;
     }
 
     private void appendDependencies(StringBuilder code, JavaImportManager imports, XmlPipelineDefinition definition) {

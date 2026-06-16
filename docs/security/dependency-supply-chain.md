@@ -1,12 +1,12 @@
 # Dependency supply-chain controls
 
-Gear4J uses three complementary Gradle/CI controls:
+Gear4J keeps the following controls as release hardening options. They are not required for the MVP development loop and should not block ordinary feature work:
 
 1. dependency locking, to make resolved versions intentional;
 2. dependency verification, to verify checksums/signatures of resolved artifacts;
 3. SCA, to detect known vulnerable components.
 
-These controls solve different problems and should remain enabled together.
+These controls solve different problems. They should be considered together for a future strict Maven Central release gate, but strict enforcement remains an explicit release decision.
 
 ## Dependency locking
 
@@ -35,15 +35,11 @@ After it exists, CI can run:
 ./gradlew --no-daemon --dependency-verification strict help
 ```
 
-This is a lightweight smoke test. The `help` task configures the build and
+This is a lightweight smoke test for a future hardened release lane. The `help` task configures the build and
 resolves enough artifacts to validate that dependency verification is active, but
-it is not a replacement for the full build. The full build should still run:
+it is not part of the MVP development loop.
 
-```bash
-./gradlew --no-daemon check verifySupplyChainConfiguration
-```
-
-`verifySupplyChainConfiguration` reports missing supply-chain files by default. To resume strict enforcement later without
+`verifySupplyChainConfiguration` remains available for a future release lane. It reports missing supply-chain files by default. To resume strict enforcement later without
 rewriting the task, run it with:
 
 ```bash
@@ -51,7 +47,7 @@ rewriting the task, run it with:
 ```
 
 With this property enabled, missing `gradle.lockfile` or `gradle/verification-metadata.xml` fails the build. It remains
-separate from `check` so CI/release policy can decide when to make the hardening mandatory.
+outside the MVP `check` workflow so CI/release policy can decide when to make the hardening mandatory.
 
 ## SCA
 
@@ -67,11 +63,17 @@ that were trusted when metadata was generated.
 
 ## Recommended CI behavior
 
-For pull requests:
+For pull requests during the MVP phase:
+
+```bash
+./gradlew --no-daemon check
+```
+
+For release candidates, strict supply-chain checks can be re-enabled deliberately:
 
 ```bash
 ./gradlew --no-daemon --dependency-verification strict help
-./gradlew --no-daemon check verifySupplyChainConfiguration
+./gradlew --no-daemon verifySupplyChainConfiguration -Pgear4j.enforceSupplyChain=true
 ```
 
 For scheduled security scans:

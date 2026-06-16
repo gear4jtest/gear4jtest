@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
     public static final InMemoryAssemblyRunRepository INSTANCE = new InMemoryAssemblyRunRepository();
@@ -38,27 +38,15 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     @Override
-    public List<AssemblyRunRecord> findByPipelineId(String pipelineId) {
-        return executions.values().stream()
-                .filter(e -> pipelineId.equals(e.pipelineId()))
-                .collect(Collectors.toList());
-    }
-
-    @Override
     public List<AssemblyRunRecord> findByPipelineId(String pipelineId, PageRequest pageRequest) {
-        return window(findByPipelineId(pipelineId), pageRequest);
-    }
-
-    @Override
-    public List<AssemblyRunRecord> findByStatus(ExecutionStatus status) {
-        return executions.values().stream()
-                .filter(e -> status.equals(e.status()))
-                .collect(Collectors.toList());
+        return window(executions.values().stream()
+                .filter(e -> pipelineId.equals(e.pipelineId())), pageRequest);
     }
 
     @Override
     public List<AssemblyRunRecord> findByStatus(ExecutionStatus status, PageRequest pageRequest) {
-        return window(findByStatus(status), pageRequest);
+        return window(executions.values().stream()
+                .filter(e -> status.equals(e.status())), pageRequest);
     }
 
     @Override
@@ -68,34 +56,28 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     @Override
-    public List<AssemblyRunRecord> findAll() {
-        return executions.values().stream()
-                .toList();
-    }
-
-    @Override
     public List<AssemblyRunRecord> findAll(PageRequest pageRequest) {
-        return window(findAll(), pageRequest);
-    }
-
-    @Override
-    public List<StationLogRecord> findRootLogsByRunId(UUID runId) {
-        return findLogsByParent(runId, null);
+        return window(executions.values().stream(), pageRequest);
     }
 
     @Override
     public List<StationLogRecord> findRootLogsByRunId(UUID runId, PageRequest pageRequest) {
-        return window(findRootLogsByRunId(runId), pageRequest);
-    }
-
-    @Override
-    public List<StationLogRecord> findChildLogsByRunId(UUID runId, UUID parentLogId) {
-        return findLogsByParent(runId, parentLogId);
+        return window(logsByParent(runId, null), pageRequest);
     }
 
     @Override
     public List<StationLogRecord> findChildLogsByRunId(UUID runId, UUID parentLogId, PageRequest pageRequest) {
-        return window(findChildLogsByRunId(runId, parentLogId), pageRequest);
+        return window(logsByParent(runId, parentLogId), pageRequest);
+    }
+
+    @Override
+    public List<StationLogRecord> findAllLogsByRunId(UUID runId, PageRequest pageRequest) {
+        Map<UUID, StationLogRecord> byLogId = stationLogsByRunId.get(runId);
+        if (byLogId == null || byLogId.isEmpty()) {
+            return List.of();
+        }
+
+        return window(byLogId.values().stream().sorted(recordComparator()), pageRequest);
     }
 
     @Override
@@ -106,20 +88,8 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
         }
 
         return byLogId.values().stream()
-                .filter(record -> java.util.Objects.equals(parentLogId, record.parentOperationId()))
+                .filter(record -> Objects.equals(parentLogId, record.parentOperationId()))
                 .count();
-    }
-
-    @Override
-    public List<StationLogRecord> findAllLogsByRunId(UUID runId) {
-        Map<UUID, StationLogRecord> byLogId = stationLogsByRunId.get(runId);
-        if (byLogId == null || byLogId.isEmpty()) {
-            return List.of();
-        }
-
-        return byLogId.values().stream()
-                .sorted(recordComparator())
-                .toList();
     }
 
     public void saveOperationRecord(StationLogRecord record) {
@@ -141,21 +111,15 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
         }
     }
 
-    private List<StationLogRecord> findLogsByParent(UUID runId, UUID parentLogId) {
+    private Stream<StationLogRecord> logsByParent(UUID runId, UUID parentLogId) {
         Map<UUID, StationLogRecord> byLogId = stationLogsByRunId.get(runId);
         if (byLogId == null || byLogId.isEmpty()) {
-            return List.of();
+            return Stream.empty();
         }
 
         return byLogId.values().stream()
-                .filter(record -> {
-                    if (parentLogId == null) {
-                        return record.parentOperationId() == null;
-                    }
-                    return parentLogId.equals(record.parentOperationId());
-                })
-                .sorted(recordComparator())
-                .toList();
+                .filter(record -> Objects.equals(parentLogId, record.parentOperationId()))
+                .sorted(recordComparator());
     }
 
     private Comparator<StationLogRecord> recordComparator() {
@@ -163,8 +127,8 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
                 .thenComparing(StationLogRecord::id, Comparator.nullsLast(Comparator.naturalOrder()));
     }
 
-    private static <T> List<T> window(List<T> values, PageRequest pageRequest) {
+    private static <T> List<T> window(Stream<T> values, PageRequest pageRequest) {
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
-        return values.stream().skip(pageRequest.offset()).limit(pageRequest.limit()).toList();
+        return values.skip(pageRequest.offset()).limit(pageRequest.limit()).toList();
     }
 }

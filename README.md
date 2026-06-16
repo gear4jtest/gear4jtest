@@ -62,8 +62,9 @@ Common commands:
 ./gradlew :gear4jtest-xml:test
 ```
 
-Unit tests live under `src/test`. Docker-backed tests live under `src/integrationTest` and are executed by the
-`integrationTest` tasks. Maven Central staging writes artifacts under `build/staging-deploy`; deployment is handled by
+Unit tests live under `src/test`. Integration tests live under `src/integrationTest` and are executed by the
+`integrationTest` tasks. Tests that need databases use Testcontainers, so the container lifecycle is declared in the
+JUnit tests themselves. Maven Central staging writes artifacts under `build/staging-deploy`; deployment is handled by
 JReleaser from the `release.yml` GitHub Actions workflow.
 
 The Gradle wrapper must be complete in the working copy: `gradlew`, `gradle/wrapper/gradle-wrapper.jar` and

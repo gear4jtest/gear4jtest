@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   integration:
-    name: Docker-backed integration tests
+    name: Testcontainers integration tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

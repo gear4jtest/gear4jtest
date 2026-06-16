@@ -67,7 +67,24 @@ public record XmlPipelineDefinition(String id,
                                Condition condition,
                                Action action) {}
 
-    public record Condition(String expression, String description) {}
+    public record Condition(String expression, String language, String description) {
+
+        public static final String LANGUAGE_JAVA = "java";
+        public static final String LANGUAGE_GEL = "gel";
+
+        public Condition(String expression, String description) {
+            this(expression, LANGUAGE_JAVA, description);
+        }
+
+        public Condition {
+            language = language == null || language.isBlank() ? LANGUAGE_JAVA
+                    : language.toLowerCase(java.util.Locale.ROOT);
+        }
+
+        public boolean isGel() {
+            return LANGUAGE_GEL.equals(language);
+        }
+    }
 
     public record Action(String expression, String description) {}
 

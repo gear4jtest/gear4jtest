@@ -26,6 +26,11 @@ public final class XmlOperationChainTranslator implements OperationChainTranslat
                 XmlToJavaGenerator.trusted());
     }
 
+    public static XmlOperationChainTranslator gelOnly() {
+        return new XmlOperationChainTranslator(new AssemblyLineValidator(), new XmlPipelineParser(),
+                XmlToJavaGenerator.gelOnly());
+    }
+
     public XmlOperationChainTranslator(AssemblyLineValidator validator,
                                        XmlPipelineParser parser,
                                        XmlToJavaGenerator generator) {

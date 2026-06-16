@@ -205,9 +205,9 @@ Useful focused tasks:
 ./gradlew :gear4jtest-core:integrationTest
 ```
 
-Unit tests no longer start Docker Compose automatically. Docker-backed tests live under `src/integrationTest/java` and
-run through `integrationTest`, which owns the Docker-backed database lifecycle. Tags may still be used for secondary
-classification, but not for separating unit and integration test source sets.
+Unit tests live under `src/test/java`. Integration tests live under `src/integrationTest/java` and run through the
+`integrationTest` task. Tests that need databases use Testcontainers, so the container lifecycle is owned by JUnit
+tests themselves.
 
 ## Code style
 

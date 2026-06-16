@@ -93,6 +93,33 @@ class XmlPipelineParserTest {
     }
 
     @Test
+    void should_parse_gel_condition_language() {
+        // Given
+        String xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+                              id="gel"
+                              inputType="java.lang.String"
+                              outputType="java.lang.String">
+                  <operations>
+                    <signal id="stop" type="STOP" inputType="java.lang.String">
+                      <condition language="gel" expression="input == &quot;a&quot;"/>
+                    </signal>
+                  </operations>
+                </assemblyLine>
+                """;
+
+        // When
+        var definition = parser.parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+
+        // Then
+        assertThat(definition.operations()).singleElement().isInstanceOfSatisfying(SignalOperation.class, signal -> {
+            assertThat(signal.condition().language()).isEqualTo("gel");
+            assertThat(signal.condition().isGel()).isTrue();
+        });
+    }
+
+    @Test
     void should_parse_signal_operation() throws IOException {
         // Given / When
         var definition = parser.parse(resource("/samples/assembly-line-signal.xml"));

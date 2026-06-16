@@ -13,7 +13,7 @@ This module owns:
 - in-memory, filesystem and database artifact stores;
 - pipeline object/config repositories;
 - translator discovery through `OperationChainTranslator`;
-- JDT-based in-memory Java compilation;
+- generated-source compiler SPI with JDT and JDK `javax.tools` implementations;
 - generated-class loading and caching;
 - dependency injection into generated classes;
 - TEST/RUN publication mode handling.
@@ -32,7 +32,7 @@ Typical flow:
 3. Store metadata in the object repository.
 4. Resolve a translator based on media type.
 5. Translate external content into Java source.
-6. Compile Java source with `JDTInMemoryCompiler`.
+6. Compile Java source with the configured `GeneratedSourceCompiler`.
 7. Load compiled classes through an `InMemoryClassLoader`.
 8. Instantiate a `GeneratedAssemblyLine` with a no-arg constructor.
 9. Inject dependencies through `DependencyInjector`.
@@ -46,10 +46,36 @@ Typical flow:
 | `OperationChainTranslator`         | SPI implemented by external format modules.                                       |
 | `OperationChainTranslatorResolver` | Resolves translators explicitly or with `ServiceLoader`.                          |
 | `GeneratedAssemblyLine`            | Interface implemented by generated pipeline classes.                              |
-| `JDTInMemoryCompiler`              | Compiles generated Java source without writing class files to disk.               |
+| `GeneratedSourceCompiler`           | SPI for generated Java compilers.                                                |
+| `JDTInMemoryCompiler`              | Default Eclipse JDT compiler implementation.                                     |
+| `JavaxToolsGeneratedSourceCompiler` | Alternative compiler backed by the JDK `javax.tools.JavaCompiler`.               |
 | `ClassLoaderRegistry`              | Tracks generated classloaders and aliases.                                        |
 | `DependencyInjector`               | Injects external dependencies into generated pipeline instances.                  |
 | `ArtifactStore`                    | Stores raw external pipeline artifacts by content hash; supports bounded streaming writes. |
+
+
+## Compiler SPI
+
+`AssemblyLineManager` accepts a `GeneratedSourceCompiler`, so applications can
+replace the default JDT compiler without changing the manager. Built-in options:
+
+```java
+GeneratedSourceCompilers.jdt(classLoader);
+GeneratedSourceCompilers.javac(classLoader);
+GeneratedSourceCompilers.fromServiceLoader(classLoader);
+```
+
+`JavaxToolsGeneratedSourceCompiler` requires a JDK runtime with the standard
+`javax.tools.JavaCompiler` available. If an application runs on a stripped runtime
+image without `jdk.compiler`, keep using JDT or provide another compiler SPI
+implementation.
+
+## Classloader lifecycle
+
+`InMemoryClassLoaderRegistry` is bounded by default (`256` concrete loaders). It
+evicts least-recently-used unaliased loaders and protects aliased loaders so
+mutable aliases such as `al/<id>/RUN/latest` never point to a missing loader.
+Applications with high version churn can use `new InMemoryClassLoaderRegistry(maxLoaders)`.
 
 ## Artifact size policy
 

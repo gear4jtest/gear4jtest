@@ -27,3 +27,5 @@ Use these status markers consistently:
 Do not describe future-direction ideas as current behavior.
 
 - [Production readiness checklist](production-readiness.md)
+
+- [API, SPI and internal contracts](architecture/api-contracts.md)

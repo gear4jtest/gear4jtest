@@ -2,17 +2,18 @@ package io.github.gear4jtest.xml.generator;
 
 import java.util.Objects;
 
+import io.github.gear4jtest.xml.expression.GearExpressionParser;
 import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Action;
 import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Condition;
 import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ValueParameter;
 
 /**
- * Renders trusted XML Java snippets into generated Java source fragments.
+ * Renders XML expressions into generated Java source fragments.
  *
  * <p>
- * The class deliberately does not parse Java. It performs Gear4J-specific
- * normalization after delegating safety checks to {@link XmlJavaSourcePolicy}.
- * This keeps snippet handling separated from operation/station generation.
+ * Java snippets are delegated to {@link XmlJavaSourcePolicy}. GEL conditions
+ * are parsed at generation time and rendered through a generated allowlisted
+ * helper.
  * </p>
  */
 final class XmlExpressionRenderer {
@@ -31,6 +32,12 @@ final class XmlExpressionRenderer {
     }
 
     String conditionLambda(Condition condition, JavaImportManager imports) {
+        if (condition.isGel()) {
+            validateGel(condition.expression());
+            return "(input, ctx) -> evaluateGel(\"" + JavaStringEscaper.escapeJava(condition.expression())
+                    + "\", input, ctx)";
+        }
+        requireKnownLanguage(condition);
         String expression = normalizeExpression(condition.expression().trim(), imports);
         if (expression.contains("->")) {
             return expression;
@@ -42,7 +49,13 @@ final class XmlExpressionRenderer {
         if (condition == null) {
             return "sig -> true";
         }
+        if (condition.isGel()) {
+            validateGel(condition.expression());
+            return "sig -> evaluateGel(\"" + JavaStringEscaper.escapeJava(condition.expression())
+                    + "\", sig.getItem(), sig.getItemExecution())";
+        }
 
+        requireKnownLanguage(condition);
         String expression = normalizeExpression(condition.expression().trim(), imports);
         if (expression.contains("->")) {
             return expression;
@@ -90,6 +103,16 @@ final class XmlExpressionRenderer {
         normalized = replaceTypeReference(normalized, imports, "java.util.HashSet");
         normalized = replaceTypeReference(normalized, imports, "java.util.Arrays");
         return normalized;
+    }
+
+    private static void validateGel(String expression) {
+        GearExpressionParser.parse(expression);
+    }
+
+    private static void requireKnownLanguage(Condition condition) {
+        if (!Condition.LANGUAGE_JAVA.equals(condition.language())) {
+            throw new IllegalArgumentException("Unsupported XML condition language: " + condition.language());
+        }
     }
 
     private static String replaceTypeReference(String expression,

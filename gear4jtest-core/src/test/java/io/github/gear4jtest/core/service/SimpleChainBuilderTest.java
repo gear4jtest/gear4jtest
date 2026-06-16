@@ -29,6 +29,7 @@ import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepository;
+import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.service.steps.Step10;
 import io.github.gear4jtest.core.service.steps.Step11;
@@ -52,13 +53,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 public class SimpleChainBuilderTest {
-    private static StationLogRecord getRecordByOperationId(List<StationLogRecord> logs, String operationId) {
-        return logs.stream()
-                .filter(log -> operationId.equals(log.operationId()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("No StationLogRecord found for operationId=" + operationId));
-    }
-
     @Test
     public void test_v2() {
         // Given
@@ -331,7 +325,7 @@ public class SimpleChainBuilderTest {
         assertThat(result.getResult()).as("primary failed, fallback must run").containsExactly(null, "fallback-ok");
 
         List<StationLogRecord> allLogs = InMemoryAssemblyRunRepository.INSTANCE
-                .findAllLogsByRunId(result.getExecution().getId());
+                .findAllLogsByRunId(result.getExecution().getId(), PageRequest.first(50));
 
         assertThat(allLogs).extracting(StationLogRecord::operationId, StationLogRecord::status)
                 .contains(tuple("primary", StationLogStatus.FAILED), tuple("fallback", StationLogStatus.SUCCEEDED));

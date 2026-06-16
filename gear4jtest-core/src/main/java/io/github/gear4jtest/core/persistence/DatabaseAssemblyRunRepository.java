@@ -141,22 +141,9 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     @Override
-    public Optional<AssemblyRunView> findViewById(UUID runId) {
-        return findById(runId).map(run -> new AssemblyRunView(run, findRootLogsByRunId(runId)));
-    }
-
-    @Override
-    public List<AssemblyRunRecord> findByPipelineId(String pipelineId) {
-        try (Connection conn = dataSource.getConnection()) {
-            String sql = "SELECT " + ASSEMBLY_RUN_COLUMNS
-                    + " FROM assembly_run WHERE pipeline_id = ? ORDER BY start_time DESC";
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setString(1, pipelineId);
-                return executeQuery(stmt, databaseDialect);
-            }
-        } catch (SQLException e) {
-            throw persistenceFailure("find assembly runs for pipeline " + pipelineId, e);
-        }
+    public Optional<AssemblyRunView> findViewById(UUID runId, PageRequest rootLogsPage) {
+        Objects.requireNonNull(rootLogsPage, "rootLogsPage must not be null");
+        return findById(runId).map(run -> new AssemblyRunView(run, findRootLogsByRunId(runId, rootLogsPage)));
     }
 
     @Override
@@ -173,20 +160,6 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             }
         } catch (SQLException e) {
             throw persistenceFailure("find paged assembly runs for pipeline " + pipelineId, e);
-        }
-    }
-
-    @Override
-    public List<AssemblyRunRecord> findByStatus(ExecutionStatus status) {
-        try (Connection conn = dataSource.getConnection()) {
-            String sql = "SELECT " + ASSEMBLY_RUN_COLUMNS
-                    + " FROM assembly_run WHERE status = ? ORDER BY start_time DESC";
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setString(1, status.name());
-                return executeQuery(stmt, databaseDialect);
-            }
-        } catch (SQLException e) {
-            throw persistenceFailure("find assembly runs with status " + status, e);
         }
     }
 
@@ -233,18 +206,6 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     @Override
-    public List<AssemblyRunRecord> findAll() {
-        try (Connection conn = dataSource.getConnection()) {
-            String sql = "SELECT " + ASSEMBLY_RUN_COLUMNS + " FROM assembly_run";
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                return executeQuery(stmt, databaseDialect);
-            }
-        } catch (SQLException e) {
-            throw persistenceFailure("find all assembly runs", e);
-        }
-    }
-
-    @Override
     public List<AssemblyRunRecord> findAll(PageRequest pageRequest) {
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
         try (Connection conn = dataSource.getConnection()) {
@@ -256,19 +217,6 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             }
         } catch (SQLException e) {
             throw persistenceFailure("find paged assembly runs", e);
-        }
-    }
-
-    @Override
-    public List<StationLogRecord> findRootLogsByRunId(UUID runId) {
-        String sql = "SELECT " + STATION_LOG_COLUMNS + " FROM station_log WHERE pipeline_execution_id = ? "
-                + "AND parent_log_id IS NULL ORDER BY start_time, id";
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-            Gear4jDatabaseDialect dialect = databaseDialect;
-            dialect.setUuid(stmt, 1, runId);
-            return executeLogQuery(stmt, dialect);
-        } catch (SQLException e) {
-            throw persistenceFailure("find root station logs for run " + runId, e);
         }
     }
 
@@ -285,20 +233,6 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             return executeLogQuery(stmt, databaseDialect);
         } catch (SQLException e) {
             throw persistenceFailure("find paged root station logs for run " + runId, e);
-        }
-    }
-
-    @Override
-    public List<StationLogRecord> findChildLogsByRunId(UUID runId, UUID parentLogId) {
-        String sql = "SELECT " + STATION_LOG_COLUMNS + " FROM station_log WHERE pipeline_execution_id = ? "
-                + "AND parent_log_id = ? ORDER BY start_time, id";
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-            Gear4jDatabaseDialect dialect = databaseDialect;
-            dialect.setUuid(stmt, 1, runId);
-            dialect.setUuid(stmt, 2, parentLogId);
-            return executeLogQuery(stmt, dialect);
-        } catch (SQLException e) {
-            throw persistenceFailure("find child station logs for run " + runId + " and parent " + parentLogId, e);
         }
     }
 
@@ -321,6 +255,21 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     @Override
+    public List<StationLogRecord> findAllLogsByRunId(UUID runId, PageRequest pageRequest) {
+        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        String base = "SELECT " + STATION_LOG_COLUMNS
+                + " FROM station_log WHERE pipeline_execution_id = ? ORDER BY start_time, id";
+        String sql = databaseDialect.pagedSql(base);
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            databaseDialect.setUuid(stmt, 1, runId);
+            databaseDialect.bindPage(stmt, 2, pageRequest);
+            return executeLogQuery(stmt, databaseDialect);
+        } catch (SQLException e) {
+            throw persistenceFailure("find paged station logs for run " + runId, e);
+        }
+    }
+
+    @Override
     public long countChildLogsByRunId(UUID runId, UUID parentLogId) {
         String sql = parentLogId == null
                 ? "SELECT COUNT(*) FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id IS NULL"
@@ -339,19 +288,6 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             }
         } catch (SQLException e) {
             throw persistenceFailure("count child station logs for run " + runId + " and parent " + parentLogId, e);
-        }
-    }
-
-    @Override
-    public List<StationLogRecord> findAllLogsByRunId(UUID runId) {
-        String sql = "SELECT " + STATION_LOG_COLUMNS
-                + " FROM station_log WHERE pipeline_execution_id = ? ORDER BY start_time, id";
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-            Gear4jDatabaseDialect dialect = databaseDialect;
-            dialect.setUuid(stmt, 1, runId);
-            return executeLogQuery(stmt, dialect);
-        } catch (SQLException e) {
-            throw persistenceFailure("find all station logs for run " + runId, e);
         }
     }
 

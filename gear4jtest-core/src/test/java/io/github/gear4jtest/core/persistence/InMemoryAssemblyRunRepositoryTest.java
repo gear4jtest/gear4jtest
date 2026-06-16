@@ -49,6 +49,6 @@ class InMemoryAssemblyRunRepositoryTest {
         repo.clear();
 
         assertThat(repo.findById(id)).isEmpty();
-        assertThat(repo.findAllLogsByRunId(id)).isEmpty();
+        assertThat(repo.findRootLogsByRunId(id, PageRequest.first(10))).isEmpty();
     }
 }

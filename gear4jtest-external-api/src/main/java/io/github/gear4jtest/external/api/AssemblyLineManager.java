@@ -14,6 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import io.github.gear4jtest.external.api.artifact.Artifact;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
+import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompiler;
+import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompilers;
 import io.github.gear4jtest.external.api.compiler.JDTInMemoryCompiler;
 import io.github.gear4jtest.external.api.loader.ClassLoaderRegistry;
 import io.github.gear4jtest.external.api.loader.DependencyInjector;
@@ -40,7 +42,7 @@ public class AssemblyLineManager {
     private final ArtifactStoreProvider storeProvider;
     private final ClassLoaderRegistry classLoaderRegistry;
     private final OperationChainTranslatorResolver translatorResolver;
-    private final JDTInMemoryCompiler compiler;
+    private final GeneratedSourceCompiler compiler;
     private final DependencyInjector dependencyInjector;
     private final ClassLoader generatedClassParent;
     private final Map<String, StoreCacheEntry> storeCacheByAl = new ConcurrentHashMap<>();
@@ -63,7 +65,7 @@ public class AssemblyLineManager {
                                ArtifactStoreProvider storeProvider,
                                ClassLoaderRegistry classLoaderRegistry,
                                OperationChainTranslatorResolver translatorResolver,
-                               JDTInMemoryCompiler compiler,
+                               GeneratedSourceCompiler compiler,
                                DependencyInjector dependencyInjector,
                                ClassLoader generatedClassParent) {
         this(configRepo, objectRepo, chainTagRepo, storeProvider, classLoaderRegistry, translatorResolver, compiler,
@@ -76,7 +78,7 @@ public class AssemblyLineManager {
                                ArtifactStoreProvider storeProvider,
                                ClassLoaderRegistry classLoaderRegistry,
                                OperationChainTranslatorResolver translatorResolver,
-                               JDTInMemoryCompiler compiler,
+                               GeneratedSourceCompiler compiler,
                                DependencyInjector dependencyInjector,
                                ClassLoader generatedClassParent,
                                long maxArtifactSizeBytes) {
@@ -104,7 +106,7 @@ public class AssemblyLineManager {
         ClassLoader cl = contextClassLoader();
         var resolver = OperationChainTranslatorResolver.fromServiceLoader(cl);
         return new AssemblyLineManager(configRepo, objectRepo, chainTagRepo, storeProvider, classLoaderRegistry,
-                resolver, new JDTInMemoryCompiler(cl), new SimpleDependencyInjector(), cl);
+                resolver, GeneratedSourceCompilers.fromServiceLoader(cl), new SimpleDependencyInjector(), cl);
     }
 
     private static String normalizeMediaType(String mediaType) {

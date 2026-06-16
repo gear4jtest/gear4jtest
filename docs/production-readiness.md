@@ -21,9 +21,7 @@ and compile it into the application JVM.
 For untrusted or semi-trusted configuration, the intended security boundary is the
 Gear4J Expression Language (GEL): a restricted expression language with no
 reflection, class loading, file access, network access or arbitrary method calls.
-A minimal GEL parser/evaluator exists in `gear4jtest-xml`, but XML generation still
-uses trusted Java snippets today. Keep inline Java XML behind trusted provenance
-and code review until XML/GEL integration is completed.
+A minimal GEL parser/evaluator exists in `gear4jtest-xml`, and XML conditions can now opt into it with `language="gel"`. Keep all other inline Java XML behind trusted provenance and code review.
 
 ## Persistence
 
@@ -64,3 +62,7 @@ Executor-backed work is cooperative. Thread interruption and `Future.cancel(true
 only stop operators that are written to observe interruption or a cancellation
 signal. Long-running user code should be interruption-aware and should not rely on
 Gear4J forcibly terminating arbitrary blocking work.
+
+## Generated classloader cache
+
+The default `InMemoryClassLoaderRegistry` is bounded and evicts least-recently-used unaliased loaders. Aliased loaders are protected from automatic eviction. Tune the registry capacity for applications with frequent TEST/RUN version churn or long rollback windows.

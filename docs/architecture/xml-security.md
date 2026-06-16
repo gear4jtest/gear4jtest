@@ -12,7 +12,9 @@ new XmlToJavaGenerator();
 ```
 
 This rejects inline Java expressions and is the right default for untrusted XML,
-user-edited XML or BO-authored XML.
+user-edited XML or BO-authored XML. Conditions can still be expressed with the
+restricted Gear4J Expression Language by setting `language="gel"` on
+`<condition>` elements.
 
 ## Trusted XML
 
@@ -46,14 +48,23 @@ static imports and arbitrary method calls.
 For that reason, Gear4J currently exposes two honest modes:
 
 - trusted Java source generation;
-- no inline Java for untrusted definitions.
+- GEL-only/no-inline-Java for untrusted definitions.
 
 It does not claim to sandbox arbitrary Java snippets inside the same JVM.
 
-## Future direction: Gear4J Expression Language
+## Gear4J Expression Language
 
-The safer long-term direction is a dedicated Gear4J expression language for BO
-and untrusted definitions. That language should be parsed into a controlled AST
-and interpreted or compiled by Gear4J without arbitrary Java access.
+GEL is a dedicated expression language for BO and untrusted definitions. It is
+parsed into a controlled AST and evaluated by Gear4J without arbitrary Java
+access. The current XML integration supports GEL for conditions:
+
+```xml
+<condition language="gel" expression="input.status == 'ACTIVE'"/>
+```
+
+The MVP language supports literals, paths such as `input.foo` and
+`variables.foo`, equality/inequality, boolean operators and parentheses. It does
+not support Java method calls, constructors, type lookup, class literals, static
+access, reflection, I/O or networking.
 
 See [Gear4J expression language](../roadmap/gear-expression-language.md).

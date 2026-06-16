@@ -98,8 +98,16 @@
     </xs:sequence>
   </xs:complexType>
 
+  <xs:simpleType name="ExpressionLanguageEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="java"/>
+      <xs:enumeration value="gel"/>
+    </xs:restriction>
+  </xs:simpleType>
+
   <xs:complexType name="ConditionType">
     <xs:attribute name="expression" type="xs:string" use="required"/>
+    <xs:attribute name="language" type="tns:ExpressionLanguageEnum" default="java"/>
     <xs:attribute name="description" type="xs:string"/>
   </xs:complexType>
 

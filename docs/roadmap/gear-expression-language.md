@@ -90,11 +90,10 @@ Trusted XML can keep Java inline as an advanced developer feature.
 Untrusted XML should use Gear4J expressions instead:
 
 ```xml
-<condition expression="input.amount > param('threshold')" />
+<condition language="gel" expression="input.amount > param('threshold')" />
 ```
 
-The XML translator would validate and store the expression model, then generate
-trusted Java source or evaluate the expression directly at runtime.
+The XML translator validates the GEL expression at generation time and emits a generated helper that evaluates it at runtime without exposing arbitrary Java execution.
 
 ## BO integration direction
 

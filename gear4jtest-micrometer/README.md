@@ -26,11 +26,28 @@ gear4j.stations.completed
 gear4j.stations.duration
 gear4j.persistence.buffered.station.logs
 gear4j.persistence.active.runs
+gear4j.persistence.flushes.scheduled
+gear4j.persistence.flushes.completed
+gear4j.persistence.flushes.failed
+gear4j.persistence.appends.rejected
+gear4j.events.published
+gear4j.events.dispatched
+gear4j.events.dropped
+gear4j.events.queued
+gear4j.reactions.submitted
+gear4j.reactions.completed
+gear4j.reactions.dropped
+gear4j.reactions.failed
 ```
 
 These metrics are useful to confirm that Gear4J is active, track completed run
-and station latency, and ensure that persistence is not silently accumulating
-logs. They are still intentionally conservative.
+and station latency, and ensure that persistence and the best-effort event
+runtime are not silently accumulating or dropping work. They are still
+intentionally conservative.
+
+`PersistenceMetricsBinder` is auto-registered by the Spring Boot starter when a
+`DatabaseExecutionManager` and a `MeterRegistry` are available. `EventMetricsBinder`
+is explicit because `EventManager` is per-run runtime state today.
 
 ## Why the current surface is conservative
 

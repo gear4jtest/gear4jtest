@@ -19,8 +19,7 @@ It should not own artifact storage, publication workflow, classloader caching or
 belong to `gear4jtest-external-api` and `gear4jtest-core`.
 
 The module also contains the first minimal Gear Expression Language (GEL) parser/evaluator under
-`io.github.gear4jtest.xml.expression`. GEL is the intended safe alternative to inline Java for future untrusted or
-BO-authored expressions. XML generation still uses trusted Java snippets today.
+`io.github.gear4jtest.xml.expression`. GEL is the safe alternative to inline Java for untrusted or BO-authored conditions. Trusted Java snippets remain available only through explicit trusted generator/translator factories.
 
 ## Supported media types
 
@@ -83,7 +82,7 @@ var generator = XmlToJavaGenerator.trusted(
 ```
 
 The default `new XmlToJavaGenerator(...)` policy rejects inline Java snippets.
-Use `XmlToJavaGenerator.trusted(...)` only for reviewed XML definitions that are
+Use `language="gel"` on `<condition>` elements for untrusted XML conditions, and use `XmlToJavaGenerator.trusted(...)` only for reviewed XML definitions that are
 allowed to generate Java source. This keeps user-generated classes aligned with
 the consuming project when desired, without coupling them to Gear4J's own
 repository formatter.
@@ -97,7 +96,7 @@ META-INF/services/io.github.gear4jtest.external.api.translator.OperationChainTra
 ```
 
 This allows `OperationChainTranslatorResolver.fromServiceLoader(...)` to discover the XML translator. The discovered
-translator uses the restrictive no-inline-Java policy by default. For reviewed build-time or trusted runtime generation,
+translator uses the restrictive GEL-only/no-inline-Java policy by default. For reviewed build-time or trusted runtime generation,
 inject `XmlOperationChainTranslator.trusted()` explicitly.
 
 ## Samples

@@ -15,7 +15,7 @@ Phase 2 adds operational guardrails without changing Gear4J into a durable messa
 - JDBC station-log persistence has bounded buffers, periodic flushes and runtime statistics;
 - caller-provided persistence executors remain caller-owned and are not shut down by Gear4J;
 - persistence records and built-in event payload policies may apply a `SensitiveDataRedactor` before values leave the live runtime;
-- Docker-backed tests are run through `integrationTest`, not every unit `test` invocation.
+- integration tests are run through `integrationTest`, not every unit `test` invocation; database-dependent tests own their container lifecycle through Testcontainers.
 
 ## Execution outcome semantics
 

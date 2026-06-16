@@ -133,3 +133,41 @@ This compatibility behavior is not a schema validator. It does not prove that an
 existing table exactly matches the shipped SQL. Applications with strict DB
 requirements should manage the SQL through their own migration process and review
 it explicitly.
+
+## Runtime locking and transaction boundaries
+
+Gear4J-managed migrations now create and use a lightweight portable lock table:
+
+```text
+gear4j_schema_lock
+```
+
+Before applying migrations for a module, `JdbcSchemaMigrator` acquires a row lock
+on the module row with `SELECT ... FOR UPDATE`. This is intended to prevent two
+application instances from applying the same Gear4J schema migrations at the same
+time. The lock is scoped to the JDBC transaction and is released when the
+migration transaction commits or rolls back.
+
+When the migrator obtains a connection from a `DataSource`, it owns the migration
+transaction: it disables auto-commit, creates/updates the schema infrastructure,
+applies pending migrations and commits. If a caller passes a connection that is
+already inside a transaction, Gear4J does not commit or roll back the caller's
+transaction; the caller remains responsible for the transaction boundary.
+
+DDL transaction semantics still depend on the database. PostgreSQL and H2 can
+usually keep DDL transactional. MySQL/MariaDB and Oracle may auto-commit DDL in
+some cases, so the lock/history mechanism should be considered a robustness
+guardrail rather than a full Flyway/Liquibase replacement.
+
+## Baseline validation
+
+The compatibility baseline path is no longer a blind `tableExists` shortcut. If
+no Gear4J history exists and the initial table is already present, the migrator
+now validates that the tables declared by the first migration exist before
+recording that migration as applied. For the core schema, it also checks the
+minimum columns required by the runtime for `assembly_run` and `station_log`.
+
+This validation is intentionally minimal. It catches incomplete legacy schemas,
+but it does not replace a full schema diff tool. Production applications that
+need reviewed, reversible DB changes should still vendor/copy the Gear4J SQL into
+their own Flyway/Liquibase process and run Gear4J with `auto-create-tables=false`.

@@ -301,7 +301,9 @@ public final class XmlPipelineParser {
         if (element == null) {
             return null;
         }
-        return new Condition(required(element, "expression"), optional(element, "description"));
+        return new Condition(required(element, "expression"),
+                optionalOrDefault(element, "language", Condition.LANGUAGE_JAVA),
+                optional(element, "description"));
     }
 
     private Action parseAction(Element element) {

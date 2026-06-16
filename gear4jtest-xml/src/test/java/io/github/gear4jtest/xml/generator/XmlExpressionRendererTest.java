@@ -5,6 +5,7 @@ import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ValueParameter;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class XmlExpressionRendererTest {
     private final JavaImportManager imports = new JavaImportManager("io.test.generated");
@@ -24,6 +25,22 @@ class XmlExpressionRendererTest {
         // Given / When / Then
         assertThat(renderer.conditionLambda(new Condition("value -> value != null", null), imports))
                 .isEqualTo("value -> value != null");
+    }
+
+    @Test
+    void conditionLambda_shouldRenderGelConditionWithoutInlineJavaValidation() {
+        // Given / When / Then
+        assertThat(renderer.conditionLambda(new Condition("input.enabled == true", Condition.LANGUAGE_GEL, null),
+                                            imports))
+                .isEqualTo("(input, ctx) -> evaluateGel(\"input.enabled == true\", input, ctx)");
+    }
+
+    @Test
+    void conditionLambda_shouldRejectUnsupportedExpressionLanguage() {
+        // Given / When / Then
+        assertThatThrownBy(() -> renderer.conditionLambda(new Condition("input.ok", "spel", null), imports))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unsupported XML condition language");
     }
 
     @Test

@@ -1,61 +1,110 @@
 package io.github.gear4jtest.external.api.loader;
 
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Bounded in-memory registry for generated classloaders.
+ *
+ * <p>
+ * Entries are evicted with a best-effort LRU policy. Concrete loader ids that
+ * are currently referenced by an alias are protected from automatic eviction so
+ * a mutable alias such as {@code latest} never points to a missing loader.
+ * </p>
+ */
 public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
-    private final Map<String, Holder> byId = new ConcurrentHashMap<>();
-    private final Map<String, String> aliasToId = new ConcurrentHashMap<>();
+    public static final int DEFAULT_MAX_LOADERS = 256;
+
+    private final int maxLoaders;
+    private final LinkedHashMap<String, Holder> byId = new LinkedHashMap<>(16, 0.75f, true);
+    private final Map<String, String> aliasToId = new HashMap<>();
+    private long evictedLoaders;
+
+    public InMemoryClassLoaderRegistry() {
+        this(DEFAULT_MAX_LOADERS);
+    }
+
+    public InMemoryClassLoaderRegistry(int maxLoaders) {
+        if (maxLoaders < 1) {
+            throw new IllegalArgumentException("maxLoaders must be >= 1");
+        }
+        this.maxLoaders = maxLoaders;
+    }
 
     @Override
-    public ClassLoader get(String id) {
+    public synchronized ClassLoader get(String id) {
         var h = byId.get(id);
         return h == null ? null : h.loader;
     }
 
     @Override
-    public void register(String id, ClassLoader loader, GeneratedAssemblyLine bound) {
-        byId.put(id, new Holder(loader, bound));
+    public synchronized void register(String id, ClassLoader loader, GeneratedAssemblyLine bound) {
+        byId.put(id, new Holder(loader, bound, Instant.now()));
+        evictOverflow(id);
     }
 
     @Override
-    public void evict(String id) {
-        byId.remove(id);
+    public synchronized void evict(String id) {
+        if (byId.remove(id) != null) {
+            evictedLoaders++;
+        }
         aliasToId.values().removeIf(v -> v.equals(id));
     }
 
     @Override
-    public void setAlias(String alias, String id) {
+    public synchronized void setAlias(String alias, String id) {
         if (id == null) {
             aliasToId.remove(alias);
-        } else {
+        } else if (byId.containsKey(id)) {
             aliasToId.put(alias, id);
+        } else {
+            throw new IllegalArgumentException("Cannot alias missing classloader id: " + id);
         }
     }
 
     @Override
-    public void clearAlias(String alias) {
+    public synchronized void clearAlias(String alias) {
         aliasToId.remove(alias);
     }
 
     @Override
-    public String resolveAlias(String alias) {
+    public synchronized String resolveAlias(String alias) {
         return aliasToId.get(alias);
     }
 
     @Override
-    public GeneratedAssemblyLine getBoundAssemblyLine(String id) {
+    public synchronized GeneratedAssemblyLine getBoundAssemblyLine(String id) {
         var h = byId.get(id);
         return h == null ? null : h.chain;
     }
 
-    private static final class Holder {
-        final ClassLoader loader;
-        final GeneratedAssemblyLine chain;
+    public synchronized RegistryStats snapshotStats() {
+        return new RegistryStats(byId.size(), aliasToId.size(), maxLoaders, evictedLoaders);
+    }
 
-        Holder(ClassLoader l, GeneratedAssemblyLine c) {
-            this.loader = l;
-            this.chain = c;
+    private void evictOverflow(String protectedId) {
+        while (byId.size() > maxLoaders) {
+            String candidate = firstEvictableId(protectedId);
+            if (candidate == null) {
+                return;
+            }
+            byId.remove(candidate);
+            evictedLoaders++;
         }
     }
+
+    private String firstEvictableId(String protectedId) {
+        for (String id : byId.keySet()) {
+            if (!id.equals(protectedId) && !aliasToId.containsValue(id)) {
+                return id;
+            }
+        }
+        return null;
+    }
+
+    public record RegistryStats(int cachedLoaders, int aliases, int maxLoaders, long evictedLoaders) {}
+
+    private record Holder(ClassLoader loader, GeneratedAssemblyLine chain, Instant registeredAt) {}
 }

@@ -24,6 +24,7 @@ import io.github.gear4jtest.core.persistence.AssemblyRunView;
 import io.github.gear4jtest.core.persistence.DatabaseAssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.service.steps.Step10;
 import io.github.gear4jtest.core.service.steps.Step3;
@@ -34,6 +35,9 @@ import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static io.github.gear4jtest.core.api.util.ElementModelBuilders.chain;
 import static io.github.gear4jtest.core.api.util.ElementModelBuilders.configuration;
@@ -44,8 +48,15 @@ import static io.github.gear4jtest.core.api.util.ElementModelBuilders.processing
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+@Testcontainers(disabledWithoutDocker = true)
 public class SimpleChainBuilderDataSourceIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleChainBuilderDataSourceIT.class);
+
+    @Container
+    private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
+            .withDatabaseName("gear4jtest")
+            .withUsername("gear4jtest")
+            .withPassword("gear4jtest");
 
     private static StationLogRecord getRecordByOperationId(List<StationLogRecord> logs, String operationId) {
         return logs.stream()
@@ -58,10 +69,9 @@ public class SimpleChainBuilderDataSourceIT {
     public void test_v2_with_datasource() {
         // Given
         PGSimpleDataSource dataSource = new PGSimpleDataSource();
-        dataSource.setUser("postgres");
-        dataSource.setPassword("postgres");
-        dataSource.setUrl("jdbc:postgresql://localhost:5432/gear4jtest");
-        dataSource.setDatabaseName("gear4jtest");
+        dataSource.setUser(POSTGRES.getUsername());
+        dataSource.setPassword(POSTGRES.getPassword());
+        dataSource.setUrl(POSTGRES.getJdbcUrl());
 
         var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
                 .then(processingOperation("step3", Step3.class).parameter(Step3::getParam, "a")
@@ -116,7 +126,7 @@ public class SimpleChainBuilderDataSourceIT {
                 .containsExactly(result.getExecution().getId(), "test", context, context, List.of(List.of("")),
                                  ExecutionStatus.SUCCEEDED);
 
-        var pipelineDetails = repository.findViewById(result.getExecution().getId());
+        var pipelineDetails = repository.findViewById(result.getExecution().getId(), PageRequest.first(100));
         assertThat(pipelineDetails).isPresent().get().extracting(AssemblyRunView::getRootOperations).asList().hasSize(1)
                 .first().asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(StationLogRecord.class))
                 .extracting(StationLogRecord::pipelineExecutionId, StationLogRecord::operationId,
@@ -124,11 +134,13 @@ public class SimpleChainBuilderDataSourceIT {
                 .containsExactly(result.getExecution().getId(), "test:root", null, StationLogStatus.SUCCEEDED,
                                  Map.of());
 
-        List<StationLogRecord> rootLogs = repository.findRootLogsByRunId(result.getExecution().getId());
+        List<StationLogRecord> rootLogs = repository.findRootLogsByRunId(result.getExecution().getId(),
+                                                                         PageRequest.first(100));
         var rootSequenceExecutionRecord = getRecordByOperationId(rootLogs, "test:root");
 
         List<StationLogRecord> rootChildren = repository.findChildLogsByRunId(result.getExecution().getId(),
-                                                                              rootSequenceExecutionRecord.id());
+                                                                              rootSequenceExecutionRecord.id(),
+                                                                              PageRequest.first(100));
 
         assertThat(rootChildren)
                 .extracting(StationLogRecord::pipelineExecutionId, StationLogRecord::operationId,
@@ -148,7 +160,8 @@ public class SimpleChainBuilderDataSourceIT {
         var iteratorExecutionRecord = getRecordByOperationId(rootChildren, "iterator");
 
         List<StationLogRecord> iteratorChildren = repository.findChildLogsByRunId(result.getExecution().getId(),
-                                                                                  iteratorExecutionRecord.id());
+                                                                                  iteratorExecutionRecord.id(),
+                                                                                  PageRequest.first(100));
 
         assertThat(iteratorChildren)
                 .extracting(StationLogRecord::pipelineExecutionId, StationLogRecord::operationId,
@@ -162,7 +175,8 @@ public class SimpleChainBuilderDataSourceIT {
         var sequenceExecutionRecord = getRecordByOperationId(iteratorChildren, "sequence");
 
         List<StationLogRecord> sequenceChildren = repository.findChildLogsByRunId(result.getExecution().getId(),
-                                                                                  sequenceExecutionRecord.id());
+                                                                                  sequenceExecutionRecord.id(),
+                                                                                  PageRequest.first(100));
 
         assertThat(sequenceChildren)
                 .extracting(StationLogRecord::pipelineExecutionId, StationLogRecord::operationId,

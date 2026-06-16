@@ -11,7 +11,7 @@ The repository is hosted on GitHub and the library is intended to be consumable 
 The build must therefore provide:
 
 - fast unit validation on pull requests;
-- separated Docker-backed integration tests;
+- separated integration tests, with database lifecycles owned by Testcontainers;
 - dependency vulnerability scanning;
 - deterministic Maven artifact staging;
 - publication to Maven Central from tags or manual release workflow.
@@ -38,7 +38,7 @@ Reasons:
 ## Workflows
 
 - `ci.yml`: unit build and checks on push and pull request.
-- `integration.yml`: Docker-backed integration tests using the dedicated `integrationTest` source set.
+- `integration.yml`: integration tests using the dedicated `integrationTest` source set; database-dependent tests use Testcontainers.
 - `security.yml`: scheduled/manual OWASP Dependency-Check scan.
 - `release.yml`: verifies, stages and publishes artifacts to Maven Central.
 

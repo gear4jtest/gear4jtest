@@ -25,7 +25,7 @@ import org.eclipse.jdt.internal.compiler.lookup.LookupEnvironment;
 import org.eclipse.jdt.internal.compiler.lookup.ModuleBinding;
 import org.eclipse.jdt.internal.compiler.problem.DefaultProblemFactory;
 
-public class JDTInMemoryCompiler {
+public class JDTInMemoryCompiler implements GeneratedSourceCompiler {
     private final ClassLoader parentClassLoader;
     private final InMemoryNameEnvironment nameEnvironment;
 
@@ -62,6 +62,7 @@ public class JDTInMemoryCompiler {
      * @param sourceCode UTF-8 Java source bytes
      * @return compiled class bytes by fully-qualified class name
      */
+    @Override
     public Map<String, byte[]> compile(String className, byte[] sourceCode) {
         try {
             InMemoryCompilationUnit unit = new InMemoryCompilationUnit(className, sourceCode);
