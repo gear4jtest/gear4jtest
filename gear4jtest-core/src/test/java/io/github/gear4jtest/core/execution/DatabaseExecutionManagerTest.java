@@ -89,7 +89,7 @@ class DatabaseExecutionManagerTest {
 
             // Then
             assertThat(persisted.await(2, TimeUnit.SECONDS)).isTrue();
-            assertThat(manager.snapshotStats().completedFlushes()).isGreaterThanOrEqualTo(1L);
+            awaitCompletedFlushes(manager, 1L);
         } finally {
             manager.shutdown(Duration.ofSeconds(1));
             flushExecutor.shutdownNow();
@@ -200,6 +200,21 @@ class DatabaseExecutionManagerTest {
             flushExecutor.shutdownNow();
             scheduler.shutdownNow();
         }
+    }
+
+    private static void awaitCompletedFlushes(DatabaseExecutionManager manager, long expectedCompletedFlushes)
+            throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        PersistenceRuntimeStats stats;
+        do {
+            stats = manager.snapshotStats();
+            if (stats.completedFlushes() >= expectedCompletedFlushes) {
+                return;
+            }
+            TimeUnit.MILLISECONDS.sleep(10);
+        } while (System.nanoTime() < deadline);
+
+        assertThat(stats.completedFlushes()).isGreaterThanOrEqualTo(expectedCompletedFlushes);
     }
 
     private static void awaitStats(DatabaseExecutionManager manager,
