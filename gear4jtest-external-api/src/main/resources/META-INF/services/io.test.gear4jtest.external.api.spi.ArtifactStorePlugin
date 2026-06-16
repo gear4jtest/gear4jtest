@@ -1,3 +1,0 @@
-io.test.gear4jtest.external.api.spi.InMemoryArtifactStorePlugin
-io.test.gear4jtest.external.api.spi.FilesystemArtifactStorePlugin
-io.test.gear4jtest.external.api.spi.DatabaseArtifactStorePlugin

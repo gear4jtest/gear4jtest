@@ -38,3 +38,4 @@ CREATE INDEX idx_pe_pipeline_id ON assembly_run (pipeline_id);
 CREATE INDEX idx_pe_status ON assembly_run (status);
 CREATE INDEX idx_oe_pipeline_id ON station_log (pipeline_execution_id);
 CREATE INDEX idx_station_log_exec_parent ON station_log (pipeline_execution_id, parent_log_id);
+CREATE INDEX idx_station_log_run_start ON station_log (pipeline_execution_id, start_time, id);

@@ -1,0 +1,159 @@
+package io.github.gear4jtest.external.api;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import io.github.gear4jtest.external.api.artifact.InMemoryArtifactStore;
+import io.github.gear4jtest.external.api.loader.ClassLoaderRegistry;
+import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
+import io.github.gear4jtest.external.api.model.OperationChainConfig;
+import io.github.gear4jtest.external.api.model.OperationChainObject;
+import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
+import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
+import io.github.gear4jtest.external.api.repository.OperationChainTagRepository;
+import io.github.gear4jtest.external.api.storage.ArtifactStoreProvider;
+import io.github.gear4jtest.external.api.translator.OperationChainTranslatorResolver;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class AssemblyLineManagerTest {
+    private final OperationChainConfigRepository configRepository = mock(OperationChainConfigRepository.class);
+    private final OperationChainObjectRepository objectRepository = mock(OperationChainObjectRepository.class);
+    private final OperationChainTagRepository tagRepository = mock(OperationChainTagRepository.class);
+    private final ArtifactStoreProvider storeProvider = mock(ArtifactStoreProvider.class);
+    private final ClassLoaderRegistry classLoaderRegistry = mock(ClassLoaderRegistry.class);
+    private final OperationChainTranslatorResolver translatorResolver = mock(OperationChainTranslatorResolver.class);
+
+    @Test
+    void registerAssemblyLine_shouldStoreArtifactPersistObjectAndTags() throws Exception {
+        // Given
+        InMemoryArtifactStore artifactStore = new InMemoryArtifactStore();
+        AssemblyLineManager manager = manager();
+        when(configRepository.findByAssemblyLineId("line")).thenReturn(Optional.of(memoryConfig("line")));
+        when(storeProvider.forConfig(any())).thenReturn(artifactStore);
+        byte[] content = "<pipeline/>".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        // When
+        String hash = manager.registerAssemblyLine("line", "1.0.0", ExecutionMode.TEST, content,
+                                                   "application/xml", List.of("fast", "xml"), "tester");
+
+        // Then
+        assertThat(artifactStore.exists(hash)).as("the external artifact is stored before publishing metadata")
+                .isTrue();
+        ArgumentCaptor<OperationChainObject> objectCaptor = ArgumentCaptor.forClass(OperationChainObject.class);
+        verify(objectRepository).insert(objectCaptor.capture());
+        assertThat(objectCaptor.getValue())
+                .as("published TEST metadata points to the stored artifact hash")
+                .extracting(OperationChainObject::alId, OperationChainObject::version, OperationChainObject::mode,
+                            OperationChainObject::contentHash, OperationChainObject::sizeBytes,
+                            OperationChainObject::mimeType, OperationChainObject::createdBy)
+                .containsExactly("line", "1.0.0", ExecutionMode.TEST, hash, (long) content.length,
+                                 "application/xml", "tester");
+        verify(tagRepository).addTag("line", "fast");
+        verify(tagRepository).addTag("line", "xml");
+    }
+
+    @Test
+    void registerAssemblyLine_shouldRejectDirectRunPublicationWhenConfigDoesNotAllowIt() {
+        // Given
+        AssemblyLineManager manager = manager();
+        when(configRepository.findByAssemblyLineId("line")).thenReturn(Optional.of(memoryConfig("line")));
+
+        // When / Then
+        assertThatThrownBy(() -> manager.registerAssemblyLine("line", "1.0.0", ExecutionMode.RUN, new byte[] { 1 },
+                                                              "application/xml", List.of(), "tester"))
+                .isInstanceOf(AssemblyLineManager.PolicyViolationException.class)
+                .hasMessageContaining("Direct RUN publication is disabled");
+    }
+
+    @Test
+    void promoteTestToRun_shouldPublishRunObjectAndInvalidateLatestAlias() throws Exception {
+        // Given
+        AssemblyLineManager manager = manager();
+        OperationChainObject testObject = object("line", "1.0.0", ExecutionMode.TEST, "a".repeat(64), 42L);
+        when(objectRepository.find("line", "1.0.0", ExecutionMode.TEST)).thenReturn(Optional.of(testObject));
+        when(objectRepository.exists("line", "1.0.0", ExecutionMode.RUN)).thenReturn(false);
+
+        // When
+        manager.promoteTestToRun("line", "1.0.0", "promoter");
+
+        // Then
+        ArgumentCaptor<OperationChainObject> objectCaptor = ArgumentCaptor.forClass(OperationChainObject.class);
+        verify(objectRepository).insert(objectCaptor.capture());
+        assertThat(objectCaptor.getValue())
+                .as("promotion creates a RUN object reusing the tested artifact")
+                .extracting(OperationChainObject::alId, OperationChainObject::version, OperationChainObject::mode,
+                            OperationChainObject::contentHash, OperationChainObject::sizeBytes,
+                            OperationChainObject::createdBy)
+                .containsExactly("line", "1.0.0", ExecutionMode.RUN, testObject.contentHash(),
+                                 testObject.sizeBytes(), "promoter");
+        verify(classLoaderRegistry).clearAlias("al/line/RUN/latest");
+    }
+
+    @Test
+    void getOperationChain_shouldReturnBoundCachedAssemblyLineWithoutRecompiling() throws Exception {
+        // Given
+        AssemblyLineManager manager = manager();
+        OperationChainObject runObject = object("line", "1.0.0", ExecutionMode.RUN, "b".repeat(64), 42L);
+        String loaderId = AssemblyLineIdentifiers.toInternalLoaderId(runObject);
+        GeneratedAssemblyLine generated = mock(GeneratedAssemblyLine.class);
+        when(objectRepository.find("line", "1.0.0", ExecutionMode.RUN)).thenReturn(Optional.of(runObject));
+        when(classLoaderRegistry.get(loaderId)).thenReturn(getClass().getClassLoader());
+        when(classLoaderRegistry.getBoundAssemblyLine(loaderId)).thenReturn(generated);
+
+        // When
+        GeneratedAssemblyLine result = manager.getOperationChain("line", "1.0.0", ExecutionMode.RUN);
+
+        // Then
+        assertThat(result).as("cached generated assembly line is returned directly").isSameAs(generated);
+        verify(classLoaderRegistry).setAlias("al/line/RUN/latest", loaderId);
+    }
+
+    @Test
+    void getOperationChainLatestRun_shouldClearStaleAliasAndBindCurrentRun() throws Exception {
+        // Given
+        AssemblyLineManager manager = manager();
+        OperationChainObject latestRun = object("line", "2.0.0", ExecutionMode.RUN, "c".repeat(64), 42L);
+        String loaderId = AssemblyLineIdentifiers.toInternalLoaderId(latestRun);
+        GeneratedAssemblyLine generated = mock(GeneratedAssemblyLine.class);
+        when(objectRepository.findLatestRun("line")).thenReturn(Optional.of(latestRun));
+        when(classLoaderRegistry.resolveAlias("al/line/RUN/latest")).thenReturn("stale-loader-id");
+        when(classLoaderRegistry.get(loaderId)).thenReturn(getClass().getClassLoader());
+        when(classLoaderRegistry.getBoundAssemblyLine(loaderId)).thenReturn(generated);
+
+        // When
+        GeneratedAssemblyLine result = manager.getOperationChain("line", ExecutionMode.RUN);
+
+        // Then
+        assertThat(result).as("latest RUN resolves to the current persisted object").isSameAs(generated);
+        verify(classLoaderRegistry).clearAlias("al/line/RUN/latest");
+        verify(classLoaderRegistry).setAlias("al/line/RUN/latest", loaderId);
+    }
+
+    private AssemblyLineManager manager() {
+        return new AssemblyLineManager(configRepository, objectRepository, tagRepository, storeProvider,
+                classLoaderRegistry, translatorResolver);
+    }
+
+    private static OperationChainConfig memoryConfig(String alId) {
+        return new OperationChainConfig(alId, false, StoreType.MEMORY, Map.of());
+    }
+
+    private static OperationChainObject object(String alId,
+                                               String version,
+                                               ExecutionMode mode,
+                                               String contentHash,
+                                               long sizeBytes) {
+        return new OperationChainObject(null, alId, version, mode, contentHash, sizeBytes, "application/xml",
+                Instant.parse("2026-06-16T00:00:00Z"), "tester", Instant.parse("2026-06-16T00:00:00Z"));
+    }
+}

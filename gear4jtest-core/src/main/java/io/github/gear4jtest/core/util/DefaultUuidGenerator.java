@@ -7,47 +7,49 @@ import java.util.concurrent.ThreadLocalRandom;
  * Default dependency-free UUIDv7 generator used by Gear4J.
  *
  * <p>
- * The implementation favors monotonic, time-ordered identifiers without
- * introducing an external dependency. Users who need different throughput or
- * generation semantics can provide their own {@code IdGenerator}.
+ * The implementation favors per-thread monotonic, time-ordered identifiers
+ * without introducing an external dependency or a JVM-wide generation lock.
+ * Users who need different throughput or generation semantics can provide their
+ * own {@code IdGenerator}.
  * </p>
  */
 public final class DefaultUuidGenerator {
-    private static final Object LOCK = new Object();
-    private static long lastTimestampMs = -1L;
-    private static int counter = 0;
+    private static final ThreadLocal<State> STATE = ThreadLocal.withInitial(State::new);
 
     private DefaultUuidGenerator() {
     }
 
     public static UUID generate() {
+        State state = STATE.get();
         long ts = System.currentTimeMillis();
-        long seq;
 
-        synchronized (LOCK) {
-            if (ts > lastTimestampMs) {
-                lastTimestampMs = ts;
-                counter = 0;
-            } else {
-                ts = lastTimestampMs;
-                counter++;
-                // Guard against sequence overflow within the same millisecond.
-                if (counter > 0x0FFF) {
-                    while (ts <= lastTimestampMs) {
-                        Thread.onSpinWait(); // Java 9+ hint
-                        ts = System.currentTimeMillis();
-                    }
-                    lastTimestampMs = ts;
-                    counter = 0;
+        if (ts > state.lastTimestampMs) {
+            state.lastTimestampMs = ts;
+            state.counter = 0;
+        } else {
+            ts = state.lastTimestampMs;
+            state.counter++;
+            // Guard against sequence overflow within the same millisecond. The
+            // wait is per-thread, avoiding the previous JVM-wide lock.
+            if (state.counter > 0x0FFF) {
+                while (ts <= state.lastTimestampMs) {
+                    Thread.onSpinWait();
+                    ts = System.currentTimeMillis();
                 }
+                state.lastTimestampMs = ts;
+                state.counter = 0;
             }
-            seq = counter;
         }
 
         long rnd = ThreadLocalRandom.current().nextLong();
-        long msb = (ts << 16) | 0x7000L | (seq & 0x0FFFL);
+        long msb = (ts << 16) | 0x7000L | (state.counter & 0x0FFFL);
         long lsb = (rnd & 0x3FFFFFFFFFFFFFFFL) | 0x8000000000000000L;
 
         return new UUID(msb, lsb);
+    }
+
+    private static final class State {
+        private long lastTimestampMs = -1L;
+        private int counter;
     }
 }

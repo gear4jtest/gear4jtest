@@ -14,6 +14,7 @@ import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.persistence.migration.JdbcSchemaMigrator;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -27,6 +28,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Tag("integration")
+@Tag("docker")
 @Testcontainers(disabledWithoutDocker = true)
 class DatabaseAssemblyRunRepositoryMultiDialectIT {
     @Container

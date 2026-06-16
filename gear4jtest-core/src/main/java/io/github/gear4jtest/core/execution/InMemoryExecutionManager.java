@@ -14,7 +14,7 @@ public class InMemoryExecutionManager implements AssemblyRunManager {
     private final SensitiveDataRedactor redactor;
 
     public InMemoryExecutionManager() {
-        this(InMemoryAssemblyRunRepository.INSTANCE, SensitiveDataRedactor.none());
+        this(new InMemoryAssemblyRunRepository(), SensitiveDataRedactor.none());
     }
 
     public InMemoryExecutionManager(InMemoryAssemblyRunRepository repository) {

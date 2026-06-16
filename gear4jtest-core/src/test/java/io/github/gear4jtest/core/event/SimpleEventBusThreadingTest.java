@@ -9,9 +9,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Timeout(value = 10, unit = TimeUnit.SECONDS)
 class SimpleEventBusThreadingTest {
     @Test
     void reactions_shouldRunOffThePublishingThread() throws Exception {

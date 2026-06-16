@@ -31,6 +31,7 @@ import io.github.gear4jtest.core.service.steps.Step3;
 import io.github.gear4jtest.core.service.steps.Step8;
 import io.github.gear4jtest.core.service.steps.Step9;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
@@ -48,6 +49,8 @@ import static io.github.gear4jtest.core.api.util.ElementModelBuilders.processing
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+@Tag("integration")
+@Tag("docker")
 @Testcontainers(disabledWithoutDocker = true)
 public class SimpleChainBuilderDataSourceIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleChainBuilderDataSourceIT.class);
@@ -66,7 +69,7 @@ public class SimpleChainBuilderDataSourceIT {
     }
 
     @Test
-    public void test_v2_with_datasource() {
+    public void pipelineWithJdbcPersistence_shouldPersistRunAndStationLogs() {
         // Given
         PGSimpleDataSource dataSource = new PGSimpleDataSource();
         dataSource.setUser(POSTGRES.getUsername());

@@ -7,6 +7,7 @@ import java.util.concurrent.CompletableFuture;
 
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.exception.SideComputeExecutionException;
 import io.github.gear4jtest.core.exception.SideComputeTimeoutException;
 import org.junit.jupiter.api.Test;
 
@@ -115,4 +116,66 @@ class SideComputeWaitProcessorTest {
 
         assertThat(globalMap).doesNotContainKey(SideComputeKeys.valueKey("slow-key"));
     }
+
+    @Test
+    void beforeExecution_shouldUseDefaultSafetyTimeoutWhenNoTimeoutIsConfigured() {
+        // Given
+        ExecutionContext execCtx = mock(ExecutionContext.class);
+        StationExecutionContext opCtx = mock(StationExecutionContext.class);
+
+        SideComputeContext scCtx = new SideComputeContext();
+        Map<String, Object> globalMap = new HashMap<>();
+
+        when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getSideComputeContext()).thenReturn(scCtx);
+        when(execCtx.getContext()).thenReturn(globalMap);
+
+        scCtx.getOrCreateFuture("never-completes");
+
+        SideComputeWaitProcessor processor = SideComputeWaitProcessor.builder("never-completes")
+                .timeout(null)
+                .safetyTimeout(Duration.ofMillis(50))
+                .onTimeoutFail()
+                .build();
+
+        // When / Then
+        assertThatThrownBy(() -> processor.beforeExecution("input", opCtx))
+                .isInstanceOf(SideComputeTimeoutException.class)
+                .hasMessageContaining("never-completes")
+                .hasMessageContaining("PT0.05S");
+    }
+
+    @Test
+    void beforeExecution_shouldRestoreInterruptFlagWhenInterruptedWhileWaiting() {
+        // Given
+        ExecutionContext execCtx = mock(ExecutionContext.class);
+        StationExecutionContext opCtx = mock(StationExecutionContext.class);
+
+        SideComputeContext scCtx = new SideComputeContext();
+        Map<String, Object> globalMap = new HashMap<>();
+
+        when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getSideComputeContext()).thenReturn(scCtx);
+        when(execCtx.getContext()).thenReturn(globalMap);
+
+        scCtx.getOrCreateFuture("interrupted-key");
+        SideComputeWaitProcessor processor = SideComputeWaitProcessor.builder("interrupted-key")
+                .timeout(Duration.ofSeconds(1))
+                .build();
+
+        try {
+            Thread.currentThread().interrupt();
+
+            // When / Then
+            assertThatThrownBy(() -> processor.beforeExecution("input", opCtx))
+                    .isInstanceOf(SideComputeExecutionException.class)
+                    .hasRootCauseInstanceOf(InterruptedException.class);
+            assertThat(Thread.currentThread().isInterrupted())
+                    .as("the interrupted flag is restored before propagating the failure")
+                    .isTrue();
+        } finally {
+            Thread.interrupted();
+        }
+    }
+
 }

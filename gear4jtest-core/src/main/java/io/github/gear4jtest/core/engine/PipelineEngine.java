@@ -33,6 +33,7 @@ import io.github.gear4jtest.core.spi.factory.IdGenerator;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 public class PipelineEngine implements PipelineExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineEngine.class);
@@ -112,8 +113,6 @@ public class PipelineEngine implements PipelineExecutor {
     private <IN, OUT> ExecutionResult<OUT> executeWithCallStack(AssemblyLine<IN, OUT> pipeline,
                                                                 RunRequest request,
                                                                 PipelineCallStack callStack) {
-        logStart(pipeline, request);
-
         ResolvedExtensions resolvedExtensions = extensionResolver.resolve(pipeline, request);
         EventHandlingDefinition eventHandlingDefinition = OptionalEventHandlingDefinition.from(pipeline);
         EventManager eventManager = new EventManager(eventHandlingDefinition, executionContextRegistry);
@@ -122,12 +121,15 @@ public class PipelineEngine implements PipelineExecutor {
                                                                        eventHandlingDefinition, eventManager);
         ExecutionContext context = runContext.context();
 
-        try {
-            runContext.execution().setStartTime(Instant.now());
-            runContext.execution().setStatus(ExecutionStatus.RUNNING);
-            return executeRegisteredContext(pipeline, request, resolvedExtensions, support, runContext);
-        } finally {
-            shutdownEventRuntimeAndCleanup(eventManager, context);
+        try (MdcScope ignored = MdcScope.open(context)) {
+            logStart(pipeline, request);
+            try {
+                runContext.execution().setStartTime(Instant.now());
+                runContext.execution().setStatus(ExecutionStatus.RUNNING);
+                return executeRegisteredContext(pipeline, request, resolvedExtensions, support, runContext);
+            } finally {
+                shutdownEventRuntimeAndCleanup(eventManager, context);
+            }
         }
     }
 
@@ -189,6 +191,45 @@ public class PipelineEngine implements PipelineExecutor {
             LOGGER.debug("Starting pipeline execution. pipelineId={}, rootStation={}, requestExtensions={}",
                          pipeline.getId(), pipeline.getRootStation() != null ? pipeline.getRootStation().getId() : null,
                          request.getExtensions().stream().map(e -> e.getClass().getSimpleName()).toList());
+        }
+    }
+
+    private static final class MdcScope implements AutoCloseable {
+        private static final String EXECUTION_ID = "gear4j.executionId";
+        private static final String PIPELINE_ID = "gear4j.pipelineId";
+
+        private final String previousExecutionId;
+        private final String previousPipelineId;
+
+        private MdcScope(String previousExecutionId, String previousPipelineId) {
+            this.previousExecutionId = previousExecutionId;
+            this.previousPipelineId = previousPipelineId;
+        }
+
+        static MdcScope open(ExecutionContext context) {
+            String previousExecutionId = MDC.get(EXECUTION_ID);
+            String previousPipelineId = MDC.get(PIPELINE_ID);
+            putOrRemove(EXECUTION_ID, context.getExecutionId() != null ? context.getExecutionId().toString() : null);
+            putOrRemove(PIPELINE_ID, context.getPipelineId());
+            return new MdcScope(previousExecutionId, previousPipelineId);
+        }
+
+        @Override
+        public void close() {
+            restore(EXECUTION_ID, previousExecutionId);
+            restore(PIPELINE_ID, previousPipelineId);
+        }
+
+        private static void restore(String key, String previousValue) {
+            putOrRemove(key, previousValue);
+        }
+
+        private static void putOrRemove(String key, String value) {
+            if (value == null) {
+                MDC.remove(key);
+            } else {
+                MDC.put(key, value);
+            }
         }
     }
 

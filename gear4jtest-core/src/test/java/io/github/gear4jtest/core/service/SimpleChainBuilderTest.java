@@ -54,7 +54,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 public class SimpleChainBuilderTest {
     @Test
-    public void test_v2() {
+    public void pipelineWithSkipIteratorAndEventSubscription_shouldComplete() {
         // Given
         var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
                 .then(processingOperation("step3", Step3.class).parameter(Step3::getParam, "a")
@@ -113,7 +113,7 @@ public class SimpleChainBuilderTest {
     }
 
     @Test
-    public void test_v2_event_management() throws InterruptedException {
+    public void pipelineWithEventSubscription_shouldPublishParameterEvents() throws InterruptedException {
         // Given
         var testEventListener = new TestEventListener();
         var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
@@ -314,8 +314,9 @@ public class SimpleChainBuilderTest {
                 .resourceFactory(resourceFactory).extensionResolver(runtimeExtensionResolver)
                 .executionContextRegistry(executionContextRegistry).build();
 
+        InMemoryAssemblyRunRepository repository = new InMemoryAssemblyRunRepository();
         var request = RunRequest.builder().input("input").resourceFactory(resourceFactory)
-                .with(new PersistenceExtension(new InMemoryExecutionManager())).build();
+                .with(new PersistenceExtension(new InMemoryExecutionManager(repository))).build();
 
         // When
         ExecutionResult<List<String>> result = engine.execute(assemblyLine, request);
@@ -324,8 +325,8 @@ public class SimpleChainBuilderTest {
         assertThat(result).isNotNull();
         assertThat(result.getResult()).as("primary failed, fallback must run").containsExactly(null, "fallback-ok");
 
-        List<StationLogRecord> allLogs = InMemoryAssemblyRunRepository.INSTANCE
-                .findAllLogsByRunId(result.getExecution().getId(), PageRequest.first(50));
+        List<StationLogRecord> allLogs = repository.findAllLogsByRunId(result.getExecution().getId(),
+                                                                       PageRequest.first(50));
 
         assertThat(allLogs).extracting(StationLogRecord::operationId, StationLogRecord::status)
                 .contains(tuple("primary", StationLogStatus.FAILED), tuple("fallback", StationLogStatus.SUCCEEDED));

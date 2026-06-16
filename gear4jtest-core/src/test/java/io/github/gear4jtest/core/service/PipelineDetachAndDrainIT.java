@@ -23,9 +23,11 @@ import io.github.gear4jtest.core.event.StationFinishedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Timeout(value = 10, unit = TimeUnit.SECONDS)
 class PipelineDetachAndDrainIT {
     private static void awaitRegistryRemoval(ExecutionContextRegistry registry, UUID executionId)
             throws InterruptedException {

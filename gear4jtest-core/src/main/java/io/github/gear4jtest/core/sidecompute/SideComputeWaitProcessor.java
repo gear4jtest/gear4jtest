@@ -1,6 +1,7 @@
 package io.github.gear4jtest.core.sidecompute;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -12,14 +13,25 @@ import io.github.gear4jtest.core.exception.SideComputeExecutionException;
 import io.github.gear4jtest.core.exception.SideComputeTimeoutException;
 
 public final class SideComputeWaitProcessor implements Processor {
+    /**
+     * Safety net used when callers do not provide an explicit timeout.
+     *
+     * <p>
+     * The previous behavior waited indefinitely via CompletableFuture.join(), which
+     * could leak a worker thread forever if the side-compute never completed.
+     */
+    public static final Duration DEFAULT_SAFETY_TIMEOUT = Duration.ofMinutes(10);
+
     private final String key;
     private final Duration timeout;
+    private final Duration safetyTimeout;
     private final OnTimeout onTimeout;
     private final Supplier<?> fallback;
 
     private SideComputeWaitProcessor(Builder builder) {
         this.key = builder.key;
         this.timeout = builder.timeout;
+        this.safetyTimeout = builder.safetyTimeout;
         this.onTimeout = builder.onTimeout;
         this.fallback = builder.fallback;
     }
@@ -38,21 +50,17 @@ public final class SideComputeWaitProcessor implements Processor {
         ExecutionContext execCtx = opCtx.getGlobalContext();
         var future = execCtx.getSideComputeContext().getOrCreateFuture(key);
 
-        try {
-            Object result;
-            if (timeout == null) {
-                result = future.join();
-            } else {
-                result = future.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
-            }
+        Duration effectiveTimeout = timeout != null ? timeout : safetyTimeout;
 
+        try {
+            Object result = future.get(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
             execCtx.getContext().put(SideComputeKeys.valueKey(key), result);
 
         } catch (TimeoutException te) {
             switch (onTimeout) {
                 case FAIL_PIPELINE -> {
                     future.completeExceptionally(te);
-                    throw new SideComputeTimeoutException(key, timeout, te);
+                    throw new SideComputeTimeoutException(key, effectiveTimeout, te);
                 }
                 case USE_FALLBACK -> {
                     Object fb = fallback != null ? fallback.get() : null;
@@ -63,6 +71,9 @@ public final class SideComputeWaitProcessor implements Processor {
                     // Leave the value unresolved; parameter resolution can observe its absence.
                 }
             }
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new SideComputeExecutionException(key, ex);
         } catch (Exception ex) {
             // Other future failures are wrapped as side-compute execution failures.
             throw new SideComputeExecutionException(key, ex);
@@ -82,6 +93,7 @@ public final class SideComputeWaitProcessor implements Processor {
     public static final class Builder {
         private final String key;
         private Duration timeout;
+        private Duration safetyTimeout = DEFAULT_SAFETY_TIMEOUT;
         private OnTimeout onTimeout = OnTimeout.FAIL_PIPELINE;
         private Supplier<?> fallback;
 
@@ -91,6 +103,11 @@ public final class SideComputeWaitProcessor implements Processor {
 
         public Builder timeout(Duration timeout) {
             this.timeout = timeout;
+            return this;
+        }
+
+        Builder safetyTimeout(Duration safetyTimeout) {
+            this.safetyTimeout = Objects.requireNonNull(safetyTimeout, "safetyTimeout must not be null");
             return this;
         }
 
