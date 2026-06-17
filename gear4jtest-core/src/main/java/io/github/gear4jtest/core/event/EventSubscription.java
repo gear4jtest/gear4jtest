@@ -3,6 +3,9 @@ package io.github.gear4jtest.core.event;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+import io.github.gear4jtest.core.api.annotation.PublicApi;
+
+@PublicApi
 public final class EventSubscription<T extends Event> {
     private final Class<T> eventType;
     private final Predicate<? super T> predicate;

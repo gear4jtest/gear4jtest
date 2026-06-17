@@ -205,7 +205,7 @@ public final class GearExpressionParser {
             }
         }
         String suffix = Character.toUpperCase(property.charAt(0)) + property.substring(1);
-        for (String candidate : List.of(property, "get" + suffix, "is" + suffix)) {
+        for (String candidate : List.of("get" + suffix, "is" + suffix)) {
             try {
                 Method method = type.getMethod(candidate);
                 if (isSafeAccessor(method)) {

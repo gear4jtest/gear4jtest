@@ -11,6 +11,9 @@ pipelines directly.
 Current public API packages include:
 
 - `io.github.gear4jtest.core.api.*`
+- `io.github.gear4jtest.core.event` event contracts used by applications that subscribe to runtime events
+- `io.github.gear4jtest.core.exception` application-visible exception hierarchy
+- `io.github.gear4jtest.core.model` application-visible runtime status values
 - `io.github.gear4jtest.core.persistence` records and repositories used by
   applications that enable JDBC persistence
 - `io.github.gear4jtest.external.api.AssemblyLineManager`
@@ -77,9 +80,10 @@ Gear4J also provides lightweight source markers in
 - `@Experimental` for contracts that may still change before the first stable
   release.
 
-These annotations are documentation markers retained in class files. They do not
-enforce binary compatibility by themselves; the package contract above remains
-the source of truth.
+These annotations are documentation markers retained in class files. Public/SPI/internal markers are now also applied
+at the main package boundaries so consumers can distinguish stable contracts from implementation packages directly in
+the generated Javadocs and class files. They do not enforce binary compatibility by themselves; the package contract
+above remains the source of truth.
 
 ## Generated XML definitions
 

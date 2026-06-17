@@ -3,6 +3,9 @@ package io.github.gear4jtest.core.event;
 import java.time.Instant;
 import java.util.UUID;
 
+import io.github.gear4jtest.core.api.annotation.PublicApi;
+
+@PublicApi
 public class Event {
     private final UUID id;
     private final String pipelineId;

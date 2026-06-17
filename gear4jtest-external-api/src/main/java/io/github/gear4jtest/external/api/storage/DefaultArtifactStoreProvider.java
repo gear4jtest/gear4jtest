@@ -88,6 +88,17 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         return v != null && (v.equalsIgnoreCase("true") || v.equalsIgnoreCase("yes") || v.equals("1"));
     }
 
+    private static long parseLong(String value, long defaultValue, String propertyName) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid artifact store property '" + propertyName + "': " + value, e);
+        }
+    }
+
     private static String opt(Map<String, String> m, String k) {
         return m.get(k);
     }
@@ -109,6 +120,9 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         CompositeArtifactStore.ReadMode readMode = parseReadMode(props.get("mode.read"));
         boolean verifyOnRead = isTrue(props.get("verifyOnRead"));
         boolean selfHealing = isTrue(props.get("selfHealing"));
+        long verificationMaxArtifactSizeBytes = parseLong(props.get("verificationMaxArtifactSizeBytes"),
+                                                          ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES,
+                                                          "verificationMaxArtifactSizeBytes");
 
         // Primary store type declared by the pipeline configuration.
         ArtifactStore primary = resolver.resolve(cfg.storeType().name(), props, ctx);
@@ -121,7 +135,7 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         }
 
         return new CompositeArtifactStore(primary, fallbacks, writeMode, readMode, verifyOnRead, selfHealing,
-                asyncExec);
+                verificationMaxArtifactSizeBytes, asyncExec);
     }
 
     private List<ArtifactStore> buildFallbacks(Map<String, String> props) {

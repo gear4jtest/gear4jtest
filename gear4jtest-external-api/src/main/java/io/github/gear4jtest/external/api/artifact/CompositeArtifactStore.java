@@ -22,6 +22,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
     private final ReadMode readMode;
     private final boolean verifyOnRead;
     private final boolean selfHealing;
+    private final long verificationMaxArtifactSizeBytes;
     private final Executor asyncExec;
 
     public CompositeArtifactStore(ArtifactStore primary,
@@ -31,12 +32,26 @@ public final class CompositeArtifactStore implements ArtifactStore {
                                   boolean verifyOnRead,
                                   boolean selfHealing,
                                   Executor asyncExec) {
+        this(primary, fallbacks, writeMode, readMode, verifyOnRead, selfHealing,
+                ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES, asyncExec);
+    }
+
+    public CompositeArtifactStore(ArtifactStore primary,
+                                  java.util.List<ArtifactStore> fallbacks,
+                                  WriteMode writeMode,
+                                  ReadMode readMode,
+                                  boolean verifyOnRead,
+                                  boolean selfHealing,
+                                  long verificationMaxArtifactSizeBytes,
+                                  Executor asyncExec) {
         this.primary = Objects.requireNonNull(primary);
         this.fallbacks = java.util.List.copyOf(Objects.requireNonNull(fallbacks));
         this.writeMode = writeMode == null ? WriteMode.PRIMARY_ONLY : writeMode;
         this.readMode = readMode == null ? ReadMode.PREFER_PRIMARY : readMode;
         this.verifyOnRead = verifyOnRead;
         this.selfHealing = selfHealing;
+        this.verificationMaxArtifactSizeBytes = validateVerificationMaxArtifactSizeBytes(
+                                                                                         verificationMaxArtifactSizeBytes);
         this.asyncExec = asyncExec != null ? asyncExec : ArtifactStoreExecutors.defaultAsyncExecutor();
     }
 
@@ -140,7 +155,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
         }
         try (var in = artifact.openStream()) {
             if (!fromPrimary && selfHealing) {
-                TempArtifact temp = spoolToTempFile(in, ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
+                TempArtifact temp = spoolToTempFile(in, verificationMaxArtifactSizeBytes);
                 try {
                     if (!temp.hashHex().equals(hash)) {
                         throw new IOException("Corrupt artifact: " + hash);
@@ -150,7 +165,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
                     deleteTempFile(temp.path());
                 }
             } else {
-                String rehash = Hashing.sha256Hex(in, ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES).hashHex();
+                String rehash = Hashing.sha256Hex(in, verificationMaxArtifactSizeBytes).hashHex();
                 if (!rehash.equals(hash)) {
                     throw new IOException("Corrupt artifact: " + hash);
                 }
@@ -221,6 +236,13 @@ public final class CompositeArtifactStore implements ArtifactStore {
             deleteTempFile(tmp);
             throw e;
         }
+    }
+
+    private static long validateVerificationMaxArtifactSizeBytes(long maxBytes) {
+        if (maxBytes == 0 || maxBytes < ArtifactStore.UNLIMITED_SIZE) {
+            throw new IllegalArgumentException("verificationMaxArtifactSizeBytes must be > 0 or UNLIMITED_SIZE");
+        }
+        return maxBytes;
     }
 
     private static void copyWithLimit(InputStream in, Path target, long maxBytes) throws IOException {

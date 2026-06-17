@@ -69,4 +69,62 @@ class GearExpressionParserTest {
         assertThat(result).as("map keys are data, not reflective Java class metadata").isTrue();
     }
 
+    @Test
+    void evaluate_shouldRejectZeroArgumentMethodsThatAreNotRecordComponentsOrBeanGetters() {
+        // Given
+        DangerousDocument document = new DangerousDocument();
+        GearExpression expression = GearExpressionParser.parse("input.expensiveComputation == 'secret'");
+
+        // When / Then
+        assertThatThrownBy(() -> expression.evaluate(new GearExpressionContext(document, Map.of())))
+                .as("GEL property access must not call arbitrary zero-argument methods")
+                .isInstanceOf(GearExpressionException.class)
+                .hasMessageContaining("No readable property");
+        assertThat(document.calls()).as("the arbitrary method must not be invoked as a pseudo property")
+                .isZero();
+    }
+
+    @Test
+    void evaluate_shouldAllowJavaBeanGettersOnPojoObjects() {
+        // Given
+        BeanDocument document = new BeanDocument("BOOK", true);
+        GearExpression expression = GearExpressionParser.parse("input.productType == 'BOOK' && input.active");
+
+        // When
+        boolean result = expression.evaluateBoolean(new GearExpressionContext(document, Map.of()));
+
+        // Then
+        assertThat(result).isTrue();
+    }
+
+    private static final class DangerousDocument {
+        private int calls;
+
+        public String expensiveComputation() {
+            calls++;
+            return "secret";
+        }
+
+        private int calls() {
+            return calls;
+        }
+    }
+
+    private static final class BeanDocument {
+        private final String productType;
+        private final boolean active;
+
+        private BeanDocument(String productType, boolean active) {
+            this.productType = productType;
+            this.active = active;
+        }
+
+        public String getProductType() {
+            return productType;
+        }
+
+        public boolean isActive() {
+            return active;
+        }
+    }
 }

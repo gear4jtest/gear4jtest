@@ -1,5 +1,7 @@
 package io.github.gear4jtest.core.event;
 
+import io.github.gear4jtest.core.api.annotation.PublicApi;
+
 /**
  * Immutable snapshot of the asynchronous event runtime counters.
  *
@@ -34,6 +36,7 @@ package io.github.gear4jtest.core.event;
  * @param inFlightReactions           number of reactions currently executing in
  *                                    the configured reaction executor
  */
+@PublicApi
 public record EventRuntimeStats(long publishedEvents,
                                 long dispatchedEvents,
                                 long submittedReactions,

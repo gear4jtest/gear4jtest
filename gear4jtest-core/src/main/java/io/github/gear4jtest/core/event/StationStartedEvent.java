@@ -2,6 +2,9 @@ package io.github.gear4jtest.core.event;
 
 import java.util.UUID;
 
+import io.github.gear4jtest.core.api.annotation.PublicApi;
+
+@PublicApi
 public final class StationStartedEvent extends StationEvent {
     public StationStartedEvent(String pipelineId,
                                UUID executionId,

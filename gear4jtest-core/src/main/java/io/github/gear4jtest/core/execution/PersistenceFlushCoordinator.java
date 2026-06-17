@@ -81,6 +81,10 @@ final class PersistenceFlushCoordinator {
         if (!buffer.markFlushScheduled()) {
             return;
         }
+        if (shutdown.get()) {
+            buffer.clearFlushScheduled();
+            return;
+        }
         counters.recordScheduledFlush();
         try {
             flushExecutor.execute(() -> {
@@ -127,7 +131,7 @@ final class PersistenceFlushCoordinator {
             buffer.clearFlushScheduled();
             buffer.unlockFlush();
         }
-        if (!drainCompletely && buffer.pendingCount() >= configuration.batchSize()) {
+        if (!drainCompletely && !shutdown.get() && buffer.pendingCount() >= configuration.batchSize()) {
             scheduleAsyncFlush(buffer, false);
         }
     }
@@ -144,6 +148,9 @@ final class PersistenceFlushCoordinator {
         if (ownsMaintenanceExecutor) {
             maintenanceExecutor.shutdownNow();
         }
+        if (ownsFlushExecutor) {
+            flushExecutor.shutdown();
+        }
         for (OperationRecordBuffer buffer : buffers.activeBuffers()) {
             try {
                 buffer.close();
@@ -155,7 +162,6 @@ final class PersistenceFlushCoordinator {
             }
         }
         if (ownsFlushExecutor) {
-            flushExecutor.shutdown();
             awaitFlushExecutorTermination(timeout);
         }
     }

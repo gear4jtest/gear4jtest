@@ -10,6 +10,7 @@ import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.slf4j.MDC;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,4 +40,31 @@ class EventManagerThreadingTest {
             manager.shutdown();
         }
     }
+
+    @Test
+    void reactions_shouldInheritPublisherMdcContext() throws Exception {
+        AtomicReference<String> correlationId = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+
+        EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
+            correlationId.set(MDC.get("gear4j.executionId"));
+            latch.countDown();
+        }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                .reactionExecutorFactory(Executors::newSingleThreadExecutor).shutdownTimeout(Duration.ofSeconds(2))
+                .build()).build();
+
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+        try {
+            MDC.put("gear4j.executionId", "run-123");
+            manager.publish(new Event("pipe", java.util.UUID.randomUUID(), "FOO"));
+
+            assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(correlationId.get()).isEqualTo("run-123");
+            assertThat(MDC.get("gear4j.executionId")).isEqualTo("run-123");
+        } finally {
+            MDC.clear();
+            manager.shutdown();
+        }
+    }
+
 }

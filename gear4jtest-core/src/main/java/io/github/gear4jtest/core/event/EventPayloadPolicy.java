@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import io.github.gear4jtest.core.api.annotation.PublicApi;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.spi.security.RedactionTarget;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
@@ -19,6 +20,7 @@ import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
  * events.
  * </p>
  */
+@PublicApi
 public interface EventPayloadPolicy {
     static EventPayloadPolicy passthrough() {
         return new EventPayloadPolicy() {

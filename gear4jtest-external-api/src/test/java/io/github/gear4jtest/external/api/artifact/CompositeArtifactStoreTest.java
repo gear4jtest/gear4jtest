@@ -11,6 +11,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CompositeArtifactStoreTest {
 
@@ -31,6 +32,41 @@ class CompositeArtifactStoreTest {
         assertThat(fallback.streamWrites()).isEqualTo(1);
         assertThat(primary.storedHashes()).containsExactly(hash);
         assertThat(fallback.storedHashes()).containsExactly(hash);
+    }
+
+    @Test
+    void get_shouldUseConfiguredVerificationLimitInsteadOfDefaultOnly() throws Exception {
+        // Given
+        InMemoryArtifactStore primary = new InMemoryArtifactStore();
+        byte[] content = "payload".getBytes(StandardCharsets.UTF_8);
+        String hash = primary.put(content);
+        CompositeArtifactStore store = new CompositeArtifactStore(primary, List.of(),
+                CompositeArtifactStore.WriteMode.PRIMARY_ONLY, CompositeArtifactStore.ReadMode.PREFER_PRIMARY, true,
+                false, content.length, Runnable::run);
+
+        // When
+        Optional<Artifact> artifact = store.get(hash);
+
+        // Then
+        assertThat(artifact).isPresent();
+        assertThat(new String(artifact.orElseThrow().openStream().readAllBytes(), StandardCharsets.UTF_8))
+                .isEqualTo("payload");
+    }
+
+    @Test
+    void get_shouldRejectArtifactsAboveConfiguredVerificationLimit() throws Exception {
+        // Given
+        InMemoryArtifactStore primary = new InMemoryArtifactStore();
+        byte[] content = "payload".getBytes(StandardCharsets.UTF_8);
+        String hash = primary.put(content);
+        CompositeArtifactStore store = new CompositeArtifactStore(primary, List.of(),
+                CompositeArtifactStore.WriteMode.PRIMARY_ONLY, CompositeArtifactStore.ReadMode.PREFER_PRIMARY, true,
+                false, content.length - 1L, Runnable::run);
+
+        // When / Then
+        assertThatThrownBy(() -> store.get(hash))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("maxBytes=" + (content.length - 1L));
     }
 
     private static final class StreamOnlyArtifactStore implements ArtifactStore {

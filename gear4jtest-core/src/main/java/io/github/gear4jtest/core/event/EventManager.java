@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.event;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -25,6 +26,7 @@ import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.sidecompute.SideComputeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * Runtime dispatcher for asynchronous pipeline events.
@@ -47,10 +49,10 @@ import org.slf4j.LoggerFactory;
 @Internal
 public final class EventManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EventManager.class);
-    private static final Event STOP_EVENT = new Event("__internal__", null, "STOP_EVENT");
+    private static final QueuedEvent STOP_EVENT = QueuedEvent.stop();
     private static final AtomicInteger DISPATCHER_COUNTER = new AtomicInteger();
     private final List<EventSubscription<?>> subscriptions;
-    private final BlockingQueue<Event> queue;
+    private final BlockingQueue<QueuedEvent> queue;
     private final Object submissionMonitor = new Object();
     private final AtomicBoolean dispatcherStopped = new AtomicBoolean(false);
     private final AtomicInteger acceptedReactions = new AtomicInteger();
@@ -129,7 +131,7 @@ public final class EventManager {
             if (!accepting) {
                 return;
             }
-            if (queue.offer(event)) {
+            if (queue.offer(QueuedEvent.of(event, MDC.getCopyOfContextMap()))) {
                 publishedEvents.incrementAndGet();
             } else {
                 droppedEvents.incrementAndGet();
@@ -193,7 +195,7 @@ public final class EventManager {
     private void dispatchLoop() {
         try {
             while (true) {
-                Event event = queue.take();
+                QueuedEvent event = queue.take();
                 if (event == STOP_EVENT) {
                     break;
                 }
@@ -201,7 +203,7 @@ public final class EventManager {
                 dispatch(event);
             }
 
-            Event remaining;
+            QueuedEvent remaining;
             while ((remaining = queue.poll()) != null) {
                 if (remaining != STOP_EVENT) {
                     dispatchedEvents.incrementAndGet();
@@ -228,12 +230,13 @@ public final class EventManager {
         }
     }
 
-    private void dispatch(Event event) {
+    private void dispatch(QueuedEvent queuedEvent) {
+        Event event = queuedEvent.event();
         for (EventSubscription<?> subscription : subscriptions) {
             if (!subscription.accepts(event)) {
                 continue;
             }
-            ReactionTask task = new ReactionTask(subscription, event);
+            ReactionTask task = new ReactionTask(subscription, event, queuedEvent.mdcContext());
             activeReactions.add(task);
             acceptedReactions.incrementAndGet();
             try {
@@ -359,14 +362,54 @@ public final class EventManager {
         }
     }
 
+    private record QueuedEvent(Event event, Map<String, String> mdcContext) {
+        private static QueuedEvent of(Event event, Map<String, String> mdcContext) {
+            Map<String, String> immutableContext = mdcContext == null ? null : Map.copyOf(mdcContext);
+            return new QueuedEvent(event, immutableContext);
+        }
+
+        private static QueuedEvent stop() {
+            return new QueuedEvent(null, null);
+        }
+    }
+
+    private static final class MdcScope implements AutoCloseable {
+        private final Map<String, String> previousContext;
+
+        private MdcScope(Map<String, String> previousContext) {
+            this.previousContext = previousContext;
+        }
+
+        private static MdcScope install(Map<String, String> context) {
+            Map<String, String> previousContext = MDC.getCopyOfContextMap();
+            if (context == null || context.isEmpty()) {
+                MDC.clear();
+            } else {
+                MDC.setContextMap(context);
+            }
+            return new MdcScope(previousContext);
+        }
+
+        @Override
+        public void close() {
+            if (previousContext == null || previousContext.isEmpty()) {
+                MDC.clear();
+            } else {
+                MDC.setContextMap(previousContext);
+            }
+        }
+    }
+
     private final class ReactionTask implements Runnable {
         private final EventSubscription<?> subscription;
         private final Event event;
+        private final Map<String, String> mdcContext;
         private final AtomicReference<ReactionTaskState> state = new AtomicReference<>(ReactionTaskState.NEW);
 
-        private ReactionTask(EventSubscription<?> subscription, Event event) {
+        private ReactionTask(EventSubscription<?> subscription, Event event, Map<String, String> mdcContext) {
             this.subscription = subscription;
             this.event = event;
+            this.mdcContext = mdcContext;
         }
 
         @Override
@@ -375,7 +418,7 @@ public final class EventManager {
                 return;
             }
             inFlightReactions.incrementAndGet();
-            try {
+            try (MdcScope ignored = MdcScope.install(mdcContext)) {
                 invokeSafely(subscription, event);
             } finally {
                 markReactionCompleted(this);
