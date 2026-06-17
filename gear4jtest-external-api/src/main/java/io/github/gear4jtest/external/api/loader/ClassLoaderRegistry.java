@@ -1,9 +1,12 @@
 package io.github.gear4jtest.external.api.loader;
 
+import io.github.gear4jtest.core.api.annotation.Spi;
+
 /**
  * Registry for generated classloaders and mutable aliases such as
  * {@code al/<id>/RUN/latest}.
  */
+@Spi
 public interface ClassLoaderRegistry {
     ClassLoader get(String internalLoaderId);
 

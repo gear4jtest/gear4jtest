@@ -5,6 +5,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import io.github.gear4jtest.core.api.annotation.PublicApi;
+
 /**
  * Repository contract for persisted pipeline runs and their station logs.
  *
@@ -22,6 +24,7 @@ import java.util.UUID;
  * runtime exception containing the operation context when possible.
  * </p>
  */
+@PublicApi
 public interface AssemblyRunRepository {
     /**
      * Initializes the backing store if the implementation owns schema creation or

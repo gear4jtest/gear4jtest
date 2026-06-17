@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.github.gear4jtest.core.api.annotation.Internal;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.sidecompute.SideComputeListener;
@@ -43,6 +44,7 @@ import org.slf4j.LoggerFactory;
  * reactions are logged and counted in {@link #snapshotStats()}.
  * </p>
  */
+@Internal
 public final class EventManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EventManager.class);
     private static final Event STOP_EVENT = new Event("__internal__", null, "STOP_EVENT");
@@ -300,7 +302,7 @@ public final class EventManager {
     public EventRuntimeStats snapshotStats() {
         return new EventRuntimeStats(publishedEvents.get(), dispatchedEvents.get(), submittedReactions.get(),
                 completedReactions.get(), droppedReactions.get(), failedReactions.get(), droppedEvents.get(),
-                queue.size());
+                queue.size(), queue.remainingCapacity(), acceptedReactions.get(), inFlightReactions.get());
     }
 
     private void tryCompleteTermination() {

@@ -1,7 +1,9 @@
 dependencies {
     api project(':gear4jtest-core')
+    api libs.jackson
 
-    implementation group: 'org.eclipse.jdt', name: 'org.eclipse.jdt.core', version: '3.43.0'
+    implementation libs.slf4j
+    implementation libs.eclipse.jdt.core
 }
 
 ext.moduleName = 'io.github.gear4jtest.external.api'

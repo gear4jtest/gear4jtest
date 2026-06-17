@@ -30,7 +30,8 @@ rejected appends.
 
 `EventMetricsBinder` can be bound manually to an `EventManager` to expose the
 best-effort in-memory event runtime counters: published/dispatched/dropped/queued
-events and submitted/completed/dropped/failed reactions. Because `EventManager`
+events, remaining event-queue capacity, and submitted/completed/dropped/failed,
+pending and in-flight reactions. Because `EventManager`
 is currently per-run runtime state rather than a singleton Spring bean, this
 binder is intentionally explicit instead of auto-registered globally.
 

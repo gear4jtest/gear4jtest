@@ -10,18 +10,16 @@ After the build-time XML generation and runtime/persistence hardening passes,
 Gear4J still needed a small production-readiness pass that does not introduce a
 large new subsystem.
 
-The major long-term security topic remains GEL, the future Gear4J Expression
-Language. GEL is not implemented in this pass because it is a language/runtime
-design of its own. The decision is nevertheless explicit: inline Java XML stays a
-trusted-source feature and GEL is the intended security boundary for untrusted
-pipeline definitions.
+The major XML security topic is the Gear4J Expression Language (GEL). Inline
+Java XML stays a trusted-source feature. GEL is the intended restricted
+expression boundary for untrusted or semi-trusted pipeline definitions.
 
 ## Decision
 
 Phase 3 adds pragmatic guardrails:
 
 - a production readiness checklist in `docs/production-readiness.md`;
-- explicit ADR for GEL as the future security boundary;
+- explicit ADR for GEL as the restricted expression boundary;
 - bounded artifact read APIs so applications can reject oversized artifacts
   before loading them fully in memory;
 - an optional `maxArtifactSizeBytes` constructor path in `AssemblyLineManager`;
@@ -36,5 +34,5 @@ Phase 3 adds pragmatic guardrails:
   into heap memory. Individual stores may still choose their own storage strategy.
 - Spring Boot applications with Actuator can diagnose persistence buffer/flush
   state through the standard health infrastructure.
-- The project still avoids implementing the full GEL interpreter until its syntax,
-  AST and type model are designed deliberately.
+- GEL exists as a deliberately small restricted evaluator. Future GEL work should
+  remain additive and keep Java reflection/class access out of the untrusted path.

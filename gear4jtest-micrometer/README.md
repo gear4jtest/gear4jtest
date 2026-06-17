@@ -34,15 +34,18 @@ gear4j.events.published
 gear4j.events.dispatched
 gear4j.events.dropped
 gear4j.events.queued
+gear4j.events.queue.remaining.capacity
 gear4j.reactions.submitted
 gear4j.reactions.completed
 gear4j.reactions.dropped
 gear4j.reactions.failed
+gear4j.reactions.pending
+gear4j.reactions.in.flight
 ```
 
 These metrics are useful to confirm that Gear4J is active, track completed run
 and station latency, and ensure that persistence and the best-effort event
-runtime are not silently accumulating or dropping work. They are still
+runtime are not silently accumulating, saturating, running late reactions or dropping work. They are still
 intentionally conservative.
 
 `PersistenceMetricsBinder` is auto-registered by the Spring Boot starter when a

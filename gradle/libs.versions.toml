@@ -7,7 +7,6 @@ logback = "1.5.18"
 mockito = "5.17.0"
 micrometer = "1.15.1"
 spring-boot = "3.5.3"
-guava = "33.0.0-jre"
 jackson = "2.19.0"
 postgresql = "42.7.7"
 mysql = "9.7.0"
@@ -16,10 +15,11 @@ ojdbc11 = "23.26.2.0.0"
 h2 = "2.4.240"
 testcontainers = "1.21.4"
 spring-framework = "6.2.8"
+eclipse-jdt-core = "3.43.0"
+eclipse-text = "3.14.400"
 
 [libraries]
 slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
-google = { module = "com.google.guava:guava", version.ref = "guava" }
 jackson = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 junit = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
@@ -45,3 +45,5 @@ spring-context = { module = "org.springframework:spring-context", version.ref = 
 spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor", version.ref = "spring-boot" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation", version.ref = "spring-boot" }
 spring-boot-actuator = { module = "org.springframework.boot:spring-boot-actuator", version.ref = "spring-boot" }
+eclipse-jdt-core = { module = "org.eclipse.jdt:org.eclipse.jdt.core", version.ref = "eclipse-jdt-core" }
+eclipse-text = { module = "org.eclipse.platform:org.eclipse.text", version.ref = "eclipse-text" }

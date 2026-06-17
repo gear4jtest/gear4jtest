@@ -85,3 +85,20 @@ For scheduled security scans:
 If `verification-metadata.xml` has not been committed yet, the strict verification
 step should be treated as a bootstrap TODO. Once the file is committed, missing or
 changed metadata should fail CI until reviewed intentionally.
+
+
+## Dependency surface hygiene
+
+Production dependencies should be declared by the module that actually uses them
+instead of being injected into every subproject from the root build. This keeps
+optional modules lighter and reduces the transitive surface exposed to consumers.
+
+Current policy:
+
+- `gear4jtest-core` owns SLF4J and the Jackson API used by JDBC persistence;
+- `gear4jtest-external-api` owns SLF4J, Jackson for external repository JSON and
+  JDT for the default compiler implementation;
+- `gear4jtest-xml` owns SLF4J and Eclipse formatter dependencies;
+- optional modules declare their own integration dependencies.
+
+Guava is not part of the current production dependency surface.

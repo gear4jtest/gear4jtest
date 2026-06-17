@@ -58,6 +58,12 @@ When Spring Boot Actuator is present and JDBC persistence is enabled, the starte
 contributes a Gear4J persistence health indicator with current persistence buffer
 and flush statistics.
 
+For the in-memory event runtime, monitor queued events, remaining queue capacity,
+dropped events, dropped reactions, pending reactions and in-flight reactions.
+Pending/in-flight reactions after shutdown usually mean user code ignored
+interruption or blocked on an external resource longer than the configured
+shutdown timeout.
+
 ## Shutdown and cancellation
 
 Executor-backed work is cooperative. Thread interruption and `Future.cancel(true)`

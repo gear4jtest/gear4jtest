@@ -27,6 +27,9 @@ public final class EventMetricsBinder {
         registerGauge(meterRegistry, manager, "gear4j.events.queued",
                       "Current number of events waiting in the in-memory event dispatcher queue",
                       value -> value.snapshotStats().queuedEvents());
+        registerGauge(meterRegistry, manager, "gear4j.events.queue.remaining.capacity",
+                      "Current remaining capacity of the bounded in-memory event dispatcher queue",
+                      value -> value.snapshotStats().remainingEventQueueCapacity());
         registerGauge(meterRegistry, manager, "gear4j.reactions.submitted",
                       "Number of event reactions submitted to the configured reaction executor",
                       value -> value.snapshotStats().submittedReactions());
@@ -39,6 +42,12 @@ public final class EventMetricsBinder {
         registerGauge(meterRegistry, manager, "gear4j.reactions.failed",
                       "Number of event reactions that failed while executing",
                       value -> value.snapshotStats().failedReactions());
+        registerGauge(meterRegistry, manager, "gear4j.reactions.pending",
+                      "Current number of accepted event reactions that have not reached a terminal state yet",
+                      value -> value.snapshotStats().pendingReactions());
+        registerGauge(meterRegistry, manager, "gear4j.reactions.in.flight",
+                      "Current number of event reactions executing in the configured reaction executor",
+                      value -> value.snapshotStats().inFlightReactions());
     }
 
     private static void registerGauge(MeterRegistry meterRegistry,

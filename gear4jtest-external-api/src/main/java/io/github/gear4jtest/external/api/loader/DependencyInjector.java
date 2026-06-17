@@ -2,8 +2,10 @@ package io.github.gear4jtest.external.api.loader;
 
 import java.util.Optional;
 
+import io.github.gear4jtest.core.api.annotation.Spi;
 import io.github.gear4jtest.external.api.ExecutionMode;
 
+@Spi
 public interface DependencyInjector {
     /**
      * Injects registered dependencies into the supplied instance.

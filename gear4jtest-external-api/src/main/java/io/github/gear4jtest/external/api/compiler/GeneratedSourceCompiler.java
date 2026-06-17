@@ -2,6 +2,8 @@ package io.github.gear4jtest.external.api.compiler;
 
 import java.util.Map;
 
+import io.github.gear4jtest.core.api.annotation.Spi;
+
 /**
  * Compiles generated Java source into in-memory class bytes.
  *
@@ -13,6 +15,7 @@ import java.util.Map;
  * </p>
  */
 @FunctionalInterface
+@Spi
 public interface GeneratedSourceCompiler {
     /**
      * Compiles one generated Java source unit.

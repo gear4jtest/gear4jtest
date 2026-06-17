@@ -8,4 +8,5 @@
  * dispatcher configuration.
  * </p>
  */
+@io.github.gear4jtest.core.api.annotation.Experimental
 package io.github.gear4jtest.core.event.transport;

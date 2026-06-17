@@ -1,5 +1,6 @@
 package io.github.gear4jtest.core.spi.extension;
 
+import io.github.gear4jtest.core.api.annotation.Spi;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
@@ -27,6 +28,7 @@ import io.github.gear4jtest.core.persistence.StationLogRecord;
  * this wrapper.
  * </p>
  */
+@Spi
 public interface StationLifecycleExtension extends RuntimeExtension {
     default LifecycleFailureMode failureMode() {
         return LifecycleFailureMode.BEST_EFFORT;

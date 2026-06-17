@@ -206,6 +206,7 @@ class EventManagerTest {
             assertThat(saturatedStats.publishedEvents()).isEqualTo(2);
             assertThat(saturatedStats.droppedEvents()).isEqualTo(1);
             assertThat(saturatedStats.queuedEvents()).isEqualTo(1);
+            assertThat(saturatedStats.remainingEventQueueCapacity()).isZero();
         } finally {
             releaseExecute.countDown();
             manager.shutdown();
@@ -288,7 +289,10 @@ class EventManagerTest {
             CompletableFuture<EventManager.ShutdownHandle> shutdown = CompletableFuture.supplyAsync(manager::shutdown);
 
             assertThat(shutdown.get(1, TimeUnit.SECONDS).detached()).isFalse();
-            assertThat(manager.snapshotStats().completedReactions()).isZero();
+            EventRuntimeStats timeoutStats = manager.snapshotStats();
+            assertThat(timeoutStats.completedReactions()).isZero();
+            assertThat(timeoutStats.pendingReactions()).isEqualTo(1);
+            assertThat(timeoutStats.inFlightReactions()).isEqualTo(1);
         } finally {
             releaseReaction.countDown();
             manager.shutdown();

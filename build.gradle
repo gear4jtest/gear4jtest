@@ -197,10 +197,6 @@ configure(project.coreProjects.findAll { !it.name.contains("gradle") }) {
     apply from: "${rootDir}/publishing.gradle"
 
     dependencies {
-        implementation(libs.slf4j)
-        implementation(libs.google)
-        implementation(libs.jackson)
-
         testImplementation(libs.junit)
         testImplementation(libs.assertj)
         testImplementation(libs.logback)

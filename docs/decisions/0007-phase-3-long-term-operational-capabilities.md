@@ -14,10 +14,11 @@ The goal is to make the existing release surface easier to operate and diagnose.
 The phase focuses on:
 
 - low-cardinality Micrometer duration metrics;
+- event-runtime backlog, capacity and in-flight reaction gauges;
 - clearer JDBC persistence exceptions;
 - avoiding unnecessary `SELECT *` in repository list queries;
-- small build hygiene cleanups;
-- documenting public SPI contracts.
+- smaller module dependency surfaces;
+- documenting public API/SPI/internal/experimental contracts.
 
 ## Decision
 
@@ -51,22 +52,33 @@ surface is explicit and less sensitive to future wide columns.
 The deprecated Sonar property `sonar.language` is removed. Language detection is
 left to Sonar's current analyzer behavior.
 
+Common production dependencies are no longer injected into every non-Gradle
+module from the root build. Modules now declare the dependencies they actually
+use, and unused Guava is removed from the current production dependency surface.
+Eclipse compiler/formatter versions are centralized in the version catalog.
+
 Dependency verification remains intentionally out of this pass. It is still a
 release-hardening topic, but the project decision is to avoid spending more time
 on heavy supply-chain machinery until the runtime/build/release process is more
 stable.
 
-### SPI documentation
+### API/SPI documentation markers
 
 Public extension contracts should state at least their nullability,
 thread-safety and lifecycle expectations. Phase 3 adds baseline Javadoc to the
 most visible SPI/repository contracts so custom implementations have clearer
 rules.
 
+The codebase also gets lightweight `@PublicApi`, `@Spi`, `@Internal` and
+`@Experimental` markers. These markers document intent and are retained in class
+files, but they do not replace the package compatibility contract.
+
 ## Consequences
 
-- Operators get latency metrics without pulling Micrometer into the core module.
+- Operators get latency and live backlog metrics without pulling Micrometer into
+  the core module.
 - Persistence failures expose more useful context to application logs.
 - Repository SQL is less fragile when schema columns are added later.
-- The build stops carrying a deprecated Sonar property.
+- The build stops carrying a deprecated Sonar property and avoids unnecessary
+  production dependencies in modules that do not use them.
 - Public extension points are easier to implement safely.

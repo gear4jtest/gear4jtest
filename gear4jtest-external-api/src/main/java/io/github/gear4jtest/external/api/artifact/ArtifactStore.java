@@ -5,11 +5,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
 
+import io.github.gear4jtest.core.api.annotation.Spi;
+
 /**
  * Content-addressed artifact store. Implementations should stream writes when
  * the backing store supports it and must enforce {@code maxBytes} before
  * accepting the artifact.
  */
+@Spi
 public interface ArtifactStore {
     long UNLIMITED_SIZE = -1L;
     long DEFAULT_MAX_ARTIFACT_SIZE_BYTES = 5L * 1024L * 1024L;

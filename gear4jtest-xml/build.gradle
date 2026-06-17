@@ -2,8 +2,9 @@ dependencies {
     implementation project(':gear4jtest-core')
     implementation project(':gear4jtest-external-api')
 
-    implementation group: 'org.eclipse.jdt', name: 'org.eclipse.jdt.core', version: '3.43.0'
-    implementation group: 'org.eclipse.platform', name: 'org.eclipse.text', version: '3.14.400'
+    implementation libs.slf4j
+    implementation libs.eclipse.jdt.core
+    implementation libs.eclipse.text
 }
 
 ext.moduleName = 'io.github.gear4jtest.xml'

@@ -24,9 +24,12 @@ class EventMetricsBinderTest {
         assertThat(meterRegistry.get("gear4j.events.dispatched").gauge().value()).isZero();
         assertThat(meterRegistry.get("gear4j.events.dropped").gauge().value()).isZero();
         assertThat(meterRegistry.get("gear4j.events.queued").gauge().value()).isZero();
+        assertThat(meterRegistry.get("gear4j.events.queue.remaining.capacity").gauge().value()).isPositive();
         assertThat(meterRegistry.get("gear4j.reactions.submitted").gauge().value()).isZero();
         assertThat(meterRegistry.get("gear4j.reactions.completed").gauge().value()).isZero();
         assertThat(meterRegistry.get("gear4j.reactions.dropped").gauge().value()).isZero();
         assertThat(meterRegistry.get("gear4j.reactions.failed").gauge().value()).isZero();
+        assertThat(meterRegistry.get("gear4j.reactions.pending").gauge().value()).isZero();
+        assertThat(meterRegistry.get("gear4j.reactions.in.flight").gauge().value()).isZero();
     }
 }

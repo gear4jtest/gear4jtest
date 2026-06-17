@@ -66,6 +66,21 @@ Known internal implementation areas:
 - `io.github.gear4jtest.xml.generator.*`
 - `io.github.gear4jtest.xml.parser.*`
 
+## Source-level markers
+
+Gear4J also provides lightweight source markers in
+`io.github.gear4jtest.core.api.annotation`:
+
+- `@PublicApi` for application-facing contracts;
+- `@Spi` for extension contracts implemented by application/integration code;
+- `@Internal` for implementation details with no compatibility promise;
+- `@Experimental` for contracts that may still change before the first stable
+  release.
+
+These annotations are documentation markers retained in class files. They do not
+enforce binary compatibility by themselves; the package contract above remains
+the source of truth.
+
 ## Generated XML definitions
 
 XML with inline Java remains a trusted-source feature. The default XML translator
