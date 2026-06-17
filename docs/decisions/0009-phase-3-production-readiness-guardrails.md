@@ -31,8 +31,9 @@ Phase 3 adds pragmatic guardrails:
 ## Consequences
 
 - Runtime XML compilation remains trusted-only.
-- Large artifact handling is still byte-array based internally, but applications
-  can now set an explicit size limit at the API boundary.
+- Composite artifact writes now preserve the bounded streaming path by spooling
+  multi-store writes through temporary files instead of forcing the full artifact
+  into heap memory. Individual stores may still choose their own storage strategy.
 - Spring Boot applications with Actuator can diagnose persistence buffer/flush
   state through the standard health infrastructure.
 - The project still avoids implementing the full GEL interpreter until its syntax,

@@ -34,7 +34,9 @@ When JDBC persistence is enabled:
   sensitive business data;
 - tune `gear4j.persistence.batch-size`, `max-pending-logs-per-run` and
   `flush-threads` for expected volume;
-- monitor failed flushes, rejected appends and active buffers.
+- monitor failed flushes, rejected appends and active buffers;
+- keep persistence history queries paginated. `PageRequest` is intentionally
+  capped at 1,000 rows per call to avoid accidental large reads.
 
 ## Artifacts
 

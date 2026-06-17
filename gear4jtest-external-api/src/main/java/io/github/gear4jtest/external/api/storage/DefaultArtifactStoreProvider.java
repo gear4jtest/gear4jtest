@@ -8,10 +8,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
+import io.github.gear4jtest.external.api.artifact.ArtifactStoreExecutors;
 import io.github.gear4jtest.external.api.artifact.CompositeArtifactStore;
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.spi.ArtifactStorePlugin;
@@ -44,7 +44,7 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
     public DefaultArtifactStoreProvider(ClassLoader classLoader, ArtifactStorePlugin.Context ctx, Executor asyncExec) {
         this.resolver = new ArtifactStoreResolver(classLoader);
         this.ctx = ctx != null ? ctx : key -> null;
-        this.asyncExec = asyncExec != null ? asyncExec : ForkJoinPool.commonPool();
+        this.asyncExec = asyncExec != null ? asyncExec : ArtifactStoreExecutors.defaultAsyncExecutor();
     }
 
     /**
@@ -55,7 +55,7 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
                                         Executor asyncExec) {
         this.resolver = Objects.requireNonNull(resolver);
         this.ctx = ctx != null ? ctx : key -> null;
-        this.asyncExec = asyncExec != null ? asyncExec : ForkJoinPool.commonPool();
+        this.asyncExec = asyncExec != null ? asyncExec : ArtifactStoreExecutors.defaultAsyncExecutor();
     }
 
     private static CompositeArtifactStore.WriteMode parseWriteMode(String value) {

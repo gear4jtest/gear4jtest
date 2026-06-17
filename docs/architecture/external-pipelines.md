@@ -111,8 +111,10 @@ unexpectedly large inputs before loading them fully in memory.
 `ArtifactStore.put(InputStream)` and `AssemblyLineManager` now apply a bounded
 default of `ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES` /
 `AssemblyLineManager.DEFAULT_MAX_ARTIFACT_SIZE_BYTES` (5 MiB). Composite-store
-read verification uses the same default bound. Applications that intentionally
-need larger generated definitions must pass an explicit limit to the advanced
-manager constructor or call `ArtifactStore.put(InputStream, maxBytes)` directly.
+read verification uses the same default bound, and composite streaming writes
+spool through temporary files so synchronous fallbacks do not require a second
+full in-memory copy. Applications that intentionally need larger generated
+definitions must pass an explicit limit to the advanced manager constructor or
+call `ArtifactStore.put(InputStream, maxBytes)` directly.
 `ArtifactStore.UNLIMITED_SIZE` remains available only as an explicit opt-in for
 trusted deployments.

@@ -75,6 +75,36 @@ class JdbcSchemaMigratorTest {
     }
 
     @Test
+    void coreV1Migration_shouldIncludeExecutionHistoryIndexesForEveryDialect() throws Exception {
+        for (Gear4jDatabaseDialect dialect : Gear4jDatabaseDialect.values()) {
+            // Given
+            String basePath = "io/github/gear4j/db/" + dialect.resourceDirectory() + "/migrations/";
+
+            // When
+            String listContent;
+            try (InputStream list = JdbcSchemaMigrator.class.getClassLoader()
+                    .getResourceAsStream(basePath + "migrations.list")) {
+                assertThat(list).as("migration list for %s", dialect).isNotNull();
+                listContent = new String(list.readAllBytes(), StandardCharsets.UTF_8);
+            }
+            String v1Content;
+            try (InputStream migration = JdbcSchemaMigrator.class.getClassLoader()
+                    .getResourceAsStream(basePath + "V1__create_execution_schema.sql")) {
+                assertThat(migration).as("V1 migration for %s", dialect).isNotNull();
+                v1Content = new String(migration.readAllBytes(), StandardCharsets.UTF_8);
+            }
+
+            // Then
+            assertThat(listContent).as("migration list for %s", dialect)
+                    .contains("V1__create_execution_schema.sql")
+                    .doesNotContain("V2__add_execution_history_indexes.sql");
+            assertThat(v1Content).as("V1 migration for %s", dialect)
+                    .contains("idx_ar_pipe_start")
+                    .contains("idx_ar_status_start");
+        }
+    }
+
+    @Test
     void migrate_shouldUseTransactionAndSchemaLockWhenConnectionOwnsAutoCommit() throws Exception {
         // Given
         Connection connection = mock(Connection.class);

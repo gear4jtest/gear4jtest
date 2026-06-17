@@ -43,5 +43,6 @@ If Spring Boot Actuator is on the classpath and JDBC persistence is enabled, the
 starter contributes a `gear4jPersistenceHealthIndicator` bean. The indicator is
 `UP` when persistence statistics can be read and includes the current number of
 active run buffers, buffered station logs, scheduled/completed/failed flushes and
-rejected appends. If the manager cannot expose its snapshot, the indicator is
-`DOWN` with the thrown exception.
+rejected appends. Failed flushes or rejected appends make the indicator `DOWN`
+because persistence is no longer healthy. If the manager cannot expose its
+snapshot, the indicator is `DOWN` with the thrown exception.

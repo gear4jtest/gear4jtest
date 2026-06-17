@@ -96,3 +96,5 @@ CREATE INDEX IF NOT EXISTS idx_pe_status ON assembly_run(status);
 CREATE INDEX IF NOT EXISTS idx_oe_pipeline_id ON station_log(pipeline_execution_id);
 CREATE INDEX IF NOT EXISTS idx_station_log_exec_parent ON station_log(pipeline_execution_id, parent_log_id);
 CREATE INDEX IF NOT EXISTS idx_station_log_run_start ON station_log (pipeline_execution_id, start_time, id);
+CREATE INDEX IF NOT EXISTS idx_ar_pipe_start ON assembly_run (pipeline_id, start_time);
+CREATE INDEX IF NOT EXISTS idx_ar_status_start ON assembly_run (status, start_time);

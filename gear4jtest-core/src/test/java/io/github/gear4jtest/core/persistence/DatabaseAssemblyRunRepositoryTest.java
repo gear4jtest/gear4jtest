@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -130,7 +131,7 @@ class DatabaseAssemblyRunRepositoryTest {
     }
 
     @Test
-    void saveOperationRecordsBatch_shouldIgnoreDuplicateInsertForAlreadyFinalizedLog() throws Exception {
+    void saveOperationRecordsBatch_shouldUseJdbcBatchForOpenUpdatesAndMissingInserts() throws Exception {
         // Given
         DataSource dataSource = mock(DataSource.class);
         Connection connection = mock(Connection.class);
@@ -142,19 +143,56 @@ class DatabaseAssemblyRunRepositoryTest {
             String sql = invocation.getArgument(0, String.class);
             return sql.startsWith("UPDATE station_log") ? update : insert;
         });
-        when(update.executeUpdate()).thenReturn(0);
-        SQLException duplicate = new SQLException("duplicate key", "23505");
-        when(insert.executeUpdate()).thenThrow(duplicate);
+        when(update.executeBatch()).thenReturn(new int[] { 1, 0 });
+        when(insert.executeBatch()).thenReturn(new int[] { 1 });
 
         DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
                 Gear4jDatabaseDialect.POSTGRESQL, new ObjectMapper());
-        StationLogRecord record = new StationLogRecord(UUID.randomUUID(), UUID.randomUUID(), "step", null,
-                StationLogStatus.SUCCEEDED, Instant.now(), Instant.now(), null, null, Map.of(), "item-1");
+        StationLogRecord first = stationLogRecord("step-1");
+        StationLogRecord second = stationLogRecord("step-2");
+
+        // When
+        repository.saveOperationRecordsBatch(java.util.List.of(first, second));
+
+        // Then
+        verify(update, times(2)).addBatch();
+        verify(update).executeBatch();
+        verify(insert).addBatch();
+        verify(insert).executeBatch();
+        verify(connection).commit();
+        verify(connection).setAutoCommit(true);
+    }
+
+    @Test
+    void saveOperationRecordsBatch_shouldFallbackToSingleRecordAlgorithmOnDuplicateBatchInsert() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement update = mock(PreparedStatement.class);
+        PreparedStatement insert = mock(PreparedStatement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.getAutoCommit()).thenReturn(true);
+        when(connection.prepareStatement(anyString())).thenAnswer(invocation -> {
+            String sql = invocation.getArgument(0, String.class);
+            return sql.startsWith("UPDATE station_log") ? update : insert;
+        });
+        when(update.executeBatch()).thenReturn(new int[] { 0 });
+        SQLException duplicate = new SQLException("duplicate key", "23505");
+        when(insert.executeBatch()).thenThrow(duplicate);
+        when(update.executeUpdate()).thenReturn(0);
+
+        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
+                Gear4jDatabaseDialect.POSTGRESQL, new ObjectMapper());
+        StationLogRecord record = stationLogRecord("step");
 
         // When
         repository.saveOperationRecordsBatch(java.util.List.of(record));
 
         // Then
+        verify(update).executeBatch();
+        verify(insert).executeBatch();
+        verify(update).executeUpdate();
+        verify(insert).executeUpdate();
         verify(connection).commit();
         verify(connection).setAutoCommit(true);
     }
@@ -242,6 +280,11 @@ class DatabaseAssemblyRunRepositoryTest {
         // Then
         verify(statement).setInt(1, 20);
         verify(statement).setInt(2, 10);
+    }
+
+    private static StationLogRecord stationLogRecord(String operationId) {
+        return new StationLogRecord(UUID.randomUUID(), UUID.randomUUID(), operationId, null, StationLogStatus.SUCCEEDED,
+                Instant.now(), Instant.now(), null, null, Map.of(), "item-1");
     }
 
     private static AssemblyRunRecord runRecord() {

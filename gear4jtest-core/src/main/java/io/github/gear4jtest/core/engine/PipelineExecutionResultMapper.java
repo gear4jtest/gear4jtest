@@ -1,7 +1,6 @@
 package io.github.gear4jtest.core.engine;
 
 import java.time.Instant;
-import java.util.HashMap;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.ExecutionOutcome;
@@ -76,7 +75,7 @@ final class PipelineExecutionResultMapper {
         }
 
         try {
-            execution.setContext(new HashMap<>(context.getContext()));
+            execution.setContext(context.snapshotContext());
         } catch (Throwable throwable) {
             LOGGER.warn("Failed to capture execution context for run {}. The run trace will keep its previous context.",
                         execution.getId(), throwable);

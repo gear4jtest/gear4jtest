@@ -10,6 +10,7 @@ import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ExecutionContextTest {
     @Test
@@ -25,6 +26,22 @@ class ExecutionContextTest {
         assertThat(context.get("tenant", String.class)).isEqualTo("tenant-a");
         assertThat(context.get("attempt", Integer.class)).isEqualTo(2);
         assertThat(context.getContext()).containsEntry("tenant", "tenant-a");
+    }
+
+    @Test
+    void snapshotContext_shouldReturnImmutablePointInTimeCopy() {
+        // Given
+        ExecutionContext context = newContext();
+        context.put("tenant", "tenant-a");
+        Map<String, Object> snapshot = context.snapshotContext();
+
+        // When
+        context.put("tenant", "tenant-b");
+        context.put("new", "value");
+
+        // Then
+        assertThat(snapshot).containsEntry("tenant", "tenant-a").doesNotContainKey("new");
+        assertThatThrownBy(() -> snapshot.put("other", "value")).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test

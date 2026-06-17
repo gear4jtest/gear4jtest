@@ -111,6 +111,19 @@ public class ExecutionContext {
         return context;
     }
 
+    /**
+     * Returns an immutable point-in-time copy of the run context.
+     *
+     * <p>
+     * {@link #getContext()} remains mutable for existing station and side-compute
+     * integrations. Runtime infrastructure should prefer this method when it only
+     * needs to observe or persist the context.
+     * </p>
+     */
+    public Map<String, Object> snapshotContext() {
+        return Map.copyOf(context);
+    }
+
     public SideComputeContext getSideComputeContext() {
         return sideComputeContext;
     }

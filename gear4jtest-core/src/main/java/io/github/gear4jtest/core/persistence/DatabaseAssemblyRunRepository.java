@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -231,11 +232,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         }
 
         try {
-            JdbcRepositoryTransaction.run(dataSource, conn -> {
-                for (StationLogRecord rec : records) {
-                    saveOperationRecord(conn, rec);
-                }
-            });
+            JdbcRepositoryTransaction.run(dataSource, conn -> saveOperationRecordsBatch(conn, records));
         } catch (SQLException e) {
             throw persistenceFailure("save station log batch " + describeRecords(records), e);
         }
@@ -243,6 +240,14 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     public void saveOperationRecord(StationLogRecord record) {
         saveOperationRecordsBatch(List.of(record));
+    }
+
+    private void saveOperationRecordsBatch(Connection conn, List<StationLogRecord> records) throws SQLException {
+        List<StationLogRecord> insertCandidates = updateOpenStationLogsBatch(conn, records);
+        if (insertCandidates.isEmpty()) {
+            return;
+        }
+        insertStationLogsBatch(conn, insertCandidates);
     }
 
     private void saveOperationRecord(Connection conn, StationLogRecord rec) throws SQLException {
@@ -253,13 +258,62 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         try {
             insertStationLog(conn, rec);
         } catch (SQLException e) {
-            if (!databaseDialect.isUniqueViolation(e)) {
+            if (!isUniqueViolation(e)) {
                 throw e;
             }
             // The row already exists, either because another writer inserted it or because
             // the log is already finalized. Try one last open-row update; if it still
             // updates zero rows, keep the existing finalized record unchanged.
             updateOpenStationLog(conn, rec);
+        }
+    }
+
+    private List<StationLogRecord> updateOpenStationLogsBatch(Connection conn, List<StationLogRecord> records)
+            throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement(DatabaseAssemblyRunSql.updateOpenStationLog())) {
+            for (StationLogRecord rec : records) {
+                stationLogBinder.bindUpdateOpen(stmt, rec);
+                stmt.addBatch();
+            }
+            int[] counts = stmt.executeBatch();
+            return recordsRequiringInsert(records, counts);
+        }
+    }
+
+    private List<StationLogRecord> recordsRequiringInsert(List<StationLogRecord> records, int[] updateCounts) {
+        if (updateCounts == null || updateCounts.length != records.size()) {
+            return List.copyOf(records);
+        }
+        List<StationLogRecord> insertCandidates = new ArrayList<>();
+        for (int i = 0; i < updateCounts.length; i++) {
+            int count = updateCounts[i];
+            if (count == 0 || count == Statement.SUCCESS_NO_INFO) {
+                insertCandidates.add(records.get(i));
+            } else if (count == Statement.EXECUTE_FAILED) {
+                return List.copyOf(records);
+            }
+        }
+        return insertCandidates;
+    }
+
+    private void insertStationLogsBatch(Connection conn, List<StationLogRecord> records) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement(DatabaseAssemblyRunSql.insertStationLog())) {
+            for (StationLogRecord rec : records) {
+                stationLogBinder.bindInsert(stmt, rec);
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+        } catch (SQLException e) {
+            if (!isUniqueViolation(e)) {
+                throw e;
+            }
+            // A batch insert can fail after only part of the batch was applied, and JDBC
+            // drivers expose this differently. Fall back to the single-record algorithm so
+            // every candidate is either inserted, updated if still open, or deliberately
+            // left unchanged when the existing row is already finalized.
+            for (StationLogRecord rec : records) {
+                saveOperationRecord(conn, rec);
+            }
         }
     }
 
@@ -309,6 +363,17 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             }
         }
         return "size=" + records.size() + ", runIds=" + runIds + ", stationLogIds=" + logIds;
+    }
+
+    private boolean isUniqueViolation(SQLException exception) {
+        SQLException current = exception;
+        while (current != null) {
+            if (databaseDialect.isUniqueViolation(current)) {
+                return true;
+            }
+            current = current.getNextException();
+        }
+        return false;
     }
 
     private ExecutionPersistenceException persistenceFailure(String operation, SQLException cause) {
