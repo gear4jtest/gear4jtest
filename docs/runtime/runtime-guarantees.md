@@ -52,6 +52,20 @@ Not guaranteed today:
 If persistence is enabled without a `SensitiveDataRedactor`, payloads, contexts and results are persisted as-is. This is
 acceptable for local development only unless the application data model is known to be non-sensitive.
 
+## External RUN publication
+
+Status: Implemented.
+
+RUN publication through `AssemblyLineManager` validates the candidate artifact before inserting RUN metadata. The
+validation path reads the artifact, translates it and compiles the generated Java source. If validation fails, no RUN
+object is inserted and the latest RUN alias is not invalidated.
+
+Not guaranteed today:
+
+- validation does not execute the generated pipeline;
+- validation does not instantiate the generated class or inject dependencies;
+- validation does not sandbox trusted inline Java.
+
 ## XML and generated code
 
 Status: Implemented.

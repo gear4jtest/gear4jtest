@@ -134,6 +134,16 @@ existing table exactly matches the shipped SQL. Applications with strict DB
 requirements should manage the SQL through their own migration process and review
 it explicitly.
 
+## Station-log write strategy
+
+Core station-log persistence preserves finalized rows: once a station log has an `end_time`, later writes for the same id
+are deliberately ignored by the normal persistence path instead of overwriting the final record.
+
+For PostgreSQL, MySQL and MariaDB, `DatabaseAssemblyRunRepository` uses a native batched upsert that inserts missing logs
+and updates existing logs only while the stored row is still open. H2 and Oracle keep the portable update-then-insert path.
+Oracle stays on the portable path until its native `MERGE` variant is covered by integration tests for the CLOB/JSON
+bindings used by Gear4J.
+
 ## Runtime locking and transaction boundaries
 
 Gear4J-managed migrations now create and use a lightweight portable lock table:

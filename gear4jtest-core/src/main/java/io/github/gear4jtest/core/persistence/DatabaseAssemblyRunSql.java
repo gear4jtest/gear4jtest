@@ -78,8 +78,47 @@ final class DatabaseAssemblyRunSql {
     }
 
     static String insertStationLog() {
+        return stationLogInsertBase();
+    }
+
+    static String upsertStationLog(Gear4jDatabaseDialect dialect) {
+        return switch (dialect) {
+            case POSTGRESQL -> postgresqlUpsertStationLog();
+            case MYSQL, MARIADB -> mysqlUpsertStationLog();
+            case H2, ORACLE -> throw new IllegalArgumentException("Native station-log upsert is not supported for "
+                    + dialect);
+        };
+    }
+
+    private static String stationLogInsertBase() {
         return "INSERT INTO station_log (id, pipeline_execution_id, operation_id, parent_log_id, branch_id, "
                 + "status, start_time, end_time, error_message, error_handler_messages, context, item_id) "
                 + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+    }
+
+    private static String postgresqlUpsertStationLog() {
+        return stationLogInsertBase()
+                + " ON CONFLICT (id) DO UPDATE SET "
+                + "branch_id = EXCLUDED.branch_id, "
+                + "status = EXCLUDED.status, "
+                + "end_time = EXCLUDED.end_time, "
+                + "error_message = EXCLUDED.error_message, "
+                + "error_handler_messages = EXCLUDED.error_handler_messages, "
+                + "context = EXCLUDED.context, "
+                + "item_id = EXCLUDED.item_id "
+                + "WHERE station_log.end_time IS NULL";
+    }
+
+    private static String mysqlUpsertStationLog() {
+        return stationLogInsertBase()
+                + " ON DUPLICATE KEY UPDATE "
+                + "branch_id = IF(end_time IS NULL, VALUES(branch_id), branch_id), "
+                + "status = IF(end_time IS NULL, VALUES(status), status), "
+                + "error_message = IF(end_time IS NULL, VALUES(error_message), error_message), "
+                + "error_handler_messages = IF(end_time IS NULL, VALUES(error_handler_messages), "
+                + "error_handler_messages), "
+                + "context = IF(end_time IS NULL, VALUES(context), context), "
+                + "item_id = IF(end_time IS NULL, VALUES(item_id), item_id), "
+                + "end_time = IF(end_time IS NULL, VALUES(end_time), end_time)";
     }
 }

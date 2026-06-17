@@ -121,8 +121,7 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         boolean verifyOnRead = isTrue(props.get("verifyOnRead"));
         boolean selfHealing = isTrue(props.get("selfHealing"));
         long verificationMaxArtifactSizeBytes = parseLong(props.get("verificationMaxArtifactSizeBytes"),
-                                                          ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES,
-                                                          "verificationMaxArtifactSizeBytes");
+                ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES, "verificationMaxArtifactSizeBytes");
 
         // Primary store type declared by the pipeline configuration.
         ArtifactStore primary = resolver.resolve(cfg.storeType().name(), props, ctx);

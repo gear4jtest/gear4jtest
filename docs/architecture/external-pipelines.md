@@ -21,6 +21,17 @@ contract.
 | `gear4jtest-gradle-xml2java` | Build-time generation from XML.                                                  |
 | `gear4jtest-core`            | Runtime execution after an `AssemblyLine` exists.                                |
 
+## RUN publication validation
+
+Before a TEST object is promoted to RUN, or before a direct RUN publication is persisted for a configuration that allows
+it, `AssemblyLineManager` validates the RUN candidate by reading the artifact, resolving the translator, translating the
+external definition and compiling the generated Java source. RUN metadata and latest-alias invalidation happen only after
+that validation succeeds.
+
+This validation intentionally stops before instantiating the generated class or injecting application dependencies.
+Instantiation can have dependency-container side effects and remains part of the normal runtime loading path. The promotion
+contract is therefore: the artifact is present, readable, translatable and compilable before it can become RUN.
+
 ## Runtime loading path
 
 The runtime external loading path is coordinated by `AssemblyLineManager`:

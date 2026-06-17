@@ -1,19 +1,23 @@
 package io.github.gear4jtest.external.api;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import io.github.gear4jtest.external.api.artifact.InMemoryArtifactStore;
+import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompiler;
 import io.github.gear4jtest.external.api.loader.ClassLoaderRegistry;
 import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
+import io.github.gear4jtest.external.api.loader.SimpleDependencyInjector;
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainTagRepository;
 import io.github.gear4jtest.external.api.storage.ArtifactStoreProvider;
+import io.github.gear4jtest.external.api.translator.OperationChainTranslator;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslatorResolver;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -21,7 +25,9 @@ import org.mockito.ArgumentCaptor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,6 +38,7 @@ class AssemblyLineManagerTest {
     private final ArtifactStoreProvider storeProvider = mock(ArtifactStoreProvider.class);
     private final ClassLoaderRegistry classLoaderRegistry = mock(ClassLoaderRegistry.class);
     private final OperationChainTranslatorResolver translatorResolver = mock(OperationChainTranslatorResolver.class);
+    private final GeneratedSourceCompiler compiler = mock(GeneratedSourceCompiler.class);
 
     @Test
     void registerAssemblyLine_shouldStoreArtifactPersistObjectAndTags() throws Exception {
@@ -76,10 +83,16 @@ class AssemblyLineManagerTest {
     }
 
     @Test
-    void promoteTestToRun_shouldPublishRunObjectAndInvalidateLatestAlias() throws Exception {
+    void promoteTestToRun_shouldValidateCompilePublishRunObjectAndInvalidateLatestAlias() throws Exception {
         // Given
         AssemblyLineManager manager = manager();
-        OperationChainObject testObject = object("line", "1.0.0", ExecutionMode.TEST, "a".repeat(64), 42L);
+        InMemoryArtifactStore artifactStore = new InMemoryArtifactStore();
+        byte[] content = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
+        String contentHash = artifactStore.put(content);
+        OperationChainObject testObject = object("line", "1.0.0", ExecutionMode.TEST, contentHash, content.length);
+        when(configRepository.findByAssemblyLineId("line")).thenReturn(Optional.of(memoryConfig("line")));
+        when(storeProvider.forConfig(any())).thenReturn(artifactStore);
+        stubSuccessfulRunValidation();
         when(objectRepository.find("line", "1.0.0", ExecutionMode.TEST)).thenReturn(Optional.of(testObject));
         when(objectRepository.exists("line", "1.0.0", ExecutionMode.RUN)).thenReturn(false);
 
@@ -97,6 +110,32 @@ class AssemblyLineManagerTest {
                 .containsExactly("line", "1.0.0", ExecutionMode.RUN, testObject.contentHash(),
                                  testObject.sizeBytes(), "promoter");
         verify(classLoaderRegistry).clearAlias("al/line/RUN/latest");
+    }
+
+    @Test
+    void promoteTestToRun_shouldRejectInvalidRunCandidateBeforePublishingRunObject() throws Exception {
+        // Given
+        AssemblyLineManager manager = manager();
+        InMemoryArtifactStore artifactStore = new InMemoryArtifactStore();
+        byte[] content = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
+        String contentHash = artifactStore.put(content);
+        OperationChainObject testObject = object("line", "1.0.0", ExecutionMode.TEST, contentHash, content.length);
+        when(configRepository.findByAssemblyLineId("line")).thenReturn(Optional.of(memoryConfig("line")));
+        when(storeProvider.forConfig(any())).thenReturn(artifactStore);
+        OperationChainTranslator translator = mock(OperationChainTranslator.class);
+        when(translatorResolver.resolve("application/xml")).thenReturn(translator);
+        when(translator.translate(any(byte[].class), eq("application/xml")))
+                .thenReturn(new OperationChainTranslator.GenerationResult("io.test.Generated", "broken source"));
+        when(compiler.compile(eq("io.test.Generated"), any(byte[].class))).thenThrow(new IllegalStateException("boom"));
+        when(objectRepository.find("line", "1.0.0", ExecutionMode.TEST)).thenReturn(Optional.of(testObject));
+        when(objectRepository.exists("line", "1.0.0", ExecutionMode.RUN)).thenReturn(false);
+
+        // When / Then
+        assertThatThrownBy(() -> manager.promoteTestToRun("line", "1.0.0", "promoter"))
+                .isInstanceOf(AssemblyLineManager.PolicyViolationException.class)
+                .hasMessageContaining("RUN candidate validation failed")
+                .hasCauseInstanceOf(IllegalStateException.class);
+        verify(objectRepository, never()).insert(any());
     }
 
     @Test
@@ -141,7 +180,18 @@ class AssemblyLineManagerTest {
 
     private AssemblyLineManager manager() {
         return new AssemblyLineManager(configRepository, objectRepository, tagRepository, storeProvider,
-                classLoaderRegistry, translatorResolver);
+                classLoaderRegistry, translatorResolver, compiler, new SimpleDependencyInjector(),
+                getClass().getClassLoader());
+    }
+
+    private void stubSuccessfulRunValidation() throws Exception {
+        OperationChainTranslator translator = mock(OperationChainTranslator.class);
+        when(translatorResolver.resolve("application/xml")).thenReturn(translator);
+        when(translator.translate(any(byte[].class), eq("application/xml")))
+                .thenReturn(new OperationChainTranslator.GenerationResult("io.test.Generated",
+                        "package io.test; public final class Generated {}"));
+        when(compiler.compile(eq("io.test.Generated"), any(byte[].class)))
+                .thenReturn(Map.of("io.test.Generated", new byte[] { 1 }));
     }
 
     private static OperationChainConfig memoryConfig(String alId) {

@@ -13,8 +13,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.inOrder;
@@ -147,7 +149,7 @@ class DatabaseAssemblyRunRepositoryTest {
         when(insert.executeBatch()).thenReturn(new int[] { 1 });
 
         DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL, new ObjectMapper());
+                Gear4jDatabaseDialect.H2, new ObjectMapper());
         StationLogRecord first = stationLogRecord("step-1");
         StationLogRecord second = stationLogRecord("step-2");
 
@@ -159,6 +161,36 @@ class DatabaseAssemblyRunRepositoryTest {
         verify(update).executeBatch();
         verify(insert).addBatch();
         verify(insert).executeBatch();
+        verify(connection).commit();
+        verify(connection).setAutoCommit(true);
+    }
+
+    @Test
+    void saveOperationRecordsBatch_shouldUseNativeUpsertForSupportedDialects() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement upsert = mock(PreparedStatement.class);
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.getAutoCommit()).thenReturn(true);
+        when(connection.prepareStatement(sqlCaptor.capture())).thenReturn(upsert);
+        when(upsert.executeBatch()).thenReturn(new int[] { 1, 1 });
+
+        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
+                Gear4jDatabaseDialect.POSTGRESQL, new ObjectMapper());
+        StationLogRecord first = stationLogRecord("step-1");
+        StationLogRecord second = stationLogRecord("step-2");
+
+        // When
+        repository.saveOperationRecordsBatch(java.util.List.of(first, second));
+
+        // Then
+        assertThat(sqlCaptor.getValue())
+                .contains("ON CONFLICT (id) DO UPDATE")
+                .contains("WHERE station_log.end_time IS NULL");
+        verify(upsert, times(2)).addBatch();
+        verify(upsert).executeBatch();
         verify(connection).commit();
         verify(connection).setAutoCommit(true);
     }
@@ -182,7 +214,7 @@ class DatabaseAssemblyRunRepositoryTest {
         when(update.executeUpdate()).thenReturn(0);
 
         DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL, new ObjectMapper());
+                Gear4jDatabaseDialect.H2, new ObjectMapper());
         StationLogRecord record = stationLogRecord("step");
 
         // When

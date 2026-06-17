@@ -85,8 +85,10 @@ public class AssemblyLineManager {
         this.aliasService = new AssemblyLineAliasService(classLoaderRegistry);
         var loader = new GeneratedAssemblyLineLoader(storeResolver, classLoaderRegistry, translatorResolver,
                 effectiveCompiler, effectiveDependencyInjector, parent, effectiveMaxArtifactSizeBytes, aliasService);
+        var publicationValidator = new AssemblyLinePublicationValidator(storeResolver, translatorResolver,
+                effectiveCompiler, effectiveMaxArtifactSizeBytes);
         this.publicationService = new AssemblyLinePublicationService(configRepo, objectRepo, chainTagRepo,
-                storeResolver, aliasService, effectiveMaxArtifactSizeBytes);
+                storeResolver, aliasService, publicationValidator, effectiveMaxArtifactSizeBytes);
         this.lookupService = new AssemblyLineLookupService(objectRepo, loader, aliasService);
     }
 
@@ -159,6 +161,10 @@ public class AssemblyLineManager {
     public static final class PolicyViolationException extends Exception {
         public PolicyViolationException(String message) {
             super(message);
+        }
+
+        public PolicyViolationException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }

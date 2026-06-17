@@ -42,6 +42,7 @@ class Gear4jAutoConfigurationTest {
         });
     }
 
+
     @Test
     void boot_engine_should_execute_nested_pipeline_calls_with_default_runtime_strategies() {
         // Given / When / Then
@@ -74,10 +75,10 @@ class Gear4jAutoConfigurationTest {
                         var slowStation = ElementModelBuilders
                                 .<String, String, SlowOperator>processingOperation("slow", SlowOperator.class)
                                 .build();
-                        ContainerBaseStation<String, String> container = new ContainerBaseStation.Builder<String, String>(
-                                branchExecutor)
-                                .withSubLine("slow-branch", slowStation)
-                                .returns(value -> value);
+                        ContainerBaseStation<String, String> container =
+                                new ContainerBaseStation.Builder<String, String>(branchExecutor)
+                                        .withSubLine("slow-branch", slowStation)
+                                        .returns(value -> value);
                         AssemblyLine<String, String> pipeline = ElementModelBuilders
                                 .<String>createAssemblyLine("parallel-timeout")
                                 .then(container)
@@ -131,6 +132,7 @@ class Gear4jAutoConfigurationTest {
                             .hasRootCauseMessage("gear4j.persistence.dialect is required when persistence is enabled");
                 });
     }
+
 
     public static final class AppendBangOperator implements Operator<String, String> {
         @Override

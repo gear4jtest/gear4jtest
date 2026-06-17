@@ -38,6 +38,13 @@ When JDBC persistence is enabled:
 - keep persistence history queries paginated. `PageRequest` is intentionally
   capped at 1,000 rows per call to avoid accidental large reads.
 
+## External RUN promotion
+
+Before an external TEST definition is promoted to RUN, Gear4J translates and compiles the candidate artifact. Treat this
+as a release gate for generated source validity, not as a full execution test: promotion validation does not instantiate
+the generated class, inject dependencies or run the pipeline. Keep a separate application-level validation flow for
+semantic tests and dependency availability.
+
 ## Artifacts
 
 Generated pipeline artifacts are generally expected to be small XML/source

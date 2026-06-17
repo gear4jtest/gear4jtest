@@ -115,6 +115,10 @@ public enum Gear4jDatabaseDialect {
         return value == null || value.isBlank() ? null : UUID.fromString(value);
     }
 
+    boolean supportsNativeStationLogUpsert() {
+        return this == POSTGRESQL || this == MYSQL || this == MARIADB;
+    }
+
     String pagedSql(String orderedSql) {
         return this == ORACLE ? orderedSql + " OFFSET ? ROWS FETCH NEXT ? ROWS ONLY"
                 : orderedSql + " LIMIT ? OFFSET ?";

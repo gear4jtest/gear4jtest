@@ -92,3 +92,22 @@ The default Micrometer extension keeps the historical tags such as `pipeline.id`
 pipeline or operation identifiers should avoid exporting unbounded-cardinality
 tags. They can provide a custom `Gear4jMeterTagPolicy` bean to control the exact
 set of tags emitted by the Micrometer extension.
+
+## Recommended MVP dashboards
+
+A first production dashboard should stay operational rather than business-level. Keep it low-cardinality and focus on
+saturation, latency and drops:
+
+| Panel | Metrics | Alert direction |
+| --- | --- | --- |
+| Run throughput | `gear4j.runs.started`, `gear4j.runs.completed` | completed much lower than started for a sustained period |
+| Run latency | `gear4j.runs.duration` | p95/p99 above the application SLO |
+| Station latency | `gear4j.stations.duration` | one station class starts dominating runtime |
+| Persistence backlog | `gear4j.persistence.buffered.station.logs`, `gear4j.persistence.active.runs` | steadily increasing backlog |
+| Persistence flush health | `gear4j.persistence.flushes.scheduled`, `gear4j.persistence.flushes.completed`, `gear4j.persistence.flushes.failed` | failed flushes increasing or completed no longer following scheduled |
+| Persistence backpressure | `gear4j.persistence.appends.rejected` | any sustained non-zero value |
+| Event queue pressure | `gear4j.events.queued`, `gear4j.events.queue.remaining.capacity`, `gear4j.events.dropped` | remaining capacity near zero or dropped events increasing |
+| Reaction pressure | `gear4j.reactions.pending`, `gear4j.reactions.in.flight`, `gear4j.reactions.dropped`, `gear4j.reactions.failed` | pending grows, dropped/failed increases |
+
+Do not add raw `pipeline.id`, `operation.id` or exception-message tags to a default dashboard. If an application needs
+those dimensions, expose them through an explicit `Gear4jMeterTagPolicy` and review the expected cardinality first.

@@ -20,6 +20,7 @@ final class AssemblyLinePublicationService {
     private final OperationChainTagRepository tagRepository;
     private final AssemblyLineStoreResolver storeResolver;
     private final AssemblyLineAliasService aliasService;
+    private final AssemblyLinePublicationValidator publicationValidator;
     private final long maxArtifactSizeBytes;
 
     AssemblyLinePublicationService(OperationChainConfigRepository configRepository,
@@ -27,12 +28,14 @@ final class AssemblyLinePublicationService {
                                    OperationChainTagRepository tagRepository,
                                    AssemblyLineStoreResolver storeResolver,
                                    AssemblyLineAliasService aliasService,
+                                   AssemblyLinePublicationValidator publicationValidator,
                                    long maxArtifactSizeBytes) {
         this.configRepository = requireNonNull(configRepository);
         this.objectRepository = requireNonNull(objectRepository);
         this.tagRepository = requireNonNull(tagRepository);
         this.storeResolver = requireNonNull(storeResolver);
         this.aliasService = requireNonNull(aliasService);
+        this.publicationValidator = requireNonNull(publicationValidator);
         this.maxArtifactSizeBytes = AssemblyLineIdentifiers.requireValidArtifactSize(maxArtifactSizeBytes);
     }
 
@@ -67,6 +70,9 @@ final class AssemblyLinePublicationService {
 
         OperationChainObject obj = new OperationChainObject(null, alId, version, mode, hash, content.length,
                 AssemblyLineIdentifiers.normalizeMediaType(mediaType), Instant.now(), createdBy, Instant.now());
+        if (mode == ExecutionMode.RUN) {
+            publicationValidator.validateRunCandidate(alId, obj);
+        }
         objectRepository.insert(obj);
         if (mode == ExecutionMode.RUN) {
             aliasService.invalidateLatestRun(alId);
@@ -97,6 +103,7 @@ final class AssemblyLinePublicationService {
         }
         var runObj = new OperationChainObject(null, alId, version, ExecutionMode.RUN, testObj.contentHash(),
                 testObj.sizeBytes(), testObj.mimeType(), Instant.now(), promotedBy, Instant.now());
+        publicationValidator.validateRunCandidate(alId, runObj);
         objectRepository.insert(runObj);
         aliasService.invalidateLatestRun(alId);
     }

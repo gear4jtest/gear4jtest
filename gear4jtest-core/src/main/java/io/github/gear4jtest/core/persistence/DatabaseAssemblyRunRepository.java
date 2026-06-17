@@ -243,6 +243,11 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     private void saveOperationRecordsBatch(Connection conn, List<StationLogRecord> records) throws SQLException {
+        if (databaseDialect.supportsNativeStationLogUpsert()) {
+            upsertStationLogsBatch(conn, records);
+            return;
+        }
+
         List<StationLogRecord> insertCandidates = updateOpenStationLogsBatch(conn, records);
         if (insertCandidates.isEmpty()) {
             return;
@@ -294,6 +299,16 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             }
         }
         return insertCandidates;
+    }
+
+    private void upsertStationLogsBatch(Connection conn, List<StationLogRecord> records) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement(DatabaseAssemblyRunSql.upsertStationLog(databaseDialect))) {
+            for (StationLogRecord rec : records) {
+                stationLogBinder.bindInsert(stmt, rec);
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+        }
     }
 
     private void insertStationLogsBatch(Connection conn, List<StationLogRecord> records) throws SQLException {
