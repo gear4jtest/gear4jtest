@@ -147,11 +147,12 @@ final class PersistenceFlushCoordinator {
             try {
                 buffer.close();
                 flushBufferBlocking(buffer, true);
+                buffers.remove(buffer.runId());
             } catch (Exception e) {
+                counters.recordFailedFlush();
                 LOGGER.error("Failed to flush buffered station logs during shutdown. runId={}", buffer.runId(), e);
             }
         }
-        buffers.clear();
         if (ownsFlushExecutor) {
             flushExecutor.shutdown();
             awaitFlushExecutorTermination(timeout);

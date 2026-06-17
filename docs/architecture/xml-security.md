@@ -65,6 +65,8 @@ access. The current XML integration supports GEL for conditions:
 The MVP language supports literals, paths such as `input.foo` and
 `variables.foo`, equality/inequality, boolean operators and parentheses. It does
 not support Java method calls, constructors, type lookup, class literals, static
-access, reflection, I/O or networking.
+access, reflection, I/O or networking. Reflective Java metadata properties such
+as `class`, `getClass` and `metaClass` are rejected on object paths; map keys with
+those names remain regular data keys.
 
 See [Gear4J expression language](../roadmap/gear-expression-language.md).

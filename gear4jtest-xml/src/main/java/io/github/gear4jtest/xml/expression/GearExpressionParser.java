@@ -1,11 +1,13 @@
 package io.github.gear4jtest.xml.expression;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * MVP parser for Gear Expression Language (GEL).
@@ -163,12 +165,35 @@ public final class GearExpressionParser {
         if (target instanceof Map<?, ?> map) {
             return map.get(property);
         }
+        validateSafePropertyName(property);
         Class<?> type = target.getClass();
         Method accessor = findAccessor(type, property);
         try {
             return accessor.invoke(target);
         } catch (ReflectiveOperationException e) {
             throw new GearExpressionException("Unable to read property '" + property + "' from " + type.getName(), e);
+        }
+    }
+
+    private static final Set<String> FORBIDDEN_OBJECT_PROPERTY_NAMES = Set.of(
+                                                                              "class",
+                                                                              "getClass",
+                                                                              "metaClass",
+                                                                              "toString",
+                                                                              "hashCode",
+                                                                              "equals",
+                                                                              "clone",
+                                                                              "finalize",
+                                                                              "wait",
+                                                                              "notify",
+                                                                              "notifyAll");
+
+    private static void validateSafePropertyName(String property) {
+        if ("class".equals(property) || "getClass".equals(property) || "metaClass".equals(property)) {
+            throw new GearExpressionException("Access to Java class metadata is forbidden in GEL: " + property);
+        }
+        if (FORBIDDEN_OBJECT_PROPERTY_NAMES.contains(property)) {
+            throw new GearExpressionException("No readable property '" + property + "' on safe GEL objects");
         }
     }
 
@@ -183,13 +208,20 @@ public final class GearExpressionParser {
         for (String candidate : List.of(property, "get" + suffix, "is" + suffix)) {
             try {
                 Method method = type.getMethod(candidate);
-                if (method.getParameterCount() == 0) {
+                if (isSafeAccessor(method)) {
                     return method;
                 }
             } catch (NoSuchMethodException ignored) {
             }
         }
         throw new GearExpressionException("No readable property '" + property + "' on " + type.getName());
+    }
+
+    private static boolean isSafeAccessor(Method method) {
+        return method.getParameterCount() == 0
+                && method.getDeclaringClass() != Object.class
+                && !Modifier.isStatic(method.getModifiers())
+                && method.getReturnType() != Void.TYPE;
     }
 
     private static final class Parser {

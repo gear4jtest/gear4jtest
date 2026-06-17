@@ -181,6 +181,41 @@ class DatabaseExecutionManagerTest {
     }
 
     @Test
+    void shutdown_shouldKeepBufferedRecordsWhenFinalFlushFails() {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        doThrow(new ExecutionPersistenceException("database unavailable"))
+                .when(repository).saveOperationRecordsBatch(anyList());
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder().batchSize(10)
+                .maxPendingLogsPerRun(10).flushInterval(Duration.ofDays(1)).build();
+        DatabaseExecutionManager manager = new DatabaseExecutionManager(repository, configuration, false,
+                flushExecutor, scheduler);
+        UUID runId = UUID.randomUUID();
+
+        try {
+            manager.append(record(runId));
+
+            // When
+            manager.shutdown(Duration.ofSeconds(1));
+
+            // Then
+            PersistenceRuntimeStats stats = manager.snapshotStats();
+            assertThat(stats.activeRuns()).as("a failed shutdown flush must keep the run buffer for diagnostics")
+                    .isEqualTo(1);
+            assertThat(stats.bufferedStationLogs())
+                    .as("drained records must be restored when shutdown persistence fails")
+                    .isEqualTo(1);
+            assertThat(stats.failedFlushes()).as("shutdown flush failures must be visible in runtime stats")
+                    .isEqualTo(1L);
+        } finally {
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
     void shutdown_shouldNotShutdownCallerManagedExecutors() {
         // Given
         DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);

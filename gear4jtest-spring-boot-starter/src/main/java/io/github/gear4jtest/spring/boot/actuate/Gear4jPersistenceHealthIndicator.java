@@ -17,8 +17,10 @@ public final class Gear4jPersistenceHealthIndicator implements HealthIndicator {
     public Health health() {
         try {
             PersistenceRuntimeStats stats = manager.snapshotStats();
-            return Health.up()
-                    .withDetail("activeRuns", stats.activeRuns())
+            Health.Builder health = stats.failedFlushes() > 0 || stats.rejectedAppends() > 0
+                    ? Health.down()
+                    : Health.up();
+            return health.withDetail("activeRuns", stats.activeRuns())
                     .withDetail("bufferedStationLogs", stats.bufferedStationLogs())
                     .withDetail("scheduledFlushes", stats.scheduledFlushes())
                     .withDetail("completedFlushes", stats.completedFlushes())
