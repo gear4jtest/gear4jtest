@@ -32,8 +32,8 @@ When JDBC persistence is enabled:
   `gear4j.persistence.auto-create-tables`;
 - configure a `SensitiveDataRedactor` when payloads may contain PII, secrets or
   sensitive business data;
-- tune `gear4j.persistence.batch-size`, `max-pending-logs-per-run` and
-  `flush-threads` for expected volume;
+- tune `gear4j.persistence.batch-size`, `max-pending-logs-per-run`,
+  `flush-threads` and `max-scheduled-flush-tasks` for expected volume;
 - monitor failed flushes, rejected appends and active buffers;
 - keep persistence history queries paginated. `PageRequest` is intentionally
   capped at 1,000 rows per call to avoid accidental large reads.

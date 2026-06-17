@@ -20,15 +20,23 @@ abstract class XmlAssemblyLineGeneratorExtension {
     /** Media type passed to the XML translator. */
     final Property<String> mediaType
 
+    /**
+     * Whether XML definitions are trusted Java source inputs.
+     * Defaults to false, so inline Java expressions are rejected unless the build opts in explicitly.
+     */
+    final Property<Boolean> trustedXml
+
     XmlAssemblyLineGeneratorExtension(Project project) {
         this.project = project
         this.xmlFiles = project.objects.fileCollection()
         this.outputDir = project.objects.directoryProperty()
         this.mediaType = project.objects.property(String)
+        this.trustedXml = project.objects.property(Boolean)
 
         this.xmlFiles.from(project.fileTree('src/main/gear4j') { include '**/*.xml' })
         this.outputDir.convention(project.layout.buildDirectory.dir('generated/sources/gear4j/xml2java/main'))
         this.mediaType.convention('application/xml')
+        this.trustedXml.convention(false)
     }
 
     /** Adds XML files or file collections to translate. */
@@ -54,5 +62,15 @@ abstract class XmlAssemblyLineGeneratorExtension {
     /** Allows Groovy DSL assignment such as outputDir = layout.buildDirectory.dir(...). */
     void setOutputDir(Object path) {
         outputDir.fileValue(project.file(path))
+    }
+
+    /** Allows Groovy DSL assignment such as trustedXml = true. */
+    void setTrustedXml(boolean trusted) {
+        trustedXml.set(trusted)
+    }
+
+    /** Convenience DSL method for trusted, reviewed XML definitions. */
+    void trustedXml() {
+        trustedXml.set(true)
     }
 }

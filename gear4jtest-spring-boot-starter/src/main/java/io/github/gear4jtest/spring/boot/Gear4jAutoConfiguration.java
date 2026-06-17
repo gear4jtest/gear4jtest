@@ -51,6 +51,7 @@ public class Gear4jAutoConfiguration {
                 .flushInterval(persistence.getFlushInterval())
                 .shutdownTimeout(persistence.getShutdownTimeout())
                 .flushThreadCount(persistence.getFlushThreads())
+                .maxScheduledFlushTasks(persistence.getMaxScheduledFlushTasks())
                 .build();
         return new DatabaseExecutionManager(dataSource, persistence.getDialect(), runtimeConfiguration,
                 persistence.isAutoCreateTables(), redactorProvider.getIfAvailable());

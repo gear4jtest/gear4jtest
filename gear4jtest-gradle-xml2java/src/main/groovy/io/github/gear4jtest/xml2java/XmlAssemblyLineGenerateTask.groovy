@@ -19,6 +19,7 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
     private final ConfigurableFileCollection xmlFiles = project.objects.fileCollection()
     private final DirectoryProperty outputDir = project.objects.directoryProperty()
     private final Property<String> mediaType = project.objects.property(String)
+    private final Property<Boolean> trustedXml = project.objects.property(Boolean).convention(false)
 
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
@@ -36,13 +37,20 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
         return mediaType
     }
 
+    @Input
+    Property<Boolean> getTrustedXml() {
+        return trustedXml
+    }
+
     @TaskAction
     void generate() {
         File destination = outputDir.get().asFile
         project.delete(destination)
         destination.mkdirs()
 
-        XmlOperationChainTranslator translator = XmlOperationChainTranslator.trusted()
+        XmlOperationChainTranslator translator = trustedXml.get()
+            ? XmlOperationChainTranslator.trusted()
+            : XmlOperationChainTranslator.gelOnly()
         xmlFiles.files
             .findAll { File file -> file.isFile() && file.name.endsWith('.xml') }
             .sort { File file -> file.path }

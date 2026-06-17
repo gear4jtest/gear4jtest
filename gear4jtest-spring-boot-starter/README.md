@@ -21,6 +21,7 @@ buffer and flush statistics.
 | `gear4j.persistence.batch-size` | `int` | `500` | Number of station logs flushed per persistence batch. |
 | `gear4j.persistence.max-pending-logs-per-run` | `int` | `10000` | Backpressure guard for buffered station logs per active run. Must be greater than or equal to `batch-size`. |
 | `gear4j.persistence.flush-threads` | `int` | `1` | Number of worker threads used for asynchronous JDBC station-log flushes. |
+| `gear4j.persistence.max-scheduled-flush-tasks` | `int` | `1000` | Maximum queued asynchronous flush tasks before persistence fails fast with backpressure. |
 | `gear4j.persistence.flush-interval` | `Duration` | `1s` | Periodic flush interval for pending station logs. |
 | `gear4j.persistence.shutdown-timeout` | `Duration` | `30s` | Maximum wait during persistence manager shutdown. |
 | `gear4j.metrics.enabled` | `boolean` | `true` | Enables Micrometer integration when a `MeterRegistry` bean is available. |

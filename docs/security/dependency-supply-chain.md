@@ -39,15 +39,13 @@ This is a lightweight smoke test for a future hardened release lane. The `help` 
 resolves enough artifacts to validate that dependency verification is active, but
 it is not part of the MVP development loop.
 
-`verifySupplyChainConfiguration` remains available for a future release lane. It reports missing supply-chain files by default. To resume strict enforcement later without
-rewriting the task, run it with:
+`verifySupplyChainConfiguration` remains available for a future hardened release lane. During the MVP it only reports missing supply-chain files by default and must not block ordinary checks or releases. To resume strict enforcement later without rewriting the task, run it with:
 
 ```bash
 ./gradlew verifySupplyChainConfiguration -Pgear4j.enforceSupplyChain=true
 ```
 
-With this property enabled, missing `gradle.lockfile` or `gradle/verification-metadata.xml` fails the build. It remains
-outside the MVP `check` workflow so CI/release policy can decide when to make the hardening mandatory.
+Only with this property enabled does a missing `gradle.lockfile` or `gradle/verification-metadata.xml` fail the build. If these files are present, they can be used and reviewed; if they are absent during the MVP, the build should continue. This subject is intentionally not a priority until the runtime/API/release process is stable.
 
 ## SCA
 
@@ -69,11 +67,16 @@ For pull requests during the MVP phase:
 ./gradlew --no-daemon check
 ```
 
-For release candidates, strict supply-chain checks can be re-enabled deliberately:
+For release candidates during the MVP, keep supply-chain checks opportunistic rather than mandatory:
+
+```bash
+./gradlew --no-daemon releaseCheck
+```
+
+If `gradle/verification-metadata.xml` already exists and has been reviewed, an additional strict verification smoke test can be run manually:
 
 ```bash
 ./gradlew --no-daemon --dependency-verification strict help
-./gradlew --no-daemon verifySupplyChainConfiguration -Pgear4j.enforceSupplyChain=true
 ```
 
 For scheduled security scans:
@@ -83,8 +86,9 @@ For scheduled security scans:
 ```
 
 If `verification-metadata.xml` has not been committed yet, the strict verification
-step should be treated as a bootstrap TODO. Once the file is committed, missing or
-changed metadata should fail CI until reviewed intentionally.
+step should simply be skipped during the MVP. Once the runtime and release process
+are stable, the team can deliberately decide whether to make missing or changed
+metadata fail CI.
 
 
 ## Dependency surface hygiene

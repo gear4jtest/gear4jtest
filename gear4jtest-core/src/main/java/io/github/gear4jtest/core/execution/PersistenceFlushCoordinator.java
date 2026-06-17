@@ -3,11 +3,12 @@ package io.github.gear4jtest.core.execution;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -56,10 +57,10 @@ final class PersistenceFlushCoordinator {
     static ExecutorService createFlushExecutor(PersistenceRuntimeConfiguration configuration) {
         Objects.requireNonNull(configuration, "configuration must not be null");
         int flushThreadCount = configuration.flushThreadCount();
-        if (flushThreadCount == 1) {
-            return Executors.newSingleThreadExecutor(PersistenceThreadFactories.flushWorker());
-        }
-        return Executors.newFixedThreadPool(flushThreadCount, PersistenceThreadFactories.flushWorker());
+        return new ThreadPoolExecutor(flushThreadCount, flushThreadCount, 0L, TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(configuration.maxScheduledFlushTasks()),
+                PersistenceThreadFactories.flushWorker(),
+                new ThreadPoolExecutor.AbortPolicy());
     }
 
     PersistenceRuntimeCounters counters() {

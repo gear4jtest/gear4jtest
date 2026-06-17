@@ -7,7 +7,6 @@ import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.engine.PipelineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
-import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
 import io.github.gear4jtest.core.engine.support.TaskFactory;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
@@ -40,16 +39,6 @@ public class Gear4jSpringConfiguration {
     }
 
     @Bean
-    public StrategyRegistry gear4jStrategyRegistry() {
-        return StrategyRegistry.defaultRegistry();
-    }
-
-    @Bean
-    public RunnerChainFactory gear4jRunnerChainFactory(StrategyRegistry strategyRegistry) {
-        return new RunnerChainFactory(strategyRegistry);
-    }
-
-    @Bean
     public RuntimeExtensionResolver gear4jRuntimeExtensionResolver(ObjectProvider<RuntimeExtension> runtimeExtensionsProvider) {
 
         List<RuntimeExtension> runtimeExtensions = runtimeExtensionsProvider.orderedStream()
@@ -68,7 +57,7 @@ public class Gear4jSpringConfiguration {
 
     @Bean
     public PipelineEngine gear4jPipelineEngine(ResourceFactory resourceFactory,
-                                               RunnerChainFactory runnerChainFactory,
+                                               ObjectProvider<RunnerChainFactory> runnerChainFactoryProvider,
                                                RuntimeExtensionResolver extensionResolver,
                                                ExecutionContextRegistry executionContextRegistry,
                                                ObjectProvider<IdGenerator> idGeneratorProvider,
@@ -77,8 +66,12 @@ public class Gear4jSpringConfiguration {
                                                ObjectProvider<Gear4jPipelineEngineBuilderCustomizer> customizersProvider) {
 
         PipelineEngine.Builder builder = PipelineEngine.builder().resourceFactory(resourceFactory)
-                .runnerChainFactory(runnerChainFactory).extensionResolver(extensionResolver)
-                .executionContextRegistry(executionContextRegistry);
+                .extensionResolver(extensionResolver).executionContextRegistry(executionContextRegistry);
+
+        RunnerChainFactory runnerChainFactory = runnerChainFactoryProvider.getIfAvailable();
+        if (runnerChainFactory != null) {
+            builder.runnerChainFactory(runnerChainFactory);
+        }
 
         IdGenerator idGenerator = idGeneratorProvider.getIfAvailable();
         if (idGenerator != null) {

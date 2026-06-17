@@ -16,6 +16,7 @@ gear4j:
     batch-size: 500
     max-pending-logs-per-run: 10000
     flush-threads: 1
+    max-scheduled-flush-tasks: 1000
     flush-interval: 1s
     shutdown-timeout: 30s
   metrics:

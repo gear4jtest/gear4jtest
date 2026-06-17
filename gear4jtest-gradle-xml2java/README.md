@@ -26,6 +26,7 @@ When the plugin is applied to a Java project, it:
 - creates the `xmlGenerateAssemblyLine` task;
 - reads `**/*.xml` under `src/main/gear4j` by default;
 - writes generated Java sources to `build/generated/sources/gear4j/xml2java/main`;
+- rejects inline Java expressions by default unless `trustedXml` is enabled explicitly;
 - adds that directory to the main Java source set;
 - makes `compileJava` depend on `xmlGenerateAssemblyLine`.
 
@@ -42,6 +43,20 @@ xmlAssemblyLineGenerator {
     outputDir = layout.buildDirectory.dir('generated/sources/gear4j/xml2java/main').get().asFile
 }
 ```
+
+XML definitions are treated as untrusted by default. This allows XML using GEL-only expressions, but rejects inline Java
+expressions such as method references, Java lambdas or fallback snippets. If the XML files are reviewed and versioned as
+source code, opt in explicitly:
+
+```groovy
+xmlAssemblyLineGenerator {
+    inputDir 'src/main/gear4j'
+    trustedXml()
+}
+```
+
+Treat `trustedXml()` exactly like adding Java source files to the build. Do not enable it for XML received from users,
+unreviewed PRs or external systems.
 
 You can also add explicit files or collections:
 

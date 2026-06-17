@@ -27,6 +27,7 @@ class XmlAssemblyLineGeneratorPlugin implements Plugin<Project> {
             task.xmlFiles.from(extension.xmlFiles)
             task.outputDir.set(extension.outputDir)
             task.mediaType.set(extension.mediaType)
+            task.trustedXml.set(extension.trustedXml)
         }
 
         project.plugins.withType(JavaPlugin) {

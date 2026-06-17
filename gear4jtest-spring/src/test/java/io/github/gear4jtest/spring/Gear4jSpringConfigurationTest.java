@@ -1,5 +1,12 @@
 package io.github.gear4jtest.spring;
 
+import io.github.gear4jtest.core.api.AssemblyLine;
+import io.github.gear4jtest.core.api.ExecutionResult;
+import io.github.gear4jtest.core.api.RunRequest;
+import io.github.gear4jtest.core.api.behavior.Operator;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.api.station.PipelineCallStation;
+import io.github.gear4jtest.core.api.util.ElementModelBuilders;
 import io.github.gear4jtest.core.engine.PipelineEngine;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
@@ -35,6 +42,38 @@ class Gear4jSpringConfigurationTest {
         }
     }
 
+    @Test
+    void spring_engine_should_execute_nested_pipeline_calls_with_default_runtime_strategies() {
+        // Given
+        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+            context.registerBean(AppendBangOperator.class, AppendBangOperator::new);
+            context.register(Gear4jSpringConfiguration.class);
+            context.refresh();
+
+            AssemblyLine<String, String> child = ElementModelBuilders.<String>createAssemblyLine("child")
+                    .then(ElementModelBuilders.processingOperation("append", AppendBangOperator.class).build())
+                    .build();
+            AssemblyLine<String, String> parent = ElementModelBuilders.<String>createAssemblyLine("parent")
+                    .then(PipelineCallStation.nestedRun("call-child", child))
+                    .build();
+
+            // When
+            ExecutionResult<String> result = context.getBean(PipelineEngine.class)
+                    .execute(parent, RunRequest.builder().input("hello").build());
+
+            // Then
+            assertThat(result.isSuccess()).isTrue();
+            assertThat(result.getResult()).isEqualTo("hello!");
+        }
+    }
+
     static final class SampleResource {
+    }
+
+    public static final class AppendBangOperator implements Operator<String, String> {
+        @Override
+        public String transform(String input, StationExecutionContext operationExecution) {
+            return input + "!";
+        }
     }
 }

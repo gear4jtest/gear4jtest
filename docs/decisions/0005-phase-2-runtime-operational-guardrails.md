@@ -39,7 +39,7 @@ Cancellation remains cooperative: thread interruption is attempted for submitted
 
 `DatabaseExecutionManager` now exposes `PersistenceRuntimeConfiguration` and `PersistenceRuntimeStats`.
 
-A bounded per-run station-log buffer prevents unlimited heap growth when the database is slow. Periodic flushing prevents low-volume runs from keeping records in memory until completion. Buffer saturation is treated as a persistence failure, not silently dropped observability data.
+A bounded per-run station-log buffer prevents unlimited heap growth when the database is slow. Periodic flushing prevents low-volume runs from keeping records in memory until completion. The asynchronous flush executor also uses a bounded task queue so a slow database cannot create an unbounded backlog of flush tasks. Buffer or flush-backlog saturation is treated as a persistence failure, not silently dropped observability data.
 
 A failed station-log flush no longer discards a batch merely because it had already been drained from the in-memory queue. The manager restores drained records before surfacing the flush failure. Non-terminal asynchronous failures can be retried by a later periodic or final flush; terminal failures still mark the run buffer unhealthy.
 

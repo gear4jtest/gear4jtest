@@ -58,6 +58,11 @@ public class Gear4jProperties {
          * Default: 1.
          */
         @Min(1) private int flushThreads = 1;
+        /**
+         * Maximum queued asynchronous JDBC flush tasks before appends fail fast.
+         * Default: 1000.
+         */
+        @Min(1) private int maxScheduledFlushTasks = 1_000;
         @NotNull private Duration flushInterval = Duration.ofSeconds(1);
         @NotNull private Duration shutdownTimeout = Duration.ofSeconds(30);
 
@@ -107,6 +112,14 @@ public class Gear4jProperties {
 
         public void setFlushThreads(int flushThreads) {
             this.flushThreads = flushThreads;
+        }
+
+        public int getMaxScheduledFlushTasks() {
+            return maxScheduledFlushTasks;
+        }
+
+        public void setMaxScheduledFlushTasks(int maxScheduledFlushTasks) {
+            this.maxScheduledFlushTasks = maxScheduledFlushTasks;
         }
 
         public Duration getFlushInterval() {
