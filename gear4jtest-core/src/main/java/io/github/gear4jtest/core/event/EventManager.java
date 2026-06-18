@@ -373,33 +373,6 @@ public final class EventManager {
         }
     }
 
-    private static final class MdcScope implements AutoCloseable {
-        private final Map<String, String> previousContext;
-
-        private MdcScope(Map<String, String> previousContext) {
-            this.previousContext = previousContext;
-        }
-
-        private static MdcScope install(Map<String, String> context) {
-            Map<String, String> previousContext = MDC.getCopyOfContextMap();
-            if (context == null || context.isEmpty()) {
-                MDC.clear();
-            } else {
-                MDC.setContextMap(context);
-            }
-            return new MdcScope(previousContext);
-        }
-
-        @Override
-        public void close() {
-            if (previousContext == null || previousContext.isEmpty()) {
-                MDC.clear();
-            } else {
-                MDC.setContextMap(previousContext);
-            }
-        }
-    }
-
     private final class ReactionTask implements Runnable {
         private final EventSubscription<?> subscription;
         private final Event event;

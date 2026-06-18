@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Objects;
 
 import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.core.persistence.PageRequest;
 
 /**
  * SQL and JDBC behavior needed by the external-api JDBC repositories for a
@@ -65,6 +66,27 @@ public final class ExternalRepositorySqlDialect {
             case MYSQL, MARIADB, ORACLE, H2 ->
                 "UPDATE operation_chain_config SET store_type=?, store_props=? WHERE al_id=?";
         };
+    }
+
+    static String pagedSql(Gear4jDatabaseDialect dialect, String orderedSql) {
+        return requireDialect(dialect) == Gear4jDatabaseDialect.ORACLE
+                ? orderedSql + " OFFSET ? ROWS FETCH NEXT ? ROWS ONLY"
+                : orderedSql + " LIMIT ? OFFSET ?";
+    }
+
+    static void bindPage(Gear4jDatabaseDialect dialect,
+                         PreparedStatement statement,
+                         int firstParameterIndex,
+                         PageRequest pageRequest)
+            throws SQLException {
+        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        if (requireDialect(dialect) == Gear4jDatabaseDialect.ORACLE) {
+            statement.setInt(firstParameterIndex, pageRequest.offset());
+            statement.setInt(firstParameterIndex + 1, pageRequest.limit());
+        } else {
+            statement.setInt(firstParameterIndex, pageRequest.limit());
+            statement.setInt(firstParameterIndex + 1, pageRequest.offset());
+        }
     }
 
     static PreparedStatement prepareGeneratedKeyInsert(Gear4jDatabaseDialect dialect,

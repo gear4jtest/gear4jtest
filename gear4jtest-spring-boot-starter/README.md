@@ -24,6 +24,8 @@ buffer and flush statistics.
 | `gear4j.persistence.max-scheduled-flush-tasks` | `int` | `1000` | Maximum queued asynchronous flush tasks before persistence fails fast with backpressure. |
 | `gear4j.persistence.flush-interval` | `Duration` | `1s` | Periodic flush interval for pending station logs. |
 | `gear4j.persistence.shutdown-timeout` | `Duration` | `30s` | Maximum wait during persistence manager shutdown. |
+| `gear4j.persistence.jdbc-statement-timeout` | `Duration` | `30s` | JDBC statement query timeout applied to Gear4J persistence statements; use `0` to disable. |
+| `gear4j.persistence.redaction-mode` | `WARN` / `REQUIRE` / `DISABLED` | `WARN` | Controls startup behavior when persistence is enabled without a `SensitiveDataRedactor` bean. |
 | `gear4j.metrics.enabled` | `boolean` | `true` | Enables Micrometer integration when a `MeterRegistry` bean is available. |
 
 ## JDBC persistence examples
@@ -38,10 +40,13 @@ gear4j.persistence.auto-create-tables=true
 
 For production deployments that manage DDL outside the application, keep
 auto-creation disabled and apply the SQL migrations from the core module for the
-selected dialect:
+selected dialect. Production applications should also provide a
+`SensitiveDataRedactor` bean and set `gear4j.persistence.redaction-mode=REQUIRE`
+when persisted payloads may contain PII, secrets or sensitive business data:
 
 ```properties
 gear4j.persistence.enabled=true
 gear4j.persistence.dialect=POSTGRESQL
 gear4j.persistence.auto-create-tables=false
+gear4j.persistence.redaction-mode=REQUIRE
 ```

@@ -21,6 +21,28 @@ class PersistenceRuntimeConfigurationTest {
         assertThat(configuration.maxPendingLogsPerRun()).isGreaterThanOrEqualTo(configuration.batchSize());
         assertThat(configuration.flushInterval()).isPositive();
         assertThat(configuration.maxScheduledFlushTasks()).isPositive();
+        assertThat(configuration.jdbcStatementTimeout()).isEqualTo(Duration.ofSeconds(30));
+    }
+
+    @Test
+    void build_shouldAllowDisablingJdbcStatementTimeout() {
+        // When
+        PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder()
+                .jdbcStatementTimeout(Duration.ZERO)
+                .build();
+
+        // Then
+        assertThat(configuration.jdbcStatementTimeout()).isZero();
+    }
+
+    @Test
+    void build_shouldRejectNegativeJdbcStatementTimeout() {
+        // When / Then
+        assertThatThrownBy(() -> PersistenceRuntimeConfiguration.builder()
+                .jdbcStatementTimeout(Duration.ofMillis(-1))
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("jdbcStatementTimeout");
     }
 
     @Test

@@ -39,6 +39,7 @@ Guaranteed today:
 - pending station logs per run are bounded;
 - scheduled asynchronous flush tasks are bounded by `maxScheduledFlushTasks`;
 - failed flushes restore drained records when possible before reporting the failure;
+- JDBC statements created by Gear4J persistence apply the configured statement timeout when supported by the driver;
 - shutdown stops accepting new flush scheduling, cancels periodic maintenance and performs a final blocking drain of
   active buffers.
 

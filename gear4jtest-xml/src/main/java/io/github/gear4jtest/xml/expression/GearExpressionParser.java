@@ -18,14 +18,34 @@ import java.util.Set;
  * constructors, static access or class literals.
  */
 public final class GearExpressionParser {
+    public static final int DEFAULT_MAX_EXPRESSION_LENGTH = 4_096;
+    public static final int DEFAULT_MAX_TOKENS = 512;
+    public static final int DEFAULT_MAX_PATH_SEGMENTS = 64;
+    public static final int DEFAULT_MAX_NESTING_DEPTH = 64;
+
     private GearExpressionParser() {
     }
 
     public static GearExpression parse(String expression) {
-        Parser parser = new Parser(tokenize(expression));
+        validateExpressionLength(expression);
+        List<Token> tokens = tokenize(expression);
+        validateTokenCount(tokens);
+        Parser parser = new Parser(tokens);
         Node root = parser.expression();
         parser.expect(TokenType.EOF);
         return context -> root.evaluate(context);
+    }
+
+    private static void validateExpressionLength(String expression) {
+        if (expression != null && expression.length() > DEFAULT_MAX_EXPRESSION_LENGTH) {
+            throw new GearExpressionException("Expression exceeds max length " + DEFAULT_MAX_EXPRESSION_LENGTH);
+        }
+    }
+
+    private static void validateTokenCount(List<Token> tokens) {
+        if (tokens.size() > DEFAULT_MAX_TOKENS) {
+            throw new GearExpressionException("Expression exceeds max token count " + DEFAULT_MAX_TOKENS);
+        }
     }
 
     private static List<Token> tokenize(String expression) {
@@ -227,6 +247,7 @@ public final class GearExpressionParser {
     private static final class Parser {
         private final List<Token> tokens;
         private int position;
+        private int nestingDepth;
 
         Parser(List<Token> tokens) {
             this.tokens = tokens;
@@ -281,9 +302,7 @@ public final class GearExpressionParser {
                 return identifier(token.value());
             }
             if ("(".equals(token.value())) {
-                Node nested = expression();
-                expect(")");
-                return nested;
+                return nestedExpression();
             }
             throw new GearExpressionException("Unexpected token: " + token.value());
         }
@@ -303,8 +322,27 @@ public final class GearExpressionParser {
             while (match(".")) {
                 Token next = expect(TokenType.IDENTIFIER);
                 segments.add(next.value());
+                if (segments.size() > DEFAULT_MAX_PATH_SEGMENTS) {
+                    throw new GearExpressionException("Expression path exceeds max segments "
+                            + DEFAULT_MAX_PATH_SEGMENTS);
+                }
             }
             return new PathNode(List.copyOf(segments));
+        }
+
+        private Node nestedExpression() {
+            nestingDepth++;
+            if (nestingDepth > DEFAULT_MAX_NESTING_DEPTH) {
+                throw new GearExpressionException("Expression exceeds max nesting depth "
+                        + DEFAULT_MAX_NESTING_DEPTH);
+            }
+            try {
+                Node nested = expression();
+                expect(")");
+                return nested;
+            } finally {
+                nestingDepth--;
+            }
         }
 
         private boolean match(String value) {

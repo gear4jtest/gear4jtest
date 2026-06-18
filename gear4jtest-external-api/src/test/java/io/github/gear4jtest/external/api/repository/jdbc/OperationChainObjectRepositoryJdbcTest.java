@@ -6,14 +6,47 @@ import java.sql.ResultSet;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.ExecutionMode;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class OperationChainObjectRepositoryJdbcTest {
+    @Test
+    void findAll_shouldApplySqlLevelPaginationWhenPageRequestIsProvided() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        ResultSet resultSet = mock(ResultSet.class);
+        String[] preparedSql = new String[1];
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenAnswer(invocation -> {
+            preparedSql[0] = invocation.getArgument(0);
+            return statement;
+        });
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(false);
+
+        OperationChainObjectRepositoryJdbc repository = new OperationChainObjectRepositoryJdbc(dataSource,
+                Gear4jDatabaseDialect.H2);
+
+        // When
+        var result = repository.findAll("pipeline", new PageRequest(5, 10));
+
+        // Then
+        assertThat(result).isEmpty();
+        assertThat(preparedSql[0]).contains("LIMIT ? OFFSET ?");
+        verify(statement).setString(1, "pipeline");
+        verify(statement).setInt(2, 10);
+        verify(statement).setInt(3, 5);
+    }
+
     @Test
     void find_shouldMapNullableTimestampsAsNull() throws Exception {
         // Given

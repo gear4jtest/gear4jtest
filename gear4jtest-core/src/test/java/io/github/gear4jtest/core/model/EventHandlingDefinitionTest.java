@@ -1,5 +1,6 @@
 package io.github.gear4jtest.core.model;
 
+import java.time.Duration;
 import java.util.concurrent.Executors;
 
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
@@ -51,6 +52,21 @@ class EventHandlingDefinitionTest {
 
         assertThat(configuration.getEventQueueCapacity())
                 .isEqualTo(EventHandlingDefinition.RuntimeConfiguration.DEFAULT_EVENT_QUEUE_CAPACITY);
+    }
+
+    @Test
+    void runtimeConfiguration_shouldRejectNonPositiveTimeouts() {
+        assertThatThrownBy(() -> EventHandlingDefinition.RuntimeConfiguration.builder()
+                .shutdownTimeout(Duration.ZERO)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("shutdownTimeout");
+
+        assertThatThrownBy(() -> EventHandlingDefinition.RuntimeConfiguration.builder()
+                .detachCleanupTimeout(Duration.ofMillis(-1))
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("detachCleanupTimeout");
     }
 
     @Test

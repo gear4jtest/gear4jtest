@@ -192,8 +192,13 @@ public class EventHandlingDefinition {
                                      Integer eventQueueCapacity) {
             this.perRunReactionExecutorFactory = perRunReactionExecutorFactory;
             this.sharedReactionExecutor = sharedReactionExecutor;
-            this.shutdownTimeout = shutdownTimeout != null ? shutdownTimeout : Duration.ofSeconds(10);
-            this.detachCleanupTimeout = detachCleanupTimeout != null ? detachCleanupTimeout : this.shutdownTimeout;
+            this.shutdownTimeout = positiveDuration(
+                                                    shutdownTimeout != null ? shutdownTimeout : Duration.ofSeconds(10),
+                                                    "shutdownTimeout");
+            this.detachCleanupTimeout = positiveDuration(
+                                                         detachCleanupTimeout != null ? detachCleanupTimeout
+                                                                 : this.shutdownTimeout,
+                                                         "detachCleanupTimeout");
             this.shutdownMode = shutdownMode != null ? shutdownMode : ShutdownMode.WAIT_FOR_DRAIN;
             this.eventQueueCapacity = requirePositiveEventQueueCapacity(eventQueueCapacity);
         }
@@ -237,6 +242,14 @@ public class EventHandlingDefinition {
 
         public int getEventQueueCapacity() {
             return eventQueueCapacity;
+        }
+
+        private static Duration positiveDuration(Duration value, String name) {
+            Objects.requireNonNull(value, name + " must not be null");
+            if (value.isZero() || value.isNegative()) {
+                throw new IllegalArgumentException(name + " must be > 0");
+            }
+            return value;
         }
 
         private static int requirePositiveEventQueueCapacity(Integer eventQueueCapacity) {

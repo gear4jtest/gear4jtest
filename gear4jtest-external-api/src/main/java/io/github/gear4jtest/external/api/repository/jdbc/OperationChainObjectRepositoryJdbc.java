@@ -1,10 +1,12 @@
 package io.github.gear4jtest.external.api.repository.jdbc;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -17,6 +19,8 @@ import java.util.regex.Pattern;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.core.persistence.JdbcStatementOptions;
+import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.ExecutionMode;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
@@ -26,10 +30,24 @@ public final class OperationChainObjectRepositoryJdbc implements OperationChainO
 
     private final DataSource ds;
     private final Gear4jDatabaseDialect databaseDialect;
+    private final JdbcStatementOptions statementOptions;
 
     public OperationChainObjectRepositoryJdbc(DataSource ds, Gear4jDatabaseDialect databaseDialect) {
+        this(ds, databaseDialect, JdbcStatementOptions.defaults());
+    }
+
+    public OperationChainObjectRepositoryJdbc(DataSource ds,
+                                              Gear4jDatabaseDialect databaseDialect,
+                                              Duration jdbcStatementTimeout) {
+        this(ds, databaseDialect, JdbcStatementOptions.of(jdbcStatementTimeout));
+    }
+
+    public OperationChainObjectRepositoryJdbc(DataSource ds,
+                                              Gear4jDatabaseDialect databaseDialect,
+                                              JdbcStatementOptions statementOptions) {
         this.ds = Objects.requireNonNull(ds, "ds must not be null");
         this.databaseDialect = Objects.requireNonNull(databaseDialect, "databaseDialect must not be null");
+        this.statementOptions = Objects.requireNonNull(statementOptions, "statementOptions must not be null");
     }
 
     private Instant instantOrNull(ResultSet rs, String column) throws SQLException {
@@ -53,6 +71,18 @@ public final class OperationChainObjectRepositoryJdbc implements OperationChainO
         }
     }
 
+    private PreparedStatement prepare(Connection connection, String sql) throws SQLException {
+        return statementOptions.prepare(connection, sql);
+    }
+
+    private PreparedStatement prepareGeneratedKeyInsert(Connection connection, String sql) throws SQLException {
+        PreparedStatement statement = ExternalRepositorySqlDialect.prepareGeneratedKeyInsert(databaseDialect,
+                                                                                             connection,
+                                                                                             sql);
+        statementOptions.apply(statement);
+        return statement;
+    }
+
     private OperationChainObject map(ResultSet rs) throws SQLException {
         return new OperationChainObject(rs.getLong("id"), rs.getString("al_id"), rs.getString("version"),
                 ExecutionMode.valueOf(rs.getString("mode")), requireContentHash(rs.getString("content_hash")),
@@ -72,7 +102,7 @@ public final class OperationChainObjectRepositoryJdbc implements OperationChainO
         String sql = "INSERT INTO operation_chain_object(al_id, version, mode, content_hash, size_bytes, "
                 + "mime_type, created_at, created_by, published_at) VALUES (?,?,?,?,?,?,?,?,?)";
         try (var c = ds.getConnection();
-                var ps = ExternalRepositorySqlDialect.prepareGeneratedKeyInsert(databaseDialect, c, sql)) {
+                var ps = prepareGeneratedKeyInsert(c, sql)) {
             ps.setString(1, o.alId());
             ps.setString(2, o.version());
             ps.setString(3, o.mode().name());
@@ -95,7 +125,7 @@ public final class OperationChainObjectRepositoryJdbc implements OperationChainO
     public Optional<OperationChainObject> find(String alId, String version, ExecutionMode mode) {
         String sql = "SELECT id, al_id, version, mode, content_hash, size_bytes, mime_type, created_at, created_by, published_at "
                 + "FROM operation_chain_object WHERE al_id=? AND version=? AND mode=?";
-        try (var c = ds.getConnection(); var ps = c.prepareStatement(sql)) {
+        try (var c = ds.getConnection(); var ps = prepare(c, sql)) {
             ps.setString(1, alId);
             ps.setString(2, version);
             ps.setString(3, mode.name());
@@ -111,7 +141,7 @@ public final class OperationChainObjectRepositoryJdbc implements OperationChainO
     public Optional<OperationChainObject> findLatestRun(String alId) {
         String sql = "SELECT id, al_id, version, mode, content_hash, size_bytes, mime_type, created_at, created_by, published_at "
                 + "FROM operation_chain_object WHERE al_id=? AND mode='RUN' ORDER BY published_at DESC, id DESC";
-        try (var c = ds.getConnection(); var ps = c.prepareStatement(sql)) {
+        try (var c = ds.getConnection(); var ps = prepare(c, sql)) {
             ps.setString(1, alId);
             ps.setMaxRows(1);
             try (var rs = ps.executeQuery()) {
@@ -125,7 +155,7 @@ public final class OperationChainObjectRepositoryJdbc implements OperationChainO
     @Override
     public boolean exists(String alId, String version, ExecutionMode mode) {
         String sql = "SELECT 1 FROM operation_chain_object WHERE al_id=? AND version=? AND mode=?";
-        try (var c = ds.getConnection(); var ps = c.prepareStatement(sql)) {
+        try (var c = ds.getConnection(); var ps = prepare(c, sql)) {
             ps.setString(1, alId);
             ps.setString(2, version);
             ps.setString(3, mode.name());
@@ -139,10 +169,20 @@ public final class OperationChainObjectRepositoryJdbc implements OperationChainO
 
     @Override
     public List<OperationChainObject> findAll(String alId) {
-        String sql = "SELECT id, al_id, version, mode, content_hash, size_bytes, mime_type, created_at, created_by, published_at "
+        return findAll(alId, null);
+    }
+
+    @Override
+    public List<OperationChainObject> findAll(String alId, PageRequest pageRequest) {
+        String orderedSql = "SELECT id, al_id, version, mode, content_hash, size_bytes, mime_type, created_at, created_by, published_at "
                 + "FROM operation_chain_object WHERE al_id=? ORDER BY published_at DESC, id DESC";
-        try (var c = ds.getConnection(); var ps = c.prepareStatement(sql)) {
+        String sql = pageRequest == null ? orderedSql
+                : ExternalRepositorySqlDialect.pagedSql(databaseDialect, orderedSql);
+        try (var c = ds.getConnection(); var ps = prepare(c, sql)) {
             ps.setString(1, alId);
+            if (pageRequest != null) {
+                ExternalRepositorySqlDialect.bindPage(databaseDialect, ps, 2, pageRequest);
+            }
             try (var rs = ps.executeQuery()) {
                 List<OperationChainObject> list = new ArrayList<>();
                 while (rs.next()) {

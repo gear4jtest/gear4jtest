@@ -117,4 +117,43 @@ class XmlAssemblyLineGeneratorPluginTest {
             .hasMessageContaining('Inline Java expressions are not allowed')
     }
 
+
+    @Test
+    void should_keep_previous_generated_sources_when_translation_fails() {
+        // Given
+        def project = ProjectBuilder.builder()
+            .withName('my-library')
+            .build()
+        project.plugins.apply(XmlAssemblyLineGeneratorPlugin)
+
+        def xmlDir = new File(project.projectDir, 'src/main/gear4j')
+        assertThat(xmlDir.mkdirs()).isTrue()
+        new File(xmlDir, 'untrusted-line.xml').text = '''<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="untrusted_line"
+              inputType="java.lang.String"
+              outputType="java.lang.String">
+  <operations>
+    <processingOperation id="append_a" type="com.myorg.operation.Step11">
+      <parameters>
+        <valueParameter retriever="com.myorg.operation.Step11::getParam" value="a"/>
+      </parameters>
+    </processingOperation>
+  </operations>
+</assemblyLine>
+'''
+        def outputDir = new File(project.buildDir, 'generated-test')
+        assertThat(outputDir.mkdirs()).isTrue()
+        def previous = new File(outputDir, 'previous.java')
+        previous.text = 'keep me'
+        def extension = project.extensions.getByType(XmlAssemblyLineGeneratorExtension)
+        extension.setOutputDir(outputDir)
+
+        // When / Then
+        assertThatThrownBy { project.tasks.getByName(XmlAssemblyLineGeneratorPlugin.TASK_NAME).generate() }
+            .isInstanceOf(SecurityException)
+            .hasMessageContaining('Inline Java expressions are not allowed')
+        assertThat(previous).exists().hasContent('keep me')
+    }
+
 }

@@ -51,7 +51,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
         this.verifyOnRead = verifyOnRead;
         this.selfHealing = selfHealing;
         this.verificationMaxArtifactSizeBytes = validateVerificationMaxArtifactSizeBytes(
-                verificationMaxArtifactSizeBytes);
+                                                                                         verificationMaxArtifactSizeBytes);
         this.asyncExec = asyncExec != null ? asyncExec : ArtifactStoreExecutors.defaultAsyncExecutor();
     }
 

@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.api.station;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -46,7 +47,7 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
     }
 
     public List<Branch<IN>> getPipelines() {
-        return pipelines;
+        return Collections.unmodifiableList(pipelines);
     }
 
     public ContainerFunction<OUT> getFunc() {

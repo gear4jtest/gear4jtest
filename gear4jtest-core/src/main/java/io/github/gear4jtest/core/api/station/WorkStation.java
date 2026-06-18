@@ -1,6 +1,7 @@
 package io.github.gear4jtest.core.api.station;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
@@ -25,11 +26,12 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
     }
 
     public List<WorkerParamsInjector.ParameterModel<?, ?>> getParameters() {
-        return parameters;
+        return parameters == null ? Collections.emptyList()
+                : Collections.unmodifiableList(parameters);
     }
 
     public void setParameters(List<WorkerParamsInjector.ParameterModel<?, ?>> parameters) {
-        this.parameters = parameters;
+        this.parameters = parameters == null ? null : new ArrayList<>(parameters);
     }
 
     public Class<Operator<IN, OUT>> getType() {
@@ -69,11 +71,11 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
             this.id = source.id;
             this.type = source.type;
-            this.parameters = source.parameters;
-            this.processors = source.processors;
-            this.onErrors = source.onErrors;
-            this.skippers = source.skippers;
-            this.metadata = source.metadata;
+            this.parameters = new ArrayList<>(source.parameters);
+            this.processors = new ArrayList<>(source.processors);
+            this.onErrors = new ArrayList<>(source.onErrors);
+            this.skippers = new ArrayList<>(source.skippers);
+            this.metadata = new ArrayList<>(source.metadata);
             this.fallbackOperator = source.fallbackOperator;
             this.reuseOperatorInstanceWithinRun = source.reuseOperatorInstanceWithinRun;
         }

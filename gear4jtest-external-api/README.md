@@ -47,8 +47,8 @@ Typical flow:
 | `OperationChainTranslatorResolver` | Resolves translators explicitly or with `ServiceLoader`.                          |
 | `GeneratedAssemblyLine`            | Interface implemented by generated pipeline classes.                              |
 | `GeneratedSourceCompiler`           | SPI for generated Java compilers.                                                |
-| `JDTInMemoryCompiler`              | Default Eclipse JDT compiler implementation.                                     |
-| `JavaxToolsGeneratedSourceCompiler` | Alternative compiler backed by the JDK `javax.tools.JavaCompiler`.               |
+| `JavaxToolsGeneratedSourceCompiler` | Default compiler when the runtime provides the JDK `javax.tools.JavaCompiler`.   |
+| `JDTInMemoryCompiler`              | Fallback Eclipse JDT compiler for runtimes without `jdk.compiler`.               |
 | `ClassLoaderRegistry`              | Tracks generated classloaders and aliases.                                        |
 | `DependencyInjector`               | Injects external dependencies into generated pipeline instances.                  |
 | `ArtifactStore`                    | Stores raw external pipeline artifacts by content hash; supports bounded streaming writes. |
@@ -57,25 +57,34 @@ Typical flow:
 ## Compiler SPI
 
 `AssemblyLineManager` accepts a `GeneratedSourceCompiler`, so applications can
-replace the default JDT compiler without changing the manager. Built-in options:
+replace the default compiler without changing the manager. Built-in options:
 
 ```java
-GeneratedSourceCompilers.jdt(classLoader);
+GeneratedSourceCompilers.defaultCompiler(classLoader); // javac when available, otherwise JDT
 GeneratedSourceCompilers.javac(classLoader);
+GeneratedSourceCompilers.jdt(classLoader);
 GeneratedSourceCompilers.fromServiceLoader(classLoader);
 ```
 
-`JavaxToolsGeneratedSourceCompiler` requires a JDK runtime with the standard
-`javax.tools.JavaCompiler` available. If an application runs on a stripped runtime
-image without `jdk.compiler`, keep using JDT or provide another compiler SPI
-implementation.
+`AssemblyLineManager` uses `GeneratedSourceCompilers.defaultCompiler(...)` when
+no compiler is injected. The default prefers the standard JDK
+`javax.tools.JavaCompiler` and falls back to Eclipse JDT when the runtime image is
+stripped and does not include `jdk.compiler`, or when javac cannot compile with
+the current runtime classpath. Applications that need deterministic
+compiler selection should inject `GeneratedSourceCompilers.javac(...)`,
+`GeneratedSourceCompilers.jdt(...)`, or their own `GeneratedSourceCompiler`.
 
 ## Classloader lifecycle
 
 `InMemoryClassLoaderRegistry` is bounded by default (`256` concrete loaders). It
 evicts least-recently-used unaliased loaders and protects aliased loaders so
 mutable aliases such as `al/<id>/RUN/latest` never point to a missing loader.
-Applications with high version churn can use `new InMemoryClassLoaderRegistry(maxLoaders)`.
+Applications with high version churn can use `new InMemoryClassLoaderRegistry(maxLoaders)`. If aliases are used for
+rollback windows or multiple mutable references, use
+`new InMemoryClassLoaderRegistry(maxLoaders, maxProtectedLoaders)` to cap the
+number of distinct loaders that aliases may protect from eviction. The registry
+also exposes `protectedLoaderCount()` and `isOverCapacityDueToProtectedLoaders()`
+for diagnostics.
 
 ## Artifact size policy
 
@@ -148,6 +157,12 @@ The `DATABASE` artifact-store plugin similarly requires a `dialect` property suc
 Provider-specific statements such as PostgreSQL `ON CONFLICT`, MySQL/MariaDB `ON DUPLICATE KEY UPDATE` and Oracle/H2
 `MERGE` are intentional, but must remain isolated behind `ExternalRepositorySqlDialect`. Adding another provider
 requires an enum value, matching schema/migration resources and integration tests for every JDBC-backed component.
+
+Repository methods that can grow with the number of published definitions expose SQL-level pagination through
+`PageRequest` variants, for example `OperationChainObjectRepository.findAll(alId, pageRequest)`,
+`OperationChainTagRepository.listTags(alId, pageRequest)` and
+`OperationChainTagRepository.findAssemblyLineIdsByTag(tag, pageRequest)`. Prefer those methods in UIs, CLIs and
+maintenance jobs instead of loading full histories.
 
 ## Testing
 

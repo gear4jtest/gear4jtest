@@ -44,6 +44,17 @@ Gear4J aims to provide:
 - **EventManager**: in-memory asynchronous event runtime. It is deliberately best-effort, not a durable broker.
 - **PayloadCloner**: SPI used to isolate branch inputs when mutable payloads are executed in containers.
 
+## Important non-guarantees
+
+Gear4J is a runtime library, so the most important operational limits are explicit:
+
+- the in-memory event runtime is best-effort and does not provide durable delivery, replay or exactly-once semantics;
+- cancellation and timeouts are cooperative for user Java code and cannot forcibly stop arbitrary blocking operators;
+- XML trusted mode is equivalent to compiling reviewed Java source in the application JVM, not a sandbox;
+- JDBC persistence can store input/context/result/error payloads, so production deployments should provide a
+  `SensitiveDataRedactor` and use strict redaction policy where possible;
+- generated classloaders are cached locally per JVM; alias invalidation is local, not a distributed cache protocol.
+
 ## Build and test
 
 The repository is a multi-module Gradle project. Dependency coordinates are centralized in the Gradle version catalog at

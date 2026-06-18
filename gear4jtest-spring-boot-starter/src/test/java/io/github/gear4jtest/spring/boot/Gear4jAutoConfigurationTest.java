@@ -15,6 +15,7 @@ import io.github.gear4jtest.core.api.util.ElementModelBuilders;
 import io.github.gear4jtest.core.engine.PipelineEngine;
 import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
+import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.micrometer.Gear4jMicrometerExtension;
 import io.github.gear4jtest.spring.boot.actuate.Gear4jActuatorAutoConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -41,7 +42,6 @@ class Gear4jAutoConfigurationTest {
             assertThat(context).doesNotHaveBean(DatabaseExecutionManager.class);
         });
     }
-
 
     @Test
     void boot_engine_should_execute_nested_pipeline_calls_with_default_runtime_strategies() {
@@ -75,10 +75,10 @@ class Gear4jAutoConfigurationTest {
                         var slowStation = ElementModelBuilders
                                 .<String, String, SlowOperator>processingOperation("slow", SlowOperator.class)
                                 .build();
-                        ContainerBaseStation<String, String> container =
-                                new ContainerBaseStation.Builder<String, String>(branchExecutor)
-                                        .withSubLine("slow-branch", slowStation)
-                                        .returns(value -> value);
+                        ContainerBaseStation<String, String> container = new ContainerBaseStation.Builder<String, String>(
+                                branchExecutor)
+                                .withSubLine("slow-branch", slowStation)
+                                .returns(value -> value);
                         AssemblyLine<String, String> pipeline = ElementModelBuilders
                                 .<String>createAssemblyLine("parallel-timeout")
                                 .then(container)
@@ -112,6 +112,30 @@ class Gear4jAutoConfigurationTest {
     }
 
     @Test
+    void should_fail_fast_when_redaction_mode_requires_redactor_but_none_is_available() {
+        // Given / When / Then
+        contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2",
+                                    "gear4j.persistence.redaction-mode=REQUIRE")
+                .run(context -> {
+                    assertThat(context).hasFailed();
+                    assertThat(context.getStartupFailure())
+                            .hasRootCauseMessage("gear4j.persistence.redaction-mode=REQUIRE requires a "
+                                    + "SensitiveDataRedactor bean when persistence is enabled");
+                });
+    }
+
+    @Test
+    void should_create_database_execution_manager_when_redaction_mode_requires_existing_redactor() {
+        // Given / When / Then
+        contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
+                .withBean(SensitiveDataRedactor.class, () -> (target, value) -> value)
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2",
+                                    "gear4j.persistence.redaction-mode=REQUIRE")
+                .run(context -> assertThat(context).hasSingleBean(DatabaseExecutionManager.class));
+    }
+
+    @Test
     void should_create_persistence_health_indicator_when_actuator_and_persistence_are_available() {
         // Given / When / Then
         contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
@@ -132,7 +156,6 @@ class Gear4jAutoConfigurationTest {
                             .hasRootCauseMessage("gear4j.persistence.dialect is required when persistence is enabled");
                 });
     }
-
 
     public static final class AppendBangOperator implements Operator<String, String> {
         @Override

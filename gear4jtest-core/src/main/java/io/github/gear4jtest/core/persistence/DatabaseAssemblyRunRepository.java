@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -28,16 +29,32 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     private final StationLogRecordRowMapper stationLogMapper;
     private final AssemblyRunRecordStatementBinder assemblyRunBinder;
     private final StationLogRecordStatementBinder stationLogBinder;
+    private final JdbcStatementOptions statementOptions;
 
     public DatabaseAssemblyRunRepository(DataSource dataSource, Gear4jDatabaseDialect databaseDialect) {
-        this(dataSource, databaseDialect, new ObjectMapper());
+        this(dataSource, databaseDialect, new ObjectMapper(), JdbcStatementOptions.defaults());
     }
 
     public DatabaseAssemblyRunRepository(DataSource dataSource,
                                          Gear4jDatabaseDialect databaseDialect,
                                          ObjectMapper objectMapper) {
+        this(dataSource, databaseDialect, objectMapper, JdbcStatementOptions.defaults());
+    }
+
+    public DatabaseAssemblyRunRepository(DataSource dataSource,
+                                         Gear4jDatabaseDialect databaseDialect,
+                                         ObjectMapper objectMapper,
+                                         Duration jdbcStatementTimeout) {
+        this(dataSource, databaseDialect, objectMapper, JdbcStatementOptions.of(jdbcStatementTimeout));
+    }
+
+    public DatabaseAssemblyRunRepository(DataSource dataSource,
+                                         Gear4jDatabaseDialect databaseDialect,
+                                         ObjectMapper objectMapper,
+                                         JdbcStatementOptions statementOptions) {
         this.dataSource = Objects.requireNonNull(dataSource, "dataSource must not be null");
         this.databaseDialect = Objects.requireNonNull(databaseDialect, "databaseDialect must not be null");
+        this.statementOptions = Objects.requireNonNull(statementOptions, "statementOptions must not be null");
         DatabasePersistenceJsonCodec jsonCodec = new DatabasePersistenceJsonCodec(
                 Objects.requireNonNull(objectMapper, "objectMapper must not be null"));
         this.assemblyRunMapper = new AssemblyRunRecordRowMapper(databaseDialect, jsonCodec);
@@ -56,7 +73,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public void save(AssemblyRunRecord execution) {
         try {
             JdbcRepositoryTransaction.run(dataSource, conn -> {
-                try (PreparedStatement stmt = conn.prepareStatement(DatabaseAssemblyRunSql.insertAssemblyRun())) {
+                try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.insertAssemblyRun())) {
                     assemblyRunBinder.bindInsert(stmt, execution);
                     stmt.executeUpdate();
                 }
@@ -70,7 +87,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public void update(AssemblyRunRecord execution) {
         try {
             JdbcRepositoryTransaction.run(dataSource, conn -> {
-                try (PreparedStatement stmt = conn.prepareStatement(DatabaseAssemblyRunSql.updateAssemblyRun())) {
+                try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.updateAssemblyRun())) {
                     assemblyRunBinder.bindUpdate(stmt, execution);
                     int updatedRows = stmt.executeUpdate();
                     if (updatedRows != 1) {
@@ -87,7 +104,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     @Override
     public Optional<AssemblyRunRecord> findById(UUID id) {
         try (Connection conn = dataSource.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(DatabaseAssemblyRunSql.selectAssemblyRunById())) {
+                PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.selectAssemblyRunById())) {
             databaseDialect.setUuid(stmt, 1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -110,7 +127,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public List<AssemblyRunRecord> findByPipelineId(String pipelineId, PageRequest pageRequest) {
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
         String sql = DatabaseAssemblyRunSql.selectAssemblyRunsByPipelineId(databaseDialect);
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = prepare(conn, sql)) {
             stmt.setString(1, pipelineId);
             databaseDialect.bindPage(stmt, 2, pageRequest);
             return executeAssemblyRunQuery(stmt);
@@ -123,7 +140,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public List<AssemblyRunRecord> findByStatus(ExecutionStatus status, PageRequest pageRequest) {
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
         String sql = DatabaseAssemblyRunSql.selectAssemblyRunsByStatus(databaseDialect);
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = prepare(conn, sql)) {
             stmt.setString(1, status.name());
             databaseDialect.bindPage(stmt, 2, pageRequest);
             return executeAssemblyRunQuery(stmt);
@@ -136,12 +153,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public void delete(UUID id) {
         try {
             JdbcRepositoryTransaction.run(dataSource, conn -> {
-                try (PreparedStatement deleteLogs = conn.prepareStatement(
-                                                                          DatabaseAssemblyRunSql
-                                                                                  .deleteStationLogsByRunId());
-                        PreparedStatement deleteRun = conn.prepareStatement(
-                                                                            DatabaseAssemblyRunSql
-                                                                                    .deleteAssemblyRunById())) {
+                try (PreparedStatement deleteLogs = prepare(conn, DatabaseAssemblyRunSql.deleteStationLogsByRunId());
+                        PreparedStatement deleteRun = prepare(conn, DatabaseAssemblyRunSql.deleteAssemblyRunById())) {
                     databaseDialect.setUuid(deleteLogs, 1, id);
                     deleteLogs.executeUpdate();
                     databaseDialect.setUuid(deleteRun, 1, id);
@@ -157,7 +170,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public List<AssemblyRunRecord> findAll(PageRequest pageRequest) {
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
         String sql = DatabaseAssemblyRunSql.selectAllAssemblyRuns(databaseDialect);
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = prepare(conn, sql)) {
             databaseDialect.bindPage(stmt, 1, pageRequest);
             return executeAssemblyRunQuery(stmt);
         } catch (SQLException e) {
@@ -169,7 +182,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public List<StationLogRecord> findRootLogsByRunId(UUID runId, PageRequest pageRequest) {
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
         String sql = DatabaseAssemblyRunSql.selectRootStationLogsByRunId(databaseDialect);
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = prepare(conn, sql)) {
             databaseDialect.setUuid(stmt, 1, runId);
             databaseDialect.bindPage(stmt, 2, pageRequest);
             return executeStationLogQuery(stmt);
@@ -182,7 +195,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public List<StationLogRecord> findChildLogsByRunId(UUID runId, UUID parentLogId, PageRequest pageRequest) {
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
         String sql = DatabaseAssemblyRunSql.selectChildStationLogsByRunId(databaseDialect);
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = prepare(conn, sql)) {
             databaseDialect.setUuid(stmt, 1, runId);
             databaseDialect.setUuid(stmt, 2, parentLogId);
             databaseDialect.bindPage(stmt, 3, pageRequest);
@@ -197,7 +210,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public List<StationLogRecord> findAllLogsByRunId(UUID runId, PageRequest pageRequest) {
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
         String sql = DatabaseAssemblyRunSql.selectAllStationLogsByRunId(databaseDialect);
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = prepare(conn, sql)) {
             databaseDialect.setUuid(stmt, 1, runId);
             databaseDialect.bindPage(stmt, 2, pageRequest);
             return executeStationLogQuery(stmt);
@@ -210,7 +223,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public long countChildLogsByRunId(UUID runId, UUID parentLogId) {
         String sql = parentLogId == null ? DatabaseAssemblyRunSql.countRootStationLogsByRunId()
                 : DatabaseAssemblyRunSql.countChildStationLogsByRunId();
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = prepare(conn, sql)) {
             databaseDialect.setUuid(stmt, 1, runId);
             if (parentLogId != null) {
                 databaseDialect.setUuid(stmt, 2, parentLogId);
@@ -275,7 +288,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     private List<StationLogRecord> updateOpenStationLogsBatch(Connection conn, List<StationLogRecord> records)
             throws SQLException {
-        try (PreparedStatement stmt = conn.prepareStatement(DatabaseAssemblyRunSql.updateOpenStationLog())) {
+        try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.updateOpenStationLog())) {
             for (StationLogRecord rec : records) {
                 stationLogBinder.bindUpdateOpen(stmt, rec);
                 stmt.addBatch();
@@ -285,14 +298,14 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         }
     }
 
-    private List<StationLogRecord> recordsRequiringInsert(List<StationLogRecord> records, int[] updateCounts) {
+    List<StationLogRecord> recordsRequiringInsert(List<StationLogRecord> records, int[] updateCounts) {
         if (updateCounts == null || updateCounts.length != records.size()) {
             return List.copyOf(records);
         }
         List<StationLogRecord> insertCandidates = new ArrayList<>();
         for (int i = 0; i < updateCounts.length; i++) {
             int count = updateCounts[i];
-            if (count == 0 || count == Statement.SUCCESS_NO_INFO) {
+            if (count == 0) {
                 insertCandidates.add(records.get(i));
             } else if (count == Statement.EXECUTE_FAILED) {
                 return List.copyOf(records);
@@ -302,7 +315,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     private void upsertStationLogsBatch(Connection conn, List<StationLogRecord> records) throws SQLException {
-        try (PreparedStatement stmt = conn.prepareStatement(DatabaseAssemblyRunSql.upsertStationLog(databaseDialect))) {
+        try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.upsertStationLog(databaseDialect))) {
             for (StationLogRecord rec : records) {
                 stationLogBinder.bindInsert(stmt, rec);
                 stmt.addBatch();
@@ -312,7 +325,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     private void insertStationLogsBatch(Connection conn, List<StationLogRecord> records) throws SQLException {
-        try (PreparedStatement stmt = conn.prepareStatement(DatabaseAssemblyRunSql.insertStationLog())) {
+        try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.insertStationLog())) {
             for (StationLogRecord rec : records) {
                 stationLogBinder.bindInsert(stmt, rec);
                 stmt.addBatch();
@@ -333,17 +346,21 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     private int updateOpenStationLog(Connection conn, StationLogRecord rec) throws SQLException {
-        try (PreparedStatement stmt = conn.prepareStatement(DatabaseAssemblyRunSql.updateOpenStationLog())) {
+        try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.updateOpenStationLog())) {
             stationLogBinder.bindUpdateOpen(stmt, rec);
             return stmt.executeUpdate();
         }
     }
 
     private void insertStationLog(Connection conn, StationLogRecord rec) throws SQLException {
-        try (PreparedStatement stmt = conn.prepareStatement(DatabaseAssemblyRunSql.insertStationLog())) {
+        try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.insertStationLog())) {
             stationLogBinder.bindInsert(stmt, rec);
             stmt.executeUpdate();
         }
+    }
+
+    private PreparedStatement prepare(Connection conn, String sql) throws SQLException {
+        return statementOptions.prepare(conn, sql);
     }
 
     private List<AssemblyRunRecord> executeAssemblyRunQuery(PreparedStatement stmt) throws SQLException {

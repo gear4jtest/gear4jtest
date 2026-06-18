@@ -38,6 +38,10 @@ public final class JavaxToolsGeneratedSourceCompiler implements GeneratedSourceC
         this.parentClassLoader = parentClassLoader != null ? parentClassLoader : ClassLoader.getSystemClassLoader();
     }
 
+    public static boolean isAvailable() {
+        return ToolProvider.getSystemJavaCompiler() != null;
+    }
+
     @Override
     public Map<String, byte[]> compile(String className, byte[] sourceCode) {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();

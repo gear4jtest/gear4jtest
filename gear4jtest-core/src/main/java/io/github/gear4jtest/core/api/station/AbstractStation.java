@@ -53,11 +53,13 @@ public abstract class AbstractStation<I, O> {
     }
 
     public List<Processor> getProcessors() {
-        return processors;
+        return processors == null ? Collections.emptyList()
+                : Collections.unmodifiableList(processors);
     }
 
     public List<BaseError<I>> getOnErrors() {
-        return onErrors;
+        return onErrors == null ? Collections.emptyList()
+                : Collections.unmodifiableList(onErrors);
     }
 
     // ------------------------------------------------------------------------

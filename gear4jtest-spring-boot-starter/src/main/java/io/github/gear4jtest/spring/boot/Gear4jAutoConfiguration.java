@@ -45,16 +45,31 @@ public class Gear4jAutoConfiguration {
                                                             ObjectProvider<SensitiveDataRedactor> redactorProvider) {
         Gear4jProperties.PersistenceProperties persistence = properties.getPersistence();
         persistence.validateWhenEnabled();
+        SensitiveDataRedactor redactor = resolveRedactor(redactorProvider.getIfAvailable(),
+                                                         persistence.getRedactionMode());
         PersistenceRuntimeConfiguration runtimeConfiguration = PersistenceRuntimeConfiguration.builder()
                 .batchSize(persistence.getBatchSize())
                 .maxPendingLogsPerRun(persistence.getMaxPendingLogsPerRun())
                 .flushInterval(persistence.getFlushInterval())
                 .shutdownTimeout(persistence.getShutdownTimeout())
+                .jdbcStatementTimeout(persistence.getJdbcStatementTimeout())
                 .flushThreadCount(persistence.getFlushThreads())
                 .maxScheduledFlushTasks(persistence.getMaxScheduledFlushTasks())
                 .build();
         return new DatabaseExecutionManager(dataSource, persistence.getDialect(), runtimeConfiguration,
-                persistence.isAutoCreateTables(), redactorProvider.getIfAvailable());
+                persistence.isAutoCreateTables(), redactor);
+    }
+
+    private static SensitiveDataRedactor resolveRedactor(SensitiveDataRedactor redactor,
+                                                         Gear4jProperties.RedactionMode redactionMode) {
+        if (redactionMode == Gear4jProperties.RedactionMode.REQUIRE && SensitiveDataRedactor.isNone(redactor)) {
+            throw new IllegalStateException("gear4j.persistence.redaction-mode=REQUIRE requires a "
+                    + "SensitiveDataRedactor bean when persistence is enabled");
+        }
+        if (redactionMode == Gear4jProperties.RedactionMode.DISABLED && SensitiveDataRedactor.isNone(redactor)) {
+            return (target, value) -> value;
+        }
+        return redactor;
     }
 
     @Bean

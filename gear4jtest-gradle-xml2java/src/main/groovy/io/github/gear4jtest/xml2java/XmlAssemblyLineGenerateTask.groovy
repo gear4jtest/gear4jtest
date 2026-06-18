@@ -45,20 +45,36 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
     @TaskAction
     void generate() {
         File destination = outputDir.get().asFile
-        project.delete(destination)
-        destination.mkdirs()
-
         XmlOperationChainTranslator translator = trustedXml.get()
             ? XmlOperationChainTranslator.trusted()
             : XmlOperationChainTranslator.gelOnly()
-        xmlFiles.files
+
+        def generatedSources = xmlFiles.files
             .findAll { File file -> file.isFile() && file.name.endsWith('.xml') }
             .sort { File file -> file.path }
-            .each { File file ->
+            .collect { File file ->
                 def result = translator.translate(file.bytes, mediaType.get())
-                XmlAssemblyLineGenerateTask.writeJavaSource(destination, result.className(), result.formattedSource())
-                logger.info('Generated Gear4J Java source {} from XML {}', result.className(), file)
+                new GeneratedSource(file, result.className(), result.formattedSource())
             }
+
+        project.delete(destination)
+        destination.mkdirs()
+        generatedSources.each { GeneratedSource generated ->
+            XmlAssemblyLineGenerateTask.writeJavaSource(destination, generated.className, generated.formattedSource)
+            logger.info('Generated Gear4J Java source {} from XML {}', generated.className, generated.sourceFile)
+        }
+    }
+
+    private static final class GeneratedSource {
+        final File sourceFile
+        final String className
+        final String formattedSource
+
+        private GeneratedSource(File sourceFile, String className, String formattedSource) {
+            this.sourceFile = sourceFile
+            this.className = className
+            this.formattedSource = formattedSource
+        }
     }
 
     static void writeJavaSource(File outputRoot, String className, String formattedSource) {

@@ -5,7 +5,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -13,6 +16,7 @@ import java.util.regex.Pattern;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.core.persistence.JdbcStatementOptions;
 import io.github.gear4jtest.external.api.repository.jdbc.ExternalRepositorySqlDialect;
 
 public final class DatabaseArtifactStore implements ArtifactStore {
@@ -22,11 +26,31 @@ public final class DatabaseArtifactStore implements ArtifactStore {
     private final DataSource ds;
     private final String table;
     private final Gear4jDatabaseDialect databaseDialect;
+    private final JdbcStatementOptions statementOptions;
 
     public DatabaseArtifactStore(DataSource ds, String table, Gear4jDatabaseDialect databaseDialect) {
+        this(ds, table, databaseDialect, JdbcStatementOptions.defaults());
+    }
+
+    public DatabaseArtifactStore(DataSource ds,
+                                 String table,
+                                 Gear4jDatabaseDialect databaseDialect,
+                                 Duration jdbcStatementTimeout) {
+        this(ds, table, databaseDialect, JdbcStatementOptions.of(jdbcStatementTimeout));
+    }
+
+    public DatabaseArtifactStore(DataSource ds,
+                                 String table,
+                                 Gear4jDatabaseDialect databaseDialect,
+                                 JdbcStatementOptions statementOptions) {
         this.ds = Objects.requireNonNull(ds, "ds must not be null");
         this.table = requireSqlIdentifier(table == null ? DEFAULT_TABLE : table, "table name");
         this.databaseDialect = Objects.requireNonNull(databaseDialect, "databaseDialect must not be null");
+        this.statementOptions = Objects.requireNonNull(statementOptions, "statementOptions must not be null");
+    }
+
+    private PreparedStatement prepare(Connection connection, String sql) throws SQLException {
+        return statementOptions.prepare(connection, sql);
     }
 
     private static String requireSqlIdentifier(String value, String label) {
@@ -53,7 +77,7 @@ public final class DatabaseArtifactStore implements ArtifactStore {
                 hash = Hashing.sha256Hex(digestInput, ArtifactStore.UNLIMITED_SIZE).hashHex();
             }
             try (var c = ds.getConnection();
-                    var ps = c.prepareStatement("INSERT INTO " + table
+                    var ps = prepare(c, "INSERT INTO " + table
                             + "(hash_hex,size_bytes,content) VALUES (?,?,?)")) {
                 ps.setString(1, hash);
                 ps.setLong(2, size);
@@ -99,7 +123,7 @@ public final class DatabaseArtifactStore implements ArtifactStore {
     public Optional<Artifact> get(String hashHex) throws IOException {
         String hash = Hashing.requireSha256Hex(hashHex);
         try (var c = ds.getConnection();
-                var ps = c.prepareStatement("SELECT size_bytes, content FROM " + table + " WHERE hash_hex=?")) {
+                var ps = prepare(c, "SELECT size_bytes, content FROM " + table + " WHERE hash_hex=?")) {
             ps.setString(1, hash);
             try (var rs = ps.executeQuery()) {
                 if (!rs.next()) {
@@ -118,7 +142,7 @@ public final class DatabaseArtifactStore implements ArtifactStore {
     @Override
     public boolean exists(String hashHex) throws IOException {
         String hash = Hashing.requireSha256Hex(hashHex);
-        try (var c = ds.getConnection(); var ps = c.prepareStatement("SELECT 1 FROM " + table + " WHERE hash_hex=?")) {
+        try (var c = ds.getConnection(); var ps = prepare(c, "SELECT 1 FROM " + table + " WHERE hash_hex=?")) {
             ps.setString(1, hash);
             try (var rs = ps.executeQuery()) {
                 return rs.next();

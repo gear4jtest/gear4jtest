@@ -31,12 +31,16 @@ When JDBC persistence is enabled:
 - decide deliberately whether Gear4J may create/migrate its schema with
   `gear4j.persistence.auto-create-tables`;
 - configure a `SensitiveDataRedactor` when payloads may contain PII, secrets or
-  sensitive business data;
+  sensitive business data, and set `gear4j.persistence.redaction-mode=REQUIRE`
+  in Spring Boot deployments that must fail fast without one;
 - tune `gear4j.persistence.batch-size`, `max-pending-logs-per-run`,
-  `flush-threads` and `max-scheduled-flush-tasks` for expected volume;
+  `flush-threads`, `max-scheduled-flush-tasks` and
+  `jdbc-statement-timeout` for expected volume and database latency;
 - monitor failed flushes, rejected appends and active buffers;
 - keep persistence history queries paginated. `PageRequest` is intentionally
-  capped at 1,000 rows per call to avoid accidental large reads.
+  capped at 1,000 rows per call to avoid accidental large reads. The external
+  JDBC repositories also expose paginated variants for operation-chain objects
+  and tags.
 
 ## External RUN promotion
 

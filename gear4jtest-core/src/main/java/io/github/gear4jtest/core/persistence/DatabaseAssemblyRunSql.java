@@ -27,16 +27,17 @@ final class DatabaseAssemblyRunSql {
 
     static String selectAssemblyRunsByPipelineId(Gear4jDatabaseDialect dialect) {
         return dialect.pagedSql("SELECT " + ASSEMBLY_RUN_COLUMNS
-                + " FROM assembly_run WHERE pipeline_id = ? ORDER BY start_time DESC");
+                + " FROM assembly_run WHERE pipeline_id = ? ORDER BY start_time DESC, id DESC");
     }
 
     static String selectAssemblyRunsByStatus(Gear4jDatabaseDialect dialect) {
         return dialect.pagedSql("SELECT " + ASSEMBLY_RUN_COLUMNS
-                + " FROM assembly_run WHERE status = ? ORDER BY start_time DESC");
+                + " FROM assembly_run WHERE status = ? ORDER BY start_time DESC, id DESC");
     }
 
     static String selectAllAssemblyRuns(Gear4jDatabaseDialect dialect) {
-        return dialect.pagedSql("SELECT " + ASSEMBLY_RUN_COLUMNS + " FROM assembly_run ORDER BY start_time DESC");
+        return dialect.pagedSql("SELECT " + ASSEMBLY_RUN_COLUMNS
+                + " FROM assembly_run ORDER BY start_time DESC, id DESC");
     }
 
     static String deleteStationLogsByRunId() {

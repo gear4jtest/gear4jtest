@@ -85,6 +85,52 @@ class GearExpressionParserTest {
     }
 
     @Test
+    void parse_shouldRejectExpressionThatExceedsMaxLength() {
+        // Given
+        String expression = "a".repeat(GearExpressionParser.DEFAULT_MAX_EXPRESSION_LENGTH + 1);
+
+        // When / Then
+        assertThatThrownBy(() -> GearExpressionParser.parse(expression))
+                .isInstanceOf(GearExpressionException.class)
+                .hasMessageContaining("max length");
+    }
+
+    @Test
+    void parse_shouldRejectExpressionThatExceedsMaxTokenCount() {
+        // Given
+        String expression = ("true || ").repeat(300) + "true";
+
+        // When / Then
+        assertThatThrownBy(() -> GearExpressionParser.parse(expression))
+                .isInstanceOf(GearExpressionException.class)
+                .hasMessageContaining("max token count");
+    }
+
+    @Test
+    void parse_shouldRejectPathThatExceedsMaxSegments() {
+        // Given
+        String expression = "input" + ".child".repeat(GearExpressionParser.DEFAULT_MAX_PATH_SEGMENTS);
+
+        // When / Then
+        assertThatThrownBy(() -> GearExpressionParser.parse(expression))
+                .isInstanceOf(GearExpressionException.class)
+                .hasMessageContaining("max segments");
+    }
+
+    @Test
+    void parse_shouldRejectExpressionThatExceedsMaxNestingDepth() {
+        // Given
+        String expression = "(".repeat(GearExpressionParser.DEFAULT_MAX_NESTING_DEPTH + 1)
+                + "true"
+                + ")".repeat(GearExpressionParser.DEFAULT_MAX_NESTING_DEPTH + 1);
+
+        // When / Then
+        assertThatThrownBy(() -> GearExpressionParser.parse(expression))
+                .isInstanceOf(GearExpressionException.class)
+                .hasMessageContaining("max nesting depth");
+    }
+
+    @Test
     void evaluate_shouldAllowJavaBeanGettersOnPojoObjects() {
         // Given
         BeanDocument document = new BeanDocument("BOOK", true);

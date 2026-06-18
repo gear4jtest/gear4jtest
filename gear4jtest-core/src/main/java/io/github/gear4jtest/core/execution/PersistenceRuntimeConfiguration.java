@@ -11,6 +11,7 @@ public final class PersistenceRuntimeConfiguration {
     private static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
     private static final int DEFAULT_FLUSH_THREAD_COUNT = 1;
     private static final int DEFAULT_MAX_SCHEDULED_FLUSH_TASKS = 1_000;
+    private static final Duration DEFAULT_JDBC_STATEMENT_TIMEOUT = Duration.ofSeconds(30);
 
     private final int batchSize;
     private final int maxPendingLogsPerRun;
@@ -18,6 +19,7 @@ public final class PersistenceRuntimeConfiguration {
     private final Duration shutdownTimeout;
     private final int flushThreadCount;
     private final int maxScheduledFlushTasks;
+    private final Duration jdbcStatementTimeout;
 
     private PersistenceRuntimeConfiguration(Builder builder) {
         this.batchSize = positive(builder.batchSize, "batchSize");
@@ -29,6 +31,7 @@ public final class PersistenceRuntimeConfiguration {
         this.shutdownTimeout = positive(builder.shutdownTimeout, "shutdownTimeout");
         this.flushThreadCount = positive(builder.flushThreadCount, "flushThreadCount");
         this.maxScheduledFlushTasks = positive(builder.maxScheduledFlushTasks, "maxScheduledFlushTasks");
+        this.jdbcStatementTimeout = nonNegative(builder.jdbcStatementTimeout, "jdbcStatementTimeout");
     }
 
     public static Builder builder() {
@@ -63,6 +66,10 @@ public final class PersistenceRuntimeConfiguration {
         return maxScheduledFlushTasks;
     }
 
+    public Duration jdbcStatementTimeout() {
+        return jdbcStatementTimeout;
+    }
+
     private static int positive(int value, String name) {
         if (value <= 0) {
             throw new IllegalArgumentException(name + " must be > 0");
@@ -78,6 +85,14 @@ public final class PersistenceRuntimeConfiguration {
         return value;
     }
 
+    private static Duration nonNegative(Duration value, String name) {
+        Objects.requireNonNull(value, name + " must not be null");
+        if (value.isNegative()) {
+            throw new IllegalArgumentException(name + " must be >= 0");
+        }
+        return value;
+    }
+
     public static final class Builder {
         private int batchSize = DEFAULT_BATCH_SIZE;
         private int maxPendingLogsPerRun = DEFAULT_MAX_PENDING_LOGS_PER_RUN;
@@ -85,6 +100,7 @@ public final class PersistenceRuntimeConfiguration {
         private Duration shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
         private int flushThreadCount = DEFAULT_FLUSH_THREAD_COUNT;
         private int maxScheduledFlushTasks = DEFAULT_MAX_SCHEDULED_FLUSH_TASKS;
+        private Duration jdbcStatementTimeout = DEFAULT_JDBC_STATEMENT_TIMEOUT;
 
         public Builder batchSize(int batchSize) {
             this.batchSize = batchSize;
@@ -113,6 +129,11 @@ public final class PersistenceRuntimeConfiguration {
 
         public Builder maxScheduledFlushTasks(int maxScheduledFlushTasks) {
             this.maxScheduledFlushTasks = maxScheduledFlushTasks;
+            return this;
+        }
+
+        public Builder jdbcStatementTimeout(Duration jdbcStatementTimeout) {
+            this.jdbcStatementTimeout = jdbcStatementTimeout;
             return this;
         }
 

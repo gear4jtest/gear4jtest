@@ -18,10 +18,12 @@ three long-term operational risks:
 
 ### Compiler SPI
 
-`GeneratedSourceCompiler` is the stable compiler SPI. The default runtime can
-still use JDT, but applications can now provide alternatives through constructor
-injection, `GeneratedSourceCompilers.fromServiceLoader(...)`, or the built-in
-`JavaxToolsGeneratedSourceCompiler` based on the JDK `javax.tools.JavaCompiler`.
+`GeneratedSourceCompiler` is the stable compiler SPI. The built-in default now
+prefers `JavaxToolsGeneratedSourceCompiler`, based on the standard JDK
+`javax.tools.JavaCompiler`, and falls back to JDT when the runtime image does not
+provide `jdk.compiler` or javac cannot compile with the current runtime classpath.
+Applications can still force JDT, force javac, or provide an alternative through
+constructor injection or `GeneratedSourceCompilers.fromServiceLoader(...)`.
 
 ### XML security boundary
 
@@ -35,11 +37,13 @@ XML. Trusted build-time generation must opt in explicitly with
 `InMemoryClassLoaderRegistry` is now bounded. It uses a best-effort LRU policy
 and protects aliased loaders from automatic eviction so aliases never point to a
 missing classloader. Operators that expect high version churn should configure a
-capacity that matches their promotion/rollback window.
+capacity that matches their promotion/rollback window. A separate
+`maxProtectedLoaders` cap prevents alias-heavy deployments from protecting an
+unbounded number of classloaders from eviction.
 
 ## Consequences
 
-- JDT remains available without making it the only compiler path.
+- The standard JDK compiler is the preferred path when available; JDT remains the fallback.
 - Untrusted XML has a concrete GEL-only path for conditions.
 - Runtime classloader churn is limited by default, while exact aliases remain
-  safe.
+  safe up to an explicit protected-loader cap.

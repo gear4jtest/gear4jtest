@@ -2,8 +2,10 @@ package io.github.gear4jtest.external.api.loader;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Bounded in-memory registry for generated classloaders.
@@ -16,21 +18,31 @@ import java.util.Map;
  */
 public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
     public static final int DEFAULT_MAX_LOADERS = 256;
+    public static final int DEFAULT_MAX_PROTECTED_LOADERS = 256;
 
     private final int maxLoaders;
+    private final int maxProtectedLoaders;
     private final LinkedHashMap<String, Holder> byId = new LinkedHashMap<>(16, 0.75f, true);
     private final Map<String, String> aliasToId = new HashMap<>();
     private long evictedLoaders;
 
     public InMemoryClassLoaderRegistry() {
-        this(DEFAULT_MAX_LOADERS);
+        this(DEFAULT_MAX_LOADERS, DEFAULT_MAX_PROTECTED_LOADERS);
     }
 
     public InMemoryClassLoaderRegistry(int maxLoaders) {
+        this(maxLoaders, DEFAULT_MAX_PROTECTED_LOADERS);
+    }
+
+    public InMemoryClassLoaderRegistry(int maxLoaders, int maxProtectedLoaders) {
         if (maxLoaders < 1) {
             throw new IllegalArgumentException("maxLoaders must be >= 1");
         }
+        if (maxProtectedLoaders < 1) {
+            throw new IllegalArgumentException("maxProtectedLoaders must be >= 1");
+        }
         this.maxLoaders = maxLoaders;
+        this.maxProtectedLoaders = maxProtectedLoaders;
     }
 
     @Override
@@ -58,6 +70,7 @@ public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
         if (id == null) {
             aliasToId.remove(alias);
         } else if (byId.containsKey(id)) {
+            requireProtectedLoaderCapacity(alias, id);
             aliasToId.put(alias, id);
         } else {
             throw new IllegalArgumentException("Cannot alias missing classloader id: " + id);
@@ -84,6 +97,18 @@ public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
         return new RegistryStats(byId.size(), aliasToId.size(), maxLoaders, evictedLoaders);
     }
 
+    public synchronized int protectedLoaderCount() {
+        return protectedLoaderIds().size();
+    }
+
+    public synchronized int maxProtectedLoaders() {
+        return maxProtectedLoaders;
+    }
+
+    public synchronized boolean isOverCapacityDueToProtectedLoaders() {
+        return byId.size() > maxLoaders && protectedLoaderCount() > 0;
+    }
+
     private void evictOverflow(String protectedId) {
         while (byId.size() > maxLoaders) {
             String candidate = firstEvictableId(protectedId);
@@ -96,12 +121,31 @@ public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
     }
 
     private String firstEvictableId(String protectedId) {
+        Set<String> protectedLoaderIds = protectedLoaderIds();
         for (String id : byId.keySet()) {
-            if (!id.equals(protectedId) && !aliasToId.containsValue(id)) {
+            if (!id.equals(protectedId) && !protectedLoaderIds.contains(id)) {
                 return id;
             }
         }
         return null;
+    }
+
+    private void requireProtectedLoaderCapacity(String alias, String id) {
+        String previousId = aliasToId.get(alias);
+        if (id.equals(previousId)) {
+            return;
+        }
+        Set<String> protectedLoaderIds = protectedLoaderIds();
+        protectedLoaderIds.remove(previousId);
+        protectedLoaderIds.add(id);
+        if (protectedLoaderIds.size() > maxProtectedLoaders) {
+            throw new IllegalStateException("Cannot protect more than " + maxProtectedLoaders
+                    + " generated classloaders with aliases");
+        }
+    }
+
+    private Set<String> protectedLoaderIds() {
+        return new HashSet<>(aliasToId.values());
     }
 
     public record RegistryStats(int cachedLoaders, int aliases, int maxLoaders, long evictedLoaders) {}

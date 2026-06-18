@@ -35,8 +35,8 @@ public interface XmlJavaSourcePolicy {
     static XmlJavaSourcePolicy forbidInlineJava() {
         return expression -> {
             if (expression != null && !expression.isBlank()) {
-                throw new SecurityException("Inline Java expressions are not allowed for untrusted XML definitions: "
-                        + expression);
+                throw new SecurityException("Inline Java expressions are not allowed for untrusted XML definitions "
+                        + "(expressionLength=" + expression.length() + ")");
             }
         };
     }

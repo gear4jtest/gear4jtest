@@ -4,6 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
@@ -50,6 +52,44 @@ class DatabaseAssemblyRunRepositoryTest {
         order.verify(statement).executeUpdate();
         order.verify(connection).commit();
         order.verify(connection).setAutoCommit(true);
+    }
+
+    @Test
+    void save_shouldApplyDefaultJdbcStatementTimeout() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.getAutoCommit()).thenReturn(true);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
+                Gear4jDatabaseDialect.POSTGRESQL);
+
+        // When
+        repository.save(runRecord());
+
+        // Then
+        verify(statement).setQueryTimeout(30);
+    }
+
+    @Test
+    void save_shouldAllowDisablingJdbcStatementTimeout() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.getAutoCommit()).thenReturn(true);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
+                Gear4jDatabaseDialect.POSTGRESQL, new ObjectMapper(), Duration.ZERO);
+
+        // When
+        repository.save(runRecord());
+
+        // Then
+        verify(statement).setQueryTimeout(0);
     }
 
     @Test
@@ -163,6 +203,22 @@ class DatabaseAssemblyRunRepositoryTest {
         verify(insert).executeBatch();
         verify(connection).commit();
         verify(connection).setAutoCommit(true);
+    }
+
+    @Test
+    void recordsRequiringInsert_shouldTreatSuccessNoInfoAsSuccessfulUpdate() {
+        // Given
+        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(mock(DataSource.class),
+                Gear4jDatabaseDialect.H2, new ObjectMapper());
+        StationLogRecord first = stationLogRecord("step-1");
+        StationLogRecord second = stationLogRecord("step-2");
+
+        // When
+        var insertCandidates = repository.recordsRequiringInsert(java.util.List.of(first, second),
+                                                                 new int[] { Statement.SUCCESS_NO_INFO, 0 });
+
+        // Then
+        assertThat(insertCandidates).containsExactly(second);
     }
 
     @Test

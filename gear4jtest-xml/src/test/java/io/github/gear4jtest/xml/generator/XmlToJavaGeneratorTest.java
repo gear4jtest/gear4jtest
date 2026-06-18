@@ -37,7 +37,9 @@ class XmlToJavaGeneratorTest {
 
         // When / Then
         assertThatThrownBy(() -> safeGenerator.generate(definition)).isInstanceOf(SecurityException.class)
-                .hasMessageContaining("Inline Java expressions are not allowed");
+                .hasMessageContaining("Inline Java expressions are not allowed")
+                .hasMessageContaining("expressionLength=")
+                .hasMessageNotContaining("input.endsWith");
     }
 
     @Test

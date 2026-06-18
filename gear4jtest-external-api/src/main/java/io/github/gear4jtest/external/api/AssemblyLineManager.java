@@ -7,7 +7,6 @@ import java.util.Set;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompiler;
 import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompilers;
-import io.github.gear4jtest.external.api.compiler.JDTInMemoryCompiler;
 import io.github.gear4jtest.external.api.loader.ClassLoaderRegistry;
 import io.github.gear4jtest.external.api.loader.DependencyInjector;
 import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
@@ -47,8 +46,8 @@ public class AssemblyLineManager {
                                ClassLoaderRegistry classLoaderRegistry,
                                OperationChainTranslatorResolver translatorResolver) {
         this(configRepo, objectRepo, chainTagRepo, storeProvider, classLoaderRegistry, translatorResolver,
-                new JDTInMemoryCompiler(contextClassLoader()), new SimpleDependencyInjector(), contextClassLoader(),
-                DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
+                GeneratedSourceCompilers.defaultCompiler(contextClassLoader()), new SimpleDependencyInjector(),
+                contextClassLoader(), DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
     }
 
     public AssemblyLineManager(OperationChainConfigRepository configRepo,
@@ -75,7 +74,8 @@ public class AssemblyLineManager {
                                ClassLoader generatedClassParent,
                                long maxArtifactSizeBytes) {
         ClassLoader parent = generatedClassParent != null ? generatedClassParent : contextClassLoader();
-        GeneratedSourceCompiler effectiveCompiler = compiler != null ? compiler : new JDTInMemoryCompiler(parent);
+        GeneratedSourceCompiler effectiveCompiler = compiler != null ? compiler
+                : GeneratedSourceCompilers.defaultCompiler(parent);
         DependencyInjector effectiveDependencyInjector = dependencyInjector != null ? dependencyInjector
                 : new SimpleDependencyInjector();
         long effectiveMaxArtifactSizeBytes = AssemblyLineIdentifiers.requireValidArtifactSize(maxArtifactSizeBytes);

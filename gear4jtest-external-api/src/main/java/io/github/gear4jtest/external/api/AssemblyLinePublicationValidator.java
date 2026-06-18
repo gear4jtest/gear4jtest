@@ -42,7 +42,7 @@ final class AssemblyLinePublicationValidator {
             if (compiled == null || !compiled.containsKey(translated.className())) {
                 throw new AssemblyLineManager.PolicyViolationException(("RUN candidate validation failed for alId=%s, "
                         + "version=%s: compiler did not produce the generated class %s")
-                                .formatted(alId, object.version(), translated.className()));
+                        .formatted(alId, object.version(), translated.className()));
             }
         } catch (AssemblyLineManager.PolicyViolationException e) {
             throw e;

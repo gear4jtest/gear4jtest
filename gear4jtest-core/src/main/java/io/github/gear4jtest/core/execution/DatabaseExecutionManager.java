@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.sql.DataSource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 import io.github.gear4jtest.core.persistence.DatabaseAssemblyRunRepository;
@@ -57,11 +58,19 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
                                     PersistenceRuntimeConfiguration configuration,
                                     boolean autoCreateTables,
                                     SensitiveDataRedactor redactor) {
-        this(new DatabaseAssemblyRunRepository(Objects.requireNonNull(dataSource, "dataSource must not be null"),
-                Objects.requireNonNull(databaseDialect, "databaseDialect must not be null")), configuration,
-                autoCreateTables, PersistenceFlushCoordinator.createFlushExecutor(configuration),
+        this(createRepository(dataSource, databaseDialect, configuration), configuration, autoCreateTables,
+                PersistenceFlushCoordinator.createFlushExecutor(configuration),
                 Executors.newSingleThreadScheduledExecutor(PersistenceThreadFactories.maintenance()), true, true,
                 redactor);
+    }
+
+    private static DatabaseAssemblyRunRepository createRepository(DataSource dataSource,
+                                                                  Gear4jDatabaseDialect databaseDialect,
+                                                                  PersistenceRuntimeConfiguration configuration) {
+        Objects.requireNonNull(configuration, "configuration must not be null");
+        return new DatabaseAssemblyRunRepository(Objects.requireNonNull(dataSource, "dataSource must not be null"),
+                Objects.requireNonNull(databaseDialect, "databaseDialect must not be null"),
+                new ObjectMapper(), configuration.jdbcStatementTimeout());
     }
 
     /**

@@ -26,6 +26,8 @@ When the plugin is applied to a Java project, it:
 - creates the `xmlGenerateAssemblyLine` task;
 - reads `**/*.xml` under `src/main/gear4j` by default;
 - writes generated Java sources to `build/generated/sources/gear4j/xml2java/main`;
+- translates all XML inputs before replacing the output directory, so a failed translation does not wipe previously
+  generated sources;
 - rejects inline Java expressions by default unless `trustedXml` is enabled explicitly;
 - adds that directory to the main Java source set;
 - makes `compileJava` depend on `xmlGenerateAssemblyLine`.

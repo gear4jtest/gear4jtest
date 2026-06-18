@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.core.persistence.JdbcStatementOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,6 @@ public final class JdbcSchemaMigrator {
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcSchemaMigrator.class);
     private static final String HISTORY_TABLE = "gear4j_schema_history";
     private static final String LOCK_TABLE = "gear4j_schema_lock";
-    private static final int SCHEMA_LOCK_QUERY_TIMEOUT_SECONDS = 30;
     private static final Pattern CREATE_TABLE_PATTERN = Pattern
             .compile("(?is)\\bCREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?([A-Z0-9_]+)");
 
@@ -54,13 +54,14 @@ public final class JdbcSchemaMigrator {
     private final String migrationListResource;
     private final String baselineTableName;
     private final ClassLoader classLoader;
+    private final JdbcStatementOptions statementOptions;
 
     public JdbcSchemaMigrator(String moduleId,
                               Gear4jDatabaseDialect dialect,
                               String migrationListResource,
                               String baselineTableName) {
         this(moduleId, dialect, migrationListResource, baselineTableName,
-                Thread.currentThread().getContextClassLoader());
+                Thread.currentThread().getContextClassLoader(), JdbcStatementOptions.defaults());
     }
 
     public JdbcSchemaMigrator(String moduleId,
@@ -68,12 +69,22 @@ public final class JdbcSchemaMigrator {
                               String migrationListResource,
                               String baselineTableName,
                               ClassLoader classLoader) {
+        this(moduleId, dialect, migrationListResource, baselineTableName, classLoader, JdbcStatementOptions.defaults());
+    }
+
+    public JdbcSchemaMigrator(String moduleId,
+                              Gear4jDatabaseDialect dialect,
+                              String migrationListResource,
+                              String baselineTableName,
+                              ClassLoader classLoader,
+                              JdbcStatementOptions statementOptions) {
         this.moduleId = requireNonBlank(moduleId, "moduleId");
         this.dialect = Objects.requireNonNull(dialect, "dialect must not be null");
         this.migrationListResource = normalizeResource(requireNonBlank(migrationListResource,
                                                                        "migrationListResource"));
         this.baselineTableName = requireNonBlank(baselineTableName, "baselineTableName");
         this.classLoader = classLoader != null ? classLoader : JdbcSchemaMigrator.class.getClassLoader();
+        this.statementOptions = Objects.requireNonNull(statementOptions, "statementOptions must not be null");
     }
 
     public static JdbcSchemaMigrator core(Gear4jDatabaseDialect dialect) {
@@ -122,6 +133,16 @@ public final class JdbcSchemaMigrator {
         }
     }
 
+    private PreparedStatement prepare(Connection connection, String sql) throws SQLException {
+        return statementOptions.prepare(connection, sql);
+    }
+
+    private Statement createStatement(Connection connection) throws SQLException {
+        Statement statement = connection.createStatement();
+        statementOptions.apply(statement);
+        return statement;
+    }
+
     private void ensureInfrastructureTables(Connection connection) throws SQLException {
         ensureHistoryTable(connection);
         ensureLockTable(connection);
@@ -154,7 +175,7 @@ public final class JdbcSchemaMigrator {
         if (tableExists(connection, tableName)) {
             return;
         }
-        try (Statement statement = connection.createStatement()) {
+        try (Statement statement = createStatement(connection)) {
             statement.execute(sql);
         } catch (SQLException e) {
             if (tableExists(connection, tableName)) {
@@ -216,7 +237,7 @@ public final class JdbcSchemaMigrator {
     }
 
     private void ensureLockRow(Connection connection) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(lockRowInsertSql())) {
+        try (PreparedStatement statement = prepare(connection, lockRowInsertSql())) {
             statement.setString(1, moduleId);
             statement.setTimestamp(2, Timestamp.from(Instant.now()));
             statement.executeUpdate();
@@ -238,9 +259,8 @@ public final class JdbcSchemaMigrator {
     }
 
     private void acquireSchemaLock(Connection connection) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                                                                       "SELECT lock_name FROM gear4j_schema_lock WHERE lock_name = ? FOR UPDATE")) {
-            statement.setQueryTimeout(SCHEMA_LOCK_QUERY_TIMEOUT_SECONDS);
+        try (PreparedStatement statement = prepare(connection,
+                                                   "SELECT lock_name FROM gear4j_schema_lock WHERE lock_name = ? FOR UPDATE")) {
             statement.setString(1, moduleId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next()) {
@@ -248,8 +268,8 @@ public final class JdbcSchemaMigrator {
                 }
             }
         }
-        try (PreparedStatement statement = connection.prepareStatement(
-                                                                       "UPDATE gear4j_schema_lock SET locked_at = ? WHERE lock_name = ?")) {
+        try (PreparedStatement statement = prepare(connection,
+                                                   "UPDATE gear4j_schema_lock SET locked_at = ? WHERE lock_name = ?")) {
             statement.setTimestamp(1, Timestamp.from(Instant.now()));
             statement.setString(2, moduleId);
             statement.executeUpdate();
@@ -257,8 +277,8 @@ public final class JdbcSchemaMigrator {
     }
 
     private boolean hasNoHistory(Connection connection) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                                                                       "SELECT 1 FROM gear4j_schema_history WHERE module_id=?")) {
+        try (PreparedStatement statement = prepare(connection,
+                                                   "SELECT 1 FROM gear4j_schema_history WHERE module_id=?")) {
             statement.setString(1, moduleId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 return !resultSet.next();
@@ -345,8 +365,8 @@ public final class JdbcSchemaMigrator {
     }
 
     private MigrationState findMigrationState(Connection connection, String version) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                                                                       "SELECT checksum FROM gear4j_schema_history WHERE module_id=? AND version=?")) {
+        try (PreparedStatement statement = prepare(connection,
+                                                   "SELECT checksum FROM gear4j_schema_history WHERE module_id=? AND version=?")) {
             statement.setString(1, moduleId);
             statement.setString(2, version);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -356,9 +376,9 @@ public final class JdbcSchemaMigrator {
     }
 
     private void insertHistory(Connection connection, SchemaMigration migration, String checksum) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                                                                       "INSERT INTO gear4j_schema_history(module_id, version, description, checksum, installed_at) "
-                                                                               + "VALUES (?,?,?,?,?)")) {
+        try (PreparedStatement statement = prepare(connection,
+                                                   "INSERT INTO gear4j_schema_history(module_id, version, description, checksum, installed_at) "
+                                                           + "VALUES (?,?,?,?,?)")) {
             statement.setString(1, moduleId);
             statement.setString(2, migration.version());
             statement.setString(3, migration.description());
@@ -411,7 +431,7 @@ public final class JdbcSchemaMigrator {
     }
 
     private void executeScript(Connection connection, String scriptContent) throws SQLException {
-        try (Statement statement = connection.createStatement()) {
+        try (Statement statement = createStatement(connection)) {
             for (String sql : splitSqlStatements(scriptContent)) {
                 statement.execute(sql);
             }

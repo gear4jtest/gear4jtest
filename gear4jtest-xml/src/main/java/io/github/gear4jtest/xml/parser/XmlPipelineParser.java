@@ -1,5 +1,6 @@
 package io.github.gear4jtest.xml.parser;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +36,21 @@ import org.w3c.dom.Node;
 import org.xml.sax.SAXParseException;
 
 public final class XmlPipelineParser {
+    public static final long DEFAULT_MAX_XML_BYTES = 2L * 1024L * 1024L;
+
+    private final long maxXmlBytes;
+
+    public XmlPipelineParser() {
+        this(DEFAULT_MAX_XML_BYTES);
+    }
+
+    public XmlPipelineParser(long maxXmlBytes) {
+        if (maxXmlBytes <= 0) {
+            throw new IllegalArgumentException("maxXmlBytes must be > 0");
+        }
+        this.maxXmlBytes = maxXmlBytes;
+    }
+
     private static Element firstOperationChild(Element parent) {
         for (Element child : children(parent)) {
             String name = localName(child);
@@ -131,7 +147,7 @@ public final class XmlPipelineParser {
 
             var builder = factory.newDocumentBuilder();
             builder.setErrorHandler(ThrowingErrorHandler.INSTANCE);
-            Document document = builder.parse(inputStream);
+            Document document = builder.parse(new BoundedInputStream(inputStream, maxXmlBytes));
             Element root = document.getDocumentElement();
 
             if (!"assemblyLine".equals(localName(root))) {
@@ -157,6 +173,47 @@ public final class XmlPipelineParser {
                 throw illegalArgumentException;
             }
             throw new IllegalArgumentException("Unable to parse Gear4J XML pipeline", e);
+        }
+    }
+
+    private static final class BoundedInputStream extends InputStream {
+        private final InputStream delegate;
+        private final long maxBytes;
+        private long count;
+
+        private BoundedInputStream(InputStream delegate, long maxBytes) {
+            this.delegate = delegate;
+            this.maxBytes = maxBytes;
+        }
+
+        @Override
+        public int read() throws IOException {
+            int value = delegate.read();
+            if (value != -1) {
+                increment(1);
+            }
+            return value;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            int read = delegate.read(b, off, len);
+            if (read > 0) {
+                increment(read);
+            }
+            return read;
+        }
+
+        @Override
+        public void close() throws IOException {
+            delegate.close();
+        }
+
+        private void increment(long bytes) throws IOException {
+            count += bytes;
+            if (count > maxBytes) {
+                throw new IOException("Gear4J XML definition exceeds maxXmlBytes=" + maxBytes);
+            }
         }
     }
 

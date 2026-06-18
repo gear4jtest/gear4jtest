@@ -74,4 +74,38 @@ class InMemoryClassLoaderRegistryTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("missing");
     }
+
+    @Test
+    void setAlias_shouldRejectTooManyProtectedLoaders() {
+        // Given
+        InMemoryClassLoaderRegistry registry = new InMemoryClassLoaderRegistry(10, 1);
+        ClassLoader loader = getClass().getClassLoader();
+        registry.register("v1", loader, null);
+        registry.register("v2", loader, null);
+        registry.setAlias("latest", "v1");
+
+        // When / Then
+        assertThatThrownBy(() -> registry.setAlias("rollback", "v2"))
+                .as("operators can cap alias-protected loaders independently from the LRU cache")
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Cannot protect more than 1");
+    }
+
+    @Test
+    void protectedLoaderCount_shouldExposeAliasProtectedLoaders() {
+        // Given
+        InMemoryClassLoaderRegistry registry = new InMemoryClassLoaderRegistry(1);
+        ClassLoader loader = getClass().getClassLoader();
+        registry.register("v1", loader, null);
+        registry.setAlias("latest", "v1");
+
+        // When
+        registry.register("v2", loader, null);
+
+        // Then
+        assertThat(registry.protectedLoaderCount()).isEqualTo(1);
+        assertThat(registry.maxProtectedLoaders()).isEqualTo(InMemoryClassLoaderRegistry.DEFAULT_MAX_PROTECTED_LOADERS);
+        assertThat(registry.isOverCapacityDueToProtectedLoaders()).isTrue();
+    }
+
 }

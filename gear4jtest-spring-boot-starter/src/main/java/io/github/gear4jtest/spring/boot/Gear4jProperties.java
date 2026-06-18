@@ -41,6 +41,21 @@ public class Gear4jProperties {
         }
     }
 
+    public enum RedactionMode {
+        /**
+         * Persist as-is when no SensitiveDataRedactor bean is available, with a startup
+         * warning.
+         */
+        WARN,
+        /**
+         * Fail startup when persistence is enabled and no SensitiveDataRedactor bean is
+         * available.
+         */
+        REQUIRE,
+        /** Explicitly allow persistence without redaction. */
+        DISABLED
+    }
+
     public static final class PersistenceProperties {
         /** Enables JDBC persistence for run and station traces. Default: false. */
         private boolean enabled;
@@ -65,6 +80,16 @@ public class Gear4jProperties {
         @Min(1) private int maxScheduledFlushTasks = 1_000;
         @NotNull private Duration flushInterval = Duration.ofSeconds(1);
         @NotNull private Duration shutdownTimeout = Duration.ofSeconds(30);
+        /**
+         * JDBC Statement query timeout applied to Gear4J persistence statements. Use 0
+         * to disable the statement-level timeout. Default: 30s.
+         */
+        @NotNull private Duration jdbcStatementTimeout = Duration.ofSeconds(30);
+        /**
+         * Controls startup behavior when persistence is enabled without a
+         * SensitiveDataRedactor bean. Default: WARN.
+         */
+        @NotNull private RedactionMode redactionMode = RedactionMode.WARN;
 
         public boolean isEnabled() {
             return enabled;
@@ -138,6 +163,22 @@ public class Gear4jProperties {
             this.shutdownTimeout = shutdownTimeout;
         }
 
+        public Duration getJdbcStatementTimeout() {
+            return jdbcStatementTimeout;
+        }
+
+        public void setJdbcStatementTimeout(Duration jdbcStatementTimeout) {
+            this.jdbcStatementTimeout = jdbcStatementTimeout;
+        }
+
+        public RedactionMode getRedactionMode() {
+            return redactionMode;
+        }
+
+        public void setRedactionMode(RedactionMode redactionMode) {
+            this.redactionMode = redactionMode;
+        }
+
         public void validateWhenEnabled() {
             if (!enabled) {
                 return;
@@ -147,6 +188,9 @@ public class Gear4jProperties {
             }
             if (maxPendingLogsPerRun < batchSize) {
                 throw new IllegalStateException("gear4j.persistence.max-pending-logs-per-run must be >= batch-size");
+            }
+            if (jdbcStatementTimeout != null && jdbcStatementTimeout.isNegative()) {
+                throw new IllegalStateException("gear4j.persistence.jdbc-statement-timeout must be >= 0");
             }
         }
     }

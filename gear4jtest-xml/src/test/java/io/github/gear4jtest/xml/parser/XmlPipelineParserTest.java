@@ -120,6 +120,26 @@ class XmlPipelineParserTest {
     }
 
     @Test
+    void should_reject_xml_that_exceeds_configured_size_limit() {
+        // Given
+        XmlPipelineParser boundedParser = new XmlPipelineParser(120);
+        String xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+                              id="too-large"
+                              inputType="java.lang.String"
+                              outputType="java.lang.String">
+                  <operations/>
+                </assemblyLine>
+                """;
+
+        // When / Then
+        assertThatThrownBy(() -> boundedParser.parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasStackTraceContaining("maxXmlBytes=120");
+    }
+
+    @Test
     void should_parse_signal_operation() throws IOException {
         // Given / When
         var definition = parser.parse(resource("/samples/assembly-line-signal.xml"));
