@@ -39,57 +39,100 @@ public class AssemblyLineManager {
     private final AssemblyLinePublicationService publicationService;
     private final AssemblyLineLookupService lookupService;
 
-    public AssemblyLineManager(OperationChainConfigRepository configRepo,
-                               OperationChainObjectRepository objectRepo,
-                               OperationChainTagRepository chainTagRepo,
-                               ArtifactStoreProvider storeProvider,
-                               ClassLoaderRegistry classLoaderRegistry,
-                               OperationChainTranslatorResolver translatorResolver) {
-        this(configRepo, objectRepo, chainTagRepo, storeProvider, classLoaderRegistry, translatorResolver,
-                GeneratedSourceCompilers.defaultCompiler(contextClassLoader()), new SimpleDependencyInjector(),
-                contextClassLoader(), DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public AssemblyLineManager(OperationChainConfigRepository configRepo,
-                               OperationChainObjectRepository objectRepo,
-                               OperationChainTagRepository chainTagRepo,
-                               ArtifactStoreProvider storeProvider,
-                               ClassLoaderRegistry classLoaderRegistry,
-                               OperationChainTranslatorResolver translatorResolver,
-                               GeneratedSourceCompiler compiler,
-                               DependencyInjector dependencyInjector,
-                               ClassLoader generatedClassParent) {
-        this(configRepo, objectRepo, chainTagRepo, storeProvider, classLoaderRegistry, translatorResolver, compiler,
-                dependencyInjector, generatedClassParent, DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
-    }
-
-    public AssemblyLineManager(OperationChainConfigRepository configRepo,
-                               OperationChainObjectRepository objectRepo,
-                               OperationChainTagRepository chainTagRepo,
-                               ArtifactStoreProvider storeProvider,
-                               ClassLoaderRegistry classLoaderRegistry,
-                               OperationChainTranslatorResolver translatorResolver,
-                               GeneratedSourceCompiler compiler,
-                               DependencyInjector dependencyInjector,
-                               ClassLoader generatedClassParent,
-                               long maxArtifactSizeBytes) {
-        ClassLoader parent = generatedClassParent != null ? generatedClassParent : contextClassLoader();
-        GeneratedSourceCompiler effectiveCompiler = compiler != null ? compiler
+    private AssemblyLineManager(Builder builder) {
+        ClassLoader parent = builder.generatedClassParent != null ? builder.generatedClassParent : contextClassLoader();
+        GeneratedSourceCompiler effectiveCompiler = builder.compiler != null ? builder.compiler
                 : GeneratedSourceCompilers.defaultCompiler(parent);
-        DependencyInjector effectiveDependencyInjector = dependencyInjector != null ? dependencyInjector
+        DependencyInjector effectiveDependencyInjector = builder.dependencyInjector != null ? builder.dependencyInjector
                 : new SimpleDependencyInjector();
-        long effectiveMaxArtifactSizeBytes = AssemblyLineIdentifiers.requireValidArtifactSize(maxArtifactSizeBytes);
+        long effectiveMaxArtifactSizeBytes = AssemblyLineIdentifiers.requireValidArtifactSize(
+                                                                                              builder.maxArtifactSizeBytes);
 
-        this.chainTagRepo = requireNonNull(chainTagRepo);
-        this.storeResolver = new AssemblyLineStoreResolver(configRepo, storeProvider);
-        this.aliasService = new AssemblyLineAliasService(classLoaderRegistry);
-        var loader = new GeneratedAssemblyLineLoader(storeResolver, classLoaderRegistry, translatorResolver,
-                effectiveCompiler, effectiveDependencyInjector, parent, effectiveMaxArtifactSizeBytes, aliasService);
-        var publicationValidator = new AssemblyLinePublicationValidator(storeResolver, translatorResolver,
+        this.chainTagRepo = requireNonNull(builder.chainTagRepo);
+        this.storeResolver = new AssemblyLineStoreResolver(builder.configRepo, builder.storeProvider);
+        this.aliasService = new AssemblyLineAliasService(builder.classLoaderRegistry);
+        var loader = new GeneratedAssemblyLineLoader(storeResolver, builder.classLoaderRegistry,
+                builder.translatorResolver, effectiveCompiler, effectiveDependencyInjector, parent,
+                effectiveMaxArtifactSizeBytes, aliasService);
+        var publicationValidator = new AssemblyLinePublicationValidator(storeResolver, builder.translatorResolver,
                 effectiveCompiler, effectiveMaxArtifactSizeBytes);
-        this.publicationService = new AssemblyLinePublicationService(configRepo, objectRepo, chainTagRepo,
-                storeResolver, aliasService, publicationValidator, effectiveMaxArtifactSizeBytes);
-        this.lookupService = new AssemblyLineLookupService(objectRepo, loader, aliasService);
+        this.publicationService = new AssemblyLinePublicationService(builder.configRepo, builder.objectRepo,
+                builder.chainTagRepo, storeResolver, aliasService, publicationValidator, effectiveMaxArtifactSizeBytes);
+        this.lookupService = new AssemblyLineLookupService(builder.objectRepo, loader, aliasService);
+    }
+
+    public static final class Builder {
+        private OperationChainConfigRepository configRepo;
+        private OperationChainObjectRepository objectRepo;
+        private OperationChainTagRepository chainTagRepo;
+        private ArtifactStoreProvider storeProvider;
+        private ClassLoaderRegistry classLoaderRegistry;
+        private OperationChainTranslatorResolver translatorResolver;
+        private GeneratedSourceCompiler compiler;
+        private DependencyInjector dependencyInjector;
+        private ClassLoader generatedClassParent;
+        private long maxArtifactSizeBytes = DEFAULT_MAX_ARTIFACT_SIZE_BYTES;
+
+        private Builder() {
+        }
+
+        public Builder configRepository(OperationChainConfigRepository configRepo) {
+            this.configRepo = configRepo;
+            return this;
+        }
+
+        public Builder objectRepository(OperationChainObjectRepository objectRepo) {
+            this.objectRepo = objectRepo;
+            return this;
+        }
+
+        public Builder tagRepository(OperationChainTagRepository chainTagRepo) {
+            this.chainTagRepo = chainTagRepo;
+            return this;
+        }
+
+        public Builder storeProvider(ArtifactStoreProvider storeProvider) {
+            this.storeProvider = storeProvider;
+            return this;
+        }
+
+        public Builder classLoaderRegistry(ClassLoaderRegistry classLoaderRegistry) {
+            this.classLoaderRegistry = classLoaderRegistry;
+            return this;
+        }
+
+        public Builder translatorResolver(OperationChainTranslatorResolver translatorResolver) {
+            this.translatorResolver = translatorResolver;
+            return this;
+        }
+
+        public Builder compiler(GeneratedSourceCompiler compiler) {
+            this.compiler = compiler;
+            return this;
+        }
+
+        public Builder dependencyInjector(DependencyInjector dependencyInjector) {
+            this.dependencyInjector = dependencyInjector;
+            return this;
+        }
+
+        public Builder generatedClassParent(ClassLoader generatedClassParent) {
+            this.generatedClassParent = generatedClassParent;
+            return this;
+        }
+
+        public Builder maxArtifactSizeBytes(long maxArtifactSizeBytes) {
+            this.maxArtifactSizeBytes = maxArtifactSizeBytes;
+            return this;
+        }
+
+        public AssemblyLineManager build() {
+            return new AssemblyLineManager(this);
+        }
     }
 
     /**
@@ -103,8 +146,17 @@ public class AssemblyLineManager {
                                                                  ClassLoaderRegistry classLoaderRegistry) {
         ClassLoader cl = contextClassLoader();
         var resolver = OperationChainTranslatorResolver.fromServiceLoader(cl);
-        return new AssemblyLineManager(configRepo, objectRepo, chainTagRepo, storeProvider, classLoaderRegistry,
-                resolver, GeneratedSourceCompilers.fromServiceLoader(cl), new SimpleDependencyInjector(), cl);
+        return AssemblyLineManager.builder()
+                .configRepository(configRepo)
+                .objectRepository(objectRepo)
+                .tagRepository(chainTagRepo)
+                .storeProvider(storeProvider)
+                .classLoaderRegistry(classLoaderRegistry)
+                .translatorResolver(resolver)
+                .compiler(GeneratedSourceCompilers.fromServiceLoader(cl))
+                .dependencyInjector(new SimpleDependencyInjector())
+                .generatedClassParent(cl)
+                .build();
     }
 
     private static ClassLoader contextClassLoader() {

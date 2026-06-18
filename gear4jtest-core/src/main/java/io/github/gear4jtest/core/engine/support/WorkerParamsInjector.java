@@ -1,6 +1,7 @@
 package io.github.gear4jtest.core.engine.support;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -111,7 +112,11 @@ public class WorkerParamsInjector implements Processor {
         private final List<ParameterModel<?, ?>> parameters;
 
         public Parameters() {
-            this.parameters = new ArrayList<>();
+            this(List.of());
+        }
+
+        private Parameters(List<ParameterModel<?, ?>> parameters) {
+            this.parameters = new ArrayList<>(parameters);
         }
 
         public static Builder newBuilder() {
@@ -123,13 +128,13 @@ public class WorkerParamsInjector implements Processor {
         }
 
         public List<ParameterModel<?, ?>> getParameters() {
-            return parameters;
+            return Collections.unmodifiableList(parameters);
         }
 
         public static class Builder {
             private final Parameters instance = new Parameters();
 
-            public <OP extends Operator<?, ?>, T> Builder withParameter(ParameterModel parameter) {
+            public Builder withParameter(ParameterModel<?, ?> parameter) {
                 instance.parameters.add(parameter);
                 return this;
             }
@@ -140,7 +145,7 @@ public class WorkerParamsInjector implements Processor {
             }
 
             public Parameters build() {
-                return instance;
+                return new Parameters(instance.parameters);
             }
         }
     }

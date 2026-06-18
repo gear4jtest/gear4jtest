@@ -56,8 +56,13 @@ public class Gear4jAutoConfiguration {
                 .flushThreadCount(persistence.getFlushThreads())
                 .maxScheduledFlushTasks(persistence.getMaxScheduledFlushTasks())
                 .build();
-        return new DatabaseExecutionManager(dataSource, persistence.getDialect(), runtimeConfiguration,
-                persistence.isAutoCreateTables(), redactor);
+        return DatabaseExecutionManager.builder()
+                .dataSource(dataSource)
+                .databaseDialect(persistence.getDialect())
+                .configuration(runtimeConfiguration)
+                .autoCreateTables(persistence.isAutoCreateTables())
+                .redactor(redactor)
+                .build();
     }
 
     private static SensitiveDataRedactor resolveRedactor(SensitiveDataRedactor redactor,

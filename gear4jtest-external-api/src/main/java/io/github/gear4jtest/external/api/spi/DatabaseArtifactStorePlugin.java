@@ -25,7 +25,11 @@ public final class DatabaseArtifactStorePlugin implements ArtifactStorePlugin {
                     "DATABASE artifact store requires a DataSource in context key: " + dataSourceKey);
         }
         String table = props == null ? null : props.get("table");
-        return new DatabaseArtifactStore(dataSource, table, requireDialect(props));
+        return DatabaseArtifactStore.builder()
+                .dataSource(dataSource)
+                .table(table)
+                .databaseDialect(requireDialect(props))
+                .build();
     }
 
     private static Gear4jDatabaseDialect requireDialect(Map<String, String> props) {

@@ -28,25 +28,55 @@ public final class DatabaseArtifactStore implements ArtifactStore {
     private final Gear4jDatabaseDialect databaseDialect;
     private final JdbcStatementOptions statementOptions;
 
-    public DatabaseArtifactStore(DataSource ds, String table, Gear4jDatabaseDialect databaseDialect) {
-        this(ds, table, databaseDialect, JdbcStatementOptions.defaults());
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public DatabaseArtifactStore(DataSource ds,
-                                 String table,
-                                 Gear4jDatabaseDialect databaseDialect,
-                                 Duration jdbcStatementTimeout) {
-        this(ds, table, databaseDialect, JdbcStatementOptions.of(jdbcStatementTimeout));
+    private DatabaseArtifactStore(Builder builder) {
+        this.ds = Objects.requireNonNull(builder.dataSource, "ds must not be null");
+        this.table = requireSqlIdentifier(builder.table == null ? DEFAULT_TABLE : builder.table, "table name");
+        this.databaseDialect = Objects.requireNonNull(builder.databaseDialect, "databaseDialect must not be null");
+        this.statementOptions = Objects.requireNonNull(builder.statementOptions,
+                                                       "statementOptions must not be null");
     }
 
-    public DatabaseArtifactStore(DataSource ds,
-                                 String table,
-                                 Gear4jDatabaseDialect databaseDialect,
-                                 JdbcStatementOptions statementOptions) {
-        this.ds = Objects.requireNonNull(ds, "ds must not be null");
-        this.table = requireSqlIdentifier(table == null ? DEFAULT_TABLE : table, "table name");
-        this.databaseDialect = Objects.requireNonNull(databaseDialect, "databaseDialect must not be null");
-        this.statementOptions = Objects.requireNonNull(statementOptions, "statementOptions must not be null");
+    public static final class Builder {
+        private DataSource dataSource;
+        private String table = DEFAULT_TABLE;
+        private Gear4jDatabaseDialect databaseDialect;
+        private JdbcStatementOptions statementOptions = JdbcStatementOptions.defaults();
+
+        private Builder() {
+        }
+
+        public Builder dataSource(DataSource dataSource) {
+            this.dataSource = dataSource;
+            return this;
+        }
+
+        public Builder table(String table) {
+            this.table = table;
+            return this;
+        }
+
+        public Builder databaseDialect(Gear4jDatabaseDialect databaseDialect) {
+            this.databaseDialect = databaseDialect;
+            return this;
+        }
+
+        public Builder jdbcStatementTimeout(Duration jdbcStatementTimeout) {
+            this.statementOptions = JdbcStatementOptions.of(jdbcStatementTimeout);
+            return this;
+        }
+
+        public Builder statementOptions(JdbcStatementOptions statementOptions) {
+            this.statementOptions = statementOptions;
+            return this;
+        }
+
+        public DatabaseArtifactStore build() {
+            return new DatabaseArtifactStore(this);
+        }
     }
 
     private PreparedStatement prepare(Connection connection, String sql) throws SQLException {

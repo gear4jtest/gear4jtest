@@ -13,17 +13,35 @@ public class InMemoryExecutionManager implements AssemblyRunManager {
     private final InMemoryAssemblyRunRepository repository;
     private final SensitiveDataRedactor redactor;
 
-    public InMemoryExecutionManager() {
-        this(new InMemoryAssemblyRunRepository(), SensitiveDataRedactor.none());
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public InMemoryExecutionManager(InMemoryAssemblyRunRepository repository) {
-        this(repository, SensitiveDataRedactor.none());
+    private InMemoryExecutionManager(Builder builder) {
+        this.repository = Objects.requireNonNull(builder.repository, "repository must not be null");
+        this.redactor = builder.redactor != null ? builder.redactor : SensitiveDataRedactor.none();
     }
 
-    public InMemoryExecutionManager(InMemoryAssemblyRunRepository repository, SensitiveDataRedactor redactor) {
-        this.repository = Objects.requireNonNull(repository, "repository must not be null");
-        this.redactor = redactor != null ? redactor : SensitiveDataRedactor.none();
+    public static final class Builder {
+        private InMemoryAssemblyRunRepository repository = new InMemoryAssemblyRunRepository();
+        private SensitiveDataRedactor redactor = SensitiveDataRedactor.none();
+
+        private Builder() {
+        }
+
+        public Builder repository(InMemoryAssemblyRunRepository repository) {
+            this.repository = repository;
+            return this;
+        }
+
+        public Builder redactor(SensitiveDataRedactor redactor) {
+            this.redactor = redactor;
+            return this;
+        }
+
+        public InMemoryExecutionManager build() {
+            return new InMemoryExecutionManager(this);
+        }
     }
 
     @Override

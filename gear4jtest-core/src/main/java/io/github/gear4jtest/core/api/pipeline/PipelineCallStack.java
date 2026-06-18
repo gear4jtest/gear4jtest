@@ -14,16 +14,15 @@ public final class PipelineCallStack {
     private final Deque<PipelineReference> stack;
     private final int maxDepth;
 
-    public PipelineCallStack() {
-        this(DEFAULT_MAX_DEPTH);
+    public static PipelineCallStack create() {
+        return withMaxDepth(DEFAULT_MAX_DEPTH);
     }
 
-    public PipelineCallStack(int maxDepth) {
+    public static PipelineCallStack withMaxDepth(int maxDepth) {
         if (maxDepth <= 0) {
             throw new IllegalArgumentException("maxDepth must be strictly positive");
         }
-        this.maxDepth = maxDepth;
-        this.stack = new ArrayDeque<>();
+        return new PipelineCallStack(new ArrayDeque<>(), maxDepth);
     }
 
     private PipelineCallStack(Deque<PipelineReference> stack, int maxDepth) {

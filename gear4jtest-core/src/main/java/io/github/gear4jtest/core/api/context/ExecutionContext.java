@@ -32,63 +32,88 @@ public class ExecutionContext {
     private final IdGenerator idGenerator;
     private final CancellationToken cancellationToken;
 
-    public ExecutionContext(UUID executionId,
-                            String pipelineId,
-                            ExecutionServices services,
-                            AssemblyRunTrace assemblyRun) {
-        this(executionId, pipelineId, services, assemblyRun, EventRuntimeOptions.disabled(), null,
-                new PipelineCallStack(), null);
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public ExecutionContext(UUID executionId,
-                            String pipelineId,
-                            ExecutionServices services,
-                            AssemblyRunTrace assemblyRun,
-                            EventRuntimeOptions eventRuntimeOptions) {
-        this(executionId, pipelineId, services, assemblyRun, eventRuntimeOptions, null, new PipelineCallStack(), null);
+    private ExecutionContext(Builder builder) {
+        this.pipelineId = builder.pipelineId;
+        this.executionId = builder.executionId;
+        this.services = Objects.requireNonNull(builder.services, "services");
+        this.assemblyRun = builder.assemblyRun;
+        this.eventRuntimeOptions = builder.eventRuntimeOptions != null
+                ? builder.eventRuntimeOptions : EventRuntimeOptions.disabled();
+        this.runtimeContract = builder.runtimeContract != null
+                ? builder.runtimeContract : PipelineRuntimeContract.inlineConfigless();
+        this.pipelineCallStack = builder.pipelineCallStack != null ? builder.pipelineCallStack
+                : PipelineCallStack.create();
+        this.idGenerator = builder.idGenerator;
+        this.cancellationToken = builder.cancellationToken != null ? builder.cancellationToken
+                : new CancellationToken();
     }
 
-    public ExecutionContext(UUID executionId,
-                            String pipelineId,
-                            ExecutionServices services,
-                            AssemblyRunTrace assemblyRun,
-                            EventRuntimeOptions eventRuntimeOptions,
-                            PipelineRuntimeContract runtimeContract,
-                            PipelineCallStack pipelineCallStack) {
-        this(executionId, pipelineId, services, assemblyRun, eventRuntimeOptions, runtimeContract, pipelineCallStack,
-                null, null);
-    }
+    public static final class Builder {
+        private UUID executionId;
+        private String pipelineId;
+        private ExecutionServices services;
+        private AssemblyRunTrace assemblyRun;
+        private EventRuntimeOptions eventRuntimeOptions;
+        private PipelineRuntimeContract runtimeContract;
+        private PipelineCallStack pipelineCallStack;
+        private IdGenerator idGenerator;
+        private CancellationToken cancellationToken;
 
-    public ExecutionContext(UUID executionId,
-                            String pipelineId,
-                            ExecutionServices services,
-                            AssemblyRunTrace assemblyRun,
-                            EventRuntimeOptions eventRuntimeOptions,
-                            PipelineRuntimeContract runtimeContract,
-                            PipelineCallStack pipelineCallStack,
-                            IdGenerator idGenerator) {
-        this(executionId, pipelineId, services, assemblyRun, eventRuntimeOptions, runtimeContract, pipelineCallStack,
-                idGenerator, null);
-    }
+        private Builder() {
+        }
 
-    public ExecutionContext(UUID executionId,
-                            String pipelineId,
-                            ExecutionServices services,
-                            AssemblyRunTrace assemblyRun,
-                            EventRuntimeOptions eventRuntimeOptions,
-                            PipelineRuntimeContract runtimeContract,
-                            PipelineCallStack pipelineCallStack,
-                            IdGenerator idGenerator,
-                            CancellationToken cancellationToken) {
-        this.pipelineId = pipelineId;
-        this.executionId = executionId;
-        this.services = Objects.requireNonNull(services, "services");
-        this.assemblyRun = assemblyRun;
-        this.eventRuntimeOptions = eventRuntimeOptions != null ? eventRuntimeOptions : EventRuntimeOptions.disabled();
-        this.runtimeContract = runtimeContract != null ? runtimeContract : PipelineRuntimeContract.inlineConfigless();
-        this.pipelineCallStack = pipelineCallStack != null ? pipelineCallStack : new PipelineCallStack();
-        this.idGenerator = idGenerator;
-        this.cancellationToken = cancellationToken != null ? cancellationToken : new CancellationToken();
+        public Builder executionId(UUID executionId) {
+            this.executionId = executionId;
+            return this;
+        }
+
+        public Builder pipelineId(String pipelineId) {
+            this.pipelineId = pipelineId;
+            return this;
+        }
+
+        public Builder services(ExecutionServices services) {
+            this.services = services;
+            return this;
+        }
+
+        public Builder assemblyRun(AssemblyRunTrace assemblyRun) {
+            this.assemblyRun = assemblyRun;
+            return this;
+        }
+
+        public Builder eventRuntimeOptions(EventRuntimeOptions eventRuntimeOptions) {
+            this.eventRuntimeOptions = eventRuntimeOptions;
+            return this;
+        }
+
+        public Builder runtimeContract(PipelineRuntimeContract runtimeContract) {
+            this.runtimeContract = runtimeContract;
+            return this;
+        }
+
+        public Builder pipelineCallStack(PipelineCallStack pipelineCallStack) {
+            this.pipelineCallStack = pipelineCallStack;
+            return this;
+        }
+
+        public Builder idGenerator(IdGenerator idGenerator) {
+            this.idGenerator = idGenerator;
+            return this;
+        }
+
+        public Builder cancellationToken(CancellationToken cancellationToken) {
+            this.cancellationToken = cancellationToken;
+            return this;
+        }
+
+        public ExecutionContext build() {
+            return new ExecutionContext(this);
+        }
     }
 
     public String getPipelineId() {

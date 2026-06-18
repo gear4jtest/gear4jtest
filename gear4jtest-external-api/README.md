@@ -79,9 +79,9 @@ compiler selection should inject `GeneratedSourceCompilers.javac(...)`,
 `InMemoryClassLoaderRegistry` is bounded by default (`256` concrete loaders). It
 evicts least-recently-used unaliased loaders and protects aliased loaders so
 mutable aliases such as `al/<id>/RUN/latest` never point to a missing loader.
-Applications with high version churn can use `new InMemoryClassLoaderRegistry(maxLoaders)`. If aliases are used for
-rollback windows or multiple mutable references, use
-`new InMemoryClassLoaderRegistry(maxLoaders, maxProtectedLoaders)` to cap the
+Applications with high version churn can use `InMemoryClassLoaderRegistry.builder().maxLoaders(maxLoaders).build()`.
+If aliases are used for rollback windows or multiple mutable references, use
+`InMemoryClassLoaderRegistry.builder().maxLoaders(maxLoaders).maxProtectedLoaders(maxProtectedLoaders).build()` to cap the
 number of distinct loaders that aliases may protect from eviction. The registry
 also exposes `protectedLoaderCount()` and `isOverCapacityDueToProtectedLoaders()`
 for diagnostics.
@@ -149,8 +149,15 @@ All JDBC entrypoints require the single shared `Gear4jDatabaseDialect` value fro
 does not auto-detect the database through JDBC metadata. For example:
 
 ```java
-new OperationChainTagRepositoryJdbc(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
-new DatabaseArtifactStore(dataSource, "artifact_store", Gear4jDatabaseDialect.POSTGRESQL);
+OperationChainTagRepositoryJdbc.builder()
+        .dataSource(dataSource)
+        .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+        .build();
+DatabaseArtifactStore.builder()
+        .dataSource(dataSource)
+        .table("artifact_store")
+        .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+        .build();
 ```
 
 The `DATABASE` artifact-store plugin similarly requires a `dialect` property such as `POSTGRESQL` or `ORACLE`.

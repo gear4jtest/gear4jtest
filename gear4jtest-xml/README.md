@@ -81,7 +81,7 @@ var generator = XmlToJavaGenerator.trusted(
         JdtFormatter.fromEclipseProfile(Path.of("config/formatter/eclipse-java-formatter.xml"), "MyProject"));
 ```
 
-The default `new XmlToJavaGenerator(...)` policy rejects inline Java snippets.
+The default `XmlToJavaGenerator.builder(...).build()` / `XmlToJavaGenerator.untrusted()` policy rejects inline Java snippets.
 Use `language="gel"` on `<condition>` elements for untrusted XML conditions, and use `XmlToJavaGenerator.trusted(...)` only for reviewed XML definitions that are
 allowed to generate Java source. This keeps user-generated classes aligned with
 the consuming project when desired, without coupling them to Gear4J's own

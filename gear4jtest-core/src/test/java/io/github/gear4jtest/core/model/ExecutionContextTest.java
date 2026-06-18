@@ -118,9 +118,41 @@ class ExecutionContextTest {
         assertThat(context.getCurrentParentOperationId()).isNull();
     }
 
+    @Test
+    void executionContext_shouldNotExposePublicConstructors() {
+        // When / Then
+        assertThat(ExecutionContext.class.getConstructors()).isEmpty();
+    }
+
+    @Test
+    void builder_shouldCreateContextWithoutTelescopingConstructor() {
+        // Given
+        UUID executionId = UUID.randomUUID();
+        var services = new ExecutionServices(null, noResources());
+        var trace = new AssemblyRunTrace(executionId, "pipeline-1", Map.of());
+
+        // When
+        ExecutionContext context = ExecutionContext.builder()
+                .executionId(executionId)
+                .pipelineId("pipeline-1")
+                .services(services)
+                .assemblyRun(trace)
+                .build();
+
+        // Then
+        assertThat(context.getExecutionId()).isEqualTo(executionId);
+        assertThat(context.getPipelineId()).isEqualTo("pipeline-1");
+        assertThat(context.getServices()).isSameAs(services);
+        assertThat(context.getPipelineExecution()).isSameAs(trace);
+    }
+
     private static ExecutionContext newContext() {
-        return new ExecutionContext(UUID.randomUUID(), "pipeline-1", new ExecutionServices(null, noResources()),
-                new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of()));
+        return ExecutionContext.builder()
+                .executionId(UUID.randomUUID())
+                .pipelineId("pipeline-1")
+                .services(new ExecutionServices(null, noResources()))
+                .assemblyRun(new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of()))
+                .build();
     }
 
     private static ResourceFactory noResources() {

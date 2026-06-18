@@ -31,94 +31,129 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
     private final PersistenceFlushCoordinator flushCoordinator;
     private final SensitiveDataRedactor redactor;
 
-    public DatabaseExecutionManager(DataSource dataSource, Gear4jDatabaseDialect databaseDialect) {
-        this(dataSource, databaseDialect, PersistenceRuntimeConfiguration.defaults(), true,
-                SensitiveDataRedactor.none());
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public DatabaseExecutionManager(DataSource dataSource,
-                                    Gear4jDatabaseDialect databaseDialect,
-                                    int flushThreshold,
-                                    boolean autoCreateTables) {
-        this(dataSource, databaseDialect,
-                PersistenceRuntimeConfiguration.builder().batchSize(flushThreshold)
-                        .maxPendingLogsPerRun(Math.max(flushThreshold, 10_000)).build(),
-                autoCreateTables, SensitiveDataRedactor.none());
-    }
+    private DatabaseExecutionManager(Builder builder) {
+        this.configuration = Objects.requireNonNull(builder.configuration, "configuration must not be null");
+        this.repository = builder.repository != null
+                ? builder.repository
+                : createRepository(builder.dataSource, builder.databaseDialect, this.configuration);
+        this.buffers = new OperationRecordBufferRegistry(configuration.maxPendingLogsPerRun());
+        this.redactor = builder.redactor != null ? builder.redactor : SensitiveDataRedactor.none();
+        if (SensitiveDataRedactor.isNone(this.redactor)) {
+            LOGGER.warn("[Gear4J] JDBC persistence is enabled with no SensitiveDataRedactor. "
+                    + "Pipeline payloads, contexts and results will be persisted as-is.");
+        }
+        if (builder.autoCreateTables) {
+            this.repository.initialize();
+        }
 
-    public DatabaseExecutionManager(DataSource dataSource,
-                                    Gear4jDatabaseDialect databaseDialect,
-                                    PersistenceRuntimeConfiguration configuration,
-                                    boolean autoCreateTables) {
-        this(dataSource, databaseDialect, configuration, autoCreateTables, SensitiveDataRedactor.none());
-    }
-
-    public DatabaseExecutionManager(DataSource dataSource,
-                                    Gear4jDatabaseDialect databaseDialect,
-                                    PersistenceRuntimeConfiguration configuration,
-                                    boolean autoCreateTables,
-                                    SensitiveDataRedactor redactor) {
-        this(createRepository(dataSource, databaseDialect, configuration), configuration, autoCreateTables,
-                PersistenceFlushCoordinator.createFlushExecutor(configuration),
-                Executors.newSingleThreadScheduledExecutor(PersistenceThreadFactories.maintenance()), true, true,
-                redactor);
+        ExecutorService flushExecutor = builder.flushExecutor != null
+                ? builder.flushExecutor
+                : PersistenceFlushCoordinator.createFlushExecutor(configuration);
+        ScheduledExecutorService maintenanceExecutor = builder.maintenanceExecutor != null
+                ? builder.maintenanceExecutor
+                : Executors.newSingleThreadScheduledExecutor(PersistenceThreadFactories.maintenance());
+        boolean ownsFlushExecutor = builder.flushExecutor == null || builder.ownsFlushExecutor;
+        boolean ownsMaintenanceExecutor = builder.maintenanceExecutor == null || builder.ownsMaintenanceExecutor;
+        this.flushCoordinator = new PersistenceFlushCoordinator(this.repository, this.configuration, buffers,
+                flushExecutor, maintenanceExecutor, ownsFlushExecutor, ownsMaintenanceExecutor);
     }
 
     private static DatabaseAssemblyRunRepository createRepository(DataSource dataSource,
                                                                   Gear4jDatabaseDialect databaseDialect,
                                                                   PersistenceRuntimeConfiguration configuration) {
         Objects.requireNonNull(configuration, "configuration must not be null");
-        return new DatabaseAssemblyRunRepository(Objects.requireNonNull(dataSource, "dataSource must not be null"),
-                Objects.requireNonNull(databaseDialect, "databaseDialect must not be null"),
-                new ObjectMapper(), configuration.jdbcStatementTimeout());
+        return DatabaseAssemblyRunRepository.builder()
+                .dataSource(Objects.requireNonNull(dataSource, "dataSource must not be null"))
+                .databaseDialect(Objects.requireNonNull(databaseDialect, "databaseDialect must not be null"))
+                .objectMapper(new ObjectMapper())
+                .jdbcStatementTimeout(configuration.jdbcStatementTimeout())
+                .build();
     }
 
-    /**
-     * Compatibility constructor for caller-managed flush executors. The supplied
-     * executor is never shut down by this manager.
-     */
-    public DatabaseExecutionManager(DatabaseAssemblyRunRepository repository,
-                                    int flushThreshold,
-                                    boolean autoCreateTables,
-                                    ExecutorService flushExecutor) {
-        this(repository,
-                PersistenceRuntimeConfiguration.builder().batchSize(flushThreshold)
-                        .maxPendingLogsPerRun(Math.max(flushThreshold, 10_000)).build(),
-                autoCreateTables, flushExecutor,
-                Executors.newSingleThreadScheduledExecutor(PersistenceThreadFactories.maintenance()), false, true,
-                SensitiveDataRedactor.none());
-    }
+    public static final class Builder {
+        private DataSource dataSource;
+        private Gear4jDatabaseDialect databaseDialect;
+        private DatabaseAssemblyRunRepository repository;
+        private PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.defaults();
+        private boolean autoCreateTables = true;
+        private ExecutorService flushExecutor;
+        private ScheduledExecutorService maintenanceExecutor;
+        private boolean ownsFlushExecutor;
+        private boolean ownsMaintenanceExecutor;
+        private SensitiveDataRedactor redactor = SensitiveDataRedactor.none();
 
-    public DatabaseExecutionManager(DatabaseAssemblyRunRepository repository,
-                                    PersistenceRuntimeConfiguration configuration,
-                                    boolean autoCreateTables,
-                                    ExecutorService flushExecutor,
-                                    ScheduledExecutorService maintenanceExecutor) {
-        this(repository, configuration, autoCreateTables, flushExecutor, maintenanceExecutor, false, false,
-                SensitiveDataRedactor.none());
-    }
-
-    private DatabaseExecutionManager(DatabaseAssemblyRunRepository repository,
-                                     PersistenceRuntimeConfiguration configuration,
-                                     boolean autoCreateTables,
-                                     ExecutorService flushExecutor,
-                                     ScheduledExecutorService maintenanceExecutor,
-                                     boolean ownsFlushExecutor,
-                                     boolean ownsMaintenanceExecutor,
-                                     SensitiveDataRedactor redactor) {
-        this.repository = Objects.requireNonNull(repository, "repository must not be null");
-        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
-        this.buffers = new OperationRecordBufferRegistry(configuration.maxPendingLogsPerRun());
-        this.redactor = redactor != null ? redactor : SensitiveDataRedactor.none();
-        if (SensitiveDataRedactor.isNone(this.redactor)) {
-            LOGGER.warn("[Gear4J] JDBC persistence is enabled with no SensitiveDataRedactor. "
-                    + "Pipeline payloads, contexts and results will be persisted as-is.");
+        private Builder() {
         }
-        if (autoCreateTables) {
-            this.repository.initialize();
+
+        public Builder dataSource(DataSource dataSource) {
+            this.dataSource = dataSource;
+            return this;
         }
-        this.flushCoordinator = new PersistenceFlushCoordinator(this.repository, this.configuration, buffers,
-                flushExecutor, maintenanceExecutor, ownsFlushExecutor, ownsMaintenanceExecutor);
+
+        public Builder databaseDialect(Gear4jDatabaseDialect databaseDialect) {
+            this.databaseDialect = databaseDialect;
+            return this;
+        }
+
+        public Builder repository(DatabaseAssemblyRunRepository repository) {
+            this.repository = repository;
+            return this;
+        }
+
+        public Builder configuration(PersistenceRuntimeConfiguration configuration) {
+            this.configuration = configuration;
+            return this;
+        }
+
+        public Builder flushThreshold(int flushThreshold) {
+            this.configuration = PersistenceRuntimeConfiguration.builder()
+                    .batchSize(flushThreshold)
+                    .maxPendingLogsPerRun(Math.max(flushThreshold, 10_000))
+                    .build();
+            return this;
+        }
+
+        public Builder autoCreateTables(boolean autoCreateTables) {
+            this.autoCreateTables = autoCreateTables;
+            return this;
+        }
+
+        public Builder flushExecutor(ExecutorService flushExecutor) {
+            this.flushExecutor = flushExecutor;
+            this.ownsFlushExecutor = false;
+            return this;
+        }
+
+        public Builder ownedFlushExecutor(ExecutorService flushExecutor) {
+            this.flushExecutor = flushExecutor;
+            this.ownsFlushExecutor = true;
+            return this;
+        }
+
+        public Builder maintenanceExecutor(ScheduledExecutorService maintenanceExecutor) {
+            this.maintenanceExecutor = maintenanceExecutor;
+            this.ownsMaintenanceExecutor = false;
+            return this;
+        }
+
+        public Builder ownedMaintenanceExecutor(ScheduledExecutorService maintenanceExecutor) {
+            this.maintenanceExecutor = maintenanceExecutor;
+            this.ownsMaintenanceExecutor = true;
+            return this;
+        }
+
+        public Builder redactor(SensitiveDataRedactor redactor) {
+            this.redactor = redactor;
+            return this;
+        }
+
+        public DatabaseExecutionManager build() {
+            return new DatabaseExecutionManager(this);
+        }
     }
 
     @Override

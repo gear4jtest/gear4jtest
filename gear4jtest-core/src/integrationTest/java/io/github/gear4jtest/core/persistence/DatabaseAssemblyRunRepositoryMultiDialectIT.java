@@ -63,7 +63,10 @@ class DatabaseAssemblyRunRepositoryMultiDialectIT {
         DataSource dataSource = new DriverManagerBackedDataSource(database.getJdbcUrl(), database.getUsername(),
                 database.getPassword());
         JdbcSchemaMigrator.core(dialect).migrate(dataSource);
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource, dialect);
+        DatabaseAssemblyRunRepository repository = DatabaseAssemblyRunRepository.builder()
+                .dataSource(dataSource)
+                .databaseDialect(dialect)
+                .build();
         UUID runId = UUID.randomUUID();
         UUID stationLogId = UUID.randomUUID();
         Instant startedAt = Instant.now();

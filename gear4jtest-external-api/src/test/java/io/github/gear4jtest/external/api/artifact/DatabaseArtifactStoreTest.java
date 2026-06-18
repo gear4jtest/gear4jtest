@@ -16,10 +16,10 @@ class DatabaseArtifactStoreTest {
         DataSource dataSource = mock(DataSource.class);
 
         // When / Then
-        assertThatThrownBy(() -> new DatabaseArtifactStore(dataSource, "artifact_store;drop table users",
-                Gear4jDatabaseDialect.POSTGRESQL)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new DatabaseArtifactStore(dataSource, "schema.artifact_store",
-                Gear4jDatabaseDialect.POSTGRESQL)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> store(dataSource, "artifact_store;drop table users", Gear4jDatabaseDialect.POSTGRESQL))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> store(dataSource, "schema.artifact_store", Gear4jDatabaseDialect.POSTGRESQL))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -28,9 +28,9 @@ class DatabaseArtifactStoreTest {
         DataSource dataSource = mock(DataSource.class);
 
         // When / Then
-        assertThatCode(() -> new DatabaseArtifactStore(dataSource, "gear4j_artifacts_1",
-                Gear4jDatabaseDialect.POSTGRESQL)).doesNotThrowAnyException();
-        assertThatCode(() -> new DatabaseArtifactStore(dataSource, null, Gear4jDatabaseDialect.POSTGRESQL))
+        assertThatCode(() -> store(dataSource, "gear4j_artifacts_1", Gear4jDatabaseDialect.POSTGRESQL))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> store(dataSource, null, Gear4jDatabaseDialect.POSTGRESQL))
                 .doesNotThrowAnyException();
     }
 
@@ -40,8 +40,19 @@ class DatabaseArtifactStoreTest {
         DataSource dataSource = mock(DataSource.class);
 
         // When / Then
-        assertThatThrownBy(() -> new DatabaseArtifactStore(dataSource, null, null))
+        assertThatThrownBy(() -> store(dataSource, null, null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("databaseDialect must not be null");
     }
+
+    private static DatabaseArtifactStore store(DataSource dataSource,
+                                               String table,
+                                               Gear4jDatabaseDialect databaseDialect) {
+        return DatabaseArtifactStore.builder()
+                .dataSource(dataSource)
+                .table(table)
+                .databaseDialect(databaseDialect)
+                .build();
+    }
+
 }

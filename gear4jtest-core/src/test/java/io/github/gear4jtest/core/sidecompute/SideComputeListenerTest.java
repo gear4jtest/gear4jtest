@@ -32,9 +32,12 @@ class SideComputeListenerTest {
                         .shutdownTimeout(Duration.ofSeconds(2)).build())
                 .build(), registry);
 
-        ExecutionContext executionContext = new ExecutionContext(UUID.randomUUID(), "pipe",
-                new ExecutionServices(eventManager, new NoOpResourceFactory()),
-                new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of()));
+        ExecutionContext executionContext = ExecutionContext.builder()
+                .executionId(UUID.randomUUID())
+                .pipelineId("pipe")
+                .services(new ExecutionServices(eventManager, new NoOpResourceFactory()))
+                .assemblyRun(new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of()))
+                .build();
         registry.register(executionContext);
 
         try {

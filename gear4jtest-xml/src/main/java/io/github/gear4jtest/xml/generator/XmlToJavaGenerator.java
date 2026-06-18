@@ -22,20 +22,12 @@ public final class XmlToJavaGenerator {
     private final JavaSourceFormatter formatter;
     private final XmlJavaSourcePolicy sourcePolicy;
 
-    public XmlToJavaGenerator() {
-        this(DEFAULT_PACKAGE);
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public XmlToJavaGenerator(String packageName) {
-        this(packageName, contextClassLoader());
-    }
-
-    public XmlToJavaGenerator(String packageName, ClassLoader classLoader) {
-        this(packageName, classLoader, JdtFormatter.defaultFormatter());
-    }
-
-    public XmlToJavaGenerator(String packageName, ClassLoader classLoader, JavaSourceFormatter formatter) {
-        this(packageName, classLoader, formatter, XmlJavaSourcePolicy.forbidInlineJava());
+    public static Builder builder(String packageName) {
+        return builder().packageName(packageName);
     }
 
     public static XmlToJavaGenerator trusted() {
@@ -49,26 +41,61 @@ public final class XmlToJavaGenerator {
     public static XmlToJavaGenerator trusted(String packageName,
                                              ClassLoader classLoader,
                                              JavaSourceFormatter formatter) {
-        return new XmlToJavaGenerator(packageName, classLoader, formatter, XmlJavaSourcePolicy.trusted());
+        return builder(packageName)
+                .classLoader(classLoader)
+                .formatter(formatter)
+                .sourcePolicy(XmlJavaSourcePolicy.trusted())
+                .build();
     }
 
     public static XmlToJavaGenerator untrusted() {
-        return new XmlToJavaGenerator();
+        return builder().build();
     }
 
     public static XmlToJavaGenerator gelOnly() {
         return untrusted();
     }
 
-    public XmlToJavaGenerator(String packageName,
-                              ClassLoader classLoader,
-                              JavaSourceFormatter formatter,
-                              XmlJavaSourcePolicy sourcePolicy) {
-        this.sourcePolicy = XmlJavaSourcePolicy.require(sourcePolicy);
-        this.sourcePolicy.validatePackageName(packageName);
-        this.packageName = Objects.requireNonNull(packageName, "packageName");
-        this.classLoader = classLoader != null ? classLoader : contextClassLoader();
-        this.formatter = Objects.requireNonNull(formatter, "formatter must not be null");
+    private XmlToJavaGenerator(Builder builder) {
+        this.sourcePolicy = XmlJavaSourcePolicy.require(builder.sourcePolicy);
+        this.sourcePolicy.validatePackageName(builder.packageName);
+        this.packageName = Objects.requireNonNull(builder.packageName, "packageName");
+        this.classLoader = builder.classLoader != null ? builder.classLoader : contextClassLoader();
+        this.formatter = Objects.requireNonNull(builder.formatter, "formatter must not be null");
+    }
+
+    public static final class Builder {
+        private String packageName = DEFAULT_PACKAGE;
+        private ClassLoader classLoader = contextClassLoader();
+        private JavaSourceFormatter formatter = JdtFormatter.defaultFormatter();
+        private XmlJavaSourcePolicy sourcePolicy = XmlJavaSourcePolicy.forbidInlineJava();
+
+        private Builder() {
+        }
+
+        public Builder packageName(String packageName) {
+            this.packageName = packageName;
+            return this;
+        }
+
+        public Builder classLoader(ClassLoader classLoader) {
+            this.classLoader = classLoader;
+            return this;
+        }
+
+        public Builder formatter(JavaSourceFormatter formatter) {
+            this.formatter = formatter;
+            return this;
+        }
+
+        public Builder sourcePolicy(XmlJavaSourcePolicy sourcePolicy) {
+            this.sourcePolicy = sourcePolicy;
+            return this;
+        }
+
+        public XmlToJavaGenerator build() {
+            return new XmlToJavaGenerator(this);
+        }
     }
 
     private static ClassLoader contextClassLoader() {

@@ -26,23 +26,41 @@ public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
     private final Map<String, String> aliasToId = new HashMap<>();
     private long evictedLoaders;
 
-    public InMemoryClassLoaderRegistry() {
-        this(DEFAULT_MAX_LOADERS, DEFAULT_MAX_PROTECTED_LOADERS);
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public InMemoryClassLoaderRegistry(int maxLoaders) {
-        this(maxLoaders, DEFAULT_MAX_PROTECTED_LOADERS);
-    }
-
-    public InMemoryClassLoaderRegistry(int maxLoaders, int maxProtectedLoaders) {
-        if (maxLoaders < 1) {
+    private InMemoryClassLoaderRegistry(Builder builder) {
+        if (builder.maxLoaders < 1) {
             throw new IllegalArgumentException("maxLoaders must be >= 1");
         }
-        if (maxProtectedLoaders < 1) {
+        if (builder.maxProtectedLoaders < 1) {
             throw new IllegalArgumentException("maxProtectedLoaders must be >= 1");
         }
-        this.maxLoaders = maxLoaders;
-        this.maxProtectedLoaders = maxProtectedLoaders;
+        this.maxLoaders = builder.maxLoaders;
+        this.maxProtectedLoaders = builder.maxProtectedLoaders;
+    }
+
+    public static final class Builder {
+        private int maxLoaders = DEFAULT_MAX_LOADERS;
+        private int maxProtectedLoaders = DEFAULT_MAX_PROTECTED_LOADERS;
+
+        private Builder() {
+        }
+
+        public Builder maxLoaders(int maxLoaders) {
+            this.maxLoaders = maxLoaders;
+            return this;
+        }
+
+        public Builder maxProtectedLoaders(int maxProtectedLoaders) {
+            this.maxProtectedLoaders = maxProtectedLoaders;
+            return this;
+        }
+
+        public InMemoryClassLoaderRegistry build() {
+            return new InMemoryClassLoaderRegistry(this);
+        }
     }
 
     @Override

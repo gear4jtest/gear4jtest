@@ -25,31 +25,55 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
     private final ObjectMapper objectMapper;
     private final JdbcStatementOptions statementOptions;
 
-    public OperationChainConfigRepositoryJdbc(DataSource ds, Gear4jDatabaseDialect databaseDialect) {
-        this(ds, databaseDialect, new ObjectMapper(), JdbcStatementOptions.defaults());
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public OperationChainConfigRepositoryJdbc(DataSource ds,
-                                              Gear4jDatabaseDialect databaseDialect,
-                                              ObjectMapper objectMapper) {
-        this(ds, databaseDialect, objectMapper, JdbcStatementOptions.defaults());
+    private OperationChainConfigRepositoryJdbc(Builder builder) {
+        this.ds = Objects.requireNonNull(builder.dataSource, "ds must not be null");
+        this.databaseDialect = Objects.requireNonNull(builder.databaseDialect, "databaseDialect must not be null");
+        this.objectMapper = Objects.requireNonNull(builder.objectMapper, "objectMapper must not be null");
+        this.statementOptions = Objects.requireNonNull(builder.statementOptions,
+                                                       "statementOptions must not be null");
     }
 
-    public OperationChainConfigRepositoryJdbc(DataSource ds,
-                                              Gear4jDatabaseDialect databaseDialect,
-                                              ObjectMapper objectMapper,
-                                              Duration jdbcStatementTimeout) {
-        this(ds, databaseDialect, objectMapper, JdbcStatementOptions.of(jdbcStatementTimeout));
-    }
+    public static final class Builder {
+        private DataSource dataSource;
+        private Gear4jDatabaseDialect databaseDialect;
+        private ObjectMapper objectMapper = new ObjectMapper();
+        private JdbcStatementOptions statementOptions = JdbcStatementOptions.defaults();
 
-    public OperationChainConfigRepositoryJdbc(DataSource ds,
-                                              Gear4jDatabaseDialect databaseDialect,
-                                              ObjectMapper objectMapper,
-                                              JdbcStatementOptions statementOptions) {
-        this.ds = Objects.requireNonNull(ds, "ds must not be null");
-        this.databaseDialect = Objects.requireNonNull(databaseDialect, "databaseDialect must not be null");
-        this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
-        this.statementOptions = Objects.requireNonNull(statementOptions, "statementOptions must not be null");
+        private Builder() {
+        }
+
+        public Builder dataSource(DataSource dataSource) {
+            this.dataSource = dataSource;
+            return this;
+        }
+
+        public Builder databaseDialect(Gear4jDatabaseDialect databaseDialect) {
+            this.databaseDialect = databaseDialect;
+            return this;
+        }
+
+        public Builder objectMapper(ObjectMapper objectMapper) {
+            this.objectMapper = objectMapper;
+            return this;
+        }
+
+        public Builder jdbcStatementTimeout(Duration jdbcStatementTimeout) {
+            this.statementOptions = JdbcStatementOptions.of(jdbcStatementTimeout);
+            return this;
+        }
+
+        public Builder statementOptions(JdbcStatementOptions statementOptions) {
+            this.statementOptions = statementOptions;
+            return this;
+        }
+
+        public OperationChainConfigRepositoryJdbc build() {
+            return new OperationChainConfigRepositoryJdbc(this);
+        }
     }
 
     private String toJson(Map<String, String> map) {

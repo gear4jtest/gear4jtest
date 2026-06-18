@@ -33,8 +33,10 @@ class OperationChainObjectRepositoryJdbcTest {
         when(statement.executeQuery()).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(false);
 
-        OperationChainObjectRepositoryJdbc repository = new OperationChainObjectRepositoryJdbc(dataSource,
-                Gear4jDatabaseDialect.H2);
+        OperationChainObjectRepositoryJdbc repository = OperationChainObjectRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.H2)
+                .build();
 
         // When
         var result = repository.findAll("pipeline", new PageRequest(5, 10));
@@ -68,8 +70,10 @@ class OperationChainObjectRepositoryJdbcTest {
         when(resultSet.getTimestamp("created_at")).thenReturn(null);
         when(resultSet.getTimestamp("published_at")).thenReturn(null);
 
-        OperationChainObjectRepositoryJdbc repository = new OperationChainObjectRepositoryJdbc(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL);
+        OperationChainObjectRepositoryJdbc repository = OperationChainObjectRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+                .build();
 
         // When
         var result = repository.find("pipeline", "1.0.0", ExecutionMode.RUN).orElseThrow();

@@ -94,7 +94,7 @@ public class PipelineEngine implements PipelineExecutor {
         Objects.requireNonNull(pipeline, "pipeline must not be null");
         RunRequest effectiveRequest = request != null ? request : RunRequest.builder().build();
         PipelineCallStack callStack = effectiveRequest.getPipelineCallStack() != null
-                ? effectiveRequest.getPipelineCallStack().copy() : new PipelineCallStack();
+                ? effectiveRequest.getPipelineCallStack().copy() : PipelineCallStack.create();
 
         try (PipelineCallStack.Scope ignored = callStack.enter(PipelineReference.from(pipeline))) {
             return executeWithCallStack(pipeline, effectiveRequest, callStack);

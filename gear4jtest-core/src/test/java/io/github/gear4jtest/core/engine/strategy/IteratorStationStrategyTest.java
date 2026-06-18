@@ -30,8 +30,12 @@ class IteratorStationStrategyTest {
                 .iterableFunction(input -> input)
                 .pipeline(SequenceStation.Builder.<String>create("chain").build())
                 .build();
-        ExecutionContext globalContext = new ExecutionContext(UUID.randomUUID(), "pipeline",
-                new ExecutionServices(null, new NoOpResourceFactory()), new AssemblyRunTrace());
+        ExecutionContext globalContext = ExecutionContext.builder()
+                .executionId(UUID.randomUUID())
+                .pipelineId("pipeline")
+                .services(new ExecutionServices(null, new NoOpResourceFactory()))
+                .assemblyRun(new AssemblyRunTrace())
+                .build();
         StationExecutionContext stationContext = new TestStationExecutionContext(globalContext,
                 StationLogTrace.start(UUID.randomUUID(), "iterator", null));
 

@@ -179,9 +179,17 @@ class AssemblyLineManagerTest {
     }
 
     private AssemblyLineManager manager() {
-        return new AssemblyLineManager(configRepository, objectRepository, tagRepository, storeProvider,
-                classLoaderRegistry, translatorResolver, compiler, new SimpleDependencyInjector(),
-                getClass().getClassLoader());
+        return AssemblyLineManager.builder()
+                .configRepository(configRepository)
+                .objectRepository(objectRepository)
+                .tagRepository(tagRepository)
+                .storeProvider(storeProvider)
+                .classLoaderRegistry(classLoaderRegistry)
+                .translatorResolver(translatorResolver)
+                .compiler(compiler)
+                .dependencyInjector(new SimpleDependencyInjector())
+                .generatedClassParent(getClass().getClassLoader())
+                .build();
     }
 
     private void stubSuccessfulRunValidation() throws Exception {

@@ -45,8 +45,7 @@ class DatabaseExecutionManagerTest {
         });
         PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder().batchSize(2)
                 .maxPendingLogsPerRun(2).flushInterval(Duration.ofDays(1)).build();
-        DatabaseExecutionManager manager = new DatabaseExecutionManager(repository, configuration, false,
-                flushExecutor, scheduler);
+        DatabaseExecutionManager manager = manager(repository, configuration, flushExecutor, scheduler);
         UUID runId = UUID.randomUUID();
 
         try {
@@ -80,8 +79,7 @@ class DatabaseExecutionManagerTest {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder().batchSize(10)
                 .maxPendingLogsPerRun(10).flushInterval(Duration.ofMillis(10)).build();
-        DatabaseExecutionManager manager = new DatabaseExecutionManager(repository, configuration, false,
-                flushExecutor, scheduler);
+        DatabaseExecutionManager manager = manager(repository, configuration, flushExecutor, scheduler);
 
         try {
             // When
@@ -116,8 +114,7 @@ class DatabaseExecutionManagerTest {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder().batchSize(2)
                 .maxPendingLogsPerRun(10).flushInterval(Duration.ofDays(1)).build();
-        DatabaseExecutionManager manager = new DatabaseExecutionManager(repository, configuration, false,
-                flushExecutor, scheduler);
+        DatabaseExecutionManager manager = manager(repository, configuration, flushExecutor, scheduler);
         UUID runId = UUID.randomUUID();
 
         try {
@@ -152,8 +149,8 @@ class DatabaseExecutionManagerTest {
                 .when(repository).update(any());
         ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        DatabaseExecutionManager manager = new DatabaseExecutionManager(repository,
-                PersistenceRuntimeConfiguration.defaults(), false, flushExecutor, scheduler);
+        DatabaseExecutionManager manager = manager(repository, PersistenceRuntimeConfiguration.defaults(),
+                                                   flushExecutor, scheduler);
         UUID runId = UUID.randomUUID();
         AssemblyRunTrace trace = new AssemblyRunTrace(runId, "pipeline", Map.of());
         trace.markSuccess("ok");
@@ -190,8 +187,7 @@ class DatabaseExecutionManagerTest {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder().batchSize(10)
                 .maxPendingLogsPerRun(10).flushInterval(Duration.ofDays(1)).build();
-        DatabaseExecutionManager manager = new DatabaseExecutionManager(repository, configuration, false,
-                flushExecutor, scheduler);
+        DatabaseExecutionManager manager = manager(repository, configuration, flushExecutor, scheduler);
         UUID runId = UUID.randomUUID();
 
         try {
@@ -221,8 +217,8 @@ class DatabaseExecutionManagerTest {
         DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
         ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        DatabaseExecutionManager manager = new DatabaseExecutionManager(repository,
-                PersistenceRuntimeConfiguration.defaults(), false, flushExecutor, scheduler);
+        DatabaseExecutionManager manager = manager(repository, PersistenceRuntimeConfiguration.defaults(),
+                                                   flushExecutor, scheduler);
 
         try {
             // When
@@ -235,6 +231,19 @@ class DatabaseExecutionManagerTest {
             flushExecutor.shutdownNow();
             scheduler.shutdownNow();
         }
+    }
+
+    private static DatabaseExecutionManager manager(DatabaseAssemblyRunRepository repository,
+                                                    PersistenceRuntimeConfiguration configuration,
+                                                    ExecutorService flushExecutor,
+                                                    ScheduledExecutorService scheduler) {
+        return DatabaseExecutionManager.builder()
+                .repository(repository)
+                .configuration(configuration)
+                .autoCreateTables(false)
+                .flushExecutor(flushExecutor)
+                .maintenanceExecutor(scheduler)
+                .build();
     }
 
     private static void awaitCompletedFlushes(DatabaseExecutionManager manager, long expectedCompletedFlushes)

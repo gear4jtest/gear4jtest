@@ -58,10 +58,10 @@ gear4j:
 Plain Java example:
 
 ```java
-DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(
-        dataSource,
-        Gear4jDatabaseDialect.POSTGRESQL,
-        true);
+DatabaseAssemblyRunRepository repository = DatabaseAssemblyRunRepository.builder()
+        .dataSource(dataSource)
+        .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+        .build();
 ```
 
 This mode is convenient for demos, standalone services, or applications where

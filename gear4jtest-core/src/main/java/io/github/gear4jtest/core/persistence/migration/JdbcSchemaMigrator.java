@@ -56,41 +56,76 @@ public final class JdbcSchemaMigrator {
     private final ClassLoader classLoader;
     private final JdbcStatementOptions statementOptions;
 
-    public JdbcSchemaMigrator(String moduleId,
-                              Gear4jDatabaseDialect dialect,
-                              String migrationListResource,
-                              String baselineTableName) {
-        this(moduleId, dialect, migrationListResource, baselineTableName,
-                Thread.currentThread().getContextClassLoader(), JdbcStatementOptions.defaults());
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public JdbcSchemaMigrator(String moduleId,
-                              Gear4jDatabaseDialect dialect,
-                              String migrationListResource,
-                              String baselineTableName,
-                              ClassLoader classLoader) {
-        this(moduleId, dialect, migrationListResource, baselineTableName, classLoader, JdbcStatementOptions.defaults());
-    }
-
-    public JdbcSchemaMigrator(String moduleId,
-                              Gear4jDatabaseDialect dialect,
-                              String migrationListResource,
-                              String baselineTableName,
-                              ClassLoader classLoader,
-                              JdbcStatementOptions statementOptions) {
-        this.moduleId = requireNonBlank(moduleId, "moduleId");
-        this.dialect = Objects.requireNonNull(dialect, "dialect must not be null");
-        this.migrationListResource = normalizeResource(requireNonBlank(migrationListResource,
+    private JdbcSchemaMigrator(Builder builder) {
+        this.moduleId = requireNonBlank(builder.moduleId, "moduleId");
+        this.dialect = Objects.requireNonNull(builder.dialect, "dialect must not be null");
+        this.migrationListResource = normalizeResource(requireNonBlank(builder.migrationListResource,
                                                                        "migrationListResource"));
-        this.baselineTableName = requireNonBlank(baselineTableName, "baselineTableName");
-        this.classLoader = classLoader != null ? classLoader : JdbcSchemaMigrator.class.getClassLoader();
-        this.statementOptions = Objects.requireNonNull(statementOptions, "statementOptions must not be null");
+        this.baselineTableName = requireNonBlank(builder.baselineTableName, "baselineTableName");
+        this.classLoader = builder.classLoader != null ? builder.classLoader
+                : JdbcSchemaMigrator.class.getClassLoader();
+        this.statementOptions = Objects.requireNonNull(builder.statementOptions,
+                                                       "statementOptions must not be null");
+    }
+
+    public static final class Builder {
+        private String moduleId;
+        private Gear4jDatabaseDialect dialect;
+        private String migrationListResource;
+        private String baselineTableName;
+        private ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        private JdbcStatementOptions statementOptions = JdbcStatementOptions.defaults();
+
+        private Builder() {
+        }
+
+        public Builder moduleId(String moduleId) {
+            this.moduleId = moduleId;
+            return this;
+        }
+
+        public Builder dialect(Gear4jDatabaseDialect dialect) {
+            this.dialect = dialect;
+            return this;
+        }
+
+        public Builder migrationListResource(String migrationListResource) {
+            this.migrationListResource = migrationListResource;
+            return this;
+        }
+
+        public Builder baselineTableName(String baselineTableName) {
+            this.baselineTableName = baselineTableName;
+            return this;
+        }
+
+        public Builder classLoader(ClassLoader classLoader) {
+            this.classLoader = classLoader;
+            return this;
+        }
+
+        public Builder statementOptions(JdbcStatementOptions statementOptions) {
+            this.statementOptions = statementOptions;
+            return this;
+        }
+
+        public JdbcSchemaMigrator build() {
+            return new JdbcSchemaMigrator(this);
+        }
     }
 
     public static JdbcSchemaMigrator core(Gear4jDatabaseDialect dialect) {
-        return new JdbcSchemaMigrator("gear4j-core", dialect,
-                "io/github/gear4j/db/" + dialect.resourceDirectory() + "/migrations/migrations.list",
-                "assembly_run");
+        return builder()
+                .moduleId("gear4j-core")
+                .dialect(dialect)
+                .migrationListResource("io/github/gear4j/db/" + dialect.resourceDirectory()
+                        + "/migrations/migrations.list")
+                .baselineTableName("assembly_run")
+                .build();
     }
 
     public void migrate(DataSource dataSource) {

@@ -59,8 +59,12 @@ class PipelineCacheWithSideComputeIntegrationTest {
                                                         Map<String, Object> context,
                                                         EventManager eventManager) {
         AssemblyRunTrace assemblyRun = new AssemblyRunTrace(UUID.randomUUID(), pipelineId, context);
-        ExecutionContext executionContext = new ExecutionContext(UUID.randomUUID(), pipelineId,
-                new ExecutionServices(eventManager, new NoOpResourceFactory()), assemblyRun);
+        ExecutionContext executionContext = ExecutionContext.builder()
+                .executionId(UUID.randomUUID())
+                .pipelineId(pipelineId)
+                .services(new ExecutionServices(eventManager, new NoOpResourceFactory()))
+                .assemblyRun(assemblyRun)
+                .build();
         executionContext.getContext().putAll(context);
         return executionContext;
     }

@@ -54,9 +54,12 @@ class StationContextUtilsTest {
     }
 
     private static DefaultStationExecutionContext newContext(String operationId) {
-        ExecutionContext globalContext = new ExecutionContext(UUID.randomUUID(), "pipeline-1",
-                new ExecutionServices(null, noResources()),
-                new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of()));
+        ExecutionContext globalContext = ExecutionContext.builder()
+                .executionId(UUID.randomUUID())
+                .pipelineId("pipeline-1")
+                .services(new ExecutionServices(null, noResources()))
+                .assemblyRun(new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of()))
+                .build();
         StationLogTrace record = StationLogTrace.start(globalContext.getExecutionId(), operationId, null);
         return new DefaultStationExecutionContext(operationId, StationKind.PROCESSING, globalContext, record, null);
     }

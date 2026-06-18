@@ -8,7 +8,7 @@ This is powerful, but it means trusted XML is effectively code.
 The default generator policy is restrictive:
 
 ```java
-new XmlToJavaGenerator();
+XmlToJavaGenerator.untrusted();
 ```
 
 This rejects inline Java expressions and is the right default for untrusted XML,
@@ -27,11 +27,11 @@ XmlToJavaGenerator.trusted();
 or, for custom package/formatter settings:
 
 ```java
-new XmlToJavaGenerator(
-        "io.example.generated",
-        Thread.currentThread().getContextClassLoader(),
-        JdtFormatter.defaultFormatter(),
-        XmlJavaSourcePolicy.trusted());
+XmlToJavaGenerator.builder("io.example.generated")
+        .classLoader(Thread.currentThread().getContextClassLoader())
+        .formatter(JdtFormatter.defaultFormatter())
+        .sourcePolicy(XmlJavaSourcePolicy.trusted())
+        .build();
 ```
 
 This mode is intended only for XML authored and reviewed by trusted developers or

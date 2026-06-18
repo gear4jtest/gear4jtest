@@ -316,7 +316,10 @@ public class SimpleChainBuilderTest {
 
         InMemoryAssemblyRunRepository repository = new InMemoryAssemblyRunRepository();
         var request = RunRequest.builder().input("input").resourceFactory(resourceFactory)
-                .with(new PersistenceExtension(new InMemoryExecutionManager(repository))).build();
+                .with(new PersistenceExtension(InMemoryExecutionManager.builder()
+                        .repository(repository)
+                        .build()))
+                .build();
 
         // When
         ExecutionResult<List<String>> result = engine.execute(assemblyLine, request);

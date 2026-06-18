@@ -55,9 +55,17 @@ final class PipelineExecutionContextFactory {
         ExecutionServices services = new ExecutionServices(eventManager, effectiveResourceFactory,
                 new StationScopedResourceRegistry());
 
-        var context = new ExecutionContext(executionId, pipeline.getId(), services, execution, eventRuntimeOptions,
-                pipeline.getConfiguration().getRuntimeContract(), callStack, effectiveGenerator,
-                request.getCancellationToken());
+        var context = ExecutionContext.builder()
+                .executionId(executionId)
+                .pipelineId(pipeline.getId())
+                .services(services)
+                .assemblyRun(execution)
+                .eventRuntimeOptions(eventRuntimeOptions)
+                .runtimeContract(pipeline.getConfiguration().getRuntimeContract())
+                .pipelineCallStack(callStack)
+                .idGenerator(effectiveGenerator)
+                .cancellationToken(request.getCancellationToken())
+                .build();
         context.getContext().putAll(effectiveContext);
 
         executionContextRegistry.register(context);

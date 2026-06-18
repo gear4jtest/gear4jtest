@@ -23,32 +23,52 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
     private final WorkerConcurrencyManager concurrencyManager;
     private final WorkerConcurrencyConfiguration concurrencyConfiguration;
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public WorkStationStrategy() {
-        this(WorkerConcurrencyManager.global(), WorkerConcurrencyConfiguration.defaults());
+        this(builder());
     }
 
-    public WorkStationStrategy(WorkerConcurrencyManager concurrencyManager) {
-        this(concurrencyManager, WorkerConcurrencyConfiguration.defaults()
-                .withConcurrencyPolicy(WorkerConcurrencyPolicy.ENGINE_LOCAL_LOCK_PER_WORKER_INSTANCE));
-    }
-
-    public WorkStationStrategy(WorkerConcurrencyManager concurrencyManager, WorkerConcurrencyPolicy concurrencyPolicy) {
-        this(concurrencyManager, WorkerConcurrencyConfiguration.defaults().withConcurrencyPolicy(concurrencyPolicy));
-    }
-
-    public WorkStationStrategy(WorkerConcurrencyManager concurrencyManager,
-                               WorkerConcurrencyPolicy concurrencyPolicy,
-                               WorkerLockAcquisitionPolicy lockAcquisitionPolicy) {
-        this(concurrencyManager, WorkerConcurrencyConfiguration.defaults()
-                .withConcurrencyPolicy(concurrencyPolicy)
-                .withLockAcquisitionPolicy(lockAcquisitionPolicy));
-    }
-
-    public WorkStationStrategy(WorkerConcurrencyManager concurrencyManager,
-                               WorkerConcurrencyConfiguration concurrencyConfiguration) {
-        this.concurrencyManager = Objects.requireNonNull(concurrencyManager, "concurrencyManager must not be null");
-        this.concurrencyConfiguration = Objects.requireNonNull(concurrencyConfiguration,
+    private WorkStationStrategy(Builder builder) {
+        this.concurrencyManager = Objects.requireNonNull(builder.concurrencyManager,
+                                                         "concurrencyManager must not be null");
+        this.concurrencyConfiguration = Objects.requireNonNull(builder.concurrencyConfiguration,
                                                                "concurrencyConfiguration must not be null");
+    }
+
+    public static final class Builder {
+        private WorkerConcurrencyManager concurrencyManager = WorkerConcurrencyManager.global();
+        private WorkerConcurrencyConfiguration concurrencyConfiguration = WorkerConcurrencyConfiguration.defaults();
+
+        private Builder() {
+        }
+
+        public Builder concurrencyManager(WorkerConcurrencyManager concurrencyManager) {
+            this.concurrencyManager = concurrencyManager;
+            return this;
+        }
+
+        public Builder concurrencyConfiguration(WorkerConcurrencyConfiguration concurrencyConfiguration) {
+            this.concurrencyConfiguration = concurrencyConfiguration;
+            return this;
+        }
+
+        public Builder concurrencyPolicy(WorkerConcurrencyPolicy concurrencyPolicy) {
+            this.concurrencyConfiguration = this.concurrencyConfiguration.withConcurrencyPolicy(concurrencyPolicy);
+            return this;
+        }
+
+        public Builder lockAcquisitionPolicy(WorkerLockAcquisitionPolicy lockAcquisitionPolicy) {
+            this.concurrencyConfiguration = this.concurrencyConfiguration
+                    .withLockAcquisitionPolicy(lockAcquisitionPolicy);
+            return this;
+        }
+
+        public WorkStationStrategy build() {
+            return new WorkStationStrategy(this);
+        }
     }
 
     /**

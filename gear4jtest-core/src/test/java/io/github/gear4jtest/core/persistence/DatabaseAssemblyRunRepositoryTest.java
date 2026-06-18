@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.UUID;
 import javax.sql.DataSource;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import org.junit.jupiter.api.Test;
@@ -39,8 +38,7 @@ class DatabaseAssemblyRunRepositoryTest {
         when(dataSource.getConnection()).thenReturn(connection);
         when(connection.getAutoCommit()).thenReturn(true);
         when(connection.prepareStatement(anyString())).thenReturn(statement);
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL);
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
         AssemblyRunRecord run = runRecord();
 
         // When
@@ -63,8 +61,7 @@ class DatabaseAssemblyRunRepositoryTest {
         when(dataSource.getConnection()).thenReturn(connection);
         when(connection.getAutoCommit()).thenReturn(true);
         when(connection.prepareStatement(anyString())).thenReturn(statement);
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL);
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
 
         // When
         repository.save(runRecord());
@@ -82,8 +79,8 @@ class DatabaseAssemblyRunRepositoryTest {
         when(dataSource.getConnection()).thenReturn(connection);
         when(connection.getAutoCommit()).thenReturn(true);
         when(connection.prepareStatement(anyString())).thenReturn(statement);
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL, new ObjectMapper(), Duration.ZERO);
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.POSTGRESQL,
+                                                              Duration.ZERO);
 
         // When
         repository.save(runRecord());
@@ -103,8 +100,7 @@ class DatabaseAssemblyRunRepositoryTest {
         when(connection.getAutoCommit()).thenReturn(true);
         when(connection.prepareStatement(anyString())).thenReturn(statement);
         when(statement.executeUpdate()).thenThrow(failure);
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL);
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
         AssemblyRunRecord run = runRecord();
 
         // When / Then
@@ -128,8 +124,7 @@ class DatabaseAssemblyRunRepositoryTest {
         when(connection.getAutoCommit()).thenReturn(true);
         when(connection.prepareStatement(anyString())).thenReturn(statement);
         when(statement.executeUpdate()).thenReturn(0);
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL);
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
         AssemblyRunRecord run = runRecord();
 
         // When / Then
@@ -157,8 +152,7 @@ class DatabaseAssemblyRunRepositoryTest {
                 .thenReturn(deleteLogs);
         when(connection.prepareStatement("DELETE FROM assembly_run WHERE id = ?")).thenReturn(deleteRun);
 
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL);
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
 
         // When
         repository.delete(UUID.randomUUID());
@@ -188,8 +182,7 @@ class DatabaseAssemblyRunRepositoryTest {
         when(update.executeBatch()).thenReturn(new int[] { 1, 0 });
         when(insert.executeBatch()).thenReturn(new int[] { 1 });
 
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.H2, new ObjectMapper());
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.H2);
         StationLogRecord first = stationLogRecord("step-1");
         StationLogRecord second = stationLogRecord("step-2");
 
@@ -208,8 +201,7 @@ class DatabaseAssemblyRunRepositoryTest {
     @Test
     void recordsRequiringInsert_shouldTreatSuccessNoInfoAsSuccessfulUpdate() {
         // Given
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(mock(DataSource.class),
-                Gear4jDatabaseDialect.H2, new ObjectMapper());
+        DatabaseAssemblyRunRepository repository = repository(mock(DataSource.class), Gear4jDatabaseDialect.H2);
         StationLogRecord first = stationLogRecord("step-1");
         StationLogRecord second = stationLogRecord("step-2");
 
@@ -233,8 +225,7 @@ class DatabaseAssemblyRunRepositoryTest {
         when(connection.prepareStatement(sqlCaptor.capture())).thenReturn(upsert);
         when(upsert.executeBatch()).thenReturn(new int[] { 1, 1 });
 
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL, new ObjectMapper());
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
         StationLogRecord first = stationLogRecord("step-1");
         StationLogRecord second = stationLogRecord("step-2");
 
@@ -269,8 +260,7 @@ class DatabaseAssemblyRunRepositoryTest {
         when(insert.executeBatch()).thenThrow(duplicate);
         when(update.executeUpdate()).thenReturn(0);
 
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.H2, new ObjectMapper());
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.H2);
         StationLogRecord record = stationLogRecord("step");
 
         // When
@@ -292,8 +282,7 @@ class DatabaseAssemblyRunRepositoryTest {
         SQLException failure = new SQLException("connection refused");
         UUID runId = UUID.randomUUID();
         when(dataSource.getConnection()).thenThrow(failure);
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL);
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
 
         // When / Then
         assertThatThrownBy(() -> repository.findById(runId))
@@ -304,23 +293,26 @@ class DatabaseAssemblyRunRepositoryTest {
     }
 
     @Test
-    void constructor_shouldRequireAnExplicitDialect() {
+    void builder_shouldRequireAnExplicitDialect() {
         // Given
         DataSource dataSource = mock(DataSource.class);
 
         // When / Then
-        assertThatThrownBy(() -> new DatabaseAssemblyRunRepository(dataSource, (Gear4jDatabaseDialect) null))
+        assertThatThrownBy(() -> DatabaseAssemblyRunRepository.builder()
+                .dataSource(dataSource)
+                .databaseDialect(null)
+                .build())
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("databaseDialect must not be null");
     }
 
     @Test
-    void constructor_shouldNotOpenAConnectionToDetectDialect() {
+    void builder_shouldNotOpenAConnectionToDetectDialect() {
         // Given
         DataSource dataSource = mock(DataSource.class);
 
         // When
-        new DatabaseAssemblyRunRepository(dataSource, Gear4jDatabaseDialect.MARIADB);
+        repository(dataSource, Gear4jDatabaseDialect.MARIADB);
 
         // Then
         verifyNoInteractions(dataSource);
@@ -337,8 +329,7 @@ class DatabaseAssemblyRunRepositoryTest {
         when(connection.prepareStatement(anyString())).thenReturn(statement);
         when(statement.executeQuery()).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(false);
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL);
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
 
         // When
         repository.findAll(new PageRequest(20, 10));
@@ -359,8 +350,7 @@ class DatabaseAssemblyRunRepositoryTest {
         when(connection.prepareStatement(anyString())).thenReturn(statement);
         when(statement.executeQuery()).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(false);
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.ORACLE);
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.ORACLE);
 
         // When
         repository.findAll(new PageRequest(20, 10));
@@ -368,6 +358,24 @@ class DatabaseAssemblyRunRepositoryTest {
         // Then
         verify(statement).setInt(1, 20);
         verify(statement).setInt(2, 10);
+    }
+
+    private static DatabaseAssemblyRunRepository repository(DataSource dataSource,
+                                                            Gear4jDatabaseDialect databaseDialect) {
+        return DatabaseAssemblyRunRepository.builder()
+                .dataSource(dataSource)
+                .databaseDialect(databaseDialect)
+                .build();
+    }
+
+    private static DatabaseAssemblyRunRepository repository(DataSource dataSource,
+                                                            Gear4jDatabaseDialect databaseDialect,
+                                                            Duration jdbcStatementTimeout) {
+        return DatabaseAssemblyRunRepository.builder()
+                .dataSource(dataSource)
+                .databaseDialect(databaseDialect)
+                .jdbcStatementTimeout(jdbcStatementTimeout)
+                .build();
     }
 
     private static StationLogRecord stationLogRecord(String operationId) {

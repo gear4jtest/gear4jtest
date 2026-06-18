@@ -38,11 +38,14 @@ class TaskFactoryTest {
                 return null;
             }
         };
-        ExecutionContext globalContext = new ExecutionContext(UUID.randomUUID(), "pipeline-1",
-                new ExecutionServices(
+        ExecutionContext globalContext = ExecutionContext.builder()
+                .executionId(UUID.randomUUID())
+                .pipelineId("pipeline-1")
+                .services(new ExecutionServices(
                         new EventManager(EventHandlingDefinition.builder().build(), new ExecutionContextRegistry()),
-                        resourceFactory),
-                assemblyRun);
+                        resourceFactory))
+                .assemblyRun(assemblyRun)
+                .build();
 
         UUID parentOperationId = UUID.randomUUID();
         globalContext.setCurrentItemId("outer-item");

@@ -24,8 +24,14 @@ class AssemblyLineManagerArtifactLimitTest {
         ArtifactStoreProvider storeProvider = mock(ArtifactStoreProvider.class);
         ClassLoaderRegistry classLoaderRegistry = mock(ClassLoaderRegistry.class);
         OperationChainTranslatorResolver translatorResolver = mock(OperationChainTranslatorResolver.class);
-        AssemblyLineManager manager = new AssemblyLineManager(configRepository, objectRepository, tagRepository,
-                storeProvider, classLoaderRegistry, translatorResolver);
+        AssemblyLineManager manager = AssemblyLineManager.builder()
+                .configRepository(configRepository)
+                .objectRepository(objectRepository)
+                .tagRepository(tagRepository)
+                .storeProvider(storeProvider)
+                .classLoaderRegistry(classLoaderRegistry)
+                .translatorResolver(translatorResolver)
+                .build();
         byte[] tooLargeContent = new byte[(int) AssemblyLineManager.DEFAULT_MAX_ARTIFACT_SIZE_BYTES + 1];
 
         // When / Then

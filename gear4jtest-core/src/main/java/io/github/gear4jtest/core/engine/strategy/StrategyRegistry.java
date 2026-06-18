@@ -82,7 +82,10 @@ public class StrategyRegistry {
         Objects.requireNonNull(workerConcurrencyConfiguration, "workerConcurrencyConfiguration must not be null");
         Objects.requireNonNull(parallelExecutionConfiguration, "parallelExecutionConfiguration must not be null");
         return new StrategyRegistry(
-                List.of(new WorkStationStrategy(workerConcurrencyManager, workerConcurrencyConfiguration),
+                List.of(WorkStationStrategy.builder()
+                        .concurrencyManager(workerConcurrencyManager)
+                        .concurrencyConfiguration(workerConcurrencyConfiguration)
+                        .build(),
                         new SequenceStationStrategy(), new IteratorStationStrategy(),
                         new IfElseContainerStationStrategy(),
                         new ContainerStationStrategy(parallelExecutionConfiguration), new SignalStationStrategy(),

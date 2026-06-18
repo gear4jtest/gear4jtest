@@ -13,9 +13,13 @@ public final class ExternalJdbcSchemaMigrator {
 
     public ExternalJdbcSchemaMigrator(Gear4jDatabaseDialect dialect) {
         Objects.requireNonNull(dialect, "dialect must not be null");
-        this.delegate = new JdbcSchemaMigrator("gear4j-external-api", dialect,
-                "io/github/gear4j/external/db/" + resourceDirectory(dialect) + "/migrations/migrations.list",
-                "operation_chain_config");
+        this.delegate = JdbcSchemaMigrator.builder()
+                .moduleId("gear4j-external-api")
+                .dialect(dialect)
+                .migrationListResource("io/github/gear4j/external/db/" + resourceDirectory(dialect)
+                        + "/migrations/migrations.list")
+                .baselineTableName("operation_chain_config")
+                .build();
     }
 
     public static ExternalJdbcSchemaMigrator forDialect(Gear4jDatabaseDialect dialect) {

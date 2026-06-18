@@ -41,12 +41,28 @@ pre-execution configuration error.
 JDBC-facing constructors must require the shared public enum:
 
 ```java
-new DatabaseExecutionManager(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
-new DatabaseAssemblyRunRepository(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
-new OperationChainConfigRepositoryJdbc(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
-new OperationChainObjectRepositoryJdbc(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
-new OperationChainTagRepositoryJdbc(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
-new DatabaseArtifactStore(dataSource, "artifact_store", Gear4jDatabaseDialect.POSTGRESQL);
+DatabaseExecutionManager.builder()
+        .dataSource(dataSource)
+        .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+        .build();
+DatabaseAssemblyRunRepository.builder().dataSource(dataSource).databaseDialect(Gear4jDatabaseDialect.POSTGRESQL).build();
+OperationChainConfigRepositoryJdbc.builder()
+        .dataSource(dataSource)
+        .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+        .build();
+OperationChainObjectRepositoryJdbc.builder()
+        .dataSource(dataSource)
+        .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+        .build();
+OperationChainTagRepositoryJdbc.builder()
+        .dataSource(dataSource)
+        .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+        .build();
+DatabaseArtifactStore.builder()
+        .dataSource(dataSource)
+        .table("artifact_store")
+        .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+        .build();
 ```
 
 The `DATABASE` artifact-store plugin must require a `dialect` property instead of consulting the `DataSource` metadata.

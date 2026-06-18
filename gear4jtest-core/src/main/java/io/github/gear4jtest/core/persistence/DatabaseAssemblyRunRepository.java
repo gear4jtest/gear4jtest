@@ -31,36 +31,60 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     private final StationLogRecordStatementBinder stationLogBinder;
     private final JdbcStatementOptions statementOptions;
 
-    public DatabaseAssemblyRunRepository(DataSource dataSource, Gear4jDatabaseDialect databaseDialect) {
-        this(dataSource, databaseDialect, new ObjectMapper(), JdbcStatementOptions.defaults());
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public DatabaseAssemblyRunRepository(DataSource dataSource,
-                                         Gear4jDatabaseDialect databaseDialect,
-                                         ObjectMapper objectMapper) {
-        this(dataSource, databaseDialect, objectMapper, JdbcStatementOptions.defaults());
-    }
-
-    public DatabaseAssemblyRunRepository(DataSource dataSource,
-                                         Gear4jDatabaseDialect databaseDialect,
-                                         ObjectMapper objectMapper,
-                                         Duration jdbcStatementTimeout) {
-        this(dataSource, databaseDialect, objectMapper, JdbcStatementOptions.of(jdbcStatementTimeout));
-    }
-
-    public DatabaseAssemblyRunRepository(DataSource dataSource,
-                                         Gear4jDatabaseDialect databaseDialect,
-                                         ObjectMapper objectMapper,
-                                         JdbcStatementOptions statementOptions) {
-        this.dataSource = Objects.requireNonNull(dataSource, "dataSource must not be null");
-        this.databaseDialect = Objects.requireNonNull(databaseDialect, "databaseDialect must not be null");
-        this.statementOptions = Objects.requireNonNull(statementOptions, "statementOptions must not be null");
+    private DatabaseAssemblyRunRepository(Builder builder) {
+        this.dataSource = Objects.requireNonNull(builder.dataSource, "dataSource must not be null");
+        this.databaseDialect = Objects.requireNonNull(builder.databaseDialect, "databaseDialect must not be null");
+        this.statementOptions = Objects.requireNonNull(builder.statementOptions,
+                                                       "statementOptions must not be null");
         DatabasePersistenceJsonCodec jsonCodec = new DatabasePersistenceJsonCodec(
-                Objects.requireNonNull(objectMapper, "objectMapper must not be null"));
+                Objects.requireNonNull(builder.objectMapper, "objectMapper must not be null"));
         this.assemblyRunMapper = new AssemblyRunRecordRowMapper(databaseDialect, jsonCodec);
         this.stationLogMapper = new StationLogRecordRowMapper(databaseDialect, jsonCodec);
         this.assemblyRunBinder = new AssemblyRunRecordStatementBinder(databaseDialect, jsonCodec);
         this.stationLogBinder = new StationLogRecordStatementBinder(databaseDialect, jsonCodec);
+    }
+
+    public static final class Builder {
+        private DataSource dataSource;
+        private Gear4jDatabaseDialect databaseDialect;
+        private ObjectMapper objectMapper = new ObjectMapper();
+        private JdbcStatementOptions statementOptions = JdbcStatementOptions.defaults();
+
+        private Builder() {
+        }
+
+        public Builder dataSource(DataSource dataSource) {
+            this.dataSource = dataSource;
+            return this;
+        }
+
+        public Builder databaseDialect(Gear4jDatabaseDialect databaseDialect) {
+            this.databaseDialect = databaseDialect;
+            return this;
+        }
+
+        public Builder objectMapper(ObjectMapper objectMapper) {
+            this.objectMapper = objectMapper;
+            return this;
+        }
+
+        public Builder jdbcStatementTimeout(Duration jdbcStatementTimeout) {
+            this.statementOptions = JdbcStatementOptions.of(jdbcStatementTimeout);
+            return this;
+        }
+
+        public Builder statementOptions(JdbcStatementOptions statementOptions) {
+            this.statementOptions = statementOptions;
+            return this;
+        }
+
+        public DatabaseAssemblyRunRepository build() {
+            return new DatabaseAssemblyRunRepository(this);
+        }
     }
 
     @Override

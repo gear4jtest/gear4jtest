@@ -1,9 +1,11 @@
 package io.github.gear4jtest.core.engine.support;
 
+import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector.Parameter;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class WorkerParamsInjectorParameterTest {
     @Test
@@ -48,5 +50,19 @@ class WorkerParamsInjectorParameterTest {
         parameter.afterExecutionCleanup();
         // PER_EXECUTION => retour à la valeur par défaut
         assertThat(parameter.getValue()).isEqualTo("default");
+    }
+
+    @Test
+    void parametersBuilder_shouldExposeImmutableSnapshot() {
+        WorkerParamsInjector.ParameterModel<Operator<?, ?>, String> model = new WorkerParamsInjector.InterpretationContextParameterModel<>(
+                operator -> null, ctx -> "value");
+        WorkerParamsInjector.Parameters.Builder builder = WorkerParamsInjector.Parameters.newBuilder();
+
+        WorkerParamsInjector.Parameters parameters = builder.withParameter(model).build();
+        builder.withParameter(model);
+
+        assertThat(parameters.getParameters()).containsExactly(model);
+        assertThatThrownBy(() -> parameters.getParameters().add(model))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 }

@@ -9,7 +9,7 @@ class InMemoryClassLoaderRegistryTest {
     @Test
     void clearAlias_shouldRemoveMutableAliasWithoutEvictingConcreteLoader() {
         // Given
-        InMemoryClassLoaderRegistry registry = new InMemoryClassLoaderRegistry();
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder().build();
         ClassLoader loader = getClass().getClassLoader();
         registry.register("pipeline:1.0.0:RUN:hash", loader, null);
         registry.setAlias("al/pipeline/RUN/latest", "pipeline:1.0.0:RUN:hash");
@@ -29,7 +29,7 @@ class InMemoryClassLoaderRegistryTest {
     @Test
     void register_shouldEvictLeastRecentlyUsedUnaliasedLoaderWhenCapacityIsExceeded() {
         // Given
-        InMemoryClassLoaderRegistry registry = new InMemoryClassLoaderRegistry(2);
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder().maxLoaders(2).build();
         ClassLoader loader = getClass().getClassLoader();
         registry.register("v1", loader, null);
         registry.register("v2", loader, null);
@@ -48,7 +48,7 @@ class InMemoryClassLoaderRegistryTest {
     @Test
     void register_shouldNotEvictAliasedLoaderEvenWhenCapacityIsExceeded() {
         // Given
-        InMemoryClassLoaderRegistry registry = new InMemoryClassLoaderRegistry(1);
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder().maxLoaders(1).build();
         ClassLoader loader = getClass().getClassLoader();
         registry.register("v1", loader, null);
         registry.setAlias("al/pipeline/RUN/latest", "v1");
@@ -66,7 +66,7 @@ class InMemoryClassLoaderRegistryTest {
     @Test
     void setAlias_shouldRejectMissingLoaderIds() {
         // Given
-        InMemoryClassLoaderRegistry registry = new InMemoryClassLoaderRegistry();
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder().build();
 
         // When / Then
         assertThatThrownBy(() -> registry.setAlias("latest", "missing"))
@@ -78,7 +78,10 @@ class InMemoryClassLoaderRegistryTest {
     @Test
     void setAlias_shouldRejectTooManyProtectedLoaders() {
         // Given
-        InMemoryClassLoaderRegistry registry = new InMemoryClassLoaderRegistry(10, 1);
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder()
+                .maxLoaders(10)
+                .maxProtectedLoaders(1)
+                .build();
         ClassLoader loader = getClass().getClassLoader();
         registry.register("v1", loader, null);
         registry.register("v2", loader, null);
@@ -94,7 +97,7 @@ class InMemoryClassLoaderRegistryTest {
     @Test
     void protectedLoaderCount_shouldExposeAliasProtectedLoaders() {
         // Given
-        InMemoryClassLoaderRegistry registry = new InMemoryClassLoaderRegistry(1);
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder().maxLoaders(1).build();
         ClassLoader loader = getClass().getClassLoader();
         registry.register("v1", loader, null);
         registry.setAlias("latest", "v1");

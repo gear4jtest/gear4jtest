@@ -32,22 +32,48 @@ public final class OperationChainObjectRepositoryJdbc implements OperationChainO
     private final Gear4jDatabaseDialect databaseDialect;
     private final JdbcStatementOptions statementOptions;
 
-    public OperationChainObjectRepositoryJdbc(DataSource ds, Gear4jDatabaseDialect databaseDialect) {
-        this(ds, databaseDialect, JdbcStatementOptions.defaults());
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public OperationChainObjectRepositoryJdbc(DataSource ds,
-                                              Gear4jDatabaseDialect databaseDialect,
-                                              Duration jdbcStatementTimeout) {
-        this(ds, databaseDialect, JdbcStatementOptions.of(jdbcStatementTimeout));
+    private OperationChainObjectRepositoryJdbc(Builder builder) {
+        this.ds = Objects.requireNonNull(builder.dataSource, "ds must not be null");
+        this.databaseDialect = Objects.requireNonNull(builder.databaseDialect, "databaseDialect must not be null");
+        this.statementOptions = Objects.requireNonNull(builder.statementOptions,
+                                                       "statementOptions must not be null");
     }
 
-    public OperationChainObjectRepositoryJdbc(DataSource ds,
-                                              Gear4jDatabaseDialect databaseDialect,
-                                              JdbcStatementOptions statementOptions) {
-        this.ds = Objects.requireNonNull(ds, "ds must not be null");
-        this.databaseDialect = Objects.requireNonNull(databaseDialect, "databaseDialect must not be null");
-        this.statementOptions = Objects.requireNonNull(statementOptions, "statementOptions must not be null");
+    public static final class Builder {
+        private DataSource dataSource;
+        private Gear4jDatabaseDialect databaseDialect;
+        private JdbcStatementOptions statementOptions = JdbcStatementOptions.defaults();
+
+        private Builder() {
+        }
+
+        public Builder dataSource(DataSource dataSource) {
+            this.dataSource = dataSource;
+            return this;
+        }
+
+        public Builder databaseDialect(Gear4jDatabaseDialect databaseDialect) {
+            this.databaseDialect = databaseDialect;
+            return this;
+        }
+
+        public Builder jdbcStatementTimeout(Duration jdbcStatementTimeout) {
+            this.statementOptions = JdbcStatementOptions.of(jdbcStatementTimeout);
+            return this;
+        }
+
+        public Builder statementOptions(JdbcStatementOptions statementOptions) {
+            this.statementOptions = statementOptions;
+            return this;
+        }
+
+        public OperationChainObjectRepositoryJdbc build() {
+            return new OperationChainObjectRepositoryJdbc(this);
+        }
     }
 
     private Instant instantOrNull(ResultSet rs, String column) throws SQLException {

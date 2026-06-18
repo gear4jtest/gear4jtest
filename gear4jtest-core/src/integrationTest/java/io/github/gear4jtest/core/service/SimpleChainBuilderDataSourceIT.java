@@ -109,7 +109,10 @@ public class SimpleChainBuilderDataSourceIT {
 
         var request = RunRequest.builder().input("b").context(context).resourceFactory(resourceFactory)
                 .with(new PersistenceExtension(
-                        new DatabaseExecutionManager(dataSource, Gear4jDatabaseDialect.POSTGRESQL)))
+                        DatabaseExecutionManager.builder()
+                                .dataSource(dataSource)
+                                .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+                                .build()))
                 .build();
 
         // When
@@ -119,8 +122,10 @@ public class SimpleChainBuilderDataSourceIT {
         assertThat(result).isNotNull().extracting(ExecutionResult::getResult).isInstanceOf(List.class).asList()
                 .hasSize(1).first().isInstanceOf(List.class).asList().contains("");
 
-        DatabaseAssemblyRunRepository repository = new DatabaseAssemblyRunRepository(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL);
+        DatabaseAssemblyRunRepository repository = DatabaseAssemblyRunRepository.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+                .build();
 
         var pipelineExecution = repository.findById(result.getExecution().getId());
         assertThat(pipelineExecution).isPresent().get()

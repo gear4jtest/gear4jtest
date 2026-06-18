@@ -124,8 +124,13 @@ class JdbcSchemaMigratorTest {
         when(selectLock.executeQuery()).thenReturn(lockRow);
         when(connection.prepareStatement("UPDATE gear4j_schema_lock SET locked_at = ? WHERE lock_name = ?"))
                 .thenReturn(updateLock);
-        var migrator = new JdbcSchemaMigrator("gear4j-core", Gear4jDatabaseDialect.POSTGRESQL,
-                "db/migrations.list", "assembly_run", resources(Map.of("db/migrations.list", "")));
+        var migrator = JdbcSchemaMigrator.builder()
+                .moduleId("gear4j-core")
+                .dialect(Gear4jDatabaseDialect.POSTGRESQL)
+                .migrationListResource("db/migrations.list")
+                .baselineTableName("assembly_run")
+                .classLoader(resources(Map.of("db/migrations.list", "")))
+                .build();
 
         // When
         migrator.migrate(connection);
@@ -176,8 +181,13 @@ class JdbcSchemaMigratorTest {
                                        CREATE TABLE assembly_run(id VARCHAR(36), pipeline_id VARCHAR(255), status VARCHAR(50), start_time TIMESTAMP);
                                        CREATE TABLE station_log(id VARCHAR(36), pipeline_execution_id VARCHAR(36), operation_id VARCHAR(255), status VARCHAR(50), start_time TIMESTAMP);
                                        """);
-        var migrator = new JdbcSchemaMigrator("gear4j-core", Gear4jDatabaseDialect.POSTGRESQL,
-                "db/migrations.list", "assembly_run", resources(resources));
+        var migrator = JdbcSchemaMigrator.builder()
+                .moduleId("gear4j-core")
+                .dialect(Gear4jDatabaseDialect.POSTGRESQL)
+                .migrationListResource("db/migrations.list")
+                .baselineTableName("assembly_run")
+                .classLoader(resources(resources))
+                .build();
 
         // When / Then
         assertThatThrownBy(() -> migrator.migrate(connection))

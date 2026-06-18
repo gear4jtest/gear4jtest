@@ -179,9 +179,13 @@ var persistenceRuntime = PersistenceRuntimeConfiguration.builder()
         .maxPendingLogsPerRun(10_000)
         .flushInterval(Duration.ofSeconds(1))
         .build();
-new DatabaseExecutionManager(dataSource, Gear4jDatabaseDialect.POSTGRESQL,
-        persistenceRuntime, true);
-new DatabaseAssemblyRunRepository(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
+DatabaseExecutionManager.builder()
+        .dataSource(dataSource)
+        .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+        .configuration(persistenceRuntime)
+        .autoCreateTables(true)
+        .build();
+DatabaseAssemblyRunRepository.builder().dataSource(dataSource).databaseDialect(Gear4jDatabaseDialect.POSTGRESQL).build();
 ```
 
 `DatabaseExecutionManager` keeps station-log buffers bounded, periodically flushes low-volume runs and exposes

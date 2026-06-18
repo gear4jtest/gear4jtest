@@ -30,8 +30,10 @@ class OperationChainConfigRepositoryJdbcTest {
         when(resultSet.getString(3)).thenReturn("FILESYSTEM");
         when(resultSet.getString(4)).thenReturn("{\"path\":\"hello, world\",\"quoted\":\"a\\\"b\"}");
 
-        OperationChainConfigRepositoryJdbc repository = new OperationChainConfigRepositoryJdbc(dataSource,
-                Gear4jDatabaseDialect.POSTGRESQL);
+        OperationChainConfigRepositoryJdbc repository = OperationChainConfigRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+                .build();
 
         // When
         var result = repository.findByAssemblyLineId("pipeline").orElseThrow();

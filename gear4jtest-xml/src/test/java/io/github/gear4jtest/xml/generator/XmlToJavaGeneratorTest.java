@@ -32,8 +32,10 @@ class XmlToJavaGeneratorTest {
                         processingOperation("then-operation"))),
                 processingOperation("else-operation"));
         XmlPipelineDefinition definition = definition(ifElse);
-        XmlToJavaGenerator safeGenerator = new XmlToJavaGenerator("io.test.generated",
-                XmlToJavaGeneratorTest.class.getClassLoader(), JavaSourceFormatter.none());
+        XmlToJavaGenerator safeGenerator = XmlToJavaGenerator.builder("io.test.generated")
+                .classLoader(XmlToJavaGeneratorTest.class.getClassLoader())
+                .formatter(JavaSourceFormatter.none())
+                .build();
 
         // When / Then
         assertThatThrownBy(() -> safeGenerator.generate(definition)).isInstanceOf(SecurityException.class)
@@ -51,8 +53,10 @@ class XmlToJavaGeneratorTest {
                         processingOperation("then-operation"))),
                 processingOperation("else-operation"));
         XmlPipelineDefinition definition = definition(ifElse);
-        XmlToJavaGenerator safeGenerator = new XmlToJavaGenerator("io.test.generated",
-                XmlToJavaGeneratorTest.class.getClassLoader(), JavaSourceFormatter.none());
+        XmlToJavaGenerator safeGenerator = XmlToJavaGenerator.builder("io.test.generated")
+                .classLoader(XmlToJavaGeneratorTest.class.getClassLoader())
+                .formatter(JavaSourceFormatter.none())
+                .build();
 
         // When
         String source = safeGenerator.generate(definition).formattedSource();

@@ -50,9 +50,12 @@ class ResolvedParametersConcurrencyTest {
             }
         };
 
-        ExecutionContext executionContext = new ExecutionContext(UUID.randomUUID(), "pipe",
-                new ExecutionServices(null, new NoOpResourceFactory()),
-                new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of()));
+        ExecutionContext executionContext = ExecutionContext.builder()
+                .executionId(UUID.randomUUID())
+                .pipelineId("pipe")
+                .services(new ExecutionServices(null, new NoOpResourceFactory()))
+                .assemblyRun(new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of()))
+                .build();
         DefaultStationExecutionContext stationExecutionContext = new DefaultStationExecutionContext("step-1",
                 executionContext, new ExecutionSupport(null, new TaskFactory(), PayloadCloners.immutableAware()));
         WorkerParamsInjector.InterpretationContext<String> interpretationContext = new WorkerParamsInjector.InterpretationContext<>(
