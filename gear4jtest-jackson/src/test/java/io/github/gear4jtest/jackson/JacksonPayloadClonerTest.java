@@ -1,6 +1,7 @@
 package io.github.gear4jtest.jackson;
 
 import java.time.ZoneId;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -239,6 +240,32 @@ class JacksonPayloadClonerTest {
         cloned[0].setValue("mutated");
 
         assertThat(payload[0].getValue()).isEqualTo("one");
+    }
+
+    @Test
+    void should_deep_clone_non_list_non_set_collection() {
+        // Given
+        ArrayDeque<NestedValue> payload = new ArrayDeque<>();
+        payload.add(new NestedValue("one"));
+        payload.add(new NestedValue("two"));
+
+        // When
+        @SuppressWarnings("unchecked")
+        java.util.Collection<NestedValue> cloned = cloner.clonePayload(payload);
+
+        // Then
+        assertThat(cloned).isNotSameAs(payload);
+        assertThat(cloned).isInstanceOf(ArrayList.class);
+        assertThat(cloned).hasSize(2);
+
+        NestedValue originalFirst = payload.iterator().next();
+        NestedValue clonedFirst = cloned.iterator().next();
+        assertThat(clonedFirst).isNotSameAs(originalFirst);
+        assertThat(clonedFirst.getValue()).isEqualTo("one");
+
+        clonedFirst.setValue("mutated");
+
+        assertThat(originalFirst.getValue()).isEqualTo("one");
     }
 
     @Test

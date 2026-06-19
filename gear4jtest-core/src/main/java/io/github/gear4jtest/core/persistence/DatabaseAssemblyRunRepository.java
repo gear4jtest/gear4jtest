@@ -97,7 +97,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public void save(AssemblyRunRecord execution) {
         try {
             JdbcRepositoryTransaction.run(dataSource, conn -> {
-                try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.insertAssemblyRun())) {
+                try (PreparedStatement stmt = prepare(conn,
+                                                      DatabaseAssemblyRunSql.insertAssemblyRun(databaseDialect))) {
                     assemblyRunBinder.bindInsert(stmt, execution);
                     stmt.executeUpdate();
                 }
@@ -111,7 +112,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public void update(AssemblyRunRecord execution) {
         try {
             JdbcRepositoryTransaction.run(dataSource, conn -> {
-                try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.updateAssemblyRun())) {
+                try (PreparedStatement stmt = prepare(conn,
+                                                      DatabaseAssemblyRunSql.updateAssemblyRun(databaseDialect))) {
                     assemblyRunBinder.bindUpdate(stmt, execution);
                     int updatedRows = stmt.executeUpdate();
                     if (updatedRows != 1) {
@@ -312,7 +314,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     private List<StationLogRecord> updateOpenStationLogsBatch(Connection conn, List<StationLogRecord> records)
             throws SQLException {
-        try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.updateOpenStationLog())) {
+        try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.updateOpenStationLog(databaseDialect))) {
             for (StationLogRecord rec : records) {
                 stationLogBinder.bindUpdateOpen(stmt, rec);
                 stmt.addBatch();
@@ -349,7 +351,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     private void insertStationLogsBatch(Connection conn, List<StationLogRecord> records) throws SQLException {
-        try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.insertStationLog())) {
+        try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.insertStationLog(databaseDialect))) {
             for (StationLogRecord rec : records) {
                 stationLogBinder.bindInsert(stmt, rec);
                 stmt.addBatch();
@@ -370,14 +372,14 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     private int updateOpenStationLog(Connection conn, StationLogRecord rec) throws SQLException {
-        try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.updateOpenStationLog())) {
+        try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.updateOpenStationLog(databaseDialect))) {
             stationLogBinder.bindUpdateOpen(stmt, rec);
             return stmt.executeUpdate();
         }
     }
 
     private void insertStationLog(Connection conn, StationLogRecord rec) throws SQLException {
-        try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.insertStationLog())) {
+        try (PreparedStatement stmt = prepare(conn, DatabaseAssemblyRunSql.insertStationLog(databaseDialect))) {
             stationLogBinder.bindInsert(stmt, rec);
             stmt.executeUpdate();
         }

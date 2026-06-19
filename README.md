@@ -64,19 +64,26 @@ versions.
 Common commands:
 
 ```bash
-./gradlew clean test
-./gradlew check
-./gradlew integrationCheck
+./gradlew clean build
+./gradlew coverageReport
+./gradlew sonarqube
 ./gradlew dependencyCheckAggregate
 ./gradlew stageMavenCentral -PprojectVersion=1.0.0
 ./gradlew :gear4jtest-core:test
 ./gradlew :gear4jtest-xml:test
 ```
 
+`./gradlew clean build` is the normal project verification command: it compiles the modules, runs unit tests, runs
+integration tests through `integrationCheck`, executes the fast style/check tasks, packages the artifacts and finalizes
+with the aggregate JaCoCo XML/HTML coverage report. `./gradlew coverageReport` can still be run directly when only the
+aggregate coverage report is needed. `./gradlew sonarqube` only sends analysis data to SonarQube/SonarCloud and depends
+on the aggregate coverage report; it is not wired into `build`.
+
 Unit tests live under `src/test`. Integration tests live under `src/integrationTest` and are executed by the
-`integrationTest` tasks. Tests that need databases use Testcontainers, so the container lifecycle is declared in the
-JUnit tests themselves. Maven Central staging writes artifacts under `build/staging-deploy`; deployment is handled by
-JReleaser from the `release.yml` GitHub Actions workflow.
+`integrationTest` tasks, which are part of the default `check`/`build` lifecycle. Tests that need databases use
+Testcontainers, so the container lifecycle is declared in the JUnit tests themselves. Maven Central staging writes
+artifacts under `build/staging-deploy`; deployment is handled by JReleaser from the `release.yml` GitHub Actions
+workflow.
 
 The Gradle wrapper must be complete in the working copy: `gradlew`, `gradle/wrapper/gradle-wrapper.jar` and
 `gradle/wrapper/gradle-wrapper.properties`.
@@ -94,8 +101,8 @@ Useful commands:
 ./gradlew check
 ```
 
-`spotlessCheck` and Checkstyle are wired into `check`, so `./gradlew check` and `./gradlew build` fail when checked-in
-sources do not follow the repository rules.
+`spotlessCheck`, Checkstyle and integration tests are wired into `check`, so `./gradlew check` and `./gradlew build`
+fail when checked-in sources do not follow the repository rules or when unit/integration tests fail.
 
 The Gradle build is the source of truth for Java formatting and validation. `.editorconfig` only defines editor-level
 basics such as UTF-8, LF line endings, indentation, final newline and trailing whitespace.

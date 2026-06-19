@@ -19,8 +19,11 @@ concurrency:
 
 jobs:
   build:
-    name: Build and unit tests
+    name: Build, integration tests, coverage and Sonar
     runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,15 +46,22 @@ jobs:
             echo "gradle/verification-metadata.xml not committed yet; see docs/security/dependency-supply-chain.md"
           fi
 
-      - name: Build
-        run: ./gradlew --no-daemon check verifySupplyChainConfiguration
+      - name: Build and coverage
+        run: ./gradlew --no-daemon clean build coverageReport verifySupplyChainConfiguration
 
-      - name: Upload test reports
+      - name: SonarQube scan
+        if: ${{ env.SONAR_TOKEN != '' }}
+        run: ./gradlew --no-daemon sonarqube
+
+      - name: Upload test and coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: unit-test-reports
+          name: verification-reports
           path: |
             **/build/test-results/test/*.xml
             **/build/reports/tests/test/**
+            **/build/test-results/integrationTest/*.xml
+            **/build/reports/tests/integrationTest/**
+            build/reports/jacoco/**
           if-no-files-found: ignore

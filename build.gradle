@@ -7,7 +7,6 @@ plugins {
     id "me.champeau.gradle.jmh" version "0.5.3"
     id 'org.asciidoctor.convert' version '2.4.0'
     id 'idea'
-    id 'jacoco-report-aggregation'
 }
 
 ext {
@@ -36,6 +35,7 @@ spotless {
 
 tasks.named('check') {
     dependsOn 'spotlessCheck'
+    dependsOn 'integrationCheck'
 }
 
 tasks.register('verifySupplyChainConfiguration') {
@@ -85,10 +85,6 @@ allprojects {
 
 ext {
     coreProjects = subprojects
-}
-
-dependencies {
-    coreProjects.each { jacocoAggregation project(":${it.name}") }
 }
 
 configure(project.coreProjects) {
@@ -285,34 +281,35 @@ tasks.register('stageMavenCentral') {
             .collect { it.tasks.named('publishAllPublicationsToMavenCentralStagingRepository') })
 }
 
-task jacocoRootTestReport(type: JacocoReport) {
+tasks.register('jacocoRootAllReport', JacocoReport) {
+    group = 'verification'
+    description = 'Generates the root JaCoCo HTML and XML reports for unit and integration tests.'
 
-    coreProjects.each { dependsOn("${it.name}:test") }
-    coreProjects.each { dependsOn("${it.name}:jacocoTestReport") }
+    dependsOn coreProjects.collect { it.tasks.named('test') }
+    dependsOn coreProjects.collect { it.tasks.named('integrationTest') }
 
-    additionalSourceDirs.from = coreProjects.sourceSets.main.allSource.srcDirs
-    sourceDirectories.from = coreProjects.sourceSets.main.allSource.srcDirs
-    classDirectories.from = coreProjects.sourceSets.main.output
-    executionData.setFrom coreProjects.collect { testedProject ->
-        testedProject.layout.buildDirectory.file('jacoco/test.exec')
-    }
-
-    dependsOn subprojects.collect { it.tasks.withType(Javadoc) }
+    additionalSourceDirs.from(coreProjects.collect { it.sourceSets.main.allSource.srcDirs }.flatten())
+    sourceDirectories.from(coreProjects.collect { it.sourceSets.main.allSource.srcDirs }.flatten())
+    classDirectories.from(coreProjects.collect { it.sourceSets.main.output })
+    executionData.from(coreProjects.collect { testedProject ->
+        [
+            testedProject.layout.buildDirectory.file('jacoco/test.exec'),
+            testedProject.layout.buildDirectory.file('jacoco/integrationTest.exec')
+        ]
+    }.flatten())
 
     onlyIf {
-        true
+        executionData.files.any { it.exists() }
     }
 
     reports {
-        xml.required = true
-        xml.destination file(allTestCoverageFile)
-        html.required = true
-        csv.required = false
+        xml.required.set(true)
+        xml.outputLocation.set(layout.buildDirectory.file('reports/jacoco/report.xml'))
+        html.required.set(true)
+        html.outputLocation.set(layout.buildDirectory.dir('reports/jacoco/html'))
+        csv.required.set(false)
     }
 }
-
-tasks.check.dependsOn tasks.jacocoRootTestReport
-tasks.jacocoRootTestReport.dependsOn tasks.test
 
 tasks.register('integrationCheck') {
     group = 'verification'
@@ -320,8 +317,24 @@ tasks.register('integrationCheck') {
     dependsOn coreProjects.collect { it.tasks.named('integrationTest') }
 }
 
+tasks.register('coverageReport') {
+    group = 'verification'
+    description = 'Runs unit and integration tests and generates the root JaCoCo HTML and XML reports.'
+    dependsOn tasks.named('jacocoRootAllReport')
+}
+
+allprojects {
+    tasks.matching { it.name == 'build' }.configureEach {
+        finalizedBy rootProject.tasks.named('coverageReport')
+    }
+}
+
+tasks.matching { it.name == 'sonarqube' || it.name == 'sonar' }.configureEach {
+    dependsOn tasks.named('coverageReport')
+}
+
 tasks.register('releaseCheck') {
     group = 'verification'
     description = 'Runs the checks expected before staging a Maven Central release.'
-    dependsOn tasks.named('check'), tasks.named('integrationCheck'), tasks.named('dependencyCheckAggregate'), tasks.named('verifySupplyChainConfiguration')
+    dependsOn tasks.named('check'), tasks.named('dependencyCheckAggregate'), tasks.named('verifySupplyChainConfiguration')
 }

@@ -10,15 +10,17 @@ final class DatabaseAssemblyRunSql {
     private DatabaseAssemblyRunSql() {
     }
 
-    static String insertAssemblyRun() {
+    static String insertAssemblyRun(Gear4jDatabaseDialect dialect) {
         return "INSERT INTO assembly_run (id, pipeline_id, input_parameters, context, result, "
                 + "status, start_time, end_time, error_message, parent_execution_id, root_execution_id, "
-                + "parent_station_log_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+                + "parent_station_log_id) VALUES (?,?," + jsonParameter(dialect) + "," + jsonParameter(dialect)
+                + "," + jsonParameter(dialect) + ",?,?,?,?,?,?,?)";
     }
 
-    static String updateAssemblyRun() {
-        return "UPDATE assembly_run SET context=?, result=?, status=?, end_time=?, error_message=?, "
-                + "parent_execution_id=?, root_execution_id=?, parent_station_log_id=? WHERE id=?";
+    static String updateAssemblyRun(Gear4jDatabaseDialect dialect) {
+        return "UPDATE assembly_run SET context=" + jsonParameter(dialect) + ", result=" + jsonParameter(dialect)
+                + ", status=?, end_time=?, error_message=?, parent_execution_id=?, root_execution_id=?, "
+                + "parent_station_log_id=? WHERE id=?";
     }
 
     static String selectAssemblyRunById() {
@@ -73,13 +75,14 @@ final class DatabaseAssemblyRunSql {
         return "SELECT COUNT(*) FROM station_log WHERE pipeline_execution_id = ? AND parent_log_id = ?";
     }
 
-    static String updateOpenStationLog() {
+    static String updateOpenStationLog(Gear4jDatabaseDialect dialect) {
         return "UPDATE station_log SET branch_id=?, status=?, end_time=?, error_message=?, "
-                + "error_handler_messages=?, context=?, item_id=? WHERE id=? AND end_time IS NULL";
+                + "error_handler_messages=?, context=" + jsonParameter(dialect)
+                + ", item_id=? WHERE id=? AND end_time IS NULL";
     }
 
-    static String insertStationLog() {
-        return stationLogInsertBase();
+    static String insertStationLog(Gear4jDatabaseDialect dialect) {
+        return stationLogInsertBase(dialect);
     }
 
     static String upsertStationLog(Gear4jDatabaseDialect dialect) {
@@ -91,14 +94,18 @@ final class DatabaseAssemblyRunSql {
         };
     }
 
-    private static String stationLogInsertBase() {
+    private static String stationLogInsertBase(Gear4jDatabaseDialect dialect) {
         return "INSERT INTO station_log (id, pipeline_execution_id, operation_id, parent_log_id, branch_id, "
                 + "status, start_time, end_time, error_message, error_handler_messages, context, item_id) "
-                + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+                + "VALUES (?,?,?,?,?,?,?,?,?,?," + jsonParameter(dialect) + ",?)";
+    }
+
+    private static String jsonParameter(Gear4jDatabaseDialect dialect) {
+        return dialect == Gear4jDatabaseDialect.H2 ? "? FORMAT JSON" : "?";
     }
 
     private static String postgresqlUpsertStationLog() {
-        return stationLogInsertBase()
+        return stationLogInsertBase(Gear4jDatabaseDialect.POSTGRESQL)
                 + " ON CONFLICT (id) DO UPDATE SET "
                 + "branch_id = EXCLUDED.branch_id, "
                 + "status = EXCLUDED.status, "
@@ -111,7 +118,7 @@ final class DatabaseAssemblyRunSql {
     }
 
     private static String mysqlUpsertStationLog() {
-        return stationLogInsertBase()
+        return stationLogInsertBase(Gear4jDatabaseDialect.MYSQL)
                 + " ON DUPLICATE KEY UPDATE "
                 + "branch_id = IF(end_time IS NULL, VALUES(branch_id), branch_id), "
                 + "status = IF(end_time IS NULL, VALUES(status), status), "

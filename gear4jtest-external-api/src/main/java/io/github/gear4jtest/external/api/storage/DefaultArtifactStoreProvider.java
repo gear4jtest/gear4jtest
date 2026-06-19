@@ -138,6 +138,8 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
                 verificationMaxArtifactSizeBytes, asyncExec);
     }
 
+    private record FallbackGroup(int order, Map<String, String> properties) {}
+
     private List<ArtifactStore> buildFallbacks(Map<String, String> props) {
         Map<String, Map<String, String>> groups = new HashMap<>();
         for (var e : props.entrySet()) {
@@ -153,13 +155,14 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
             groups.computeIfAbsent(idx, __ -> new HashMap<>()).put(tail, e.getValue());
         }
 
-        var ordered = groups.keySet().stream()
-                .sorted(Comparator.comparingInt(DefaultArtifactStoreProvider::parseFallbackIndex))
+        var ordered = groups.entrySet().stream()
+                .map(entry -> new FallbackGroup(parseFallbackIndex(entry.getKey()), entry.getValue()))
+                .sorted(Comparator.comparingInt(FallbackGroup::order))
                 .collect(Collectors.toList());
 
         List<ArtifactStore> out = new ArrayList<>();
-        for (String idx : ordered) {
-            Map<String, String> g = groups.get(idx);
+        for (FallbackGroup fallback : ordered) {
+            Map<String, String> g = fallback.properties();
             String type = opt(g, "type");
             if (type == null || type.isBlank())
                 continue;
