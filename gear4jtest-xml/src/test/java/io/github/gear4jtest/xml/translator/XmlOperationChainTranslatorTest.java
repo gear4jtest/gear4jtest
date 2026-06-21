@@ -135,7 +135,7 @@ class XmlOperationChainTranslatorTest {
         Class<?> generatedClass = generatedClassLoader.loadClass(translated.className());
         var generated = (GeneratedAssemblyLine) generatedClass.getDeclaredConstructor().newInstance();
         var injector = new SimpleDependencyInjector();
-        injector.registerBean("modelsService", new ModelsService());
+        injector.registerBean("modelsService", new ModelsService(), ExecutionMode.TEST);
         injector.injectDependencies(generated, ExecutionMode.TEST);
         AssemblyLine pipeline = generated.getAssemblyLineDefinition();
         ExecutionResult<?> result = engine().execute(pipeline, RunRequest.builder().input("b")

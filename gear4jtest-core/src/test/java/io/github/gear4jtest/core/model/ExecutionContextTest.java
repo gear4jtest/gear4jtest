@@ -29,6 +29,18 @@ class ExecutionContextTest {
     }
 
     @Test
+    void find_shouldReturnOptionalTypedValueWithoutConflatingAbsenceAndWrongType() {
+        // Given
+        ExecutionContext context = newContext();
+        context.put("tenant", "tenant-a");
+
+        // When / Then
+        assertThat(context.find("tenant", String.class)).contains("tenant-a");
+        assertThat(context.find("missing", String.class)).isEmpty();
+        assertThat(context.find("tenant", Integer.class)).isEmpty();
+    }
+
+    @Test
     void snapshotContext_shouldReturnImmutablePointInTimeCopy() {
         // Given
         ExecutionContext context = newContext();

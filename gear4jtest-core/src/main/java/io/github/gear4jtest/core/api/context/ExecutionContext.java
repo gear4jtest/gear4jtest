@@ -5,6 +5,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -126,6 +127,14 @@ public class ExecutionContext {
 
     public <T> T get(String key, Class<T> type) {
         return type.cast(context.get(key));
+    }
+
+    public <T> Optional<T> find(String key, Class<T> type) {
+        Object value = context.get(key);
+        if (value == null || !type.isInstance(value)) {
+            return Optional.empty();
+        }
+        return Optional.of(type.cast(value));
     }
 
     public UUID getExecutionId() {

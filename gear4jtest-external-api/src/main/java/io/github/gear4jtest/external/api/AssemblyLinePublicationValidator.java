@@ -30,7 +30,17 @@ final class AssemblyLinePublicationValidator {
         this.maxArtifactSizeBytes = AssemblyLineIdentifiers.requireValidArtifactSize(maxArtifactSizeBytes);
     }
 
+    void validatePublicationCandidate(String alId, OperationChainObject object)
+            throws AssemblyLineManager.PolicyViolationException {
+        validateCandidate(alId, object, object.mode() + " publication candidate");
+    }
+
     void validateRunCandidate(String alId, OperationChainObject object)
+            throws AssemblyLineManager.PolicyViolationException {
+        validateCandidate(alId, object, "RUN candidate");
+    }
+
+    private void validateCandidate(String alId, OperationChainObject object, String candidateLabel)
             throws AssemblyLineManager.PolicyViolationException {
         String mediaType = AssemblyLineIdentifiers.normalizeMediaType(object.mimeType());
         try {
@@ -40,15 +50,15 @@ final class AssemblyLinePublicationValidator {
                                                             translated.formattedSource()
                                                                     .getBytes(StandardCharsets.UTF_8));
             if (compiled == null || !compiled.containsKey(translated.className())) {
-                throw new AssemblyLineManager.PolicyViolationException(("RUN candidate validation failed for alId=%s, "
+                throw new AssemblyLineManager.PolicyViolationException(("%s validation failed for alId=%s, "
                         + "version=%s: compiler did not produce the generated class %s")
-                        .formatted(alId, object.version(), translated.className()));
+                        .formatted(candidateLabel, alId, object.version(), translated.className()));
             }
         } catch (AssemblyLineManager.PolicyViolationException e) {
             throw e;
         } catch (Exception e) {
-            throw new AssemblyLineManager.PolicyViolationException(("RUN candidate validation failed for alId=%s, "
-                    + "version=%s, mediaType=%s").formatted(alId, object.version(), mediaType), e);
+            throw new AssemblyLineManager.PolicyViolationException(("%s validation failed for alId=%s, "
+                    + "version=%s, mediaType=%s").formatted(candidateLabel, alId, object.version(), mediaType), e);
         }
     }
 

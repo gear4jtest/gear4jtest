@@ -47,6 +47,7 @@ class AssemblyLineManagerTest {
         AssemblyLineManager manager = manager();
         when(configRepository.findByAssemblyLineId("line")).thenReturn(Optional.of(memoryConfig("line")));
         when(storeProvider.forConfig(any())).thenReturn(artifactStore);
+        stubSuccessfulRunValidation();
         byte[] content = "<pipeline/>".getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
         // When
@@ -67,6 +68,30 @@ class AssemblyLineManagerTest {
                                  "application/xml", "tester");
         verify(tagRepository).addTag("line", "fast");
         verify(tagRepository).addTag("line", "xml");
+    }
+
+    @Test
+    void registerAssemblyLine_shouldValidateTestCandidateBeforePublishingMetadata() throws Exception {
+        // Given
+        InMemoryArtifactStore artifactStore = new InMemoryArtifactStore();
+        AssemblyLineManager manager = manager();
+        when(configRepository.findByAssemblyLineId("line")).thenReturn(Optional.of(memoryConfig("line")));
+        when(storeProvider.forConfig(any())).thenReturn(artifactStore);
+        OperationChainTranslator translator = mock(OperationChainTranslator.class);
+        when(translatorResolver.resolve("application/xml")).thenReturn(translator);
+        when(translator.translate(any(byte[].class), eq("application/xml")))
+                .thenReturn(new OperationChainTranslator.GenerationResult("io.test.Generated", "broken source"));
+        when(compiler.compile(eq("io.test.Generated"), any(byte[].class))).thenThrow(new IllegalStateException("boom"));
+        byte[] content = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
+
+        // When / Then
+        assertThatThrownBy(() -> manager.registerAssemblyLine("line", "1.0.0", ExecutionMode.TEST, content,
+                                                              "application/xml", List.of("fast"), "tester"))
+                .isInstanceOf(AssemblyLineManager.PolicyViolationException.class)
+                .hasMessageContaining("TEST publication candidate validation failed")
+                .hasCauseInstanceOf(IllegalStateException.class);
+        verify(objectRepository, never()).insert(any());
+        verify(tagRepository, never()).addTag(any(), any());
     }
 
     @Test

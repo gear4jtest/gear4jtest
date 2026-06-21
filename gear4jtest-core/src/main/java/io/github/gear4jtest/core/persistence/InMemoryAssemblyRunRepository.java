@@ -10,12 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
-    /**
-     * Shared mutable repository kept for source compatibility. Prefer creating a
-     * dedicated repository instance per engine, test or scenario.
-     */
-    @Deprecated(since = "0.1.0", forRemoval = true)
-    public static final InMemoryAssemblyRunRepository INSTANCE = new InMemoryAssemblyRunRepository();
     private final Map<UUID, AssemblyRunRecord> executions = new ConcurrentHashMap<>();
     private final Map<UUID, Map<UUID, StationLogRecord>> stationLogsByRunId = new ConcurrentHashMap<>();
 

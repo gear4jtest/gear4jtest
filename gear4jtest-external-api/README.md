@@ -29,11 +29,11 @@ Typical flow:
 
 1. Register an artifact for an assembly line id, version and execution mode.
 2. Store the raw content in the configured `ArtifactStore`.
-3. Store metadata in the object repository.
-4. Resolve a translator based on media type.
-5. Translate external content into Java source.
-6. Compile Java source with the configured `GeneratedSourceCompiler`.
-7. Load compiled classes through an `InMemoryClassLoader`.
+3. Resolve a translator based on media type.
+4. Translate external content into Java source.
+5. Compile Java source with the configured `GeneratedSourceCompiler`.
+6. Store metadata in the object repository only after publication validation succeeds.
+7. Load compiled classes through an `InMemoryClassLoader` on demand.
 8. Instantiate a `GeneratedAssemblyLine` with a no-arg constructor.
 9. Inject dependencies through `DependencyInjector`.
 10. Cache and return the generated assembly line.
@@ -104,6 +104,7 @@ External definitions use `ExecutionMode`:
 - `RUN`: a runnable definition selected by exact version or latest RUN lookup.
 
 Direct RUN publication is guarded by configuration. The normal flow can publish TEST first and then promote to RUN.
+Both TEST and RUN publications are validated before metadata insertion by translating and compiling the external artifact.
 
 Latest RUN lookups are cached through a mutable classloader alias named `al/<id>/RUN/latest`. Publishing a RUN object or
 promoting a TEST object to RUN through `AssemblyLineManager` clears that alias. The next latest lookup resolves the
@@ -117,7 +118,13 @@ Generated classes should remain no-arg constructible and implement `GeneratedAss
 Dependencies should be represented as fields annotated with `@Inject`. The manager instantiates the class first, then
 delegates dependency resolution to the configured `DependencyInjector`.
 
-This keeps generated code compatible with simple classloader-based loading.
+`SimpleDependencyInjector.registerBean(name, bean)` exposes a bean to RUN mode only. Beans that are safe for TEST
+execution must opt in explicitly with `registerBean(name, bean, ExecutionMode.TEST, ...)`. This prevents draft or
+unpromoted external definitions from automatically receiving every application dependency registered in the lightweight
+injector.
+
+This keeps generated code compatible with simple classloader-based loading while making the TEST/RUN dependency boundary
+explicit.
 
 ## Translator contract
 

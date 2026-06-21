@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -54,7 +55,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 public class SimpleChainBuilderTest {
     @Test
-    public void pipelineWithSkipIteratorAndEventSubscription_shouldComplete() {
+    public void pipelineWithSkipIteratorAndEventSubscription_shouldComplete() throws InterruptedException {
         // Given
         var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
                 .then(processingOperation("step3", Step3.class).parameter(Step3::getParam, "a")
@@ -156,8 +157,7 @@ public class SimpleChainBuilderTest {
         assertThat(result).isNotNull().extracting(ExecutionResult::getResult).isInstanceOf(List.class).asList()
                 .hasSize(1).first().isInstanceOf(List.class).asList().contains("");
 
-        TimeUnit.MILLISECONDS.sleep(500);
-        assertThat(testEventListener.getCounter()).isEqualTo(15);
+        awaitUntilAsserted(() -> assertThat(testEventListener.getCounter()).isEqualTo(15));
     }
 
     @Test
@@ -386,20 +386,34 @@ public class SimpleChainBuilderTest {
         }
     }
 
-    public static class TestEventListener {
-        public int COUNTER;
-
-        public TestEventListener() {
-            COUNTER = 0;
+    private static void awaitUntilAsserted(Runnable assertion) throws InterruptedException {
+        long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        AssertionError lastFailure = null;
+        while (System.nanoTime() < deadlineNanos) {
+            try {
+                assertion.run();
+                return;
+            } catch (AssertionError e) {
+                lastFailure = e;
+                TimeUnit.MILLISECONDS.sleep(10);
+            }
         }
+        if (lastFailure != null) {
+            throw lastFailure;
+        }
+        assertion.run();
+    }
+
+    public static class TestEventListener {
+        private final AtomicInteger counter = new AtomicInteger();
 
         public void handleEvent(Event e) {
             System.out.println(e.getExecutionId() + " " + e.getName() + " " + e.getId());
-            COUNTER++;
+            counter.incrementAndGet();
         }
 
         public int getCounter() {
-            return COUNTER;
+            return counter.get();
         }
     }
 }

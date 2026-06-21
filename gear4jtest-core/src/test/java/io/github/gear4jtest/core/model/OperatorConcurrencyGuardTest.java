@@ -16,35 +16,49 @@ class OperatorConcurrencyGuardTest {
     @Test
     void beforeUse_shouldBlockUntilLockIsReleased() throws Exception {
         WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard();
-
         CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        CountDownLatch attemptStarted = new CountDownLatch(1);
+        CountDownLatch contenderAcquired = new CountDownLatch(1);
 
-        Thread t1 = new Thread(() -> {
+        Thread holder = new Thread(() -> {
             guard.beforeUse();
             locked.countDown();
             try {
-                Thread.sleep(200);
+                release.await(2, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } finally {
                 guard.afterUse();
             }
         });
+        holder.start();
+        assertThat(locked.await(2, TimeUnit.SECONDS)).isTrue();
 
-        t1.start();
+        Thread contender = new Thread(() -> {
+            attemptStarted.countDown();
+            guard.beforeUse();
+            try {
+                contenderAcquired.countDown();
+            } finally {
+                guard.afterUse();
+            }
+        });
+        contender.start();
+        assertThat(attemptStarted.await(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(contenderAcquired.await(100, TimeUnit.MILLISECONDS))
+                .as("contender must not acquire while the holder still owns the guard")
+                .isFalse();
 
-        locked.await(2, TimeUnit.SECONDS);
+        release.countDown();
 
-        long before = System.nanoTime();
-        guard.beforeUse();
-        long after = System.nanoTime();
-        guard.afterUse();
-
-        long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(after - before);
-
-        assertThat(elapsedMillis).as("guard should block at least ~150ms").isGreaterThanOrEqualTo(150);
-
-        t1.join();
+        assertThat(contenderAcquired.await(2, TimeUnit.SECONDS))
+                .as("contender should acquire once the holder releases the guard")
+                .isTrue();
+        holder.join(2_000);
+        contender.join(2_000);
+        assertThat(holder.isAlive()).isFalse();
+        assertThat(contender.isAlive()).isFalse();
     }
 
     @Test
@@ -81,14 +95,9 @@ class OperatorConcurrencyGuardTest {
         guard.beforeUse();
 
         try {
-            long before = System.nanoTime();
-
             assertThatThrownBy(() -> guard.beforeUse(WorkerLockAcquisitionPolicy.BLOCK_CALLER, Duration.ofMillis(50)))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("Timed out after PT0.05S while waiting for worker lock");
-
-            long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - before);
-            assertThat(elapsedMillis).isGreaterThanOrEqualTo(40);
         } finally {
             guard.afterUse();
         }

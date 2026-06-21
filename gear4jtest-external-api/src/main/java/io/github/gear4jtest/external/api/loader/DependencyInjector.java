@@ -8,7 +8,8 @@ import io.github.gear4jtest.external.api.ExecutionMode;
 @Spi
 public interface DependencyInjector {
     /**
-     * Injects registered dependencies into the supplied instance.
+     * Injects registered dependencies into the supplied instance for the requested
+     * execution mode.
      */
     void injectDependencies(Object instance, ExecutionMode mode) throws InjectionException;
 

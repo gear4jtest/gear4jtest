@@ -21,16 +21,17 @@ contract.
 | `gear4jtest-gradle-xml2java` | Build-time generation from XML.                                                  |
 | `gear4jtest-core`            | Runtime execution after an `AssemblyLine` exists.                                |
 
-## RUN publication validation
+## Publication validation
 
-Before a TEST object is promoted to RUN, or before a direct RUN publication is persisted for a configuration that allows
-it, `AssemblyLineManager` validates the RUN candidate by reading the artifact, resolving the translator, translating the
-external definition and compiling the generated Java source. RUN metadata and latest-alias invalidation happen only after
-that validation succeeds.
+Before TEST or direct RUN metadata is persisted, `AssemblyLineManager` validates the publication candidate by reading the
+artifact, resolving the translator, translating the external definition and compiling the generated Java source. Promotion
+from TEST to RUN runs the same validation against the RUN candidate before inserting RUN metadata or invalidating the
+latest alias.
 
 This validation intentionally stops before instantiating the generated class or injecting application dependencies.
-Instantiation can have dependency-container side effects and remains part of the normal runtime loading path. The promotion
-contract is therefore: the artifact is present, readable, translatable and compilable before it can become RUN.
+Instantiation can have dependency-container side effects and remains part of the normal runtime loading path. The
+publication contract is therefore: the artifact is present, readable, translatable and compilable before it can be stored
+as TEST or RUN metadata.
 
 ## Runtime loading path
 
@@ -43,7 +44,7 @@ The runtime external loading path is coordinated by `AssemblyLineManager`:
 5. compile the Java source in memory;
 6. load the compiled classes through an in-memory classloader;
 7. instantiate the generated class;
-8. inject dependencies;
+8. inject dependencies allowed for the requested `ExecutionMode`;
 9. cache the loaded generated assembly line.
 
 ## Translator contract
@@ -65,6 +66,11 @@ A generated class should:
 - have a public no-argument constructor;
 - build and return a core `AssemblyLine`;
 - receive external dependencies through fields annotated with `@Inject`.
+
+The built-in `SimpleDependencyInjector` treats `registerBean(name, bean)` as RUN-only. TEST-safe dependencies must be
+registered with an explicit mode allowlist, for example `registerBean("modelsService", modelsService, ExecutionMode.TEST,
+ExecutionMode.RUN)`. Custom injectors should preserve the same principle: TEST and RUN do not automatically share the
+same application dependency surface.
 
 ## Versioning and aliases
 

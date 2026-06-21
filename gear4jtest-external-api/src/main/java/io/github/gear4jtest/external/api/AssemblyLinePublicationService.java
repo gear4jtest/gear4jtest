@@ -70,9 +70,7 @@ final class AssemblyLinePublicationService {
 
         OperationChainObject obj = new OperationChainObject(null, alId, version, mode, hash, content.length,
                 AssemblyLineIdentifiers.normalizeMediaType(mediaType), Instant.now(), createdBy, Instant.now());
-        if (mode == ExecutionMode.RUN) {
-            publicationValidator.validateRunCandidate(alId, obj);
-        }
+        publicationValidator.validatePublicationCandidate(alId, obj);
         objectRepository.insert(obj);
         if (mode == ExecutionMode.RUN) {
             aliasService.invalidateLatestRun(alId);
