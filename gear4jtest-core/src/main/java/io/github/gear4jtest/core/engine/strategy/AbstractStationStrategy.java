@@ -123,42 +123,42 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
     protected Object handleSkip(S station,
                                 Object input,
                                 StationExecutionContext ctx,
-                                StationLogTrace record,
+                                StationLogTrace stationLog,
                                 String reason) {
 
         if (station.getFallbackOperator() != null) {
             try {
                 Object res = invokeFallback(station.getFallbackOperator(), input, ctx);
-                markSkipped(record, reason);
-                record.setOutput(res);
+                markSkipped(stationLog, reason);
+                stationLog.setOutput(res);
                 return res;
             } catch (Exception e) {
-                record.addErrorHandlerException(e);
-                record.markSkipped(e);
+                stationLog.addErrorHandlerException(e);
+                stationLog.markSkipped(e);
                 return null;
             }
         }
 
         if (Boolean.TRUE.equals(station.getUnary())) {
-            markSkipped(record, reason);
-            record.setOutput(input);
+            markSkipped(stationLog, reason);
+            stationLog.setOutput(input);
             return input;
         }
 
-        markSkipped(record, reason);
+        markSkipped(stationLog, reason);
         return null;
     }
 
-    private void markSkipped(StationLogTrace record, String reason) {
+    private void markSkipped(StationLogTrace stationLog, String reason) {
         if (reason != null) {
-            record.markSkipped(reason);
+            stationLog.markSkipped(reason);
         } else {
-            record.markSkipped();
+            stationLog.markSkipped();
         }
     }
 
-    protected List<Throwable> buildErrorListForRelease(StationLogTrace record, Exception mainException) {
-        List<Throwable> throwables = record.getThrowables();
+    protected List<Throwable> buildErrorListForRelease(StationLogTrace stationLog, Exception mainException) {
+        List<Throwable> throwables = stationLog.getThrowables();
         if (throwables == null || throwables.isEmpty()) {
             if (mainException == null) {
                 return List.of();

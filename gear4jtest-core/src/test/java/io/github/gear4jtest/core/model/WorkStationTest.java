@@ -41,9 +41,13 @@ class WorkStationTest {
         assertThat(station.getParameters()).isEmpty();
         assertThat(station.getProcessors()).isEmpty();
         assertThat(station.getOnErrors()).isEmpty();
-        assertThatThrownBy(() -> station.getParameters().add(null))
+        var parameters = station.getParameters();
+        var processors = station.getProcessors();
+        Processor processor = new NoopProcessor();
+
+        assertThatThrownBy(() -> parameters.add(null))
                 .isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> station.getProcessors().add(new NoopProcessor()))
+        assertThatThrownBy(() -> processors.add(processor))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 

@@ -152,7 +152,7 @@ class RunLifecycleExtensionTest {
         }
 
         @Override
-        public void append(StationLogRecord record) {
+        public void append(StationLogRecord stationLogRecord) {
             // no-op
         }
 

@@ -69,10 +69,11 @@ public class SimpleDependencyInjector implements DependencyInjector {
                 String beanName = inject.value().isEmpty() ? field.getName() : inject.value();
 
                 InjectionCandidate candidate = findCandidate(beanName, field.getType(), mode);
-                if (candidate.bean().isPresent()) {
+                Optional<?> bean = candidate.bean();
+                if (bean.isPresent()) {
                     try {
                         field.setAccessible(true);
-                        field.set(instance, candidate.bean().get());
+                        field.set(instance, bean.get());
                     } catch (IllegalAccessException e) {
                         throw new InjectionException("Dependency injection failed for field: " + field.getName(), e);
                     }

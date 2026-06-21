@@ -26,7 +26,7 @@ class DatabaseArtifactStorePluginTest {
     }
 
     @Test
-    void build_shouldAcceptASupportedExplicitDialect() throws Exception {
+    void build_shouldAcceptASupportedExplicitDialect() {
         // Given
         DatabaseArtifactStorePlugin plugin = new DatabaseArtifactStorePlugin();
 

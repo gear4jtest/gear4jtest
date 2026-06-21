@@ -1,5 +1,6 @@
 package io.github.gear4jtest.external.api.artifact;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -11,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CompositeArtifactStoreAdditionalTest {
     @Test
-    void constructor_shouldUseDefaultsForNullModesAndExecutor() throws Exception {
+    void constructor_shouldUseDefaultsForNullModesAndExecutor() throws IOException {
         InMemoryArtifactStore primary = new InMemoryArtifactStore();
         CompositeArtifactStore store = new CompositeArtifactStore(primary, List.of(), null, null, false, false, null);
 
@@ -31,7 +32,7 @@ class CompositeArtifactStoreAdditionalTest {
     }
 
     @Test
-    void asyncFallbacks_shouldWriteByteArrayContentUsingConfiguredExecutor() throws Exception {
+    void asyncFallbacks_shouldWriteByteArrayContentUsingConfiguredExecutor() throws IOException {
         InMemoryArtifactStore primary = new InMemoryArtifactStore();
         InMemoryArtifactStore fallback = new InMemoryArtifactStore();
         CompositeArtifactStore store = new CompositeArtifactStore(primary, List.of(fallback),
@@ -45,7 +46,7 @@ class CompositeArtifactStoreAdditionalTest {
     }
 
     @Test
-    void get_shouldReadFromFallbackAndSelfHealPrimaryWhenEnabled() throws Exception {
+    void get_shouldReadFromFallbackAndSelfHealPrimaryWhenEnabled() throws IOException {
         InMemoryArtifactStore primary = new InMemoryArtifactStore();
         InMemoryArtifactStore fallback = new InMemoryArtifactStore();
         String hash = fallback.put("payload".getBytes(StandardCharsets.UTF_8));
@@ -60,7 +61,7 @@ class CompositeArtifactStoreAdditionalTest {
     }
 
     @Test
-    void get_shouldRejectCorruptFallbackBeforeHealingPrimary() throws Exception {
+    void get_shouldRejectCorruptFallbackBeforeHealingPrimary() throws IOException {
         InMemoryArtifactStore primary = new InMemoryArtifactStore();
         InMemoryArtifactStore fallback = new InMemoryArtifactStore();
         String expectedHash = Hashing.sha256Hex("expected".getBytes(StandardCharsets.UTF_8));
@@ -77,7 +78,7 @@ class CompositeArtifactStoreAdditionalTest {
     }
 
     @Test
-    void exists_shouldCheckFallbacksWhenPrimaryMisses() throws Exception {
+    void exists_shouldCheckFallbacksWhenPrimaryMisses() throws IOException {
         InMemoryArtifactStore primary = new InMemoryArtifactStore();
         InMemoryArtifactStore fallback = new InMemoryArtifactStore();
         String hash = fallback.put("payload".getBytes(StandardCharsets.UTF_8));

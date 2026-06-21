@@ -8,6 +8,6 @@ public class Step7 extends Step6 {
         if (object.equals("a")) {
             throw new RuntimeException();
         }
-        return object/* .getValue() */.toString() + "_" + operationExecution.getGlobalContext().get("a", Object.class);
+        return object + "_" + operationExecution.getGlobalContext().get("a", Object.class);
     }
 }

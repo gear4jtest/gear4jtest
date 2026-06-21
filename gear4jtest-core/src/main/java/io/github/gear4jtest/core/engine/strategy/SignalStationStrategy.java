@@ -28,6 +28,10 @@ public class SignalStationStrategy extends AbstractStationStrategy<SignalStation
             switch (station.getSignalType()) {
                 case FATAL -> operationExecution.getRecord().markFailed(null);
                 case STOP -> operationExecution.getRecord().markStopped(null);
+                case IGNORE -> {
+                    // Intentionally leave the operation status unchanged.
+                }
+                default -> throw new IllegalStateException("Unsupported signal type: " + station.getSignalType());
             }
         }
         return input;

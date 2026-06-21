@@ -37,8 +37,10 @@ class GearExpressionParserTest {
         record Document(String productType) {}
         GearExpression expression = GearExpressionParser.parse("input.class.name == 'Document'");
 
+        GearExpressionContext context = new GearExpressionContext(new Document("BOOK"), Map.of());
+
         // When / Then
-        assertThatThrownBy(() -> expression.evaluate(new GearExpressionContext(new Document("BOOK"), Map.of())))
+        assertThatThrownBy(() -> expression.evaluate(context))
                 .as("GEL property paths must not expose Java Class metadata through getClass()")
                 .isInstanceOf(GearExpressionException.class)
                 .hasMessageContaining("class metadata");
@@ -50,8 +52,10 @@ class GearExpressionParserTest {
         record Document(String productType) {}
         GearExpression expression = GearExpressionParser.parse("input.toString == 'BOOK'");
 
+        GearExpressionContext context = new GearExpressionContext(new Document("BOOK"), Map.of());
+
         // When / Then
-        assertThatThrownBy(() -> expression.evaluate(new GearExpressionContext(new Document("BOOK"), Map.of())))
+        assertThatThrownBy(() -> expression.evaluate(context))
                 .as("GEL property paths must not invoke Object methods as pseudo properties")
                 .isInstanceOf(GearExpressionException.class)
                 .hasMessageContaining("No readable property");
@@ -75,8 +79,10 @@ class GearExpressionParserTest {
         DangerousDocument document = new DangerousDocument();
         GearExpression expression = GearExpressionParser.parse("input.expensiveComputation == 'secret'");
 
+        GearExpressionContext context = new GearExpressionContext(document, Map.of());
+
         // When / Then
-        assertThatThrownBy(() -> expression.evaluate(new GearExpressionContext(document, Map.of())))
+        assertThatThrownBy(() -> expression.evaluate(context))
                 .as("GEL property access must not call arbitrary zero-argument methods")
                 .isInstanceOf(GearExpressionException.class)
                 .hasMessageContaining("No readable property");

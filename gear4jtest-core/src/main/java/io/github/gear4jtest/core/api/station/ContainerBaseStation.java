@@ -162,6 +162,7 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
         private BranchCondition<I> siblingCondition;
 
         public Branch() {
+            // Empty constructor kept for fluent builder-style initialization.
         }
 
         public String getId() {

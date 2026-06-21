@@ -165,15 +165,15 @@ public class DatabaseExecutionManager implements AssemblyRunManager {
     }
 
     @Override
-    public void append(StationLogRecord record) {
-        if (record == null) {
+    public void append(StationLogRecord stationLogRecord) {
+        if (stationLogRecord == null) {
             return;
         }
         flushCoordinator.ensureOpen();
-        record = record.redactedWith(redactor);
-        UUID runId = record.pipelineExecutionId();
+        stationLogRecord = stationLogRecord.redactedWith(redactor);
+        UUID runId = stationLogRecord.pipelineExecutionId();
         OperationRecordBuffer buffer = buffers.getOrCreate(runId);
-        boolean shouldScheduleFlush = buffer.append(record, configuration.batchSize(),
+        boolean shouldScheduleFlush = buffer.append(stationLogRecord, configuration.batchSize(),
                                                     flushCoordinator.counters());
         if (shouldScheduleFlush) {
             flushCoordinator.scheduleAsyncFlush(buffer, false);

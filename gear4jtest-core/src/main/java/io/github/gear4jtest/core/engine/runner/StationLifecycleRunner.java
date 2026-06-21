@@ -58,11 +58,11 @@ public class StationLifecycleRunner implements StationRunner {
         if (runCtx.getServices().getEventManager() == null || stationCtx.getRecord() == null) {
             return;
         }
-        StationLogTrace record = stationCtx.getRecord();
+        StationLogTrace stationLog = stationCtx.getRecord();
         runCtx.getServices().getEventManager()
-                .publish(new StationStartedEvent(runCtx.getPipelineId(), runCtx.getExecutionId(), record.getId(),
-                        stationCtx.getOperationId(), record.getParentOperationId(), record.getBranchId(),
-                        record.getItemId(), runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
+                .publish(new StationStartedEvent(runCtx.getPipelineId(), runCtx.getExecutionId(), stationLog.getId(),
+                        stationCtx.getOperationId(), stationLog.getParentOperationId(), stationLog.getBranchId(),
+                        stationLog.getItemId(), runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
                                 .mapStationInput(input, stationCtx)));
     }
 
@@ -101,8 +101,6 @@ public class StationLifecycleRunner implements StationRunner {
         try {
             extension.onStationStarted(runCtx, stationCtx, snapshot);
             return false;
-        } catch (Error error) {
-            throw error;
         } catch (Exception exception) {
             return handleLifecycleFailure(extension, stationCtx.getRecord(), snapshot.operationId(),
                                           "onStationStarted", exception);
@@ -115,8 +113,6 @@ public class StationLifecycleRunner implements StationRunner {
                                        StationLogTrace result) {
         try {
             extension.onStationCompleted(runCtx, stationCtx, StationLogRecord.from(result));
-        } catch (Error error) {
-            throw error;
         } catch (Exception exception) {
             handleLifecycleFailure(extension, result, result.getOperationId(), "onStationCompleted", exception);
         }
@@ -139,16 +135,16 @@ public class StationLifecycleRunner implements StationRunner {
             return false;
         }
 
-        StationLifecycleException recordedFailure = new StationLifecycleException(lifecycleCallback,
+        StationLifecycleException lifecycleFailure = new StationLifecycleException(lifecycleCallback,
                 extension.getClass(), exception);
         StationLogStatus status = stationLog.getStatus();
         if (status == StationLogStatus.RUNNING || status == StationLogStatus.SUCCEEDED
                 || status == StationLogStatus.SKIPPED) {
-            stationLog.markFailed(recordedFailure);
+            stationLog.markFailed(lifecycleFailure);
         } else {
             // Do not erase an earlier FAILED/STOPPED/CANCELLED terminal outcome.
             // Retain the lifecycle failure as additional diagnostic material.
-            stationLog.addErrorHandlerException(recordedFailure);
+            stationLog.addErrorHandlerException(lifecycleFailure);
         }
         return true;
     }

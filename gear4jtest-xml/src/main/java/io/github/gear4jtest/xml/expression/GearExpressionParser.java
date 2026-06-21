@@ -33,7 +33,7 @@ public final class GearExpressionParser {
         Parser parser = new Parser(tokens);
         Node root = parser.expression();
         parser.expect(TokenType.EOF);
-        return context -> root.evaluate(context);
+        return root::evaluate;
     }
 
     private static void validateExpressionLength(String expression) {
@@ -232,6 +232,7 @@ public final class GearExpressionParser {
                     return method;
                 }
             } catch (NoSuchMethodException ignored) {
+                // Try the next JavaBean accessor candidate.
             }
         }
         throw new GearExpressionException("No readable property '" + property + "' on " + type.getName());

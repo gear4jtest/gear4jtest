@@ -60,9 +60,11 @@ class OperatorConcurrencyManagerTest {
         WorkerConcurrencyManager manager = new WorkerConcurrencyManager(
                 new WorkerConcurrencyRegistryConfiguration(1, 1, 2));
 
-        manager.guardFor(new Object());
+        Object firstWorker = new Object();
+        Object rejectedWorker = new Object();
+        manager.guardFor(firstWorker);
 
-        assertThatThrownBy(() -> manager.guardFor(new Object())).isInstanceOf(IllegalStateException.class)
+        assertThatThrownBy(() -> manager.guardFor(rejectedWorker)).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Too many worker instances tracked");
     }
 

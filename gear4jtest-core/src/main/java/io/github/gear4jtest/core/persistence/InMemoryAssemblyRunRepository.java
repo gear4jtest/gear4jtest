@@ -14,6 +14,7 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
     private final Map<UUID, Map<UUID, StationLogRecord>> stationLogsByRunId = new ConcurrentHashMap<>();
 
     public InMemoryAssemblyRunRepository() {
+        // Public constructor intentionally creates an isolated in-memory repository.
     }
 
     public void clear() {
@@ -87,17 +88,17 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
         }
 
         return byLogId.values().stream()
-                .filter(record -> Objects.equals(parentLogId, record.parentOperationId()))
+                .filter(candidate -> Objects.equals(parentLogId, candidate.parentOperationId()))
                 .count();
     }
 
-    public void saveOperationRecord(StationLogRecord record) {
-        if (record == null) {
+    public void saveOperationRecord(StationLogRecord stationLogRecord) {
+        if (stationLogRecord == null) {
             return;
         }
 
-        stationLogsByRunId.computeIfAbsent(record.pipelineExecutionId(), ignored -> new ConcurrentHashMap<>())
-                .put(record.id(), record);
+        stationLogsByRunId.computeIfAbsent(stationLogRecord.pipelineExecutionId(), ignored -> new ConcurrentHashMap<>())
+                .put(stationLogRecord.id(), stationLogRecord);
     }
 
     public void saveOperationRecords(List<StationLogRecord> records) {
@@ -105,8 +106,8 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
             return;
         }
 
-        for (StationLogRecord record : records) {
-            saveOperationRecord(record);
+        for (StationLogRecord stationLogRecord : records) {
+            saveOperationRecord(stationLogRecord);
         }
     }
 
@@ -117,7 +118,7 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
         }
 
         return byLogId.values().stream()
-                .filter(record -> Objects.equals(parentLogId, record.parentOperationId()))
+                .filter(candidate -> Objects.equals(parentLogId, candidate.parentOperationId()))
                 .sorted(recordComparator());
     }
 

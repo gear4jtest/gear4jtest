@@ -39,7 +39,10 @@ class StationBuilderCoverageTest {
             assertThat(station.getPipelines().get(0).getStation()).isSameAs(branchStation);
             assertThat(station.getPipelines().get(0).getCondition()).isNotNull();
             assertThat(station.getFunc().apply("gear")).isEqualTo("gear!");
-            assertThatThrownBy(() -> station.getPipelines().add(station.getPipelines().get(0)))
+            var branches = station.getPipelines();
+            var firstBranch = branches.get(0);
+
+            assertThatThrownBy(() -> branches.add(firstBranch))
                     .isInstanceOf(UnsupportedOperationException.class);
         } finally {
             executor.shutdownNow();
@@ -53,16 +56,15 @@ class StationBuilderCoverageTest {
                 .id("branch-op")
                 .build();
 
-        assertThatThrownBy(() -> new ContainerBaseStation.Builder<String, Void>()
+        var duplicatedBranchBuilder = new ContainerBaseStation.Builder<String, Void>()
                 .withSubLine("same", branchStation)
-                .withSubLine("same", branchStation)
-                .build())
+                .withSubLine("same", branchStation);
+
+        assertThatThrownBy(duplicatedBranchBuilder::build)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Container contains duplicated branch id 'same'");
 
-        assertThatThrownBy(() -> new UnaryContainerStation.Builder<String>()
-                .withOneLine(" ", branchStation)
-                .build())
+        assertThatThrownBy(() -> new UnaryContainerStation.Builder<String>().withOneLine(" ", branchStation))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("branch id is required");
     }
@@ -153,10 +155,12 @@ class StationBuilderCoverageTest {
     private static final class NoOpProcessor implements Processor {
         @Override
         public <I> void beforeExecution(I input, StationExecutionContext ctx) {
+            // No-op processor used only to exercise builder coverage.
         }
 
         @Override
         public void afterExecution(Object result, StationExecutionContext context) {
+            // No-op processor used only to exercise builder coverage.
         }
     }
 }

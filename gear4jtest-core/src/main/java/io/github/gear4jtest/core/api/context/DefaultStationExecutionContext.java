@@ -12,19 +12,19 @@ public class DefaultStationExecutionContext implements StationExecutionContext {
     private final String operationId;
     private final StationKind kind;
     private final ExecutionContext globalContext;
-    private final StationLogTrace record;
+    private final StationLogTrace trace;
     private final ExecutionSupport support;
     private final Map<Class<?>, Object> capabilities = new HashMap<>();
 
     public DefaultStationExecutionContext(String operationId,
                                           StationKind kind,
                                           ExecutionContext globalContext,
-                                          StationLogTrace record,
+                                          StationLogTrace trace,
                                           ExecutionSupport support) {
         this.operationId = operationId;
         this.kind = kind;
         this.globalContext = globalContext;
-        this.record = record;
+        this.trace = trace;
         this.support = support;
     }
 
@@ -35,7 +35,7 @@ public class DefaultStationExecutionContext implements StationExecutionContext {
         this.kind = StationKind.OTHER;
         this.globalContext = globalContext;
         this.support = support;
-        this.record = null;
+        this.trace = null;
     }
 
     @Override
@@ -55,7 +55,7 @@ public class DefaultStationExecutionContext implements StationExecutionContext {
 
     @Override
     public StationLogTrace getRecord() {
-        return record;
+        return trace;
     }
 
     @Override

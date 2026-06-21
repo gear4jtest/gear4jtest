@@ -58,7 +58,7 @@ class IteratorStationStrategyTest {
     }
 
     private record TestStationExecutionContext(ExecutionContext globalContext,
-                                               StationLogTrace record)
+                                               StationLogTrace stationLogTrace)
             implements StationExecutionContext {
         @Override
         public String getOperationId() {
@@ -77,7 +77,7 @@ class IteratorStationStrategyTest {
 
         @Override
         public StationLogTrace getRecord() {
-            return record;
+            return stationLogTrace;
         }
 
         @Override

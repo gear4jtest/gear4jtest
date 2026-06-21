@@ -44,7 +44,9 @@ class ExternalTransportReactionTest {
             throw new IllegalStateException("transport down");
         });
 
-        assertThatThrownBy(() -> reaction.handle(new Event("pipeline", UUID.randomUUID(), "TYPE")))
+        Event event = new Event("pipeline", UUID.randomUUID(), "TYPE");
+
+        assertThatThrownBy(() -> reaction.handle(event))
                 .isInstanceOf(ExternalTransportPublishException.class)
                 .hasMessage("Failed to publish event envelope to external transport.")
                 .hasCauseInstanceOf(IllegalStateException.class);
@@ -55,7 +57,9 @@ class ExternalTransportReactionTest {
         ExternalTransportReaction<Event> reaction = new ExternalTransportReaction<>(ignored -> envelope(),
                 ignored -> PublishResult.rejected("queue-full"));
 
-        assertThatThrownBy(() -> reaction.handle(new Event("pipeline", UUID.randomUUID(), "TYPE")))
+        Event event = new Event("pipeline", UUID.randomUUID(), "TYPE");
+
+        assertThatThrownBy(() -> reaction.handle(event))
                 .isInstanceOf(ExternalTransportPublishException.class)
                 .hasMessage("External transport rejected event envelope: queue-full");
     }

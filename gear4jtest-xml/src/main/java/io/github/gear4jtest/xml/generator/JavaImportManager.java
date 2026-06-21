@@ -38,15 +38,8 @@ final class JavaImportManager {
             return simpleName;
         }
 
-        String alreadyRegistered = importsBySimpleName.get(simpleName);
-        if (alreadyRegistered == null) {
-            importsBySimpleName.put(simpleName, fullyQualifiedName);
-            return simpleName;
-        }
-        if (alreadyRegistered.equals(fullyQualifiedName)) {
-            return simpleName;
-        }
-        return fullyQualifiedName;
+        String registered = importsBySimpleName.computeIfAbsent(simpleName, ignored -> fullyQualifiedName);
+        return registered.equals(fullyQualifiedName) ? simpleName : fullyQualifiedName;
     }
 
     void addStatic(String fullyQualifiedMember) {

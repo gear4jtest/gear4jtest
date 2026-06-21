@@ -37,8 +37,11 @@ class XmlExpressionRendererTest {
 
     @Test
     void conditionLambda_shouldRejectUnsupportedExpressionLanguage() {
-        // Given / When / Then
-        assertThatThrownBy(() -> renderer.conditionLambda(new Condition("input.ok", "spel", null), imports))
+        // Given
+        Condition condition = new Condition("input.ok", "spel", null);
+
+        // When / Then
+        assertThatThrownBy(() -> renderer.conditionLambda(condition, imports))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unsupported XML condition language");
     }

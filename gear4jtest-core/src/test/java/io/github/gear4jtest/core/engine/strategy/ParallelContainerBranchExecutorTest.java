@@ -44,7 +44,7 @@ class ParallelContainerBranchExecutorTest {
         StationLogTrace branchLog = aggregation.results().get(0);
         assertThat(branchLog.getStatus()).isEqualTo(StationLogStatus.FAILED);
         assertThat(branchLog.getBranchId()).isEqualTo("rejected");
-        assertThat(branchLog.getParentOperationId()).isEqualTo(context.record().getId());
+        assertThat(branchLog.getParentOperationId()).isEqualTo(context.stationLogTrace().getId());
         assertThat(aggregation.interruptingChild()).isSameAs(branchLog);
     }
 
@@ -104,7 +104,7 @@ class ParallelContainerBranchExecutorTest {
 
     private record TestStationExecutionContext(String operationId,
                                                ExecutionContext globalContext,
-                                               StationLogTrace record,
+                                               StationLogTrace stationLogTrace,
                                                ExecutionSupport support)
             implements StationExecutionContext {
         @Override
@@ -124,7 +124,7 @@ class ParallelContainerBranchExecutorTest {
 
         @Override
         public StationLogTrace getRecord() {
-            return record;
+            return stationLogTrace;
         }
 
         @Override

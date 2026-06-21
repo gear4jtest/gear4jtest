@@ -1,7 +1,6 @@
 package io.github.gear4jtest.xml.parser;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContainerOperation;
@@ -16,16 +15,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class XmlPipelineParserTest {
     private final XmlPipelineParser parser = new XmlPipelineParser();
 
-    private static java.io.InputStream resource(String name) throws IOException {
+    private static java.io.InputStream resource(String name) {
         var input = XmlPipelineParserTest.class.getResourceAsStream(name);
         if (input == null) {
-            throw new IOException("Missing test resource: " + name);
+            throw new IllegalStateException("Missing test resource: " + name);
         }
         return input;
     }
 
     @Test
-    void should_parse_operations_dependencies_and_configuration() throws IOException {
+    void should_parse_operations_dependencies_and_configuration() {
         // Given / When
         var definition = parser.parse(resource("/samples/assembly-line-iterator.xml"));
 
@@ -43,7 +42,7 @@ class XmlPipelineParserTest {
     }
 
     @Test
-    void should_parse_container_branches() throws IOException {
+    void should_parse_container_branches() {
         // Given / When
         var definition = parser.parse(resource("/samples/assembly-line-parallel-container.xml"));
 
@@ -57,17 +56,23 @@ class XmlPipelineParserTest {
     }
 
     @Test
-    void should_reject_missing_subline_id() throws IOException {
-        // Given / When / Then
-        assertThatThrownBy(() -> parser.parse(resource("/samples/bad-missing-subline-id.xml")))
+    void should_reject_missing_subline_id() {
+        // Given
+        var xml = resource("/samples/bad-missing-subline-id.xml");
+
+        // When / Then
+        assertThatThrownBy(() -> parser.parse(xml))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Missing required attribute 'id' on <subLine>");
     }
 
     @Test
-    void should_reject_doctype_declarations() throws IOException {
-        // Given / When / Then
-        assertThatThrownBy(() -> parser.parse(resource("/samples/bad-doctype.xml")))
+    void should_reject_doctype_declarations() {
+        // Given
+        var xml = resource("/samples/bad-doctype.xml");
+
+        // When / Then
+        assertThatThrownBy(() -> parser.parse(xml))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unable to parse Gear4J XML pipeline");
     }
@@ -86,8 +91,10 @@ class XmlPipelineParserTest {
                 </assemblyLine>
                 """;
 
+        ByteArrayInputStream input = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
+
         // When / Then
-        assertThatThrownBy(() -> parser.parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))))
+        assertThatThrownBy(() -> parser.parse(input))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unable to parse Gear4J XML pipeline");
     }
@@ -133,14 +140,16 @@ class XmlPipelineParserTest {
                 </assemblyLine>
                 """;
 
+        ByteArrayInputStream input = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
+
         // When / Then
-        assertThatThrownBy(() -> boundedParser.parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))))
+        assertThatThrownBy(() -> boundedParser.parse(input))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasStackTraceContaining("maxXmlBytes=120");
     }
 
     @Test
-    void should_parse_signal_operation() throws IOException {
+    void should_parse_signal_operation() {
         // Given / When
         var definition = parser.parse(resource("/samples/assembly-line-signal.xml"));
 

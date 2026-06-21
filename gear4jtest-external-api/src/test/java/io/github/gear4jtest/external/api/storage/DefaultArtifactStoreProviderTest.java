@@ -31,13 +31,18 @@ class DefaultArtifactStoreProviderTest {
         DefaultArtifactStoreProvider provider = new DefaultArtifactStoreProvider(
                 new ArtifactStoreResolver(getClass().getClassLoader()), null, Runnable::run);
 
-        assertThatThrownBy(() -> provider.forConfig(new OperationChainConfig("pipeline", false, StoreType.MEMORY,
-                Map.of("mode.write", "ALL_THE_THINGS"))))
+        OperationChainConfig invalidWriteModeConfig = new OperationChainConfig("pipeline", false, StoreType.MEMORY,
+                Map.of("mode.write", "ALL_THE_THINGS"));
+
+        assertThatThrownBy(() -> provider.forConfig(invalidWriteModeConfig))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("mode.write");
 
-        assertThatThrownBy(() -> provider.forConfig(new OperationChainConfig("pipeline", false, StoreType.MEMORY,
-                Map.of("verificationMaxArtifactSizeBytes", "not-a-number"))))
+        OperationChainConfig invalidVerificationLimitConfig = new OperationChainConfig("pipeline", false,
+                StoreType.MEMORY,
+                Map.of("verificationMaxArtifactSizeBytes", "not-a-number"));
+
+        assertThatThrownBy(() -> provider.forConfig(invalidVerificationLimitConfig))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("verificationMaxArtifactSizeBytes");
     }

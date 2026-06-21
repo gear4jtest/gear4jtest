@@ -27,13 +27,13 @@ class PersistenceRedactionTest {
         trace.setErrorMessage("raw-error");
 
         // When
-        AssemblyRunRecord record = AssemblyRunRecord.from(trace, redactor);
+        AssemblyRunRecord assemblyRunRecord = AssemblyRunRecord.from(trace, redactor);
 
         // Then
-        assertThat(record.context()).containsEntry("token", "***");
-        assertThat(record.inputParams()).isEqualTo("***");
-        assertThat(record.result()).isEqualTo("***");
-        assertThat(record.errorMessage()).isEqualTo("redacted-error");
+        assertThat(assemblyRunRecord.context()).containsEntry("token", "***");
+        assertThat(assemblyRunRecord.inputParams()).isEqualTo("***");
+        assertThat(assemblyRunRecord.result()).isEqualTo("***");
+        assertThat(assemblyRunRecord.errorMessage()).isEqualTo("redacted-error");
     }
 
     @Test
@@ -44,11 +44,11 @@ class PersistenceRedactionTest {
         trace.markFailed(new IllegalStateException("raw-error"));
 
         // When
-        StationLogRecord record = StationLogRecord.from(trace).redactedWith(redactor);
+        StationLogRecord stationLogRecord = StationLogRecord.from(trace).redactedWith(redactor);
 
         // Then
-        assertThat(record.context()).containsEntry("token", "***");
-        assertThat(record.errorMessage()).isEqualTo("redacted-error");
-        assertThat(record.errorHandlerMessages()).isEqualTo("redacted-error");
+        assertThat(stationLogRecord.context()).containsEntry("token", "***");
+        assertThat(stationLogRecord.errorMessage()).isEqualTo("redacted-error");
+        assertThat(stationLogRecord.errorHandlerMessages()).isEqualTo("redacted-error");
     }
 }

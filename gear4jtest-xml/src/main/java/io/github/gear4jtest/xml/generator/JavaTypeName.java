@@ -11,7 +11,9 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 final class JavaTypeName {
-    static final JavaTypeName OBJECT = raw("java.lang.Object");
+    private static final String JAVA_LANG_OBJECT = "java.lang.Object";
+
+    static final JavaTypeName OBJECT = raw(JAVA_LANG_OBJECT);
     static final JavaTypeName STRING = raw("java.lang.String");
     private final String rawType;
     private final List<JavaTypeName> arguments;
@@ -78,7 +80,7 @@ final class JavaTypeName {
                 JavaTypeName bound = from(upperBounds[0]);
                 return new JavaTypeName(bound.rawType, bound.arguments, true, true, false);
             }
-            return new JavaTypeName("java.lang.Object", List.of(), true, false, false);
+            return new JavaTypeName(JAVA_LANG_OBJECT, List.of(), true, false, false);
         }
         if (type instanceof GenericArrayType genericArrayType) {
             return raw(from(genericArrayType.getGenericComponentType()).canonical() + "[]");
@@ -190,7 +192,7 @@ final class JavaTypeName {
                 case "Short" -> "java.lang.Short";
                 case "Byte" -> "java.lang.Byte";
                 case "Character" -> "java.lang.Character";
-                case "Object" -> "java.lang.Object";
+                case "Object" -> JAVA_LANG_OBJECT;
                 case "List" -> "java.util.List";
                 case "Set" -> "java.util.Set";
                 case "Map" -> "java.util.Map";

@@ -60,7 +60,7 @@ class JacksonPayloadClonerIntegrationTest {
 
         ContainerBaseStation<MutablePayload, MutablePayload> container = ElementModelBuilders
                 .container(MutablePayload.class, executor).withSubLine("id1", branchOne).withSubLine("id2", branchTwo)
-                .returns((MutablePayload left, MutablePayload right) -> MutablePayload.merge(left, right));
+                .returns(MutablePayload::merge);
 
         return AssemblyLine.<MutablePayload, MutablePayload>builder("parallel-container").then(container).build();
     }
@@ -133,6 +133,7 @@ class JacksonPayloadClonerIntegrationTest {
         private List<String> values = new ArrayList<>();
 
         public MutablePayload() {
+            // Default constructor required by Jackson.
         }
 
         public static MutablePayload seed(String value) {

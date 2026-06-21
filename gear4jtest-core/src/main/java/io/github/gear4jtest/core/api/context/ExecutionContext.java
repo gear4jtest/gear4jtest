@@ -238,7 +238,7 @@ public class ExecutionContext {
 
     public Scope enterParentOperation(UUID operationId) {
         if (operationId == null) {
-            return Scope.noop();
+            return Scope.noOp();
         }
         pushParentOperationId(operationId);
         return this::popParentOperationId;
@@ -249,6 +249,9 @@ public class ExecutionContext {
         if (!stack.isEmpty()) {
             stack.pop();
         }
+        if (stack.isEmpty()) {
+            parentStack.remove();
+        }
     }
 
     @FunctionalInterface
@@ -256,7 +259,7 @@ public class ExecutionContext {
         Scope NOOP = () -> {
         };
 
-        static Scope noop() {
+        static Scope noOp() {
             return NOOP;
         }
 

@@ -73,10 +73,12 @@ class RepositoryDefaultPaginationTest {
     private record InMemoryTagRepository(Set<String> tags, List<String> ids) implements OperationChainTagRepository {
         @Override
         public void addTag(String alId, String tag) {
+            // No-op: this fixture only verifies default pagination helpers.
         }
 
         @Override
         public void removeTag(String alId, String tag) {
+            // No-op: this fixture only verifies default pagination helpers.
         }
 
         @Override

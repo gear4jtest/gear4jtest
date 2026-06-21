@@ -1,6 +1,7 @@
 package io.github.gear4jtest.core.api.util;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
@@ -25,6 +26,9 @@ import io.github.gear4jtest.core.api.station.UnaryWorkStation;
 import io.github.gear4jtest.core.api.station.WorkStation;
 
 public final class ElementModelBuilders {
+
+    private static final String CLAZZ_MUST_NOT_BE_NULL = "clazz must not be null";
+
     private ElementModelBuilders() {
     }
 
@@ -67,22 +71,27 @@ public final class ElementModelBuilders {
     }
 
     public static <T> SignalStation.Builder<T> fatalSignal(Class<T> clazz) {
+        Objects.requireNonNull(clazz, CLAZZ_MUST_NOT_BE_NULL);
         return new SignalStation.Builder<T>().type(SignalType.FATAL);
     }
 
     public static <U, V> SignalStation.Builder<Map<U, V>> fatalSignal(MapType<U, V> clazz) {
+        Objects.requireNonNull(clazz, CLAZZ_MUST_NOT_BE_NULL);
         return new SignalStation.Builder<Map<U, V>>().type(SignalType.FATAL);
     }
 
     public static <T> ContainerBaseStation.Builder<T, T> container(Class<T> clazz) {
+        Objects.requireNonNull(clazz, CLAZZ_MUST_NOT_BE_NULL);
         return new ContainerBaseStation.Builder<>();
     }
 
     public static <T> ContainerBaseStation.Builder<T, T> container(Class<T> clazz, ExecutorService executorService) {
+        Objects.requireNonNull(clazz, CLAZZ_MUST_NOT_BE_NULL);
         return new ContainerBaseStation.Builder<>(executorService);
     }
 
     public static <T> UnaryIfElseContainerStation.Builder<T> ifElseContainer(Class<T> clazz) {
+        Objects.requireNonNull(clazz, CLAZZ_MUST_NOT_BE_NULL);
         return new UnaryIfElseContainerStation.Builder<>();
     }
 

@@ -74,8 +74,8 @@ class JacksonPayloadClonerTest {
         List<NestedValue> cloned = cloner.clonePayload(original);
 
         // Then
-        assertThat(cloned).isNotSameAs(original);
-        assertThat(cloned).hasSize(2);
+        assertThat(cloned).isNotSameAs(original)
+                .hasSize(2);
         assertThat(cloned.get(0)).isInstanceOf(NestedValue.class);
         assertThat(cloned.get(0)).isNotSameAs(original.get(0));
         assertThat(cloned.get(0).getValue()).isEqualTo("one");
@@ -208,8 +208,8 @@ class JacksonPayloadClonerTest {
         LinkedHashSet<NestedValue> cloned = cloner.clonePayload(payload);
 
         // Then
-        assertThat(cloned).isNotSameAs(payload);
-        assertThat(cloned).hasSize(2);
+        assertThat(cloned).isNotSameAs(payload)
+                .hasSize(2);
 
         List<NestedValue> originalValues = new ArrayList<>(payload);
         List<NestedValue> clonedValues = new ArrayList<>(cloned);
@@ -232,8 +232,8 @@ class JacksonPayloadClonerTest {
         NestedValue[] cloned = cloner.clonePayload(payload);
 
         // Then
-        assertThat(cloned).isNotSameAs(payload);
-        assertThat(cloned).hasSize(2);
+        assertThat(cloned).isNotSameAs(payload)
+                .hasSize(2);
         assertThat(cloned[0]).isNotSameAs(payload[0]);
         assertThat(cloned[0].getValue()).isEqualTo("one");
 
@@ -254,9 +254,9 @@ class JacksonPayloadClonerTest {
         java.util.Collection<NestedValue> cloned = cloner.clonePayload(payload);
 
         // Then
-        assertThat(cloned).isNotSameAs(payload);
-        assertThat(cloned).isInstanceOf(ArrayList.class);
-        assertThat(cloned).hasSize(2);
+        assertThat(cloned).isNotSameAs(payload)
+                .isInstanceOf(ArrayList.class)
+                .hasSize(2);
 
         NestedValue originalFirst = payload.iterator().next();
         NestedValue clonedFirst = cloned.iterator().next();
@@ -280,8 +280,8 @@ class JacksonPayloadClonerTest {
         Map<NestedKey, NestedValue> cloned = cloner.clonePayload(payload);
 
         // Then
-        assertThat(cloned).isNotSameAs(payload);
-        assertThat(cloned).hasSize(1);
+        assertThat(cloned).isNotSameAs(payload)
+                .hasSize(1);
 
         Map.Entry<NestedKey, NestedValue> clonedEntry = cloned.entrySet().iterator().next();
         assertThat(clonedEntry.getKey()).isNotSameAs(key);
@@ -372,6 +372,7 @@ class JacksonPayloadClonerTest {
         private Map<String, NestedValue> children = new LinkedHashMap<>();
 
         public ComplexPayload() {
+            // Default constructor required by Jackson.
         }
 
         public String getId() {
@@ -441,6 +442,7 @@ class JacksonPayloadClonerTest {
         private String value;
 
         public NonRoundTrippablePayload() {
+            // Default constructor required by Jackson.
         }
 
         public String getValue() {

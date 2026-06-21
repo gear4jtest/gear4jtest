@@ -6,6 +6,8 @@ public class NoOpAssemblyRunManager implements AssemblyRunManager {
     public static final AssemblyRunManager NO_OP_INSTANCE = new NoOpAssemblyRunManager();
 
     public NoOpAssemblyRunManager() {
+        // Public constructor allows tests and lightweight integrations to opt out
+        // explicitly.
     }
 
     @Override

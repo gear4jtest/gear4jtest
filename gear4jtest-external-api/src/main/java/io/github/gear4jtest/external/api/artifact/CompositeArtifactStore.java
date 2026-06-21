@@ -61,6 +61,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
         String hash = primary.put(stored);
         switch (writeMode) {
             case PRIMARY_ONLY -> {
+                // Primary write already completed; no fallback write is required.
             }
             case SYNC_ALL -> {
                 for (var fb : fallbacks) {
@@ -101,6 +102,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
         }
         switch (writeMode) {
             case PRIMARY_ONLY -> {
+                // Primary write already completed; no fallback write is required.
             }
             case SYNC_ALL -> {
                 for (var fb : fallbacks) {

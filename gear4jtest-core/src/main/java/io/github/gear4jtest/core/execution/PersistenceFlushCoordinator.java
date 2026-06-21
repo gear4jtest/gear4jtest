@@ -131,7 +131,7 @@ final class PersistenceFlushCoordinator {
             buffer.clearFlushScheduled();
             buffer.unlockFlush();
         }
-        if (!drainCompletely && !shutdown.get() && buffer.pendingCount() >= configuration.batchSize()) {
+        if (!shutdown.get() && buffer.pendingCount() >= configuration.batchSize()) {
             scheduleAsyncFlush(buffer, false);
         }
     }

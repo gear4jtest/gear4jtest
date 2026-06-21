@@ -21,6 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
+    private static final String PAGE_REQUEST_REQUIRED = "pageRequest must not be null";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseAssemblyRunRepository.class);
 
     private final DataSource dataSource;
@@ -151,7 +153,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     @Override
     public List<AssemblyRunRecord> findByPipelineId(String pipelineId, PageRequest pageRequest) {
-        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        Objects.requireNonNull(pageRequest, PAGE_REQUEST_REQUIRED);
         String sql = DatabaseAssemblyRunSql.selectAssemblyRunsByPipelineId(databaseDialect);
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = prepare(conn, sql)) {
             stmt.setString(1, pipelineId);
@@ -164,7 +166,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     @Override
     public List<AssemblyRunRecord> findByStatus(ExecutionStatus status, PageRequest pageRequest) {
-        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        Objects.requireNonNull(pageRequest, PAGE_REQUEST_REQUIRED);
         String sql = DatabaseAssemblyRunSql.selectAssemblyRunsByStatus(databaseDialect);
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = prepare(conn, sql)) {
             stmt.setString(1, status.name());
@@ -194,7 +196,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     @Override
     public List<AssemblyRunRecord> findAll(PageRequest pageRequest) {
-        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        Objects.requireNonNull(pageRequest, PAGE_REQUEST_REQUIRED);
         String sql = DatabaseAssemblyRunSql.selectAllAssemblyRuns(databaseDialect);
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = prepare(conn, sql)) {
             databaseDialect.bindPage(stmt, 1, pageRequest);
@@ -206,7 +208,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     @Override
     public List<StationLogRecord> findRootLogsByRunId(UUID runId, PageRequest pageRequest) {
-        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        Objects.requireNonNull(pageRequest, PAGE_REQUEST_REQUIRED);
         String sql = DatabaseAssemblyRunSql.selectRootStationLogsByRunId(databaseDialect);
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = prepare(conn, sql)) {
             databaseDialect.setUuid(stmt, 1, runId);
@@ -219,7 +221,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     @Override
     public List<StationLogRecord> findChildLogsByRunId(UUID runId, UUID parentLogId, PageRequest pageRequest) {
-        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        Objects.requireNonNull(pageRequest, PAGE_REQUEST_REQUIRED);
         String sql = DatabaseAssemblyRunSql.selectChildStationLogsByRunId(databaseDialect);
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = prepare(conn, sql)) {
             databaseDialect.setUuid(stmt, 1, runId);
@@ -234,7 +236,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     @Override
     public List<StationLogRecord> findAllLogsByRunId(UUID runId, PageRequest pageRequest) {
-        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        Objects.requireNonNull(pageRequest, PAGE_REQUEST_REQUIRED);
         String sql = DatabaseAssemblyRunSql.selectAllStationLogsByRunId(databaseDialect);
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = prepare(conn, sql)) {
             databaseDialect.setUuid(stmt, 1, runId);
@@ -277,8 +279,8 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         }
     }
 
-    public void saveOperationRecord(StationLogRecord record) {
-        saveOperationRecordsBatch(List.of(record));
+    public void saveOperationRecord(StationLogRecord stationLogRecord) {
+        saveOperationRecordsBatch(List.of(stationLogRecord));
     }
 
     private void saveOperationRecordsBatch(Connection conn, List<StationLogRecord> records) throws SQLException {
@@ -412,12 +414,12 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     private String describeRecords(List<StationLogRecord> records) {
         LinkedHashSet<UUID> runIds = new LinkedHashSet<>();
         LinkedHashSet<UUID> logIds = new LinkedHashSet<>();
-        for (StationLogRecord record : records) {
-            if (record.pipelineExecutionId() != null && runIds.size() < 5) {
-                runIds.add(record.pipelineExecutionId());
+        for (StationLogRecord stationLogRecord : records) {
+            if (stationLogRecord.pipelineExecutionId() != null && runIds.size() < 5) {
+                runIds.add(stationLogRecord.pipelineExecutionId());
             }
-            if (record.id() != null && logIds.size() < 5) {
-                logIds.add(record.id());
+            if (stationLogRecord.id() != null && logIds.size() < 5) {
+                logIds.add(stationLogRecord.id());
             }
         }
         return "size=" + records.size() + ", runIds=" + runIds + ", stationLogIds=" + logIds;

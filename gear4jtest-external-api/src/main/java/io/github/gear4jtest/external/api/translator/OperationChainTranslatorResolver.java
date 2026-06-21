@@ -30,7 +30,7 @@ public final class OperationChainTranslatorResolver {
                 .filter(c -> {
                     try {
                         return c.supports(mt);
-                    } catch (Throwable t) {
+                    } catch (Exception e) {
                         return false;
                     }
                 })

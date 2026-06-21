@@ -104,8 +104,11 @@ class ContainerStationStrategyTest {
         // Given
         DummyStation station = station("station");
 
+        ContainerBaseStation.Branch.Builder<Object> builder = new ContainerBaseStation.Branch.Builder<Object>()
+                .withOperation(station);
+
         // When / Then
-        assertThatThrownBy(() -> new ContainerBaseStation.Branch.Builder<>().withOperation(station).build())
+        assertThatThrownBy(builder::build)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("branch id is required");
     }

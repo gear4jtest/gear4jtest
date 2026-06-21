@@ -37,16 +37,17 @@ class PersistenceRuntimeConfigurationTest {
 
     @Test
     void build_shouldRejectNegativeJdbcStatementTimeout() {
+        PersistenceRuntimeConfiguration.Builder builder = PersistenceRuntimeConfiguration.builder()
+                .jdbcStatementTimeout(Duration.ofMillis(-1));
+
         // When / Then
-        assertThatThrownBy(() -> PersistenceRuntimeConfiguration.builder()
-                .jdbcStatementTimeout(Duration.ofMillis(-1))
-                .build())
+        assertThatThrownBy(builder::build)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("jdbcStatementTimeout");
     }
 
     @Test
-    void createFlushExecutor_shouldRejectWhenBoundedQueueIsFull() throws Exception {
+    void createFlushExecutor_shouldRejectWhenBoundedQueueIsFull() {
         // Given
         PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder()
                 .flushThreadCount(1)
@@ -60,10 +61,12 @@ class PersistenceRuntimeConfigurationTest {
                 // queued task intentionally fills the bounded flush backlog
             });
 
-            // When / Then
-            assertThatThrownBy(() -> executor.execute(() -> {
+            Runnable rejectedTask = () -> {
                 // rejected task
-            }))
+            };
+
+            // When / Then
+            assertThatThrownBy(() -> executor.execute(rejectedTask))
                     .isInstanceOf(RejectedExecutionException.class);
         } finally {
             releaseWorker.countDown();
@@ -73,19 +76,22 @@ class PersistenceRuntimeConfigurationTest {
 
     @Test
     void build_shouldRejectBufferSmallerThanBatch() {
+        PersistenceRuntimeConfiguration.Builder builder = PersistenceRuntimeConfiguration.builder().batchSize(10)
+                .maxPendingLogsPerRun(9).flushInterval(Duration.ofSeconds(1));
+
         // When / Then
-        assertThatThrownBy(() -> PersistenceRuntimeConfiguration.builder().batchSize(10)
-                .maxPendingLogsPerRun(9).flushInterval(Duration.ofSeconds(1)).build())
+        assertThatThrownBy(builder::build)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("maxPendingLogsPerRun");
     }
 
     @Test
     void build_shouldRejectNonPositiveFlushBacklogCapacity() {
+        PersistenceRuntimeConfiguration.Builder builder = PersistenceRuntimeConfiguration.builder()
+                .maxScheduledFlushTasks(0);
+
         // When / Then
-        assertThatThrownBy(() -> PersistenceRuntimeConfiguration.builder()
-                .maxScheduledFlushTasks(0)
-                .build())
+        assertThatThrownBy(builder::build)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("maxScheduledFlushTasks");
     }

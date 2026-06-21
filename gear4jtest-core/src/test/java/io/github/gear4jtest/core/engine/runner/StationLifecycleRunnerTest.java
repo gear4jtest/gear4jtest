@@ -176,9 +176,9 @@ class StationLifecycleRunnerTest {
         }
 
         @Override
-        public void append(StationLogRecord record) {
-            if (stationId.equals(record.operationId())) {
-                lastStatus.set(record.status());
+        public void append(StationLogRecord stationLogRecord) {
+            if (stationId.equals(stationLogRecord.operationId())) {
+                lastStatus.set(stationLogRecord.status());
             }
         }
 

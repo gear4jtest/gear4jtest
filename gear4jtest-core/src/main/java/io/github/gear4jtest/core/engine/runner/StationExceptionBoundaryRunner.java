@@ -25,26 +25,22 @@ public class StationExceptionBoundaryRunner implements StationRunner {
     public StationLogTrace run(Object input, AbstractStation<?, ?> station, StationExecutionContext ctx) {
         try {
             return delegate.run(input, station, ctx);
-        } catch (Error error) {
-            throw error;
         } catch (Exception throwable) {
             Exception effectiveException = StationExecutionException.unwrap(throwable);
             try {
                 return errorPolicyExecutor.apply(station, input, ctx, effectiveException);
-            } catch (Error error) {
-                throw error;
             } catch (Exception policyFailure) {
                 LOGGER.error("Station error policy failed. Falling back to markFailed. stationId={}", station.getId(),
                              policyFailure);
 
-                StationLogTrace record = ctx.getRecord();
-                if (record.getStatus() == StationLogStatus.RUNNING) {
-                    record.markFailed(effectiveException);
+                StationLogTrace stationLog = ctx.getRecord();
+                if (stationLog.getStatus() == StationLogStatus.RUNNING) {
+                    stationLog.markFailed(effectiveException);
                 } else {
-                    record.addErrorHandlerException(effectiveException);
+                    stationLog.addErrorHandlerException(effectiveException);
                 }
-                record.addErrorHandlerException(policyFailure);
-                return record;
+                stationLog.addErrorHandlerException(policyFailure);
+                return stationLog;
             }
         }
     }

@@ -29,7 +29,9 @@ class StationLogSnapshotTest {
         assertThat(snapshot.branchId()).isEqualTo("branch-1");
         assertThat(snapshot.status()).isEqualTo(StationLog.Status.SUCCEEDED);
         assertThat(snapshot.context()).containsEntry("secret", "value");
-        assertThatThrownBy(() -> snapshot.context().put("other", "value"))
+        Map<String, Object> context = snapshot.context();
+
+        assertThatThrownBy(() -> context.put("other", "value"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 

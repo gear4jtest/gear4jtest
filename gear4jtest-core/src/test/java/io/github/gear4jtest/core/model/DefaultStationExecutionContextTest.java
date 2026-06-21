@@ -50,8 +50,8 @@ class DefaultStationExecutionContextTest {
                 .services(new ExecutionServices(null, noResources()))
                 .assemblyRun(new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of()))
                 .build();
-        StationLogTrace record = StationLogTrace.start(globalContext.getExecutionId(), operationId, null);
-        return new DefaultStationExecutionContext(operationId, StationKind.PROCESSING, globalContext, record, null);
+        StationLogTrace stationLog = StationLogTrace.start(globalContext.getExecutionId(), operationId, null);
+        return new DefaultStationExecutionContext(operationId, StationKind.PROCESSING, globalContext, stationLog, null);
     }
 
     private static ResourceFactory noResources() {

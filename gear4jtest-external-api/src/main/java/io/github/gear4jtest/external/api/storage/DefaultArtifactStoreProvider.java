@@ -158,7 +158,7 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         var ordered = groups.entrySet().stream()
                 .map(entry -> new FallbackGroup(parseFallbackIndex(entry.getKey()), entry.getValue()))
                 .sorted(Comparator.comparingInt(FallbackGroup::order))
-                .collect(Collectors.toList());
+                .toList();
 
         List<ArtifactStore> out = new ArrayList<>();
         for (FallbackGroup fallback : ordered) {

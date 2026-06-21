@@ -27,17 +27,17 @@ public class StationErrorPolicyExecutor {
                                  StationExecutionContext stationCtx,
                                  Exception exception) {
 
-        StationLogTrace record = stationCtx.getRecord();
+        StationLogTrace stationLog = stationCtx.getRecord();
 
-        if (record.getStatus() != StationLogStatus.RUNNING) {
-            record.addErrorHandlerException(exception);
-            return record;
+        if (stationLog.getStatus() != StationLogStatus.RUNNING) {
+            stationLog.addErrorHandlerException(exception);
+            return stationLog;
         }
 
         List<BaseError<Object>> onErrors = (List<BaseError<Object>>) (List<?>) station.getOnErrors();
         if (onErrors == null || onErrors.isEmpty()) {
-            record.markFailed(exception);
-            return record;
+            stationLog.markFailed(exception);
+            return stationLog;
         }
 
         BaseError<Object> matched = null;
@@ -61,8 +61,8 @@ public class StationErrorPolicyExecutor {
         }
 
         if (matched == null) {
-            record.markFailed(exception);
-            return record;
+            stationLog.markFailed(exception);
+            return stationLog;
         }
 
         try {
@@ -70,20 +70,20 @@ public class StationErrorPolicyExecutor {
                 matched.getAction().run();
             }
         } catch (Exception handlerException) {
-            record.addErrorHandlerException(handlerException);
+            stationLog.addErrorHandlerException(handlerException);
         }
 
         SignalType signalType = matched.getSignalType() != null ? matched.getSignalType() : SignalType.FATAL;
 
         return switch (signalType) {
-            case IGNORE -> applyIgnorePolicy(station, input, stationCtx, record, exception);
+            case IGNORE -> applyIgnorePolicy(station, input, stationCtx, stationLog, exception);
             case STOP -> {
-                record.markStopped(exception);
-                yield record;
+                stationLog.markStopped(exception);
+                yield stationLog;
             }
             default -> {
-                record.markFailed(exception);
-                yield record;
+                stationLog.markFailed(exception);
+                yield stationLog;
             }
         };
     }
@@ -91,27 +91,27 @@ public class StationErrorPolicyExecutor {
     private StationLogTrace applyIgnorePolicy(AbstractStation<?, ?> station,
                                               Object input,
                                               StationExecutionContext stationCtx,
-                                              StationLogTrace record,
+                                              StationLogTrace stationLog,
                                               Exception originalException) {
 
         if (station.getFallbackOperator() != null) {
             try {
                 Object result = invokeFallback(station.getFallbackOperator(), input, stationCtx);
-                record.markSuccess(result);
-                return record;
+                stationLog.markSuccess(result);
+                return stationLog;
             } catch (Exception fallbackException) {
-                record.addErrorHandlerException(fallbackException);
-                record.markSkipped(originalException);
-                return record;
+                stationLog.addErrorHandlerException(fallbackException);
+                stationLog.markSkipped(originalException);
+                return stationLog;
             }
         }
 
         if (Boolean.TRUE.equals(station.getUnary())) {
-            record.markSuccess(input);
-            return record;
+            stationLog.markSuccess(input);
+            return stationLog;
         }
 
-        record.markSkipped(originalException);
-        return record;
+        stationLog.markSkipped(originalException);
+        return stationLog;
     }
 }

@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 
 class SideComputeWaitProcessorTest {
     @Test
-    void beforeExecution_shouldWaitAndStoreResolvedValue() throws Exception {
+    void beforeExecution_shouldWaitAndStoreResolvedValue() {
         // arrange
         ExecutionContext execCtx = mock(ExecutionContext.class);
         StationExecutionContext opCtx = mock(StationExecutionContext.class);
@@ -68,7 +68,7 @@ class SideComputeWaitProcessorTest {
     }
 
     @Test
-    void beforeExecution_shouldUseFallbackOnTimeoutWhenConfigured() throws Exception {
+    void beforeExecution_shouldUseFallbackOnTimeoutWhenConfigured() {
         ExecutionContext execCtx = mock(ExecutionContext.class);
         StationExecutionContext opCtx = mock(StationExecutionContext.class);
 
@@ -96,7 +96,7 @@ class SideComputeWaitProcessorTest {
     }
 
     @Test
-    void beforeExecution_shouldIgnoreTimeoutWhenConfiguredToIgnore() throws Exception {
+    void beforeExecution_shouldIgnoreTimeoutWhenConfiguredToIgnore() {
         ExecutionContext execCtx = mock(ExecutionContext.class);
         StationExecutionContext opCtx = mock(StationExecutionContext.class);
 

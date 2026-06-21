@@ -45,8 +45,6 @@ final class PipelineRunLifecycleInvoker {
                                         AssemblyRunTrace execution) {
         try {
             lifecycleExtension.onRunStarted(context, execution);
-        } catch (Error error) {
-            throw error;
         } catch (Exception e) {
             if (lifecycleExtension.failureMode() == LifecycleFailureMode.CRITICAL) {
                 throw e instanceof RuntimeException runtimeException ? runtimeException : new RuntimeException(e);
@@ -63,8 +61,6 @@ final class PipelineRunLifecycleInvoker {
         try {
             lifecycleExtension.onRunCompleted(context, execution);
             return null;
-        } catch (Error error) {
-            throw error;
         } catch (Exception e) {
             if (lifecycleExtension.failureMode() == LifecycleFailureMode.CRITICAL) {
                 LOGGER.error("A critical RunLifecycleExtension failed during onRunCompleted. extension={}",

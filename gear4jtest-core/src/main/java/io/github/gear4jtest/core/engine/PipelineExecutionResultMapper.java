@@ -76,9 +76,9 @@ final class PipelineExecutionResultMapper {
 
         try {
             execution.setContext(context.snapshotContext());
-        } catch (Throwable throwable) {
+        } catch (RuntimeException runtimeException) {
             LOGGER.warn("Failed to capture execution context for run {}. The run trace will keep its previous context.",
-                        execution.getId(), throwable);
+                        execution.getId(), runtimeException);
         }
 
         if (fatalError != null) {
@@ -93,10 +93,9 @@ final class PipelineExecutionResultMapper {
                 case CANCELLED -> execution.setStatus(ExecutionStatus.CANCELLED);
                 case FAILED -> execution.setStatus(ExecutionStatus.FAILED);
             }
-            if (result.getOutcome() == ExecutionOutcome.FAILED || result.getOutcome() == ExecutionOutcome.CANCELLED) {
-                if (result.getError() != null) {
-                    execution.setError(asException(result.getError()));
-                }
+            if ((result.getOutcome() == ExecutionOutcome.FAILED || result.getOutcome() == ExecutionOutcome.CANCELLED)
+                    && result.getError() != null) {
+                execution.setError(asException(result.getError()));
             }
         } else {
             execution.setStatus(ExecutionStatus.FAILED);

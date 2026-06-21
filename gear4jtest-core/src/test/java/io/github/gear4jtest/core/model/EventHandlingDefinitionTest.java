@@ -56,22 +56,27 @@ class EventHandlingDefinitionTest {
 
     @Test
     void runtimeConfiguration_shouldRejectNonPositiveTimeouts() {
-        assertThatThrownBy(() -> EventHandlingDefinition.RuntimeConfiguration.builder()
-                .shutdownTimeout(Duration.ZERO)
-                .build())
+        EventHandlingDefinition.RuntimeConfiguration.Builder zeroShutdownTimeoutBuilder = EventHandlingDefinition.RuntimeConfiguration
+                .builder().shutdownTimeout(Duration.ZERO);
+
+        assertThatThrownBy(zeroShutdownTimeoutBuilder::build)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("shutdownTimeout");
 
-        assertThatThrownBy(() -> EventHandlingDefinition.RuntimeConfiguration.builder()
-                .detachCleanupTimeout(Duration.ofMillis(-1))
-                .build())
+        EventHandlingDefinition.RuntimeConfiguration.Builder negativeCleanupTimeoutBuilder = EventHandlingDefinition.RuntimeConfiguration
+                .builder().detachCleanupTimeout(Duration.ofMillis(-1));
+
+        assertThatThrownBy(negativeCleanupTimeoutBuilder::build)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("detachCleanupTimeout");
     }
 
     @Test
     void runtimeConfiguration_shouldRejectInvalidEventQueueCapacity() {
-        assertThatThrownBy(() -> EventHandlingDefinition.RuntimeConfiguration.builder().eventQueueCapacity(0).build())
+        EventHandlingDefinition.RuntimeConfiguration.Builder invalidQueueCapacityBuilder = EventHandlingDefinition.RuntimeConfiguration
+                .builder().eventQueueCapacity(0);
+
+        assertThatThrownBy(invalidQueueCapacityBuilder::build)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("eventQueueCapacity must be >= 1");
     }

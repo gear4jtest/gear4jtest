@@ -22,7 +22,7 @@ public final class SpringAssemblyLineRegistry implements AssemblyLineRegistry {
 
         Map<String, AssemblyLine> discovered = beanFactory.getBeansOfType(AssemblyLine.class);
         Map<String, AssemblyLine<?, ?>> ordered = new LinkedHashMap<>();
-        discovered.forEach((name, pipeline) -> ordered.put(name, pipeline));
+        discovered.forEach(ordered::put);
         this.assemblyLinesByBeanName = Map.copyOf(ordered);
     }
 

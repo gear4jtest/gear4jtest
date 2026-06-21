@@ -65,6 +65,8 @@ public final class FilesystemArtifactStore implements ArtifactStore {
             try {
                 Files.deleteIfExists(tmp);
             } catch (Exception ignored) {
+                // Best-effort cleanup: the operation result must not be masked by temp-file
+                // deletion failure.
             }
         }
     }

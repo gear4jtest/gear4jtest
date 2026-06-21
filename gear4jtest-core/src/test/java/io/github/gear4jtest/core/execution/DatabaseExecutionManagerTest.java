@@ -50,11 +50,13 @@ class DatabaseExecutionManagerTest {
 
         try {
             // When
-            manager.append(record(runId));
-            manager.append(record(runId));
+            manager.append(stationRecord(runId));
+            manager.append(stationRecord(runId));
+
+            StationLogRecord rejectedRecord = stationRecord(runId);
 
             // Then
-            assertThatThrownBy(() -> manager.append(record(runId)))
+            assertThatThrownBy(() -> manager.append(rejectedRecord))
                     .isInstanceOf(ExecutionPersistenceException.class)
                     .hasMessageContaining("buffer is full");
             assertThat(manager.snapshotStats().rejectedAppends()).isEqualTo(1L);
@@ -83,7 +85,7 @@ class DatabaseExecutionManagerTest {
 
         try {
             // When
-            manager.append(record(UUID.randomUUID()));
+            manager.append(stationRecord(UUID.randomUUID()));
 
             // Then
             assertThat(persisted.await(2, TimeUnit.SECONDS)).isTrue();
@@ -119,8 +121,8 @@ class DatabaseExecutionManagerTest {
 
         try {
             // When
-            manager.append(record(runId));
-            manager.append(record(runId));
+            manager.append(stationRecord(runId));
+            manager.append(stationRecord(runId));
 
             // Then
             assertThat(failedOnce.await(2, TimeUnit.SECONDS)).as("first asynchronous flush should fail").isTrue();
@@ -156,7 +158,7 @@ class DatabaseExecutionManagerTest {
         trace.markSuccess("ok");
 
         try {
-            manager.append(record(runId));
+            manager.append(stationRecord(runId));
 
             // When / Then
             assertThatThrownBy(() -> manager.end(trace))
@@ -191,7 +193,7 @@ class DatabaseExecutionManagerTest {
         UUID runId = UUID.randomUUID();
 
         try {
-            manager.append(record(runId));
+            manager.append(stationRecord(runId));
 
             // When
             manager.shutdown(Duration.ofSeconds(1));
@@ -281,7 +283,7 @@ class DatabaseExecutionManagerTest {
                 .isEqualTo(expectedBufferedLogs);
     }
 
-    private static StationLogRecord record(UUID runId) {
+    private static StationLogRecord stationRecord(UUID runId) {
         return new StationLogRecord(UUID.randomUUID(), runId, "station", null, StationLogStatus.SUCCEEDED,
                 Instant.now(), Instant.now(), null, null, Map.of(), null);
     }

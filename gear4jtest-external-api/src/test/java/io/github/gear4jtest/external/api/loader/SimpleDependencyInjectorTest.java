@@ -55,6 +55,87 @@ class SimpleDependencyInjectorTest {
         assertThat(generated.secretService).isNull();
     }
 
+    @Test
+    void injectDependencies_shouldSupportDefaultFieldNameAndIgnoreOptionalMissingBeans() throws Exception {
+        // Given
+        SimpleDependencyInjector injector = new SimpleDependencyInjector();
+        SafeService safeService = new SafeService();
+        injector.registerBean("safeService", safeService, ExecutionMode.TEST);
+        var generated = new GeneratedWithFieldNameAndOptionalMissingBean();
+
+        // When
+        injector.injectDependencies(generated, ExecutionMode.TEST);
+
+        // Then
+        assertThat(generated.safeService).isSameAs(safeService);
+        assertThat(generated.missingService).isNull();
+    }
+
+    @Test
+    void registerBean_shouldValidateArgumentsAndAllowedModes() {
+        // Given
+        SimpleDependencyInjector injector = new SimpleDependencyInjector();
+
+        // When / Then
+        assertThatThrownBy(() -> injector.registerBean(null, new SafeService()))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("name must not be null");
+        assertThatThrownBy(() -> injector.registerBean("safeService", null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("bean must not be null");
+        assertThatThrownBy(() -> injector.registerBean("safeService", new SafeService(), (ExecutionMode) null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("firstMode must not be null");
+        assertThatThrownBy(() -> injector.registerBean("safeService", new SafeService(), java.util.Set.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("allowedModes must not be empty");
+        assertThatThrownBy(() -> injector.registerBean("safeService", new SafeService(), ExecutionMode.RUN,
+                                                       (ExecutionMode) null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("additional mode must not be null");
+    }
+
+    @Test
+    void injectDependencies_shouldValidateInputsAndReportMissingOrIncompatibleRequiredBeans() {
+        // Given
+        SimpleDependencyInjector injector = new SimpleDependencyInjector();
+        injector.registerBean("safeService", "wrong-type", ExecutionMode.TEST);
+
+        // When / Then
+        assertThatThrownBy(() -> injector.injectDependencies(null, ExecutionMode.TEST))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("instance must not be null");
+        assertThatThrownBy(() -> injector.injectDependencies(new GeneratedWithRequiredSafeService(), null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("mode must not be null");
+        assertThatThrownBy(() -> injector.injectDependencies(new GeneratedWithRequiredSafeService(),
+                                                             ExecutionMode.TEST))
+                .isInstanceOf(InjectionException.class)
+                .hasMessage("Required bean not found: safeService");
+        assertThatThrownBy(() -> injector.injectDependencies(new GeneratedWithRequiredSecret(), ExecutionMode.RUN))
+                .isInstanceOf(InjectionException.class)
+                .hasMessage("Required bean not found: secretService");
+    }
+
+    @Test
+    void getBean_shouldValidateArgumentsAndReturnTypedOptional() {
+        // Given
+        SimpleDependencyInjector injector = new SimpleDependencyInjector();
+        SafeService safeService = new SafeService();
+        injector.registerBean("safeService", safeService);
+
+        // When / Then
+        assertThat(injector.getBean("safeService", SafeService.class)).contains(safeService);
+        assertThat(injector.getBean("safeService", SecretService.class)).isEmpty();
+        assertThat(injector.getBean("missing", SafeService.class)).isEmpty();
+        assertThatThrownBy(() -> injector.getBean(null, SafeService.class))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("name must not be null");
+        assertThatThrownBy(() -> injector.getBean("safeService", null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("type must not be null");
+    }
+
     private static final class GeneratedWithRequiredSecret {
         @Inject("secretService")
         private SecretService secretService;
@@ -68,6 +149,14 @@ class SimpleDependencyInjectorTest {
     private static final class GeneratedWithOptionalSecret {
         @Inject(value = "secretService", required = false)
         private SecretService secretService;
+    }
+
+    private static final class GeneratedWithFieldNameAndOptionalMissingBean {
+        @Inject
+        private SafeService safeService;
+
+        @Inject(value = "missingService", required = false)
+        private SecretService missingService;
     }
 
     private static final class SecretService {

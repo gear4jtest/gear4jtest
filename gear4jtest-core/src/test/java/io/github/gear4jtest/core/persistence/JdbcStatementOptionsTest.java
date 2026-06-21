@@ -36,8 +36,10 @@ class JdbcStatementOptionsTest {
 
     @Test
     void of_shouldRejectNegativeTimeout() {
+        Duration invalidTimeout = Duration.ofMillis(-1);
+
         // When / Then
-        assertThatThrownBy(() -> JdbcStatementOptions.of(Duration.ofMillis(-1)))
+        assertThatThrownBy(() -> JdbcStatementOptions.of(invalidTimeout))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("queryTimeout");
     }

@@ -43,6 +43,8 @@ import org.slf4j.LoggerFactory;
  * </p>
  */
 public final class JdbcSchemaMigrator {
+    private static final String ASSEMBLY_RUN_TABLE = "assembly_run";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcSchemaMigrator.class);
     private static final String HISTORY_TABLE = "gear4j_schema_history";
     private static final String LOCK_TABLE = "gear4j_schema_lock";
@@ -124,7 +126,7 @@ public final class JdbcSchemaMigrator {
                 .dialect(dialect)
                 .migrationListResource("io/github/gear4j/db/" + dialect.resourceDirectory()
                         + "/migrations/migrations.list")
-                .baselineTableName("assembly_run")
+                .baselineTableName(ASSEMBLY_RUN_TABLE)
                 .build();
     }
 
@@ -350,8 +352,8 @@ public final class JdbcSchemaMigrator {
 
     private void validateKnownCoreColumns(Connection connection, Set<String> requiredTables, String version)
             throws SQLException {
-        if (requiredTables.contains("assembly_run")) {
-            requireColumns(connection, "assembly_run", version, "id", "pipeline_id", "status", "start_time");
+        if (requiredTables.contains(ASSEMBLY_RUN_TABLE)) {
+            requireColumns(connection, ASSEMBLY_RUN_TABLE, version, "id", "pipeline_id", "status", "start_time");
         }
         if (requiredTables.contains("station_log")) {
             requireColumns(connection, "station_log", version, "id", "pipeline_execution_id", "operation_id",

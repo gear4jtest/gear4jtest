@@ -135,7 +135,7 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         private void addParameterInjectorIfNecessary() {
-            if (processors.stream().noneMatch(p -> p instanceof WorkerParamsInjector)) {
+            if (processors.stream().noneMatch(WorkerParamsInjector.class::isInstance)) {
                 processors.add(new WorkerParamsInjector());
             }
         }

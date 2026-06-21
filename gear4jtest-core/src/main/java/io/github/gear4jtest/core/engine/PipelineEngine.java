@@ -139,40 +139,49 @@ public class PipelineEngine implements PipelineExecutor {
                                                                     ExecutionSupport support,
                                                                     PipelineRunContext runContext) {
         ExecutionResult<OUT> result = null;
-        Throwable fatalError = null;
+        boolean recoverablePath = false;
         try {
             lifecycleInvoker.invokeRunStarted(resolvedExtensions.runLifecycleExtensions(), runContext.context(),
                                               runContext.execution());
             result = rootExecutionChain.execute(pipeline, request, runContext.context(), support, resolvedExtensions,
                                                 runContext.execution());
+            recoverablePath = true;
         } catch (Exception e) {
+            recoverablePath = true;
             LOGGER.error("Error while executing pipeline", e);
             runContext.execution().setStatus(ExecutionStatus.FAILED);
             runContext.execution().setError(PipelineExecutionResultMapper.asException(e));
             result = ExecutionResult.failure(PipelineExecutionResultMapper.asException(e), runContext.execution());
-        } catch (Throwable t) {
-            fatalError = t;
-            throw t;
         } finally {
-            PipelineExecutionResultMapper.finalizeRunFromResult(runContext.context(), runContext.execution(), result,
-                                                                fatalError);
-            if (result == null && fatalError == null) {
-                Exception failure = runContext.execution().getError() != null ? runContext.execution().getError()
-                        : new IllegalStateException("Pipeline execution returned no result");
-                result = ExecutionResult.failure(failure, runContext.execution());
-            }
-            Exception completionFailure = lifecycleInvoker
-                    .invokeRunCompleted(resolvedExtensions.runLifecycleExtensions(),
-                                        runContext.context(),
-                                        runContext.execution());
-            if (completionFailure != null && fatalError == null) {
-                runContext.execution().setEndTime(Instant.now());
-                runContext.execution().setStatus(ExecutionStatus.FAILED);
-                runContext.execution().setError(completionFailure);
-                result = ExecutionResult.failure(completionFailure, runContext.execution());
+            if (recoverablePath) {
+                result = finalizeRecoverableExecution(resolvedExtensions, runContext, result);
             }
         }
         return result;
+    }
+
+    private <OUT> ExecutionResult<OUT> finalizeRecoverableExecution(ResolvedExtensions resolvedExtensions,
+                                                                    PipelineRunContext runContext,
+                                                                    ExecutionResult<OUT> result) {
+        ExecutionResult<OUT> finalizedResult = result;
+        PipelineExecutionResultMapper.finalizeRunFromResult(runContext.context(), runContext.execution(),
+                                                            finalizedResult, null);
+        if (finalizedResult == null) {
+            Exception failure = runContext.execution().getError() != null ? runContext.execution().getError()
+                    : new IllegalStateException("Pipeline execution returned no result");
+            finalizedResult = ExecutionResult.failure(failure, runContext.execution());
+        }
+        Exception completionFailure = lifecycleInvoker
+                .invokeRunCompleted(resolvedExtensions.runLifecycleExtensions(),
+                                    runContext.context(),
+                                    runContext.execution());
+        if (completionFailure != null) {
+            runContext.execution().setEndTime(Instant.now());
+            runContext.execution().setStatus(ExecutionStatus.FAILED);
+            runContext.execution().setError(completionFailure);
+            finalizedResult = ExecutionResult.failure(completionFailure, runContext.execution());
+        }
+        return finalizedResult;
     }
 
     private void shutdownEventRuntimeAndCleanup(EventManager eventManager, ExecutionContext context) {

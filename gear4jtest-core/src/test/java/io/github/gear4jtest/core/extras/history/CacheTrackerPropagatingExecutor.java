@@ -7,7 +7,6 @@ import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 public final class CacheTrackerPropagatingExecutor extends AbstractExecutorService {
     private final ExecutorService delegate;
@@ -66,7 +65,7 @@ public final class CacheTrackerPropagatingExecutor extends AbstractExecutorServi
                         return task.call();
                     }
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         return delegate.invokeAll(wrapped);
     }

@@ -36,6 +36,12 @@ import org.w3c.dom.Node;
 import org.xml.sax.SAXParseException;
 
 public final class XmlPipelineParser {
+    private static final String CONDITION_ELEMENT = "condition";
+    private static final String EXPRESSION_ATTRIBUTE = "expression";
+    private static final String INPUT_TYPE_ATTRIBUTE = "inputType";
+    private static final String OUTPUT_TYPE_ATTRIBUTE = "outputType";
+    private static final String RETRIEVER_ATTRIBUTE = "retriever";
+
     public static final long DEFAULT_MAX_XML_BYTES = 2L * 1024L * 1024L;
 
     private final long maxXmlBytes;
@@ -54,7 +60,7 @@ public final class XmlPipelineParser {
     private static Element firstOperationChild(Element parent) {
         for (Element child : children(parent)) {
             String name = localName(child);
-            if ("condition".equals(name)) {
+            if (CONDITION_ELEMENT.equals(name)) {
                 continue;
             }
             return child;
@@ -156,8 +162,8 @@ public final class XmlPipelineParser {
             }
 
             String id = required(root, "id");
-            String inputType = required(root, "inputType");
-            String outputType = optional(root, "outputType");
+            String inputType = required(root, INPUT_TYPE_ATTRIBUTE);
+            String outputType = optional(root, OUTPUT_TYPE_ATTRIBUTE);
 
             Element operationsElement = requiredChild(root, "operations");
             List<Operation> operations = children(operationsElement).stream()
@@ -241,7 +247,7 @@ public final class XmlPipelineParser {
 
     private ProcessingOperation parseProcessing(Element element) {
         return new ProcessingOperation(required(element, "id"), required(element, "type"),
-                optional(element, "inputType"), parseParameters(child(element, "parameters")),
+                optional(element, INPUT_TYPE_ATTRIBUTE), parseParameters(child(element, "parameters")),
                 parseErrors(child(element, "onErrors")), parseConditions(child(element, "conditions")),
                 parseTransformer(child(element, "fallbackTransformer")));
     }
@@ -250,11 +256,12 @@ public final class XmlPipelineParser {
         Element iterableFunction = requiredChild(element, "iterableFunction");
         Element operationWrapper = requiredChild(element, "operation");
 
-        return new IteratorOperation(required(element, "id"), optional(element, "inputType"),
-                optional(element, "outputType"), required(iterableFunction, "expression"),
+        return new IteratorOperation(required(element, "id"), optional(element, INPUT_TYPE_ATTRIBUTE),
+                optional(element, OUTPUT_TYPE_ATTRIBUTE), required(iterableFunction, EXPRESSION_ATTRIBUTE),
                 parseOperation(operationWrapper),
                 child(element, "accumulator") == null ? null : required(child(element, "accumulator"), "type"),
-                child(element, "collector") == null ? null : required(child(element, "collector"), "expression"));
+                child(element, "collector") == null ? null
+                        : required(child(element, "collector"), EXPRESSION_ATTRIBUTE));
     }
 
     private ContainerOperation parseContainer(Element element) {
@@ -263,15 +270,16 @@ public final class XmlPipelineParser {
 
         for (Element subLine : childrenNamed(subLinesElement, "subLine")) {
             Element operationElement = firstOperationChild(subLine);
-            subLines.add(new SubLine(required(subLine, "id"), parseCondition(child(subLine, "condition")),
+            subLines.add(new SubLine(required(subLine, "id"), parseCondition(child(subLine, CONDITION_ELEMENT)),
                     parseOperation(operationElement)));
         }
 
         Element returnsFunction = child(element, "returnsFunction");
-        return new ContainerOperation(required(element, "id"), required(element, "inputType"),
-                required(element, "outputType"), Boolean.parseBoolean(optionalOrDefault(element, "parallel", "false")),
+        return new ContainerOperation(required(element, "id"), required(element, INPUT_TYPE_ATTRIBUTE),
+                required(element, OUTPUT_TYPE_ATTRIBUTE),
+                Boolean.parseBoolean(optionalOrDefault(element, "parallel", "false")),
                 optionalInteger(element, "threadPoolSize"), List.copyOf(subLines),
-                returnsFunction == null ? null : required(returnsFunction, "expression"));
+                returnsFunction == null ? null : required(returnsFunction, EXPRESSION_ATTRIBUTE));
     }
 
     private IfElseOperation parseIfElse(Element element) {
@@ -286,7 +294,7 @@ public final class XmlPipelineParser {
                         "ifElse conditionalOperation currently supports processing operations only");
             }
             conditionalOperations.add(new ConditionalOperation(required(conditionalOperation, "id"),
-                    parseCondition(requiredChild(conditionalOperation, "condition")), processingOperation));
+                    parseCondition(requiredChild(conditionalOperation, CONDITION_ELEMENT)), processingOperation));
         }
 
         ProcessingOperation elseOperation = null;
@@ -295,13 +303,13 @@ public final class XmlPipelineParser {
             elseOperation = parseProcessing(elseElement);
         }
 
-        return new IfElseOperation(required(element, "id"), required(element, "inputType"),
-                required(element, "outputType"), List.copyOf(conditionalOperations), elseOperation);
+        return new IfElseOperation(required(element, "id"), required(element, INPUT_TYPE_ATTRIBUTE),
+                required(element, OUTPUT_TYPE_ATTRIBUTE), List.copyOf(conditionalOperations), elseOperation);
     }
 
     private SignalOperation parseSignal(Element element) {
         return new SignalOperation(required(element, "id"), required(element, "type").toUpperCase(Locale.ROOT),
-                optional(element, "inputType"), parseCondition(child(element, "condition")));
+                optional(element, INPUT_TYPE_ATTRIBUTE), parseCondition(child(element, CONDITION_ELEMENT)));
     }
 
     private Parameters parseParameters(Element element) {
@@ -312,12 +320,14 @@ public final class XmlPipelineParser {
         List<Parameter> parameters = new ArrayList<>();
         for (Element child : children(element)) {
             switch (localName(child)) {
-                case "valueParameter" -> parameters.add(new ValueParameter(required(child, "retriever"),
+                case "valueParameter" -> parameters.add(new ValueParameter(required(child, RETRIEVER_ATTRIBUTE),
                         required(child, "value"), optionalOrDefault(child, "valueType", "java.lang.String")));
                 case "supplierParameter" ->
-                    parameters.add(new SupplierParameter(required(child, "retriever"), required(child, "supplier")));
+                    parameters.add(new SupplierParameter(required(child, RETRIEVER_ATTRIBUTE),
+                            required(child, "supplier")));
                 case "contextParameter" ->
-                    parameters.add(new ContextParameter(required(child, "retriever"), required(child, "function")));
+                    parameters.add(new ContextParameter(required(child, RETRIEVER_ATTRIBUTE),
+                            required(child, "function")));
                 default ->
                     throw new IllegalArgumentException("Unsupported parameter element: <" + localName(child) + ">");
             }
@@ -338,7 +348,7 @@ public final class XmlPipelineParser {
             }
             errors.add(new ErrorHandler("safeError".equals(name),
                     required(child, "signalType").toUpperCase(Locale.ROOT), required(child, "throwableType"),
-                    parseCondition(child(child, "condition")), parseAction(child(child, "action"))));
+                    parseCondition(child(child, CONDITION_ELEMENT)), parseAction(child(child, "action"))));
         }
         return List.copyOf(errors);
     }
@@ -348,7 +358,7 @@ public final class XmlPipelineParser {
             return List.of();
         }
         List<Condition> conditions = new ArrayList<>();
-        for (Element condition : childrenNamed(element, "condition")) {
+        for (Element condition : childrenNamed(element, CONDITION_ELEMENT)) {
             conditions.add(parseCondition(condition));
         }
         return List.copyOf(conditions);
@@ -358,7 +368,7 @@ public final class XmlPipelineParser {
         if (element == null) {
             return null;
         }
-        return new Condition(required(element, "expression"),
+        return new Condition(required(element, EXPRESSION_ATTRIBUTE),
                 optionalOrDefault(element, "language", Condition.LANGUAGE_JAVA),
                 optional(element, "description"));
     }
@@ -367,15 +377,15 @@ public final class XmlPipelineParser {
         if (element == null) {
             return null;
         }
-        return new Action(required(element, "expression"), optional(element, "description"));
+        return new Action(required(element, EXPRESSION_ATTRIBUTE), optional(element, "description"));
     }
 
     private Transformer parseTransformer(Element element) {
         if (element == null) {
             return null;
         }
-        return new Transformer(required(element, "expression"), optional(element, "inputType"),
-                optional(element, "outputType"));
+        return new Transformer(required(element, EXPRESSION_ATTRIBUTE), optional(element, INPUT_TYPE_ATTRIBUTE),
+                optional(element, OUTPUT_TYPE_ATTRIBUTE));
     }
 
     private Configuration parseConfiguration(Element element) {

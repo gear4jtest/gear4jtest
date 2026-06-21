@@ -27,6 +27,7 @@ public class RunnerChainFactory {
                                           RunRequest request,
                                           ExecutionContext ctx,
                                           ResolvedExtensions extensions) {
+        Objects.requireNonNull(request, "request must not be null");
 
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Creating station runner chain. pipelineId={}, stationWrappers={}, stationLifecycles={}, runInterceptors={}, executorWrappers={}",

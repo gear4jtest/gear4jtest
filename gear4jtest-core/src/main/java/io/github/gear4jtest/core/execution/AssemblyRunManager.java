@@ -9,7 +9,7 @@ import io.github.gear4jtest.core.persistence.StationLogRecord;
 public interface AssemblyRunManager {
     void start(AssemblyRunTrace execution);
 
-    default void append(StationLogRecord record) {
+    default void append(StationLogRecord stationLogRecord) {
         // no-op by default
     }
 

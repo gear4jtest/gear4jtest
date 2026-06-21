@@ -53,7 +53,7 @@ final class OperationRecordBuffer {
         flushScheduled.set(false);
     }
 
-    boolean append(StationLogRecord record,
+    boolean append(StationLogRecord stationLogRecord,
                    int batchSize,
                    PersistenceRuntimeCounters counters) {
         assertHealthy();
@@ -63,9 +63,9 @@ final class OperationRecordBuffer {
             if (closed.get()) {
                 throw new ExecutionPersistenceException(
                         "Cannot append station log to a closed run buffer. runId=" + runId
-                                + ", stationLogId=" + record.id());
+                                + ", stationLogId=" + stationLogRecord.id());
             }
-            if (!queue.offer(record)) {
+            if (!queue.offer(stationLogRecord)) {
                 counters.recordRejectedAppend();
                 throw new ExecutionPersistenceException("Station log persistence buffer is full. runId=" + runId
                         + ", maxPendingLogsPerRun=" + capacity);
@@ -97,11 +97,11 @@ final class OperationRecordBuffer {
         if (batch == null || batch.isEmpty()) {
             return;
         }
-        for (StationLogRecord record : batch) {
-            if (!queue.offer(record)) {
+        for (StationLogRecord stationLogRecord : batch) {
+            if (!queue.offer(stationLogRecord)) {
                 recordFailure(new ExecutionPersistenceException(
                         "Could not requeue drained station log after failed persistence flush. runId=" + runId
-                                + ", stationLogId=" + record.id()));
+                                + ", stationLogId=" + stationLogRecord.id()));
                 break;
             }
             pendingCount.incrementAndGet();

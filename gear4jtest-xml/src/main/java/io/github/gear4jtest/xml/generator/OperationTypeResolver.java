@@ -3,6 +3,7 @@ package io.github.gear4jtest.xml.generator;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -176,12 +177,12 @@ final class OperationTypeResolver {
         if (type instanceof Class<?> clazz) {
             for (Type interfaceType : clazz.getGenericInterfaces()) {
                 Type[] resolved = findOperatorArguments(interfaceType, resolvedVariables);
-                if (resolved != null) {
+                if (resolved.length == 2) {
                     return resolved;
                 }
             }
             Type superType = clazz.getGenericSuperclass();
-            return superType == null ? null : findOperatorArguments(superType, resolvedVariables);
+            return superType == null ? new Type[0] : findOperatorArguments(superType, resolvedVariables);
         }
 
         if (type instanceof ParameterizedType parameterizedType) {
@@ -201,7 +202,7 @@ final class OperationTypeResolver {
                 return findOperatorArguments(rawClass, childVariables);
             }
         }
-        return null;
+        return new Type[0];
     }
 
     private Type resolveType(Type type, Map<TypeVariable<?>, Type> variables) {
@@ -250,6 +251,15 @@ final class OperationTypeResolver {
 
     private record ResolvedParameterizedType(Class<?> rawType, Type[] actualTypeArguments, Type ownerType)
             implements ParameterizedType {
+        private ResolvedParameterizedType {
+            actualTypeArguments = actualTypeArguments == null ? new Type[0] : actualTypeArguments.clone();
+        }
+
+        @Override
+        public Type[] actualTypeArguments() {
+            return actualTypeArguments.clone();
+        }
+
         @Override
         public Type[] getActualTypeArguments() {
             return actualTypeArguments.clone();
@@ -263,6 +273,35 @@ final class OperationTypeResolver {
         @Override
         public Type getOwnerType() {
             return ownerType;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof ResolvedParameterizedType that)) {
+                return false;
+            }
+            return Objects.equals(rawType, that.rawType)
+                    && Arrays.equals(actualTypeArguments, that.actualTypeArguments)
+                    && Objects.equals(ownerType, that.ownerType);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hash(rawType, ownerType);
+            result = 31 * result + Arrays.hashCode(actualTypeArguments);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "ResolvedParameterizedType["
+                    + "rawType=" + rawType
+                    + ", actualTypeArguments=" + Arrays.toString(actualTypeArguments)
+                    + ", ownerType=" + ownerType
+                    + ']';
         }
     }
 }

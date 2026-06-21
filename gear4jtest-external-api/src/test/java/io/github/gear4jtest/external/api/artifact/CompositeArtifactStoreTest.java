@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class CompositeArtifactStoreTest {
 
     @Test
-    void putInputStream_shouldWritePrimaryAndSynchronousFallbacksWithoutUsingByteArrayPut() throws Exception {
+    void putInputStream_shouldWritePrimaryAndSynchronousFallbacksWithoutUsingByteArrayPut() throws IOException {
         // Given
         StreamOnlyArtifactStore primary = new StreamOnlyArtifactStore();
         StreamOnlyArtifactStore fallback = new StreamOnlyArtifactStore();
@@ -35,7 +35,7 @@ class CompositeArtifactStoreTest {
     }
 
     @Test
-    void get_shouldUseConfiguredVerificationLimitInsteadOfDefaultOnly() throws Exception {
+    void get_shouldUseConfiguredVerificationLimitInsteadOfDefaultOnly() throws IOException {
         // Given
         InMemoryArtifactStore primary = new InMemoryArtifactStore();
         byte[] content = "payload".getBytes(StandardCharsets.UTF_8);
@@ -54,7 +54,7 @@ class CompositeArtifactStoreTest {
     }
 
     @Test
-    void get_shouldRejectArtifactsAboveConfiguredVerificationLimit() throws Exception {
+    void get_shouldRejectArtifactsAboveConfiguredVerificationLimit() {
         // Given
         InMemoryArtifactStore primary = new InMemoryArtifactStore();
         byte[] content = "payload".getBytes(StandardCharsets.UTF_8);
@@ -87,12 +87,12 @@ class CompositeArtifactStoreTest {
         }
 
         @Override
-        public Optional<Artifact> get(String hashHex) {
+        public Optional<Artifact> get(String hashHex) throws IOException {
             return Optional.empty();
         }
 
         @Override
-        public boolean exists(String hashHex) {
+        public boolean exists(String hashHex) throws IOException {
             return storedHashes.contains(hashHex);
         }
 

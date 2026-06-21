@@ -37,8 +37,11 @@ class PipelineCallStationStrategyStatusMappingTest {
                 .build();
         PipelineCallStationStrategy strategy = new PipelineCallStationStrategy(NestedPipelineExecutor.unsupported());
 
+        StationRunner runner = successfulRunner();
+        TestStationExecutionContext context = stationContext("call");
+
         // When / Then
-        assertThatThrownBy(() -> strategy.doExecute(station, "input", successfulRunner(), stationContext("call")))
+        assertThatThrownBy(() -> strategy.doExecute(station, "input", runner, context))
                 .isInstanceOf(PipelineCallException.class)
                 .hasMessageContaining("is not resolved")
                 .hasMessageContaining("missing:1");
@@ -57,9 +60,9 @@ class PipelineCallStationStrategyStatusMappingTest {
 
         // Then
         assertThat(output).isEqualTo("child-output");
-        assertThat(context.record().getStatus()).isEqualTo(StationLogStatus.SKIPPED);
-        assertThat(context.record().<String>getOutput()).isEqualTo("child-output");
-        assertThat(context.record().getContext()).containsEntry("pipeline.call.mode", "INLINE")
+        assertThat(context.stationLogTrace().getStatus()).isEqualTo(StationLogStatus.SKIPPED);
+        assertThat(context.stationLogTrace().<String>getOutput()).isEqualTo("child-output");
+        assertThat(context.stationLogTrace().getContext()).containsEntry("pipeline.call.mode", "INLINE")
                 .containsEntry("pipeline.call.declaredReference", "child:1")
                 .containsEntry("pipeline.call.resolvedReference", "child:1")
                 .containsEntry("skip.reason", "Child pipeline root was skipped: child");
@@ -85,11 +88,11 @@ class PipelineCallStationStrategyStatusMappingTest {
 
         // Then
         assertThat(stoppedOutput).isEqualTo("stopped");
-        assertThat(stoppedContext.record().getStatus()).isEqualTo(StationLogStatus.STOPPED);
-        assertThat(stoppedContext.record().getErrorMessage()).isEqualTo("stop");
+        assertThat(stoppedContext.stationLogTrace().getStatus()).isEqualTo(StationLogStatus.STOPPED);
+        assertThat(stoppedContext.stationLogTrace().getErrorMessage()).isEqualTo("stop");
         assertThat(cancelledOutput).isEqualTo("cancelled");
-        assertThat(cancelledContext.record().getStatus()).isEqualTo(StationLogStatus.CANCELLED);
-        assertThat(cancelledContext.record().getErrorMessage()).isEqualTo("cancel");
+        assertThat(cancelledContext.stationLogTrace().getStatus()).isEqualTo(StationLogStatus.CANCELLED);
+        assertThat(cancelledContext.stationLogTrace().getErrorMessage()).isEqualTo("cancel");
     }
 
     @Test
@@ -99,10 +102,11 @@ class PipelineCallStationStrategyStatusMappingTest {
         PipelineCallStation<String, String> station = PipelineCallStation.inline("call", childPipeline());
         PipelineCallStationStrategy strategy = new PipelineCallStationStrategy(NestedPipelineExecutor.unsupported());
 
+        StationRunner runner = runnerReturning(childLog(StationLogStatus.FAILED, null, failure));
+        TestStationExecutionContext context = stationContext("call");
+
         // When / Then
-        assertThatThrownBy(() -> strategy.doExecute(station, "input",
-                                                    runnerReturning(childLog(StationLogStatus.FAILED, null, failure)),
-                                                    stationContext("call")))
+        assertThatThrownBy(() -> strategy.doExecute(station, "input", runner, context))
                 .isInstanceOf(PipelineCallException.class)
                 .satisfies(throwable -> assertThat(throwable.getCause()).isSameAs(failure))
                 .hasMessageContaining("Inline child pipeline 'child:1' failed in station 'call'");
@@ -130,15 +134,15 @@ class PipelineCallStationStrategyStatusMappingTest {
 
         // Then
         assertThat(skippedOutput).isEqualTo("skipped");
-        assertThat(skippedContext.record().getStatus()).isEqualTo(StationLogStatus.SKIPPED);
-        assertThat(skippedContext.record().getContext()).containsEntry("pipeline.call.childExecutionId",
-                                                                       skipped.getId());
+        assertThat(skippedContext.stationLogTrace().getStatus()).isEqualTo(StationLogStatus.SKIPPED);
+        assertThat(skippedContext.stationLogTrace().getContext()).containsEntry("pipeline.call.childExecutionId",
+                                                                                skipped.getId());
         assertThat(stoppedOutput).isEqualTo("stopped");
-        assertThat(stoppedContext.record().getStatus()).isEqualTo(StationLogStatus.STOPPED);
-        assertThat(stoppedContext.record().getErrorMessage()).isEqualTo("stop");
+        assertThat(stoppedContext.stationLogTrace().getStatus()).isEqualTo(StationLogStatus.STOPPED);
+        assertThat(stoppedContext.stationLogTrace().getErrorMessage()).isEqualTo("stop");
         assertThat(cancelledOutput).isEqualTo("cancelled");
-        assertThat(cancelledContext.record().getStatus()).isEqualTo(StationLogStatus.CANCELLED);
-        assertThat(cancelledContext.record().getErrorMessage()).isEqualTo("cancel");
+        assertThat(cancelledContext.stationLogTrace().getStatus()).isEqualTo(StationLogStatus.CANCELLED);
+        assertThat(cancelledContext.stationLogTrace().getErrorMessage()).isEqualTo("cancel");
     }
 
     @Test
@@ -147,16 +151,22 @@ class PipelineCallStationStrategyStatusMappingTest {
         PipelineCallStation<String, String> station = PipelineCallStation.nestedRun("call", childPipeline());
         IllegalStateException failure = new IllegalStateException("nested failed");
 
+        AssemblyRunTrace failedRun = childRun(ExecutionStatus.FAILED, failure);
+        PipelineCallStationStrategy failedStrategy = strategyReturning(ExecutionResult.failure(failure, failedRun));
+        StationRunner runner = successfulRunner();
+        TestStationExecutionContext context = stationContext("call");
+
         // When / Then
-        assertThatThrownBy(() -> strategyReturning(ExecutionResult.failure(failure, childRun(ExecutionStatus.FAILED,
-                                                                                             failure)))
-                .doExecute(station, "input", successfulRunner(), stationContext("call")))
+        assertThatThrownBy(() -> failedStrategy.doExecute(station, "input", runner, context))
                 .isInstanceOf(PipelineCallException.class)
                 .satisfies(throwable -> assertThat(throwable.getCause()).isSameAs(failure))
                 .hasMessageContaining("Nested child pipeline 'child:1' failed in station 'call'");
-        assertThatThrownBy(() -> strategyReturning(new ExecutionResult<>(null,
-                io.github.gear4jtest.core.api.ExecutionOutcome.FAILED, null, null))
-                .doExecute(station, "input", successfulRunner(), stationContext("call")))
+        ExecutionResult<Object> failedWithoutRun = new ExecutionResult<>(null,
+                io.github.gear4jtest.core.api.ExecutionOutcome.FAILED, null, null);
+        PipelineCallStationStrategy failedWithoutRunStrategy = strategyReturning(failedWithoutRun);
+        TestStationExecutionContext contextWithoutRun = stationContext("call");
+
+        assertThatThrownBy(() -> failedWithoutRunStrategy.doExecute(station, "input", runner, contextWithoutRun))
                 .isInstanceOf(PipelineCallException.class)
                 .hasCauseInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Nested child pipeline 'child:1' failed in station 'call'");
@@ -234,7 +244,7 @@ class PipelineCallStationStrategyStatusMappingTest {
 
     private record TestStationExecutionContext(String operationId,
                                                ExecutionContext globalContext,
-                                               StationLogTrace record)
+                                               StationLogTrace stationLogTrace)
             implements StationExecutionContext {
         @Override
         public String getOperationId() {
@@ -253,7 +263,7 @@ class PipelineCallStationStrategyStatusMappingTest {
 
         @Override
         public StationLogTrace getRecord() {
-            return record;
+            return stationLogTrace;
         }
 
         @Override

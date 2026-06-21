@@ -87,7 +87,7 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
         }
 
         private void addParameterInjectorIfNecessary() {
-            if (processors.stream().noneMatch(p -> p instanceof WorkerParamsInjector)) {
+            if (processors.stream().noneMatch(WorkerParamsInjector.class::isInstance)) {
                 processors.add(new WorkerParamsInjector());
             }
         }

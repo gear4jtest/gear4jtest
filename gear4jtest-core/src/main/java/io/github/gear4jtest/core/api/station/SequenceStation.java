@@ -11,7 +11,7 @@ public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
     private FlowConfig flowConfig;
     private boolean synthetic;
 
-    private SequenceStation(String id, String name, List<AbstractStation<?, ?>> steps) {
+    private SequenceStation(String id, List<AbstractStation<?, ?>> steps) {
         super(id, StationKind.OTHER);
         this.steps = List.copyOf(steps);
     }
@@ -27,7 +27,7 @@ public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
     public static SequenceStation<Object, Object> syntheticRoot(String id,
                                                                 List<AbstractStation<?, ?>> steps,
                                                                 FlowConfig flowConfig) {
-        SequenceStation<Object, Object> root = new SequenceStation<>(id, id, steps);
+        SequenceStation<Object, Object> root = new SequenceStation<>(id, steps);
         root.setSynthetic(true);
         root.setFlowConfig(flowConfig);
         return root;
@@ -55,27 +55,25 @@ public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
     public static class Builder<IN, OUT> {
         private final String id;
-        private final String name;
         private final List<AbstractStation<?, ?>> accumulatedSteps;
 
-        private Builder(String id, String name, List<AbstractStation<?, ?>> steps) {
+        private Builder(String id, List<AbstractStation<?, ?>> steps) {
             this.id = id;
-            this.name = name;
             this.accumulatedSteps = steps;
         }
 
         public static <I> Builder<I, I> create(String id) {
-            return new Builder<>(id, id, new ArrayList<>());
+            return new Builder<>(id, new ArrayList<>());
         }
 
         public <NEXT_OUT> Builder<IN, NEXT_OUT> next(AbstractStation<OUT, NEXT_OUT> nextStep) {
             this.accumulatedSteps.add(nextStep);
 
-            return new Builder<>(this.id, this.name, this.accumulatedSteps);
+            return new Builder<>(this.id, this.accumulatedSteps);
         }
 
         public SequenceStation<IN, OUT> build() {
-            return new SequenceStation<>(id, name, accumulatedSteps);
+            return new SequenceStation<>(id, accumulatedSteps);
         }
     }
 }

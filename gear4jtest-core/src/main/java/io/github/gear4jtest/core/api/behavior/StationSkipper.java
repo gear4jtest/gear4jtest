@@ -15,6 +15,8 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
  * </p>
  */
 public final class StationSkipper {
+    private static final String PREDICATE_PARAMETER = "predicate";
+
     private final SkipPhase phase;
     private final StationSkipTest test;
     private final String reason;
@@ -29,7 +31,7 @@ public final class StationSkipper {
      * Creates a pre-processor skipper without a reason.
      */
     public static StationSkipper pre(StationSkipTest predicate) {
-        Objects.requireNonNull(predicate, "predicate");
+        Objects.requireNonNull(predicate, PREDICATE_PARAMETER);
         return new StationSkipper(SkipPhase.PRE_PROCESSORS, predicate, null);
     }
 
@@ -37,7 +39,7 @@ public final class StationSkipper {
      * Creates a pre-processor skipper with an optional diagnostic reason.
      */
     public static StationSkipper pre(StationSkipTest predicate, String reason) {
-        Objects.requireNonNull(predicate, "predicate");
+        Objects.requireNonNull(predicate, PREDICATE_PARAMETER);
         return new StationSkipper(SkipPhase.PRE_PROCESSORS, predicate, reason);
     }
 
@@ -45,7 +47,7 @@ public final class StationSkipper {
      * Creates a post-processor skipper without a reason.
      */
     public static StationSkipper post(StationSkipTest predicate) {
-        Objects.requireNonNull(predicate, "predicate");
+        Objects.requireNonNull(predicate, PREDICATE_PARAMETER);
         return new StationSkipper(SkipPhase.POST_PROCESSORS, predicate, null);
     }
 
@@ -57,7 +59,7 @@ public final class StationSkipper {
      * Creates a post-processor skipper with an optional diagnostic reason.
      */
     public static StationSkipper post(StationSkipTest predicate, String reason) {
-        Objects.requireNonNull(predicate, "predicate");
+        Objects.requireNonNull(predicate, PREDICATE_PARAMETER);
         return new StationSkipper(SkipPhase.POST_PROCESSORS, predicate, reason);
     }
 

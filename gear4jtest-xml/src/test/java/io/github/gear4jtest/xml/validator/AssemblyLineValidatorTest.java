@@ -3,6 +3,8 @@ package io.github.gear4jtest.xml.validator;
 import java.io.IOException;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -28,43 +30,20 @@ class AssemblyLineValidatorTest {
         assertThatCode(() -> validator.validate(xml)).doesNotThrowAnyException();
     }
 
-    @Test
-    void should_reject_invalid_xml_contract() throws IOException {
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "/samples/bad-assembly-line.xml",
+            "/samples/bad-missing-subline-id.xml",
+            "/samples/bad-doctype.xml",
+            "/samples/bad-missing-else-operation.xml"
+    })
+    void should_reject_invalid_xml_contracts(String sample) throws IOException {
         // Given
-        byte[] xml = resource("/samples/bad-assembly-line.xml");
+        byte[] xml = resource(sample);
 
         // When / Then
         assertThatThrownBy(() -> validator.validate(xml)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Invalid Gear4J XML pipeline definition");
     }
 
-    @Test
-    void should_reject_missing_subline_id() throws IOException {
-        // Given
-        byte[] xml = resource("/samples/bad-missing-subline-id.xml");
-
-        // When / Then
-        assertThatThrownBy(() -> validator.validate(xml)).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Invalid Gear4J XML pipeline definition");
-    }
-
-    @Test
-    void should_reject_doctype_declarations() throws IOException {
-        // Given
-        byte[] xml = resource("/samples/bad-doctype.xml");
-
-        // When / Then
-        assertThatThrownBy(() -> validator.validate(xml)).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Invalid Gear4J XML pipeline definition");
-    }
-
-    @Test
-    void should_reject_ifelse_without_else_operation() throws IOException {
-        // Given
-        byte[] xml = resource("/samples/bad-missing-else-operation.xml");
-
-        // When / Then
-        assertThatThrownBy(() -> validator.validate(xml)).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Invalid Gear4J XML pipeline definition");
-    }
 }

@@ -181,14 +181,17 @@ public final class EventManager {
         try {
             if (!queue.offer(STOP_EVENT, shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
                 queue.clear();
-                queue.offer(STOP_EVENT);
+                boolean stopQueued = queue.offer(STOP_EVENT);
                 LOGGER.warn("Timed out while enqueueing the event-runtime stop signal. Pending events were discarded. "
-                        + "timeout={}", shutdownTimeout);
+                        + "timeout={}, stopQueued={}", shutdownTimeout, stopQueued);
             }
         } catch (InterruptedException interruptedException) {
             Thread.currentThread().interrupt();
             queue.clear();
-            queue.offer(STOP_EVENT);
+            boolean stopQueued = queue.offer(STOP_EVENT);
+            if (!stopQueued) {
+                LOGGER.warn("Unable to enqueue the event-runtime stop signal after interruption.");
+            }
         }
     }
 
@@ -212,8 +215,8 @@ public final class EventManager {
             }
         } catch (InterruptedException interruptedException) {
             Thread.currentThread().interrupt();
-        } catch (Throwable throwable) {
-            terminationFuture.completeExceptionally(throwable);
+        } catch (RuntimeException runtimeException) {
+            terminationFuture.completeExceptionally(runtimeException);
         } finally {
             dispatcherStopped.set(true);
             if (reactionExecutor != null) {
@@ -259,8 +262,6 @@ public final class EventManager {
     private void invokeSafely(EventSubscription<?> subscription, Event event) {
         try {
             subscription.handle(event);
-        } catch (Error error) {
-            throw error;
         } catch (Exception exception) {
             failedReactions.incrementAndGet();
             LOGGER.error("Asynchronous event reaction failed. eventType={}, subscriptionType={}", event.getName(),

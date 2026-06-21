@@ -23,7 +23,9 @@ class JdbcDialectCoverageTest {
 
     @Test
     void from_shouldRejectUnknownMetadataAndNullMetadata() {
-        assertThatThrownBy(() -> JdbcDialect.from(meta("H2", "H2 JDBC Driver", "jdbc:h2:mem:test")))
+        DatabaseMetaData unknownMetadata = meta("H2", "H2 JDBC Driver", "jdbc:h2:mem:test");
+
+        assertThatThrownBy(() -> JdbcDialect.from(unknownMetadata))
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessageContaining("Unsupported Gear4J external repository database provider");
         assertThatNullPointerException()

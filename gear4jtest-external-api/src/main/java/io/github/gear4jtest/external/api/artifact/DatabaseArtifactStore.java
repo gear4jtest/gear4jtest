@@ -20,7 +20,7 @@ import io.github.gear4jtest.core.persistence.JdbcStatementOptions;
 import io.github.gear4jtest.external.api.repository.jdbc.ExternalRepositorySqlDialect;
 
 public final class DatabaseArtifactStore implements ArtifactStore {
-    private static final Pattern SQL_IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]{0,63}");
+    private static final Pattern SQL_IDENTIFIER = Pattern.compile("[A-Za-z_]\\w{0,63}");
     private static final String DEFAULT_TABLE = "artifact_store";
 
     private final DataSource ds;
@@ -129,6 +129,8 @@ public final class DatabaseArtifactStore implements ArtifactStore {
             try {
                 Files.deleteIfExists(tmp);
             } catch (Exception ignored) {
+                // Best-effort cleanup: the operation result must not be masked by temp-file
+                // deletion failure.
             }
         }
     }

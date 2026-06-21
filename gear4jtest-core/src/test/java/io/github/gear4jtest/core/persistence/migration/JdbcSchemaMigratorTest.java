@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
 import org.junit.jupiter.api.Test;
@@ -198,6 +199,100 @@ class JdbcSchemaMigratorTest {
         order.verify(connection).setAutoCommit(false);
         order.verify(connection).rollback();
         order.verify(connection).setAutoCommit(true);
+    }
+
+    @Test
+    void builder_shouldRejectBlankRequiredValuesAndNullOptions() {
+        assertThatThrownBy(() -> JdbcSchemaMigrator.builder()
+                .moduleId(" ")
+                .dialect(Gear4jDatabaseDialect.H2)
+                .migrationListResource("db/migrations.list")
+                .baselineTableName("assembly_run")
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("moduleId must not be blank");
+
+        assertThatThrownBy(() -> JdbcSchemaMigrator.builder()
+                .moduleId("module")
+                .dialect(Gear4jDatabaseDialect.H2)
+                .migrationListResource(" ")
+                .baselineTableName("assembly_run")
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("migrationListResource must not be blank");
+
+        assertThatThrownBy(() -> JdbcSchemaMigrator.builder()
+                .moduleId("module")
+                .dialect(Gear4jDatabaseDialect.H2)
+                .migrationListResource("db/migrations.list")
+                .baselineTableName(" ")
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("baselineTableName must not be blank");
+
+        assertThatThrownBy(() -> JdbcSchemaMigrator.builder()
+                .moduleId("module")
+                .dialect(Gear4jDatabaseDialect.H2)
+                .migrationListResource("db/migrations.list")
+                .baselineTableName("assembly_run")
+                .statementOptions(null)
+                .build())
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("statementOptions must not be null");
+    }
+
+    @Test
+    void migrateDataSource_shouldOpenMigrateAndCloseConnection() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        DatabaseMetaData metadata = mock(DatabaseMetaData.class);
+        PreparedStatement insertLock = mock(PreparedStatement.class);
+        PreparedStatement selectLock = mock(PreparedStatement.class);
+        PreparedStatement updateLock = mock(PreparedStatement.class);
+        ResultSet selectedLock = resultSet(true);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.getAutoCommit()).thenReturn(false);
+        when(connection.getMetaData()).thenReturn(metadata);
+        when(metadata.getTables(isNull(), isNull(), anyString(), isNull())).thenAnswer(invocation -> resultSet(true));
+        when(connection.prepareStatement("INSERT INTO gear4j_schema_lock(lock_name, locked_at) VALUES (?,?) "
+                + "ON CONFLICT (lock_name) DO NOTHING"))
+                .thenReturn(insertLock);
+        when(connection.prepareStatement("SELECT lock_name FROM gear4j_schema_lock WHERE lock_name = ? FOR UPDATE"))
+                .thenReturn(selectLock);
+        when(selectLock.executeQuery()).thenReturn(selectedLock);
+        when(connection.prepareStatement("UPDATE gear4j_schema_lock SET locked_at = ? WHERE lock_name = ?"))
+                .thenReturn(updateLock);
+        JdbcSchemaMigrator migrator = JdbcSchemaMigrator.builder()
+                .moduleId("gear4j-core")
+                .dialect(Gear4jDatabaseDialect.POSTGRESQL)
+                .migrationListResource("/db/migrations.list")
+                .baselineTableName("assembly_run")
+                .classLoader(resources(Map.of("db/migrations.list", "")))
+                .build();
+
+        migrator.migrate(dataSource);
+
+        verify(connection).close();
+        verify(selectLock).executeQuery();
+    }
+
+    @Test
+    void migrateDataSource_shouldWrapConnectionFailures() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        SQLException failure = new SQLException("no connection");
+        when(dataSource.getConnection()).thenThrow(failure);
+        JdbcSchemaMigrator migrator = JdbcSchemaMigrator.builder()
+                .moduleId("gear4j-core")
+                .dialect(Gear4jDatabaseDialect.H2)
+                .migrationListResource("db/migrations.list")
+                .baselineTableName("assembly_run")
+                .classLoader(resources(Map.of("db/migrations.list", "")))
+                .build();
+
+        assertThatThrownBy(() -> migrator.migrate(dataSource))
+                .isInstanceOf(SchemaMigrationException.class)
+                .hasMessageContaining("Failed to migrate Gear4J schema for module gear4j-core")
+                .hasCause(failure);
     }
 
     private static ResultSet resultSet(boolean next) throws SQLException {

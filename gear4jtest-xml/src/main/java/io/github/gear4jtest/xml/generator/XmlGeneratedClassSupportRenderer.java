@@ -7,11 +7,15 @@ import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContainerOperation;
 import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Operation;
 
 final class XmlGeneratedClassSupportRenderer {
+    private static final String INDENT_PRIVATE = "    private ";
+    private static final String FIELD_SUFFIX = "\")\n";
+    private static final String METHOD_END = "    }\n\n";
+
     void appendDependencies(StringBuilder code, JavaImportManager imports, XmlPipelineDefinition definition) {
         for (XmlPipelineDefinition.Dependency dependency : definition.dependencies()) {
             code.append("    @").append(imports.use("io.github.gear4jtest.external.api.loader.Inject")).append("(\"")
-                    .append(JavaStringEscaper.escapeJava(dependency.name())).append("\")\n");
-            code.append("    private ").append(JavaTypeName.parse(dependency.type()).render(imports)).append(" ")
+                    .append(JavaStringEscaper.escapeJava(dependency.name())).append(FIELD_SUFFIX);
+            code.append(INDENT_PRIVATE).append(JavaTypeName.parse(dependency.type()).render(imports)).append(" ")
                     .append(XmlGeneratedNames.toFieldName(dependency.name())).append(";\n\n");
         }
     }
@@ -28,15 +32,15 @@ final class XmlGeneratedClassSupportRenderer {
         for (Map.Entry<ContainerOperation, String> entry : executorFields.entrySet()) {
             code.append("    @").append(inject).append("(\"")
                     .append(JavaStringEscaper.escapeJava(XmlGeneratedNames.parallelExecutorBeanName(entry.getKey())))
-                    .append("\")\n");
-            code.append("    private ").append(executorService).append(" ").append(entry.getValue())
+                    .append(FIELD_SUFFIX);
+            code.append(INDENT_PRIVATE).append(executorService).append(" ").append(entry.getValue())
                     .append(";\n\n");
         }
     }
 
     void appendConstructor(StringBuilder code, String simpleClassName) {
         code.append("    public ").append(simpleClassName).append("() {\n");
-        code.append("    }\n\n");
+        code.append(METHOD_END);
     }
 
     void appendGelHelper(StringBuilder code, JavaImportManager imports, XmlPipelineDefinition definition) {
@@ -57,7 +61,7 @@ final class XmlGeneratedClassSupportRenderer {
                 .append(gearExpressionParser).append("::parse)\n");
         code.append("                .evaluateBoolean(new ").append(gearExpressionContext)
                 .append("(input, ctx == null ? null : ctx.getContext()));\n");
-        code.append("    }\n\n");
+        code.append(METHOD_END);
     }
 
     void appendRequireExecutorServiceMethod(StringBuilder code,
@@ -77,7 +81,7 @@ final class XmlGeneratedClassSupportRenderer {
                 .append("\"' for parallel XML container\");\n");
         code.append("        }\n");
         code.append("        return executorService;\n");
-        code.append("    }\n\n");
+        code.append(METHOD_END);
     }
 
     void appendConfigurationMethod(StringBuilder code, JavaImportManager imports, XmlPipelineDefinition definition) {
@@ -86,7 +90,7 @@ final class XmlGeneratedClassSupportRenderer {
         }
 
         String configuration = imports.use("io.github.gear4jtest.core.api.AssemblyLine") + ".Configuration";
-        code.append("    private ").append(configuration).append(" createConfiguration() {\n");
+        code.append(INDENT_PRIVATE).append(configuration).append(" createConfiguration() {\n");
         code.append("        ").append(configuration).append(".Builder builder = ").append(configuration)
                 .append(".builder();\n");
 
@@ -115,7 +119,7 @@ final class XmlGeneratedClassSupportRenderer {
         }
 
         code.append("        return builder.build();\n");
-        code.append("    }\n\n");
+        code.append(METHOD_END);
     }
 
     void appendAssemblyMethod(StringBuilder code,
@@ -131,7 +135,8 @@ final class XmlGeneratedClassSupportRenderer {
                 .append("> getAssemblyLineDefinition() {\n");
         String elementModelBuilders = imports.use("io.github.gear4jtest.core.api.util.ElementModelBuilders");
         code.append("        return ").append(elementModelBuilders).append(".<").append(inputType.render(imports))
-                .append(">createAssemblyLine(\"").append(JavaStringEscaper.escapeJava(definition.id())).append("\")\n");
+                .append(">createAssemblyLine(\"").append(JavaStringEscaper.escapeJava(definition.id()))
+                .append(FIELD_SUFFIX);
 
         for (Operation operation : definition.operations()) {
             code.append("                .then(").append(XmlGeneratedNames.operationMethodName(operation))
@@ -143,7 +148,7 @@ final class XmlGeneratedClassSupportRenderer {
         }
 
         code.append("                .build();\n");
-        code.append("    }\n\n");
+        code.append(METHOD_END);
     }
 
     private JavaTypeName resolvePipelineOutput(XmlPipelineDefinition definition,

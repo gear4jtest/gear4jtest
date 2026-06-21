@@ -12,8 +12,8 @@ import io.github.gear4jtest.core.api.annotation.Internal;
 
 @Internal
 public abstract class AbstractStationLogState<T extends AbstractStationLogState<T, S>, S> {
-    private transient Object output;
-    private final transient List<Throwable> throwables = Collections.synchronizedList(new ArrayList<>());
+    private Object output;
+    private final List<Throwable> throwables = Collections.synchronizedList(new ArrayList<>());
     private UUID id;
     private UUID pipelineExecutionId;
     private String operationId;

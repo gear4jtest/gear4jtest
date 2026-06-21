@@ -12,6 +12,7 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.spi.extension.ExecutorWrapperExtension;
 import io.github.gear4jtest.core.spi.extension.RunInterceptorExtension;
 import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
+import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
 import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
 import io.github.gear4jtest.core.spi.extension.StationWrapperExtension;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
@@ -43,12 +44,10 @@ class PipelineRuntimeContractValidatorTest {
     void validateConfigurationCoherence_shouldRejectConfiglessInlineContractWhenRuntimeConfigIsPresent() {
         PipelineRuntimeContract contract = PipelineRuntimeContract.inlineConfigless();
 
-        assertThatThrownBy(() -> PipelineRuntimeContractValidator.validateConfigurationCoherence(contract,
-                                                                                                 null,
-                                                                                                 EventHandlingDefinition
-                                                                                                         .builder()
-                                                                                                         .build(),
-                                                                                                 List.of()))
+        EventHandlingDefinition eventHandling = EventHandlingDefinition.builder().build();
+        List<RuntimeExtension> extensions = List.of();
+
+        assertThatThrownBy(() -> validateConfigurationCoherence(contract, null, eventHandling, extensions))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("configless");
     }
@@ -60,11 +59,10 @@ class PipelineRuntimeContractValidatorTest {
                 .mandatoryRequirement(RuntimeRequirement.defaultEventHandling())
                 .build();
 
-        assertThatThrownBy(() -> PipelineRuntimeContractValidator.validateConfigurationCoherence(contract,
-                                                                                                 PersistenceConfiguration
-                                                                                                         .builder()
-                                                                                                         .build(),
-                                                                                                 null, List.of()))
+        PersistenceConfiguration persistence = PersistenceConfiguration.builder().build();
+        List<RuntimeExtension> extensions = List.of();
+
+        assertThatThrownBy(() -> validateConfigurationCoherence(contract, persistence, null, extensions))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("persistence");
     }
@@ -75,12 +73,10 @@ class PipelineRuntimeContractValidatorTest {
                 .inlinePolicy(InlinePolicy.ALLOWED_WHEN_REQUIREMENTS_SATISFIED)
                 .build();
 
-        assertThatThrownBy(() -> PipelineRuntimeContractValidator.validateConfigurationCoherence(contract,
-                                                                                                 null,
-                                                                                                 EventHandlingDefinition
-                                                                                                         .builder()
-                                                                                                         .build(),
-                                                                                                 List.of()))
+        EventHandlingDefinition eventHandling = EventHandlingDefinition.builder().build();
+        List<RuntimeExtension> extensions = List.of();
+
+        assertThatThrownBy(() -> validateConfigurationCoherence(contract, null, eventHandling, extensions))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("event-handling requirement");
     }
@@ -91,21 +87,21 @@ class PipelineRuntimeContractValidatorTest {
                 .inlinePolicy(InlinePolicy.ALLOWED_WHEN_REQUIREMENTS_SATISFIED)
                 .build();
 
-        assertThatThrownBy(() -> PipelineRuntimeContractValidator.validateConfigurationCoherence(contract,
-                                                                                                 null, null,
-                                                                                                 List.of(new TestRunInterceptor())))
+        List<RuntimeExtension> runInterceptorExtensions = List.of(new TestRunInterceptor());
+
+        assertThatThrownBy(() -> validateConfigurationCoherence(contract, null, null, runInterceptorExtensions))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("run-scoped extension");
 
-        assertThatThrownBy(() -> PipelineRuntimeContractValidator.validateConfigurationCoherence(contract,
-                                                                                                 null, null,
-                                                                                                 List.of(new TestRunLifecycle())))
+        List<RuntimeExtension> runLifecycleExtensions = List.of(new TestRunLifecycle());
+
+        assertThatThrownBy(() -> validateConfigurationCoherence(contract, null, null, runLifecycleExtensions))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("run-scoped extension");
 
-        assertThatThrownBy(() -> PipelineRuntimeContractValidator.validateConfigurationCoherence(contract,
-                                                                                                 null, null,
-                                                                                                 List.of(new TestExecutorWrapper())))
+        List<RuntimeExtension> executorWrapperExtensions = List.of(new TestExecutorWrapper());
+
+        assertThatThrownBy(() -> validateConfigurationCoherence(contract, null, null, executorWrapperExtensions))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("executor wrapper extension");
     }
@@ -116,9 +112,9 @@ class PipelineRuntimeContractValidatorTest {
                 .inlinePolicy(InlinePolicy.ALLOWED_WHEN_REQUIREMENTS_SATISFIED)
                 .build();
 
-        assertThatThrownBy(() -> PipelineRuntimeContractValidator.validateConfigurationCoherence(contract,
-                                                                                                 null, null,
-                                                                                                 List.of(new TestStationWrapper())))
+        List<RuntimeExtension> stationWrapperExtensions = List.of(new TestStationWrapper());
+
+        assertThatThrownBy(() -> validateConfigurationCoherence(contract, null, null, stationWrapperExtensions))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("mandatory runtime requirement");
 
@@ -129,6 +125,14 @@ class PipelineRuntimeContractValidatorTest {
 
         PipelineRuntimeContractValidator.validateConfigurationCoherence(satisfied, null, null,
                                                                         List.of(new TestStationLifecycle()));
+    }
+
+    private static void validateConfigurationCoherence(PipelineRuntimeContract contract,
+                                                       PersistenceConfiguration persistenceConfiguration,
+                                                       EventHandlingDefinition eventHandlingDefinition,
+                                                       List<RuntimeExtension> extensions) {
+        PipelineRuntimeContractValidator.validateConfigurationCoherence(contract, persistenceConfiguration,
+                                                                        eventHandlingDefinition, extensions);
     }
 
     private static final class TestRunInterceptor implements RunInterceptorExtension {

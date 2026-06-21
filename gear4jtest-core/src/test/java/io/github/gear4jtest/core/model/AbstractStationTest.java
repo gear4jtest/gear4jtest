@@ -67,8 +67,10 @@ class AbstractStationTest {
         // Given
         TestStation station = new TestStation("station-1");
 
+        var metadata = station.getMetadata();
+
         // When / Then
-        assertThatThrownBy(() -> station.getMetadata().require(String.class)).isInstanceOf(IllegalStateException.class)
+        assertThatThrownBy(() -> metadata.require(String.class)).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining(String.class.getName());
     }
 

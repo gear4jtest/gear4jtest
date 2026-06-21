@@ -1,0 +1,79 @@
+package io.github.gear4jtest.core.api;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import io.github.gear4jtest.core.api.context.CancellationToken;
+import io.github.gear4jtest.core.api.pipeline.NestedRunContext;
+import io.github.gear4jtest.core.api.pipeline.PipelineCallStack;
+import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
+import io.github.gear4jtest.core.spi.factory.IdGenerator;
+import io.github.gear4jtest.core.spi.factory.ResourceFactory;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+class RunRequestDeepCoverageTest {
+    @Test
+    void builder_shouldExposeDefaultsAndCopyNullContextToEmptyMap() {
+        // When
+        RunRequest request = RunRequest.builder().context(null).build();
+
+        // Then
+        assertThat(request.getInput()).isNull();
+        assertThat(request.getContext()).isEmpty();
+        assertThat(request.getExtensions()).isEmpty();
+        assertThat(request.getResourceFactory()).isNull();
+        assertThat(request.getIdGenerator()).isNull();
+        assertThat(request.getNestedRunContext()).isNull();
+        assertThat(request.getPipelineCallStack()).isNull();
+        assertThat(request.getCancellationToken()).isNull();
+    }
+
+    @Test
+    void toBuilder_shouldDefensivelyCopyExtensionsAndContext() {
+        // Given
+        Map<String, Object> sourceContext = new LinkedHashMap<>();
+        sourceContext.put("tenant", "acme");
+        RuntimeExtension extension = new RuntimeExtension() {};
+        ResourceFactory resourceFactory = new ResourceFactory() {
+            @Override
+            public <T> T getResource(Class<T> type) {
+                return null;
+            }
+        };
+        IdGenerator idGenerator = () -> UUID.fromString("00000000-0000-7000-8000-000000000123");
+        NestedRunContext nested = new NestedRunContext(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                "parent", "station");
+        PipelineCallStack callStack = PipelineCallStack.withMaxDepth(5);
+        CancellationToken token = new CancellationToken();
+        RunRequest request = RunRequest.builder()
+                .input("input")
+                .context(sourceContext)
+                .resourceFactory(resourceFactory)
+                .withIdGenerator(idGenerator)
+                .nestedRunContext(nested)
+                .pipelineCallStack(callStack)
+                .cancellationToken(token)
+                .with(extension)
+                .build();
+
+        // When
+        RunRequest copy = request.toBuilder().context(Map.of("copied", true)).build();
+        sourceContext.put("late", "mutation");
+
+        // Then
+        assertThat(copy.getInput()).isEqualTo("input");
+        assertThat(copy.getContext()).containsOnly(Map.entry("copied", true));
+        assertThat(copy.getResourceFactory()).isSameAs(resourceFactory);
+        assertThat(copy.getIdGenerator()).isSameAs(idGenerator);
+        assertThat(copy.getNestedRunContext()).isSameAs(nested);
+        assertThat(copy.getPipelineCallStack()).isSameAs(callStack);
+        assertThat(copy.getCancellationToken()).isSameAs(token);
+        assertThat(copy.getExtensions()).containsExactly(extension);
+        assertThatThrownBy(() -> copy.getExtensions().add(new RuntimeExtension() {}))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+}

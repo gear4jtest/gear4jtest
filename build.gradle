@@ -237,6 +237,7 @@ configure(project.coreProjects.findAll { it.name.contains("gradle") }) {
 
 def allTestCoverageFile = "${rootProject.projectDir}/build/reports/jacoco/report.xml"
 
+
 sonar {
     properties {
         property "sonar.host.url", "https://sonarcloud.io"

@@ -51,14 +51,14 @@ public class InMemoryExecutionManager implements AssemblyRunManager {
     }
 
     @Override
-    public void append(StationLogRecord record) {
-        repository.saveOperationRecord(record != null ? record.redactedWith(redactor) : null);
+    public void append(StationLogRecord stationLogRecord) {
+        repository.saveOperationRecord(stationLogRecord != null ? stationLogRecord.redactedWith(redactor) : null);
     }
 
     @Override
     public void appendAll(List<StationLogRecord> records) {
         repository.saveOperationRecords(records == null ? null
-                : records.stream().map(record -> record.redactedWith(redactor)).toList());
+                : records.stream().map(entry -> entry.redactedWith(redactor)).toList());
     }
 
     @Override

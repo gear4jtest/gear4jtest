@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  * </p>
  */
 public interface XmlJavaSourcePolicy {
-    Pattern JAVA_PACKAGE = Pattern.compile("[a-zA-Z_$][a-zA-Z\\d_$]*(\\.[a-zA-Z_$][a-zA-Z\\d_$]*)*");
+    Pattern JAVA_PACKAGE = Pattern.compile("[a-zA-Z_$][a-zA-Z\\d_$]*+(?:\\.[a-zA-Z_$][a-zA-Z\\d_$]*+)*+");
 
     default void validatePackageName(String packageName) {
         if (packageName == null || !JAVA_PACKAGE.matcher(packageName).matches()) {

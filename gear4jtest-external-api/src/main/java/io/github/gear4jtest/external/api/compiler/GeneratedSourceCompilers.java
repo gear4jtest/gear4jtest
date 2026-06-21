@@ -50,11 +50,8 @@ public final class GeneratedSourceCompilers {
      */
     public static GeneratedSourceCompiler fromServiceLoader(ClassLoader classLoader) {
         ClassLoader effectiveClassLoader = classLoader != null ? classLoader : contextClassLoader();
-        for (GeneratedSourceCompiler compiler : ServiceLoader.load(GeneratedSourceCompiler.class,
-                                                                   effectiveClassLoader)) {
-            return compiler;
-        }
-        return defaultCompiler(effectiveClassLoader);
+        var compilers = ServiceLoader.load(GeneratedSourceCompiler.class, effectiveClassLoader).iterator();
+        return compilers.hasNext() ? compilers.next() : defaultCompiler(effectiveClassLoader);
     }
 
     private static ClassLoader contextClassLoader() {

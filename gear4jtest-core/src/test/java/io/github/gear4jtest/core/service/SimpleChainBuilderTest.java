@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -55,7 +56,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 public class SimpleChainBuilderTest {
     @Test
-    public void pipelineWithSkipIteratorAndEventSubscription_shouldComplete() throws InterruptedException {
+    void pipelineWithSkipIteratorAndEventSubscription_shouldComplete() {
         // Given
         var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
                 .then(processingOperation("step3", Step3.class).parameter(Step3::getParam, "a")
@@ -114,7 +115,7 @@ public class SimpleChainBuilderTest {
     }
 
     @Test
-    public void pipelineWithEventSubscription_shouldPublishParameterEvents() throws InterruptedException {
+    void pipelineWithEventSubscription_shouldPublishParameterEvents() {
         // Given
         var testEventListener = new TestEventListener();
         var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
@@ -161,7 +162,7 @@ public class SimpleChainBuilderTest {
     }
 
     @Test
-    public void test_container_two_sublines() {
+    void test_container_two_sublines() {
         // Given
         var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
                 .then(processingOperation("step11", Step11.class).parameter(Step11::getParam, "a").build())
@@ -204,7 +205,7 @@ public class SimpleChainBuilderTest {
     }
 
     @Test
-    public void test_container_two_paralleled_sublines() {
+    void test_container_two_paralleled_sublines() {
         // Given
         var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
                 .then(processingOperation("step11", Step11.class).parameter(Step11::getParam, "a").build())
@@ -247,7 +248,7 @@ public class SimpleChainBuilderTest {
     }
 
     @Test
-    public void test_container_if_else_container() {
+    void test_container_if_else_container() {
         // Given
         var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
                 .then(processingOperation("step11", Step11.class).parameter(Step11::getParam, "a").build())
@@ -386,7 +387,7 @@ public class SimpleChainBuilderTest {
         }
     }
 
-    private static void awaitUntilAsserted(Runnable assertion) throws InterruptedException {
+    private static void awaitUntilAsserted(Runnable assertion) {
         long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
         AssertionError lastFailure = null;
         while (System.nanoTime() < deadlineNanos) {
@@ -395,7 +396,7 @@ public class SimpleChainBuilderTest {
                 return;
             } catch (AssertionError e) {
                 lastFailure = e;
-                TimeUnit.MILLISECONDS.sleep(10);
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
             }
         }
         if (lastFailure != null) {
@@ -407,7 +408,7 @@ public class SimpleChainBuilderTest {
     public static class TestEventListener {
         private final AtomicInteger counter = new AtomicInteger();
 
-        public void handleEvent(Event e) {
+        void handleEvent(Event e) {
             System.out.println(e.getExecutionId() + " " + e.getName() + " " + e.getId());
             counter.incrementAndGet();
         }

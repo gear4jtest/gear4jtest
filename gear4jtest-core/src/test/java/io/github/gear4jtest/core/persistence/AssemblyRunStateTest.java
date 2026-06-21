@@ -43,7 +43,9 @@ class AssemblyRunStateTest {
 
         assertThat(details.getSummary()).isSameAs(summary);
         assertThat(details.getRootOperations()).containsExactly(log);
-        assertThatThrownBy(() -> details.getRootOperations().add(log))
+        List<StationLog> rootOperations = details.getRootOperations();
+
+        assertThatThrownBy(() -> rootOperations.add(log))
                 .isInstanceOf(UnsupportedOperationException.class);
         assertThat(new AssemblyRunDetails(summary, null).getRootOperations()).isEmpty();
     }
@@ -58,7 +60,9 @@ class AssemblyRunStateTest {
 
         assertThat(view.getSummary()).isSameAs(summary);
         assertThat(view.getRootOperations()).containsExactly(log);
-        assertThatThrownBy(() -> view.getRootOperations().add(log))
+        List<StationLogRecord> rootOperations = view.getRootOperations();
+
+        assertThatThrownBy(() -> rootOperations.add(log))
                 .isInstanceOf(UnsupportedOperationException.class);
         assertThat(new AssemblyRunView(summary, null).getRootOperations()).isEmpty();
     }

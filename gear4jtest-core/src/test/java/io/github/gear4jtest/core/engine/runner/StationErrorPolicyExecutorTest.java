@@ -34,12 +34,12 @@ class StationErrorPolicyExecutorTest {
         StationExecutionContext context = stationContext("station");
 
         // When
-        StationLogTrace record = executor.apply(station, "input", context, failure);
+        StationLogTrace stationLog = executor.apply(station, "input", context, failure);
 
         // Then
-        assertThat(record.getStatus()).isEqualTo(StationLogStatus.FAILED);
-        assertThat(record.getErrorMessage()).isEqualTo("boom");
-        assertThat(record.getThrowables()).containsExactly(failure);
+        assertThat(stationLog.getStatus()).isEqualTo(StationLogStatus.FAILED);
+        assertThat(stationLog.getErrorMessage()).isEqualTo("boom");
+        assertThat(stationLog.getThrowables()).containsExactly(failure);
     }
 
     @Test
@@ -51,12 +51,12 @@ class StationErrorPolicyExecutorTest {
         context.getRecord().markSuccess("already-done");
 
         // When
-        StationLogTrace record = executor.apply(station, "input", context, failure);
+        StationLogTrace stationLog = executor.apply(station, "input", context, failure);
 
         // Then
-        assertThat(record.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
-        assertThat(record.<String>getOutput()).isEqualTo("already-done");
-        assertThat(record.getErrorHandlerMessages()).isEqualTo("late");
+        assertThat(stationLog.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
+        assertThat(stationLog.<String>getOutput()).isEqualTo("already-done");
+        assertThat(stationLog.getErrorHandlerMessages()).isEqualTo("late");
     }
 
     @Test
@@ -73,11 +73,11 @@ class StationErrorPolicyExecutorTest {
         StationExecutionContext context = stationContext("station");
 
         // When
-        StationLogTrace record = executor.apply(station, "input", context, failure);
+        StationLogTrace stationLog = executor.apply(station, "input", context, failure);
 
         // Then
-        assertThat(record.getStatus()).isEqualTo(StationLogStatus.FAILED);
-        assertThat(record.getErrorMessage()).isEqualTo("boom");
+        assertThat(stationLog.getStatus()).isEqualTo(StationLogStatus.FAILED);
+        assertThat(stationLog.getErrorMessage()).isEqualTo("boom");
     }
 
     @Test
@@ -94,12 +94,12 @@ class StationErrorPolicyExecutorTest {
         StationExecutionContext context = stationContext("station");
 
         // When
-        StationLogTrace record = executor.apply(station, "input", context, failure);
+        StationLogTrace stationLog = executor.apply(station, "input", context, failure);
 
         // Then
         assertThat(actions).hasValue(1);
-        assertThat(record.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
-        assertThat(record.<String>getOutput()).isEqualTo("input-fallback");
+        assertThat(stationLog.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
+        assertThat(stationLog.<String>getOutput()).isEqualTo("input-fallback");
     }
 
     @Test
@@ -116,13 +116,13 @@ class StationErrorPolicyExecutorTest {
         StationExecutionContext context = stationContext("station");
 
         // When
-        StationLogTrace record = executor.apply(station, "input", context, new RuntimeException("boom"));
+        StationLogTrace stationLog = executor.apply(station, "input", context, new RuntimeException("boom"));
 
         // Then
-        assertThat(record.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
-        assertThat(record.<String>getOutput()).isEqualTo("input-fallback");
-        assertThat(record.getErrorHandlerMessages()).contains("handler failed");
-        assertThat(record.getThrowables()).contains(actionFailure);
+        assertThat(stationLog.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
+        assertThat(stationLog.<String>getOutput()).isEqualTo("input-fallback");
+        assertThat(stationLog.getErrorHandlerMessages()).contains("handler failed");
+        assertThat(stationLog.getThrowables()).contains(actionFailure);
     }
 
     @Test
@@ -136,12 +136,12 @@ class StationErrorPolicyExecutorTest {
         StationExecutionContext context = stationContext("station");
 
         // When
-        StationLogTrace record = executor.apply(station, "input", context, original);
+        StationLogTrace stationLog = executor.apply(station, "input", context, original);
 
         // Then
-        assertThat(record.getStatus()).isEqualTo(StationLogStatus.SKIPPED);
-        assertThat(record.getErrorMessage()).isEqualTo("boom");
-        assertThat(record.getErrorHandlerMessages()).contains("fallback failed").contains("boom");
+        assertThat(stationLog.getStatus()).isEqualTo(StationLogStatus.SKIPPED);
+        assertThat(stationLog.getErrorMessage()).isEqualTo("boom");
+        assertThat(stationLog.getErrorHandlerMessages()).contains("fallback failed").contains("boom");
     }
 
     @Test
@@ -151,11 +151,11 @@ class StationErrorPolicyExecutorTest {
         StationExecutionContext context = stationContext("station");
 
         // When
-        StationLogTrace record = executor.apply(station, "input", context, new RuntimeException("boom"));
+        StationLogTrace stationLog = executor.apply(station, "input", context, new RuntimeException("boom"));
 
         // Then
-        assertThat(record.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
-        assertThat(record.<String>getOutput()).isEqualTo("input");
+        assertThat(stationLog.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
+        assertThat(stationLog.<String>getOutput()).isEqualTo("input");
     }
 
     @Test
@@ -165,11 +165,11 @@ class StationErrorPolicyExecutorTest {
         StationExecutionContext context = stationContext("station");
 
         // When
-        StationLogTrace record = executor.apply(station, "input", context, new RuntimeException("boom"));
+        StationLogTrace stationLog = executor.apply(station, "input", context, new RuntimeException("boom"));
 
         // Then
-        assertThat(record.getStatus()).isEqualTo(StationLogStatus.SKIPPED);
-        assertThat(record.getErrorMessage()).isEqualTo("boom");
+        assertThat(stationLog.getStatus()).isEqualTo(StationLogStatus.SKIPPED);
+        assertThat(stationLog.getErrorMessage()).isEqualTo("boom");
     }
 
     @Test
@@ -206,8 +206,8 @@ class StationErrorPolicyExecutorTest {
                 .services(new ExecutionServices(null, noResources()))
                 .assemblyRun(new AssemblyRunTrace(UUID.randomUUID(), "pipeline", Map.of()))
                 .build();
-        StationLogTrace record = StationLogTrace.start(globalContext.getExecutionId(), operationId, null);
-        return new DefaultStationExecutionContext(operationId, StationKind.PROCESSING, globalContext, record, null);
+        StationLogTrace stationLog = StationLogTrace.start(globalContext.getExecutionId(), operationId, null);
+        return new DefaultStationExecutionContext(operationId, StationKind.PROCESSING, globalContext, stationLog, null);
     }
 
     private static ResourceFactory noResources() {

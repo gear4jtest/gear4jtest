@@ -86,8 +86,8 @@ public final class SideComputer<E extends Event, T, R> {
             }
             R finalResult = mapper.apply(computeResult);
             future.complete(finalResult);
-        } catch (Throwable throwable) {
-            future.completeExceptionally(throwable);
+        } catch (Exception exception) {
+            future.completeExceptionally(exception);
         }
     }
 

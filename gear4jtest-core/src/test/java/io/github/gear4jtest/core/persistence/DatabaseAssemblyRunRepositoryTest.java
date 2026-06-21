@@ -261,10 +261,10 @@ class DatabaseAssemblyRunRepositoryTest {
         when(update.executeUpdate()).thenReturn(0);
 
         DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.H2);
-        StationLogRecord record = stationLogRecord("step");
+        StationLogRecord stationLogRecord = stationLogRecord("step");
 
         // When
-        repository.saveOperationRecordsBatch(java.util.List.of(record));
+        repository.saveOperationRecordsBatch(java.util.List.of(stationLogRecord));
 
         // Then
         verify(update).executeBatch();
@@ -297,11 +297,12 @@ class DatabaseAssemblyRunRepositoryTest {
         // Given
         DataSource dataSource = mock(DataSource.class);
 
-        // When / Then
-        assertThatThrownBy(() -> DatabaseAssemblyRunRepository.builder()
+        DatabaseAssemblyRunRepository.Builder builder = DatabaseAssemblyRunRepository.builder()
                 .dataSource(dataSource)
-                .databaseDialect(null)
-                .build())
+                .databaseDialect(null);
+
+        // When / Then
+        assertThatThrownBy(builder::build)
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("databaseDialect must not be null");
     }
@@ -358,6 +359,75 @@ class DatabaseAssemblyRunRepositoryTest {
         // Then
         verify(statement).setInt(1, 20);
         verify(statement).setInt(2, 10);
+    }
+
+    @Test
+    void builder_shouldRequireDataSourceObjectMapperAndStatementOptions() {
+        assertThatThrownBy(() -> DatabaseAssemblyRunRepository.builder()
+                .databaseDialect(Gear4jDatabaseDialect.H2)
+                .build())
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("dataSource must not be null");
+
+        assertThatThrownBy(() -> DatabaseAssemblyRunRepository.builder()
+                .dataSource(mock(DataSource.class))
+                .databaseDialect(Gear4jDatabaseDialect.H2)
+                .objectMapper(null)
+                .build())
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("objectMapper must not be null");
+
+        assertThatThrownBy(() -> DatabaseAssemblyRunRepository.builder()
+                .dataSource(mock(DataSource.class))
+                .databaseDialect(Gear4jDatabaseDialect.H2)
+                .statementOptions(null)
+                .build())
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("statementOptions must not be null");
+    }
+
+    @Test
+    void saveOperationRecordsBatch_shouldIgnoreNullOrEmptyBatches() {
+        DataSource dataSource = mock(DataSource.class);
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.H2);
+
+        repository.saveOperationRecordsBatch(null);
+        repository.saveOperationRecordsBatch(java.util.List.of());
+
+        verifyNoInteractions(dataSource);
+    }
+
+    @Test
+    void recordsRequiringInsert_shouldFallbackToEveryRecordWhenCountsAreMissingOrFailed() {
+        DatabaseAssemblyRunRepository repository = repository(mock(DataSource.class), Gear4jDatabaseDialect.H2);
+        StationLogRecord first = stationLogRecord("step-1");
+        StationLogRecord second = stationLogRecord("step-2");
+        java.util.List<StationLogRecord> records = java.util.List.of(first, second);
+
+        assertThat(repository.recordsRequiringInsert(records, null)).containsExactly(first, second);
+        assertThat(repository.recordsRequiringInsert(records, new int[] { 1 })).containsExactly(first, second);
+        assertThat(repository.recordsRequiringInsert(records, new int[] { 1, Statement.EXECUTE_FAILED }))
+                .containsExactly(first, second);
+    }
+
+    @Test
+    void countChildLogsByRunId_shouldReturnZeroWhenQueryHasNoRows() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        ResultSet resultSet = mock(ResultSet.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(false);
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
+        UUID runId = UUID.randomUUID();
+        UUID parentId = UUID.randomUUID();
+
+        assertThat(repository.countChildLogsByRunId(runId, parentId)).isZero();
+
+        verify(statement).setObject(1, runId);
+        verify(statement).setObject(2, parentId);
     }
 
     private static DatabaseAssemblyRunRepository repository(DataSource dataSource,

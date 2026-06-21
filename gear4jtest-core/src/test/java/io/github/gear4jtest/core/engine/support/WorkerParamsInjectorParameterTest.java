@@ -62,7 +62,9 @@ class WorkerParamsInjectorParameterTest {
         builder.withParameter(model);
 
         assertThat(parameters.getParameters()).containsExactly(model);
-        assertThatThrownBy(() -> parameters.getParameters().add(model))
+        var parameterModels = parameters.getParameters();
+
+        assertThatThrownBy(() -> parameterModels.add(model))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 }

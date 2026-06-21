@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class OperatorConcurrencyGuardTest {
     @Test
-    void beforeUse_shouldBlockUntilLockIsReleased() throws Exception {
+    void beforeUse_shouldBlockUntilLockIsReleased() throws InterruptedException {
         WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard();
         CountDownLatch locked = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
@@ -62,7 +62,7 @@ class OperatorConcurrencyGuardTest {
     }
 
     @Test
-    void beforeUse_shouldFailFastWhenLockIsAlreadyHeld() throws Exception {
+    void beforeUse_shouldFailFastWhenLockIsAlreadyHeld() throws InterruptedException {
         WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard();
         AtomicReference<Throwable> failure = new AtomicReference<>();
 
@@ -73,7 +73,7 @@ class OperatorConcurrencyGuardTest {
                 try {
                     guard.beforeUse(WorkerLockAcquisitionPolicy.FAIL_FAST);
                     guard.afterUse();
-                } catch (Throwable e) {
+                } catch (RuntimeException e) {
                     failure.set(e);
                 }
             });
@@ -89,13 +89,15 @@ class OperatorConcurrencyGuardTest {
     }
 
     @Test
-    void beforeUse_shouldTimeoutWhenBlockCallerWaitsTooLong() throws Exception {
+    void beforeUse_shouldTimeoutWhenBlockCallerWaitsTooLong() {
         WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard();
 
         guard.beforeUse();
 
+        Duration timeout = Duration.ofMillis(50);
+
         try {
-            assertThatThrownBy(() -> guard.beforeUse(WorkerLockAcquisitionPolicy.BLOCK_CALLER, Duration.ofMillis(50)))
+            assertThatThrownBy(() -> guard.beforeUse(WorkerLockAcquisitionPolicy.BLOCK_CALLER, timeout))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("Timed out after PT0.05S while waiting for worker lock");
         } finally {

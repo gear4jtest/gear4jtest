@@ -37,8 +37,7 @@ Reasons:
 
 ## Workflows
 
-- `ci.yml`: unit build and checks on push and pull request.
-- `integration.yml`: integration tests using the dedicated `integrationTest` source set; database-dependent tests use Testcontainers.
+- `ci.yml`: unit build, integration checks, coverage and SonarQube scan on push and pull request.
 - `security.yml`: scheduled/manual OWASP Dependency-Check scan.
 - `release.yml`: verifies, stages and publishes artifacts to Maven Central.
 
