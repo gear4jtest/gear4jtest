@@ -81,7 +81,7 @@ class EventManagerTest {
 
             manager.shutdown();
 
-            assertThat(completed.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(completed.getCount()).isZero();
             assertThat(handled).containsExactly("FIRST");
         } finally {
             manager.shutdown();

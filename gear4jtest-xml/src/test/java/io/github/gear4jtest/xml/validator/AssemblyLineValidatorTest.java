@@ -2,7 +2,6 @@ package io.github.gear4jtest.xml.validator;
 
 import java.io.IOException;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -21,10 +20,16 @@ class AssemblyLineValidatorTest {
         }
     }
 
-    @Test
-    void should_validate_current_xml_contract() throws IOException {
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "/samples/assembly-line-iterator.xml",
+            "/samples/assembly-line-parallel-container.xml",
+            "/samples/assembly-line-container-three-branches.xml",
+            "/samples/assembly-line-signal.xml"
+    })
+    void should_validate_current_xml_contract(String sample) throws IOException {
         // Given
-        byte[] xml = resource("/samples/assembly-line-iterator.xml");
+        byte[] xml = resource(sample);
 
         // When / Then
         assertThatCode(() -> validator.validate(xml)).doesNotThrowAnyException();
@@ -35,7 +40,8 @@ class AssemblyLineValidatorTest {
             "/samples/bad-assembly-line.xml",
             "/samples/bad-missing-subline-id.xml",
             "/samples/bad-doctype.xml",
-            "/samples/bad-missing-else-operation.xml"
+            "/samples/bad-missing-else-operation.xml",
+            "/samples/bad-ignore-signal.xml"
     })
     void should_reject_invalid_xml_contracts(String sample) throws IOException {
         // Given

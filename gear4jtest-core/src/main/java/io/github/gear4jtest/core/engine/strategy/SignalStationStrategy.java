@@ -28,6 +28,7 @@ public class SignalStationStrategy extends AbstractStationStrategy<SignalStation
             switch (station.getSignalType()) {
                 case FATAL -> operationExecution.getRecord().markFailed(null);
                 case STOP -> operationExecution.getRecord().markStopped(null);
+                case IGNORE -> throw new IllegalStateException("SignalStation cannot emit IGNORE");
             }
         }
         return input;

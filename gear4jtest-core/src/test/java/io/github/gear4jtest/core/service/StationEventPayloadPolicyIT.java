@@ -11,7 +11,8 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
@@ -30,7 +31,7 @@ class StationEventPayloadPolicyIT {
     void stationEvents_shouldRespectConfiguredPayloadPolicy() {
         CopyOnWriteArrayList<StationFinishedEvent> seenEvents = new CopyOnWriteArrayList<>();
 
-        AssemblyLine<String, Integer> pipeline = ElementModelBuilders.<String>createAssemblyLine("payload-policy")
+        AssemblyLine<String, Integer> pipeline = AssemblyLines.<String>createAssemblyLine("payload-policy")
                 .configuration(AssemblyLine.Configuration.builder()
                         .eventHandling(EventHandlingDefinition.builder()
                                 .subscription(EventSubscription.on(StationFinishedEvent.class, seenEvents::add))
@@ -41,8 +42,8 @@ class StationEventPayloadPolicyIT {
                                         .shutdownTimeout(Duration.ofSeconds(2)).build())
                                 .build())
                         .build())
-                .then(ElementModelBuilders
-                        .<String, Integer, LengthOperator>processingOperation("step-1", LengthOperator.class).build())
+                .then(Stations.<String, Integer, LengthOperator>processingOperation("step-1", LengthOperator.class)
+                        .build())
                 .build();
 
         AssemblyLineEngine engine = AssemblyLineEngine.builder()

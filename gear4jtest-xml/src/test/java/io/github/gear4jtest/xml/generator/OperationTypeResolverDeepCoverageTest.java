@@ -77,7 +77,7 @@ class OperationTypeResolverDeepCoverageTest {
         ProcessingOperation ifChild = processing("if-child", StringToIntegerOperator.class, null);
         IfElseOperation ifElse = new IfElseOperation("ifelse", "java.lang.String", null,
                 List.of(new ConditionalOperation("when", new Condition("true", null), ifChild)), null);
-        SignalOperation signal = new SignalOperation("signal", "IGNORE", "java.lang.Long", null);
+        SignalOperation signal = new SignalOperation("signal", "STOP", "java.lang.Long", null);
         XmlAssemblyLineDefinition definition = definition("java.lang.Object", container, ifElse, signal);
 
         // When

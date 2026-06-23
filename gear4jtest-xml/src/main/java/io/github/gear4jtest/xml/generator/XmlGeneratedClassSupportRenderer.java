@@ -135,8 +135,8 @@ final class XmlGeneratedClassSupportRenderer {
         code.append("    public ").append(imports.use("io.github.gear4jtest.core.api.AssemblyLine")).append("<")
                 .append(inputType.render(imports)).append(", ").append(outputType.render(imports))
                 .append("> getAssemblyLineDefinition() {\n");
-        String elementModelBuilders = imports.use("io.github.gear4jtest.core.api.util.ElementModelBuilders");
-        code.append("        return ").append(elementModelBuilders).append(".<").append(inputType.render(imports))
+        String assemblyLines = imports.use("io.github.gear4jtest.core.api.util.AssemblyLines");
+        code.append("        return ").append(assemblyLines).append(".<").append(inputType.render(imports))
                 .append(">createAssemblyLine(\"").append(JavaStringEscaper.escapeJava(definition.id()))
                 .append(FIELD_SUFFIX);
 

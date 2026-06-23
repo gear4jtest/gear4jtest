@@ -1,17 +1,52 @@
 package io.github.gear4jtest.core.persistence;
 
 public enum ExecutionStatus {
-    // Active states before execution starts.
-    PENDING(StatusCategory.ACTIVE), INITIALIZING(StatusCategory.ACTIVE),
+    /**
+     * Reserved for queued or externally scheduled executions. The core in-process
+     * engine currently starts runs directly in {@link #RUNNING}.
+     */
+    PENDING(StatusCategory.ACTIVE),
 
-    // Active states while execution is in progress.
-    RUNNING(StatusCategory.ACTIVE), PAUSED(StatusCategory.ACTIVE),
+    /**
+     * Reserved for future multi-step run initialization. The core in-process engine
+     * currently starts runs directly in {@link #RUNNING}.
+     */
+    INITIALIZING(StatusCategory.ACTIVE),
 
-    // Successful terminal state.
+    /**
+     * Execution is actively running in the current process.
+     */
+    RUNNING(StatusCategory.ACTIVE),
+
+    /**
+     * Reserved for future pause/resume support. The core engine does not currently
+     * emit this status.
+     */
+    PAUSED(StatusCategory.ACTIVE),
+
+    /**
+     * Successful terminal state.
+     */
     SUCCEEDED(StatusCategory.TERMINAL),
 
-    // Terminal stop and failure states.
-    FAILED(StatusCategory.TERMINAL), STOPPED(StatusCategory.TERMINAL), CANCELLED(StatusCategory.TERMINAL),
+    /**
+     * Terminal state for an execution that failed with an error.
+     */
+    FAILED(StatusCategory.TERMINAL),
+
+    /**
+     * Terminal state for an execution stopped by flow-control rules.
+     */
+    STOPPED(StatusCategory.TERMINAL),
+
+    /**
+     * Terminal state for an execution cancelled through cooperative cancellation.
+     */
+    CANCELLED(StatusCategory.TERMINAL),
+
+    /**
+     * Terminal state for an execution skipped by runtime rules.
+     */
     SKIPPED(StatusCategory.TERMINAL);
 
     private final StatusCategory category;

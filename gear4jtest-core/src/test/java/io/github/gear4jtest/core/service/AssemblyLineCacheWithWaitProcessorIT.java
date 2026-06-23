@@ -16,7 +16,8 @@ import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.WorkStation;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
@@ -80,11 +81,11 @@ class AssemblyLineCacheWithWaitProcessorIT {
                 .computer(event -> trackingTaskHistoryApi.get("customer:" + event.getOutput(), CustomerDto.class))
                 .addHandler(new TaskHistoryExpirySideComputeHandler<>()).map(TaskHistoryResult::value).build();
 
-        WorkStation<String, String> triggerStation = ElementModelBuilders
+        WorkStation<String, String> triggerStation = Stations
                 .processingOperation("trigger-customer-fetch", TriggerSideComputeOperator.class)
                 .build();
 
-        WorkStation<String, FinalOutput> joinStation = ElementModelBuilders
+        WorkStation<String, FinalOutput> joinStation = Stations
                 .processingOperation("join-sidecompute-and-taskhistory", JoinUsingContextOperator.class)
                 .addProcessor(SideComputeWaitProcessor.builder("customer-profile").build())
                 .parameter(JoinUsingContextOperator::getCustomerParam,
@@ -92,8 +93,8 @@ class AssemblyLineCacheWithWaitProcessorIT {
                                    .getSideCompute().get("customer-profile", CustomerDto.class))
                 .build();
 
-        AssemblyLine<String, FinalOutput> pipeline = ElementModelBuilders
-                .<String>createAssemblyLine("customer-enrichment").version("1.0.0")
+        AssemblyLine<String, FinalOutput> pipeline = AssemblyLines.<String>createAssemblyLine("customer-enrichment")
+                .version("1.0.0")
                 .configuration(AssemblyLine.Configuration.builder()
                         .eventHandling(EventHandlingDefinition.builder()
                                 .sideComputer(sideComputer)

@@ -23,7 +23,9 @@ final class XmlOperationMethodRenderer {
     private static final String BUILDER_TYPE_PREFIX = ".Builder<";
     private static final String BUILDER_PARAMETER = "        builder.parameter(";
     private static final String METHOD_END = "    }\n\n";
-    private static final String ELEMENT_MODEL_BUILDERS = "io.github.gear4jtest.core.api.util.ElementModelBuilders";
+    private static final String ASSEMBLY_LINES = "io.github.gear4jtest.core.api.util.AssemblyLines";
+    private static final String ERRORS = "io.github.gear4jtest.core.api.util.Errors";
+    private static final String STATIONS = "io.github.gear4jtest.core.api.util.Stations";
 
     void appendOperationMethod(StringBuilder code, Operation operation, XmlGenerationContext context) {
         String methodName = XmlGeneratedNames.operationMethodName(operation);
@@ -60,7 +62,7 @@ final class XmlOperationMethodRenderer {
         OperationSignature signature = context.signatures().get(operation);
         JavaTypeName operationType = JavaTypeName.parse(operation.type());
         String workStation = imports.use("io.github.gear4jtest.core.api.station.WorkStation");
-        imports.addStatic(ELEMENT_MODEL_BUILDERS + ".processingOperation");
+        imports.addStatic(STATIONS + ".processingOperation");
 
         code.append(INDENT_PRIVATE).append(workStation).append("<").append(signature.inputType().render(imports))
                 .append(", ").append(signature.outputType().render(imports)).append("> ")
@@ -127,11 +129,11 @@ final class XmlOperationMethodRenderer {
         };
 
         if (!"IGNORE".equals(errorHandler.signalType().toUpperCase(Locale.ROOT))) {
-            imports.addStatic(ELEMENT_MODEL_BUILDERS + "." + builder);
+            imports.addStatic(ERRORS + "." + builder);
         }
 
-        String elementModelBuilders = imports.use(ELEMENT_MODEL_BUILDERS);
-        code.append("        builder.onError(").append(elementModelBuilders).append(".<")
+        String errors = imports.use(ERRORS);
+        code.append("        builder.onError(").append(errors).append(".<")
                 .append(inputType.render(imports)).append(">").append(builder).append("(")
                 .append(JavaTypeName.parse(errorHandler.throwableType()).renderClassLiteral(imports)).append(")\n");
 
@@ -160,14 +162,14 @@ final class XmlOperationMethodRenderer {
         OperationSignature signature = context.signatures().get(operation);
         OperationSignature childSignature = context.signatures().get(operation.operation());
         String iteratorStation = imports.use("io.github.gear4jtest.core.api.station.IteratorStation");
-        imports.addStatic(ELEMENT_MODEL_BUILDERS + ".chain");
+        imports.addStatic(ASSEMBLY_LINES + ".chain");
 
         code.append(INDENT_PRIVATE).append(iteratorStation).append("<").append(signature.inputType().render(imports))
                 .append(", ").append(signature.outputType().render(imports)).append("> ")
                 .append(XmlGeneratedNames.operationMethodName(operation))
                 .append(METHOD_OPEN);
-        String elementModelBuilders = imports.use(ELEMENT_MODEL_BUILDERS);
-        code.append("        return ").append(elementModelBuilders).append(".<")
+        String stations = imports.use(STATIONS);
+        code.append("        return ").append(stations).append(".<")
                 .append(signature.inputType().render(imports)).append(">iterate(\"")
                 .append(JavaStringEscaper.escapeJava(operation.id()))
                 .append("\")\n");
@@ -179,8 +181,8 @@ final class XmlOperationMethodRenderer {
 
         if (operation.accumulator() != null) {
             String accumulator = switch (operation.accumulator().toUpperCase(Locale.ROOT)) {
-                case "LIST" -> imports.use(ELEMENT_MODEL_BUILDERS) + ".toList()";
-                case "SET" -> imports.use(ELEMENT_MODEL_BUILDERS) + ".toSet()";
+                case "LIST" -> imports.use(STATIONS) + ".toList()";
+                case "SET" -> imports.use(STATIONS) + ".toSet()";
                 default -> throw new IllegalArgumentException("Unsupported accumulator: " + operation.accumulator());
             };
             code.append("                .accumulator(").append(accumulator).append(")\n");
@@ -208,7 +210,7 @@ final class XmlOperationMethodRenderer {
         XmlExpressionRenderer expressions = context.expressions();
         OperationSignature signature = context.signatures().get(operation);
         String containerBaseStation = imports.use("io.github.gear4jtest.core.api.station.ContainerBaseStation");
-        imports.addStatic(ELEMENT_MODEL_BUILDERS + ".container");
+        imports.addStatic(STATIONS + ".container");
 
         code.append(INDENT_PRIVATE).append(containerBaseStation).append("<")
                 .append(signature.inputType().render(imports)).append(", ")
@@ -232,7 +234,7 @@ final class XmlOperationMethodRenderer {
         }
 
         for (SubLine subLine : operation.subLines()) {
-            code.append("                .withSubLine(\"").append(JavaStringEscaper.escapeJava(subLine.id()))
+            code.append("                .withBranch(\"").append(JavaStringEscaper.escapeJava(subLine.id()))
                     .append("\", ")
                     .append(XmlGeneratedNames.operationMethodName(subLine.operation())).append("()");
             if (subLine.condition() != null) {
@@ -266,7 +268,7 @@ final class XmlOperationMethodRenderer {
         XmlExpressionRenderer expressions = context.expressions();
         OperationSignature signature = context.signatures().get(operation);
         String unaryIfElse = imports.use("io.github.gear4jtest.core.api.station.UnaryIfElseContainerStation");
-        imports.addStatic(ELEMENT_MODEL_BUILDERS + ".ifElseContainer");
+        imports.addStatic(STATIONS + ".ifElseContainer");
 
         code.append(INDENT_PRIVATE).append(unaryIfElse).append("<").append(signature.inputType().render(imports))
                 .append("> ").append(XmlGeneratedNames.operationMethodName(operation)).append(METHOD_OPEN);
@@ -306,8 +308,8 @@ final class XmlOperationMethodRenderer {
                 .append("> builder = new ").append(signalStation).append(BUILDER_TYPE_PREFIX)
                 .append(signature.inputType().render(imports)).append(">()\n");
         code.append("                .id(\"").append(JavaStringEscaper.escapeJava(operation.id())).append("\")\n");
-        String stationSignalType = imports.use("io.github.gear4jtest.core.api.station.StationSignalType");
-        code.append("                .type(").append(stationSignalType)
+        String signalType = imports.use("io.github.gear4jtest.core.api.behavior.SignalType");
+        code.append("                .type(").append(signalType)
                 .append(".").append(operation.type().toUpperCase(Locale.ROOT)).append(");\n");
         code.append("        builder.condition(")
                 .append(expressions.signalConditionLambda(operation.condition(), signature.inputType(), imports))

@@ -101,8 +101,13 @@ General rules:
 
 `AssemblyLineCallStation` can execute a child pipeline inline or as a nested run.
 
-A nested run creates its own execution trace and runtime setup. The current MVP inherits parent key/value context for
-nested runs, but this is an explicit implementation choice that can later become a configurable context propagation
-policy.
+A nested run creates its own execution trace and runtime setup. User context propagation is controlled by
+`ContextPropagationPolicy` on `AssemblyLineEngine.Builder`. The default remains the historical shallow map copy: the
+child receives a distinct context map, but mutable values inside that map are still shared references. Configure
+`ContextPropagationPolicy.none()`, `includeKeys(...)` or `copyValues(...)` when nested-run isolation matters.
+
+Nested runs intentionally share the parent cancellation token and call stack so cancellation and cycle/depth protection
+propagate through the call tree. Independent top-level runs should not reuse those objects accidentally; use
+`RunRequest.toIndependentBuilder()` when a request is used as a reusable template.
 
 A running pipeline graph must not be mutated while a run is in progress.

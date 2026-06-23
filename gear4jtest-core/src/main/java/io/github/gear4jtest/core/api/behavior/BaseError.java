@@ -32,6 +32,46 @@ public class BaseError<T> {
         return signalType;
     }
 
+    private abstract static class AbstractBuilder<T, SELF extends AbstractBuilder<T, SELF>> {
+        private final SignalType signalType;
+        private final Class<? extends Throwable> throwableType;
+        private Condition<T> condition;
+        private Runnable action;
+
+        private AbstractBuilder(SignalType signalType, Class<? extends Throwable> throwableType) {
+            this.signalType = signalType;
+            this.throwableType = throwableType;
+        }
+
+        public SELF condition(Condition<T> condition) {
+            this.condition = condition;
+            return self();
+        }
+
+        public SELF action(Runnable action) {
+            this.action = action;
+            return self();
+        }
+
+        protected SignalType signalType() {
+            return signalType;
+        }
+
+        protected Class<? extends Throwable> throwableType() {
+            return throwableType;
+        }
+
+        protected Condition<T> condition() {
+            return condition;
+        }
+
+        protected Runnable action() {
+            return action;
+        }
+
+        protected abstract SELF self();
+    }
+
     public static class SafeError<T> extends BaseError<T> {
         private SafeError(SignalType signalType,
                           Class<? extends Throwable> throwableType,
@@ -40,29 +80,18 @@ public class BaseError<T> {
             super(signalType, throwableType, condition, action);
         }
 
-        public static class Builder<T> {
-            private final SignalType signalType;
-            private final Class<? extends Throwable> throwableType;
-            private Condition<T> condition;
-            private Runnable action;
-
+        public static class Builder<T> extends AbstractBuilder<T, Builder<T>> {
             public Builder(SignalType signalType, Class<? extends Throwable> throwableType) {
-                this.signalType = signalType;
-                this.throwableType = throwableType;
+                super(signalType, throwableType);
             }
 
-            public Builder<T> condition(Condition<T> condition) {
-                this.condition = condition;
-                return this;
-            }
-
-            public Builder<T> action(Runnable action) {
-                this.action = action;
+            @Override
+            protected Builder<T> self() {
                 return this;
             }
 
             public SafeError<T> build() {
-                return new SafeError<>(signalType, throwableType, condition, action);
+                return new SafeError<>(signalType(), throwableType(), condition(), action());
             }
         }
     }
@@ -75,29 +104,18 @@ public class BaseError<T> {
             super(signalType, throwableType, condition, action);
         }
 
-        public static class Builder<T> {
-            private final SignalType signalType;
-            private final Class<? extends Throwable> throwableType;
-            private Condition<T> condition;
-            private Runnable action;
-
+        public static class Builder<T> extends AbstractBuilder<T, Builder<T>> {
             public Builder(SignalType signalType, Class<? extends Throwable> throwableType) {
-                this.signalType = signalType;
-                this.throwableType = throwableType;
+                super(signalType, throwableType);
             }
 
-            public Builder<T> condition(Condition<T> condition) {
-                this.condition = condition;
-                return this;
-            }
-
-            public Builder<T> action(Runnable action) {
-                this.action = action;
+            @Override
+            protected Builder<T> self() {
                 return this;
             }
 
             public UnSafeError<T> build() {
-                return new UnSafeError<>(signalType, throwableType, condition, action);
+                return new UnSafeError<>(signalType(), throwableType(), condition(), action());
             }
         }
     }

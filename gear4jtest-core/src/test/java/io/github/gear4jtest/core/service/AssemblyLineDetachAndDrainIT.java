@@ -13,7 +13,8 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
@@ -46,7 +47,7 @@ class AssemblyLineDetachAndDrainIT {
         CountDownLatch releaseReaction = new CountDownLatch(1);
         ExecutionContextRegistry registry = new ExecutionContextRegistry();
 
-        AssemblyLine<String, Integer> pipeline = ElementModelBuilders.<String>createAssemblyLine("detach-drain")
+        AssemblyLine<String, Integer> pipeline = AssemblyLines.<String>createAssemblyLine("detach-drain")
                 .configuration(AssemblyLine.Configuration.builder().eventHandling(EventHandlingDefinition.builder()
                         .subscription(EventSubscription.on(StationFinishedEvent.class, event -> {
                             reactionStarted.countDown();
@@ -58,8 +59,8 @@ class AssemblyLineDetachAndDrainIT {
                                 .shutdownMode(EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.DETACH_AND_DRAIN)
                                 .build())
                         .build()).build())
-                .then(ElementModelBuilders
-                        .<String, Integer, LengthOperator>processingOperation("step-1", LengthOperator.class).build())
+                .then(Stations.<String, Integer, LengthOperator>processingOperation("step-1", LengthOperator.class)
+                        .build())
                 .build();
 
         AssemblyLineEngine engine = AssemblyLineEngine.builder()

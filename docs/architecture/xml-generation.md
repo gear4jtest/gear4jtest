@@ -39,6 +39,30 @@ Generated code should:
 XML branch ids must be carried into generated Java builder calls. Generated code should never invent random branch ids or
 fall back silently to station ids for container branches.
 
+
+## Container generation
+
+XML containers are generated against the single post-H.2 container API:
+
+```java
+Stations.container(Input.class)
+        .withBranch("alpha", alpha())
+        .withBranch("beta", beta())
+        .returns(results -> results.orderedOutputs());
+```
+
+Generated XML code may use `results.orderedOutputs()` because XML definitions do not expose Java branch-handle variables to authors. Handwritten Java should prefer typed `ContainerBranch<IN, OUT>` handles and `results.get(branch)`.
+
+Do not generate or reintroduce arity-specific container APIs, positional varargs aggregators, `withSubLine(...)`, or legacy umbrella builder helpers.
+
+## Signal generation
+
+Flow signal stations and error policies are separate in XML and generated Java:
+
+- `<signal type="STOP|FATAL">` generates `SignalStation` with `SignalType.STOP` or `SignalType.FATAL`;
+- `IGNORE` is invalid for `<signal>`;
+- error handlers may still use `signalType="IGNORE"` because that belongs to error-policy semantics.
+
 ## Validation rules
 
 Validation should happen before Java generation.

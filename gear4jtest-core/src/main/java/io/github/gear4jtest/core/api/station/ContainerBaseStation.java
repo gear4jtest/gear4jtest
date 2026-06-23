@@ -14,18 +14,14 @@ import io.github.gear4jtest.core.api.config.FlowConfig;
 
 public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
     private final List<Branch<IN>> pipelines;
-    private final ContainerFunction<OUT> func;
+    private final ContainerResultsFunction<OUT> resultsFunc;
     private final boolean parallel;
     private final ExecutorService executorService;
     private final FlowConfig flowConfig;
     private final Duration awaitTimeout;
 
-    public ContainerBaseStation(List<Branch<IN>> pipelines, ContainerFunction<OUT> func) {
-        this(pipelines, func, false, null, null, null, false);
-    }
-
     protected ContainerBaseStation(List<Branch<IN>> pipelines,
-                                   ContainerFunction<OUT> func,
+                                   ContainerResultsFunction<OUT> resultsFunc,
                                    boolean parallel,
                                    ExecutorService executorService,
                                    FlowConfig flowConfig,
@@ -33,7 +29,7 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
                                    boolean unary) {
         super("", StationKind.CONTAINER, null, null, null, unary, null, null);
         this.pipelines = pipelines == null || pipelines.isEmpty() ? List.of() : List.copyOf(pipelines);
-        this.func = func;
+        this.resultsFunc = resultsFunc;
         this.parallel = parallel;
         this.executorService = executorService;
         this.flowConfig = flowConfig;
@@ -63,8 +59,8 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
         return pipelines;
     }
 
-    public ContainerFunction<OUT> getFunc() {
-        return func;
+    public ContainerResultsFunction<OUT> getResultsFunc() {
+        return resultsFunc;
     }
 
     public boolean isParallel() {
@@ -84,8 +80,8 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
     }
 
     @FunctionalInterface
-    public interface ContainerFunction<OUT> {
-        OUT apply(Object... objects);
+    public interface ContainerResultsFunction<OUT> {
+        OUT apply(ContainerResults results);
     }
 
     public static class Builder<IN, OUT> {
@@ -113,35 +109,73 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
             return this;
         }
 
-        public <A> Container1Station.Builder<IN, OUT, A> withSubLine(String id,
-                                                                     AbstractStation<IN, A> startingElement) {
-            var branch = new Branch.Builder<IN>().withId(id).withOperation(startingElement).build();
-            return new Container1Station.Builder<>(this, branch);
+        public <A> Builder<IN, OUT> withBranch(String id, AbstractStation<IN, A> station) {
+            return withBranch(ContainerBranch.of(id, station));
         }
 
-        public <A> Container1Station.Builder<IN, OUT, A> withSubLine(String id,
-                                                                     AbstractStation<IN, A> startingElement,
-                                                                     Condition<IN> condition) {
-            var branch = new Branch.Builder<IN>().withId(id).withCondition(condition).withOperation(startingElement)
-                    .build();
-            return new Container1Station.Builder<>(this, branch);
+        public <A> Builder<IN, OUT> withBranch(String id,
+                                               AbstractStation<IN, A> station,
+                                               Condition<IN> condition) {
+            return withBranch(ContainerBranch.of(id, station), condition);
         }
 
-        public <A> Container1Station.Builder<IN, OUT, A> withSubLine(String id,
-                                                                     AbstractStation<IN, A> startingElement,
-                                                                     BranchCondition<IN> siblingCondition) {
-            var branch = new Branch.Builder<IN>().withId(id).withSiblingCondition(siblingCondition)
-                    .withOperation(startingElement).build();
-            return new Container1Station.Builder<>(this, branch);
+        public <A> Builder<IN, OUT> withBranch(String id,
+                                               AbstractStation<IN, A> station,
+                                               BranchCondition<IN> siblingCondition) {
+            return withBranch(ContainerBranch.of(id, station), siblingCondition);
         }
 
-        public <A> Container1Station.Builder<IN, OUT, A> withSubLine(String id,
-                                                                     AbstractStation<IN, A> startingElement,
-                                                                     Condition<IN> condition,
-                                                                     BranchCondition<IN> siblingCondition) {
-            var branch = new Branch.Builder<IN>().withId(id).withCondition(condition)
-                    .withSiblingCondition(siblingCondition).withOperation(startingElement).build();
-            return new Container1Station.Builder<>(this, branch);
+        public <A> Builder<IN, OUT> withBranch(String id,
+                                               AbstractStation<IN, A> station,
+                                               Condition<IN> condition,
+                                               BranchCondition<IN> siblingCondition) {
+            return withBranch(ContainerBranch.of(id, station), condition, siblingCondition);
+        }
+
+        public <A> Builder<IN, OUT> withBranch(ContainerBranch<IN, A> branch) {
+            this.branches.add(branch(branch));
+            return this;
+        }
+
+        public <A> Builder<IN, OUT> withBranch(ContainerBranch<IN, A> branch, Condition<IN> condition) {
+            this.branches.add(branch(branch.withConditions(condition, branch.siblingCondition())));
+            return this;
+        }
+
+        public <A> Builder<IN, OUT> withBranch(ContainerBranch<IN, A> branch, BranchCondition<IN> siblingCondition) {
+            this.branches.add(branch(branch.withConditions(branch.condition(), siblingCondition)));
+            return this;
+        }
+
+        public <A> Builder<IN, OUT> withBranch(ContainerBranch<IN, A> branch,
+                                               Condition<IN> condition,
+                                               BranchCondition<IN> siblingCondition) {
+            this.branches.add(branch(branch.withConditions(condition, siblingCondition)));
+            return this;
+        }
+
+        private static <IN, A> Branch<IN> branch(ContainerBranch<IN, A> branch) {
+            Objects.requireNonNull(branch, "container branch is required");
+            return new Branch.Builder<IN>().withId(branch.id()).withCondition(branch.condition())
+                    .withSiblingCondition(branch.siblingCondition()).withOperation(branch.station()).build();
+        }
+
+        public <C> ContainerBaseStation<IN, C> returns(ContainerResultsFunction<C> func) {
+            return ContainerBaseStation.buildStation(branches,
+                                                     isParallel,
+                                                     executorService,
+                                                     flowConfig,
+                                                     awaitTimeout,
+                                                     func);
+        }
+
+        public ContainerBaseStation<IN, Void> build() {
+            return ContainerBaseStation.buildStation(branches,
+                                                     isParallel,
+                                                     executorService,
+                                                     flowConfig,
+                                                     awaitTimeout,
+                                                     null);
         }
     }
 
@@ -150,9 +184,14 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
                                                                 ExecutorService executorService,
                                                                 FlowConfig flowConfig,
                                                                 Duration awaitTimeout,
-                                                                ContainerFunction<OUT> function) {
+                                                                ContainerResultsFunction<OUT> function) {
         validateUniqueBranchIds(branches);
-        return new ContainerBaseStation<>(branches, function, isParallel, executorService, flowConfig, awaitTimeout,
+        return new ContainerBaseStation<>(branches,
+                function,
+                isParallel,
+                executorService,
+                flowConfig,
+                awaitTimeout,
                 false);
     }
 

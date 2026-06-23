@@ -5,6 +5,8 @@ import java.util.Objects;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import io.github.gear4jtest.core.exception.ConcurrentTransformerUseException;
+
 public final class WorkerConcurrencyGuard {
     private final ReentrantLock monitor = new ReentrantLock();
     private final Condition available = monitor.newCondition();
@@ -50,10 +52,10 @@ public final class WorkerConcurrencyGuard {
         monitor.lock();
         try {
             if (!inUse) {
-                throw new IllegalStateException("Worker lock is not held");
+                throw new ConcurrentTransformerUseException("Worker lock is not held");
             }
             if (owner != Thread.currentThread()) {
-                throw new IllegalStateException("Worker lock is held by another thread");
+                throw new ConcurrentTransformerUseException("Worker lock is held by another thread");
             }
 
             inUse = false;
@@ -68,7 +70,7 @@ public final class WorkerConcurrencyGuard {
         monitor.lock();
         try {
             if (inUse) {
-                throw new IllegalStateException("Worker lock is already held");
+                throw new ConcurrentTransformerUseException("Worker lock is already held");
             }
             markInUseByCurrentThread();
         } finally {
@@ -82,14 +84,14 @@ public final class WorkerConcurrencyGuard {
         try {
             while (inUse) {
                 if (remainingNanos <= 0L) {
-                    throw new IllegalStateException("Timed out after " + lockWaitTimeout
+                    throw new ConcurrentTransformerUseException("Timed out after " + lockWaitTimeout
                             + " while waiting for worker lock");
                 }
                 try {
                     remainingNanos = available.awaitNanos(remainingNanos);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    throw new IllegalStateException("Interrupted while waiting for worker lock", e);
+                    throw new ConcurrentTransformerUseException("Interrupted while waiting for worker lock", e);
                 }
             }
             markInUseByCurrentThread();

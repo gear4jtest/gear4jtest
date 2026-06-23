@@ -7,5 +7,4 @@
   <suppress checks="RegexpSinglelineJava" files=".*[\\/]src[\\/]test[\\/].*"/>
   <suppress checks="RegexpSinglelineJava" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
   <suppress checks="RegexpSinglelineJava" files=".*DatabaseAssemblyRunRepository\.java"/>
-  <suppress checks="RegexpSinglelineJava" files=".*ElementModelBuilders\.java"/>
 </suppressions>

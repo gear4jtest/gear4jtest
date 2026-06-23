@@ -23,6 +23,7 @@ import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
+import io.github.gear4jtest.core.api.station.ContainerBranch;
 import io.github.gear4jtest.core.api.station.StationKind;
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.engine.support.ExecutorDecorator;
@@ -99,6 +100,10 @@ class ContainerStationStrategyTest {
         return new DummyStation(id);
     }
 
+    private static TypedDummyStation<String> stringStation(String id) {
+        return new TypedDummyStation<>(id);
+    }
+
     @Test
     void should_reject_branch_without_explicit_id() {
         // Given
@@ -120,7 +125,7 @@ class ContainerStationStrategyTest {
         DummyStation first = station("first");
         DummyStation second = station("second");
 
-        var container = new ContainerBaseStation.Builder<>().withSubLine("1", first).withSubLine("2", second).build();
+        var container = new ContainerBaseStation.Builder<>().withBranch("1", first).withBranch("2", second).build();
 
         StationRunner runner = mock(StationRunner.class);
         StationExecutionContext operationExecution = newOperationExecutionContext("container");
@@ -150,7 +155,7 @@ class ContainerStationStrategyTest {
                 CancelPolicy.PROPAGATE_CANCEL);
 
         var container = new ContainerBaseStation.Builder<Object, Object>().flowConfig(flowConfig)
-                .withSubLine("1", first).withSubLine("2", second).returns(Arrays::asList);
+                .withBranch("1", first).withBranch("2", second).returns(results -> results.orderedOutputs());
 
         StationRunner runner = mock(StationRunner.class);
         StationExecutionContext operationExecution = newOperationExecutionContext("container");
@@ -181,7 +186,7 @@ class ContainerStationStrategyTest {
                 CancelPolicy.PROPAGATE_CANCEL);
 
         var container = new ContainerBaseStation.Builder<Object, Object>().flowConfig(flowConfig)
-                .withSubLine("1", first).withSubLine("2", second).returns(Arrays::asList);
+                .withBranch("1", first).withBranch("2", second).returns(results -> results.orderedOutputs());
 
         StationRunner runner = mock(StationRunner.class);
         StationExecutionContext operationExecution = newOperationExecutionContext("container");
@@ -209,7 +214,8 @@ class ContainerStationStrategyTest {
         DummyStation executed = station("executed");
 
         var container = new ContainerBaseStation.Builder<Object, Object>()
-                .withSubLine("1", skipped, (input, ctx) -> false).withSubLine("2", executed).returns(Arrays::asList);
+                .withBranch("1", skipped, (input, ctx) -> false).withBranch("2", executed)
+                .returns(results -> results.orderedOutputs());
 
         StationRunner runner = mock(StationRunner.class);
         StationExecutionContext operationExecution = newOperationExecutionContext("container");
@@ -227,6 +233,40 @@ class ContainerStationStrategyTest {
     }
 
     @Test
+    void should_assemble_named_container_results_from_more_than_two_branches() {
+        // Given
+        ContainerStationStrategy strategy = new ContainerStationStrategy();
+        TypedDummyStation<String> first = stringStation("first");
+        TypedDummyStation<String> second = stringStation("second");
+        TypedDummyStation<String> third = stringStation("third");
+        ContainerBranch<Object, String> left = ContainerBranch.of("left", first);
+        ContainerBranch<Object, String> middle = ContainerBranch.of("middle", second);
+        ContainerBranch<Object, String> right = ContainerBranch.of("right", third);
+
+        var container = new ContainerBaseStation.Builder<Object, Object>()
+                .withBranch(left)
+                .withBranch(middle)
+                .withBranch(right)
+                .returns(results -> results.get(left) + results.get(middle) + results.get(right));
+
+        StationRunner runner = mock(StationRunner.class);
+        StationExecutionContext operationExecution = newOperationExecutionContext("container");
+
+        when(runner.run(any(), same(first), same(operationExecution))).thenReturn(successLog("first", "A"));
+        when(runner.run(any(), same(second), same(operationExecution))).thenReturn(successLog("second", "B"));
+        when(runner.run(any(), same(third), same(operationExecution))).thenReturn(successLog("third", "C"));
+
+        // When
+        Object result = strategy.doExecute(container, "input", runner, operationExecution);
+
+        // Then
+        assertThat(result).isEqualTo("ABC");
+        verify(runner).run(any(), same(first), same(operationExecution));
+        verify(runner).run(any(), same(second), same(operationExecution));
+        verify(runner).run(any(), same(third), same(operationExecution));
+    }
+
+    @Test
     void should_cancel_parent_when_parallel_branch_times_out_with_default_cancel_policy() {
         ExecutorService executorService = Executors.newFixedThreadPool(2);
         try {
@@ -236,8 +276,8 @@ class ContainerStationStrategyTest {
             DummyStation fast = station("fast");
 
             var container = new ContainerBaseStation.Builder<Object, Object>(executorService)
-                    .awaitTimeout(Duration.ofMillis(50)).withSubLine("1", slow).withSubLine("2", fast)
-                    .returns(Arrays::asList);
+                    .awaitTimeout(Duration.ofMillis(50)).withBranch("1", slow).withBranch("2", fast)
+                    .returns(results -> results.orderedOutputs());
 
             StationExecutionContext operationExecution = newOperationExecutionContext("container");
 
@@ -277,8 +317,8 @@ class ContainerStationStrategyTest {
                     CancelPolicy.IGNORE_AND_CONTINUE);
 
             var container = new ContainerBaseStation.Builder<Object, Object>(executorService).flowConfig(flowConfig)
-                    .awaitTimeout(Duration.ofMillis(50)).withSubLine("1", slow).withSubLine("2", fast)
-                    .returns(Arrays::asList);
+                    .awaitTimeout(Duration.ofMillis(50)).withBranch("1", slow).withBranch("2", fast)
+                    .returns(results -> results.orderedOutputs());
 
             StationExecutionContext operationExecution = newOperationExecutionContext("container");
 
@@ -315,8 +355,8 @@ class ContainerStationStrategyTest {
             DummyStation slow = station("slow");
             DummyStation failing = station("failing");
 
-            var container = new ContainerBaseStation.Builder<Object, Object>(executorService).withSubLine("1", slow)
-                    .withSubLine("2", failing).returns(Arrays::asList);
+            var container = new ContainerBaseStation.Builder<Object, Object>(executorService).withBranch("1", slow)
+                    .withBranch("2", failing).returns(results -> results.orderedOutputs());
 
             StationExecutionContext operationExecution = newOperationExecutionContext("container");
 
@@ -374,8 +414,8 @@ class ContainerStationStrategyTest {
             ContainerStationStrategy strategy = new ContainerStationStrategy(
                     ParallelExecutionConfiguration.withDefaultAwaitTimeout(Duration.ofMillis(30)));
             DummyStation slow = station("slow");
-            var container = new ContainerBaseStation.Builder<Object, Object>(executorService).withSubLine("1", slow)
-                    .returns(Arrays::asList);
+            var container = new ContainerBaseStation.Builder<Object, Object>(executorService).withBranch("1", slow)
+                    .returns(results -> results.orderedOutputs());
             StationExecutionContext context = newOperationExecutionContext("container");
             StationRunner runner = (input, station, ctx) -> {
                 try {
@@ -403,8 +443,8 @@ class ContainerStationStrategyTest {
         // Given
         ContainerStationStrategy strategy = new ContainerStationStrategy();
         DummyStation branch = station("rejected");
-        var container = new ContainerBaseStation.Builder<Object, Object>(executorService).withSubLine("1", branch)
-                .returns(Arrays::asList);
+        var container = new ContainerBaseStation.Builder<Object, Object>(executorService).withBranch("1", branch)
+                .returns(results -> results.orderedOutputs());
         StationExecutionContext context = newOperationExecutionContext("container");
 
         // When
@@ -415,6 +455,12 @@ class ContainerStationStrategyTest {
         assertThat(result).isNull();
         assertThat(context.getRecord().getStatus()).isEqualTo(StationLogStatus.FAILED);
         assertThat(context.getRecord().getThrowables()).anyMatch(RejectedExecutionException.class::isInstance);
+    }
+
+    private static final class TypedDummyStation<T> extends AbstractStation<Object, T> {
+        private TypedDummyStation(String id) {
+            super(id, StationKind.CUSTOM, null, null, null, false, null, null);
+        }
     }
 
     private static final class DummyStation extends AbstractStation<Object, Object> {

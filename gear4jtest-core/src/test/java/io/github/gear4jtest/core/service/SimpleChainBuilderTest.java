@@ -19,7 +19,9 @@ import io.github.gear4jtest.core.api.config.CancelPolicy;
 import io.github.gear4jtest.core.api.config.FailurePolicy;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 import io.github.gear4jtest.core.api.config.StopPolicy;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
+import io.github.gear4jtest.core.api.util.Errors;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
@@ -44,13 +46,14 @@ import io.github.gear4jtest.core.service.steps.Step9;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.chain;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.configuration;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.container;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.eventConfiguration;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.eventHandling;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.ifElseContainer;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.processingOperation;
+import static io.github.gear4jtest.core.api.util.AssemblyLines.chain;
+import static io.github.gear4jtest.core.api.util.Events.eventConfiguration;
+import static io.github.gear4jtest.core.api.util.Events.eventHandling;
+import static io.github.gear4jtest.core.api.util.RuntimeContracts.configuration;
+import static io.github.gear4jtest.core.api.util.Stations.branch;
+import static io.github.gear4jtest.core.api.util.Stations.container;
+import static io.github.gear4jtest.core.api.util.Stations.ifElseContainer;
+import static io.github.gear4jtest.core.api.util.Stations.processingOperation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -58,15 +61,15 @@ public class SimpleChainBuilderTest {
     @Test
     void pipelineWithSkipIteratorAndEventSubscription_shouldComplete() {
         // Given
-        var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
+        var assemblyLine = AssemblyLines.<String>createAssemblyLine("test")
                 .then(processingOperation("step3", Step3.class).parameter(Step3::getParam, "a")
-                        .onError(ElementModelBuilders.<String>ignore(Exception.class)
+                        .onError(Errors.<String>ignore(Exception.class)
                                 .condition((input, ctx) -> ctx.getContext().containsKey("a"))
                                 .action(() -> System.out.println("Error occurred!")).build())
                         .skipIf((input, ctx) -> input.equals("a")).transformer((a, ctx) -> new HashMap<>()).build())
                 .then(processingOperation("step8", Step8.class).build())
                 .then(processingOperation("step9", Step9.class).build())
-                .then(ElementModelBuilders.<List<Integer>>iterate("iterator")
+                .then(Stations.<List<Integer>>iterate("iterator")
                         .iterableFunction(Function.identity())
                         .sequence(chain("sequence", processingOperation("step10", Step10.class).build()).build())
                         .collector(Collectors.toList())
@@ -118,15 +121,15 @@ public class SimpleChainBuilderTest {
     void pipelineWithEventSubscription_shouldPublishParameterEvents() {
         // Given
         var testEventListener = new TestEventListener();
-        var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
+        var assemblyLine = AssemblyLines.<String>createAssemblyLine("test")
                 .then(processingOperation("step3", Step3.class).parameter(Step3::getParam, "a")
-                        .onError(ElementModelBuilders.<String>ignore(Exception.class)
+                        .onError(Errors.<String>ignore(Exception.class)
                                 .condition((input, ctx) -> ctx.getContext().containsKey("a"))
                                 .action(() -> System.out.println("Error occurred!")).build())
                         .skipIf((input, ctx) -> input.equals("a")).transformer((a, ctx) -> new HashMap<>()).build())
                 .then(processingOperation("step8", Step8.class).build())
                 .then(processingOperation("step9", Step9.class).build())
-                .then(ElementModelBuilders.<List<Integer>>iterate("iterator").iterableFunction(Function.identity())
+                .then(Stations.<List<Integer>>iterate("iterator").iterableFunction(Function.identity())
                         .sequence(chain("sequence", processingOperation("step10", Step10.class).build()).build())
                         .collector(Collectors.toList()).build())
                 .configuration(configuration().eventHandling(eventHandling()
@@ -164,16 +167,16 @@ public class SimpleChainBuilderTest {
     @Test
     void test_container_two_sublines() {
         // Given
-        var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
+        var assemblyLine = AssemblyLines.<String>createAssemblyLine("test")
                 .then(processingOperation("step11", Step11.class).parameter(Step11::getParam, "a").build())
                 .then(container(String.class)
-                        .withSubLine("1",
-                                     processingOperation("step11", Step11.class).parameter(Step11::getParam, "c")
-                                             .build())
-                        .withSubLine("2",
-                                     processingOperation("step11", Step11.class).parameter(Step11::getParam, "b")
-                                             .build())
-                        .returns(Arrays::asList))
+                        .withBranch(branch("1",
+                                           processingOperation("step11", Step11.class).parameter(Step11::getParam, "c")
+                                                   .build()))
+                        .withBranch(branch("2",
+                                           processingOperation("step11", Step11.class).parameter(Step11::getParam, "b")
+                                                   .build()))
+                        .returns(results -> List.of(results.get("1", String.class), results.get("2", String.class))))
                 .configuration(configuration().eventHandling(eventHandling()
                         .subscription(EventSubscription.on(Event.class, new TestEventListener()::handleEvent))
                         .globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build()).build())
@@ -207,16 +210,16 @@ public class SimpleChainBuilderTest {
     @Test
     void test_container_two_paralleled_sublines() {
         // Given
-        var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
+        var assemblyLine = AssemblyLines.<String>createAssemblyLine("test")
                 .then(processingOperation("step11", Step11.class).parameter(Step11::getParam, "a").build())
                 .then(container(String.class, Executors.newFixedThreadPool(2))
-                        .withSubLine("1",
-                                     processingOperation("step11", Step11.class).parameter(Step11::getParam, "c")
-                                             .build())
-                        .withSubLine("2",
-                                     processingOperation("step11", Step11.class).parameter(Step11::getParam, "b")
-                                             .build())
-                        .returns(Arrays::asList))
+                        .withBranch(branch("1",
+                                           processingOperation("step11", Step11.class).parameter(Step11::getParam, "c")
+                                                   .build()))
+                        .withBranch(branch("2",
+                                           processingOperation("step11", Step11.class).parameter(Step11::getParam, "b")
+                                                   .build()))
+                        .returns(results -> List.of(results.get("1", String.class), results.get("2", String.class))))
                 .configuration(configuration().eventHandling(eventHandling()
                         .subscription(EventSubscription.on(Event.class, new TestEventListener()::handleEvent))
                         .globalEventConfiguration(eventConfiguration().eventOnParameterChanged(true).build()).build())
@@ -250,7 +253,7 @@ public class SimpleChainBuilderTest {
     @Test
     void test_container_if_else_container() {
         // Given
-        var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
+        var assemblyLine = AssemblyLines.<String>createAssemblyLine("test")
                 .then(processingOperation("step11", Step11.class).parameter(Step11::getParam, "a").build())
                 .then(ifElseContainer(String.class)
                         .conditionally("when-a-c",
@@ -295,15 +298,16 @@ public class SimpleChainBuilderTest {
     @Test
     void should_execute_fallback_branch_only_when_primary_failed() {
         // Given
+        var primary = branch("1", processingOperation("primary", FailingPrimary.class).build());
+        var fallback = branch("2", processingOperation("fallback", FallbackStep.class).build());
         var sequentialContainer = container(String.class)
                 .flowConfig(new FlowConfig(FailurePolicy.IGNORE_AND_CONTINUE, StopPolicy.PROPAGATE_STOP,
                         CancelPolicy.PROPAGATE_CANCEL))
-                .withSubLine("1", processingOperation("primary", FailingPrimary.class).build())
-                .withSubLine("2", processingOperation("fallback", FallbackStep.class).build(),
-                             (input, ctx, siblings) -> siblings.isFailed("1"))
-                .returns(Arrays::asList);
+                .withBranch(primary)
+                .withBranch(fallback, (input, ctx, siblings) -> siblings.isFailed("1"))
+                .returns(results -> Arrays.asList(results.get(primary), results.get(fallback)));
 
-        var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("container-branch-condition")
+        var assemblyLine = AssemblyLines.<String>createAssemblyLine("container-branch-condition")
                 .then(chain("root-sequence", sequentialContainer).build()).build();
 
         RuntimeExtensionResolver runtimeExtensionResolver = new RuntimeExtensionResolver(null);

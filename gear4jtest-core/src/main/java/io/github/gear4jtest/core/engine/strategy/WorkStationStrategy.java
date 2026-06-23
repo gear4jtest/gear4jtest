@@ -17,6 +17,7 @@ import io.github.gear4jtest.core.engine.support.WorkerConcurrencyPolicy;
 import io.github.gear4jtest.core.engine.support.WorkerIntrospector;
 import io.github.gear4jtest.core.engine.support.WorkerLockAcquisitionPolicy;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
+import io.github.gear4jtest.core.exception.ConcurrentTransformerUseException;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, ?>> {
@@ -105,16 +106,15 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
         ((DefaultStationExecutionContext) operationExecution).addCapability(WorkerParamsInjector.Parameters.class,
                                                                             parameters.build());
 
-        if (!isStateful(operationExecution)
-                || concurrencyPolicy() == WorkerConcurrencyPolicy.ALLOW_PARALLEL_INVOCATIONS) {
+        if (!shouldProtectWorker(station, operationExecution)) {
             return;
         }
 
         WorkerConcurrencyGuard guard = concurrencyManager.guardFor(operation);
         try {
             guard.beforeUse(lockAcquisitionPolicy(), concurrencyConfiguration.lockWaitTimeout());
-        } catch (IllegalStateException e) {
-            throw new IllegalStateException("Worker instance cannot be invoked concurrently: "
+        } catch (ConcurrentTransformerUseException e) {
+            throw new ConcurrentTransformerUseException("Worker instance cannot be invoked concurrently: "
                     + operation.getClass().getName() + ". Concurrent invocation is protected by "
                     + concurrencyPolicy() + " with " + lockAcquisitionPolicy() + " and timeout "
                     + concurrencyConfiguration.lockWaitTimeout() + ". " + lockFailureAdvice(), e);
@@ -150,6 +150,17 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
             // Delegate remaining cleanup to the base strategy.
             super.release(station, result, context, errors);
         }
+    }
+
+    private boolean shouldProtectWorker(WorkStation<?, ?> station, StationExecutionContext operationExecution) {
+        if (concurrencyPolicy() == WorkerConcurrencyPolicy.ALLOW_PARALLEL_INVOCATIONS) {
+            return false;
+        }
+        if (concurrencyPolicy() == WorkerConcurrencyPolicy.LOCK_REUSED_WORKER_INSTANCE_ONLY
+                && !station.isReuseOperatorInstanceWithinRun()) {
+            return false;
+        }
+        return isStateful(operationExecution);
     }
 
     /**

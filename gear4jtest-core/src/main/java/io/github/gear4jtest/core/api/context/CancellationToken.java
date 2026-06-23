@@ -11,7 +11,9 @@ import io.github.gear4jtest.core.exception.AssemblyLineCancellationException;
  * <p>
  * Gear4J may interrupt asynchronous tasks, but user operators that perform long
  * blocking or iterative work should also poll this token and stop cleanly when
- * cancellation is requested.
+ * cancellation is requested. The token is one-shot and stateful: sharing the
+ * same instance between independent top-level runs means cancelling one of
+ * those runs cancels every run that reused the token.
  * </p>
  */
 public final class CancellationToken {

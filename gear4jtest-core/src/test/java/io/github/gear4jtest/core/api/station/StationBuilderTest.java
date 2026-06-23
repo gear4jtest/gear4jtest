@@ -1,6 +1,8 @@
 package io.github.gear4jtest.core.api.station;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
@@ -15,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class StationBuilderCoverageTest {
+class StationBuilderTest {
     @Test
     void unaryContainerBuilder_shouldBuildParallelContainerWithOneLineAndFunction() {
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -39,7 +41,8 @@ class StationBuilderCoverageTest {
             assertThat(station.getAssemblyLines().get(0).getId()).isEqualTo("branch-1");
             assertThat(station.getAssemblyLines().get(0).getStation()).isSameAs(branchStation);
             assertThat(station.getAssemblyLines().get(0).getCondition()).isNotNull();
-            assertThat(station.getFunc().apply("gear")).isEqualTo("gear!");
+            assertThat(station.getResultsFunc().apply(ContainerResults.of(Map.of("branch-1", "gear"), List.of("gear"))))
+                    .isEqualTo("gear!");
             var branches = station.getAssemblyLines();
             var firstBranch = branches.get(0);
 
@@ -58,8 +61,8 @@ class StationBuilderCoverageTest {
                 .build();
 
         var duplicatedBranchBuilder = new ContainerBaseStation.Builder<String, Void>()
-                .withSubLine("same", branchStation)
-                .withSubLine("same", branchStation);
+                .withBranch(ContainerBranch.of("same", branchStation))
+                .withBranch(ContainerBranch.of("same", branchStation));
 
         assertThatThrownBy(duplicatedBranchBuilder::build)
                 .isInstanceOf(IllegalArgumentException.class)
@@ -115,34 +118,92 @@ class StationBuilderCoverageTest {
     }
 
     @Test
+    void containerBaseBuilder_shouldBuildNamedTypedContainerWithMoreThanTwoBranches() {
+        WorkStation<String, String> branchStation = new WorkStation.Builder<String, String, IdentityOperator>()
+                .type(IdentityOperator.class)
+                .id("branch-op")
+                .build();
+        ContainerBranch<String, String> first = ContainerBranch.of("first", branchStation);
+        ContainerBranch<String, String> second = ContainerBranch.of("second", branchStation);
+        ContainerBranch<String, String> third = ContainerBranch.of("third", branchStation);
+
+        ContainerBaseStation<String, String> station = new ContainerBaseStation.Builder<String, String>()
+                .withBranch(first)
+                .withBranch(second, (input, ctx) -> true)
+                .withBranch(third, (input, ctx, siblings) -> true)
+                .returns(results -> results.get(first) + results.get(second) + results.get(third));
+
+        assertThat(station.getAssemblyLines()).extracting(ContainerBaseStation.Branch::getId)
+                .containsExactly("first", "second", "third");
+        assertThat(station.getAssemblyLines().get(1).getCondition()).isNotNull();
+        assertThat(station.getAssemblyLines().get(2).getSiblingCondition()).isNotNull();
+        assertThat(station.getResultsFunc().apply(ContainerResults.of(Map.of("first", "A", "second", "B",
+                                                                             "third", "C"),
+                                                                      List.of("A", "B", "C"))))
+                .isEqualTo("ABC");
+    }
+
+    @Test
+    void containerResults_shouldValidateNamedTypedAccess() {
+        WorkStation<String, String> textStation = new WorkStation.Builder<String, String, IdentityOperator>()
+                .type(IdentityOperator.class)
+                .id("text-op")
+                .build();
+        ContainerBranch<String, String> text = ContainerBranch.of("text", textStation);
+        ContainerResults results = ContainerResults.of(Map.of("text", "value", "number", 42), List.of("value", 42));
+
+        assertThat(results.get(text)).isEqualTo("value");
+        assertThat(results.get("number", Integer.class)).isEqualTo(42);
+        assertThat(results.orderedOutputs()).containsExactly("value", 42);
+        assertThatThrownBy(() -> results.get("number", String.class))
+                .isInstanceOf(ClassCastException.class)
+                .hasMessageContaining("Container branch 'number' produced java.lang.Integer");
+        assertThatThrownBy(() -> results.get("missing"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Unknown container branch result 'missing'");
+    }
+
+    @Test
     void containerBaseBuilder_shouldBuildTwoLineContainerWithSiblingCondition() {
         WorkStation<String, String> branchStation = new WorkStation.Builder<String, String, IdentityOperator>()
                 .type(IdentityOperator.class)
                 .id("branch-op")
                 .build();
+        ContainerBranch<String, String> first = ContainerBranch.of("a", branchStation);
+        ContainerBranch<String, String> second = ContainerBranch.of("b", branchStation);
 
         ContainerBaseStation<String, String> station = new ContainerBaseStation.Builder<String, String>()
-                .withSubLine("a", branchStation)
-                .withSubLine("b", branchStation, (input, ctx, siblings) -> true)
-                .returns((left, right) -> left + right);
+                .withBranch(first)
+                .withBranch(second, (input, ctx, siblings) -> true)
+                .returns(results -> results.get(first) + results.get(second));
 
         assertThat(station.getUnary()).isFalse();
         assertThat(station.getAssemblyLines()).extracting(ContainerBaseStation.Branch::getId)
                 .containsExactly("a", "b");
         assertThat(station.getAssemblyLines().get(1).getSiblingCondition()).isNotNull();
-        assertThat(station.getFunc().apply("A", "B")).isEqualTo("AB");
+        assertThat(station.getResultsFunc().apply(ContainerResults.of(Map.of("a", "A", "b", "B"),
+                                                                      List.of("A", "B"))))
+                .isEqualTo("AB");
     }
 
     @Test
     void signalStationBuilder_shouldBuildUnaryStation() {
         SignalStation<String> station = new SignalStation.Builder<String>()
                 .id("fatal")
-                .type(StationSignalType.FATAL)
+                .type(SignalType.FATAL)
                 .build();
 
+        assertThat(station.getSignalType()).isEqualTo(SignalType.FATAL);
         assertThat(station.getUnary()).isTrue();
         assertThat(station.getProcessors()).isEmpty();
         assertThat(station.getOnErrors()).isEmpty();
+    }
+
+    @Test
+    void signalStationBuilder_shouldRejectIgnoreSignal() {
+        assertThatThrownBy(() -> new SignalStation.Builder<String>().type(SignalType.IGNORE))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("SignalStation does not support IGNORE; use STOP or FATAL");
     }
 
     static class IdentityOperator implements Operator<String, String> {

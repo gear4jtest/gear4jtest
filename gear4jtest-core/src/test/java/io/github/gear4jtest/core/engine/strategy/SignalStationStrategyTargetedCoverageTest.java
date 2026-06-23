@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.engine.strategy;
 import java.util.Map;
 import java.util.UUID;
 
+import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
@@ -10,7 +11,6 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.SignalStation;
 import io.github.gear4jtest.core.api.station.StationKind;
-import io.github.gear4jtest.core.api.station.StationSignalType;
 import io.github.gear4jtest.core.api.station.WorkStation;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
@@ -32,7 +32,7 @@ class SignalStationStrategyTargetedCoverageTest {
     @Test
     void doExecute_shouldMarkFailedWhenFatalSignalIsEligible() {
         StationExecutionContext context = stationContext("fatal");
-        Object output = strategy.doExecute(signal(StationSignalType.FATAL, true), "input", null, context);
+        Object output = strategy.doExecute(signal(SignalType.FATAL, true), "input", null, context);
 
         assertThat(output).isEqualTo("input");
         assertThat(context.getRecord().getStatus()).isEqualTo(StationLogStatus.FAILED);
@@ -42,7 +42,7 @@ class SignalStationStrategyTargetedCoverageTest {
     void doExecute_shouldMarkStoppedWhenStopSignalIsEligible() {
         StationExecutionContext context = stationContext("stop");
 
-        strategy.doExecute(signal(StationSignalType.STOP, true), "input", null, context);
+        strategy.doExecute(signal(SignalType.STOP, true), "input", null, context);
 
         assertThat(context.getRecord().getStatus()).isEqualTo(StationLogStatus.STOPPED);
     }
@@ -51,7 +51,7 @@ class SignalStationStrategyTargetedCoverageTest {
     void doExecute_shouldLeaveStatusRunningWhenSignalIsNotEligible() {
         StationExecutionContext context = stationContext("ineligible");
 
-        strategy.doExecute(signal(StationSignalType.FATAL, false), "input", null, context);
+        strategy.doExecute(signal(SignalType.FATAL, false), "input", null, context);
 
         assertThat(context.getRecord().getStatus()).isEqualTo(StationLogStatus.RUNNING);
     }
@@ -61,7 +61,7 @@ class SignalStationStrategyTargetedCoverageTest {
         return (Class<? extends AbstractStation<?, ?>>) type;
     }
 
-    private static SignalStation<String> signal(StationSignalType signalType, boolean eligible) {
+    private static SignalStation<String> signal(SignalType signalType, boolean eligible) {
         return new SignalStation.Builder<String>()
                 .id("signal")
                 .type(signalType)

@@ -6,7 +6,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -23,12 +22,14 @@ import io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContract;
 import io.github.gear4jtest.core.api.assemblyline.InlinePolicy;
 import io.github.gear4jtest.core.api.assemblyline.RuntimeRequirement;
 import io.github.gear4jtest.core.api.behavior.Operator;
+import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
 import io.github.gear4jtest.core.api.station.SignalStation;
-import io.github.gear4jtest.core.api.station.StationSignalType;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
+import io.github.gear4jtest.core.api.util.Events;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
@@ -51,12 +52,12 @@ import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.chain;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.configuration;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.container;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.eventConfiguration;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.ifElseContainer;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.processingOperation;
+import static io.github.gear4jtest.core.api.util.AssemblyLines.chain;
+import static io.github.gear4jtest.core.api.util.Events.eventConfiguration;
+import static io.github.gear4jtest.core.api.util.RuntimeContracts.configuration;
+import static io.github.gear4jtest.core.api.util.Stations.container;
+import static io.github.gear4jtest.core.api.util.Stations.ifElseContainer;
+import static io.github.gear4jtest.core.api.util.Stations.processingOperation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -128,7 +129,7 @@ class FullAssemblyLineRuntimeIT {
     }
 
     private static EventHandlingDefinition eventHandlingDefinition(EventCollector collector) {
-        return ElementModelBuilders.eventHandling()
+        return Events.eventHandling()
                 .subscription(collector.stationStarted())
                 .subscription(collector.stationFinished())
                 .subscription(collector.parameterResolved())
@@ -144,7 +145,7 @@ class FullAssemblyLineRuntimeIT {
                                                                  ExecutorService parallelExecutor,
                                                                  AssemblyLine<List<String>, String> inlineChild,
                                                                  AssemblyLine<String, String> nestedChild) {
-        return ElementModelBuilders.<String>createAssemblyLine("full-runtime")
+        return AssemblyLines.<String>createAssemblyLine("full-runtime")
                 .configuration(configuration()
                         .eventHandling(eventHandling)
                         .runtimeContract(AssemblyLineRuntimeContract.builder()
@@ -156,13 +157,13 @@ class FullAssemblyLineRuntimeIT {
                         .parameter(SuffixOperator::getSuffix, "|prefix")
                         .build())
                 .then(container(String.class, parallelExecutor)
-                        .withSubLine("left", processingOperation("left-suffix", SuffixOperator.class)
+                        .withBranch("left", processingOperation("left-suffix", SuffixOperator.class)
                                 .parameter(SuffixOperator::getSuffix, "|left")
                                 .build())
-                        .withSubLine("right", processingOperation("right-suffix", SuffixOperator.class)
+                        .withBranch("right", processingOperation("right-suffix", SuffixOperator.class)
                                 .parameter(SuffixOperator::getSuffix, "|right")
                                 .build())
-                        .returns((left, right) -> Arrays.stream(new Object[] { left, right })
+                        .returns(results -> results.orderedOutputs().stream()
                                 .map(Object::toString)
                                 .sorted()
                                 .collect(Collectors.joining("+"))))
@@ -172,10 +173,10 @@ class FullAssemblyLineRuntimeIT {
                         .elseOp("missing-left", processingOperation("lowercase", LowercaseOperator.class).build()))
                 .then(new SignalStation.Builder<String>()
                         .id("noop-stop-signal")
-                        .type(StationSignalType.STOP)
+                        .type(SignalType.STOP)
                         .condition(signal -> false)
                         .build())
-                .then(ElementModelBuilders.<String>iterate("split-iterator")
+                .then(Stations.<String>iterate("split-iterator")
                         .iterableFunction(input -> List.of(input.split("\\+")))
                         .sequence(chain("each-item",
                                         processingOperation("append-item-marker", SuffixOperator.class)
@@ -190,7 +191,7 @@ class FullAssemblyLineRuntimeIT {
     }
 
     private static AssemblyLine<List<String>, String> inlineChildAssemblyLine(EventHandlingDefinition eventHandling) {
-        return ElementModelBuilders.<List<String>>createAssemblyLine("inline-child")
+        return AssemblyLines.<List<String>>createAssemblyLine("inline-child")
                 .configuration(configuration()
                         .eventHandling(eventHandling)
                         .runtimeContract(AssemblyLineRuntimeContract.builder()
@@ -203,7 +204,7 @@ class FullAssemblyLineRuntimeIT {
     }
 
     private static AssemblyLine<String, String> nestedChildAssemblyLine(EventHandlingDefinition eventHandling) {
-        return ElementModelBuilders.<String>createAssemblyLine("nested-child")
+        return AssemblyLines.<String>createAssemblyLine("nested-child")
                 .configuration(configuration().eventHandling(eventHandling).build())
                 .then(processingOperation("nested-suffix", SuffixOperator.class)
                         .parameter(SuffixOperator::getSuffix, "|nested")

@@ -28,6 +28,14 @@ Not guaranteed today:
 
 Durable eventing remains a separate subsystem concern and must not be assumed from the in-memory event runtime.
 
+By default, event shutdown uses `WAIT_FOR_DRAIN`: the pipeline result is returned only after already accepted reactions
+have drained or the shutdown timeout expires. Use `DETACH_AND_DRAIN` explicitly when best-effort reactions should outlive
+the caller's `execute(...)` call; `RuntimeConfiguration.detachAndDrainDefaults()` is the shortcut for that explicit mode.
+
+Side-compute waits are synchronous from the station's perspective. A station waiting for side-compute depends on the
+event reaction executor having enough capacity to complete the corresponding side-compute reaction before the configured
+timeout.
+
 ## Persistence runtime
 
 Status: Implemented with bounded in-memory buffering.
@@ -100,9 +108,14 @@ interruption or keeps blocking on external resources.
 Application operators and processors should be written cooperatively:
 
 - respect thread interruption;
+- poll `CancellationToken` during long loops or multi-step work;
 - use their own I/O timeouts;
 - avoid unbounded blocking calls;
 - keep retry/backoff policies explicit.
+
+A `CancellationToken` is one-shot state. Sharing one token between unrelated top-level runs couples their lifecycle:
+cancelling one run cancels every run that reused the same token. `RunRequest.toBuilder()` preserves the token;
+`RunRequest.toIndependentBuilder()` intentionally drops it so the engine can allocate a fresh token for the copied run.
 
 ## AssemblyLine graph immutability
 

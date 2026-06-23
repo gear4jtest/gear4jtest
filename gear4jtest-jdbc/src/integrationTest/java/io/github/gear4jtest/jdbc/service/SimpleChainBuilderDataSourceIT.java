@@ -8,7 +8,9 @@ import java.util.stream.Collectors;
 
 import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
+import io.github.gear4jtest.core.api.util.Errors;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
@@ -40,12 +42,12 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.chain;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.configuration;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.eventConfiguration;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.eventHandling;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.persistenceConfiguration;
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.processingOperation;
+import static io.github.gear4jtest.core.api.util.AssemblyLines.chain;
+import static io.github.gear4jtest.core.api.util.Events.eventConfiguration;
+import static io.github.gear4jtest.core.api.util.Events.eventHandling;
+import static io.github.gear4jtest.core.api.util.Persistence.persistenceConfiguration;
+import static io.github.gear4jtest.core.api.util.RuntimeContracts.configuration;
+import static io.github.gear4jtest.core.api.util.Stations.processingOperation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -76,15 +78,15 @@ public class SimpleChainBuilderDataSourceIT {
         dataSource.setPassword(POSTGRES.getPassword());
         dataSource.setUrl(POSTGRES.getJdbcUrl());
 
-        var assemblyLine = ElementModelBuilders.<String>createAssemblyLine("test")
+        var assemblyLine = AssemblyLines.<String>createAssemblyLine("test")
                 .then(processingOperation("step3", Step3.class).parameter(Step3::getParam, "a")
-                        .onError(ElementModelBuilders.<String>ignore(Exception.class)
+                        .onError(Errors.<String>ignore(Exception.class)
                                 .condition((input, ctx) -> ctx.getContext().containsKey("a"))
                                 .action(() -> LOGGER.info("Error occurred!")).build())
                         .skipIf((input, ctx) -> input.equals("a")).transformer((a, ctx) -> new HashMap<>()).build())
                 .then(processingOperation("step8", Step8.class).build())
                 .then(processingOperation("step9", Step9.class).build())
-                .then(ElementModelBuilders.<List<Integer>>iterate("iterator").iterableFunction(Function.identity())
+                .then(Stations.<List<Integer>>iterate("iterator").iterableFunction(Function.identity())
                         .sequence(chain("sequence", processingOperation("step10", Step10.class).build()).build())
                         .collector(Collectors.toList()).build())
                 .configuration(configuration().eventHandling(eventHandling()

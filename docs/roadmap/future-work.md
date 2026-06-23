@@ -25,7 +25,9 @@ This file collects known review topics and future ideas. Items here are not nece
 
 Potential future work:
 
-- Improve persistence flushing strategy.
+- Consider advanced persistence tuning after ADR 0015: adaptive batch sizing, explicit metrics for core terminal-record buffers, and custom failure/reporting policies for batched terminal snapshots.
+- Consider advanced context propagation diagnostics after ADR 0016, such as metrics for omitted keys or reusable project-specific context copiers.
+- Review side-compute execution isolation if side-compute becomes high-volume or latency-critical. The current model waits synchronously from the station thread for work completed by the async event/reaction infrastructure.
 - Avoid a single bottleneck thread for all pipelines if that becomes a real limit.
 - Consider local durable append before remote DB flush for stronger crash behavior.
 - Enrich the Micrometer module with durations, failures, cancellations, event stats and an explicit tag policy. See [Micrometer observability](../architecture/micrometer-observability.md).
@@ -80,3 +82,4 @@ Potential future work:
 - Add generated-code examples for XML.
 - Add diagrams for runner chain, event runtime and external pipeline compilation.
 - Add a migration guide when module/package names are finalized.
+- Revisit JPMS descriptors before 1.0 once public API/SPI boundaries and advanced extension points are stable.

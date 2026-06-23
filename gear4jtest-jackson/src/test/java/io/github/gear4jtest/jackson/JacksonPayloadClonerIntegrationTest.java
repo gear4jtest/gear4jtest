@@ -11,7 +11,7 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.api.station.UnaryWorkStation;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
@@ -52,15 +52,16 @@ class JacksonPayloadClonerIntegrationTest {
     }
 
     private static AssemblyLine<MutablePayload, MutablePayload> parallelContainerAssemblyLine(ExecutorService executor) {
-        UnaryWorkStation<MutablePayload> branchOne = ElementModelBuilders
+        UnaryWorkStation<MutablePayload> branchOne = Stations
                 .unaryProcessingOperation("branch-one", AddBranchOneOperator.class).build();
 
-        UnaryWorkStation<MutablePayload> branchTwo = ElementModelBuilders
+        UnaryWorkStation<MutablePayload> branchTwo = Stations
                 .unaryProcessingOperation("branch-two", AddBranchTwoOperator.class).build();
 
-        ContainerBaseStation<MutablePayload, MutablePayload> container = ElementModelBuilders
-                .container(MutablePayload.class, executor).withSubLine("id1", branchOne).withSubLine("id2", branchTwo)
-                .returns(MutablePayload::merge);
+        ContainerBaseStation<MutablePayload, MutablePayload> container = Stations
+                .container(MutablePayload.class, executor).withBranch("id1", branchOne).withBranch("id2", branchTwo)
+                .returns(results -> MutablePayload.merge(results.get("id1", MutablePayload.class),
+                                                         results.get("id2", MutablePayload.class)));
 
         return AssemblyLine.<MutablePayload, MutablePayload>builder("parallel-container").then(container).build();
     }

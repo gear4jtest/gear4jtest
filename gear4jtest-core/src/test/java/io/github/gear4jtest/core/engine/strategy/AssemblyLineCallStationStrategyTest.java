@@ -17,7 +17,8 @@ import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -27,7 +28,7 @@ import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.processingOperation;
+import static io.github.gear4jtest.core.api.util.Stations.processingOperation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AssemblyLineCallStationStrategyTest {
@@ -44,9 +45,9 @@ class AssemblyLineCallStationStrategyTest {
     @Test
     void inline_pipeline_call_executes_child_root_inside_parent_run() {
         // Given
-        AssemblyLine<String, String> child = ElementModelBuilders.<String>createAssemblyLine("child")
+        AssemblyLine<String, String> child = AssemblyLines.<String>createAssemblyLine("child")
                 .then(processingOperation("child-step", AppendChild.class).build()).build();
-        AssemblyLine<String, String> parent = ElementModelBuilders.<String>createAssemblyLine("parent")
+        AssemblyLine<String, String> parent = AssemblyLines.<String>createAssemblyLine("parent")
                 .then(AssemblyLineCallStation.inline("call-child", child))
                 .then(processingOperation("parent-step", AppendParent.class).build()).build();
         AssemblyLineEngine engine = engine();
@@ -70,13 +71,15 @@ class AssemblyLineCallStationStrategyTest {
         // Given
         AwaitBothBranches.reset(2);
         ExecutorService executor = Executors.newFixedThreadPool(2);
-        AssemblyLine<String, String> child = ElementModelBuilders.<String>createAssemblyLine("shared-child")
+        AssemblyLine<String, String> child = AssemblyLines.<String>createAssemblyLine("shared-child")
                 .then(processingOperation("child-step", AwaitBothBranches.class).build()).build();
-        var parallelContainer = ElementModelBuilders.container(String.class, executor)
-                .withSubLine("left", AssemblyLineCallStation.inline("call-left", child))
-                .withSubLine("right", AssemblyLineCallStation.inline("call-right", child))
-                .returns((String left, String right) -> left + "|" + right);
-        AssemblyLine<String, String> parent = ElementModelBuilders.<String>createAssemblyLine("parent")
+        var left = Stations.branch("left", AssemblyLineCallStation.inline("call-left", child));
+        var right = Stations.branch("right", AssemblyLineCallStation.inline("call-right", child));
+        var parallelContainer = Stations.container(String.class, executor)
+                .withBranch(left)
+                .withBranch(right)
+                .returns(results -> results.get(left) + "|" + results.get(right));
+        AssemblyLine<String, String> parent = AssemblyLines.<String>createAssemblyLine("parent")
                 .then(parallelContainer)
                 .build();
         AssemblyLineEngine engine = engine();
@@ -107,13 +110,15 @@ class AssemblyLineCallStationStrategyTest {
         // Given
         AwaitBothBranches.reset(2);
         ExecutorService executor = Executors.newFixedThreadPool(2);
-        AssemblyLine<String, String> child = ElementModelBuilders.<String>createAssemblyLine("shared-child")
+        AssemblyLine<String, String> child = AssemblyLines.<String>createAssemblyLine("shared-child")
                 .then(processingOperation("child-step", AwaitBothBranches.class).build()).build();
-        var parallelContainer = ElementModelBuilders.container(String.class, executor)
-                .withSubLine("left", AssemblyLineCallStation.nestedRun("call-left", child))
-                .withSubLine("right", AssemblyLineCallStation.nestedRun("call-right", child))
-                .returns((String left, String right) -> left + "|" + right);
-        AssemblyLine<String, String> parent = ElementModelBuilders.<String>createAssemblyLine("parent")
+        var left = Stations.branch("left", AssemblyLineCallStation.nestedRun("call-left", child));
+        var right = Stations.branch("right", AssemblyLineCallStation.nestedRun("call-right", child));
+        var parallelContainer = Stations.container(String.class, executor)
+                .withBranch(left)
+                .withBranch(right)
+                .returns(results -> results.get(left) + "|" + results.get(right));
+        AssemblyLine<String, String> parent = AssemblyLines.<String>createAssemblyLine("parent")
                 .then(parallelContainer)
                 .build();
         AssemblyLineEngine engine = engine();
@@ -143,10 +148,10 @@ class AssemblyLineCallStationStrategyTest {
     void nested_pipeline_call_executes_child_as_separate_run_with_lineage() {
         // Given
         RunCaptureExtension childRunCapture = new RunCaptureExtension();
-        AssemblyLine<String, String> child = ElementModelBuilders.<String>createAssemblyLine("child")
+        AssemblyLine<String, String> child = AssemblyLines.<String>createAssemblyLine("child")
                 .then(processingOperation("child-step", AppendChild.class).build()).defaultExtension(childRunCapture)
                 .build();
-        AssemblyLine<String, String> parent = ElementModelBuilders.<String>createAssemblyLine("parent")
+        AssemblyLine<String, String> parent = AssemblyLines.<String>createAssemblyLine("parent")
                 .then(AssemblyLineCallStation.nestedRun("call-child", child))
                 .then(processingOperation("parent-step", AppendParent.class).build()).build();
         AssemblyLineEngine engine = engine();
@@ -177,10 +182,10 @@ class AssemblyLineCallStationStrategyTest {
     void nested_pipeline_call_applies_child_run_interceptors() {
         // Given
         CountingRunInterceptor childInterceptor = new CountingRunInterceptor();
-        AssemblyLine<String, String> child = ElementModelBuilders.<String>createAssemblyLine("child")
+        AssemblyLine<String, String> child = AssemblyLines.<String>createAssemblyLine("child")
                 .then(processingOperation("child-step", AppendChild.class).build()).defaultExtension(childInterceptor)
                 .build();
-        AssemblyLine<String, String> parent = ElementModelBuilders.<String>createAssemblyLine("parent")
+        AssemblyLine<String, String> parent = AssemblyLines.<String>createAssemblyLine("parent")
                 .then(AssemblyLineCallStation.nestedRun("call-child", child)).build();
         AssemblyLineEngine engine = engine();
 
@@ -199,10 +204,10 @@ class AssemblyLineCallStationStrategyTest {
     void inline_pipeline_call_rejects_child_pipeline_with_runtime_contract_forbidding_inline() {
         // Given
         CountingRunInterceptor childInterceptor = new CountingRunInterceptor();
-        AssemblyLine<String, String> child = ElementModelBuilders.<String>createAssemblyLine("child")
+        AssemblyLine<String, String> child = AssemblyLines.<String>createAssemblyLine("child")
                 .then(processingOperation("child-step", AppendChild.class).build()).defaultExtension(childInterceptor)
                 .build();
-        AssemblyLine<String, String> parent = ElementModelBuilders.<String>createAssemblyLine("parent")
+        AssemblyLine<String, String> parent = AssemblyLines.<String>createAssemblyLine("parent")
                 .then(AssemblyLineCallStation.inline("call-child", child)).build();
         AssemblyLineEngine engine = engine();
 

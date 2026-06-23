@@ -9,7 +9,8 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.execution.AssemblyRunManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -99,8 +100,8 @@ class RunLifecycleExtensionTest {
     }
 
     private static AssemblyLine<String, String> pipeline() {
-        return ElementModelBuilders.<String>createAssemblyLine("run-lifecycle")
-                .then(ElementModelBuilders.processingOperation("echo", EchoOperator.class).build())
+        return AssemblyLines.<String>createAssemblyLine("run-lifecycle")
+                .then(Stations.processingOperation("echo", EchoOperator.class).build())
                 .build();
     }
 

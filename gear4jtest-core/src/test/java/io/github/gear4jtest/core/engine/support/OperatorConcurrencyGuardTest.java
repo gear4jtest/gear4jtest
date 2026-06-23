@@ -1,12 +1,11 @@
-package io.github.gear4jtest.core.model;
+package io.github.gear4jtest.core.engine.support;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyGuard;
-import io.github.gear4jtest.core.engine.support.WorkerLockAcquisitionPolicy;
+import io.github.gear4jtest.core.exception.ConcurrentTransformerUseException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -81,7 +80,7 @@ class OperatorConcurrencyGuardTest {
             contender.start();
             contender.join(2_000);
 
-            assertThat(failure.get()).isInstanceOf(IllegalStateException.class)
+            assertThat(failure.get()).isInstanceOf(ConcurrentTransformerUseException.class)
                     .hasMessageContaining("Worker lock is already held");
         } finally {
             guard.afterUse();
@@ -98,7 +97,7 @@ class OperatorConcurrencyGuardTest {
 
         try {
             assertThatThrownBy(() -> guard.beforeUse(WorkerLockAcquisitionPolicy.BLOCK_CALLER, timeout))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(ConcurrentTransformerUseException.class)
                     .hasMessageContaining("Timed out after PT0.05S while waiting for worker lock");
         } finally {
             guard.afterUse();

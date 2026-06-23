@@ -76,4 +76,37 @@ class RunRequestDeepCoverageTest {
         assertThatThrownBy(() -> copy.getExtensions().add(new RuntimeExtension() {}))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
+
+    @Test
+    void toIndependentBuilder_shouldCopyReusableValuesWithoutSharingCancellationOrCallStack() {
+        // Given
+        RuntimeExtension extension = new RuntimeExtension() {};
+        IdGenerator idGenerator = () -> UUID.fromString("00000000-0000-7000-8000-000000000124");
+        NestedRunContext nested = new NestedRunContext(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                "parent", "station");
+        AssemblyLineCallStack callStack = AssemblyLineCallStack.withMaxDepth(5);
+        CancellationToken token = new CancellationToken();
+        RunRequest request = RunRequest.builder()
+                .input("input")
+                .context(Map.of("tenant", "acme"))
+                .withIdGenerator(idGenerator)
+                .nestedRunContext(nested)
+                .assemblyLineCallStack(callStack)
+                .cancellationToken(token)
+                .with(extension)
+                .build();
+
+        // When
+        RunRequest independent = request.toIndependentBuilder().input("copy-input").build();
+
+        // Then
+        assertThat(independent.getInput()).isEqualTo("copy-input");
+        assertThat(independent.getContext()).containsEntry("tenant", "acme");
+        assertThat(independent.getIdGenerator()).isSameAs(idGenerator);
+        assertThat(independent.getNestedRunContext()).isNull();
+        assertThat(independent.getExtensions()).containsExactly(extension);
+        assertThat(independent.getAssemblyLineCallStack()).isNull();
+        assertThat(independent.getCancellationToken()).isNull();
+    }
+
 }

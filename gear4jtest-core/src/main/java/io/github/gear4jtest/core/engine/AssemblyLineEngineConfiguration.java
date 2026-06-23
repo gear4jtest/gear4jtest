@@ -45,8 +45,8 @@ final class AssemblyLineEngineConfiguration {
     static WorkerConcurrencyManager defaultWorkerConcurrencyManager(WorkerConcurrencyConfiguration configuration) {
         return switch (configuration.concurrencyPolicy()) {
             case LOCK_PER_WORKER_INSTANCE -> WorkerConcurrencyManager.global();
-            case ENGINE_LOCAL_LOCK_PER_WORKER_INSTANCE, ALLOW_PARALLEL_INVOCATIONS -> new WorkerConcurrencyManager(
-                    configuration.registryConfiguration());
+            case ENGINE_LOCAL_LOCK_PER_WORKER_INSTANCE, LOCK_REUSED_WORKER_INSTANCE_ONLY, ALLOW_PARALLEL_INVOCATIONS ->
+                new WorkerConcurrencyManager(configuration.registryConfiguration());
         };
     }
 }

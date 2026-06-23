@@ -84,18 +84,49 @@ public class RunRequest {
 
     /**
      * Creates a builder initialized with the current request values.
+     *
+     * <p>
+     * This method preserves all runtime objects, including the
+     * {@link CancellationToken} and the {@link AssemblyLineCallStack}. That is the
+     * right behavior when deriving a request that must remain part of the same
+     * cancellation/call-stack scope, for example internal nested-run propagation.
+     * For an independent top-level run, prefer {@link #toIndependentBuilder()} or
+     * replace those fields explicitly before building the copy.
+     * </p>
      */
     public Builder toBuilder() {
-        Builder builder = new Builder()
-                .input(input)
-                .context(context)
-                .resourceFactory(resourceFactory)
-                .withIdGenerator(idGenerator)
+        Builder builder = copyIntoBuilder()
                 .nestedRunContext(nestedRunContext)
                 .assemblyLineCallStack(assemblyLineCallStack)
                 .cancellationToken(cancellationToken);
         extensions.forEach(builder::with);
         return builder;
+    }
+
+    /**
+     * Creates a builder initialized with the reusable request values, but without
+     * sharing cancellation or call-stack state with the source request.
+     *
+     * <p>
+     * Use this helper when a request acts as a template for multiple independent
+     * top-level runs. The new request keeps input, context, resource factory, id
+     * generator and extensions, but drops nested-run metadata and lets the engine
+     * allocate a fresh {@link CancellationToken} and {@link AssemblyLineCallStack}
+     * unless the caller explicitly supplies them again on the returned builder.
+     * </p>
+     */
+    public Builder toIndependentBuilder() {
+        Builder builder = copyIntoBuilder();
+        extensions.forEach(builder::with);
+        return builder;
+    }
+
+    private Builder copyIntoBuilder() {
+        return new Builder()
+                .input(input)
+                .context(context)
+                .resourceFactory(resourceFactory)
+                .withIdGenerator(idGenerator);
     }
 
     /**

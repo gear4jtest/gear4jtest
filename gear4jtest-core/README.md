@@ -91,8 +91,24 @@ Main station kinds:
 - `SignalStation`: emits explicit STOP or FATAL-like flow signals.
 - `AssemblyLineCallStation`: calls another pipeline either inline or as a nested run.
 
-Container branch ids are explicit and stable. They are used by sibling outcome conditions, so they are functional
-identifiers rather than cosmetic labels. Do not rely on station ids or random generated ids for branches.
+Container branch ids are explicit and stable. They are used by sibling outcome conditions and named result aggregation,
+so they are functional identifiers rather than cosmetic labels. Do not rely on station ids or random generated ids for
+branches.
+
+For containers, use named typed branches and `ContainerResults` aggregation instead of arity-specific builders or positional `Object...` aggregation:
+
+```java
+var price = Stations.branch("price", priceStation);
+var stock = Stations.branch("stock", stockStation);
+
+Stations.container(Product.class)
+        .withBranch(price)
+        .withBranch(stock)
+        .returns(results -> new ProductEnrichment(results.get(price), results.get(stock)));
+```
+
+The former one/two-branch arity-specific container wrappers have been removed before 1.0. The same generic model now
+covers one, two or many branches.
 
 A pipeline graph is expected to be fully configured before execution starts. Builders expose the mutation surface;
 post-build flow and timeout setters are intentionally not public API.
@@ -119,9 +135,9 @@ It is suitable for:
 - observability callbacks;
 - non-critical enrichment.
 
-Each subscribed run creates its own lightweight dispatcher thread. This keeps run isolation simple, but high-throughput
-applications with many short-lived runs should treat event subscriptions as a visible runtime cost. Detached reactions
-that arrive after run cleanup may be skipped; waiters must keep defensive timeouts.
+Subscribed runs keep run-local queues, subscriptions and counters, while event dispatch work is multiplexed by a small
+shared in-process dispatcher. Detached reactions that arrive after run cleanup may be skipped; waiters must keep
+defensive timeouts.
 
 It does not provide:
 
@@ -156,6 +172,12 @@ concurrency policy is `LOCK_PER_WORKER_INSTANCE`. This protects stateful singlet
 in the same JVM, but it can also serialize unrelated runs that share the same operator instance. Choose an engine-local
 manager or an explicit parallel policy when that global safety trade-off is not desired.
 
+`LOCK_REUSED_WORKER_INSTANCE_ONLY` is an opt-in optimization for applications whose `ResourceFactory` returns fresh
+prototype/execution-scoped operators for non-reused stations. In that mode, Gear4J protects only workers explicitly
+cached with `reuseOperatorInstanceWithinRun()`, avoiding registry churn for high-volume prototype operators. Do not use
+it when a non-reused station can still receive the same non-thread-safe singleton from the `ResourceFactory`; keep the
+default process-wide policy or the engine-local policy for that case.
+
 A worker guard must be released by the same thread that acquired it. Current station strategies preserve that invariant;
 future strategies that hand work off between threads must transfer or redesign the guard explicitly.
 
@@ -171,8 +193,10 @@ across branches. Storage-specific JSON codecs belong to their integration module
 `AssemblyLineCallStation` supports two execution modes:
 
 - `INLINE`: executes a child pipeline inside the current run boundary when its runtime requirements are compatible.
-- `NESTED_RUN`: creates a nested run with its own execution trace and runtime setup while inheriting selected parent
-  context for the current MVP.
+- `NESTED_RUN`: creates a nested run with its own execution trace and runtime setup. User context propagation is
+  controlled by `ContextPropagationPolicy`; the default is a shallow copy of all parent context values. Configure the
+  engine with `ContextPropagationPolicy.none()`, `includeKeys(...)` or `copyValues(...)` when nested-run context
+  isolation matters.
 
 A running pipeline graph must remain stable for the duration of the run. Inline pipeline recursion detection is
 thread-confined and propagated to parallel branch tasks so sibling branches do not contaminate each other's call stack.
@@ -181,6 +205,13 @@ thread-confined and propagated to parallel branch tasks so sibling branches do n
 
 JDBC execution persistence is intentionally outside core. Use the optional `gear4jtest-jdbc` module for
 `DatabaseExecutionManager`, `DatabaseAssemblyRunRepository`, `Gear4jDatabaseDialect` and schema migrations.
+
+The built-in `PersistenceExtension` persists station start snapshots immediately
+and batches terminal station snapshots per run with `appendAll(...)` before
+calling `end(run)`. Build it with
+`PersistenceExtension.builder(manager).terminalRecordBatchSize(1)` when an
+application prefers one terminal flush per station over batched completion
+persistence.
 
 Core applications can still depend only on the generic contracts:
 

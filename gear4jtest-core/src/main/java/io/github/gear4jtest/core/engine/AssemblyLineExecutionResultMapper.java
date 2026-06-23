@@ -30,26 +30,27 @@ final class AssemblyLineExecutionResultMapper {
         StationLogTrace rootLog = rootRunner.run(request.getInput(), pipeline.getRootStation(), rootContext);
         Object result = rootLog.getOutput();
 
-        return switch (rootLog.getStatus()) {
+        ExecutionStatus rootStatus = rootLog.getStatus().toExecutionStatus();
+        return switch (rootStatus) {
             case SUCCEEDED -> {
-                execution.setStatus(ExecutionStatus.SUCCEEDED);
+                execution.setStatus(rootStatus);
                 execution.setResult(result);
                 yield (ExecutionResult<OUT>) ExecutionResult.success(result, execution);
             }
             case SKIPPED -> {
-                execution.setStatus(ExecutionStatus.SKIPPED);
+                execution.setStatus(rootStatus);
                 execution.setResult(result);
                 yield (ExecutionResult<OUT>) ExecutionResult.skipped(result, execution);
             }
             case STOPPED -> {
-                execution.setStatus(ExecutionStatus.STOPPED);
+                execution.setStatus(rootStatus);
                 execution.setResult(result);
                 yield (ExecutionResult<OUT>) ExecutionResult.stopped(result, execution);
             }
             case CANCELLED -> {
                 Exception cancellation = rootLog.getErrorMessage() != null
                         ? new RuntimeException(rootLog.getErrorMessage()) : null;
-                execution.setStatus(ExecutionStatus.CANCELLED);
+                execution.setStatus(rootStatus);
                 execution.setResult(result);
                 if (cancellation != null) {
                     execution.setError(cancellation);
@@ -59,7 +60,7 @@ final class AssemblyLineExecutionResultMapper {
             case FAILED -> {
                 Exception failure = new RuntimeException(
                         rootLog.getErrorMessage() != null ? rootLog.getErrorMessage() : "AssemblyLine failed");
-                execution.setStatus(ExecutionStatus.FAILED);
+                execution.setStatus(rootStatus);
                 execution.setError(failure);
                 yield (ExecutionResult<OUT>) ExecutionResult.failure(failure, execution);
             }
@@ -72,6 +73,8 @@ final class AssemblyLineExecutionResultMapper {
                 execution.setError(failure);
                 yield (ExecutionResult<OUT>) ExecutionResult.failure(failure, execution);
             }
+            case PENDING, INITIALIZING, PAUSED -> throw new IllegalStateException(
+                    "Root station returned unsupported active status " + rootStatus);
         };
     }
 
@@ -95,13 +98,7 @@ final class AssemblyLineExecutionResultMapper {
             execution.setErrorMessage("CRITICAL JVM ERROR: " + fatalError);
         } else if (result != null) {
             execution.setResult(result.getResult());
-            switch (result.getOutcome()) {
-                case SUCCEEDED -> execution.setStatus(ExecutionStatus.SUCCEEDED);
-                case SKIPPED -> execution.setStatus(ExecutionStatus.SKIPPED);
-                case STOPPED -> execution.setStatus(ExecutionStatus.STOPPED);
-                case CANCELLED -> execution.setStatus(ExecutionStatus.CANCELLED);
-                case FAILED -> execution.setStatus(ExecutionStatus.FAILED);
-            }
+            execution.setStatus(result.getOutcome().toExecutionStatus());
             if ((result.getOutcome() == ExecutionOutcome.FAILED || result.getOutcome() == ExecutionOutcome.CANCELLED)
                     && result.getError() != null) {
                 execution.setError(asException(result.getError()));

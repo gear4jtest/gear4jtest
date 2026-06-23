@@ -3,21 +3,31 @@ package io.github.gear4jtest.core.api.station;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 public class SignalStation<IN> extends AbstractStation<IN, IN> {
-    private final StationSignalType signalType;
+    private final SignalType signalType;
     private final Predicate<SignalInterpretationContext<IN>> condition;
 
     private SignalStation(String id,
-                          StationSignalType signalType,
+                          SignalType signalType,
                           Predicate<SignalInterpretationContext<IN>> condition) {
         super(id, StationKind.SIGNAL, null, null, null, true, null, null);
-        this.signalType = Objects.requireNonNull(signalType, "signalType is required");
+        this.signalType = requireStationSignal(signalType);
         this.condition = Objects.requireNonNull(condition, "condition is required");
     }
 
-    public StationSignalType getSignalType() {
+    /**
+     * Returns the explicit flow signal emitted by this station.
+     *
+     * <p>
+     * Signal stations only support {@link SignalType#STOP} and
+     * {@link SignalType#FATAL}. {@link SignalType#IGNORE} is reserved for error
+     * policies and is rejected by the builder.
+     * </p>
+     */
+    public SignalType getSignalType() {
         return signalType;
     }
 
@@ -25,9 +35,17 @@ public class SignalStation<IN> extends AbstractStation<IN, IN> {
         return condition;
     }
 
+    private static SignalType requireStationSignal(SignalType signalType) {
+        SignalType effectiveSignalType = Objects.requireNonNull(signalType, "signalType is required");
+        if (effectiveSignalType == SignalType.IGNORE) {
+            throw new IllegalArgumentException("SignalStation does not support IGNORE; use STOP or FATAL");
+        }
+        return effectiveSignalType;
+    }
+
     public static class Builder<IN> {
         private String id = "";
-        private StationSignalType signalType;
+        private SignalType signalType;
         private Predicate<SignalInterpretationContext<IN>> condition;
 
         public Builder<IN> id(String id) {
@@ -35,8 +53,8 @@ public class SignalStation<IN> extends AbstractStation<IN, IN> {
             return this;
         }
 
-        public Builder<IN> type(StationSignalType signalType) {
-            this.signalType = Objects.requireNonNull(signalType, "signalType is required");
+        public Builder<IN> type(SignalType signalType) {
+            this.signalType = requireStationSignal(signalType);
             return this;
         }
 
@@ -46,7 +64,7 @@ public class SignalStation<IN> extends AbstractStation<IN, IN> {
         }
 
         public SignalStation<IN> build() {
-            return new SignalStation<>(id, signalType != null ? signalType : StationSignalType.FATAL,
+            return new SignalStation<>(id, signalType != null ? signalType : SignalType.FATAL,
                     condition != null ? condition : ignored -> true);
         }
     }

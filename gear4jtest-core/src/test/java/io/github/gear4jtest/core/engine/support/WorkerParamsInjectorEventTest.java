@@ -12,7 +12,8 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
@@ -29,7 +30,7 @@ class WorkerParamsInjectorEventTest {
     void should_publish_parameter_resolved_event_when_enabled() {
         CopyOnWriteArrayList<ParameterResolvedEvent> seenEvents = new CopyOnWriteArrayList<>();
 
-        AssemblyLine<String, Integer> pipeline = ElementModelBuilders.<String>createAssemblyLine("param-events")
+        AssemblyLine<String, Integer> pipeline = AssemblyLines.<String>createAssemblyLine("param-events")
                 .configuration(AssemblyLine.Configuration.builder()
                         .eventHandling(EventHandlingDefinition.builder()
                                 .subscription(io.github.gear4jtest.core.event.EventSubscription
@@ -41,7 +42,7 @@ class WorkerParamsInjectorEventTest {
                                         .shutdownTimeout(Duration.ofSeconds(2)).build())
                                 .build())
                         .build())
-                .then(ElementModelBuilders
+                .then(Stations
                         .<String, Integer, ParamEchoOperator>processingOperation("step-1", ParamEchoOperator.class)
                         .parameter(ParamEchoOperator::getLengthParam,
                                    (Function<WorkerParamsInjector.InterpretationContext<String>, Integer>) ctx -> ctx

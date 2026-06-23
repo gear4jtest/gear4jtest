@@ -22,15 +22,30 @@ The current runtime is deliberately best-effort.
 The event path is:
 
 1. a station publishes an event;
-2. `EventManager` attempts to put it in a bounded in-memory queue;
-3. the dispatcher thread takes the event;
-4. matching subscriptions are submitted to an `ExecutorService`;
-5. accepted reactions run asynchronously;
-6. events rejected by the bounded queue and reactions rejected by the executor are logged and counted as dropped.
+2. the run-local `EventManager` reserves capacity in its bounded in-memory queue accounting;
+3. a lightweight dispatch task is submitted to the shared in-process event dispatcher;
+4. the shared dispatcher invokes the run-local dispatch task;
+5. matching subscriptions are submitted to the run's configured `ExecutorService`;
+6. accepted reactions run asynchronously;
+7. events rejected by run-local queue accounting and reactions rejected by the executor are logged and counted as dropped.
 
 There is no durable hand-off, replay log or persistent acknowledgement.
 
+## Shutdown behavior
+
+`RuntimeConfiguration` defaults to `ShutdownMode.WAIT_FOR_DRAIN`. With this mode, once the pipeline itself has completed,
+`AssemblyLineEngine.execute(...)` waits for already accepted event reactions to drain until the configured shutdown
+timeout expires. This preserves a simple "result returned after reactions drained or timed out" contract, but it means an
+otherwise asynchronous event subscription can still make the caller wait at the end of the run.
+
+Use `ShutdownMode.DETACH_AND_DRAIN` when the application wants to return the pipeline result before best-effort reactions
+finish. `RuntimeConfiguration.detachAndDrainDefaults()` exists as a readable shortcut for this common best-effort mode.
+Detached mode is still not durable delivery: reactions may already have been dropped under saturation, and run-scoped
+resources are cleaned up after `detachCleanupTimeout` even if user reaction code is still blocked.
+
 ## What the runtime does not guarantee
+
+The shared dispatcher removes the previous "one dispatcher thread per run" cost. It does not make the runtime durable or globally ordered. Each run still owns its own subscriptions, shutdown mode, counters and reaction executor configuration.
 
 The current event runtime does not provide:
 

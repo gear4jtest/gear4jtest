@@ -32,7 +32,7 @@
           </processingOperation>
         </subLine>
       </subLines>
-      <returnsFunction expression="(a, b) -> java.util.Arrays.asList(a, b)"/>
+      <returnsFunction expression="results -> results.orderedOutputs()"/>
     </container>
   </operations>
 

@@ -32,6 +32,21 @@ public enum WorkerConcurrencyPolicy {
     ENGINE_LOCAL_LOCK_PER_WORKER_INSTANCE,
 
     /**
+     * Protect only stateful worker instances that Gear4J explicitly reuses for a
+     * station within a run.
+     *
+     * <p>
+     * This opt-in mode avoids registering high-volume prototype workers returned by
+     * the {@code ResourceFactory} for non-reused stations. Use it only when those
+     * non-reused workers are guaranteed to be fresh execution-scoped instances,
+     * stateless, or otherwise thread-safe. It does not protect a singleton returned
+     * repeatedly by the {@code ResourceFactory} unless the station is configured
+     * with {@code reuseOperatorInstanceWithinRun()}.
+     * </p>
+     */
+    LOCK_REUSED_WORKER_INSTANCE_ONLY,
+
+    /**
      * Do not lock worker invocations.
      *
      * <p>

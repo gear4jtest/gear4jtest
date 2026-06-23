@@ -68,6 +68,32 @@ Prefer:
 - deterministic output so tests remain stable.
 
 
+
+## Containers and signals
+
+Generated containers target the current typed container API. XML `subLine` ids are emitted as deterministic branch ids and `returnsFunction` lambdas receive `ContainerResults`:
+
+```xml
+<container id="parallelContainer"
+           inputType="java.lang.String"
+           outputType="java.util.List&lt;java.lang.String&gt;"
+           parallel="true">
+  <subLines>
+    <subLine id="alpha">...</subLine>
+    <subLine id="beta">...</subLine>
+    <subLine id="gamma">...</subLine>
+  </subLines>
+  <returnsFunction expression="results -> results.orderedOutputs()"/>
+</container>
+```
+
+`orderedOutputs()` is intended for XML/dynamic aggregation where branch handles are not available in handwritten code. Java-authored pipelines should prefer `Stations.branch(...)` handles and `results.get(branch)`.
+
+Flow signal stations and error policies intentionally use different domains:
+
+- `<signal type="STOP|FATAL">` is a flow-control station and cannot use `IGNORE`;
+- `<safeError>` / `<unsafeError>` `signalType` may use `STOP`, `FATAL` or `IGNORE` because it describes an error-handling policy.
+
 ## Generated source formatting
 
 Generated Java is formatted through the `JavaSourceFormatter` abstraction. The default `XmlToJavaGenerator` uses a

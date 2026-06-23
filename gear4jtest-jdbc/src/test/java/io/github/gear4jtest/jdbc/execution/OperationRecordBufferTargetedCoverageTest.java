@@ -51,6 +51,32 @@ class OperationRecordBufferTargetedCoverageTest {
     }
 
     @Test
+    void appendAll_shouldAppendBatchUnderOneCapacityCheck() {
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 3);
+        PersistenceRuntimeCounters counters = new PersistenceRuntimeCounters();
+        StationLogRecord first = record();
+        StationLogRecord second = record();
+
+        assertThat(buffer.appendAll(List.of(first, second), 2, counters)).isTrue();
+
+        assertThat(buffer.pendingCount()).isEqualTo(2);
+        assertThat(buffer.drainBatch(10)).containsExactly(first, second);
+    }
+
+    @Test
+    void appendAll_shouldRejectWholeBatchWhenCapacityIsInsufficient() {
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 1);
+        PersistenceRuntimeCounters counters = new PersistenceRuntimeCounters();
+
+        assertThatThrownBy(() -> buffer.appendAll(List.of(record(), record()), 10, counters))
+                .isInstanceOf(ExecutionPersistenceException.class)
+                .hasMessageContaining("buffer is full");
+
+        assertThat(buffer.pendingCount()).isZero();
+        assertThat(counters.snapshot(new OperationRecordBufferRegistry(1)).rejectedAppends()).isEqualTo(1L);
+    }
+
+    @Test
     void drainBatch_shouldReducePendingCountAndRestoreShouldRequeueRecords() {
         OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 3);
         PersistenceRuntimeCounters counters = new PersistenceRuntimeCounters();

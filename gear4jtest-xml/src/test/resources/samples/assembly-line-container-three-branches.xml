@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="test_three_branch_container"
+              inputType="java.lang.String"
+              outputType="java.util.List&lt;java.lang.String&gt;">
+
+  <operations>
+    <container id="threeBranchContainer"
+               inputType="java.lang.String"
+               outputType="java.util.List&lt;java.lang.String&gt;">
+      <subLines>
+        <subLine id="alpha">
+          <processingOperation id="step_alpha" type="com.myorg.operation.Step11">
+            <parameters>
+              <valueParameter retriever="com.myorg.operation.Step11::getParam" value="a"/>
+            </parameters>
+          </processingOperation>
+        </subLine>
+        <subLine id="beta">
+          <processingOperation id="step_beta" type="com.myorg.operation.Step11">
+            <parameters>
+              <valueParameter retriever="com.myorg.operation.Step11::getParam" value="b"/>
+            </parameters>
+          </processingOperation>
+        </subLine>
+        <subLine id="gamma">
+          <processingOperation id="step_gamma" type="com.myorg.operation.Step11">
+            <parameters>
+              <valueParameter retriever="com.myorg.operation.Step11::getParam" value="c"/>
+            </parameters>
+          </processingOperation>
+        </subLine>
+      </subLines>
+      <returnsFunction expression="results -> results.orderedOutputs()"/>
+    </container>
+  </operations>
+</assemblyLine>

@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
@@ -20,6 +21,7 @@ import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
+import org.slf4j.MDC;
 
 import static io.github.gear4jtest.core.api.config.FlowConfig.DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,7 +33,7 @@ class ParallelContainerBranchExecutorTest {
         ExecutorService rejectedExecutor = Executors.newSingleThreadExecutor();
         rejectedExecutor.shutdown();
         ContainerBaseStation<String, Void> station = new ContainerBaseStation.Builder<String, Void>(rejectedExecutor)
-                .withSubLine("rejected", new TestStation("branch"))
+                .withBranch("rejected", new TestStation("branch"))
                 .build();
         TestStationExecutionContext context = stationContext("container");
 
@@ -54,7 +56,7 @@ class ParallelContainerBranchExecutorTest {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
             ContainerBaseStation<String, Void> station = new ContainerBaseStation.Builder<String, Void>(executor)
-                    .withSubLine("skipped", new TestStation("branch"), (input, ctx) -> false)
+                    .withBranch("skipped", new TestStation("branch"), (input, ctx) -> false)
                     .build();
             TestStationExecutionContext context = stationContext("container");
 
@@ -68,6 +70,50 @@ class ParallelContainerBranchExecutorTest {
             assertThat(branchLog.getStatus()).isEqualTo(StationLogStatus.SKIPPED);
             assertThat(branchLog.getBranchId()).isEqualTo("skipped");
             assertThat(aggregation.interruptingChild()).isNull();
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void execute_shouldPropagateMdcToParallelBranches() {
+        // Given
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            ContainerBaseStation<String, Void> station = new ContainerBaseStation.Builder<String, Void>(executor)
+                    .withBranch("branch-1", new TestStation("branch"))
+                    .build();
+            TestStationExecutionContext context = stationContext("container");
+            AtomicReference<String> seenExecutionId = new AtomicReference<>();
+            AtomicReference<String> seenAssemblyLineId = new AtomicReference<>();
+            io.github.gear4jtest.core.spi.runner.StationRunner runner = (input, child, childContext) -> {
+                seenExecutionId.set(MDC.get("gear4j.executionId"));
+                seenAssemblyLineId.set(MDC.get("gear4j.assemblyLineId"));
+                StationLogTrace log = StationLogTrace.start(childContext.getGlobalContext().getExecutionId(),
+                                                            child.getId(), null);
+                log.markSuccess(input);
+                return log;
+            };
+
+            MDC.clear();
+            try {
+                MDC.put("gear4j.executionId", "run-123");
+                MDC.put("gear4j.assemblyLineId", "pipeline-1");
+
+                // When
+                ContainerExecutionAggregation aggregation = new ParallelContainerBranchExecutor()
+                        .execute(station, "input", runner, context, DEFAULT, Duration.ofSeconds(2));
+
+                // Then
+                assertThat(aggregation.results()).hasSize(1);
+                assertThat(aggregation.results().get(0).getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
+                assertThat(seenExecutionId.get()).isEqualTo("run-123");
+                assertThat(seenAssemblyLineId.get()).isEqualTo("pipeline-1");
+                assertThat(MDC.get("gear4j.executionId")).isEqualTo("run-123");
+                assertThat(MDC.get("gear4j.assemblyLineId")).isEqualTo("pipeline-1");
+            } finally {
+                MDC.clear();
+            }
         } finally {
             executor.shutdownNow();
         }

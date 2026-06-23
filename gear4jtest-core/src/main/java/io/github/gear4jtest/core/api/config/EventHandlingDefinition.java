@@ -173,6 +173,15 @@ public class EventHandlingDefinition {
      * guaranteed acceptance. If the executor saturates, reactions may be rejected
      * and dropped.
      * </p>
+     *
+     * <p>
+     * The default shutdown mode is {@link ShutdownMode#WAIT_FOR_DRAIN}: once the
+     * pipeline itself has completed, {@code execute(...)} waits for accepted event
+     * reactions to drain until {@link #getShutdownTimeout()} expires. Applications
+     * that want the pipeline result to return before best-effort reactions complete
+     * should select {@link ShutdownMode#DETACH_AND_DRAIN} deliberately and
+     * configure {@link #getDetachCleanupTimeout()}.
+     * </p>
      */
     public static class RuntimeConfiguration {
         public static final int DEFAULT_EVENT_QUEUE_CAPACITY = 4096;
@@ -205,6 +214,32 @@ public class EventHandlingDefinition {
 
         public static Builder builder() {
             return new Builder();
+        }
+
+        /**
+         * Returns the default blocking shutdown configuration.
+         *
+         * <p>
+         * This is equivalent to {@code builder().build()} and makes the choice to wait
+         * for accepted reactions at the end of {@code execute(...)} explicit at call
+         * sites.
+         * </p>
+         */
+        public static RuntimeConfiguration waitForDrainDefaults() {
+            return builder().shutdownMode(ShutdownMode.WAIT_FOR_DRAIN).build();
+        }
+
+        /**
+         * Returns a best-effort detached shutdown configuration.
+         *
+         * <p>
+         * With this mode, {@code execute(...)} returns once the pipeline itself has
+         * completed, while accepted event reactions continue to drain briefly in the
+         * background according to {@link #getDetachCleanupTimeout()}.
+         * </p>
+         */
+        public static RuntimeConfiguration detachAndDrainDefaults() {
+            return builder().shutdownMode(ShutdownMode.DETACH_AND_DRAIN).build();
         }
 
         private static ExecutorService createDefaultSharedReactionExecutor() {
@@ -264,7 +299,23 @@ public class EventHandlingDefinition {
          * Shutdown behavior for the asynchronous event runtime.
          */
         public enum ShutdownMode {
-            WAIT_FOR_DRAIN, DETACH_AND_DRAIN, CANCEL_PENDING_TASKS
+            /**
+             * Block the caller at the end of {@code execute(...)} while already accepted
+             * reactions drain, bounded by
+             * {@link RuntimeConfiguration#getShutdownTimeout()}.
+             */
+            WAIT_FOR_DRAIN,
+
+            /**
+             * Return the pipeline result immediately and keep run-scoped event resources
+             * alive briefly so accepted reactions can finish on a best-effort basis.
+             */
+            DETACH_AND_DRAIN,
+
+            /**
+             * Stop accepting event work and cancel pending reaction tasks at shutdown.
+             */
+            CANCEL_PENDING_TASKS
         }
 
         public record ExecutorHandle(ExecutorService executorService, boolean shutdownOnClose) {}
@@ -331,6 +382,10 @@ public class EventHandlingDefinition {
                 return this;
             }
 
+            /**
+             * Configures the maximum time {@link ShutdownMode#WAIT_FOR_DRAIN} waits for
+             * already accepted reactions before returning from {@code execute(...)}.
+             */
             public Builder shutdownTimeout(Duration shutdownTimeout) {
                 this.shutdownTimeout = shutdownTimeout;
                 return this;

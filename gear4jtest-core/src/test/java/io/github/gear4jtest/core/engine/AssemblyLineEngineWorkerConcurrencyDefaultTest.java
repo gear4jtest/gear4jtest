@@ -12,7 +12,7 @@ import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
 import io.github.gear4jtest.core.engine.support.ConcurrencyAwareTransformer;
 import io.github.gear4jtest.core.engine.support.WorkerStatefulness;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -20,7 +20,7 @@ import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.processingOperation;
+import static io.github.gear4jtest.core.api.util.Stations.processingOperation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AssemblyLineEngineWorkerConcurrencyDefaultTest {
@@ -36,7 +36,7 @@ class AssemblyLineEngineWorkerConcurrencyDefaultTest {
         // Given
         SharedStatefulOperator.reset();
         CountDownLatch start = new CountDownLatch(1);
-        AssemblyLine<String, String> assemblyLine = ElementModelBuilders.<String>createAssemblyLine("default-lock")
+        AssemblyLine<String, String> assemblyLine = AssemblyLines.<String>createAssemblyLine("default-lock")
                 .then(processingOperation("stateful", SharedStatefulOperator.class).build())
                 .build();
         AssemblyLineEngine firstEngine = productionDefaultEngine();

@@ -77,7 +77,11 @@ formatting-only change or report it explicitly.
 
 - Use Java 17.
 - Prefer explicit, boring Java over clever abstractions.
+- Prefer records plus `with...` methods for small immutable value objects; prefer builders for generic station APIs, progressive DSL construction or validation-heavy objects.
+- Use focused builder helper facades instead of umbrella helpers: `AssemblyLines`, `Stations`, `Errors`, `Events`, `Persistence`, `Concurrency` and `RuntimeContracts`.
+- For all containers, use typed named branches (`ContainerBranch<IN, OUT>` + `ContainerResults`) over positional `Object...` aggregation or arity-specific `ContainerNStation`-style APIs.
 - Keep public APIs intentional and document important API/SPI contracts.
+- Add `package-info.java` with exactly one API stability marker for every new production package.
 - Do not add mechanical Javadocs to obvious getters or builders only to satisfy a tool; doclint missing-comment checks are intentionally disabled.
 - Add or update tests for behavior changes.
 - Prefer JUnit 5 and AssertJ.
@@ -87,13 +91,18 @@ formatting-only change or report it explicitly.
 
 - Keep `gear4jtest-core` framework-agnostic.
 - Do not add Spring, XML, Jackson-specific, external transport or storage-specific dependencies to core.
+- Do not add new API/SPI dependencies on internal engine/execution packages without updating the architecture baseline and documenting the reason.
 - Runtime traces and persistence records are separate concepts.
 - Station logs are observability data, not flow-control input.
-- `EventManager` is in-memory and best-effort, not a durable broker.
+- `EventManager` is in-memory and best-effort, not a durable broker; dispatch is shared, while run-local state/counters/shutdown remain per execution.
 - External event forwarding must not imply guaranteed delivery unless a separate durable subsystem is implemented.
 - AssemblyLine references must preserve runtime graph stability during a run.
 - Do not shut down executors supplied by callers unless ownership is explicit.
 - Payload cloning belongs behind `PayloadCloner`.
+- `RunRequest.toBuilder()` must keep cancellation/call-stack state for coupled runs; use or document
+  `toIndependentBuilder()` for reusable top-level request templates.
+- User operators must remain interruption/cancellation aware when they participate in parallel containers, timeouts or
+  cancellation-sensitive flows.
 
 ## Generated code
 

@@ -10,7 +10,8 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
@@ -25,8 +26,8 @@ class AssemblyLineEngineOutcomeTest {
     @Test
     void skippedProcessingOperationWithFallback_shouldExposeSkippedOutcomeAndFallbackOutput() {
         // Given
-        AssemblyLine<String, String> pipeline = ElementModelBuilders.<String>createAssemblyLine("skip-root")
-                .then(ElementModelBuilders.processingOperation("skipped", EchoOperator.class)
+        AssemblyLine<String, String> pipeline = AssemblyLines.<String>createAssemblyLine("skip-root")
+                .then(Stations.processingOperation("skipped", EchoOperator.class)
                         .skipIf((input, ctx) -> true)
                         .transformer(new FallbackOperator())
                         .build())
@@ -53,8 +54,8 @@ class AssemblyLineEngineOutcomeTest {
     @Test
     void skippedUnaryOperation_shouldExposeSkippedOutcomeAndPassInputThrough() {
         // Given
-        AssemblyLine<String, String> pipeline = ElementModelBuilders.<String>createAssemblyLine("skip-root-unary")
-                .then(ElementModelBuilders.unaryProcessingOperation("skipped", EchoOperator.class)
+        AssemblyLine<String, String> pipeline = AssemblyLines.<String>createAssemblyLine("skip-root-unary")
+                .then(Stations.unaryProcessingOperation("skipped", EchoOperator.class)
                         .skipIf((input, ctx) -> true)
                         .build())
                 .build();
@@ -79,12 +80,12 @@ class AssemblyLineEngineOutcomeTest {
     @Test
     void skippedIntermediateOperationWithFallback_shouldRemainSkippedButFeedNextStation() {
         // Given
-        AssemblyLine<String, String> pipeline = ElementModelBuilders.<String>createAssemblyLine("skip-then-continue")
-                .then(ElementModelBuilders.processingOperation("skipped", EchoOperator.class)
+        AssemblyLine<String, String> pipeline = AssemblyLines.<String>createAssemblyLine("skip-then-continue")
+                .then(Stations.processingOperation("skipped", EchoOperator.class)
                         .skipIf((input, ctx) -> true)
                         .transformer(new FallbackOperator())
                         .build())
-                .then(ElementModelBuilders.unaryProcessingOperation("next", AppendOperator.class)
+                .then(Stations.unaryProcessingOperation("next", AppendOperator.class)
                         .build())
                 .build();
         RecordingStationLifecycleExtension stationRecorder = new RecordingStationLifecycleExtension();

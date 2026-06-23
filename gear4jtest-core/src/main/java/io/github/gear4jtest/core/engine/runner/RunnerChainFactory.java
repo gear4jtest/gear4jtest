@@ -37,9 +37,7 @@ public class RunnerChainFactory {
         }
 
         LateBoundStationRunner lateBoundRoot = new LateBoundStationRunner();
-        StationRunner recursiveRunner = new RecursiveStationRunner(lateBoundRoot);
-
-        StationRunner chain = new TerminalStationRunner(strategyRegistry, recursiveRunner);
+        StationRunner chain = new TerminalStationRunner(strategyRegistry, lateBoundRoot);
 
         var wrappers = extensions.stationWrappers();
         for (int i = wrappers.size() - 1; i >= 0; i--) {

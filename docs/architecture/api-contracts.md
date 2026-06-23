@@ -12,6 +12,7 @@ Current public API packages include:
 
 - `io.github.gear4jtest.core.api.*`
 - `io.github.gear4jtest.core.event` event contracts used by applications that subscribe to runtime events
+- `io.github.gear4jtest.core.sidecompute` side-compute contracts and wait processors
 - `io.github.gear4jtest.core.exception` application-visible exception hierarchy
 - `io.github.gear4jtest.core.model` application-visible runtime status values
 - `io.github.gear4jtest.core.persistence` persistence records and repository contracts independent of a storage provider
@@ -21,6 +22,7 @@ Current public API packages include:
 - `io.github.gear4jtest.external.api.ExecutionMode`
 - `io.github.gear4jtest.external.api.StoreType`
 - `io.github.gear4jtest.xml.translator.XmlOperationChainTranslator`
+- `io.github.gear4jtest.xml.validator.AssemblyLineValidator`
 
 Compatibility expectation after the first stable release:
 
@@ -63,14 +65,19 @@ compatibility guarantees before the first production release.
 
 Known internal implementation areas:
 
+- `io.github.gear4jtest.core.builtin.extension.*`
 - `io.github.gear4jtest.core.engine.*`
 - `io.github.gear4jtest.core.execution.*`
-- `io.github.gear4jtest.core.event.*` except documented event contracts
+- `io.github.gear4jtest.core.event.EventManager` and other members explicitly marked `@Internal`
+- `io.github.gear4jtest.core.internal.*`
+- `io.github.gear4jtest.core.util.*`
+- `io.github.gear4jtest.external.api.storage.*`
 - `io.github.gear4jtest.jdbc.migration.*`
 - `io.github.gear4jtest.xml.generator.*`
+- `io.github.gear4jtest.xml.model.*`
 - `io.github.gear4jtest.xml.parser.*`
 
-## Source-level markers
+## Source-level markers and guardrails
 
 Gear4J also provides lightweight source markers in
 `io.github.gear4jtest.core.api.annotation`:
@@ -85,6 +92,13 @@ These annotations are documentation markers retained in class files. Public/SPI/
 at the main package boundaries so consumers can distinguish stable contracts from implementation packages directly in
 the generated Javadocs and class files. They do not enforce binary compatibility by themselves; the package contract
 above remains the source of truth.
+
+The repository intentionally does not introduce JPMS descriptors yet. Instead, source-level architecture tests enforce
+that production packages declare a package marker and that API/SPI dependencies on implementation packages do not grow
+silently. See `docs/decisions/0012-source-level-api-boundaries.md` for the rationale.
+
+Some public packages contain individual classes or methods marked `@Internal`. Those members are implementation details
+kept public for wiring, tests or historical compatibility; they are not part of the stable consumer contract.
 
 ## Generated XML definitions
 

@@ -67,7 +67,7 @@ public final class SideComputer<E extends Event, T, R> {
                 .filter(event -> event.getStatus() == status);
     }
 
-    public EventSubscription<E> toSubscription(ExecutionContextRegistry registry) {
+    EventSubscription<E> toSubscription(ExecutionContextRegistry registry) {
         return EventSubscription.on(eventType, trigger, event -> runCompute(event, registry));
     }
 

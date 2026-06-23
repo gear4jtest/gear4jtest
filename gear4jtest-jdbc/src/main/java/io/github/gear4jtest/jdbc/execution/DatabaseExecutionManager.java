@@ -1,7 +1,10 @@
 package io.github.gear4jtest.jdbc.execution;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -185,8 +188,34 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
 
     @Override
     public void appendAll(List<StationLogRecord> records) {
-        if (records != null) {
-            records.forEach(this::append);
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        flushCoordinator.ensureOpen();
+        Map<UUID, List<StationLogRecord>> recordsByRun = new LinkedHashMap<>();
+        for (StationLogRecord record : records) {
+            if (record == null) {
+                continue;
+            }
+            StationLogRecord redactedRecord = record.redactedWith(redactor);
+            recordsByRun.computeIfAbsent(redactedRecord.assemblyLineExecutionId(), ignored -> new ArrayList<>())
+                    .add(redactedRecord);
+        }
+        for (List<StationLogRecord> runRecords : recordsByRun.values()) {
+            appendRunBatch(runRecords);
+        }
+    }
+
+    private void appendRunBatch(List<StationLogRecord> records) {
+        if (records.isEmpty()) {
+            return;
+        }
+        UUID runId = records.get(0).assemblyLineExecutionId();
+        OperationRecordBuffer buffer = buffers.getOrCreate(runId);
+        boolean shouldScheduleFlush = buffer.appendAll(records, configuration.batchSize(),
+                                                       flushCoordinator.counters());
+        if (shouldScheduleFlush) {
+            flushCoordinator.scheduleAsyncFlush(buffer, false);
         }
     }
 

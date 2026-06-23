@@ -11,7 +11,8 @@ import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
@@ -48,11 +49,11 @@ class Gear4jAutoConfigurationTest {
         // Given / When / Then
         contextRunner.withBean(AppendBangOperator.class, AppendBangOperator::new)
                 .run(context -> {
-                    AssemblyLine<String, String> child = ElementModelBuilders.<String>createAssemblyLine("child")
-                            .then(ElementModelBuilders.processingOperation("append", AppendBangOperator.class)
+                    AssemblyLine<String, String> child = AssemblyLines.<String>createAssemblyLine("child")
+                            .then(Stations.processingOperation("append", AppendBangOperator.class)
                                     .build())
                             .build();
-                    AssemblyLine<String, String> parent = ElementModelBuilders.<String>createAssemblyLine("parent")
+                    AssemblyLine<String, String> parent = AssemblyLines.<String>createAssemblyLine("parent")
                             .then(AssemblyLineCallStation.nestedRun("call-child", child))
                             .build();
 
@@ -72,14 +73,14 @@ class Gear4jAutoConfigurationTest {
             contextRunner.withBean(SlowOperator.class, SlowOperator::new)
                     .withPropertyValues("gear4j.parallel.default-await-timeout=20ms")
                     .run(context -> {
-                        var slowStation = ElementModelBuilders
+                        var slowStation = Stations
                                 .<String, String, SlowOperator>processingOperation("slow", SlowOperator.class)
                                 .build();
                         ContainerBaseStation<String, String> container = new ContainerBaseStation.Builder<String, String>(
                                 branchExecutor)
-                                .withSubLine("slow-branch", slowStation)
-                                .returns(value -> value);
-                        AssemblyLine<String, String> pipeline = ElementModelBuilders
+                                .withBranch("slow-branch", slowStation)
+                                .returns(results -> results.get("slow-branch", String.class));
+                        AssemblyLine<String, String> pipeline = AssemblyLines
                                 .<String>createAssemblyLine("parallel-timeout")
                                 .then(container)
                                 .build();

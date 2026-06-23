@@ -76,6 +76,36 @@ final class OperationRecordBuffer {
         }
     }
 
+    boolean appendAll(List<StationLogRecord> stationLogRecords,
+                      int batchSize,
+                      PersistenceRuntimeCounters counters) {
+        if (stationLogRecords == null || stationLogRecords.isEmpty()) {
+            return false;
+        }
+        assertHealthy();
+        flushLock.lock();
+        try {
+            assertHealthy();
+            if (closed.get()) {
+                throw new ExecutionPersistenceException(
+                        "Cannot append station logs to a closed run buffer. runId=" + runId
+                                + ", stationLogCount=" + stationLogRecords.size());
+            }
+            if (queue.remainingCapacity() < stationLogRecords.size()) {
+                counters.recordRejectedAppend();
+                throw new ExecutionPersistenceException("Station log persistence buffer is full. runId=" + runId
+                        + ", maxPendingLogsPerRun=" + capacity
+                        + ", attemptedAppendCount=" + stationLogRecords.size());
+            }
+            for (StationLogRecord stationLogRecord : stationLogRecords) {
+                queue.offer(stationLogRecord);
+            }
+            return pendingCount.addAndGet(stationLogRecords.size()) >= batchSize;
+        } finally {
+            flushLock.unlock();
+        }
+    }
+
     void lockFlush() {
         flushLock.lock();
     }

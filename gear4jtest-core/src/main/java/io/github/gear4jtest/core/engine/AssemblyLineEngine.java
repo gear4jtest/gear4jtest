@@ -12,6 +12,7 @@ import io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStack;
 import io.github.gear4jtest.core.api.assemblyline.AssemblyLineReference;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
+import io.github.gear4jtest.core.api.context.ContextPropagationPolicy;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.api.context.PayloadCloners;
@@ -47,6 +48,7 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
     private final WorkerConcurrencyManager workerConcurrencyManager;
     private final WorkerConcurrencyConfiguration workerConcurrencyConfiguration;
     private final ParallelExecutionConfiguration parallelExecutionConfiguration;
+    private final ContextPropagationPolicy nestedRunContextPropagationPolicy;
     private final AssemblyLineExecutionContextFactory executionContextFactory;
     private final AssemblyLineRootExecutionChain rootExecutionChain;
     private final AssemblyLineRunLifecycleInvoker lifecycleInvoker;
@@ -72,6 +74,8 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
                 : AssemblyLineEngineConfiguration.defaultWorkerConcurrencyManager(this.workerConcurrencyConfiguration);
         this.parallelExecutionConfiguration = builder.parallelExecutionConfiguration != null
                 ? builder.parallelExecutionConfiguration : ParallelExecutionConfiguration.defaults();
+        this.nestedRunContextPropagationPolicy = builder.nestedRunContextPropagationPolicy != null
+                ? builder.nestedRunContextPropagationPolicy : ContextPropagationPolicy.inheritAllShallow();
         this.runnerChainFactory = builder.runnerChainFactory != null ? builder.runnerChainFactory
                 : new RunnerChainFactory(
                         StrategyRegistry.defaultRegistry(this::executeNestedAssemblyLine, this.workerConcurrencyManager,
@@ -106,7 +110,8 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
                                                          AssemblyLine<?, ?> childAssemblyLine,
                                                          Object input,
                                                          StationExecutionContext parentContext) {
-        RunRequest childRequest = NestedRunRequestFactory.create(input, parentContext, defaultIdGenerator);
+        RunRequest childRequest = NestedRunRequestFactory.create(input, parentContext, defaultIdGenerator,
+                                                                 nestedRunContextPropagationPolicy);
         return execute((AssemblyLine) childAssemblyLine, childRequest);
     }
 
@@ -257,6 +262,7 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
         private Duration workerLockWaitTimeout;
         private WorkerConcurrencyRegistryConfiguration workerConcurrencyRegistryConfiguration;
         private ParallelExecutionConfiguration parallelExecutionConfiguration;
+        private ContextPropagationPolicy nestedRunContextPropagationPolicy;
 
         public Builder resourceFactory(ResourceFactory resourceFactory) {
             this.resourceFactory = resourceFactory;
@@ -326,6 +332,16 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
 
         public Builder parallelExecutionConfiguration(ParallelExecutionConfiguration parallelExecutionConfiguration) {
             this.parallelExecutionConfiguration = parallelExecutionConfiguration;
+            return this;
+        }
+
+        /**
+         * Configures how user context values are propagated from a parent run to a
+         * {@code NESTED_RUN} child. The default is
+         * {@link ContextPropagationPolicy#inheritAllShallow()}.
+         */
+        public Builder nestedRunContextPropagationPolicy(ContextPropagationPolicy nestedRunContextPropagationPolicy) {
+            this.nestedRunContextPropagationPolicy = nestedRunContextPropagationPolicy;
             return this;
         }
 

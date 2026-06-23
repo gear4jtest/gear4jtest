@@ -12,6 +12,17 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.exception.SideComputeExecutionException;
 import io.github.gear4jtest.core.exception.SideComputeTimeoutException;
 
+/**
+ * Processor that blocks station execution until a named side-compute value is
+ * available in the run context.
+ *
+ * <p>
+ * The wait happens on the station thread. The side-compute itself is completed
+ * by the event runtime, so applications should size the reaction executor and
+ * choose explicit timeouts for side-compute workloads that are
+ * latency-sensitive or may block on external systems.
+ * </p>
+ */
 public final class SideComputeWaitProcessor implements Processor {
     /**
      * Safety net used when callers do not provide an explicit timeout.

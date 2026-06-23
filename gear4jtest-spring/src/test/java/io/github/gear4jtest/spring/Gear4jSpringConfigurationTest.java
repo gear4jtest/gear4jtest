@@ -6,7 +6,8 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
@@ -50,10 +51,10 @@ class Gear4jSpringConfigurationTest {
             context.register(Gear4jSpringConfiguration.class);
             context.refresh();
 
-            AssemblyLine<String, String> child = ElementModelBuilders.<String>createAssemblyLine("child")
-                    .then(ElementModelBuilders.processingOperation("append", AppendBangOperator.class).build())
+            AssemblyLine<String, String> child = AssemblyLines.<String>createAssemblyLine("child")
+                    .then(Stations.processingOperation("append", AppendBangOperator.class).build())
                     .build();
-            AssemblyLine<String, String> parent = ElementModelBuilders.<String>createAssemblyLine("parent")
+            AssemblyLine<String, String> parent = AssemblyLines.<String>createAssemblyLine("parent")
                     .then(AssemblyLineCallStation.nestedRun("call-child", child))
                     .build();
 

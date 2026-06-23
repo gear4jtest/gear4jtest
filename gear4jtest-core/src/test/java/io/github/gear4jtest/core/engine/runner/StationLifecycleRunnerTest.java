@@ -15,7 +15,8 @@ import io.github.gear4jtest.core.api.config.StopPolicy;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.SequenceStation;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
@@ -105,12 +106,12 @@ class StationLifecycleRunnerTest {
         AssemblyLineEngine engine = engine(new FailingStationLifecycleExtension(LifecycleFailureMode.CRITICAL, true,
                 "first"));
         SequenceStation<String, String> sequence = SequenceStation.Builder.<String>create("sequence")
-                .next(ElementModelBuilders.processingOperation("first", EchoOperator.class).build())
-                .next(ElementModelBuilders.processingOperation("second", AppendOperator.class).build())
+                .next(Stations.processingOperation("first", EchoOperator.class).build())
+                .next(Stations.processingOperation("second", AppendOperator.class).build())
                 .flowConfig(new FlowConfig(FailurePolicy.IGNORE_AND_CONTINUE, StopPolicy.PROPAGATE_STOP,
                         CancelPolicy.PROPAGATE_CANCEL))
                 .build();
-        AssemblyLine<String, String> pipeline = ElementModelBuilders.<String>createAssemblyLine("flow-policy")
+        AssemblyLine<String, String> pipeline = AssemblyLines.<String>createAssemblyLine("flow-policy")
                 .then(sequence).build();
 
         // When
@@ -132,8 +133,8 @@ class StationLifecycleRunnerTest {
     }
 
     private static AssemblyLine<String, String> pipeline() {
-        return ElementModelBuilders.<String>createAssemblyLine("lifecycle-test")
-                .then(ElementModelBuilders.processingOperation("echo", EchoOperator.class).build()).build();
+        return AssemblyLines.<String>createAssemblyLine("lifecycle-test")
+                .then(Stations.processingOperation("echo", EchoOperator.class).build()).build();
     }
 
     private static ResourceFactory reflectiveResourceFactory() {

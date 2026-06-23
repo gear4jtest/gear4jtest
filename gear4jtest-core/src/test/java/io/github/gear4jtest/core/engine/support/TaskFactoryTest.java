@@ -21,6 +21,7 @@ import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 import org.junit.jupiter.api.Test;
+import org.slf4j.MDC;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -93,6 +94,74 @@ class TaskFactoryTest {
             assertThat(globalContext.getCurrentItemId()).isEqualTo("outer-item");
             assertThat(globalContext.getCurrentBranchId()).isEqualTo("outer-branch");
             assertThat(globalContext.getCurrentParentOperationId()).isEqualTo(parentOperationId);
+        }
+    }
+
+    @Test
+    void should_propagate_and_restore_mdc_inside_async_task() throws Exception {
+        // Given
+        TaskFactory taskFactory = new TaskFactory();
+        ExecutionSupport support = new ExecutionSupport(ExecutorDecorator.noOp(), taskFactory, null);
+
+        AssemblyRunTrace assemblyRun = new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of());
+        ExecutionContext globalContext = ExecutionContext.builder()
+                .executionId(UUID.randomUUID())
+                .assemblyLineId("pipeline-1")
+                .services(new ExecutionServices(
+                        new EventManager(EventHandlingDefinition.builder().build(), new ExecutionContextRegistry()),
+                        new ResourceFactory() {
+                            @Override
+                            public <T> T getResource(Class<T> clazz) {
+                                return null;
+                            }
+                        }))
+                .assemblyRun(assemblyRun)
+                .build();
+        StationLogTrace parentRecord = StationLogTrace.start(globalContext.getExecutionId(), "parent", null);
+        parentRecord.setContext(new HashMap<>());
+        parentRecord.setStatus(StationLogStatus.RUNNING);
+        StationExecutionContext operationExecution = new DefaultStationExecutionContext("parent",
+                StationKind.CONTAINER,
+                globalContext, parentRecord, support);
+        DummyStation child = new DummyStation("child");
+        AtomicReference<String> seenExecutionId = new AtomicReference<>();
+        AtomicReference<String> seenCustomKey = new AtomicReference<>();
+
+        StationRunner runner = (input, station, ctx) -> {
+            seenExecutionId.set(MDC.get("gear4j.executionId"));
+            seenCustomKey.set(MDC.get("gear4j.custom"));
+            StationLogTrace childLog = StationLogTrace.start(ctx.getGlobalContext().getExecutionId(), station.getId(),
+                                                             null);
+            childLog.setContext(new HashMap<>());
+            childLog.markSuccess("ok");
+            return childLog;
+        };
+
+        MDC.clear();
+        try {
+            MDC.put("gear4j.executionId", "run-123");
+            MDC.put("gear4j.custom", "captured");
+            Callable<StationLogTrace> task = taskFactory.createTask(() -> "payload", child, runner, operationExecution,
+                                                                    "child-item", "child-branch");
+
+            // Simulate a worker thread that already had its own MDC before running the
+            // Gear4J task.
+            MDC.clear();
+            MDC.put("gear4j.executionId", "worker-before");
+            MDC.put("worker.only", "preserved");
+
+            // When
+            StationLogTrace result = task.call();
+
+            // Then
+            assertThat(result.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
+            assertThat(seenExecutionId.get()).isEqualTo("run-123");
+            assertThat(seenCustomKey.get()).isEqualTo("captured");
+            assertThat(MDC.get("gear4j.executionId")).isEqualTo("worker-before");
+            assertThat(MDC.get("worker.only")).isEqualTo("preserved");
+            assertThat(MDC.get("gear4j.custom")).isNull();
+        } finally {
+            MDC.clear();
         }
     }
 

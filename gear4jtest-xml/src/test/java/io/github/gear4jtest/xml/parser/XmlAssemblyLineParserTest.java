@@ -42,7 +42,7 @@ class XmlAssemblyLineParserTest {
     }
 
     @Test
-    void should_parse_container_branches() {
+    void should_parse_container_branches_and_results_function() {
         // Given / When
         var definition = parser.parse(resource("/samples/assembly-line-parallel-container.xml"));
 
@@ -52,7 +52,23 @@ class XmlAssemblyLineParserTest {
             assertThat(container.parallel()).isTrue();
             assertThat(container.threadPoolSize()).isEqualTo(2);
             assertThat(container.subLines()).hasSize(2);
+            assertThat(container.returnsFunction()).isEqualTo("results -> results.orderedOutputs()");
         });
+    }
+
+    @Test
+    void should_parse_three_branch_container_contract() {
+        // Given / When
+        var definition = parser.parse(resource("/samples/assembly-line-container-three-branches.xml"));
+
+        // Then
+        assertThat(definition.operations()).singleElement()
+                .isInstanceOfSatisfying(ContainerOperation.class, container -> {
+                    assertThat(container.id()).isEqualTo("threeBranchContainer");
+                    assertThat(container.subLines().stream().map(subLine -> subLine.id()).toList())
+                            .containsExactly("alpha", "beta", "gamma");
+                    assertThat(container.returnsFunction()).isEqualTo("results -> results.orderedOutputs()");
+                });
     }
 
     @Test

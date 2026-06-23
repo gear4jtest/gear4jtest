@@ -7,10 +7,17 @@ production application, review the following operational boundaries.
 
 The default event runtime is in-memory and best-effort. It is appropriate for
 local observers, metrics enrichment and non-critical side-compute reactions. Its
-dispatch queue is bounded by default; saturated runtimes drop new events and
-expose the drop count through `EventManager.snapshotStats()`. It must not be used
-as a business-critical delivery guarantee. If durable delivery is required, use a
-dedicated outbox or external broker design and keep handlers idempotent.
+per-run queue accounting is bounded by default; saturated runtimes drop new
+events and expose the drop count through `EventManager.snapshotStats()`. Dispatch
+is multiplexed by a shared in-process dispatcher instead of one dispatcher thread
+per run, while reaction execution remains controlled by the configured reaction
+executor. The default shutdown mode is `WAIT_FOR_DRAIN`, so `execute(...)` may
+wait for accepted reactions until the shutdown timeout expires. Choose `DETACH_AND_DRAIN`, for
+example through `RuntimeConfiguration.detachAndDrainDefaults()`, deliberately if
+returning the pipeline result quickly matters more than waiting for best-effort
+reaction drain. It must not be used as a business-critical
+delivery guarantee. If durable delivery is required, use a dedicated outbox or
+external broker design and keep handlers idempotent.
 
 ## XML and generated Java
 
@@ -31,11 +38,17 @@ When JDBC persistence is enabled:
 - decide deliberately whether Gear4J may create/migrate its schema with
   `gear4j.persistence.auto-create-tables`;
 - configure a `SensitiveDataRedactor` when payloads may contain PII, secrets or
-  sensitive business data, and set `gear4j.persistence.redaction-mode=REQUIRE`
-  in Spring Boot deployments that must fail fast without one;
+  sensitive business data; `SensitiveDataRedactor.none()` means run context,
+  inputs, outputs, station context and error messages are persisted as-is;
+- set `gear4j.persistence.redaction-mode=REQUIRE` in Spring Boot deployments
+  that must fail fast without an explicit redactor;
 - tune `gear4j.persistence.batch-size`, `max-pending-logs-per-run`,
   `flush-threads`, `max-scheduled-flush-tasks` and
   `jdbc-statement-timeout` for expected volume and database latency;
+- the built-in core `PersistenceExtension` persists station start snapshots
+  immediately and batches terminal station snapshots with `appendAll(...)` before
+  ending the run; use `terminalRecordBatchSize(1)` for the most immediate
+  terminal snapshot persistence behavior;
 - monitor failed flushes, rejected appends and active buffers;
 - keep persistence history queries paginated. `PageRequest` is intentionally
   capped at 1,000 rows per call to avoid accidental large reads. The external
@@ -75,12 +88,29 @@ Pending/in-flight reactions after shutdown usually mean user code ignored
 interruption or blocked on an external resource longer than the configured
 shutdown timeout.
 
+
+## Worker concurrency
+
+The default worker concurrency policy protects stateful worker instances with a
+process-wide lock. This is the safest option when a `ResourceFactory` may return
+non-thread-safe singleton operators, but it can create registry churn for
+high-volume prototype operators. Use `LOCK_REUSED_WORKER_INSTANCE_ONLY` only when
+non-reused stations are guaranteed to receive fresh execution-scoped operators,
+stateless operators or thread-safe operators. Keep the default or
+`ENGINE_LOCAL_LOCK_PER_WORKER_INSTANCE` when singleton sharing is possible.
+
 ## Shutdown and cancellation
 
 Executor-backed work is cooperative. Thread interruption and `Future.cancel(true)`
 only stop operators that are written to observe interruption or a cancellation
-signal. Long-running user code should be interruption-aware and should not rely on
-Gear4J forcibly terminating arbitrary blocking work.
+signal. Long-running user code should be interruption-aware, should poll the run
+`CancellationToken` where practical and should not rely on Gear4J forcibly
+terminating arbitrary blocking work.
+
+When reusing a `RunRequest` as a template for several independent runs, prefer
+`RunRequest.toIndependentBuilder()`. `toBuilder()` intentionally preserves the
+original cancellation token and call-stack state for nested or otherwise coupled
+execution scopes.
 
 ## Generated classloader cache
 

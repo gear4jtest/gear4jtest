@@ -87,10 +87,13 @@ public final class WorkerConcurrencyManager {
         size = guards.size();
 
         if (size >= configuration.failWhenTrackedWorkersExceeds()) {
-            throw new IllegalStateException("Too many worker instances tracked by WorkerConcurrencyManager: " + size
-                    + ". This usually means prototype workers are created at high volume while global per-instance locking "
-                    + "is enabled. Use WorkerConcurrencyPolicy.ALLOW_PARALLEL_INVOCATIONS for thread-safe workers, "
-                    + "or WorkerConcurrencyPolicy.ENGINE_LOCAL_LOCK_PER_WORKER_INSTANCE when process-wide protection is not required.");
+            throw new IllegalStateException("Too many worker instances tracked by WorkerConcurrencyManager: "
+                    + size + ". This usually means prototype workers are created at high volume while global "
+                    + "per-instance locking is enabled. Use WorkerConcurrencyPolicy.ALLOW_PARALLEL_INVOCATIONS "
+                    + "for thread-safe workers, "
+                    + "WorkerConcurrencyPolicy.LOCK_REUSED_WORKER_INSTANCE_ONLY for guaranteed prototype workers, "
+                    + "or WorkerConcurrencyPolicy.ENGINE_LOCAL_LOCK_PER_WORKER_INSTANCE when process-wide protection "
+                    + "is not required.");
         }
 
         long previousWarning = lastWarningAtSize.get();

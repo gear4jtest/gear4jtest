@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.engine.strategy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -10,6 +11,7 @@ import java.util.concurrent.TimeoutException;
 import io.github.gear4jtest.core.api.behavior.SiblingBranchOutcomes;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
+import io.github.gear4jtest.core.api.station.ContainerResults;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 
@@ -152,8 +154,22 @@ final class ContainerBranchExecutionSupport {
     }
 
     static Object assembleReturnValue(ContainerBaseStation<?, ?> station, List<StationLogTrace> executions) {
-        Object[] returnedObjects = executions.stream().map(StationLogTrace::getOutput).toArray();
-        return station.getFunc() != null ? station.getFunc().apply(returnedObjects) : null;
+        if (station.getResultsFunc() != null) {
+            return station.getResultsFunc().apply(namedResults(station, executions));
+        }
+        return null;
+    }
+
+    private static ContainerResults namedResults(ContainerBaseStation<?, ?> station, List<StationLogTrace> executions) {
+        Map<String, Object> byBranchId = new LinkedHashMap<>();
+        List<Object> orderedOutputs = new ArrayList<>(executions.size());
+        List<? extends ContainerBaseStation.Branch<?>> branches = station.getAssemblyLines();
+        for (int index = 0; index < executions.size(); index++) {
+            Object output = executions.get(index).getOutput();
+            byBranchId.put(branches.get(index).getId(), output);
+            orderedOutputs.add(output);
+        }
+        return ContainerResults.of(byBranchId, orderedOutputs);
     }
 
     private static StationLogTrace newSyntheticChildLog(ContainerBaseStation.Branch<?> branch,

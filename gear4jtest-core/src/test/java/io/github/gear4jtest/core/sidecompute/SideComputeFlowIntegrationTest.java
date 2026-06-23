@@ -11,7 +11,8 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
+import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
@@ -27,7 +28,7 @@ class SideComputeFlowIntegrationTest {
     void failing_required_processor_should_abort_station_before_operator_execution() {
         AtomicInteger operatorExecutions = new AtomicInteger();
 
-        AssemblyLine<String, String> pipeline = ElementModelBuilders.<String>createAssemblyLine("required-processor")
+        AssemblyLine<String, String> pipeline = AssemblyLines.<String>createAssemblyLine("required-processor")
                 .configuration(AssemblyLine.Configuration.builder()
                         .eventHandling(EventHandlingDefinition.builder()
                                 .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
@@ -35,8 +36,7 @@ class SideComputeFlowIntegrationTest {
                                         .shutdownTimeout(Duration.ofSeconds(2)).build())
                                 .build())
                         .build())
-                .then(ElementModelBuilders
-                        .<String, String, CountingOperator>processingOperation("step-1", CountingOperator.class)
+                .then(Stations.<String, String, CountingOperator>processingOperation("step-1", CountingOperator.class)
                         .addProcessor(SideComputeWaitProcessor.builder("missing-key").timeout(Duration.ofMillis(50))
                                 .onTimeoutFail().build())
                         .build())

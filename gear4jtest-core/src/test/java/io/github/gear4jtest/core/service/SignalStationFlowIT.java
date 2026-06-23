@@ -6,10 +6,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
+import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.SignalStation;
-import io.github.gear4jtest.core.api.station.StationSignalType;
-import io.github.gear4jtest.core.api.util.ElementModelBuilders;
+import io.github.gear4jtest.core.api.util.AssemblyLines;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
@@ -26,7 +26,7 @@ import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static io.github.gear4jtest.core.api.util.ElementModelBuilders.processingOperation;
+import static io.github.gear4jtest.core.api.util.Stations.processingOperation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -41,10 +41,10 @@ class SignalStationFlowIT {
     @Test
     void stopSignal_shouldInterruptSequenceAndPersistStoppedRunWithoutRunningNextStation() {
         // Given
-        var pipeline = ElementModelBuilders.<String>createAssemblyLine("stop-signal")
+        var pipeline = AssemblyLines.<String>createAssemblyLine("stop-signal")
                 .then(new SignalStation.Builder<String>()
                         .id("stop-now")
-                        .type(StationSignalType.STOP)
+                        .type(SignalType.STOP)
                         .condition(signal -> true)
                         .build())
                 .then(processingOperation("after-stop", RecordingOperator.class).build())

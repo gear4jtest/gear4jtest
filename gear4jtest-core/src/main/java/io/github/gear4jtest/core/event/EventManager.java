@@ -29,15 +29,22 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
- * Runtime dispatcher for asynchronous pipeline events.
+ * Runtime controller for asynchronous pipeline events.
  *
  * <p>
  * This runtime is deliberately <strong>best-effort</strong>. Reactions are
- * delivered through an in-memory queue and submitted to an
+ * delivered through an in-memory shared dispatcher and submitted to an
  * {@link ExecutorService}. There is no durable storage, no transactional
  * hand-off, and no replay mechanism. As a consequence, the runtime does
  * <strong>not</strong> provide guaranteed delivery, exactly-once execution, or
  * recovery after process failure.
+ * </p>
+ *
+ * <p>
+ * Each {@code EventManager} still owns run-local subscriptions, counters,
+ * shutdown semantics and queue-capacity accounting, but it no longer creates
+ * one dedicated dispatcher thread per run. Lightweight dispatch tasks are
+ * multiplexed by a shared in-process dispatcher.
  * </p>
  *
  * <p>
@@ -49,12 +56,13 @@ import org.slf4j.MDC;
 @Internal
 public final class EventManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EventManager.class);
-    private static final QueuedEvent STOP_EVENT = QueuedEvent.stop();
-    private static final AtomicInteger DISPATCHER_COUNTER = new AtomicInteger();
     private final List<EventSubscription<?>> subscriptions;
     private final BlockingQueue<QueuedEvent> queue;
     private final Object submissionMonitor = new Object();
-    private final AtomicBoolean dispatcherStopped = new AtomicBoolean(false);
+    private final AtomicBoolean shutdownStarted = new AtomicBoolean(false);
+    private final AtomicBoolean ownedExecutorShutdownInitiated = new AtomicBoolean(false);
+    private final AtomicBoolean dispatchTaskScheduled = new AtomicBoolean(false);
+    private final AtomicInteger dispatchingEvents = new AtomicInteger();
     private final AtomicInteger acceptedReactions = new AtomicInteger();
     private final AtomicInteger inFlightReactions = new AtomicInteger();
     private final Set<ReactionTask> activeReactions = ConcurrentHashMap.newKeySet();
@@ -68,9 +76,9 @@ public final class EventManager {
     private final AtomicLong failedReactions = new AtomicLong();
     private final ExecutorService reactionExecutor;
     private final boolean shutdownExecutorOnClose;
-    private final Thread dispatcherThread;
     private final Duration shutdownTimeout;
     private final EventHandlingDefinition.RuntimeConfiguration.ShutdownMode shutdownMode;
+    private final int eventQueueCapacity;
     /** Guarded by {@link #submissionMonitor}. */
     private boolean accepting;
 
@@ -83,12 +91,12 @@ public final class EventManager {
         this.subscriptions = buildSubscriptions(effectiveDefinition, registry);
         this.shutdownTimeout = runtimeConfiguration.getShutdownTimeout();
         this.shutdownMode = runtimeConfiguration.getShutdownMode();
-        this.queue = new LinkedBlockingQueue<>(runtimeConfiguration.getEventQueueCapacity());
+        this.eventQueueCapacity = runtimeConfiguration.getEventQueueCapacity();
+        this.queue = new LinkedBlockingQueue<>(eventQueueCapacity);
 
         if (subscriptions.isEmpty()) {
             this.reactionExecutor = null;
             this.shutdownExecutorOnClose = false;
-            this.dispatcherThread = null;
             this.accepting = false;
             this.terminationFuture.complete(null);
             return;
@@ -99,10 +107,6 @@ public final class EventManager {
         this.reactionExecutor = executorHandle.executorService();
         this.shutdownExecutorOnClose = executorHandle.shutdownOnClose();
         this.accepting = true;
-        this.dispatcherThread = new Thread(this::dispatchLoop,
-                "gear4j-event-dispatcher-" + DISPATCHER_COUNTER.incrementAndGet());
-        this.dispatcherThread.setDaemon(true);
-        this.dispatcherThread.start();
     }
 
     private static List<EventSubscription<?>> buildSubscriptions(EventHandlingDefinition definition,
@@ -124,9 +128,10 @@ public final class EventManager {
      */
     public <T extends Event> void publish(T event) {
         Objects.requireNonNull(event, "event");
-        if (dispatcherThread == null) {
+        if (subscriptions.isEmpty()) {
             return;
         }
+
         synchronized (submissionMonitor) {
             if (!accepting) {
                 return;
@@ -136,33 +141,41 @@ public final class EventManager {
             } else {
                 droppedEvents.incrementAndGet();
                 LOGGER.warn("Dropping event because the in-memory event queue is full. eventType={}, capacity={}",
-                            event.getName(), queue.remainingCapacity() + queue.size());
+                            event.getName(), eventQueueCapacity);
+                return;
             }
         }
+
+        scheduleDispatchIfNeeded();
     }
 
     /**
      * Initiates shutdown of the asynchronous event runtime.
      *
      * <p>
-     * Depending on the configured shutdown mode, this may wait for the queue to
-     * drain, detach and let the drain finish in the background, or cancel pending
-     * queued work. Even in drain modes, the runtime remains best-effort: a
-     * saturated executor may still reject some reactions.
+     * Depending on the configured shutdown mode, this may wait for already accepted
+     * events and reactions to drain, detach and let the drain finish in the
+     * background, or cancel pending queued work. Even in drain modes, the runtime
+     * remains best-effort: a saturated executor may still reject some reactions.
      * </p>
      */
     public ShutdownHandle shutdown() {
-        if (dispatcherThread == null) {
+        if (subscriptions.isEmpty()) {
             return ShutdownHandle.completed();
         }
 
         synchronized (submissionMonitor) {
             if (accepting) {
                 accepting = false;
+                shutdownStarted.set(true);
                 if (shutdownMode == EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.CANCEL_PENDING_TASKS) {
-                    queue.clear();
+                    dropPendingQueuedEvents();
+                    cancelPendingReactions();
+                    forceShutdownOwnedExecutor();
+                } else {
+                    scheduleDispatchIfNeeded();
                 }
-                enqueueStopEvent();
+                tryCompleteTermination();
             }
         }
 
@@ -177,59 +190,43 @@ public final class EventManager {
         return handle;
     }
 
-    private void enqueueStopEvent() {
-        try {
-            if (!queue.offer(STOP_EVENT, shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
-                queue.clear();
-                boolean stopQueued = queue.offer(STOP_EVENT);
-                LOGGER.warn("Timed out while enqueueing the event-runtime stop signal. Pending events were discarded. "
-                        + "timeout={}, stopQueued={}", shutdownTimeout, stopQueued);
-            }
-        } catch (InterruptedException interruptedException) {
-            Thread.currentThread().interrupt();
-            queue.clear();
-            boolean stopQueued = queue.offer(STOP_EVENT);
-            if (!stopQueued) {
-                LOGGER.warn("Unable to enqueue the event-runtime stop signal after interruption.");
-            }
+    private void scheduleDispatchIfNeeded() {
+        if (!dispatchTaskScheduled.compareAndSet(false, true)) {
+            return;
+        }
+        boolean submitted = EventDispatcher.shared().submit(this::dispatchFromSharedDispatcher);
+        if (!submitted) {
+            dispatchTaskScheduled.set(false);
+            dropPendingQueuedEvents();
+            LOGGER.warn("Dropping pending events because the shared event dispatcher rejected the dispatch task.");
         }
     }
 
-    private void dispatchLoop() {
+    private void dispatchFromSharedDispatcher() {
+        dispatchingEvents.incrementAndGet();
         try {
-            while (true) {
-                QueuedEvent event = queue.take();
-                if (event == STOP_EVENT) {
-                    break;
-                }
+            QueuedEvent queuedEvent;
+            while ((queuedEvent = queue.poll()) != null) {
                 dispatchedEvents.incrementAndGet();
-                dispatch(event);
+                dispatch(queuedEvent);
             }
-
-            QueuedEvent remaining;
-            while ((remaining = queue.poll()) != null) {
-                if (remaining != STOP_EVENT) {
-                    dispatchedEvents.incrementAndGet();
-                    dispatch(remaining);
-                }
-            }
-        } catch (InterruptedException interruptedException) {
-            Thread.currentThread().interrupt();
         } catch (RuntimeException runtimeException) {
             terminationFuture.completeExceptionally(runtimeException);
+            throw runtimeException;
         } finally {
-            dispatcherStopped.set(true);
-            if (reactionExecutor != null) {
-                if (shutdownMode == EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.CANCEL_PENDING_TASKS) {
-                    if (shutdownExecutorOnClose) {
-                        reactionExecutor.shutdownNow();
-                    }
-                    cancelPendingReactions();
-                } else if (shutdownExecutorOnClose) {
-                    reactionExecutor.shutdown();
-                }
+            dispatchingEvents.decrementAndGet();
+            dispatchTaskScheduled.set(false);
+            if (!queue.isEmpty()) {
+                scheduleDispatchIfNeeded();
             }
             tryCompleteTermination();
+        }
+    }
+
+    private void dropPendingQueuedEvents() {
+        QueuedEvent ignored;
+        while ((ignored = queue.poll()) != null) {
+            droppedEvents.incrementAndGet();
         }
     }
 
@@ -310,8 +307,26 @@ public final class EventManager {
     }
 
     private void tryCompleteTermination() {
-        if (dispatcherStopped.get() && acceptedReactions.get() == 0) {
-            terminationFuture.complete(null);
+        if (!shutdownStarted.get()) {
+            return;
+        }
+        if (queue.isEmpty() && dispatchingEvents.get() == 0) {
+            initiateOwnedExecutorShutdownAfterDispatchDrain();
+            if (acceptedReactions.get() == 0) {
+                terminationFuture.complete(null);
+            }
+        }
+    }
+
+    private void initiateOwnedExecutorShutdownAfterDispatchDrain() {
+        if (!shutdownExecutorOnClose || reactionExecutor == null) {
+            return;
+        }
+        if (shutdownMode == EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.CANCEL_PENDING_TASKS) {
+            return;
+        }
+        if (ownedExecutorShutdownInitiated.compareAndSet(false, true)) {
+            reactionExecutor.shutdown();
         }
     }
 
@@ -355,6 +370,7 @@ public final class EventManager {
             return;
         }
 
+        ownedExecutorShutdownInitiated.set(true);
         reactionExecutor.shutdownNow();
         try {
             reactionExecutor.awaitTermination(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -367,10 +383,6 @@ public final class EventManager {
         private static QueuedEvent of(Event event, Map<String, String> mdcContext) {
             Map<String, String> immutableContext = mdcContext == null ? null : Map.copyOf(mdcContext);
             return new QueuedEvent(event, immutableContext);
-        }
-
-        private static QueuedEvent stop() {
-            return new QueuedEvent(null, null);
         }
     }
 

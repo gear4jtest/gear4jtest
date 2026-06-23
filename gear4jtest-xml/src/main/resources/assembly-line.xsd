@@ -151,7 +151,7 @@
   <xs:complexType name="ContainerType">
     <xs:sequence>
       <xs:element name="subLines" type="tns:SubLinesType"/>
-      <xs:element name="returnsFunction" type="tns:ContainerFunctionType" minOccurs="0"/>
+      <xs:element name="returnsFunction" type="tns:ContainerResultsFunctionType" minOccurs="0"/>
     </xs:sequence>
     <xs:attribute name="id" type="xs:ID" use="required"/>
     <xs:attribute name="inputType" type="xs:string" use="required"/>
@@ -181,7 +181,7 @@
     <xs:attribute name="id" type="xs:string" use="required"/>
   </xs:complexType>
 
-  <xs:complexType name="ContainerFunctionType">
+  <xs:complexType name="ContainerResultsFunctionType">
     <xs:attribute name="expression" type="xs:string" use="required"/>
     <xs:attribute name="description" type="xs:string"/>
   </xs:complexType>
@@ -218,7 +218,7 @@
       <xs:element name="condition" type="tns:ConditionType" minOccurs="0"/>
     </xs:sequence>
     <xs:attribute name="id" type="xs:ID" use="required"/>
-    <xs:attribute name="type" type="tns:StationSignalTypeEnum" use="required"/>
+    <xs:attribute name="type" type="tns:FlowSignalTypeEnum" use="required"/>
     <xs:attribute name="inputType" type="xs:string"/>
   </xs:complexType>
 
@@ -250,7 +250,7 @@
     <xs:attribute name="storeResultObject" type="xs:boolean" default="true"/>
   </xs:complexType>
 
-  <xs:simpleType name="StationSignalTypeEnum">
+  <xs:simpleType name="FlowSignalTypeEnum">
     <xs:restriction base="xs:string">
       <xs:enumeration value="STOP"/>
       <xs:enumeration value="FATAL"/>

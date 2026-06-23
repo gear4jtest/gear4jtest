@@ -8,10 +8,12 @@ import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Condition;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ConditionalOperation;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ContainerOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ErrorHandler;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IfElseOperation;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Operation;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Parameters;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ProcessingOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SignalOperation;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SubLine;
 import org.junit.jupiter.api.Test;
 
@@ -69,6 +71,98 @@ class XmlToJavaGeneratorTest {
     }
 
     @Test
+    void generate_shouldRenderSingleBranchContainerWithContainerResultsApi() {
+        // Given
+        ContainerOperation container = new ContainerOperation("single-container", "java.lang.String",
+                "java.lang.String", false, null,
+                List.of(new SubLine("only", null, processingOperation("only-operation"))),
+                "results -> results.get(\"only\", String.class)");
+        XmlAssemblyLineDefinition definition = definition(container);
+
+        // When
+        String source = generator.generate(definition).formattedSource();
+
+        // Then
+        assertThat(source).contains("private ContainerBaseStation<String, String> containerSingle_container()")
+                .contains("return container(String.class)")
+                .contains(".withBranch(\"only\", processOnly_operation())")
+                .contains(".returns(results -> results.get(\"only\", String.class));")
+                .doesNotContain("withSubLine")
+                .doesNotContain("ContainerFunction")
+                .doesNotContain("ElementModelBuilders");
+    }
+
+    @Test
+    void generate_shouldRenderTwoBranchContainerWithContainerResultsApi() {
+        // Given
+        ContainerOperation container = new ContainerOperation("two-container", "java.lang.String",
+                "java.lang.String", false, null,
+                List.of(new SubLine("left", null, processingOperation("left-operation")),
+                        new SubLine("right", null, processingOperation("right-operation"))),
+                "results -> results.get(\"left\", String.class) + results.get(\"right\", String.class)");
+        XmlAssemblyLineDefinition definition = definition(container);
+
+        // When
+        String source = generator.generate(definition).formattedSource();
+
+        // Then
+        assertThat(source).contains(".withBranch(\"left\", processLeft_operation())")
+                .contains(".withBranch(\"right\", processRight_operation())")
+                .contains(".returns(results -> results.get(\"left\", String.class) "
+                        + "+ results.get(\"right\", String.class));")
+                .doesNotContain("withSubLine")
+                .doesNotContain("Object...");
+    }
+
+    @Test
+    void generate_shouldRenderParallelThreeBranchContainerWithOrderedContainerResultsFallback() {
+        // Given
+        ContainerOperation container = new ContainerOperation("parallel-three", "java.lang.String",
+                "java.util.List<java.lang.String>", true, 3,
+                List.of(new SubLine("alpha", null, processingOperation("alpha-operation")),
+                        new SubLine("beta", null, processingOperation("beta-operation")),
+                        new SubLine("gamma", null, processingOperation("gamma-operation"))),
+                "results -> results.orderedOutputs()");
+        XmlAssemblyLineDefinition definition = definition(container);
+
+        // When
+        String source = generator.generate(definition).formattedSource();
+
+        // Then
+        assertThat(source).contains("@Inject(\"gear4j.executor.parallel-three\")")
+                .contains("requireExecutorService(gear4jParallel_threeExecutorService, "
+                        + "\"gear4j.executor.parallel-three\")")
+                .contains(".withBranch(\"alpha\", processAlpha_operation())")
+                .contains(".withBranch(\"beta\", processBeta_operation())")
+                .contains(".withBranch(\"gamma\", processGamma_operation())")
+                .contains(".returns(results -> results.orderedOutputs());")
+                .doesNotContain("withSubLine")
+                .doesNotContain("Container1Station")
+                .doesNotContain("Container2Station");
+    }
+
+    @Test
+    void generate_shouldKeepFlowSignalsSeparateFromErrorSignalPolicies() {
+        // Given
+        ProcessingOperation processing = new ProcessingOperation("guarded", StringOperator.class.getName(),
+                "java.lang.String", new Parameters(List.of()),
+                List.of(new ErrorHandler(false, "IGNORE", RuntimeException.class.getName(), null, null)),
+                List.of(), null);
+        SignalOperation signal = new SignalOperation("fatal-flow", "FATAL", "java.lang.String",
+                new Condition("input.isBlank()", null));
+        XmlAssemblyLineDefinition definition = definition(processing, signal);
+
+        // When
+        String source = generator.generate(definition).formattedSource();
+
+        // Then
+        assertThat(source).contains("Errors.<String>ignore(RuntimeException.class)")
+                .contains(".type(SignalType.FATAL)")
+                .doesNotContain("StationSignalType")
+                .doesNotContain(".type(SignalType.IGNORE)");
+    }
+
+    @Test
     void generate_shouldRequireInjectedExecutorForParallelContainer() {
         // Given
         ProcessingOperation first = processingOperation("first");
@@ -76,7 +170,7 @@ class XmlToJavaGeneratorTest {
         ContainerOperation container = new ContainerOperation("parallel-container", "java.lang.String",
                 "java.lang.String", true, 2, List.of(new SubLine("first-line", null, first),
                                                      new SubLine("second-line", null, second)),
-                "(first, second) -> first");
+                "results -> results.get(\"first-line\", String.class)");
         XmlAssemblyLineDefinition definition = definition(container);
 
         // When

@@ -129,7 +129,7 @@ deterministic output, but transient generated files should not be edited directl
 - `gear4jtest-gradle-xml2java/README.md`: Gradle XML generation plugin.
 - `docs/architecture/`: durable architecture notes.
 - `docs/contributing/code-style.md`: style, formatter and Checkstyle rules.
-- `docs/decisions/`: decision records and future-direction notes.
+- `docs/decisions/`: decision records and future-direction notes, including source-level API boundary policy.
 - `docs/roadmap/future-work.md`: known work items and non-MVP ideas.
 - `docs/releasing.md`: Maven Central release process.
 - `docs/security/dependency-supply-chain.md`: dependency locking, verification and SCA guidance.

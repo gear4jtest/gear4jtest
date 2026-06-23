@@ -75,7 +75,7 @@ class XmlOperationChainTranslatorTest {
                 .contains("@Inject(\"modelsService\")")
                 .contains("private WorkStation<String, Map<String, String>> processStep3()")
                 .contains("private IteratorStation<List<Integer>, List<List<String>>> iterateIterator()")
-                .contains("ElementModelBuilders.<List<Integer>>iterate(\"iterator\")")
+                .contains("Stations.<List<Integer>>iterate(\"iterator\")")
                 .contains("public AssemblyLine<String, List<List<String>>> getAssemblyLineDefinition()")
                 .contains("builder.skipIf((input, ctx) -> input.equals(modelsService.getModel(\"fjeifj\")))")
                 .doesNotContain("@SuppressWarnings").doesNotContain("AbstractStation)")
@@ -94,7 +94,7 @@ class XmlOperationChainTranslatorTest {
         // Then
         assertThat(result.formattedSource()).contains("private SignalStation<String> signalStop_when_a()")
                 .contains("new SignalStation.Builder<String>()").contains(".id(\"stop_when_a\")")
-                .contains(".type(StationSignalType.STOP)").contains("String input = sig.getItem();")
+                .contains(".type(SignalType.STOP)").contains("String input = sig.getItem();")
                 .contains("var ctx = sig.getItemExecution();").contains("return input.endsWith(\"a\");");
     }
 
@@ -104,6 +104,7 @@ class XmlOperationChainTranslatorTest {
         List<String> samples = List
                 .of("/samples/good-assembly-line.xml", "/samples/sample-assembly-line.xml",
                     "/samples/assembly-line-iterator.xml", "/samples/assembly-line-parallel-container.xml",
+                    "/samples/assembly-line-container-three-branches.xml",
                     "/samples/assembly-line-ifelse-container.xml", "/samples/assembly-line-signal.xml",
                     "/samples/assembly-line-v2.xml", "/samples/assembly-line-database-persistence.xml");
         var compiler = new JDTInMemoryCompiler(Thread.currentThread().getContextClassLoader());
