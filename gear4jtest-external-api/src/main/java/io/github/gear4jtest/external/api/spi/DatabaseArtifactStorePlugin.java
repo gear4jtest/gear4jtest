@@ -5,9 +5,9 @@ import java.util.Locale;
 import java.util.Map;
 import javax.sql.DataSource;
 
-import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.artifact.DatabaseArtifactStore;
+import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 
 public final class DatabaseArtifactStorePlugin implements ArtifactStorePlugin {
     @Override

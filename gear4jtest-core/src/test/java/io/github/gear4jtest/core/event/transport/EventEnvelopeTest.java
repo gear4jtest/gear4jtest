@@ -57,7 +57,7 @@ class EventEnvelopeTest {
         assertThat(envelope.hashCode()).isEqualTo(sameContent.hashCode());
         assertThat(envelope).isNotEqualTo(withEventId(UUID.fromString("00000000-0000-7000-8000-000000000099")))
                 .isNotEqualTo(withEventType("OTHER"))
-                .isNotEqualTo(withPipelineId("other-pipeline"))
+                .isNotEqualTo(withAssemblyLineId("other-pipeline"))
                 .isNotEqualTo(withExecutionId(UUID.fromString("00000000-0000-7000-8000-000000000098")))
                 .isNotEqualTo(withStationExecutionId(UUID.fromString("00000000-0000-7000-8000-000000000097")))
                 .isNotEqualTo(withOperationId("other-operation"))
@@ -110,8 +110,8 @@ class EventEnvelopeTest {
                 "application/json", "partition", "1");
     }
 
-    private static EventEnvelope withPipelineId(String pipelineId) {
-        return new EventEnvelope(EVENT_ID, "TYPE", pipelineId, EXECUTION_ID, STATION_EXECUTION_ID, "operation",
+    private static EventEnvelope withAssemblyLineId(String assemblyLineId) {
+        return new EventEnvelope(EVENT_ID, "TYPE", assemblyLineId, EXECUTION_ID, STATION_EXECUTION_ID, "operation",
                 PARENT_OPERATION_ID, "item", OCCURRED_AT, Map.of("trace", "a"), new byte[] { 1, 2, 3 },
                 "application/json", "partition", "1");
     }

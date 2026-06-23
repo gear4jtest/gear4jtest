@@ -38,13 +38,13 @@ public interface Gear4jMeterTagPolicy {
         @Override
         public String[] runStartedTags(AssemblyRunTrace run) {
             Objects.requireNonNull(run, "run must not be null");
-            return new String[] { "pipeline.id", safe(run.getPipelineId()) };
+            return new String[] { "pipeline.id", safe(run.getAssemblyLineId()) };
         }
 
         @Override
         public String[] runCompletedTags(AssemblyRunTrace run) {
             Objects.requireNonNull(run, "run must not be null");
-            return new String[] { "pipeline.id", safe(run.getPipelineId()), "status", safe(run.getStatus()) };
+            return new String[] { "pipeline.id", safe(run.getAssemblyLineId()), "status", safe(run.getStatus()) };
         }
 
         @Override

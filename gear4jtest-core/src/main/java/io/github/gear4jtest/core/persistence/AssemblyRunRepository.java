@@ -8,7 +8,7 @@ import java.util.UUID;
 import io.github.gear4jtest.core.api.annotation.PublicApi;
 
 /**
- * Repository contract for persisted pipeline runs and their station logs.
+ * Repository contract for persisted assembly line runs and their station logs.
  *
  * <p>
  * Implementations may be called by the runtime persistence extension while runs
@@ -20,7 +20,7 @@ import io.github.gear4jtest.core.api.annotation.PublicApi;
  *
  * <p>
  * Implementations should be thread-safe if they are shared between concurrent
- * pipeline runs. Failures should be reported with a persistence-specific
+ * assembly line runs. Failures should be reported with a persistence-specific
  * runtime exception containing the operation context when possible.
  * </p>
  */
@@ -40,7 +40,7 @@ public interface AssemblyRunRepository {
 
     Optional<AssemblyRunRecord> findById(UUID id);
 
-    List<AssemblyRunRecord> findByPipelineId(String pipelineId, PageRequest pageRequest);
+    List<AssemblyRunRecord> findByAssemblyLineId(String assemblyLineId, PageRequest pageRequest);
 
     List<AssemblyRunRecord> findByStatus(ExecutionStatus status, PageRequest pageRequest);
 

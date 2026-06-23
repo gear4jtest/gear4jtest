@@ -13,12 +13,12 @@ import java.util.UUID;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 
-import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.external.api.StoreType;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.repository.jdbc.ExternalJdbcSchemaMigrator;
 import io.github.gear4jtest.external.api.spi.ArtifactStorePlugin;
+import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

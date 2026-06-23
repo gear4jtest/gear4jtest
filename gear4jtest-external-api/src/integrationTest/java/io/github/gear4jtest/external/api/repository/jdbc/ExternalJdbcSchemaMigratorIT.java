@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 
-import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

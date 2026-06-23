@@ -6,17 +6,17 @@ import io.github.gear4jtest.core.api.annotation.PublicApi;
 
 @PublicApi
 public final class StationStartedEvent extends StationEvent {
-    public StationStartedEvent(String pipelineId,
+    public StationStartedEvent(String assemblyLineId,
                                UUID executionId,
                                UUID stationExecutionId,
                                String operationId,
                                UUID parentOperationId,
                                String itemId,
                                Object input) {
-        super(pipelineId, executionId, stationExecutionId, operationId, parentOperationId, itemId, input);
+        super(assemblyLineId, executionId, stationExecutionId, operationId, parentOperationId, itemId, input);
     }
 
-    public StationStartedEvent(String pipelineId,
+    public StationStartedEvent(String assemblyLineId,
                                UUID executionId,
                                UUID stationExecutionId,
                                String operationId,
@@ -24,6 +24,6 @@ public final class StationStartedEvent extends StationEvent {
                                String branchId,
                                String itemId,
                                Object input) {
-        super(pipelineId, executionId, stationExecutionId, operationId, parentOperationId, branchId, itemId, input);
+        super(assemblyLineId, executionId, stationExecutionId, operationId, parentOperationId, branchId, itemId, input);
     }
 }

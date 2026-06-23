@@ -11,11 +11,11 @@ import javax.sql.DataSource;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
-import io.github.gear4jtest.core.persistence.JdbcStatementOptions;
 import io.github.gear4jtest.external.api.StoreType;
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
+import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.jdbc.persistence.JdbcStatementOptions;
 
 public final class OperationChainConfigRepositoryJdbc implements OperationChainConfigRepository {
     private static final TypeReference<Map<String, String>> STRING_MAP_TYPE = new TypeReference<>() {};

@@ -100,8 +100,8 @@ public class StationErrorPolicyExecutor {
                 stationLog.markSuccess(result);
                 return stationLog;
             } catch (Exception fallbackException) {
-                stationLog.addErrorHandlerException(fallbackException);
-                stationLog.markSkipped(originalException);
+                stationLog.addErrorHandlerException(originalException);
+                stationLog.markFailed(fallbackException);
                 return stationLog;
             }
         }

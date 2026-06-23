@@ -13,17 +13,17 @@ public abstract class StationEvent extends Event {
     private final String itemId;
     private final Object input;
 
-    protected StationEvent(String pipelineId,
+    protected StationEvent(String assemblyLineId,
                            UUID executionId,
                            UUID stationExecutionId,
                            String operationId,
                            UUID parentOperationId,
                            String itemId,
                            Object input) {
-        this(pipelineId, executionId, stationExecutionId, operationId, parentOperationId, null, itemId, input);
+        this(assemblyLineId, executionId, stationExecutionId, operationId, parentOperationId, null, itemId, input);
     }
 
-    protected StationEvent(String pipelineId,
+    protected StationEvent(String assemblyLineId,
                            UUID executionId,
                            UUID stationExecutionId,
                            String operationId,
@@ -31,7 +31,7 @@ public abstract class StationEvent extends Event {
                            String branchId,
                            String itemId,
                            Object input) {
-        super(pipelineId, executionId);
+        super(assemblyLineId, executionId);
         this.stationExecutionId = stationExecutionId;
         this.operationId = operationId;
         this.parentOperationId = parentOperationId;

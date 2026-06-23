@@ -7,9 +7,9 @@ import java.sql.SQLException;
 import java.util.Map;
 import javax.sql.DataSource;
 
-import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.external.api.StoreType;
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
+import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

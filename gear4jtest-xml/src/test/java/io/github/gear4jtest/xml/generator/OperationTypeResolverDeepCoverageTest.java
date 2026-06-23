@@ -5,17 +5,17 @@ import java.util.Map;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Condition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ConditionalOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContainerOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IfElseOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IteratorOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Operation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Parameters;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ProcessingOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SignalOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SubLine;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Condition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ConditionalOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ContainerOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IfElseOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IteratorOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Operation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Parameters;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ProcessingOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SignalOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SubLine;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,7 +25,7 @@ class OperationTypeResolverDeepCoverageTest {
     void resolve_shouldReuseCachedSignatureWhenSameOperationAppearsMoreThanOnce() {
         // Given
         ProcessingOperation shared = processing("shared", StringToIntegerOperator.class, null);
-        XmlPipelineDefinition definition = definition("java.lang.String", shared, shared);
+        XmlAssemblyLineDefinition definition = definition("java.lang.String", shared, shared);
 
         // When
         Map<Operation, OperationSignature> signatures = resolve(definition);
@@ -40,7 +40,7 @@ class OperationTypeResolverDeepCoverageTest {
     void processing_shouldPreferExplicitInputOverOperatorInputAndKeepOperatorOutputWithoutFallbackOutput() {
         // Given
         ProcessingOperation operation = processing("processing", StringToIntegerOperator.class, "java.lang.Long");
-        XmlPipelineDefinition definition = definition("java.lang.String", operation);
+        XmlAssemblyLineDefinition definition = definition("java.lang.String", operation);
 
         // When
         OperationSignature signature = resolve(definition).get(operation);
@@ -78,7 +78,7 @@ class OperationTypeResolverDeepCoverageTest {
         IfElseOperation ifElse = new IfElseOperation("ifelse", "java.lang.String", null,
                 List.of(new ConditionalOperation("when", new Condition("true", null), ifChild)), null);
         SignalOperation signal = new SignalOperation("signal", "IGNORE", "java.lang.Long", null);
-        XmlPipelineDefinition definition = definition("java.lang.Object", container, ifElse, signal);
+        XmlAssemblyLineDefinition definition = definition("java.lang.Object", container, ifElse, signal);
 
         // When
         Map<Operation, OperationSignature> signatures = resolve(definition);
@@ -107,13 +107,13 @@ class OperationTypeResolverDeepCoverageTest {
         assertThat(signature.outputType()).isEqualTo(JavaTypeName.OBJECT);
     }
 
-    private static Map<Operation, OperationSignature> resolve(XmlPipelineDefinition definition) {
+    private static Map<Operation, OperationSignature> resolve(XmlAssemblyLineDefinition definition) {
         return new OperationTypeResolver(OperationTypeResolverDeepCoverageTest.class.getClassLoader())
                 .resolve(definition);
     }
 
-    private static XmlPipelineDefinition definition(String inputType, Operation... operations) {
-        return new XmlPipelineDefinition("pipeline", inputType, null, List.of(operations), null, List.of());
+    private static XmlAssemblyLineDefinition definition(String inputType, Operation... operations) {
+        return new XmlAssemblyLineDefinition("pipeline", inputType, null, List.of(operations), null, List.of());
     }
 
     private static ProcessingOperation processing(String id, Class<?> operatorType, String inputType) {

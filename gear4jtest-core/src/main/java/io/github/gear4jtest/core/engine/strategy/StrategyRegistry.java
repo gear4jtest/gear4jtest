@@ -25,59 +25,59 @@ public class StrategyRegistry {
      *
      * <p>
      * This overload is kept for existing tests/custom engines. A
-     * {@code PipelineCallStation} running in {@code NESTED_RUN} mode requires the
-     * overload accepting a {@link NestedPipelineExecutor}.
+     * {@code AssemblyLineCallStation} running in {@code NESTED_RUN} mode requires
+     * the overload accepting a {@link NestedAssemblyLineExecutor}.
      * </p>
      */
     public static StrategyRegistry defaultRegistry() {
-        return defaultRegistry(NestedPipelineExecutor.unsupported());
+        return defaultRegistry(NestedAssemblyLineExecutor.unsupported());
     }
 
-    public static StrategyRegistry defaultRegistry(NestedPipelineExecutor nestedPipelineExecutor) {
-        return defaultRegistry(nestedPipelineExecutor, WorkerConcurrencyManager.global(),
+    public static StrategyRegistry defaultRegistry(NestedAssemblyLineExecutor nestedAssemblyLineExecutor) {
+        return defaultRegistry(nestedAssemblyLineExecutor, WorkerConcurrencyManager.global(),
                                WorkerConcurrencyConfiguration.defaults(), ParallelExecutionConfiguration.defaults());
     }
 
-    public static StrategyRegistry defaultRegistry(NestedPipelineExecutor nestedPipelineExecutor,
+    public static StrategyRegistry defaultRegistry(NestedAssemblyLineExecutor nestedAssemblyLineExecutor,
                                                    WorkerConcurrencyManager workerConcurrencyManager) {
-        return defaultRegistry(nestedPipelineExecutor, workerConcurrencyManager,
+        return defaultRegistry(nestedAssemblyLineExecutor, workerConcurrencyManager,
                                WorkerConcurrencyConfiguration.defaults()
                                        .withConcurrencyPolicy(WorkerConcurrencyPolicy.ENGINE_LOCAL_LOCK_PER_WORKER_INSTANCE),
                                ParallelExecutionConfiguration.defaults());
     }
 
-    public static StrategyRegistry defaultRegistry(NestedPipelineExecutor nestedPipelineExecutor,
+    public static StrategyRegistry defaultRegistry(NestedAssemblyLineExecutor nestedAssemblyLineExecutor,
                                                    WorkerConcurrencyManager workerConcurrencyManager,
                                                    WorkerConcurrencyPolicy workerConcurrencyPolicy) {
-        return defaultRegistry(nestedPipelineExecutor, workerConcurrencyManager,
+        return defaultRegistry(nestedAssemblyLineExecutor, workerConcurrencyManager,
                                WorkerConcurrencyConfiguration.defaults()
                                        .withConcurrencyPolicy(workerConcurrencyPolicy),
                                ParallelExecutionConfiguration.defaults());
     }
 
-    public static StrategyRegistry defaultRegistry(NestedPipelineExecutor nestedPipelineExecutor,
+    public static StrategyRegistry defaultRegistry(NestedAssemblyLineExecutor nestedAssemblyLineExecutor,
                                                    WorkerConcurrencyManager workerConcurrencyManager,
                                                    WorkerConcurrencyPolicy workerConcurrencyPolicy,
                                                    WorkerLockAcquisitionPolicy lockAcquisitionPolicy) {
-        return defaultRegistry(nestedPipelineExecutor, workerConcurrencyManager,
+        return defaultRegistry(nestedAssemblyLineExecutor, workerConcurrencyManager,
                                WorkerConcurrencyConfiguration.defaults()
                                        .withConcurrencyPolicy(workerConcurrencyPolicy)
                                        .withLockAcquisitionPolicy(lockAcquisitionPolicy),
                                ParallelExecutionConfiguration.defaults());
     }
 
-    public static StrategyRegistry defaultRegistry(NestedPipelineExecutor nestedPipelineExecutor,
+    public static StrategyRegistry defaultRegistry(NestedAssemblyLineExecutor nestedAssemblyLineExecutor,
                                                    WorkerConcurrencyManager workerConcurrencyManager,
                                                    WorkerConcurrencyConfiguration workerConcurrencyConfiguration) {
-        return defaultRegistry(nestedPipelineExecutor, workerConcurrencyManager, workerConcurrencyConfiguration,
+        return defaultRegistry(nestedAssemblyLineExecutor, workerConcurrencyManager, workerConcurrencyConfiguration,
                                ParallelExecutionConfiguration.defaults());
     }
 
-    public static StrategyRegistry defaultRegistry(NestedPipelineExecutor nestedPipelineExecutor,
+    public static StrategyRegistry defaultRegistry(NestedAssemblyLineExecutor nestedAssemblyLineExecutor,
                                                    WorkerConcurrencyManager workerConcurrencyManager,
                                                    WorkerConcurrencyConfiguration workerConcurrencyConfiguration,
                                                    ParallelExecutionConfiguration parallelExecutionConfiguration) {
-        Objects.requireNonNull(nestedPipelineExecutor, "nestedPipelineExecutor must not be null");
+        Objects.requireNonNull(nestedAssemblyLineExecutor, "nestedAssemblyLineExecutor must not be null");
         Objects.requireNonNull(workerConcurrencyManager, "workerConcurrencyManager must not be null");
         Objects.requireNonNull(workerConcurrencyConfiguration, "workerConcurrencyConfiguration must not be null");
         Objects.requireNonNull(parallelExecutionConfiguration, "parallelExecutionConfiguration must not be null");
@@ -89,7 +89,7 @@ public class StrategyRegistry {
                         new SequenceStationStrategy(), new IteratorStationStrategy(),
                         new IfElseContainerStationStrategy(),
                         new ContainerStationStrategy(parallelExecutionConfiguration), new SignalStationStrategy(),
-                        new PipelineCallStationStrategy(nestedPipelineExecutor)));
+                        new AssemblyLineCallStationStrategy(nestedAssemblyLineExecutor)));
     }
 
     @SuppressWarnings("unchecked")

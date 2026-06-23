@@ -15,7 +15,7 @@ public abstract class AbstractStationLogState<T extends AbstractStationLogState<
     private Object output;
     private final List<Throwable> throwables = Collections.synchronizedList(new ArrayList<>());
     private UUID id;
-    private UUID pipelineExecutionId;
+    private UUID assemblyLineExecutionId;
     private String operationId;
     private UUID parentOperationId;
     private String branchId;
@@ -43,9 +43,9 @@ public abstract class AbstractStationLogState<T extends AbstractStationLogState<
 
     protected abstract S cancelledStatus();
 
-    protected void initializeStarted(UUID pipelineExecutionId, String operationId, UUID parentOperationId) {
+    protected void initializeStarted(UUID assemblyLineExecutionId, String operationId, UUID parentOperationId) {
         this.id = UUID.randomUUID();
-        this.pipelineExecutionId = pipelineExecutionId;
+        this.assemblyLineExecutionId = assemblyLineExecutionId;
         this.operationId = operationId;
         this.parentOperationId = parentOperationId;
         this.status = runningStatus();
@@ -129,12 +129,12 @@ public abstract class AbstractStationLogState<T extends AbstractStationLogState<
         this.id = id;
     }
 
-    public UUID getPipelineExecutionId() {
-        return pipelineExecutionId;
+    public UUID getAssemblyLineExecutionId() {
+        return assemblyLineExecutionId;
     }
 
-    public void setPipelineExecutionId(UUID pipelineExecutionId) {
-        this.pipelineExecutionId = pipelineExecutionId;
+    public void setAssemblyLineExecutionId(UUID assemblyLineExecutionId) {
+        this.assemblyLineExecutionId = assemblyLineExecutionId;
     }
 
     public String getOperationId() {

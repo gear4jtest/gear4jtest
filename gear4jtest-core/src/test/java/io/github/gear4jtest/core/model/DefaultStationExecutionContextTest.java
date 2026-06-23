@@ -46,7 +46,7 @@ class DefaultStationExecutionContextTest {
     private static DefaultStationExecutionContext newContext(String operationId) {
         ExecutionContext globalContext = ExecutionContext.builder()
                 .executionId(UUID.randomUUID())
-                .pipelineId("pipeline-1")
+                .assemblyLineId("pipeline-1")
                 .services(new ExecutionServices(null, noResources()))
                 .assemblyRun(new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of()))
                 .build();

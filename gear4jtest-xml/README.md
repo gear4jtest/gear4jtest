@@ -45,7 +45,7 @@ Typical path:
 
 1. `XmlOperationChainTranslator` receives XML bytes and media type.
 2. `AssemblyLineValidator` validates the XML.
-3. `XmlPipelineParser` parses XML into `XmlPipelineDefinition`.
+3. `XmlAssemblyLineParser` parses XML into `XmlAssemblyLineDefinition`.
 4. `XmlToJavaGenerator` generates Java source.
 5. `JdtFormatter` formats the generated source.
 6. `AssemblyLineManager` compiles and loads the generated class through the external API module.

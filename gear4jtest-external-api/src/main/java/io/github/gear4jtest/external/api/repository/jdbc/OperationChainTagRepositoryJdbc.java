@@ -9,10 +9,10 @@ import java.util.Objects;
 import java.util.Set;
 import javax.sql.DataSource;
 
-import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
-import io.github.gear4jtest.core.persistence.JdbcStatementOptions;
 import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.repository.OperationChainTagRepository;
+import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.jdbc.persistence.JdbcStatementOptions;
 
 public final class OperationChainTagRepositoryJdbc implements OperationChainTagRepository {
     private final DataSource ds;

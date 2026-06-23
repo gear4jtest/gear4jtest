@@ -146,22 +146,22 @@ class ExecutionContextTest {
         // When
         ExecutionContext context = ExecutionContext.builder()
                 .executionId(executionId)
-                .pipelineId("pipeline-1")
+                .assemblyLineId("pipeline-1")
                 .services(services)
                 .assemblyRun(trace)
                 .build();
 
         // Then
         assertThat(context.getExecutionId()).isEqualTo(executionId);
-        assertThat(context.getPipelineId()).isEqualTo("pipeline-1");
+        assertThat(context.getAssemblyLineId()).isEqualTo("pipeline-1");
         assertThat(context.getServices()).isSameAs(services);
-        assertThat(context.getPipelineExecution()).isSameAs(trace);
+        assertThat(context.getAssemblyLineExecution()).isSameAs(trace);
     }
 
     private static ExecutionContext newContext() {
         return ExecutionContext.builder()
                 .executionId(UUID.randomUUID())
-                .pipelineId("pipeline-1")
+                .assemblyLineId("pipeline-1")
                 .services(new ExecutionServices(null, noResources()))
                 .assemblyRun(new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of()))
                 .build();

@@ -85,7 +85,7 @@ class ParallelContainerBranchExecutorTest {
         AssemblyRunTrace run = new AssemblyRunTrace(UUID.randomUUID(), "pipeline", Map.of());
         ExecutionContext globalContext = ExecutionContext.builder()
                 .executionId(run.getId())
-                .pipelineId("pipeline")
+                .assemblyLineId("pipeline")
                 .services(new ExecutionServices(null, noResources()))
                 .assemblyRun(run)
                 .build();
@@ -145,7 +145,7 @@ class ParallelContainerBranchExecutorTest {
 
     private static final class TestStation extends AbstractStation<String, String> {
         private TestStation(String id) {
-            super(id, StationKind.PROCESSING);
+            super(id, StationKind.PROCESSING, null, null, null, false, null, null);
         }
     }
 }

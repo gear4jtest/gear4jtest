@@ -6,33 +6,33 @@ import java.util.Set;
 
 import io.github.gear4jtest.external.api.translator.OperationChainTranslator;
 import io.github.gear4jtest.xml.generator.XmlToJavaGenerator;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition;
-import io.github.gear4jtest.xml.parser.XmlPipelineParser;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
+import io.github.gear4jtest.xml.parser.XmlAssemblyLineParser;
 import io.github.gear4jtest.xml.validator.AssemblyLineValidator;
 
 public final class XmlOperationChainTranslator implements OperationChainTranslator {
-    public static final String VENDOR_MEDIA_TYPE = "application/vnd.gear4j.pipeline+xml";
+    public static final String VENDOR_MEDIA_TYPE = "application/vnd.gear4j.assembly-line+xml";
     private static final Set<String> SUPPORTED_MEDIA_TYPES = Set.of("application/xml", "text/xml", VENDOR_MEDIA_TYPE);
     private final AssemblyLineValidator validator;
-    private final XmlPipelineParser parser;
+    private final XmlAssemblyLineParser parser;
     private final XmlToJavaGenerator generator;
 
     public XmlOperationChainTranslator() {
-        this(new AssemblyLineValidator(), new XmlPipelineParser(), XmlToJavaGenerator.untrusted());
+        this(new AssemblyLineValidator(), new XmlAssemblyLineParser(), XmlToJavaGenerator.untrusted());
     }
 
     public static XmlOperationChainTranslator trusted() {
-        return new XmlOperationChainTranslator(new AssemblyLineValidator(), new XmlPipelineParser(),
+        return new XmlOperationChainTranslator(new AssemblyLineValidator(), new XmlAssemblyLineParser(),
                 XmlToJavaGenerator.trusted());
     }
 
     public static XmlOperationChainTranslator gelOnly() {
-        return new XmlOperationChainTranslator(new AssemblyLineValidator(), new XmlPipelineParser(),
+        return new XmlOperationChainTranslator(new AssemblyLineValidator(), new XmlAssemblyLineParser(),
                 XmlToJavaGenerator.gelOnly());
     }
 
     public XmlOperationChainTranslator(AssemblyLineValidator validator,
-                                       XmlPipelineParser parser,
+                                       XmlAssemblyLineParser parser,
                                        XmlToJavaGenerator generator) {
         this.validator = validator;
         this.parser = parser;
@@ -55,10 +55,10 @@ public final class XmlOperationChainTranslator implements OperationChainTranslat
     @Override
     public GenerationResult translate(byte[] content, String mediaType) {
         if (!supports(mediaType)) {
-            throw new IllegalArgumentException("Unsupported XML pipeline media type: " + mediaType);
+            throw new IllegalArgumentException("Unsupported XML assembly-line media type: " + mediaType);
         }
         validator.validate(content);
-        XmlPipelineDefinition definition = parser.parse(new ByteArrayInputStream(content));
+        XmlAssemblyLineDefinition definition = parser.parse(new ByteArrayInputStream(content));
         return generator.generate(definition);
     }
 }

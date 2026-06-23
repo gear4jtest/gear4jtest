@@ -9,12 +9,12 @@ public class OperationErrorEvent extends OperationBaseEvent {
     private static final String TYPE = "OPERATION_ERROR";
     private final Exception exception;
 
-    public OperationErrorEvent(String pipelineId,
+    public OperationErrorEvent(String assemblyLineId,
                                UUID executionId,
                                String operationId,
                                Object input,
                                Exception exception) {
-        super(pipelineId, executionId, TYPE, operationId, input);
+        super(assemblyLineId, executionId, TYPE, operationId, input);
         this.exception = exception;
     }
 

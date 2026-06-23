@@ -1,5 +1,6 @@
 package io.github.gear4jtest.core.api;
 
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -15,5 +16,16 @@ public interface StationMetadata {
 
     default <T> T require(Class<T> type) {
         return get(type).orElseThrow(() -> new IllegalStateException("Missing station metadata: " + type.getName()));
+    }
+
+    static StationMetadata empty() {
+        return ImmutableStationMetadata.EMPTY;
+    }
+
+    static StationMetadata copyOf(Map<Class<?>, Object> values) {
+        if (values == null || values.isEmpty()) {
+            return empty();
+        }
+        return new ImmutableStationMetadata(Map.copyOf(values));
     }
 }

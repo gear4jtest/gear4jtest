@@ -10,11 +10,16 @@ import io.github.gear4jtest.core.api.behavior.Condition;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 
 public class UnaryIfElseContainerStation<A> extends ContainerBaseStation<A, A> {
-    private String elseBranchId;
-    private AbstractStation<A, A> elseOp;
+    private final String elseBranchId;
+    private final AbstractStation<A, A> elseOp;
 
-    private UnaryIfElseContainerStation() {
-        super(new ArrayList<>(), null);
+    private UnaryIfElseContainerStation(List<Branch<A>> branches,
+                                        FlowConfig flowConfig,
+                                        String elseBranchId,
+                                        AbstractStation<A, A> elseOp) {
+        super(branches, null, false, null, flowConfig, null, true);
+        this.elseBranchId = elseBranchId;
+        this.elseOp = elseOp;
     }
 
     public String getElseBranchId() {
@@ -58,12 +63,7 @@ public class UnaryIfElseContainerStation<A> extends ContainerBaseStation<A, A> {
         public UnaryIfElseContainerStation<A> build() {
             ContainerBaseStation.validateUniqueBranchIds(branches);
             validateElseBranchId();
-            UnaryIfElseContainerStation<A> station = new UnaryIfElseContainerStation<>();
-            station.pipelines.addAll(branches);
-            station.setFlowConfig(flowConfig);
-            station.elseBranchId = elseBranchId;
-            station.elseOp = elseOp;
-            return station;
+            return new UnaryIfElseContainerStation<>(branches, flowConfig, elseBranchId, elseOp);
         }
 
         private void validateElseBranchId() {
@@ -77,7 +77,7 @@ public class UnaryIfElseContainerStation<A> extends ContainerBaseStation<A, A> {
 
             Set<String> ids = new HashSet<>();
             for (Branch<A> branch : branches) {
-                ids.add(branch.getEffectiveId());
+                ids.add(branch.getId());
             }
             if (!ids.add(elseBranchId)) {
                 throw new IllegalArgumentException("Container contains duplicated branch id '" + elseBranchId + "'");

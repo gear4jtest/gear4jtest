@@ -121,7 +121,7 @@ class StationBuildersDeepCoverageTest {
 
         // Then
         assertThat(branch.getId()).isEqualTo("branch-id");
-        assertThat(branch.getEffectiveId()).isEqualTo("branch-id");
+        assertThat(branch.getId()).isEqualTo("branch-id");
         assertThat(branch.getStation()).isSameAs(station);
         assertThat(branch.getCondition().test("input", null)).isTrue();
         assertThat(branch.getSiblingCondition().test("input", null, null)).isTrue();

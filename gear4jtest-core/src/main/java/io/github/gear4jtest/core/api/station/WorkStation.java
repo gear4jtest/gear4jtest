@@ -1,10 +1,11 @@
 package io.github.gear4jtest.core.api.station;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+import io.github.gear4jtest.core.api.MutableStationMetadata;
+import io.github.gear4jtest.core.api.StationMetadata;
 import io.github.gear4jtest.core.api.behavior.BaseError;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
@@ -14,24 +15,31 @@ import io.github.gear4jtest.core.api.config.OperationAdditionalModel;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 
 public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
-    protected Class<Operator<IN, OUT>> type;
-    protected List<WorkerParamsInjector.ParameterModel<?, ?>> parameters;
+    private final Class<Operator<IN, OUT>> type;
+    private final List<WorkerParamsInjector.ParameterModel<?, ?>> parameters;
     /**
-     * Whether the operator instance is reused for the whole pipeline run.
+     * Whether the operator instance is reused for the whole assembly line run.
      */
-    protected boolean reuseOperatorInstanceWithinRun = false;
+    private final boolean reuseOperatorInstanceWithinRun;
 
-    WorkStation() {
-        super("", StationKind.PROCESSING);
+    WorkStation(String id,
+                Class<Operator<IN, OUT>> type,
+                List<WorkerParamsInjector.ParameterModel<?, ?>> parameters,
+                List<Processor> processors,
+                List<BaseError<IN>> onErrors,
+                Operator<IN, OUT> fallbackOperator,
+                boolean reuseOperatorInstanceWithinRun,
+                List<StationSkipper> skippers,
+                StationMetadata metadata,
+                boolean unary) {
+        super(id, StationKind.PROCESSING, processors, onErrors, fallbackOperator, unary, skippers, metadata);
+        this.type = type;
+        this.parameters = parameters == null || parameters.isEmpty() ? List.of() : List.copyOf(parameters);
+        this.reuseOperatorInstanceWithinRun = reuseOperatorInstanceWithinRun;
     }
 
     public List<WorkerParamsInjector.ParameterModel<?, ?>> getParameters() {
-        return parameters == null ? Collections.emptyList()
-                : Collections.unmodifiableList(parameters);
-    }
-
-    public void setParameters(List<WorkerParamsInjector.ParameterModel<?, ?>> parameters) {
-        this.parameters = parameters == null ? null : new ArrayList<>(parameters);
+        return parameters;
     }
 
     public Class<Operator<IN, OUT>> getType() {
@@ -191,10 +199,18 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
             return this;
         }
 
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         public WorkStation<IN, OUT> build() {
-            WorkStation<IN, OUT> station = new WorkStation<>();
-            applyBuilder(station, this);
-            return station;
+            return new WorkStation<>(id,
+                    (Class) type,
+                    parameters,
+                    processors,
+                    onErrors,
+                    (Operator<IN, OUT>) fallbackOperator,
+                    reuseOperatorInstanceWithinRun,
+                    skippers,
+                    buildMetadata(metadata),
+                    false);
         }
     }
 
@@ -288,21 +304,16 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
     private record MetadataEntry<T>(Class<T> type, T value) {}
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    static <IN, OUT, OP extends Operator<IN, OUT>> void applyBuilder(WorkStation<IN, OUT> station,
-                                                                     Builder<IN, OUT, OP> builder) {
-        station.id = builder.id;
-        station.type = (Class) builder.type;
-        station.processors = builder.processors.isEmpty() ? null : new ArrayList<>(builder.processors);
-        station.parameters = builder.parameters.isEmpty() ? null : new ArrayList<>(builder.parameters);
-        station.onErrors = builder.onErrors.isEmpty() ? null : new ArrayList<>(builder.onErrors);
-        station.fallbackOperator = (Operator<IN, OUT>) builder.fallbackOperator;
-        station.reuseOperatorInstanceWithinRun = builder.reuseOperatorInstanceWithinRun;
-        builder.skippers.forEach(station::addSkipper);
-        builder.metadata.forEach(entry -> applyMetadata(station, entry));
+    private static StationMetadata buildMetadata(List<MetadataEntry<?>> metadata) {
+        if (metadata.isEmpty()) {
+            return StationMetadata.empty();
+        }
+        MutableStationMetadata mutable = new MutableStationMetadata();
+        metadata.forEach(entry -> putMetadata(mutable, entry));
+        return mutable.immutableCopy();
     }
 
-    private static <IN, OUT, T> void applyMetadata(WorkStation<IN, OUT> station, MetadataEntry<T> entry) {
-        station.putMetadata(entry.type(), entry.value());
+    private static <T> void putMetadata(MutableStationMetadata metadata, MetadataEntry<T> entry) {
+        metadata.put(entry.type(), entry.value());
     }
 }

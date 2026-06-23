@@ -6,12 +6,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
-import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.SignalStation;
+import io.github.gear4jtest.core.api.station.StationSignalType;
 import io.github.gear4jtest.core.api.util.ElementModelBuilders;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
-import io.github.gear4jtest.core.engine.PipelineEngine;
+import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
 import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
@@ -44,12 +44,12 @@ class SignalStationFlowIT {
         var pipeline = ElementModelBuilders.<String>createAssemblyLine("stop-signal")
                 .then(new SignalStation.Builder<String>()
                         .id("stop-now")
-                        .type(SignalType.STOP)
+                        .type(StationSignalType.STOP)
                         .condition(signal -> true)
                         .build())
                 .then(processingOperation("after-stop", RecordingOperator.class).build())
                 .build();
-        PipelineEngine engine = engine();
+        AssemblyLineEngine engine = engine();
 
         // When
         ExecutionResult<String> result = engine.execute(pipeline, RunRequest.builder().input("payload").build());
@@ -68,8 +68,8 @@ class SignalStationFlowIT {
                 .doesNotContain(tuple("after-stop", StationLogStatus.SUCCEEDED));
     }
 
-    private PipelineEngine engine() {
-        return PipelineEngine.builder()
+    private AssemblyLineEngine engine() {
+        return AssemblyLineEngine.builder()
                 .resourceFactory(new ReflectiveResourceFactory())
                 .runnerChainFactory(new RunnerChainFactory(StrategyRegistry.defaultRegistry()))
                 .extensionResolver(new RuntimeExtensionResolver(List.of(new PersistenceExtension(

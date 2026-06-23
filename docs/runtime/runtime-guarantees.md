@@ -103,3 +103,15 @@ Application operators and processors should be written cooperatively:
 - use their own I/O timeouts;
 - avoid unbounded blocking calls;
 - keep retry/backoff policies explicit.
+
+## AssemblyLine graph immutability
+
+Status: Implemented for station definitions.
+
+A station graph is immutable after construction. Station identifiers, kinds, processors, error policies, skip rules,
+fallback operators, metadata, flow configuration and container branch definitions are copied into final fields when a
+station is built. Builders remain mutable while the graph is being assembled, but built stations must not be modified by
+application code or by the runtime.
+
+Runtime state is stored separately in execution contexts and traces. This keeps one `AssemblyLine` definition safely
+reusable across runs and prevents concurrent executions from mutating shared station definitions.

@@ -17,7 +17,7 @@ class OperationEventsTest {
         StationStartedEvent event = new StationStartedEvent("pipeline-1", executionId, stationExecutionId,
                 "operation-1", parentOperationId, "item-42", "input");
 
-        assertThat(event.getPipelineId()).isEqualTo("pipeline-1");
+        assertThat(event.getAssemblyLineId()).isEqualTo("pipeline-1");
         assertThat(event.getExecutionId()).isEqualTo(executionId);
         assertThat(event.getStationExecutionId()).isEqualTo(stationExecutionId);
         assertThat(event.getOperationId()).isEqualTo("operation-1");

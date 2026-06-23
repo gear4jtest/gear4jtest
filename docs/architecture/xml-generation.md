@@ -15,8 +15,8 @@ The generated source should be both executable and readable enough to debug when
 | Component                     | Role                                                  |
 |-------------------------------|-------------------------------------------------------|
 | `AssemblyLineValidator`       | Validates XML against the schema.                     |
-| `XmlPipelineParser`           | Parses XML into an internal model.                    |
-| `XmlPipelineDefinition`       | Internal model used by the generator.                 |
+| `XmlAssemblyLineParser`           | Parses XML into an internal model.                    |
+| `XmlAssemblyLineDefinition`       | Internal model used by the generator.                 |
 | `XmlToJavaGenerator`          | Generates Java source.                                |
 | `JdtFormatter`                | Formats generated Java.                               |
 | `XmlOperationChainTranslator` | Exposes XML translation through the external-api SPI. |

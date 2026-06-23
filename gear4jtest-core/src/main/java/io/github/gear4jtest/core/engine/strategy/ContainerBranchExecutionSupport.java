@@ -66,7 +66,7 @@ final class ContainerBranchExecutionSupport {
         if (!station.isParallel()) {
             return;
         }
-        for (ContainerBaseStation.Branch<?> branch : station.getPipelines()) {
+        for (ContainerBaseStation.Branch<?> branch : station.getAssemblyLines()) {
             if (branch.getSiblingCondition() != null) {
                 throw new IllegalArgumentException(
                         "Sibling branch conditions are only supported in sequential containers");
@@ -130,7 +130,7 @@ final class ContainerBranchExecutionSupport {
         }
         childLog.setParentOperationId(context.getRecord().getId());
         if (childLog.getBranchId() == null) {
-            childLog.setBranchId(branch.getEffectiveId());
+            childLog.setBranchId(branch.getId());
         }
         return childLog;
     }
@@ -161,7 +161,7 @@ final class ContainerBranchExecutionSupport {
         StationLogTrace log = StationLogTrace.start(context.getGlobalContext().getExecutionId(),
                                                     branch.getStation().getId(), context.getRecord().getId());
         log.setItemId(context.getGlobalContext().getCurrentItemId());
-        log.setBranchId(branch.getEffectiveId());
+        log.setBranchId(branch.getId());
         log.setContext(new HashMap<>());
         return log;
     }

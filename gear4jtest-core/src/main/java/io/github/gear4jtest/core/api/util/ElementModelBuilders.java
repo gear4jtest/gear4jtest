@@ -6,21 +6,22 @@ import java.util.concurrent.ExecutorService;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.AssemblyLine.Configuration;
+import io.github.gear4jtest.core.api.assemblyline.AssemblyLineExecutionMode;
 import io.github.gear4jtest.core.api.behavior.BaseError;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition.EventConfiguration;
 import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
-import io.github.gear4jtest.core.api.pipeline.PipelineExecutionMode;
 import io.github.gear4jtest.core.api.station.AbstractStation;
+import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.api.station.IteratorStation;
 import io.github.gear4jtest.core.api.station.IteratorStation.ListAccumulator;
 import io.github.gear4jtest.core.api.station.IteratorStation.SetAccumulator;
-import io.github.gear4jtest.core.api.station.PipelineCallStation;
 import io.github.gear4jtest.core.api.station.SequenceStation;
 import io.github.gear4jtest.core.api.station.SignalStation;
+import io.github.gear4jtest.core.api.station.StationSignalType;
 import io.github.gear4jtest.core.api.station.UnaryIfElseContainerStation;
 import io.github.gear4jtest.core.api.station.UnaryWorkStation;
 import io.github.gear4jtest.core.api.station.WorkStation;
@@ -72,12 +73,12 @@ public final class ElementModelBuilders {
 
     public static <T> SignalStation.Builder<T> fatalSignal(Class<T> clazz) {
         Objects.requireNonNull(clazz, CLAZZ_MUST_NOT_BE_NULL);
-        return new SignalStation.Builder<T>().type(SignalType.FATAL);
+        return new SignalStation.Builder<T>().type(StationSignalType.FATAL);
     }
 
     public static <U, V> SignalStation.Builder<Map<U, V>> fatalSignal(MapType<U, V> clazz) {
         Objects.requireNonNull(clazz, CLAZZ_MUST_NOT_BE_NULL);
-        return new SignalStation.Builder<Map<U, V>>().type(SignalType.FATAL);
+        return new SignalStation.Builder<Map<U, V>>().type(StationSignalType.FATAL);
     }
 
     public static <T> ContainerBaseStation.Builder<T, T> container(Class<T> clazz) {
@@ -107,20 +108,20 @@ public final class ElementModelBuilders {
         return SequenceStation.Builder.<IN>create(id).next(step);
     }
 
-    public static <IN, OUT> PipelineCallStation.Builder<IN, OUT> pipelineCall(String id) {
-        return PipelineCallStation.builder(id);
+    public static <IN, OUT> AssemblyLineCallStation.Builder<IN, OUT> assemblyLineCall(String id) {
+        return AssemblyLineCallStation.builder(id);
     }
 
-    public static <IN, OUT> PipelineCallStation<IN, OUT> inlinePipeline(String id,
-                                                                        AssemblyLine<IN, OUT> childPipeline) {
-        return PipelineCallStation.<IN, OUT>builder(id).executionMode(PipelineExecutionMode.INLINE)
-                .directTarget(childPipeline).build();
+    public static <IN, OUT> AssemblyLineCallStation<IN, OUT> inlineAssemblyLine(String id,
+                                                                                AssemblyLine<IN, OUT> childAssemblyLine) {
+        return AssemblyLineCallStation.<IN, OUT>builder(id).executionMode(AssemblyLineExecutionMode.INLINE)
+                .directTarget(childAssemblyLine).build();
     }
 
-    public static <IN, OUT> PipelineCallStation<IN, OUT> nestedPipeline(String id,
-                                                                        AssemblyLine<IN, OUT> childPipeline) {
-        return PipelineCallStation.<IN, OUT>builder(id).executionMode(PipelineExecutionMode.NESTED_RUN)
-                .directTarget(childPipeline).build();
+    public static <IN, OUT> AssemblyLineCallStation<IN, OUT> nestedAssemblyLine(String id,
+                                                                                AssemblyLine<IN, OUT> childAssemblyLine) {
+        return AssemblyLineCallStation.<IN, OUT>builder(id).executionMode(AssemblyLineExecutionMode.NESTED_RUN)
+                .directTarget(childAssemblyLine).build();
     }
 
     public static ListAccumulator toList() {

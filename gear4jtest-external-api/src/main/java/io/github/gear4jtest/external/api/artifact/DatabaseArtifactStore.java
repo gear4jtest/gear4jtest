@@ -15,9 +15,9 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
 
-import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
-import io.github.gear4jtest.core.persistence.JdbcStatementOptions;
 import io.github.gear4jtest.external.api.repository.jdbc.ExternalRepositorySqlDialect;
+import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.jdbc.persistence.JdbcStatementOptions;
 
 public final class DatabaseArtifactStore implements ArtifactStore {
     private static final Pattern SQL_IDENTIFIER = Pattern.compile("[A-Za-z_]\\w{0,63}");

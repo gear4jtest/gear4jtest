@@ -28,19 +28,19 @@ final class SequentialContainerBranchExecutor {
         List<Throwable> collectedErrors = new ArrayList<>();
         Map<String, StationLogStatus> siblingStatuses = new LinkedHashMap<>();
 
-        for (ContainerBaseStation.Branch<?> branch : station.getPipelines()) {
+        for (ContainerBaseStation.Branch<?> branch : station.getAssemblyLines()) {
             StationLogTrace childLog;
             if (!ContainerBranchExecutionSupport.isBranchEligible(branch, input, context, siblingStatuses)) {
                 childLog = ContainerBranchExecutionSupport.conditionSkippedLog(branch, context);
             } else {
                 Object branchInput = ContainerBranchExecutionSupport.clonePayload(input, context);
-                try (var ignored = context.getGlobalContext().enterBranch(branch.getEffectiveId())) {
+                try (var ignored = context.getGlobalContext().enterBranch(branch.getId())) {
                     childLog = runner.run(branchInput, branch.getStation(), context);
                 }
             }
 
             results.add(childLog);
-            siblingStatuses.put(branch.getEffectiveId(), childLog.getStatus());
+            siblingStatuses.put(branch.getId(), childLog.getStatus());
             FlowDecision decision = FlowDecider.decide(childLog, flowConfig);
             switch (decision) {
                 case PROCEED -> {

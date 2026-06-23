@@ -1,7 +1,7 @@
 package io.github.gear4jtest.xml.generator;
 
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Condition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ValueParameter;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Condition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ValueParameter;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

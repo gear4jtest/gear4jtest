@@ -6,9 +6,9 @@ import io.github.gear4jtest.core.internal.AbstractStationLogState;
 import io.github.gear4jtest.core.model.StationLogStatus;
 
 public class StationLogTrace extends AbstractStationLogState<StationLogTrace, StationLogStatus> {
-    public static StationLogTrace start(UUID pipelineExecutionId, String operationId, UUID parentOperationId) {
+    public static StationLogTrace start(UUID assemblyLineExecutionId, String operationId, UUID parentOperationId) {
         StationLogTrace stationLog = new StationLogTrace();
-        stationLog.initializeStarted(pipelineExecutionId, operationId, parentOperationId);
+        stationLog.initializeStarted(assemblyLineExecutionId, operationId, parentOperationId);
         return stationLog;
     }
 

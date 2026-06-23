@@ -133,8 +133,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
                 stationLog.setOutput(res);
                 return res;
             } catch (Exception e) {
-                stationLog.addErrorHandlerException(e);
-                stationLog.markSkipped(e);
+                stationLog.markFailed(e);
                 return null;
             }
         }

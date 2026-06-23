@@ -42,9 +42,8 @@ class AbstractStationStrategyTargetedCoverageTest {
 
     @Test
     void run_shouldApplyFallbackWhenPreProcessorSkipperMatches() {
-        TestStation station = new TestStation();
-        station.addSkipper(StationSkipper.pre((input, ctx) -> true, "not today"));
-        station.withFallback((Operator<String, String>) (input, ctx) -> input + "-fallback");
+        TestStation station = new TestStation(List.of(), (input, ctx) -> input + "-fallback",
+                List.of(StationSkipper.pre((input, ctx) -> true, "not today")));
         StationExecutionContext context = stationContext("skipped");
         TestStrategy strategy = new TestStrategy();
 
@@ -57,9 +56,24 @@ class AbstractStationStrategyTargetedCoverageTest {
     }
 
     @Test
+    void run_shouldMarkFailedWhenSkipFallbackFails() {
+        TestStation station = new TestStation(List.of(), (input, ctx) -> {
+            throw new IllegalStateException("fallback failed");
+        }, List.of(StationSkipper.pre((input, ctx) -> true, "not today")));
+        StationExecutionContext context = stationContext("skipped");
+        TestStrategy strategy = new TestStrategy();
+
+        StationLogTrace result = strategy.run(station, "input", context, noopRunner());
+
+        assertThat(result.getStatus()).isEqualTo(StationLogStatus.FAILED);
+        assertThat(result.getErrorMessage()).isEqualTo("fallback failed");
+        assertThat(result.getErrorHandlerMessages()).contains("fallback failed");
+        assertThat(strategy.executed).isFalse();
+    }
+
+    @Test
     void run_shouldContinueWhenProcessorFailureModeAllowsItAndRecordError() {
-        TestStation station = new TestStation();
-        station.withProcessors(List.of(new Processor() {
+        TestStation station = new TestStation(List.of(new Processor() {
             @Override
             public <I> void beforeExecution(I input, StationExecutionContext ctx) {
                 throw new IllegalStateException("before ignored");
@@ -69,7 +83,7 @@ class AbstractStationStrategyTargetedCoverageTest {
             public void afterExecution(Object result, StationExecutionContext context) {
                 throw new IllegalStateException("after ignored");
             }
-        }));
+        }), null, List.of());
         StationExecutionContext context = stationContext("processor");
 
         StationLogTrace result = new TestStrategy().run(station, "input", context, noopRunner());
@@ -81,8 +95,7 @@ class AbstractStationStrategyTargetedCoverageTest {
 
     @Test
     void run_shouldWrapProcessorFailureWhenFailureModeFailsStation() {
-        TestStation station = new TestStation();
-        station.withProcessors(List.of(new Processor() {
+        TestStation station = new TestStation(List.of(new Processor() {
             @Override
             public <I> void beforeExecution(I input, StationExecutionContext ctx) {
                 throw new IllegalStateException("before fatal");
@@ -96,7 +109,7 @@ class AbstractStationStrategyTargetedCoverageTest {
             public FailureMode beforeExecutionFailureMode() {
                 return FailureMode.FAIL_STATION;
             }
-        }));
+        }), null, List.of());
         StationExecutionContext context = stationContext("processor-fatal");
 
         assertThatThrownBy(() -> new TestStrategy().run(station, "input", context, noopRunner()))
@@ -156,7 +169,7 @@ class AbstractStationStrategyTargetedCoverageTest {
     private static StationExecutionContext stationContext(String operationId) {
         ExecutionContext globalContext = ExecutionContext.builder()
                 .executionId(UUID.randomUUID())
-                .pipelineId("pipe")
+                .assemblyLineId("pipe")
                 .services(new ExecutionServices(null, new NoOpResourceFactory()))
                 .assemblyRun(new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of()))
                 .build();
@@ -207,15 +220,13 @@ class AbstractStationStrategyTargetedCoverageTest {
 
     private static final class TestStation extends AbstractStation<String, String> {
         private TestStation() {
-            super("station", StationKind.PROCESSING);
+            this(List.of(), null, List.of());
         }
 
-        private void withFallback(Operator<String, String> fallback) {
-            this.fallbackOperator = fallback;
-        }
-
-        private void withProcessors(List<Processor> processors) {
-            this.processors = processors;
+        private TestStation(List<Processor> processors,
+                            Operator<String, String> fallback,
+                            List<StationSkipper> skippers) {
+            super("station", StationKind.PROCESSING, processors, null, fallback, false, skippers, null);
         }
     }
 

@@ -3,18 +3,18 @@ package io.github.gear4jtest.micrometer;
 import java.util.Objects;
 import java.util.function.ToDoubleFunction;
 
-import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
+import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 
 /**
- * Registers gauges backed by {@link DatabaseExecutionManager#snapshotStats()}.
+ * Registers gauges backed by {@link PersistenceRuntimeMonitor#snapshotStats()}.
  */
 public final class PersistenceMetricsBinder {
     private PersistenceMetricsBinder() {
     }
 
-    public static void bind(MeterRegistry meterRegistry, DatabaseExecutionManager manager) {
+    public static void bind(MeterRegistry meterRegistry, PersistenceRuntimeMonitor manager) {
         Objects.requireNonNull(meterRegistry, "meterRegistry must not be null");
         Objects.requireNonNull(manager, "manager must not be null");
         registerGauge(meterRegistry, manager, "gear4j.persistence.buffered.station.logs",
@@ -38,10 +38,10 @@ public final class PersistenceMetricsBinder {
     }
 
     private static void registerGauge(MeterRegistry meterRegistry,
-                                      DatabaseExecutionManager manager,
+                                      PersistenceRuntimeMonitor manager,
                                       String name,
                                       String description,
-                                      ToDoubleFunction<DatabaseExecutionManager> valueFunction) {
+                                      ToDoubleFunction<PersistenceRuntimeMonitor> valueFunction) {
         Gauge.builder(name, manager, valueFunction)
                 .description(description)
                 .register(meterRegistry);

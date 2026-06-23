@@ -56,7 +56,7 @@ class ContainerStationStrategyTest {
         };
         ExecutionContext globalContext = ExecutionContext.builder()
                 .executionId(UUID.randomUUID())
-                .pipelineId("pipeline-1")
+                .assemblyLineId("pipeline-1")
                 .services(new ExecutionServices(
                         new EventManager(EventHandlingDefinition.builder().build(), new ExecutionContextRegistry()),
                         resourceFactory))
@@ -419,7 +419,7 @@ class ContainerStationStrategyTest {
 
     private static final class DummyStation extends AbstractStation<Object, Object> {
         private DummyStation(String id) {
-            super(id, StationKind.OTHER);
+            super(id, StationKind.CUSTOM, null, null, null, false, null, null);
         }
     }
 }

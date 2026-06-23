@@ -1,7 +1,7 @@
 package io.github.gear4jtest.core.model;
 
 import io.github.gear4jtest.core.api.context.CancellationToken;
-import io.github.gear4jtest.core.exception.PipelineCancellationException;
+import io.github.gear4jtest.core.exception.AssemblyLineCancellationException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,7 +21,7 @@ class CancellationTokenTest {
         assertThat(first).isTrue();
         assertThat(second).isFalse();
         assertThat(token.cancellationCause()).get().extracting(Throwable::getMessage).isEqualTo("first");
-        assertThatThrownBy(token::throwIfCancellationRequested).isInstanceOf(PipelineCancellationException.class)
+        assertThatThrownBy(token::throwIfCancellationRequested).isInstanceOf(AssemblyLineCancellationException.class)
                 .hasMessage("first");
     }
 }

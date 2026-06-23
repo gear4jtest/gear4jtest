@@ -8,18 +8,18 @@ import io.github.gear4jtest.core.api.annotation.PublicApi;
 @PublicApi
 public class Event {
     private final UUID id;
-    private final String pipelineId;
+    private final String assemblyLineId;
     private final UUID executionId;
     private final Instant occurredAt;
     private final String type;
 
-    public Event(String pipelineId, UUID executionId) {
-        this(pipelineId, executionId, null);
+    public Event(String assemblyLineId, UUID executionId) {
+        this(assemblyLineId, executionId, null);
     }
 
-    public Event(String pipelineId, UUID executionId, String type) {
+    public Event(String assemblyLineId, UUID executionId, String type) {
         this.id = UUID.randomUUID();
-        this.pipelineId = pipelineId;
+        this.assemblyLineId = assemblyLineId;
         this.executionId = executionId;
         this.occurredAt = Instant.now();
         this.type = type;
@@ -29,8 +29,8 @@ public class Event {
         return id;
     }
 
-    public String getPipelineId() {
-        return pipelineId;
+    public String getAssemblyLineId() {
+        return assemblyLineId;
     }
 
     public UUID getExecutionId() {

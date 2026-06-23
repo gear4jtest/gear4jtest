@@ -29,25 +29,25 @@ class StrategyRegistryDeepCoverageTest {
         // When / Then
         assertThat(StrategyRegistry.defaultRegistry().getStrategy(station)).isInstanceOf(WorkStationStrategy.class);
         assertThat(StrategyRegistry.defaultRegistry(
-                                                    NestedPipelineExecutor.unsupported(),
+                                                    NestedAssemblyLineExecutor.unsupported(),
                                                     new WorkerConcurrencyManager())
                 .getStrategy(station))
                 .isInstanceOf(WorkStationStrategy.class);
         assertThat(StrategyRegistry.defaultRegistry(
-                                                    NestedPipelineExecutor.unsupported(),
+                                                    NestedAssemblyLineExecutor.unsupported(),
                                                     new WorkerConcurrencyManager(),
                                                     WorkerConcurrencyPolicy.ALLOW_PARALLEL_INVOCATIONS)
                 .getStrategy(station))
                 .isInstanceOf(WorkStationStrategy.class);
         assertThat(StrategyRegistry.defaultRegistry(
-                                                    NestedPipelineExecutor.unsupported(),
+                                                    NestedAssemblyLineExecutor.unsupported(),
                                                     new WorkerConcurrencyManager(),
                                                     WorkerConcurrencyPolicy.ENGINE_LOCAL_LOCK_PER_WORKER_INSTANCE,
                                                     WorkerLockAcquisitionPolicy.FAIL_FAST)
                 .getStrategy(station))
                 .isInstanceOf(WorkStationStrategy.class);
         assertThat(StrategyRegistry.defaultRegistry(
-                                                    NestedPipelineExecutor.unsupported(),
+                                                    NestedAssemblyLineExecutor.unsupported(),
                                                     new WorkerConcurrencyManager(),
                                                     WorkerConcurrencyConfiguration.defaults(),
                                                     ParallelExecutionConfiguration.defaults())
@@ -63,17 +63,17 @@ class StrategyRegistryDeepCoverageTest {
                                                                   WorkerConcurrencyConfiguration.defaults(),
                                                                   ParallelExecutionConfiguration.defaults()))
                 .isInstanceOf(NullPointerException.class)
-                .hasMessage("nestedPipelineExecutor must not be null");
-        assertThatThrownBy(() -> StrategyRegistry.defaultRegistry(NestedPipelineExecutor.unsupported(), null,
+                .hasMessage("nestedAssemblyLineExecutor must not be null");
+        assertThatThrownBy(() -> StrategyRegistry.defaultRegistry(NestedAssemblyLineExecutor.unsupported(), null,
                                                                   WorkerConcurrencyConfiguration.defaults(),
                                                                   ParallelExecutionConfiguration.defaults()))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessage("workerConcurrencyManager must not be null");
-        assertThatThrownBy(() -> StrategyRegistry.defaultRegistry(NestedPipelineExecutor.unsupported(), manager,
+        assertThatThrownBy(() -> StrategyRegistry.defaultRegistry(NestedAssemblyLineExecutor.unsupported(), manager,
                                                                   null, ParallelExecutionConfiguration.defaults()))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessage("workerConcurrencyConfiguration must not be null");
-        assertThatThrownBy(() -> StrategyRegistry.defaultRegistry(NestedPipelineExecutor.unsupported(), manager,
+        assertThatThrownBy(() -> StrategyRegistry.defaultRegistry(NestedAssemblyLineExecutor.unsupported(), manager,
                                                                   WorkerConcurrencyConfiguration.defaults(), null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessage("parallelExecutionConfiguration must not be null");
@@ -106,7 +106,7 @@ class StrategyRegistryDeepCoverageTest {
 
     private static final class UnsupportedStation extends AbstractStation<String, String> {
         private UnsupportedStation() {
-            super("unsupported", StationKind.OTHER);
+            super("unsupported", StationKind.CUSTOM, null, null, null, false, null, null);
         }
     }
 

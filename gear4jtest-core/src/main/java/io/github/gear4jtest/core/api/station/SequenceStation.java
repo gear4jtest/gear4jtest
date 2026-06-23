@@ -8,12 +8,14 @@ import io.github.gear4jtest.core.api.config.FlowConfig;
 
 public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
     private final List<AbstractStation<?, ?>> steps;
-    private FlowConfig flowConfig;
-    private boolean synthetic;
+    private final FlowConfig flowConfig;
+    private final boolean synthetic;
 
-    private SequenceStation(String id, List<AbstractStation<?, ?>> steps) {
-        super(id, StationKind.OTHER);
-        this.steps = List.copyOf(steps);
+    private SequenceStation(String id, List<AbstractStation<?, ?>> steps, FlowConfig flowConfig, boolean synthetic) {
+        super(id, StationKind.SEQUENCE, null, null, null, false, null, null);
+        this.steps = steps == null || steps.isEmpty() ? List.of() : List.copyOf(steps);
+        this.flowConfig = flowConfig;
+        this.synthetic = synthetic;
     }
 
     /**
@@ -27,10 +29,7 @@ public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
     public static SequenceStation<Object, Object> syntheticRoot(String id,
                                                                 List<AbstractStation<?, ?>> steps,
                                                                 FlowConfig flowConfig) {
-        SequenceStation<Object, Object> root = new SequenceStation<>(id, steps);
-        root.setSynthetic(true);
-        root.setFlowConfig(flowConfig);
-        return root;
+        return new SequenceStation<>(id, steps, flowConfig, true);
     }
 
     public List<AbstractStation<?, ?>> getSteps() {
@@ -41,21 +40,14 @@ public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
         return flowConfig;
     }
 
-    public void setFlowConfig(FlowConfig flowConfig) {
-        this.flowConfig = flowConfig;
-    }
-
     public boolean isSynthetic() {
         return synthetic;
-    }
-
-    public void setSynthetic(boolean synthetic) {
-        this.synthetic = synthetic;
     }
 
     public static class Builder<IN, OUT> {
         private final String id;
         private final List<AbstractStation<?, ?>> accumulatedSteps;
+        private FlowConfig flowConfig;
 
         private Builder(String id, List<AbstractStation<?, ?>> steps) {
             this.id = id;
@@ -69,11 +61,18 @@ public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
         public <NEXT_OUT> Builder<IN, NEXT_OUT> next(AbstractStation<OUT, NEXT_OUT> nextStep) {
             this.accumulatedSteps.add(nextStep);
 
-            return new Builder<>(this.id, this.accumulatedSteps);
+            Builder<IN, NEXT_OUT> next = new Builder<>(this.id, this.accumulatedSteps);
+            next.flowConfig = this.flowConfig;
+            return next;
+        }
+
+        public Builder<IN, OUT> flowConfig(FlowConfig flowConfig) {
+            this.flowConfig = flowConfig;
+            return this;
         }
 
         public SequenceStation<IN, OUT> build() {
-            return new SequenceStation<>(id, accumulatedSteps);
+            return new SequenceStation<>(id, accumulatedSteps, flowConfig, false);
         }
     }
 }

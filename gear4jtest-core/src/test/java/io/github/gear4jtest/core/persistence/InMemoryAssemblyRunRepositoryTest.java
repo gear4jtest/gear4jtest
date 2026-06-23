@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class InMemoryAssemblyRunRepositoryTest {
     @Test
-    void saveAndFind_shouldStorePipelineExecution() {
+    void saveAndFind_shouldStoreAssemblyLineExecution() {
         InMemoryAssemblyRunRepository repo = new InMemoryAssemblyRunRepository();
 
         UUID id = UUID.randomUUID();
@@ -21,7 +21,7 @@ class InMemoryAssemblyRunRepositoryTest {
         Optional<AssemblyRunRecord> res = repo.findById(id);
 
         assertThat(res).isPresent();
-        assertThat(res.get().pipelineId()).isEqualTo("pipe");
+        assertThat(res.get().assemblyLineId()).isEqualTo("pipe");
     }
 
     @Test
@@ -35,7 +35,7 @@ class InMemoryAssemblyRunRepositoryTest {
         repo.save(v1);
         repo.update(v2);
 
-        assertThat(repo.findById(id).get().pipelineId()).isEqualTo("pipe2");
+        assertThat(repo.findById(id).get().assemblyLineId()).isEqualTo("pipe2");
     }
 
     @Test

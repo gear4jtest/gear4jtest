@@ -49,7 +49,7 @@ class EventPayloadPolicyCoverageTest {
         UUID executionId = UUID.randomUUID();
         OperationBaseEvent base = new OperationBaseEvent("pipeline", executionId, "TYPE", "op", "in", "out");
 
-        assertThat(base.getPipelineId()).isEqualTo("pipeline");
+        assertThat(base.getAssemblyLineId()).isEqualTo("pipeline");
         assertThat(base.getExecutionId()).isEqualTo(executionId);
         assertThat(base.getName()).isEqualTo("TYPE");
         assertThat(base.getOperationId()).isEqualTo("op");

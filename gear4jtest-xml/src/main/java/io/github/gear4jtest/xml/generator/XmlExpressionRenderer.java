@@ -3,9 +3,9 @@ package io.github.gear4jtest.xml.generator;
 import java.util.Objects;
 
 import io.github.gear4jtest.xml.expression.GearExpressionParser;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Action;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Condition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ValueParameter;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Action;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Condition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ValueParameter;
 
 /**
  * Renders XML expressions into generated Java source fragments.

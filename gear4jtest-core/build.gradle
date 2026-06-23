@@ -1,6 +1,7 @@
 dependencies {
-    api libs.jackson
     implementation libs.slf4j
+
+    testImplementation libs.jackson
 }
 
 ext.moduleName = 'io.github.gear4jtest.core'

@@ -4,15 +4,15 @@ import java.util.List;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Condition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ConditionalOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContainerOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IfElseOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Operation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Parameters;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ProcessingOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SubLine;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Condition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ConditionalOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ContainerOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IfElseOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Operation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Parameters;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ProcessingOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SubLine;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,7 +31,7 @@ class XmlToJavaGeneratorTest {
                 List.of(new ConditionalOperation("when-a", new Condition("input.endsWith(\"a\")", null),
                         processingOperation("then-operation"))),
                 processingOperation("else-operation"));
-        XmlPipelineDefinition definition = definition(ifElse);
+        XmlAssemblyLineDefinition definition = definition(ifElse);
         XmlToJavaGenerator safeGenerator = XmlToJavaGenerator.builder("io.test.generated")
                 .classLoader(XmlToJavaGeneratorTest.class.getClassLoader())
                 .formatter(JavaSourceFormatter.none())
@@ -52,7 +52,7 @@ class XmlToJavaGeneratorTest {
                         new Condition("input == \"a\"", Condition.LANGUAGE_GEL, null),
                         processingOperation("then-operation"))),
                 processingOperation("else-operation"));
-        XmlPipelineDefinition definition = definition(ifElse);
+        XmlAssemblyLineDefinition definition = definition(ifElse);
         XmlToJavaGenerator safeGenerator = XmlToJavaGenerator.builder("io.test.generated")
                 .classLoader(XmlToJavaGeneratorTest.class.getClassLoader())
                 .formatter(JavaSourceFormatter.none())
@@ -77,7 +77,7 @@ class XmlToJavaGeneratorTest {
                 "java.lang.String", true, 2, List.of(new SubLine("first-line", null, first),
                                                      new SubLine("second-line", null, second)),
                 "(first, second) -> first");
-        XmlPipelineDefinition definition = definition(container);
+        XmlAssemblyLineDefinition definition = definition(container);
 
         // When
         String source = generator.generate(definition).formattedSource();
@@ -99,7 +99,7 @@ class XmlToJavaGeneratorTest {
                 List.of(new ConditionalOperation("when-a", new Condition("input.endsWith(\"a\")", null),
                         processingOperation("then-operation"))),
                 processingOperation("else-operation"));
-        XmlPipelineDefinition definition = definition(ifElse);
+        XmlAssemblyLineDefinition definition = definition(ifElse);
 
         // When
         String source = generator.generate(definition).formattedSource();
@@ -114,7 +114,8 @@ class XmlToJavaGeneratorTest {
     @Test
     void generate_shouldRejectMethodNameCollisions() {
         // Given
-        XmlPipelineDefinition definition = definition(processingOperation("same-id"), processingOperation("same_id"));
+        XmlAssemblyLineDefinition definition = definition(processingOperation("same-id"),
+                                                          processingOperation("same_id"));
 
         // When / Then
         assertThatThrownBy(() -> generator.generate(definition)).isInstanceOf(IllegalArgumentException.class)
@@ -123,8 +124,9 @@ class XmlToJavaGeneratorTest {
                 .hasMessageContaining("same_id");
     }
 
-    private static XmlPipelineDefinition definition(Operation... operations) {
-        return new XmlPipelineDefinition("pipeline", "java.lang.String", "java.lang.String", List.of(operations), null,
+    private static XmlAssemblyLineDefinition definition(Operation... operations) {
+        return new XmlAssemblyLineDefinition("pipeline", "java.lang.String", "java.lang.String", List.of(operations),
+                null,
                 List.of());
     }
 

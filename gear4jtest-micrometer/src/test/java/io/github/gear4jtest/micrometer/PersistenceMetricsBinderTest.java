@@ -1,6 +1,6 @@
 package io.github.gear4jtest.micrometer;
 
-import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
+import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
 import io.github.gear4jtest.core.execution.PersistenceRuntimeStats;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,7 @@ class PersistenceMetricsBinderTest {
     void bind_shouldExposeAllPersistenceRuntimeStats() {
         // Given
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-        DatabaseExecutionManager manager = mock(DatabaseExecutionManager.class);
+        PersistenceRuntimeMonitor manager = mock(PersistenceRuntimeMonitor.class);
         when(manager.snapshotStats()).thenReturn(new PersistenceRuntimeStats(2, 3, 4, 5, 6, 7));
 
         // When

@@ -34,7 +34,7 @@ final class ParallelContainerBranchExecutor {
                                           StationExecutionContext context,
                                           FlowConfig flowConfig,
                                           Duration awaitTimeout) {
-        List<? extends ContainerBaseStation.Branch<?>> branches = station.getPipelines();
+        List<? extends ContainerBaseStation.Branch<?>> branches = station.getAssemblyLines();
         StationLogTrace[] orderedResults = new StationLogTrace[branches.size()];
         List<Throwable> collectedErrors = new ArrayList<>();
         String currentItemId = context.getGlobalContext().getCurrentItemId();
@@ -60,7 +60,7 @@ final class ParallelContainerBranchExecutor {
 
             Callable<StationLogTrace> task = context.getSupport().getTaskFactory()
                     .createTask(() -> ContainerBranchExecutionSupport.clonePayload(input, context),
-                                branch.getStation(), runner, context, currentItemId, branch.getEffectiveId());
+                                branch.getStation(), runner, context, currentItemId, branch.getId());
             int finalIndex = index;
             try {
                 Future<BranchExecution> future = completionService

@@ -119,7 +119,7 @@ class SideComputerTargetedCoverageTest {
         UUID executionId = UUID.randomUUID();
         return ExecutionContext.builder()
                 .executionId(executionId)
-                .pipelineId("pipe")
+                .assemblyLineId("pipe")
                 .services(new ExecutionServices(null, new NoOpResourceFactory()))
                 .assemblyRun(new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of()))
                 .build();
@@ -128,8 +128,8 @@ class SideComputerTargetedCoverageTest {
     private static final class CustomEvent extends Event {
         private final String payload;
 
-        private CustomEvent(String pipelineId, UUID executionId, String payload) {
-            super(pipelineId, executionId);
+        private CustomEvent(String assemblyLineId, UUID executionId, String payload) {
+            super(assemblyLineId, executionId);
             this.payload = payload;
         }
 

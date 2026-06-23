@@ -1,47 +1,70 @@
 package io.github.gear4jtest.core.api.station;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import io.github.gear4jtest.core.api.MutableStationMetadata;
 import io.github.gear4jtest.core.api.StationMetadata;
 import io.github.gear4jtest.core.api.behavior.BaseError;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
-import io.github.gear4jtest.core.api.behavior.StationSkipTest;
 import io.github.gear4jtest.core.api.behavior.StationSkipper;
 
 /**
  * Base class for all station definitions.
  *
  * <p>
- * A station definition describes one node of a pipeline graph. It carries
- * runtime behavior such as processors, error handlers, skip predicates,
+ * A station definition describes one immutable node of a pipeline graph. It
+ * carries runtime behavior such as processors, error handlers, skip predicates,
  * fallback behavior and metadata, but it is not itself an execution trace.
  * Runtime outcomes are recorded separately by station log traces.
  * </p>
  */
 public abstract class AbstractStation<I, O> {
-    private final List<StationSkipper> skippers = new ArrayList<>();
-    private final MutableStationMetadata metadata = new MutableStationMetadata();
-    protected String id;
-    protected StationKind kind;
-    protected List<Processor> processors;
-    protected List<BaseError<I>> onErrors;
-    protected Operator<I, O> fallbackOperator;
-    protected Boolean unary;
+    private final String id;
+    private final StationKind kind;
+    private final List<Processor> processors;
+    private final List<BaseError<I>> onErrors;
+    private final Operator<I, O> fallbackOperator;
+    private final boolean unary;
+    private final List<StationSkipper> skippers;
+    private final StationMetadata metadata;
 
     /**
-     * Creates a station definition.
+     * Creates a fully initialized immutable station definition.
      *
-     * @param id   station identifier used in traces and generated code
-     * @param kind station kind used for strategy dispatch
+     * @param id               station identifier used in traces and generated code
+     * @param kind             station kind used for strategy dispatch
+     * @param processors       processors applied around the station execution
+     * @param onErrors         station error policies
+     * @param fallbackOperator fallback operator used by skip/error policies
+     * @param unary            whether the station input and output types are
+     *                         identical
+     * @param skippers         ordered skip predicates
+     * @param metadata         typed metadata attached to the station
      */
-    protected AbstractStation(String id, StationKind kind) {
+    protected AbstractStation(String id,
+                              StationKind kind,
+                              List<Processor> processors,
+                              List<BaseError<I>> onErrors,
+                              Operator<I, O> fallbackOperator,
+                              boolean unary,
+                              List<StationSkipper> skippers,
+                              StationMetadata metadata) {
         this.id = Objects.requireNonNull(id, "id is required");
         this.kind = Objects.requireNonNull(kind, "kind is required");
+        this.processors = immutableList(processors);
+        this.onErrors = immutableList(onErrors);
+        this.fallbackOperator = fallbackOperator;
+        this.unary = unary;
+        this.skippers = immutableList(skippers);
+        this.metadata = metadata == null ? StationMetadata.empty() : metadata;
+    }
+
+    private static <T> List<T> immutableList(List<T> values) {
+        if (values == null || values.isEmpty()) {
+            return List.of();
+        }
+        return values.stream().filter(Objects::nonNull).toList();
     }
 
     public String getId() {
@@ -53,85 +76,22 @@ public abstract class AbstractStation<I, O> {
     }
 
     public List<Processor> getProcessors() {
-        return processors == null ? Collections.emptyList()
-                : Collections.unmodifiableList(processors);
+        return processors;
     }
 
     public List<BaseError<I>> getOnErrors() {
-        return onErrors == null ? Collections.emptyList()
-                : Collections.unmodifiableList(onErrors);
+        return onErrors;
     }
-
-    // ------------------------------------------------------------------------
-    // Skippers
-    // ------------------------------------------------------------------------
 
     /**
      * Returns the ordered skip predicates configured on this station.
      */
     public List<StationSkipper> getSkippers() {
-        return Collections.unmodifiableList(skippers);
+        return skippers;
     }
-
-    /**
-     * Adds a station skipper to the station definition.
-     */
-    public AbstractStation<I, O> addSkipper(StationSkipper skipper) {
-        if (skipper != null) {
-            skippers.add(skipper);
-        }
-        return this;
-    }
-
-    /**
-     * Adds a pre-execution skip predicate.
-     *
-     * @param predicate predicate evaluated before station execution
-     * @return this station definition
-     */
-    public AbstractStation<I, O> skipIf(StationSkipTest predicate) {
-        return addSkipper(StationSkipper.pre(predicate));
-    }
-
-    /**
-     * Adds a post-execution skip predicate.
-     *
-     * @param predicate predicate evaluated with access to the station execution
-     *                  context
-     * @return this station definition
-     */
-    public AbstractStation<I, O> skipIfPost(StationSkipTest predicate) {
-        return addSkipper(StationSkipper.post(predicate));
-    }
-
-    /**
-     * Compatibility alias for {@link #skipIf(StationSkipTest)}.
-     */
-    public AbstractStation<I, O> condition(StationSkipTest predicate) {
-        return skipIf(predicate);
-    }
-
-    // ------------------------------------------------------------------------
-    // Metadata
-    // ------------------------------------------------------------------------
 
     public StationMetadata getMetadata() {
         return metadata;
-    }
-
-    /**
-     * Returns mutable metadata attached to this station definition.
-     */
-    public MutableStationMetadata mutableMetadata() {
-        return metadata;
-    }
-
-    /**
-     * Stores a typed metadata value on this station definition.
-     */
-    public <T> AbstractStation<I, O> putMetadata(Class<T> type, T value) {
-        metadata.put(type, value);
-        return this;
     }
 
     public Operator<I, O> getFallbackOperator() {

@@ -18,7 +18,7 @@ class AssemblyRunTraceDeepCoverageTest {
 
         // Then
         assertThat(trace.getId()).isEqualTo(id);
-        assertThat(trace.getPipelineId()).isEqualTo("pipeline");
+        assertThat(trace.getAssemblyLineId()).isEqualTo("pipeline");
         assertThat(trace.getInputParams()).isEqualTo(Map.of("tenant", "acme"));
     }
 
@@ -32,7 +32,7 @@ class AssemblyRunTraceDeepCoverageTest {
         AssemblyRunTrace grandChild = AssemblyRunTrace.childOf(child, "grand-child");
 
         // Then
-        assertThat(child.getPipelineId()).isEqualTo("child");
+        assertThat(child.getAssemblyLineId()).isEqualTo("child");
         assertThat(child.getParentExecutionId()).isEqualTo(root.getId());
         assertThat(child.getRootExecutionId()).isEqualTo(root.getId());
         assertThat(child.getStartTime()).isNotNull();

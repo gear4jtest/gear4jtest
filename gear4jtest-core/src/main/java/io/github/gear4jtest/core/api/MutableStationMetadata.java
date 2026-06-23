@@ -21,4 +21,8 @@ public final class MutableStationMetadata implements StationMetadata {
     public boolean isEmpty() {
         return values.isEmpty();
     }
+
+    public StationMetadata immutableCopy() {
+        return StationMetadata.copyOf(values);
+    }
 }

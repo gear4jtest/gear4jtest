@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContract;
+import io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContractValidator;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
-import io.github.gear4jtest.core.api.pipeline.PipelineRuntimeContract;
-import io.github.gear4jtest.core.api.pipeline.PipelineRuntimeContractValidator;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.SequenceStation;
 import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
@@ -142,7 +142,7 @@ public class AssemblyLine<IN, OUT> {
             return this;
         }
 
-        public Builder<IN, OUT> runtimeContract(PipelineRuntimeContract runtimeContract) {
+        public Builder<IN, OUT> runtimeContract(AssemblyLineRuntimeContract runtimeContract) {
             this.configBuilder.runtimeContract(runtimeContract);
             return this;
         }
@@ -208,12 +208,12 @@ public class AssemblyLine<IN, OUT> {
         private final PersistenceConfiguration persistence;
         private final EventHandlingDefinition eventHandlingDefinition;
         private final List<RuntimeExtension> defaultExtensions;
-        private final PipelineRuntimeContract runtimeContract;
+        private final AssemblyLineRuntimeContract runtimeContract;
 
         private Configuration(PersistenceConfiguration persistence,
                               EventHandlingDefinition eventHandlingDefinition,
                               List<RuntimeExtension> defaultExtensions,
-                              PipelineRuntimeContract runtimeContract) {
+                              AssemblyLineRuntimeContract runtimeContract) {
             this.persistence = persistence;
             this.eventHandlingDefinition = eventHandlingDefinition;
             this.defaultExtensions = defaultExtensions == null ? List.of() : List.copyOf(defaultExtensions);
@@ -236,7 +236,7 @@ public class AssemblyLine<IN, OUT> {
             return defaultExtensions;
         }
 
-        public PipelineRuntimeContract getRuntimeContract() {
+        public AssemblyLineRuntimeContract getRuntimeContract() {
             return runtimeContract;
         }
 
@@ -247,7 +247,7 @@ public class AssemblyLine<IN, OUT> {
             private final List<RuntimeExtension> defaultExtensions = new ArrayList<>();
             private PersistenceConfiguration persistence;
             private EventHandlingDefinition eventHandlingDefinition;
-            private PipelineRuntimeContract runtimeContract;
+            private AssemblyLineRuntimeContract runtimeContract;
 
             public Builder() {
             }
@@ -283,25 +283,25 @@ public class AssemblyLine<IN, OUT> {
                 return this;
             }
 
-            public Builder runtimeContract(PipelineRuntimeContract runtimeContract) {
+            public Builder runtimeContract(AssemblyLineRuntimeContract runtimeContract) {
                 this.runtimeContract = runtimeContract;
                 return this;
             }
 
             public Configuration build() {
-                PipelineRuntimeContract finalRuntimeContract = runtimeContract != null ? runtimeContract
+                AssemblyLineRuntimeContract finalRuntimeContract = runtimeContract != null ? runtimeContract
                         : defaultRuntimeContract();
-                PipelineRuntimeContractValidator.validateConfigurationCoherence(finalRuntimeContract, persistence,
-                                                                                eventHandlingDefinition,
-                                                                                defaultExtensions);
+                AssemblyLineRuntimeContractValidator.validateConfigurationCoherence(finalRuntimeContract, persistence,
+                                                                                    eventHandlingDefinition,
+                                                                                    defaultExtensions);
                 return new Configuration(persistence, eventHandlingDefinition, defaultExtensions, finalRuntimeContract);
             }
 
-            private PipelineRuntimeContract defaultRuntimeContract() {
+            private AssemblyLineRuntimeContract defaultRuntimeContract() {
                 boolean hasRuntimeConfiguration = persistence != null || eventHandlingDefinition != null
                         || !defaultExtensions.isEmpty();
-                return hasRuntimeConfiguration ? PipelineRuntimeContract.nestedRunOnly()
-                        : PipelineRuntimeContract.inlineConfigless();
+                return hasRuntimeConfiguration ? AssemblyLineRuntimeContract.nestedRunOnly()
+                        : AssemblyLineRuntimeContract.inlineConfigless();
             }
         }
     }

@@ -12,8 +12,12 @@ import io.github.gear4jtest.core.event.EventSubscription;
 import io.github.gear4jtest.core.event.StationFinishedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.model.StationLogStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class SideComputer<E extends Event, T, R> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SideComputer.class);
+
     private final Class<E> eventType;
     private final Predicate<E> trigger;
     private final String key;
@@ -29,7 +33,8 @@ public final class SideComputer<E extends Event, T, R> {
                          List<SideComputeHandler<E, T>> handlers) {
         this.eventType = Objects.requireNonNull(eventType, "eventType");
         this.trigger = trigger != null ? trigger : __ -> true;
-        this.key = Objects.requireNonNull(key, "key");
+        SideComputeKeys.validateUserKey(key);
+        this.key = key;
         this.computer = Objects.requireNonNull(computer, "computer");
         this.mapper = Objects.requireNonNull(mapper, "mapper");
         this.handlers = List.copyOf(handlers);
@@ -73,6 +78,8 @@ public final class SideComputer<E extends Event, T, R> {
     private void runCompute(E event, ExecutionContextRegistry registry) {
         var executionContext = registry.get(event.getExecutionId());
         if (executionContext == null) {
+            LOGGER.warn("Skipping side-compute '{}' for event {} because execution context {} is no longer registered",
+                        key, event.getClass().getSimpleName(), event.getExecutionId());
             return;
         }
 
@@ -102,7 +109,8 @@ public final class SideComputer<E extends Event, T, R> {
 
         private Builder(Class<E> eventType, String key) {
             this.eventType = Objects.requireNonNull(eventType, "eventType");
-            this.key = Objects.requireNonNull(key, "key");
+            SideComputeKeys.validateUserKey(key);
+            this.key = key;
         }
 
         public Builder<E, T, R> filter(Predicate<E> predicate) {

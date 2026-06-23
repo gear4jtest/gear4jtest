@@ -19,7 +19,9 @@ public class Container2Station<IN, OUT, A, B> extends ContainerBaseStation<IN, O
         @Override
         @SuppressWarnings("unchecked")
         default C apply(Object... objects) {
-            assert objects != null && objects.length == 2;
+            if (objects == null || objects.length != 2) {
+                throw new IllegalArgumentException("Expected exactly two container results");
+            }
             return applya((A) objects[0], (B) objects[1]);
         }
     }

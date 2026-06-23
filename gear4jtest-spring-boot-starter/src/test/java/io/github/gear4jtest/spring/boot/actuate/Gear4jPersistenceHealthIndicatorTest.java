@@ -1,6 +1,6 @@
 package io.github.gear4jtest.spring.boot.actuate;
 
-import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
+import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
 import io.github.gear4jtest.core.execution.PersistenceRuntimeStats;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.actuate.health.Status;
@@ -13,7 +13,7 @@ class Gear4jPersistenceHealthIndicatorTest {
     @Test
     void health_shouldExposePersistenceRuntimeStatsWhenPersistenceIsHealthy() {
         // Given
-        DatabaseExecutionManager manager = mock(DatabaseExecutionManager.class);
+        PersistenceRuntimeMonitor manager = mock(PersistenceRuntimeMonitor.class);
         when(manager.snapshotStats()).thenReturn(new PersistenceRuntimeStats(2, 3, 4, 5, 0, 0));
         Gear4jPersistenceHealthIndicator indicator = new Gear4jPersistenceHealthIndicator(manager);
 
@@ -35,7 +35,7 @@ class Gear4jPersistenceHealthIndicatorTest {
     @Test
     void health_shouldBeDownWhenFlushesFailedOrAppendsWereRejected() {
         // Given
-        DatabaseExecutionManager manager = mock(DatabaseExecutionManager.class);
+        PersistenceRuntimeMonitor manager = mock(PersistenceRuntimeMonitor.class);
         when(manager.snapshotStats()).thenReturn(new PersistenceRuntimeStats(2, 3, 4, 5, 6, 7));
         Gear4jPersistenceHealthIndicator indicator = new Gear4jPersistenceHealthIndicator(manager);
 
@@ -54,7 +54,7 @@ class Gear4jPersistenceHealthIndicatorTest {
     @Test
     void health_shouldBeDownWhenStatsCannotBeRead() {
         // Given
-        DatabaseExecutionManager manager = mock(DatabaseExecutionManager.class);
+        PersistenceRuntimeMonitor manager = mock(PersistenceRuntimeMonitor.class);
         when(manager.snapshotStats()).thenThrow(new IllegalStateException("boom"));
         Gear4jPersistenceHealthIndicator indicator = new Gear4jPersistenceHealthIndicator(manager);
 

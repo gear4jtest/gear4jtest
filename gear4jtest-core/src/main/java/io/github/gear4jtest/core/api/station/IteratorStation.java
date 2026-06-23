@@ -15,16 +15,12 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
  * child sequence for each item.
  */
 public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
-    private Function<IN, ? extends Iterable<?>> func;
-    private SequenceStation<?, ?> chain;
-    private ItemIdResolver itemIdResolver;
-    private FlowConfig flowConfig;
-    private Accumulator accumulator;
-    private Collector<?, ?, ?> collector;
-
-    private IteratorStation(String id) {
-        super(id, StationKind.ITERATOR);
-    }
+    private final Function<IN, ? extends Iterable<?>> func;
+    private final SequenceStation<?, ?> chain;
+    private final ItemIdResolver itemIdResolver;
+    private final FlowConfig flowConfig;
+    private final Accumulator accumulator;
+    private final Collector<?, ?, ?> collector;
 
     private IteratorStation(String id,
                             Function<IN, ? extends Iterable<?>> func,
@@ -33,7 +29,7 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
                             FlowConfig flowConfig,
                             Accumulator accumulator,
                             Collector<?, ?, ?> collector) {
-        this(id);
+        super(id, StationKind.ITERATOR, null, null, null, false, null, null);
         this.func = func;
         this.chain = chain;
         this.itemIdResolver = itemIdResolver;
@@ -64,10 +60,6 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
     public FlowConfig getFlowConfig() {
         return flowConfig;
-    }
-
-    public void setFlowConfig(FlowConfig flowConfig) {
-        this.flowConfig = flowConfig;
     }
 
     @FunctionalInterface
@@ -103,9 +95,14 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
             return new Builder<>(this);
         }
 
-        public <A> Builder<IN, A> pipeline(SequenceStation<OUT, A> sequenceStation) {
+        public <A> Builder<IN, A> sequence(SequenceStation<OUT, A> sequenceStation) {
             this.chain = sequenceStation;
             return new Builder<>(this);
+        }
+
+        public Builder<IN, OUT> flowConfig(FlowConfig flowConfig) {
+            this.flowConfig = flowConfig;
+            return this;
         }
 
         public Builder<IN, OUT> accumulator(Accumulator accumulator) {

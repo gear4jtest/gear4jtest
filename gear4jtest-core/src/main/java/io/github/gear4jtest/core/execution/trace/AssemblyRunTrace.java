@@ -10,14 +10,14 @@ public class AssemblyRunTrace extends AbstractAssemblyRunState {
         super();
     }
 
-    public AssemblyRunTrace(UUID id, String pipelineId, Map<String, Object> pipelineParams) {
-        super(id, pipelineId, pipelineParams);
+    public AssemblyRunTrace(UUID id, String assemblyLineId, Map<String, Object> pipelineParams) {
+        super(id, assemblyLineId, pipelineParams);
     }
 
     public static AssemblyRunTrace childOf(AssemblyRunTrace parent, String assemblyLineId) {
         AssemblyRunTrace child = new AssemblyRunTrace();
         child.setId(UUID.randomUUID());
-        child.setPipelineId(assemblyLineId);
+        child.setAssemblyLineId(assemblyLineId);
         child.setParentExecutionId(parent.getId());
         child.setRootExecutionId(parent.getRootExecutionId() != null ? parent.getRootExecutionId() : parent.getId());
         child.markStarted();

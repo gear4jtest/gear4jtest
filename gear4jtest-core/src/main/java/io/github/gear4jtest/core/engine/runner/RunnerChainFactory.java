@@ -30,7 +30,7 @@ public class RunnerChainFactory {
         Objects.requireNonNull(request, "request must not be null");
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Creating station runner chain. pipelineId={}, stationWrappers={}, stationLifecycles={}, runInterceptors={}, executorWrappers={}",
+            LOGGER.debug("Creating station runner chain. assemblyLineId={}, stationWrappers={}, stationLifecycles={}, runInterceptors={}, executorWrappers={}",
                          pipeline.getId(), extensions.stationWrappers().size(),
                          extensions.stationLifecycleExtensions().size(), extensions.runInterceptors().size(),
                          extensions.executorWrappers().size());

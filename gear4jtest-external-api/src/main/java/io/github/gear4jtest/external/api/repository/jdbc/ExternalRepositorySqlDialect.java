@@ -8,8 +8,8 @@ import java.sql.Statement;
 import java.util.Locale;
 import java.util.Objects;
 
-import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.core.persistence.PageRequest;
+import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 
 /**
  * SQL and JDBC behavior needed by the external-api JDBC repositories for a

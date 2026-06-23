@@ -2,7 +2,6 @@ package io.github.gear4jtest.core.api.station;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -14,17 +13,31 @@ import io.github.gear4jtest.core.api.behavior.Condition;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 
 public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
-    protected final List<Branch<IN>> pipelines;
-    protected ContainerFunction<OUT> func;
-    protected boolean isParallel = false;
-    protected ExecutorService executorService;
-    protected FlowConfig flowConfig;
-    protected Duration awaitTimeout;
+    private final List<Branch<IN>> pipelines;
+    private final ContainerFunction<OUT> func;
+    private final boolean parallel;
+    private final ExecutorService executorService;
+    private final FlowConfig flowConfig;
+    private final Duration awaitTimeout;
 
     public ContainerBaseStation(List<Branch<IN>> pipelines, ContainerFunction<OUT> func) {
-        super("", StationKind.CONTAINER);
-        this.pipelines = pipelines;
+        this(pipelines, func, false, null, null, null, false);
+    }
+
+    protected ContainerBaseStation(List<Branch<IN>> pipelines,
+                                   ContainerFunction<OUT> func,
+                                   boolean parallel,
+                                   ExecutorService executorService,
+                                   FlowConfig flowConfig,
+                                   Duration awaitTimeout,
+                                   boolean unary) {
+        super("", StationKind.CONTAINER, null, null, null, unary, null, null);
+        this.pipelines = pipelines == null || pipelines.isEmpty() ? List.of() : List.copyOf(pipelines);
         this.func = func;
+        this.parallel = parallel;
+        this.executorService = executorService;
+        this.flowConfig = flowConfig;
+        this.awaitTimeout = awaitTimeout;
     }
 
     protected static void validateUniqueBranchIds(List<? extends Branch<?>> branches) {
@@ -35,7 +48,7 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
                 throw new IllegalArgumentException("Container contains a null branch");
             }
 
-            String branchId = branch.getEffectiveId();
+            String branchId = branch.getId();
             if (branchId == null || branchId.isBlank()) {
                 throw new IllegalArgumentException("Container contains a branch without explicit id");
             }
@@ -46,8 +59,8 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
     }
 
-    public List<Branch<IN>> getPipelines() {
-        return Collections.unmodifiableList(pipelines);
+    public List<Branch<IN>> getAssemblyLines() {
+        return pipelines;
     }
 
     public ContainerFunction<OUT> getFunc() {
@@ -55,7 +68,7 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
     }
 
     public boolean isParallel() {
-        return isParallel;
+        return parallel;
     }
 
     public ExecutorService getExecutorService() {
@@ -66,16 +79,8 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
         return flowConfig;
     }
 
-    public void setFlowConfig(FlowConfig flowConfig) {
-        this.flowConfig = flowConfig;
-    }
-
     public Duration getAwaitTimeout() {
         return awaitTimeout;
-    }
-
-    public void setAwaitTimeout(Duration awaitTimeout) {
-        this.awaitTimeout = awaitTimeout;
     }
 
     @FunctionalInterface
@@ -147,29 +152,30 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
                                                                 Duration awaitTimeout,
                                                                 ContainerFunction<OUT> function) {
         validateUniqueBranchIds(branches);
-        ContainerBaseStation<IN, OUT> station = new ContainerBaseStation<>(new ArrayList<>(branches), function);
-        station.executorService = executorService;
-        station.isParallel = isParallel;
-        station.setFlowConfig(flowConfig);
-        station.setAwaitTimeout(awaitTimeout);
-        return station;
+        return new ContainerBaseStation<>(branches, function, isParallel, executorService, flowConfig, awaitTimeout,
+                false);
     }
 
     public static class Branch<I> {
-        private String id;
-        private AbstractStation<I, ?> station;
-        private Condition<I> condition;
-        private BranchCondition<I> siblingCondition;
+        private final String id;
+        private final AbstractStation<I, ?> station;
+        private final Condition<I> condition;
+        private final BranchCondition<I> siblingCondition;
 
-        public Branch() {
-            // Empty constructor kept for fluent builder-style initialization.
+        private Branch(String id,
+                       AbstractStation<I, ?> station,
+                       Condition<I> condition,
+                       BranchCondition<I> siblingCondition) {
+            if (id == null || id.isBlank()) {
+                throw new IllegalArgumentException("branch id is required");
+            }
+            this.id = id;
+            this.station = Objects.requireNonNull(station, "branch station is required");
+            this.condition = condition;
+            this.siblingCondition = siblingCondition;
         }
 
         public String getId() {
-            return id;
-        }
-
-        public String getEffectiveId() {
             return id;
         }
 
@@ -212,17 +218,7 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
             }
 
             public Branch<I> build() {
-                Objects.requireNonNull(station, "branch station is required");
-                if (id == null || id.isBlank()) {
-                    throw new IllegalArgumentException("branch id is required");
-                }
-
-                Branch<I> branch = new Branch<>();
-                branch.station = station;
-                branch.id = id;
-                branch.condition = condition;
-                branch.siblingCondition = siblingCondition;
-                return branch;
+                return new Branch<>(id, station, condition, siblingCondition);
             }
         }
     }

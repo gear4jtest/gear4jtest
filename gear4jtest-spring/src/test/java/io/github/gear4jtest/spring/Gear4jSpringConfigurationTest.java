@@ -5,9 +5,9 @@ import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.station.PipelineCallStation;
+import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
 import io.github.gear4jtest.core.api.util.ElementModelBuilders;
-import io.github.gear4jtest.core.engine.PipelineEngine;
+import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,7 @@ class Gear4jSpringConfigurationTest {
             assertThat(context.getBean(ExecutionContextRegistry.class))
                     .as("execution context registry")
                     .isNotNull();
-            assertThat(context.getBean(PipelineEngine.class))
+            assertThat(context.getBean(AssemblyLineEngine.class))
                     .as("pipeline engine")
                     .isNotNull();
             assertThat(context.getBean(AssemblyLineRegistry.class).getAll())
@@ -54,11 +54,11 @@ class Gear4jSpringConfigurationTest {
                     .then(ElementModelBuilders.processingOperation("append", AppendBangOperator.class).build())
                     .build();
             AssemblyLine<String, String> parent = ElementModelBuilders.<String>createAssemblyLine("parent")
-                    .then(PipelineCallStation.nestedRun("call-child", child))
+                    .then(AssemblyLineCallStation.nestedRun("call-child", child))
                     .build();
 
             // When
-            ExecutionResult<String> result = context.getBean(PipelineEngine.class)
+            ExecutionResult<String> result = context.getBean(AssemblyLineEngine.class)
                     .execute(parent, RunRequest.builder().input("hello").build());
 
             // Then

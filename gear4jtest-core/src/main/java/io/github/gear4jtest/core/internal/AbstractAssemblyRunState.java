@@ -10,7 +10,7 @@ import io.github.gear4jtest.core.persistence.ExecutionStatus;
 @Internal
 public abstract class AbstractAssemblyRunState {
     private UUID id;
-    private String pipelineId;
+    private String assemblyLineId;
     private Map<String, Object> context;
     private Object inputParams;
     private Object result;
@@ -26,9 +26,9 @@ public abstract class AbstractAssemblyRunState {
     protected AbstractAssemblyRunState() {
     }
 
-    protected AbstractAssemblyRunState(UUID id, String pipelineId, Map<String, Object> pipelineParams) {
+    protected AbstractAssemblyRunState(UUID id, String assemblyLineId, Map<String, Object> pipelineParams) {
         this.id = id;
-        this.pipelineId = pipelineId;
+        this.assemblyLineId = assemblyLineId;
         this.status = ExecutionStatus.RUNNING;
         this.inputParams = pipelineParams;
     }
@@ -62,12 +62,12 @@ public abstract class AbstractAssemblyRunState {
         this.id = id;
     }
 
-    public String getPipelineId() {
-        return pipelineId;
+    public String getAssemblyLineId() {
+        return assemblyLineId;
     }
 
-    public void setPipelineId(String pipelineId) {
-        this.pipelineId = pipelineId;
+    public void setAssemblyLineId(String assemblyLineId) {
+        this.assemblyLineId = assemblyLineId;
     }
 
     public Map<String, Object> getContext() {

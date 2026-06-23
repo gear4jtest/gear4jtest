@@ -2,8 +2,8 @@ package io.github.gear4jtest.external.api.repository.jdbc;
 
 import java.sql.PreparedStatement;
 
-import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.core.persistence.PageRequest;
+import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

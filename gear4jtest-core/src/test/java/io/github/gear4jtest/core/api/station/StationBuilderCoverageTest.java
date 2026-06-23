@@ -32,14 +32,15 @@ class StationBuilderCoverageTest {
                     .build();
 
             assertThat(station.isParallel()).isTrue();
+            assertThat(station.getUnary()).isTrue();
             assertThat(station.getExecutorService()).isSameAs(executor);
             assertThat(station.getAwaitTimeout()).isEqualTo(Duration.ofSeconds(2));
-            assertThat(station.getPipelines()).hasSize(1);
-            assertThat(station.getPipelines().get(0).getEffectiveId()).isEqualTo("branch-1");
-            assertThat(station.getPipelines().get(0).getStation()).isSameAs(branchStation);
-            assertThat(station.getPipelines().get(0).getCondition()).isNotNull();
+            assertThat(station.getAssemblyLines()).hasSize(1);
+            assertThat(station.getAssemblyLines().get(0).getId()).isEqualTo("branch-1");
+            assertThat(station.getAssemblyLines().get(0).getStation()).isSameAs(branchStation);
+            assertThat(station.getAssemblyLines().get(0).getCondition()).isNotNull();
             assertThat(station.getFunc().apply("gear")).isEqualTo("gear!");
-            var branches = station.getPipelines();
+            var branches = station.getAssemblyLines();
             var firstBranch = branches.get(0);
 
             assertThatThrownBy(() -> branches.add(firstBranch))
@@ -125,10 +126,23 @@ class StationBuilderCoverageTest {
                 .withSubLine("b", branchStation, (input, ctx, siblings) -> true)
                 .returns((left, right) -> left + right);
 
-        assertThat(station.getPipelines()).extracting(ContainerBaseStation.Branch::getEffectiveId)
+        assertThat(station.getUnary()).isFalse();
+        assertThat(station.getAssemblyLines()).extracting(ContainerBaseStation.Branch::getId)
                 .containsExactly("a", "b");
-        assertThat(station.getPipelines().get(1).getSiblingCondition()).isNotNull();
+        assertThat(station.getAssemblyLines().get(1).getSiblingCondition()).isNotNull();
         assertThat(station.getFunc().apply("A", "B")).isEqualTo("AB");
+    }
+
+    @Test
+    void signalStationBuilder_shouldBuildUnaryStation() {
+        SignalStation<String> station = new SignalStation.Builder<String>()
+                .id("fatal")
+                .type(StationSignalType.FATAL)
+                .build();
+
+        assertThat(station.getUnary()).isTrue();
+        assertThat(station.getProcessors()).isEmpty();
+        assertThat(station.getOnErrors()).isEmpty();
     }
 
     static class IdentityOperator implements Operator<String, String> {

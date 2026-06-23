@@ -2,12 +2,12 @@ package io.github.gear4jtest.xml.generator;
 
 import java.util.Locale;
 
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContainerOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IfElseOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IteratorOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Operation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ProcessingOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SignalOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ContainerOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IfElseOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IteratorOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Operation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ProcessingOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SignalOperation;
 
 /**
  * Centralizes Java names derived from XML identifiers.

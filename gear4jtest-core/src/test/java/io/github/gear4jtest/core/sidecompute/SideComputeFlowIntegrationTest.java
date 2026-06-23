@@ -12,7 +12,7 @@ import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.util.ElementModelBuilders;
-import io.github.gear4jtest.core.engine.PipelineEngine;
+import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
 import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
@@ -42,7 +42,7 @@ class SideComputeFlowIntegrationTest {
                         .build())
                 .build();
 
-        PipelineEngine engine = PipelineEngine.builder()
+        AssemblyLineEngine engine = AssemblyLineEngine.builder()
                 .runnerChainFactory(new RunnerChainFactory(StrategyRegistry.defaultRegistry()))
                 .resourceFactory(new CountingResourceFactory(new CountingOperator(operatorExecutions)))
                 .extensionResolver(new RuntimeExtensionResolver(List.of()))

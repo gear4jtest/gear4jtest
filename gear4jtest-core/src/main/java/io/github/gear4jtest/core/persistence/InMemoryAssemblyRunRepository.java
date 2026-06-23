@@ -38,9 +38,9 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
     }
 
     @Override
-    public List<AssemblyRunRecord> findByPipelineId(String pipelineId, PageRequest pageRequest) {
+    public List<AssemblyRunRecord> findByAssemblyLineId(String assemblyLineId, PageRequest pageRequest) {
         return window(executions.values().stream()
-                .filter(e -> pipelineId.equals(e.pipelineId())), pageRequest);
+                .filter(e -> assemblyLineId.equals(e.assemblyLineId())), pageRequest);
     }
 
     @Override
@@ -97,7 +97,8 @@ public class InMemoryAssemblyRunRepository implements AssemblyRunRepository {
             return;
         }
 
-        stationLogsByRunId.computeIfAbsent(stationLogRecord.pipelineExecutionId(), ignored -> new ConcurrentHashMap<>())
+        stationLogsByRunId
+                .computeIfAbsent(stationLogRecord.assemblyLineExecutionId(), ignored -> new ConcurrentHashMap<>())
                 .put(stationLogRecord.id(), stationLogRecord);
     }
 

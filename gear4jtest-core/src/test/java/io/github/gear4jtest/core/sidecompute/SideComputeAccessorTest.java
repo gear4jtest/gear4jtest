@@ -40,6 +40,16 @@ class SideComputeAccessorTest {
     }
 
     @Test
+    void valueKey_shouldRejectReservedOrBlankUserKeys() {
+        assertThatThrownBy(() -> SideComputeKeys.valueKey("__sidecompute_value__:already-prefixed"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("reserved prefix");
+        assertThatThrownBy(() -> SideComputeKeys.valueKey(" "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must not be blank");
+    }
+
+    @Test
     void isPresent_shouldReturnTrueWhenValueExists() {
         ExecutionContext execCtx = mock(ExecutionContext.class);
         Map<String, Object> ctxMap = new HashMap<>();

@@ -60,7 +60,8 @@ public class StationLifecycleRunner implements StationRunner {
         }
         StationLogTrace stationLog = stationCtx.getRecord();
         runCtx.getServices().getEventManager()
-                .publish(new StationStartedEvent(runCtx.getPipelineId(), runCtx.getExecutionId(), stationLog.getId(),
+                .publish(new StationStartedEvent(runCtx.getAssemblyLineId(), runCtx.getExecutionId(),
+                        stationLog.getId(),
                         stationCtx.getOperationId(), stationLog.getParentOperationId(), stationLog.getBranchId(),
                         stationLog.getItemId(), runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
                                 .mapStationInput(input, stationCtx)));
@@ -74,7 +75,7 @@ public class StationLifecycleRunner implements StationRunner {
             return;
         }
         runCtx.getServices().getEventManager()
-                .publish(new StationFinishedEvent(runCtx.getPipelineId(), runCtx.getExecutionId(), result.getId(),
+                .publish(new StationFinishedEvent(runCtx.getAssemblyLineId(), runCtx.getExecutionId(), result.getId(),
                         stationCtx.getOperationId(), result.getParentOperationId(), result.getBranchId(),
                         result.getItemId(), runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
                                 .mapStationInput(input, stationCtx),

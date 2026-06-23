@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStack;
+import io.github.gear4jtest.core.api.assemblyline.NestedRunContext;
 import io.github.gear4jtest.core.api.context.CancellationToken;
-import io.github.gear4jtest.core.api.pipeline.NestedRunContext;
-import io.github.gear4jtest.core.api.pipeline.PipelineCallStack;
 import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
 import io.github.gear4jtest.core.spi.factory.IdGenerator;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
@@ -19,7 +19,7 @@ import io.github.gear4jtest.core.spi.factory.ResourceFactory;
  *
  * <p>
  * A request carries the user input, additional context values and optional
- * services/extensions that are specific to one run. Pipeline-level defaults
+ * services/extensions that are specific to one run. AssemblyLine-level defaults
  * remain on {@link AssemblyLine}; request values are merged by the engine when
  * the run starts.
  * </p>
@@ -31,7 +31,7 @@ public class RunRequest {
     private final List<RuntimeExtension> extensions;
     private final IdGenerator idGenerator;
     private final NestedRunContext nestedRunContext;
-    private final PipelineCallStack pipelineCallStack;
+    private final AssemblyLineCallStack assemblyLineCallStack;
     private final CancellationToken cancellationToken;
 
     private RunRequest(Builder builder) {
@@ -42,7 +42,7 @@ public class RunRequest {
         this.extensions = List.copyOf(builder.extensions);
         this.idGenerator = builder.idGenerator;
         this.nestedRunContext = builder.nestedRunContext;
-        this.pipelineCallStack = builder.pipelineCallStack;
+        this.assemblyLineCallStack = builder.assemblyLineCallStack;
         this.cancellationToken = builder.cancellationToken;
     }
 
@@ -74,8 +74,8 @@ public class RunRequest {
         return nestedRunContext;
     }
 
-    public PipelineCallStack getPipelineCallStack() {
-        return pipelineCallStack;
+    public AssemblyLineCallStack getAssemblyLineCallStack() {
+        return assemblyLineCallStack;
     }
 
     public CancellationToken getCancellationToken() {
@@ -92,7 +92,7 @@ public class RunRequest {
                 .resourceFactory(resourceFactory)
                 .withIdGenerator(idGenerator)
                 .nestedRunContext(nestedRunContext)
-                .pipelineCallStack(pipelineCallStack)
+                .assemblyLineCallStack(assemblyLineCallStack)
                 .cancellationToken(cancellationToken);
         extensions.forEach(builder::with);
         return builder;
@@ -108,7 +108,7 @@ public class RunRequest {
         private ResourceFactory resourceFactory;
         private IdGenerator idGenerator;
         private NestedRunContext nestedRunContext;
-        private PipelineCallStack pipelineCallStack;
+        private AssemblyLineCallStack assemblyLineCallStack;
         private CancellationToken cancellationToken;
 
         public Builder input(Object input) {
@@ -136,8 +136,8 @@ public class RunRequest {
             return this;
         }
 
-        public Builder pipelineCallStack(PipelineCallStack pipelineCallStack) {
-            this.pipelineCallStack = pipelineCallStack;
+        public Builder assemblyLineCallStack(AssemblyLineCallStack assemblyLineCallStack) {
+            this.assemblyLineCallStack = assemblyLineCallStack;
             return this;
         }
 

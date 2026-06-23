@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
+import io.github.gear4jtest.core.api.StationMetadata;
 import io.github.gear4jtest.core.api.behavior.BaseError;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
@@ -12,8 +13,15 @@ import io.github.gear4jtest.core.api.behavior.StationSkipper;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 
 public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
-    private UnaryWorkStation() {
-        super();
+    private UnaryWorkStation(String id,
+                             Class<Operator<INOUT, INOUT>> type,
+                             List<WorkerParamsInjector.ParameterModel<?, ?>> parameters,
+                             List<Processor> processors,
+                             List<BaseError<INOUT>> onErrors,
+                             Operator<INOUT, INOUT> fallbackOperator,
+                             List<StationSkipper> skippers) {
+        super(id, type, parameters, processors, onErrors, fallbackOperator, false, skippers, StationMetadata.empty(),
+                true);
     }
 
     public static class Builder<INOUT, OP extends Operator<INOUT, INOUT>> {
@@ -35,10 +43,10 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
         private <PREVIOUS_OP extends Operator<INOUT, INOUT>> Builder(Builder<INOUT, PREVIOUS_OP> source) {
             this.id = source.id;
             this.type = source.type;
-            this.parameters = source.parameters;
-            this.processors = source.processors;
-            this.onErrors = source.onErrors;
-            this.skippers = source.skippers;
+            this.parameters = new ArrayList<>(source.parameters);
+            this.processors = new ArrayList<>(source.processors);
+            this.onErrors = new ArrayList<>(source.onErrors);
+            this.skippers = new ArrayList<>(source.skippers);
             this.fallbackOperator = source.fallbackOperator;
         }
 
@@ -135,10 +143,15 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
             return this;
         }
 
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         public UnaryWorkStation<INOUT> build() {
-            UnaryWorkStation<INOUT> station = new UnaryWorkStation<>();
-            applyBuilder(station, this);
-            return station;
+            return new UnaryWorkStation<>(id,
+                    (Class) type,
+                    parameters,
+                    processors,
+                    onErrors,
+                    (Operator<INOUT, INOUT>) fallbackOperator,
+                    skippers);
         }
     }
 
@@ -211,18 +224,5 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
                 return operation.build();
             }
         }
-    }
-
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static <INOUT, OP extends Operator<INOUT, INOUT>> void applyBuilder(UnaryWorkStation<INOUT> station,
-                                                                                Builder<INOUT, OP> builder) {
-        station.id = builder.id;
-        station.unary = true;
-        station.type = (Class) builder.type;
-        station.processors = builder.processors.isEmpty() ? null : new ArrayList<>(builder.processors);
-        station.parameters = builder.parameters.isEmpty() ? null : new ArrayList<>(builder.parameters);
-        station.onErrors = builder.onErrors.isEmpty() ? null : new ArrayList<>(builder.onErrors);
-        station.fallbackOperator = (Operator<INOUT, INOUT>) builder.fallbackOperator;
-        builder.skippers.forEach(station::addSkipper);
     }
 }

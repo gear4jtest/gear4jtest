@@ -2,8 +2,8 @@ package io.github.gear4jtest.xml.generator;
 
 import java.util.List;
 
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Parameters;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ProcessingOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Parameters;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ProcessingOperation;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

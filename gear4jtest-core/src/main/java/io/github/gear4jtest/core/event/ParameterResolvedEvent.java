@@ -14,7 +14,7 @@ public final class ParameterResolvedEvent extends Event {
     private final boolean cacheHit;
     private final String valueType;
 
-    public ParameterResolvedEvent(String pipelineId,
+    public ParameterResolvedEvent(String assemblyLineId,
                                   UUID executionId,
                                   UUID stationExecutionId,
                                   String operationId,
@@ -23,7 +23,7 @@ public final class ParameterResolvedEvent extends Event {
                                   String parameterDescriptor,
                                   boolean cacheHit,
                                   String valueType) {
-        super(pipelineId, executionId);
+        super(assemblyLineId, executionId);
         this.stationExecutionId = stationExecutionId;
         this.operationId = operationId;
         this.parentOperationId = parentOperationId;

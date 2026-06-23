@@ -121,7 +121,7 @@ class StationExceptionBoundaryRunnerTargetedCoverageTest {
     private static StationExecutionContext stationContext() {
         ExecutionContext globalContext = ExecutionContext.builder()
                 .executionId(UUID.randomUUID())
-                .pipelineId("pipe")
+                .assemblyLineId("pipe")
                 .services(new ExecutionServices(null, new NoOpResourceFactory()))
                 .assemblyRun(new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of()))
                 .build();
@@ -131,7 +131,7 @@ class StationExceptionBoundaryRunnerTargetedCoverageTest {
 
     private static final class TestStation extends AbstractStation<String, String> {
         private TestStation() {
-            super("station", StationKind.PROCESSING);
+            super("station", StationKind.PROCESSING, null, null, null, false, null, null);
         }
     }
 

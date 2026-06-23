@@ -68,7 +68,7 @@ class InMemoryAssemblyRunRepositoryBehaviorTest {
         repo.saveOperationRecord(log(first.id(), UUID.randomUUID(), "root", null, 10));
 
         // When / Then
-        assertThat(repo.findByPipelineId("pipe-a", PageRequest.first(10)))
+        assertThat(repo.findByAssemblyLineId("pipe-a", PageRequest.first(10)))
                 .extracting(AssemblyRunRecord::id)
                 .containsExactlyInAnyOrder(first.id(), third.id());
         assertThat(repo.findByStatus(ExecutionStatus.FAILED, PageRequest.first(10)))
@@ -96,8 +96,9 @@ class InMemoryAssemblyRunRepositoryBehaviorTest {
         assertThat(repo.findAllLogsByRunId(UUID.randomUUID(), PageRequest.first(10))).isEmpty();
     }
 
-    private static AssemblyRunRecord run(String pipelineId, ExecutionStatus status, int second) {
-        return new AssemblyRunRecord(UUID.randomUUID(), pipelineId, Map.of("pipeline", pipelineId), "input", "result",
+    private static AssemblyRunRecord run(String assemblyLineId, ExecutionStatus status, int second) {
+        return new AssemblyRunRecord(UUID.randomUUID(), assemblyLineId, Map.of("pipeline", assemblyLineId), "input",
+                "result",
                 status, java.time.Instant.parse("2026-01-01T00:00:" + twoDigits(second) + "Z"),
                 java.time.Instant.parse("2026-01-01T00:01:" + twoDigits(second) + "Z"), null, null, null, null);
     }

@@ -5,5 +5,5 @@ package io.github.gear4jtest.core.api.station;
  * without relying on {@code instanceof}.
  */
 public enum StationKind {
-    PROCESSING, CONTAINER, ITERATOR, SIGNAL, PIPELINE, OTHER
+    PROCESSING, CONTAINER, SEQUENCE, ITERATOR, SIGNAL, ASSEMBLY_LINE, ROOT, CUSTOM
 }

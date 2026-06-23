@@ -9,8 +9,13 @@ import io.github.gear4jtest.core.api.behavior.Condition;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 
 public class UnaryContainerStation<A> extends ContainerBaseStation<A, A> {
-    private UnaryContainerStation() {
-        super(new ArrayList<>(), null);
+    private UnaryContainerStation(List<Branch<A>> branches,
+                                  ContainerFunction<A> function,
+                                  boolean parallel,
+                                  ExecutorService executorService,
+                                  FlowConfig flowConfig,
+                                  Duration awaitTimeout) {
+        super(branches, function, parallel, executorService, flowConfig, awaitTimeout, true);
     }
 
     public static class Builder<A> {
@@ -75,14 +80,8 @@ public class UnaryContainerStation<A> extends ContainerBaseStation<A, A> {
 
         public UnaryContainerStation<A> build() {
             ContainerBaseStation.validateUniqueBranchIds(branches);
-            UnaryContainerStation<A> station = new UnaryContainerStation<>();
-            station.pipelines.addAll(branches);
-            station.func = function;
-            station.isParallel = isParallel;
-            station.executorService = executorService;
-            station.setFlowConfig(flowConfig);
-            station.setAwaitTimeout(awaitTimeout);
-            return station;
+            return new UnaryContainerStation<>(branches, function, isParallel, executorService, flowConfig,
+                    awaitTimeout);
         }
     }
 }

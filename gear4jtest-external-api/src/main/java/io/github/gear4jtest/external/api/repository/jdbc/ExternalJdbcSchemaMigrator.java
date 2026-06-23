@@ -4,8 +4,8 @@ import java.sql.Connection;
 import java.util.Objects;
 import javax.sql.DataSource;
 
-import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
-import io.github.gear4jtest.core.persistence.migration.JdbcSchemaMigrator;
+import io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator;
+import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 
 /** Applies versioned Gear4J external-api JDBC schema migrations. */
 public final class ExternalJdbcSchemaMigrator {

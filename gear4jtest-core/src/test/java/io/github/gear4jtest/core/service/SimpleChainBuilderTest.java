@@ -21,7 +21,7 @@ import io.github.gear4jtest.core.api.config.FlowConfig;
 import io.github.gear4jtest.core.api.config.StopPolicy;
 import io.github.gear4jtest.core.api.util.ElementModelBuilders;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
-import io.github.gear4jtest.core.engine.PipelineEngine;
+import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
 import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
@@ -68,7 +68,7 @@ public class SimpleChainBuilderTest {
                 .then(processingOperation("step9", Step9.class).build())
                 .then(ElementModelBuilders.<List<Integer>>iterate("iterator")
                         .iterableFunction(Function.identity())
-                        .pipeline(chain("sequence", processingOperation("step10", Step10.class).build()).build())
+                        .sequence(chain("sequence", processingOperation("step10", Step10.class).build()).build())
                         .collector(Collectors.toList())
                         .build())
                 .configuration(configuration().eventHandling(eventHandling()
@@ -87,7 +87,7 @@ public class SimpleChainBuilderTest {
         RunnerChainFactory runnerChainFactory = new RunnerChainFactory(StrategyRegistry.defaultRegistry());
         ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
         ResourceFactory resourceFactory = new TestResourceFactory();
-        PipelineEngine engine = PipelineEngine.builder()
+        AssemblyLineEngine engine = AssemblyLineEngine.builder()
                 .runnerChainFactory(runnerChainFactory)
                 .resourceFactory(resourceFactory).extensionResolver(runtimeExtensionResolver)
                 .executionContextRegistry(executionContextRegistry).build();
@@ -127,7 +127,7 @@ public class SimpleChainBuilderTest {
                 .then(processingOperation("step8", Step8.class).build())
                 .then(processingOperation("step9", Step9.class).build())
                 .then(ElementModelBuilders.<List<Integer>>iterate("iterator").iterableFunction(Function.identity())
-                        .pipeline(chain("sequence", processingOperation("step10", Step10.class).build()).build())
+                        .sequence(chain("sequence", processingOperation("step10", Step10.class).build()).build())
                         .collector(Collectors.toList()).build())
                 .configuration(configuration().eventHandling(eventHandling()
                         .subscription(EventSubscription.on(Event.class, testEventListener::handleEvent))
@@ -145,7 +145,7 @@ public class SimpleChainBuilderTest {
         RunnerChainFactory runnerChainFactory = new RunnerChainFactory(StrategyRegistry.defaultRegistry());
         ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
         ResourceFactory resourceFactory = new TestResourceFactory();
-        PipelineEngine engine = PipelineEngine.builder().runnerChainFactory(runnerChainFactory)
+        AssemblyLineEngine engine = AssemblyLineEngine.builder().runnerChainFactory(runnerChainFactory)
                 .resourceFactory(resourceFactory).extensionResolver(runtimeExtensionResolver)
                 .executionContextRegistry(executionContextRegistry).build();
 
@@ -190,7 +190,7 @@ public class SimpleChainBuilderTest {
         RunnerChainFactory runnerChainFactory = new RunnerChainFactory(StrategyRegistry.defaultRegistry());
         ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
         ResourceFactory resourceFactory = new TestResourceFactory();
-        PipelineEngine engine = PipelineEngine.builder().runnerChainFactory(runnerChainFactory)
+        AssemblyLineEngine engine = AssemblyLineEngine.builder().runnerChainFactory(runnerChainFactory)
                 .resourceFactory(resourceFactory).extensionResolver(runtimeExtensionResolver)
                 .executionContextRegistry(executionContextRegistry).build();
 
@@ -233,7 +233,7 @@ public class SimpleChainBuilderTest {
         RunnerChainFactory runnerChainFactory = new RunnerChainFactory(StrategyRegistry.defaultRegistry());
         ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
         ResourceFactory resourceFactory = new TestResourceFactory();
-        PipelineEngine engine = PipelineEngine.builder().runnerChainFactory(runnerChainFactory)
+        AssemblyLineEngine engine = AssemblyLineEngine.builder().runnerChainFactory(runnerChainFactory)
                 .resourceFactory(resourceFactory).extensionResolver(runtimeExtensionResolver)
                 .executionContextRegistry(executionContextRegistry).build();
 
@@ -279,7 +279,7 @@ public class SimpleChainBuilderTest {
         RunnerChainFactory runnerChainFactory = new RunnerChainFactory(StrategyRegistry.defaultRegistry());
         ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
         ResourceFactory resourceFactory = new TestResourceFactory();
-        PipelineEngine engine = PipelineEngine.builder().runnerChainFactory(runnerChainFactory)
+        AssemblyLineEngine engine = AssemblyLineEngine.builder().runnerChainFactory(runnerChainFactory)
                 .resourceFactory(resourceFactory).extensionResolver(runtimeExtensionResolver)
                 .executionContextRegistry(executionContextRegistry).build();
 
@@ -311,7 +311,7 @@ public class SimpleChainBuilderTest {
         ExecutionContextRegistry executionContextRegistry = new ExecutionContextRegistry();
         ResourceFactory resourceFactory = new TestResourceFactory();
 
-        PipelineEngine engine = PipelineEngine.builder().runnerChainFactory(runnerChainFactory)
+        AssemblyLineEngine engine = AssemblyLineEngine.builder().runnerChainFactory(runnerChainFactory)
                 .resourceFactory(resourceFactory).extensionResolver(runtimeExtensionResolver)
                 .executionContextRegistry(executionContextRegistry).build();
 

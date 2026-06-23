@@ -31,7 +31,7 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
         FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
         StationLogTrace selectedBranchLog = null;
 
-        for (ContainerBaseStation.Branch<?> element : station.getPipelines()) {
+        for (ContainerBaseStation.Branch<?> element : station.getAssemblyLines()) {
             if (element.getCondition() == null || evaluateBranchCondition(element, input, operationExecution)) {
                 Object newObject = clonePayload(input, operationExecution);
                 selectedBranchLog = runner.run(newObject, element.getStation(), operationExecution);

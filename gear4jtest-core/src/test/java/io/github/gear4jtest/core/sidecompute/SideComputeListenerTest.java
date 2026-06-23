@@ -34,7 +34,7 @@ class SideComputeListenerTest {
 
         ExecutionContext executionContext = ExecutionContext.builder()
                 .executionId(UUID.randomUUID())
-                .pipelineId("pipe")
+                .assemblyLineId("pipe")
                 .services(new ExecutionServices(eventManager, new NoOpResourceFactory()))
                 .assemblyRun(new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of()))
                 .build();
@@ -54,8 +54,8 @@ class SideComputeListenerTest {
     private static final class CustomEvent extends Event {
         private final String payload;
 
-        private CustomEvent(String pipelineId, UUID executionId, String payload) {
-            super(pipelineId, executionId);
+        private CustomEvent(String assemblyLineId, UUID executionId, String payload) {
+            super(assemblyLineId, executionId);
             this.payload = payload;
         }
 

@@ -19,11 +19,11 @@ public interface AssemblyRunManager {
         }
     }
 
-    default void heartbeat(UUID pipelineId) {
+    default void heartbeat(UUID runId) {
         // no-op
     }
 
-    default void flush(UUID pipelineId) {
+    default void flush(UUID runId) {
         // no-op by default
     }
 

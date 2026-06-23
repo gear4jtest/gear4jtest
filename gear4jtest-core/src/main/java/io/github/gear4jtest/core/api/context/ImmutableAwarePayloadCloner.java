@@ -59,7 +59,7 @@ public final class ImmutableAwarePayloadCloner implements PayloadCloner {
         }
 
         throw new PayloadCloneException("No PayloadCloner is able to isolate payload of type "
-                + payload.getClass().getName() + ". Configure a dedicated PayloadCloner on PipelineEngine.Builder "
+                + payload.getClass().getName() + ". Configure a dedicated PayloadCloner on AssemblyLineEngine.Builder "
                 + "or use immutable payloads.");
     }
 

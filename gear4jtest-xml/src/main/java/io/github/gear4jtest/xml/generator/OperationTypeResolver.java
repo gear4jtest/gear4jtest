@@ -10,15 +10,15 @@ import java.util.Map;
 import java.util.Objects;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ConditionalOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContainerOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IfElseOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IteratorOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Operation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ProcessingOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SignalOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SubLine;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ConditionalOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ContainerOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IfElseOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IteratorOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Operation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ProcessingOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SignalOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SubLine;
 
 final class OperationTypeResolver {
     private final ClassLoader classLoader;
@@ -33,7 +33,7 @@ final class OperationTypeResolver {
         return value == null || value.isBlank() ? null : JavaTypeName.parse(value);
     }
 
-    Map<Operation, OperationSignature> resolve(XmlPipelineDefinition definition) {
+    Map<Operation, OperationSignature> resolve(XmlAssemblyLineDefinition definition) {
         JavaTypeName current = JavaTypeName.parse(definition.inputType());
         for (Operation operation : definition.operations()) {
             OperationSignature signature = resolve(operation, current);

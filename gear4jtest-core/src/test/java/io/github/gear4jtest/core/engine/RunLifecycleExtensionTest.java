@@ -29,7 +29,7 @@ class RunLifecycleExtensionTest {
     void onRunStarted_shouldObserveStartedTrace() {
         // Given
         StartSnapshotExtension extension = new StartSnapshotExtension();
-        PipelineEngine engine = engine(extension);
+        AssemblyLineEngine engine = engine(extension);
 
         // When
         var result = engine.execute(pipeline(), RunRequest.builder().input("ok").build());
@@ -44,7 +44,7 @@ class RunLifecycleExtensionTest {
     @Test
     void criticalRunStartedFailure_shouldBeReturnedAsFailedExecutionResult() {
         // Given
-        PipelineEngine engine = engine(new FailingRunLifecycleExtension(true));
+        AssemblyLineEngine engine = engine(new FailingRunLifecycleExtension(true));
 
         // When
         var result = engine.execute(pipeline(), RunRequest.builder().input("ok").build());
@@ -59,7 +59,7 @@ class RunLifecycleExtensionTest {
     @Test
     void criticalRunCompletedFailure_shouldBeReturnedAsFailedExecutionResult() {
         // Given
-        PipelineEngine engine = engine(new FailingRunLifecycleExtension(false));
+        AssemblyLineEngine engine = engine(new FailingRunLifecycleExtension(false));
 
         // When
         var result = engine.execute(pipeline(), RunRequest.builder().input("ok").build());
@@ -75,8 +75,8 @@ class RunLifecycleExtensionTest {
     void criticalRunCompletedFailure_shouldBeVisibleToLaterPersistenceExtension() {
         // Given
         RecordingRunManager manager = new RecordingRunManager();
-        PipelineEngine engine = engine(List.of(new PersistenceExtension(manager),
-                                               new FailingRunLifecycleExtension(false)));
+        AssemblyLineEngine engine = engine(List.of(new PersistenceExtension(manager),
+                                                   new FailingRunLifecycleExtension(false)));
 
         // When
         var result = engine.execute(pipeline(), RunRequest.builder().input("ok").build());
@@ -86,12 +86,12 @@ class RunLifecycleExtensionTest {
         assertThat(manager.completedStatus()).hasValue(ExecutionStatus.FAILED);
     }
 
-    private static PipelineEngine engine(RuntimeExtension extension) {
+    private static AssemblyLineEngine engine(RuntimeExtension extension) {
         return engine(List.of(extension));
     }
 
-    private static PipelineEngine engine(List<? extends RuntimeExtension> extensions) {
-        return PipelineEngine.builder()
+    private static AssemblyLineEngine engine(List<? extends RuntimeExtension> extensions) {
+        return AssemblyLineEngine.builder()
                 .resourceFactory(reflectiveResourceFactory())
                 .extensionResolver(new RuntimeExtensionResolver(List.copyOf(extensions)))
                 .executionContextRegistry(new ExecutionContextRegistry())

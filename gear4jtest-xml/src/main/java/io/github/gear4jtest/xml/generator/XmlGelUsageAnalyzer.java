@@ -1,19 +1,19 @@
 package io.github.gear4jtest.xml.generator;
 
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Condition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContainerOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IfElseOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IteratorOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Operation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ProcessingOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SignalOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Condition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ContainerOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IfElseOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IteratorOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Operation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ProcessingOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SignalOperation;
 
 final class XmlGelUsageAnalyzer {
     private XmlGelUsageAnalyzer() {
     }
 
-    static boolean usesGel(XmlPipelineDefinition definition) {
+    static boolean usesGel(XmlAssemblyLineDefinition definition) {
         for (Operation operation : definition.operations()) {
             if (usesGel(operation)) {
                 return true;

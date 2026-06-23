@@ -4,7 +4,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import io.github.gear4jtest.core.api.context.PayloadCloner;
-import io.github.gear4jtest.core.engine.PipelineEngine;
+import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
 import io.github.gear4jtest.core.engine.support.TaskFactory;
@@ -56,16 +56,16 @@ public class Gear4jSpringConfiguration {
     }
 
     @Bean
-    public PipelineEngine gear4jPipelineEngine(ResourceFactory resourceFactory,
-                                               ObjectProvider<RunnerChainFactory> runnerChainFactoryProvider,
-                                               RuntimeExtensionResolver extensionResolver,
-                                               ExecutionContextRegistry executionContextRegistry,
-                                               ObjectProvider<IdGenerator> idGeneratorProvider,
-                                               ObjectProvider<TaskFactory> taskFactoryProvider,
-                                               ObjectProvider<PayloadCloner> payloadClonerProvider,
-                                               ObjectProvider<Gear4jPipelineEngineBuilderCustomizer> customizersProvider) {
+    public AssemblyLineEngine gear4jAssemblyLineEngine(ResourceFactory resourceFactory,
+                                                       ObjectProvider<RunnerChainFactory> runnerChainFactoryProvider,
+                                                       RuntimeExtensionResolver extensionResolver,
+                                                       ExecutionContextRegistry executionContextRegistry,
+                                                       ObjectProvider<IdGenerator> idGeneratorProvider,
+                                                       ObjectProvider<TaskFactory> taskFactoryProvider,
+                                                       ObjectProvider<PayloadCloner> payloadClonerProvider,
+                                                       ObjectProvider<Gear4jAssemblyLineEngineBuilderCustomizer> customizersProvider) {
 
-        PipelineEngine.Builder builder = PipelineEngine.builder().resourceFactory(resourceFactory)
+        AssemblyLineEngine.Builder builder = AssemblyLineEngine.builder().resourceFactory(resourceFactory)
                 .extensionResolver(extensionResolver).executionContextRegistry(executionContextRegistry);
 
         RunnerChainFactory runnerChainFactory = runnerChainFactoryProvider.getIfAvailable();
@@ -88,7 +88,7 @@ public class Gear4jSpringConfiguration {
             builder.payloadCloner(payloadCloner);
         }
 
-        for (Gear4jPipelineEngineBuilderCustomizer customizer : customizersProvider.orderedStream().toList()) {
+        for (Gear4jAssemblyLineEngineBuilderCustomizer customizer : customizersProvider.orderedStream().toList()) {
             customizer.customize(builder);
         }
 

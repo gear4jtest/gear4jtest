@@ -9,14 +9,15 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
  * Around-run extension point.
  *
  * <p>
- * Implementations wrap the whole pipeline run. They can add cross-cutting
+ * Implementations wrap the whole assembly line run. They can add cross-cutting
  * behavior such as timing, tracing, request decoration or policy checks, but
  * should normally delegate exactly once to {@link RunChain#proceed()}.
  * </p>
  */
 public interface RunInterceptorExtension extends RuntimeExtension {
+
     /**
-     * Wraps a pipeline run.
+     * Wraps an assembly line run.
      *
      * @param pipeline pipeline being executed
      * @param request  per-run request

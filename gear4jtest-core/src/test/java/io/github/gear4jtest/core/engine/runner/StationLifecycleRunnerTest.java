@@ -17,7 +17,7 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.SequenceStation;
 import io.github.gear4jtest.core.api.util.ElementModelBuilders;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
-import io.github.gear4jtest.core.engine.PipelineEngine;
+import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.execution.AssemblyRunManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -38,7 +38,8 @@ class StationLifecycleRunnerTest {
     @Test
     void bestEffortStationLifecycleFailure_shouldNotFailRun() {
         // Given
-        PipelineEngine engine = engine(new FailingStationLifecycleExtension(LifecycleFailureMode.BEST_EFFORT, true));
+        AssemblyLineEngine engine = engine(new FailingStationLifecycleExtension(LifecycleFailureMode.BEST_EFFORT,
+                true));
 
         // When
         ExecutionResult<String> result = engine.execute(pipeline(), RunRequest.builder().input("ok").build());
@@ -52,7 +53,7 @@ class StationLifecycleRunnerTest {
     void criticalStationStartedFailure_shouldFailThroughStationStatusWithoutExecutingDelegate() {
         // Given
         EXECUTIONS.set(0);
-        PipelineEngine engine = engine(new FailingStationLifecycleExtension(LifecycleFailureMode.CRITICAL, true));
+        AssemblyLineEngine engine = engine(new FailingStationLifecycleExtension(LifecycleFailureMode.CRITICAL, true));
 
         // When
         ExecutionResult<String> result = engine.execute(pipeline(), RunRequest.builder().input("ok").build());
@@ -69,7 +70,7 @@ class StationLifecycleRunnerTest {
     void criticalStationCompletedFailure_shouldTurnSuccessfulStationIntoFailedStatus() {
         // Given
         EXECUTIONS.set(0);
-        PipelineEngine engine = engine(new FailingStationLifecycleExtension(LifecycleFailureMode.CRITICAL, false));
+        AssemblyLineEngine engine = engine(new FailingStationLifecycleExtension(LifecycleFailureMode.CRITICAL, false));
 
         // When
         ExecutionResult<String> result = engine.execute(pipeline(), RunRequest.builder().input("ok").build());
@@ -86,9 +87,9 @@ class StationLifecycleRunnerTest {
     void persistenceExtension_shouldPersistTheNormalizedFailedStatusAfterCriticalCompletionFailure() {
         // Given
         RecordingAssemblyRunManager manager = new RecordingAssemblyRunManager("echo");
-        PipelineEngine engine = engine(List.of(new PersistenceExtension(manager),
-                                               new FailingStationLifecycleExtension(LifecycleFailureMode.CRITICAL,
-                                                       false, "echo")));
+        AssemblyLineEngine engine = engine(List.of(new PersistenceExtension(manager),
+                                                   new FailingStationLifecycleExtension(LifecycleFailureMode.CRITICAL,
+                                                           false, "echo")));
 
         // When
         ExecutionResult<String> result = engine.execute(pipeline(), RunRequest.builder().input("ok").build());
@@ -101,13 +102,14 @@ class StationLifecycleRunnerTest {
     @Test
     void criticalChildLifecycleFailure_shouldBeHandledByParentFlowPolicy() {
         // Given
-        PipelineEngine engine = engine(new FailingStationLifecycleExtension(LifecycleFailureMode.CRITICAL, true,
+        AssemblyLineEngine engine = engine(new FailingStationLifecycleExtension(LifecycleFailureMode.CRITICAL, true,
                 "first"));
         SequenceStation<String, String> sequence = SequenceStation.Builder.<String>create("sequence")
                 .next(ElementModelBuilders.processingOperation("first", EchoOperator.class).build())
-                .next(ElementModelBuilders.processingOperation("second", AppendOperator.class).build()).build();
-        sequence.setFlowConfig(new FlowConfig(FailurePolicy.IGNORE_AND_CONTINUE, StopPolicy.PROPAGATE_STOP,
-                CancelPolicy.PROPAGATE_CANCEL));
+                .next(ElementModelBuilders.processingOperation("second", AppendOperator.class).build())
+                .flowConfig(new FlowConfig(FailurePolicy.IGNORE_AND_CONTINUE, StopPolicy.PROPAGATE_STOP,
+                        CancelPolicy.PROPAGATE_CANCEL))
+                .build();
         AssemblyLine<String, String> pipeline = ElementModelBuilders.<String>createAssemblyLine("flow-policy")
                 .then(sequence).build();
 
@@ -119,12 +121,12 @@ class StationLifecycleRunnerTest {
         assertThat(result.getResult()).isEqualTo("ok-second");
     }
 
-    private static PipelineEngine engine(StationLifecycleExtension extension) {
+    private static AssemblyLineEngine engine(StationLifecycleExtension extension) {
         return engine(List.of(extension));
     }
 
-    private static PipelineEngine engine(List<? extends RuntimeExtension> extensions) {
-        return PipelineEngine.builder().resourceFactory(reflectiveResourceFactory())
+    private static AssemblyLineEngine engine(List<? extends RuntimeExtension> extensions) {
+        return AssemblyLineEngine.builder().resourceFactory(reflectiveResourceFactory())
                 .extensionResolver(new RuntimeExtensionResolver(List.copyOf(extensions)))
                 .executionContextRegistry(new ExecutionContextRegistry()).build();
     }

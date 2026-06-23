@@ -15,18 +15,14 @@ import java.util.function.Supplier;
  * </p>
  */
 public final class StationScopedResourceRegistry {
-    private final Map<String, Object> resources = new ConcurrentHashMap<>();
-
-    private static String key(String stationId, Class<?> type) {
-        return stationId + ":" + type.getName();
-    }
+    private final Map<ResourceKey, Object> resources = new ConcurrentHashMap<>();
 
     public <T> T getOrCreate(String stationId, Class<T> type, Supplier<T> factory) {
         Objects.requireNonNull(stationId, "stationId");
         Objects.requireNonNull(type, "type");
         Objects.requireNonNull(factory, "factory");
 
-        String key = key(stationId, type);
+        ResourceKey key = new ResourceKey(stationId, type);
         Object value = resources.computeIfAbsent(key, ignored -> factory.get());
         return type.cast(value);
     }
@@ -35,10 +31,17 @@ public final class StationScopedResourceRegistry {
         if (stationId == null || type == null) {
             return;
         }
-        resources.remove(key(stationId, type));
+        resources.remove(new ResourceKey(stationId, type));
     }
 
     public void clearAll() {
         resources.clear();
+    }
+
+    private record ResourceKey(String stationId, Class<?> type) {
+        private ResourceKey {
+            Objects.requireNonNull(stationId, "stationId");
+            Objects.requireNonNull(type, "type");
+        }
     }
 }

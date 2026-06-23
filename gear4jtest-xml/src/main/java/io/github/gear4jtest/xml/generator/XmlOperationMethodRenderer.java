@@ -2,20 +2,20 @@ package io.github.gear4jtest.xml.generator;
 
 import java.util.Locale;
 
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Condition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContainerOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContextParameter;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ErrorHandler;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IfElseOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IteratorOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Operation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Parameter;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ProcessingOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SignalOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SubLine;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SupplierParameter;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ValueParameter;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Condition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ContainerOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ContextParameter;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ErrorHandler;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IfElseOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IteratorOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Operation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Parameter;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ProcessingOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SignalOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SubLine;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SupplierParameter;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ValueParameter;
 
 final class XmlOperationMethodRenderer {
     private static final String INDENT_PRIVATE = "    private ";
@@ -173,7 +173,7 @@ final class XmlOperationMethodRenderer {
                 .append("\")\n");
         code.append("                .iterableFunction(")
                 .append(expressions.normalizeExpression(operation.iterableFunction(), imports)).append(")\n");
-        code.append("                .pipeline(chain(\"").append(JavaStringEscaper.escapeJava(operation.id()))
+        code.append("                .sequence(chain(\"").append(JavaStringEscaper.escapeJava(operation.id()))
                 .append(":chain\", ")
                 .append(XmlGeneratedNames.operationMethodName(operation.operation())).append("()).build())\n");
 
@@ -255,7 +255,7 @@ final class XmlOperationMethodRenderer {
     private void appendIfElseMethod(StringBuilder code,
                                     IfElseOperation operation,
                                     XmlGenerationContext context) {
-        for (XmlPipelineDefinition.ConditionalOperation conditionalOperation : operation.conditionalOperations()) {
+        for (XmlAssemblyLineDefinition.ConditionalOperation conditionalOperation : operation.conditionalOperations()) {
             appendOperationMethod(code, conditionalOperation.operation(), context);
         }
         if (operation.elseOperation() != null) {
@@ -273,7 +273,7 @@ final class XmlOperationMethodRenderer {
         code.append("        return ifElseContainer(").append(signature.inputType().renderClassLiteral(imports))
                 .append(")\n");
 
-        for (XmlPipelineDefinition.ConditionalOperation conditionalOperation : operation.conditionalOperations()) {
+        for (XmlAssemblyLineDefinition.ConditionalOperation conditionalOperation : operation.conditionalOperations()) {
             code.append("                .conditionally(\"")
                     .append(JavaStringEscaper.escapeJava(conditionalOperation.id()))
                     .append("\", ")
@@ -306,7 +306,8 @@ final class XmlOperationMethodRenderer {
                 .append("> builder = new ").append(signalStation).append(BUILDER_TYPE_PREFIX)
                 .append(signature.inputType().render(imports)).append(">()\n");
         code.append("                .id(\"").append(JavaStringEscaper.escapeJava(operation.id())).append("\")\n");
-        code.append("                .type(").append(imports.use("io.github.gear4jtest.core.api.behavior.SignalType"))
+        String stationSignalType = imports.use("io.github.gear4jtest.core.api.station.StationSignalType");
+        code.append("                .type(").append(stationSignalType)
                 .append(".").append(operation.type().toUpperCase(Locale.ROOT)).append(");\n");
         code.append("        builder.condition(")
                 .append(expressions.signalConditionLambda(operation.condition(), signature.inputType(), imports))

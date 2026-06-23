@@ -1,9 +1,11 @@
 package io.github.gear4jtest.core.engine.support;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
+import io.github.gear4jtest.core.api.assemblyline.AssemblyLineReference;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
@@ -27,10 +29,14 @@ public class TaskFactory {
                                                 String branchId) {
 
         UUID parentOperationId = ctx.getGlobalContext().getCurrentParentOperationId();
+        List<AssemblyLineReference> assemblyLineCallStackSnapshot = ctx.getGlobalContext().getAssemblyLineCallStack()
+                .snapshot();
 
         return () -> {
             ExecutionContext context = ctx.getGlobalContext();
-            try (var ignoredItem = context.enterItem(itemId);
+            try (var ignoredCallStack = context.getAssemblyLineCallStack()
+                    .restoreSnapshot(assemblyLineCallStackSnapshot);
+                    var ignoredItem = context.enterItem(itemId);
                     var ignoredBranch = context.enterBranch(branchId);
                     var ignoredParent = context.enterParentOperation(parentOperationId)) {
                 Object safeInput = inputSupplier.get();

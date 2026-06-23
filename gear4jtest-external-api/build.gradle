@@ -1,5 +1,6 @@
 dependencies {
     api project(':gear4jtest-core')
+    api project(':gear4jtest-jdbc')
     api libs.jackson
 
     implementation libs.slf4j

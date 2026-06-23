@@ -9,13 +9,13 @@ import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
-import io.github.gear4jtest.core.api.station.PipelineCallStation;
 import io.github.gear4jtest.core.api.util.ElementModelBuilders;
-import io.github.gear4jtest.core.engine.PipelineEngine;
-import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
+import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
+import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.micrometer.Gear4jMicrometerExtension;
 import io.github.gear4jtest.spring.boot.actuate.Gear4jActuatorAutoConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -38,7 +38,7 @@ class Gear4jAutoConfigurationTest {
         contextRunner.run(context -> {
             assertThat(context).hasSingleBean(Gear4jProperties.class);
             assertThat(context).hasSingleBean(ExecutionContextRegistry.class);
-            assertThat(context).hasSingleBean(PipelineEngine.class);
+            assertThat(context).hasSingleBean(AssemblyLineEngine.class);
             assertThat(context).doesNotHaveBean(DatabaseExecutionManager.class);
         });
     }
@@ -53,10 +53,10 @@ class Gear4jAutoConfigurationTest {
                                     .build())
                             .build();
                     AssemblyLine<String, String> parent = ElementModelBuilders.<String>createAssemblyLine("parent")
-                            .then(PipelineCallStation.nestedRun("call-child", child))
+                            .then(AssemblyLineCallStation.nestedRun("call-child", child))
                             .build();
 
-                    ExecutionResult<String> result = context.getBean(PipelineEngine.class)
+                    ExecutionResult<String> result = context.getBean(AssemblyLineEngine.class)
                             .execute(parent, RunRequest.builder().input("hello").build());
 
                     assertThat(result.isSuccess()).isTrue();
@@ -85,7 +85,7 @@ class Gear4jAutoConfigurationTest {
                                 .build();
 
                         // When
-                        ExecutionResult<String> result = context.getBean(PipelineEngine.class)
+                        ExecutionResult<String> result = context.getBean(AssemblyLineEngine.class)
                                 .execute(pipeline, RunRequest.builder().input("hello").build());
 
                         // Then

@@ -54,7 +54,7 @@ is explicit because `EventManager` is per-run runtime state today.
 
 ## Why the current surface is conservative
 
-Metrics with tags such as `pipelineId`, `operationId`, `exceptionClass` or
+Metrics with tags such as `assemblyLineId`, `operationId`, `exceptionClass` or
 `stationId` can quickly create high-cardinality time series, especially if
 pipelines are generated dynamically by a BO.
 

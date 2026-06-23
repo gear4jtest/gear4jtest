@@ -10,7 +10,7 @@ import io.github.gear4jtest.core.spi.security.RedactionTarget;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 
 public record AssemblyRunRecord(UUID id,
-                                String pipelineId,
+                                String assemblyLineId,
                                 Map<String, Object> context,
                                 Object inputParams,
                                 Object result,
@@ -36,7 +36,7 @@ public record AssemblyRunRecord(UUID id,
         Object redactedContext = effective.redact(RedactionTarget.RUN_CONTEXT, context);
         Map<String, Object> storedContext = redactedContext instanceof Map<?, ?> map
                 ? Map.copyOf((Map<String, Object>) map) : Map.of();
-        return new AssemblyRunRecord(trace.getId(), trace.getPipelineId(), storedContext,
+        return new AssemblyRunRecord(trace.getId(), trace.getAssemblyLineId(), storedContext,
                 effective.redact(RedactionTarget.RUN_INPUT, trace.getInputParams()),
                 effective.redact(RedactionTarget.RUN_RESULT, trace.getResult()), trace.getStatus(),
                 trace.getStartTime(),
@@ -53,7 +53,7 @@ public record AssemblyRunRecord(UUID id,
     public AssemblyRunTrace toTrace() {
         AssemblyRunTrace trace = new AssemblyRunTrace();
         trace.setId(id);
-        trace.setPipelineId(pipelineId);
+        trace.setAssemblyLineId(assemblyLineId);
         trace.setContext(context == null ? Map.of() : new LinkedHashMap<>(context));
         trace.setInputParams(inputParams);
         trace.setResult(result);

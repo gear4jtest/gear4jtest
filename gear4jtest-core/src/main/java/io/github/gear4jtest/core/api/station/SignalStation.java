@@ -1,19 +1,23 @@
 package io.github.gear4jtest.core.api.station;
 
+import java.util.Objects;
 import java.util.function.Predicate;
 
-import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 
 public class SignalStation<IN> extends AbstractStation<IN, IN> {
-    protected SignalType signalType;
-    protected Predicate<SignalInterpretationContext<IN>> condition;
+    private final StationSignalType signalType;
+    private final Predicate<SignalInterpretationContext<IN>> condition;
 
-    public SignalStation() {
-        super("", StationKind.SIGNAL);
+    private SignalStation(String id,
+                          StationSignalType signalType,
+                          Predicate<SignalInterpretationContext<IN>> condition) {
+        super(id, StationKind.SIGNAL, null, null, null, true, null, null);
+        this.signalType = Objects.requireNonNull(signalType, "signalType is required");
+        this.condition = Objects.requireNonNull(condition, "condition is required");
     }
 
-    public SignalType getSignalType() {
+    public StationSignalType getSignalType() {
         return signalType;
     }
 
@@ -23,16 +27,16 @@ public class SignalStation<IN> extends AbstractStation<IN, IN> {
 
     public static class Builder<IN> {
         private String id = "";
-        private SignalType signalType;
+        private StationSignalType signalType;
         private Predicate<SignalInterpretationContext<IN>> condition;
 
         public Builder<IN> id(String id) {
-            this.id = java.util.Objects.requireNonNull(id, "id is required");
+            this.id = Objects.requireNonNull(id, "id is required");
             return this;
         }
 
-        public Builder<IN> type(SignalType signalType) {
-            this.signalType = signalType;
+        public Builder<IN> type(StationSignalType signalType) {
+            this.signalType = Objects.requireNonNull(signalType, "signalType is required");
             return this;
         }
 
@@ -42,17 +46,14 @@ public class SignalStation<IN> extends AbstractStation<IN, IN> {
         }
 
         public SignalStation<IN> build() {
-            SignalStation<IN> station = new SignalStation<>();
-            station.id = id;
-            station.signalType = signalType;
-            station.condition = condition;
-            return station;
+            return new SignalStation<>(id, signalType != null ? signalType : StationSignalType.FATAL,
+                    condition != null ? condition : ignored -> true);
         }
     }
 
     public static class SignalInterpretationContext<T> {
-        private T item;
-        private ExecutionContext itemExecution;
+        private final T item;
+        private final ExecutionContext itemExecution;
 
         public SignalInterpretationContext(T item, ExecutionContext itemExecution) {
             this.item = item;

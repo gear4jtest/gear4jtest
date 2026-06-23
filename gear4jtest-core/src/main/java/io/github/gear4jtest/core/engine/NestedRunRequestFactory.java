@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Optional;
 
 import io.github.gear4jtest.core.api.RunRequest;
+import io.github.gear4jtest.core.api.assemblyline.NestedRunContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.pipeline.NestedRunContext;
 import io.github.gear4jtest.core.spi.factory.IdGenerator;
 
 final class NestedRunRequestFactory {
@@ -19,7 +19,7 @@ final class NestedRunRequestFactory {
          * NESTED_RUN currently inherits the full key/value context from the parent run.
          * This is an explicit MVP choice. A future ContextPropagationPolicy can narrow
          * this to NONE, ALL or an explicit projection without changing the
-         * PipelineCallStation contract.
+         * AssemblyLineCallStation contract.
          */
         return RunRequest.builder().input(input)
                 .context(new HashMap<>(parentContext.getGlobalContext().getContext()))
@@ -27,7 +27,7 @@ final class NestedRunRequestFactory {
                 .withIdGenerator(Optional.ofNullable(parentContext.getGlobalContext().getIdGenerator())
                         .orElse(defaultIdGenerator))
                 .nestedRunContext(nestedRunContext)
-                .pipelineCallStack(parentContext.getGlobalContext().getPipelineCallStack())
+                .assemblyLineCallStack(parentContext.getGlobalContext().getAssemblyLineCallStack())
                 .cancellationToken(parentContext.getGlobalContext().getCancellationToken()).build();
     }
 }

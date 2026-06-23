@@ -9,14 +9,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EventTest {
     @Test
     void constructor_shouldInitializeAllFields() {
-        String pipelineId = "pipeline-1";
+        String assemblyLineId = "pipeline-1";
         var executionId = UUID.randomUUID();
         String type = "MY_EVENT";
 
-        Event event = new Event(pipelineId, executionId, type);
+        Event event = new Event(assemblyLineId, executionId, type);
 
         assertThat(event.getId()).isNotNull().isInstanceOf(UUID.class);
-        assertThat(event.getPipelineId()).isEqualTo(pipelineId);
+        assertThat(event.getAssemblyLineId()).isEqualTo(assemblyLineId);
         assertThat(event.getExecutionId()).isEqualTo(executionId);
         assertThat(event.getName()).isEqualTo(type);
     }

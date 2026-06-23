@@ -4,9 +4,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStack;
+import io.github.gear4jtest.core.api.assemblyline.NestedRunContext;
 import io.github.gear4jtest.core.api.context.CancellationToken;
-import io.github.gear4jtest.core.api.pipeline.NestedRunContext;
-import io.github.gear4jtest.core.api.pipeline.PipelineCallStack;
 import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
 import io.github.gear4jtest.core.spi.factory.IdGenerator;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
@@ -28,7 +28,7 @@ class RunRequestDeepCoverageTest {
         assertThat(request.getResourceFactory()).isNull();
         assertThat(request.getIdGenerator()).isNull();
         assertThat(request.getNestedRunContext()).isNull();
-        assertThat(request.getPipelineCallStack()).isNull();
+        assertThat(request.getAssemblyLineCallStack()).isNull();
         assertThat(request.getCancellationToken()).isNull();
     }
 
@@ -47,7 +47,7 @@ class RunRequestDeepCoverageTest {
         IdGenerator idGenerator = () -> UUID.fromString("00000000-0000-7000-8000-000000000123");
         NestedRunContext nested = new NestedRunContext(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 "parent", "station");
-        PipelineCallStack callStack = PipelineCallStack.withMaxDepth(5);
+        AssemblyLineCallStack callStack = AssemblyLineCallStack.withMaxDepth(5);
         CancellationToken token = new CancellationToken();
         RunRequest request = RunRequest.builder()
                 .input("input")
@@ -55,7 +55,7 @@ class RunRequestDeepCoverageTest {
                 .resourceFactory(resourceFactory)
                 .withIdGenerator(idGenerator)
                 .nestedRunContext(nested)
-                .pipelineCallStack(callStack)
+                .assemblyLineCallStack(callStack)
                 .cancellationToken(token)
                 .with(extension)
                 .build();
@@ -70,7 +70,7 @@ class RunRequestDeepCoverageTest {
         assertThat(copy.getResourceFactory()).isSameAs(resourceFactory);
         assertThat(copy.getIdGenerator()).isSameAs(idGenerator);
         assertThat(copy.getNestedRunContext()).isSameAs(nested);
-        assertThat(copy.getPipelineCallStack()).isSameAs(callStack);
+        assertThat(copy.getAssemblyLineCallStack()).isSameAs(callStack);
         assertThat(copy.getCancellationToken()).isSameAs(token);
         assertThat(copy.getExtensions()).containsExactly(extension);
         assertThatThrownBy(() -> copy.getExtensions().add(new RuntimeExtension() {}))

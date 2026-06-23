@@ -5,12 +5,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
+import io.github.gear4jtest.core.api.assemblyline.AssemblyLineExecutionMode;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.pipeline.PipelineExecutionMode;
 import io.github.gear4jtest.core.api.station.SignalStation;
+import io.github.gear4jtest.core.api.station.StationSignalType;
 import io.github.gear4jtest.core.api.station.WorkStation;
 import org.junit.jupiter.api.Test;
 
@@ -46,17 +47,17 @@ class ElementModelBuildersTest {
             assertThat(ElementModelBuilders.iterate("items").accumulator(ElementModelBuilders.toList()).build()
                     .getId()).isEqualTo("items");
             assertThat(ElementModelBuilders.container(String.class).withSubLine("branch", branch)
-                    .returns(value -> value).getPipelines()).hasSize(1);
+                    .returns(value -> value).getAssemblyLines()).hasSize(1);
             assertThat(ElementModelBuilders.container(String.class, executor).withSubLine("branch", branch)
                     .returns(value -> value).getExecutorService()).isSameAs(executor);
-            assertThat(ElementModelBuilders.ifElseContainer(String.class).build().getPipelines()).isEmpty();
+            assertThat(ElementModelBuilders.ifElseContainer(String.class).build().getAssemblyLines()).isEmpty();
         } finally {
             executor.shutdownNow();
         }
     }
 
     @Test
-    void signalAndPipelineFactories_shouldBuildExpectedDefinitions() {
+    void signalAndAssemblyLineFactories_shouldBuildExpectedDefinitions() {
         // Given
         WorkStation<String, String> station = ElementModelBuilders
                 .<String, String, IdentityOperator>processingOperation("identity", IdentityOperator.class)
@@ -73,13 +74,13 @@ class ElementModelBuildersTest {
                 .build();
 
         // Then
-        assertThat(fatal.getSignalType()).isEqualTo(SignalType.FATAL);
-        assertThat(mapFatal.getSignalType()).isEqualTo(SignalType.FATAL);
-        assertThat(ElementModelBuilders.inlinePipeline("inline", child).getExecutionMode())
-                .isEqualTo(PipelineExecutionMode.INLINE);
-        assertThat(ElementModelBuilders.nestedPipeline("nested", child).getExecutionMode())
-                .isEqualTo(PipelineExecutionMode.NESTED_RUN);
-        assertThat(ElementModelBuilders.<String, String>pipelineCall("call").directTarget(child).build().getId())
+        assertThat(fatal.getSignalType()).isEqualTo(StationSignalType.FATAL);
+        assertThat(mapFatal.getSignalType()).isEqualTo(StationSignalType.FATAL);
+        assertThat(ElementModelBuilders.inlineAssemblyLine("inline", child).getExecutionMode())
+                .isEqualTo(AssemblyLineExecutionMode.INLINE);
+        assertThat(ElementModelBuilders.nestedAssemblyLine("nested", child).getExecutionMode())
+                .isEqualTo(AssemblyLineExecutionMode.NESTED_RUN);
+        assertThat(ElementModelBuilders.<String, String>assemblyLineCall("call").directTarget(child).build().getId())
                 .isEqualTo("call");
         assertThat(ElementModelBuilders.chain("chain", station).build().getId()).isEqualTo("chain");
     }

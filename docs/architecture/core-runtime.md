@@ -6,7 +6,7 @@ Implemented, evolving.
 
 ## Summary
 
-The core runtime executes an `AssemblyLine` through `PipelineEngine`.
+The core runtime executes an `AssemblyLine` through `AssemblyLineEngine`.
 
 The engine is responsible for:
 
@@ -22,13 +22,13 @@ The engine is responsible for:
 
 | Type                       | Role                                                         |
 |----------------------------|--------------------------------------------------------------|
-| `AssemblyLine`             | Pipeline definition.                                         |
+| `AssemblyLine`             | AssemblyLine definition.                                         |
 | `RunRequest`               | Per-run input, context and runtime overrides.                |
 | `ExecutionResult`          | Public result returned by execution.                         |
 | `ExecutionContext`         | Mutable state of one run.                                    |
 | `ExecutionServices`        | Run-scoped services used by strategies and station contexts. |
 | `StationExecutionContext`  | Context exposed to station execution and user code.          |
-| `PipelineEngine`           | Runtime orchestrator.                                        |
+| `AssemblyLineEngine`           | Runtime orchestrator.                                        |
 | `StationRunner`            | Executes a station through a composable runner chain.        |
 | `StationExecutionStrategy` | Strategy for a specific station kind.                        |
 
@@ -70,8 +70,13 @@ Examples:
 - `ContainerStationStrategy` executes branches and aggregates outcomes.
 - `IfElseContainerStationStrategy` chooses a branch.
 - `IteratorStationStrategy` iterates and accumulates output.
-- `PipelineCallStationStrategy` executes child pipelines.
+- `AssemblyLineCallStationStrategy` executes child pipelines.
 - `SignalStationStrategy` produces flow signals.
+
+Station definitions are immutable after construction. Optional behavior such as processors, error policies, skip rules,
+metadata, flow configuration, container timeouts and synthetic/root flags must be provided through builders or
+constructors. Runtime state belongs in `ExecutionContext`, `StationExecutionContext` and trace objects, never in the
+station graph itself.
 
 Container branches must have explicit, stable branch identifiers. Branch ids are used as functional keys for sibling
 outcomes in sequential containers, not only as trace labels. The runtime must not generate random branch ids, because
@@ -92,9 +97,9 @@ General rules:
 - JVM `Error` should not be swallowed as an ordinary recoverable failure.
 - Persistence and event failures must not silently corrupt the runtime trace.
 
-## Pipeline calls
+## AssemblyLine calls
 
-`PipelineCallStation` can execute a child pipeline inline or as a nested run.
+`AssemblyLineCallStation` can execute a child pipeline inline or as a nested run.
 
 A nested run creates its own execution trace and runtime setup. The current MVP inherits parent key/value context for
 nested runs, but this is an explicit implementation choice that can later become a configurable context propagation

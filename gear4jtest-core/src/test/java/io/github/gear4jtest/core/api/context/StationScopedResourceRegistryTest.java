@@ -27,6 +27,17 @@ class StationScopedResourceRegistryTest {
     }
 
     @Test
+    void getOrCreate_shouldKeepStationIdsContainingSeparatorsIndependent() {
+        StationScopedResourceRegistry registry = new StationScopedResourceRegistry();
+
+        String first = registry.getOrCreate("a:b", String.class, () -> "first");
+        String second = registry.getOrCreate("a", String.class, () -> "second");
+
+        assertThat(first).isEqualTo("first");
+        assertThat(second).isEqualTo("second");
+    }
+
+    @Test
     void clear_shouldRemoveOnlyOneStationScopedResource() {
         StationScopedResourceRegistry registry = new StationScopedResourceRegistry();
         String original = registry.getOrCreate("station", String.class, () -> "one");

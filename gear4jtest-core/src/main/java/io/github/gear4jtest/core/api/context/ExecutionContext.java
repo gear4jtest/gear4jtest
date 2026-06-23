@@ -9,9 +9,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStack;
+import io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContract;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
-import io.github.gear4jtest.core.api.pipeline.PipelineCallStack;
-import io.github.gear4jtest.core.api.pipeline.PipelineRuntimeContract;
 import io.github.gear4jtest.core.event.EventPayloadPolicy;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.sidecompute.SideComputeContext;
@@ -22,14 +22,14 @@ public class ExecutionContext {
     private final ThreadLocal<String> currentBranchId = new ThreadLocal<>();
     private final ThreadLocal<Deque<UUID>> parentStack = ThreadLocal.withInitial(ArrayDeque::new);
     private final UUID executionId;
-    private final String pipelineId;
+    private final String assemblyLineId;
     private final Map<String, Object> context = new ConcurrentHashMap<>();
     private final SideComputeContext sideComputeContext = new SideComputeContext();
     private final AssemblyRunTrace assemblyRun;
     private final ExecutionServices services;
     private final EventRuntimeOptions eventRuntimeOptions;
-    private final PipelineRuntimeContract runtimeContract;
-    private final PipelineCallStack pipelineCallStack;
+    private final AssemblyLineRuntimeContract runtimeContract;
+    private final AssemblyLineCallStack assemblyLineCallStack;
     private final IdGenerator idGenerator;
     private final CancellationToken cancellationToken;
 
@@ -38,16 +38,16 @@ public class ExecutionContext {
     }
 
     private ExecutionContext(Builder builder) {
-        this.pipelineId = builder.pipelineId;
+        this.assemblyLineId = builder.assemblyLineId;
         this.executionId = builder.executionId;
         this.services = Objects.requireNonNull(builder.services, "services");
         this.assemblyRun = builder.assemblyRun;
         this.eventRuntimeOptions = builder.eventRuntimeOptions != null
                 ? builder.eventRuntimeOptions : EventRuntimeOptions.disabled();
         this.runtimeContract = builder.runtimeContract != null
-                ? builder.runtimeContract : PipelineRuntimeContract.inlineConfigless();
-        this.pipelineCallStack = builder.pipelineCallStack != null ? builder.pipelineCallStack
-                : PipelineCallStack.create();
+                ? builder.runtimeContract : AssemblyLineRuntimeContract.inlineConfigless();
+        this.assemblyLineCallStack = builder.assemblyLineCallStack != null ? builder.assemblyLineCallStack
+                : AssemblyLineCallStack.create();
         this.idGenerator = builder.idGenerator;
         this.cancellationToken = builder.cancellationToken != null ? builder.cancellationToken
                 : new CancellationToken();
@@ -55,12 +55,12 @@ public class ExecutionContext {
 
     public static final class Builder {
         private UUID executionId;
-        private String pipelineId;
+        private String assemblyLineId;
         private ExecutionServices services;
         private AssemblyRunTrace assemblyRun;
         private EventRuntimeOptions eventRuntimeOptions;
-        private PipelineRuntimeContract runtimeContract;
-        private PipelineCallStack pipelineCallStack;
+        private AssemblyLineRuntimeContract runtimeContract;
+        private AssemblyLineCallStack assemblyLineCallStack;
         private IdGenerator idGenerator;
         private CancellationToken cancellationToken;
 
@@ -72,8 +72,8 @@ public class ExecutionContext {
             return this;
         }
 
-        public Builder pipelineId(String pipelineId) {
-            this.pipelineId = pipelineId;
+        public Builder assemblyLineId(String assemblyLineId) {
+            this.assemblyLineId = assemblyLineId;
             return this;
         }
 
@@ -92,13 +92,13 @@ public class ExecutionContext {
             return this;
         }
 
-        public Builder runtimeContract(PipelineRuntimeContract runtimeContract) {
+        public Builder runtimeContract(AssemblyLineRuntimeContract runtimeContract) {
             this.runtimeContract = runtimeContract;
             return this;
         }
 
-        public Builder pipelineCallStack(PipelineCallStack pipelineCallStack) {
-            this.pipelineCallStack = pipelineCallStack;
+        public Builder assemblyLineCallStack(AssemblyLineCallStack assemblyLineCallStack) {
+            this.assemblyLineCallStack = assemblyLineCallStack;
             return this;
         }
 
@@ -117,8 +117,8 @@ public class ExecutionContext {
         }
     }
 
-    public String getPipelineId() {
-        return pipelineId;
+    public String getAssemblyLineId() {
+        return assemblyLineId;
     }
 
     public <T> void put(String key, T value) {
@@ -162,7 +162,7 @@ public class ExecutionContext {
         return sideComputeContext;
     }
 
-    public AssemblyRunTrace getPipelineExecution() {
+    public AssemblyRunTrace getAssemblyLineExecution() {
         return assemblyRun;
     }
 
@@ -174,12 +174,12 @@ public class ExecutionContext {
         return eventRuntimeOptions;
     }
 
-    public PipelineRuntimeContract getRuntimeContract() {
+    public AssemblyLineRuntimeContract getRuntimeContract() {
         return runtimeContract;
     }
 
-    public PipelineCallStack getPipelineCallStack() {
-        return pipelineCallStack;
+    public AssemblyLineCallStack getAssemblyLineCallStack() {
+        return assemblyLineCallStack;
     }
 
     public IdGenerator getIdGenerator() {

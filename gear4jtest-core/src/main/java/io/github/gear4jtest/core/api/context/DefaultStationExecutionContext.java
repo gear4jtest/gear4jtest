@@ -32,7 +32,7 @@ public class DefaultStationExecutionContext implements StationExecutionContext {
                                           ExecutionContext globalContext,
                                           ExecutionSupport support) {
         this.operationId = operationId;
-        this.kind = StationKind.OTHER;
+        this.kind = StationKind.ROOT;
         this.globalContext = globalContext;
         this.support = support;
         this.trace = null;

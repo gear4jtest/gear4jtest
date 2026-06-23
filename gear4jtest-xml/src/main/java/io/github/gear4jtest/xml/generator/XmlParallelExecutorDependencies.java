@@ -3,12 +3,12 @@ package io.github.gear4jtest.xml.generator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContainerOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IfElseOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IteratorOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Operation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SubLine;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ContainerOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IfElseOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IteratorOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Operation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SubLine;
 
 /**
  * Collects generated executor dependencies required by parallel XML containers.
@@ -17,7 +17,7 @@ final class XmlParallelExecutorDependencies {
     private XmlParallelExecutorDependencies() {
     }
 
-    static Map<ContainerOperation, String> collect(XmlPipelineDefinition definition) {
+    static Map<ContainerOperation, String> collect(XmlAssemblyLineDefinition definition) {
         Map<ContainerOperation, String> executorFields = new LinkedHashMap<>();
         Map<String, ContainerOperation> ownersByField = new LinkedHashMap<>();
 
@@ -54,7 +54,7 @@ final class XmlParallelExecutorDependencies {
         }
 
         if (operation instanceof IfElseOperation ifElseOperation) {
-            for (XmlPipelineDefinition.ConditionalOperation conditionalOperation : ifElseOperation
+            for (XmlAssemblyLineDefinition.ConditionalOperation conditionalOperation : ifElseOperation
                     .conditionalOperations()) {
                 collect(conditionalOperation.operation(), executorFields, ownersByField);
             }

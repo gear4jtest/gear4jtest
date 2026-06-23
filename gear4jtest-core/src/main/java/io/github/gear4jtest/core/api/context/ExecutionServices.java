@@ -17,8 +17,8 @@ import io.github.gear4jtest.core.spi.factory.ResourceFactory;
  * </p>
  *
  * <p>
- * Internal orchestration capabilities, such as launching nested pipeline runs,
- * must not be added here. They are reserved to engine strategies so user
+ * Internal orchestration capabilities, such as launching nested assembly line
+ * runs, must not be added here. They are reserved to engine strategies so user
  * components cannot bypass validation, lineage tracking or BO traceability.
  * </p>
  */

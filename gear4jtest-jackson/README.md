@@ -35,7 +35,7 @@ ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 PayloadCloner payloadCloner = JacksonPayloadCloners.with(objectMapper);
 ```
 
-Pass the cloner to the `PipelineEngine` builder where the engine is assembled.
+Pass the cloner to the `AssemblyLineEngine` builder where the engine is assembled.
 
 ## When to use this module
 

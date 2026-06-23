@@ -1,6 +1,9 @@
 package io.github.gear4jtest.core.execution;
 
-/** Point-in-time observability snapshot for asynchronous JDBC persistence. */
+/**
+ * Point-in-time observability snapshot for an asynchronous persistence
+ * implementation.
+ */
 public record PersistenceRuntimeStats(int activeRuns,
                                       int bufferedStationLogs,
                                       long scheduledFlushes,

@@ -3,7 +3,7 @@ package io.github.gear4jtest.xml.generator;
 import java.util.Objects;
 
 import io.github.gear4jtest.external.api.translator.OperationChainTranslator;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
 
 /**
  * Public XML-to-Java generator facade.
@@ -103,8 +103,9 @@ public final class XmlToJavaGenerator {
         return classLoader != null ? classLoader : ClassLoader.getSystemClassLoader();
     }
 
-    public OperationChainTranslator.GenerationResult generate(XmlPipelineDefinition definition) {
-        GeneratedJavaSource generatedSource = new XmlGeneratedPipelineRenderer(packageName, classLoader, sourcePolicy)
+    public OperationChainTranslator.GenerationResult generate(XmlAssemblyLineDefinition definition) {
+        GeneratedJavaSource generatedSource = new XmlGeneratedAssemblyLineRenderer(packageName, classLoader,
+                sourcePolicy)
                 .render(definition);
         return new OperationChainTranslator.GenerationResult(
                 generatedSource.fullyQualifiedClassName(), formatter.format(generatedSource.source()));

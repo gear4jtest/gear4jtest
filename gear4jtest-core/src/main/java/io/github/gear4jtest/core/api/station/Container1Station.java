@@ -25,7 +25,9 @@ public class Container1Station<IN, OUT, A> extends ContainerBaseStation<IN, OUT>
         @Override
         @SuppressWarnings("unchecked")
         default B apply(Object... objects) {
-            assert objects != null && objects.length == 1;
+            if (objects == null || objects.length != 1) {
+                throw new IllegalArgumentException("Expected exactly one container result");
+            }
             return applya((A) objects[0]);
         }
     }

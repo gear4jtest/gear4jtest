@@ -12,7 +12,7 @@ import io.github.gear4jtest.core.spi.security.RedactionTarget;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 
 public record StationLogRecord(UUID id,
-                               UUID pipelineExecutionId,
+                               UUID assemblyLineExecutionId,
                                String operationId,
                                UUID parentOperationId,
                                String branchId,
@@ -24,7 +24,7 @@ public record StationLogRecord(UUID id,
                                Map<String, Object> context,
                                String itemId) {
     public StationLogRecord(UUID id,
-                            UUID pipelineExecutionId,
+                            UUID assemblyLineExecutionId,
                             String operationId,
                             UUID parentOperationId,
                             StationLogStatus status,
@@ -34,7 +34,8 @@ public record StationLogRecord(UUID id,
                             String errorHandlerMessages,
                             Map<String, Object> context,
                             String itemId) {
-        this(id, pipelineExecutionId, operationId, parentOperationId, null, status, startedAt, endedAt, errorMessage,
+        this(id, assemblyLineExecutionId, operationId, parentOperationId, null, status, startedAt, endedAt,
+                errorMessage,
                 errorHandlerMessages, context, itemId);
     }
 
@@ -44,7 +45,7 @@ public record StationLogRecord(UUID id,
         }
         Map<String, Object> copiedContext = log.getContext() == null ? Map.of()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(log.getContext()));
-        return new StationLogRecord(log.getId(), log.getPipelineExecutionId(), log.getOperationId(),
+        return new StationLogRecord(log.getId(), log.getAssemblyLineExecutionId(), log.getOperationId(),
                 log.getParentOperationId(), log.getBranchId(), log.getStatus(), log.getStartedAt(), log.getEndedAt(),
                 log.getErrorMessage(), log.getErrorHandlerMessages(), copiedContext, log.getItemId());
     }
@@ -55,7 +56,7 @@ public record StationLogRecord(UUID id,
         Object redactedContext = effective.redact(RedactionTarget.STATION_CONTEXT, context);
         Map<String, Object> storedContext = redactedContext instanceof Map<?, ?> map
                 ? Collections.unmodifiableMap(new LinkedHashMap<>((Map<String, Object>) map)) : Map.of();
-        return new StationLogRecord(id, pipelineExecutionId, operationId, parentOperationId, branchId, status,
+        return new StationLogRecord(id, assemblyLineExecutionId, operationId, parentOperationId, branchId, status,
                 startedAt, endedAt, stringValue(effective.redact(RedactionTarget.STATION_ERROR_MESSAGE, errorMessage)),
                 stringValue(effective.redact(RedactionTarget.STATION_ERROR_HANDLER_MESSAGES, errorHandlerMessages)),
                 storedContext, itemId);

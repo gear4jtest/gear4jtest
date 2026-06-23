@@ -1,0 +1,8 @@
+dependencies {
+    api project(':gear4jtest-core')
+
+    api libs.jackson
+    implementation libs.slf4j
+}
+
+ext.moduleName = 'io.github.gear4jtest.jdbc'

@@ -58,7 +58,7 @@ public final class SideComputeWaitProcessor implements Processor {
 
         } catch (TimeoutException te) {
             switch (onTimeout) {
-                case FAIL_PIPELINE -> {
+                case FAIL_ASSEMBLY_LINE -> {
                     future.completeExceptionally(te);
                     throw new SideComputeTimeoutException(key, effectiveTimeout, te);
                 }
@@ -87,17 +87,18 @@ public final class SideComputeWaitProcessor implements Processor {
     }
 
     public enum OnTimeout {
-        FAIL_PIPELINE, USE_FALLBACK, IGNORE
+        FAIL_ASSEMBLY_LINE, USE_FALLBACK, IGNORE
     }
 
     public static final class Builder {
         private final String key;
         private Duration timeout;
         private Duration safetyTimeout = DEFAULT_SAFETY_TIMEOUT;
-        private OnTimeout onTimeout = OnTimeout.FAIL_PIPELINE;
+        private OnTimeout onTimeout = OnTimeout.FAIL_ASSEMBLY_LINE;
         private Supplier<?> fallback;
 
         private Builder(String key) {
+            SideComputeKeys.validateUserKey(key);
             this.key = key;
         }
 
@@ -112,7 +113,7 @@ public final class SideComputeWaitProcessor implements Processor {
         }
 
         public Builder onTimeoutFail() {
-            this.onTimeout = OnTimeout.FAIL_PIPELINE;
+            this.onTimeout = OnTimeout.FAIL_ASSEMBLY_LINE;
             this.fallback = null;
             return this;
         }

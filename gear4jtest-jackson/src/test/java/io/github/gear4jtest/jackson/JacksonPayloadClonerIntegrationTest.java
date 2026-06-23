@@ -12,7 +12,7 @@ import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.api.station.UnaryWorkStation;
 import io.github.gear4jtest.core.api.util.ElementModelBuilders;
-import io.github.gear4jtest.core.engine.PipelineEngine;
+import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
 import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class JacksonPayloadClonerIntegrationTest {
-    private static PipelineEngine newEngine(Object payloadCloner) {
-        PipelineEngine.Builder builder = PipelineEngine.builder().resourceFactory(resourceFactory())
+    private static AssemblyLineEngine newEngine(Object payloadCloner) {
+        AssemblyLineEngine.Builder builder = AssemblyLineEngine.builder().resourceFactory(resourceFactory())
                 .runnerChainFactory(new RunnerChainFactory(StrategyRegistry.defaultRegistry()))
                 .extensionResolver(new RuntimeExtensionResolver(List.of()))
                 .executionContextRegistry(new ExecutionContextRegistry());
@@ -51,7 +51,7 @@ class JacksonPayloadClonerIntegrationTest {
         };
     }
 
-    private static AssemblyLine<MutablePayload, MutablePayload> parallelContainerPipeline(ExecutorService executor) {
+    private static AssemblyLine<MutablePayload, MutablePayload> parallelContainerAssemblyLine(ExecutorService executor) {
         UnaryWorkStation<MutablePayload> branchOne = ElementModelBuilders
                 .unaryProcessingOperation("branch-one", AddBranchOneOperator.class).build();
 
@@ -70,8 +70,8 @@ class JacksonPayloadClonerIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try {
             // Given
-            PipelineEngine engine = newEngine(null);
-            AssemblyLine<MutablePayload, MutablePayload> pipeline = parallelContainerPipeline(executor);
+            AssemblyLineEngine engine = newEngine(null);
+            AssemblyLine<MutablePayload, MutablePayload> pipeline = parallelContainerAssemblyLine(executor);
             MutablePayload input = MutablePayload.seed("seed");
 
             // When
@@ -93,8 +93,8 @@ class JacksonPayloadClonerIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try {
             // Given
-            PipelineEngine engine = newEngine(JacksonPayloadCloners.defaultMapper());
-            AssemblyLine<MutablePayload, MutablePayload> pipeline = parallelContainerPipeline(executor);
+            AssemblyLineEngine engine = newEngine(JacksonPayloadCloners.defaultMapper());
+            AssemblyLine<MutablePayload, MutablePayload> pipeline = parallelContainerAssemblyLine(executor);
             MutablePayload input = MutablePayload.seed("seed");
 
             // When

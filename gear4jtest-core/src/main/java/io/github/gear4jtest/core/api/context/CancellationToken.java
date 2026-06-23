@@ -3,7 +3,7 @@ package io.github.gear4jtest.core.api.context;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.github.gear4jtest.core.exception.PipelineCancellationException;
+import io.github.gear4jtest.core.exception.AssemblyLineCancellationException;
 
 /**
  * Cooperative cancellation signal shared by all stations of one run.
@@ -15,15 +15,15 @@ import io.github.gear4jtest.core.exception.PipelineCancellationException;
  * </p>
  */
 public final class CancellationToken {
-    private final AtomicReference<PipelineCancellationException> cancellation = new AtomicReference<>();
+    private final AtomicReference<AssemblyLineCancellationException> cancellation = new AtomicReference<>();
 
     /** Requests cancellation once and preserves the first reason. */
     public boolean cancel(String reason) {
-        return cancel(new PipelineCancellationException(reason));
+        return cancel(new AssemblyLineCancellationException(reason));
     }
 
     /** Requests cancellation once and preserves the first cause. */
-    public boolean cancel(PipelineCancellationException cause) {
+    public boolean cancel(AssemblyLineCancellationException cause) {
         if (cause == null) {
             throw new IllegalArgumentException("cancellation cause must not be null");
         }
@@ -34,7 +34,7 @@ public final class CancellationToken {
         return cancellation.get() != null;
     }
 
-    public Optional<PipelineCancellationException> cancellationCause() {
+    public Optional<AssemblyLineCancellationException> cancellationCause() {
         return Optional.ofNullable(cancellation.get());
     }
 
@@ -42,7 +42,7 @@ public final class CancellationToken {
      * Throws the recorded cancellation exception when cancellation was requested.
      */
     public void throwIfCancellationRequested() {
-        PipelineCancellationException cause = cancellation.get();
+        AssemblyLineCancellationException cause = cancellation.get();
         if (cause != null) {
             throw cause;
         }

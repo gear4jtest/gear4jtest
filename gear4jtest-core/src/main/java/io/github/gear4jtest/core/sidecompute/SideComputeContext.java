@@ -21,7 +21,7 @@ public final class SideComputeContext {
         futures.values().forEach(future -> {
             if (!future.isDone()) {
                 future.completeExceptionally(new CancellationException(
-                        "Pipeline execution ended before side-compute completion"));
+                        "AssemblyLine execution ended before side-compute completion"));
             }
         });
     }

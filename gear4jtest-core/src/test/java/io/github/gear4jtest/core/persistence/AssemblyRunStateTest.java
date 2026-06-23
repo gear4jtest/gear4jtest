@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.model.StationLogStatus;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,13 +16,13 @@ class AssemblyRunStateTest {
     @Test
     void childOf_shouldLinkParentAndRootExecution() {
         UUID rootId = UUID.randomUUID();
-        AssemblyRun parent = new AssemblyRun(UUID.randomUUID(), "parent", Map.of("k", "v"));
+        AssemblyRunTrace parent = new AssemblyRunTrace(UUID.randomUUID(), "parent", Map.of("k", "v"));
         parent.setRootExecutionId(rootId);
 
-        AssemblyRun child = AssemblyRun.childOf(parent, "child");
+        AssemblyRunTrace child = AssemblyRunTrace.childOf(parent, "child");
 
         assertThat(child.getId()).isNotNull();
-        assertThat(child.getPipelineId()).isEqualTo("child");
+        assertThat(child.getAssemblyLineId()).isEqualTo("child");
         assertThat(child.getParentExecutionId()).isEqualTo(parent.getId());
         assertThat(child.getRootExecutionId()).isEqualTo(rootId);
         assertThat(child.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
@@ -28,26 +30,11 @@ class AssemblyRunStateTest {
 
     @Test
     void childOf_shouldUseParentAsRootWhenParentHasNoRoot() {
-        AssemblyRun parent = new AssemblyRun(UUID.randomUUID(), "parent", Map.of());
+        AssemblyRunTrace parent = new AssemblyRunTrace(UUID.randomUUID(), "parent", Map.of());
 
-        AssemblyRun child = AssemblyRun.childOf(parent, "child");
+        AssemblyRunTrace child = AssemblyRunTrace.childOf(parent, "child");
 
         assertThat(child.getRootExecutionId()).isEqualTo(parent.getId());
-    }
-
-    @Test
-    void assemblyRunDetails_shouldDefensivelyCopyRootOperations() {
-        AssemblyRun summary = new AssemblyRun(UUID.randomUUID(), "pipeline", Map.of());
-        StationLog log = StationLog.start(summary.getId(), "op", null);
-        AssemblyRunDetails details = new AssemblyRunDetails(summary, List.of(log));
-
-        assertThat(details.getSummary()).isSameAs(summary);
-        assertThat(details.getRootOperations()).containsExactly(log);
-        List<StationLog> rootOperations = details.getRootOperations();
-
-        assertThatThrownBy(() -> rootOperations.add(log))
-                .isInstanceOf(UnsupportedOperationException.class);
-        assertThat(new AssemblyRunDetails(summary, null).getRootOperations()).isEmpty();
     }
 
     @Test
@@ -55,7 +42,7 @@ class AssemblyRunStateTest {
         AssemblyRunRecord summary = new AssemblyRunRecord(UUID.randomUUID(), "pipeline", Map.of(), null, null,
                 ExecutionStatus.RUNNING, null, null, null, null, null, null);
         StationLogRecord log = new StationLogRecord(UUID.randomUUID(), summary.id(), "op", null, null,
-                io.github.gear4jtest.core.model.StationLogStatus.RUNNING, null, null, null, null, Map.of(), null);
+                StationLogStatus.RUNNING, null, null, null, null, Map.of(), null);
         AssemblyRunView view = new AssemblyRunView(summary, List.of(log));
 
         assertThat(view.getSummary()).isSameAs(summary);
@@ -68,9 +55,7 @@ class AssemblyRunStateTest {
     }
 
     @Test
-    void detailsAndView_shouldRejectNullSummaries() {
-        assertThatNullPointerException().isThrownBy(() -> new AssemblyRunDetails(null, List.of()))
-                .withMessage("summary must not be null");
+    void assemblyRunView_shouldRejectNullSummary() {
         assertThatNullPointerException().isThrownBy(() -> new AssemblyRunView(null, List.of()))
                 .withMessage("summary must not be null");
     }

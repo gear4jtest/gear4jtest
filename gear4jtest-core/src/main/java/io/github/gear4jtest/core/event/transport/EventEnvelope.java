@@ -25,7 +25,7 @@ import java.util.UUID;
  */
 public record EventEnvelope(UUID eventId,
                             String eventType,
-                            String pipelineId,
+                            String assemblyLineId,
                             UUID executionId,
                             UUID stationExecutionId,
                             String operationId,
@@ -57,7 +57,7 @@ public record EventEnvelope(UUID eventId,
         }
         return Objects.equals(eventId, that.eventId)
                 && Objects.equals(eventType, that.eventType)
-                && Objects.equals(pipelineId, that.pipelineId)
+                && Objects.equals(assemblyLineId, that.assemblyLineId)
                 && Objects.equals(executionId, that.executionId)
                 && Objects.equals(stationExecutionId, that.stationExecutionId)
                 && Objects.equals(operationId, that.operationId)
@@ -73,7 +73,7 @@ public record EventEnvelope(UUID eventId,
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(eventId, eventType, pipelineId, executionId, stationExecutionId, operationId,
+        int result = Objects.hash(eventId, eventType, assemblyLineId, executionId, stationExecutionId, operationId,
                                   parentOperationId, itemId, occurredAt, headers, contentType, partitionKey,
                                   schemaVersion);
         result = 31 * result + Arrays.hashCode(payload);
@@ -85,7 +85,7 @@ public record EventEnvelope(UUID eventId,
         return "EventEnvelope["
                 + "eventId=" + eventId
                 + ", eventType=" + eventType
-                + ", pipelineId=" + pipelineId
+                + ", assemblyLineId=" + assemblyLineId
                 + ", executionId=" + executionId
                 + ", stationExecutionId=" + stationExecutionId
                 + ", operationId=" + operationId

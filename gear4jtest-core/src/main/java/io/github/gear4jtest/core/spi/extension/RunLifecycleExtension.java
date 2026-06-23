@@ -5,7 +5,7 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 
 /**
- * Passive lifecycle hooks around a pipeline run.
+ * Passive lifecycle hooks around an assembly line run.
  *
  * <p>
  * These hooks are invoked by the engine outside the measured runtime scope:
@@ -28,6 +28,7 @@ import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
  */
 @Spi
 public interface RunLifecycleExtension extends RuntimeExtension {
+
     default LifecycleFailureMode failureMode() {
         return LifecycleFailureMode.BEST_EFFORT;
     }

@@ -1,5 +1,6 @@
 dependencies {
     api project(':gear4jtest-spring')
+    api project(':gear4jtest-jdbc')
     implementation project(':gear4jtest-micrometer')
     implementation libs.spring.boot.autoconfigure
     implementation libs.spring.boot.starter.validation

@@ -8,11 +8,11 @@ import io.github.gear4jtest.core.api.annotation.PublicApi;
 public class OperationCompletedEvent extends OperationBaseEvent {
     private static final String TYPE = "OPERATION_COMPLETED";
 
-    public OperationCompletedEvent(String pipelineId,
+    public OperationCompletedEvent(String assemblyLineId,
                                    UUID executionId,
                                    String operationId,
                                    Object input,
                                    Object output) {
-        super(pipelineId, executionId, TYPE, operationId, input, output);
+        super(assemblyLineId, executionId, TYPE, operationId, input, output);
     }
 }

@@ -1,6 +1,6 @@
 package io.github.gear4jtest.spring.boot.actuate;
 
-import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
+import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
 import io.github.gear4jtest.spring.boot.Gear4jAutoConfiguration;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -14,9 +14,9 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnClass(HealthIndicator.class)
 public class Gear4jActuatorAutoConfiguration {
     @Bean
-    @ConditionalOnBean(DatabaseExecutionManager.class)
+    @ConditionalOnBean(PersistenceRuntimeMonitor.class)
     @ConditionalOnMissingBean(name = "gear4jPersistenceHealthIndicator")
-    Gear4jPersistenceHealthIndicator gear4jPersistenceHealthIndicator(DatabaseExecutionManager manager) {
+    Gear4jPersistenceHealthIndicator gear4jPersistenceHealthIndicator(PersistenceRuntimeMonitor manager) {
         return new Gear4jPersistenceHealthIndicator(manager);
     }
 }

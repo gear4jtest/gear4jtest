@@ -41,6 +41,6 @@ class SideComputeContextDeepCoverageTest {
         assertThat(pending.isCompletedExceptionally()).isTrue();
         assertThatThrownBy(pending::join)
                 .isInstanceOf(CancellationException.class)
-                .hasMessage("Pipeline execution ended before side-compute completion");
+                .hasMessage("AssemblyLine execution ended before side-compute completion");
     }
 }

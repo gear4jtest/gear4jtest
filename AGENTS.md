@@ -18,6 +18,7 @@ modules add external pipeline loading, XML translation, Gradle XML generation, J
 - `gear4jtest-xml`: XML validation, parsing and Java source generation.
 - `gear4jtest-gradle-xml2java`: Gradle plugin for XML-to-Java generation.
 - `gear4jtest-jackson`: optional Jackson-backed `PayloadCloner` implementation.
+- `gear4jtest-jdbc`: optional JDBC execution persistence, dialects and schema migrations.
 - `gear4jtest-spring`: lightweight Spring integration.
 
 ## Build and validation commands
@@ -90,7 +91,7 @@ formatting-only change or report it explicitly.
 - Station logs are observability data, not flow-control input.
 - `EventManager` is in-memory and best-effort, not a durable broker.
 - External event forwarding must not imply guaranteed delivery unless a separate durable subsystem is implemented.
-- Pipeline references must preserve runtime graph stability during a run.
+- AssemblyLine references must preserve runtime graph stability during a run.
 - Do not shut down executors supplied by callers unless ownership is explicit.
 - Payload cloning belongs behind `PayloadCloner`.
 

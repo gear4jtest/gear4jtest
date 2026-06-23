@@ -5,13 +5,14 @@ import javax.sql.DataSource;
 import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.execution.AssemblyRunManager;
-import io.github.gear4jtest.core.execution.DatabaseExecutionManager;
-import io.github.gear4jtest.core.execution.PersistenceRuntimeConfiguration;
+import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
+import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
+import io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfiguration;
 import io.github.gear4jtest.micrometer.Gear4jMeterTagPolicy;
 import io.github.gear4jtest.micrometer.Gear4jMicrometerExtension;
 import io.github.gear4jtest.micrometer.PersistenceMetricsBinder;
-import io.github.gear4jtest.spring.Gear4jPipelineEngineBuilderCustomizer;
+import io.github.gear4jtest.spring.Gear4jAssemblyLineEngineBuilderCustomizer;
 import io.github.gear4jtest.spring.Gear4jSpringConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.ObjectProvider;
@@ -31,7 +32,7 @@ import org.springframework.context.annotation.Import;
 public class Gear4jAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(name = "gear4jParallelExecutionCustomizer")
-    Gear4jPipelineEngineBuilderCustomizer gear4jParallelExecutionCustomizer(Gear4jProperties properties) {
+    Gear4jAssemblyLineEngineBuilderCustomizer gear4jParallelExecutionCustomizer(Gear4jProperties properties) {
         return builder -> builder.parallelExecutionConfiguration(ParallelExecutionConfiguration
                 .withDefaultAwaitTimeout(properties.getParallel().getDefaultAwaitTimeout()));
     }
@@ -97,10 +98,10 @@ public class Gear4jAutoConfiguration {
 
     @Bean
     @ConditionalOnClass(MeterRegistry.class)
-    @ConditionalOnBean({ MeterRegistry.class, DatabaseExecutionManager.class })
+    @ConditionalOnBean({ MeterRegistry.class, PersistenceRuntimeMonitor.class })
     @ConditionalOnProperty(prefix = "gear4j.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
     Gear4jPersistenceMetricsRegistrar gear4jPersistenceMetricsRegistrar(MeterRegistry meterRegistry,
-                                                                        DatabaseExecutionManager manager) {
+                                                                        PersistenceRuntimeMonitor manager) {
         PersistenceMetricsBinder.bind(meterRegistry, manager);
         return new Gear4jPersistenceMetricsRegistrar();
     }

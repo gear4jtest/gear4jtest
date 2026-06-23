@@ -74,7 +74,7 @@ public class WorkerParamsInjector implements Processor {
         }
 
         operationExecution.getServices().getEventManager()
-                .publish(new ParameterResolvedEvent(operationExecution.getGlobalContext().getPipelineId(),
+                .publish(new ParameterResolvedEvent(operationExecution.getGlobalContext().getAssemblyLineId(),
                         operationExecution.getGlobalContext().getExecutionId(), operationExecution.getRecord().getId(),
                         operationExecution.getOperationId(), operationExecution.getRecord().getParentOperationId(),
                         operationExecution.getRecord().getItemId(), rawParam.describe(), resolution.cacheHit(),

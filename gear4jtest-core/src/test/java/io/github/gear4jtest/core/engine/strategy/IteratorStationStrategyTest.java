@@ -28,11 +28,11 @@ class IteratorStationStrategyTest {
         // Given
         IteratorStation<List<String>, String> station = new IteratorStation.Builder<List<String>, String>("iterator")
                 .iterableFunction(input -> input)
-                .pipeline(SequenceStation.Builder.<String>create("chain").build())
+                .sequence(SequenceStation.Builder.<String>create("chain").build())
                 .build();
         ExecutionContext globalContext = ExecutionContext.builder()
                 .executionId(UUID.randomUUID())
-                .pipelineId("pipeline")
+                .assemblyLineId("pipeline")
                 .services(new ExecutionServices(null, new NoOpResourceFactory()))
                 .assemblyRun(new AssemblyRunTrace())
                 .build();

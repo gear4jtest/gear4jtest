@@ -42,7 +42,7 @@ public final class Gear4jMicrometerExtension implements RunLifecycleExtension, S
     @Override
     public void onRunStarted(ExecutionContext ctx, AssemblyRunTrace run) {
         Counter.builder("gear4j.runs.started")
-                .description("Number of Gear4J pipeline runs started")
+                .description("Number of Gear4J assembly line runs started")
                 .tags(tagPolicy.runStartedTags(run))
                 .register(meterRegistry)
                 .increment();
@@ -52,11 +52,11 @@ public final class Gear4jMicrometerExtension implements RunLifecycleExtension, S
     public void onRunCompleted(ExecutionContext ctx, AssemblyRunTrace run) {
         String[] tags = tagPolicy.runCompletedTags(run);
         Counter.builder("gear4j.runs.completed")
-                .description("Number of Gear4J pipeline runs completed")
+                .description("Number of Gear4J assembly line runs completed")
                 .tags(tags)
                 .register(meterRegistry)
                 .increment();
-        recordTimer("gear4j.runs.duration", "Duration of completed Gear4J pipeline runs", run.getStartTime(),
+        recordTimer("gear4j.runs.duration", "Duration of completed Gear4J assembly line runs", run.getStartTime(),
                     run.getEndTime(), tags);
     }
 

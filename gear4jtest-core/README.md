@@ -2,21 +2,22 @@
 
 `gear4jtest-core` contains the Gear4J runtime engine and public Java API.
 
-This module is the dependency-agnostic heart of the project. It should not depend on Spring, XML, Jackson-specific
-behavior, external transport systems or storage-specific assumptions.
+This module is the dependency-agnostic heart of the project. It must not depend on Spring, XML, Jackson-specific
+behavior, external transport systems or storage-specific implementations. JDBC persistence lives in the optional
+`gear4jtest-jdbc` module; core keeps only the persistence contracts and trace/record models needed by runtime SPIs.
 
 ## What this module owns
 
 - `AssemblyLine`, `RunRequest`, `ExecutionResult` and explicit terminal outcomes.
 - Station models and builders.
-- Runtime execution through `PipelineEngine`.
+- Runtime execution through `AssemblyLineEngine`.
 - Station strategies and runner chain construction.
 - Flow decisions, stop/cancel semantics and error handling.
 - Runtime events and side-compute hooks.
 - Runtime traces and persistence abstractions.
 - Extension SPI for run, station, executor and lifecycle behavior.
 - Payload cloning SPI.
-- Pipeline call execution in inline or nested-run mode.
+- AssemblyLine call execution in inline or nested-run mode.
 
 ## Package map
 
@@ -26,10 +27,10 @@ behavior, external transport systems or storage-specific assumptions.
 | `api.behavior`    | User-facing operators, processors, conditions, skippers, signals and sibling outcomes. |
 | `api.config`      | Flow, persistence, event and station configuration.                                    |
 | `api.context`     | Execution context, execution services, station context and payload cloning SPI.        |
-| `api.pipeline`    | Pipeline references, pipeline targets, nested-run context and runtime contracts.       |
+| `api.assemblyline`    | AssemblyLine references, assembly-line targets, nested-run context and runtime contracts.       |
 | `api.station`     | Station model types.                                                                   |
 | `api.util`        | Builder helpers.                                                                       |
-| `engine`          | Pipeline engine, extension resolution and runtime orchestration.                       |
+| `engine`          | AssemblyLine engine, extension resolution and runtime orchestration.                       |
 | `engine.runner`   | Runner-chain layers around station execution.                                          |
 | `engine.strategy` | Station execution strategies.                                                          |
 | `event`           | In-memory asynchronous event runtime and subscriptions.                                |
@@ -42,7 +43,7 @@ behavior, external transport systems or storage-specific assumptions.
 
 A run starts from a fully built `AssemblyLine` and a `RunRequest`.
 
-`PipelineEngine` resolves default and request-level runtime extensions, creates the `EventManager`, merges default and
+`AssemblyLineEngine` resolves default and request-level runtime extensions, creates the `EventManager`, merges default and
 request context, registers an `ExecutionContext`, builds the root station runner, then executes the root station through
 the runner chain.
 
@@ -63,7 +64,7 @@ Flow decisions must be driven by runtime state and station outcomes, not by pers
 - pipeline id;
 - user context map;
 - runtime contract;
-- call stack;
+- a thread-confined pipeline call stack;
 - runtime trace;
 - event runtime options;
 - a cooperative `CancellationToken` for long-running user operators.
@@ -87,11 +88,14 @@ Main station kinds:
 - `ContainerBaseStation`: executes multiple branches, sequentially or with an executor.
 - `UnaryIfElseContainerStation`: conditional branch container.
 - `IteratorStation`: iterates over input and accumulates results.
-- `SignalStation`: emits STOP, CANCEL or FATAL-like flow signals.
-- `PipelineCallStation`: calls another pipeline either inline or as a nested run.
+- `SignalStation`: emits explicit STOP or FATAL-like flow signals.
+- `AssemblyLineCallStation`: calls another pipeline either inline or as a nested run.
 
 Container branch ids are explicit and stable. They are used by sibling outcome conditions, so they are functional
 identifiers rather than cosmetic labels. Do not rely on station ids or random generated ids for branches.
+
+A pipeline graph is expected to be fully configured before execution starts. Builders expose the mutation surface;
+post-build flow and timeout setters are intentionally not public API.
 
 ## Flow and error semantics
 
@@ -115,6 +119,10 @@ It is suitable for:
 - observability callbacks;
 - non-critical enrichment.
 
+Each subscribed run creates its own lightweight dispatcher thread. This keeps run isolation simple, but high-throughput
+applications with many short-lived runs should treat event subscriptions as a visible runtime cost. Detached reactions
+that arrive after run cleanup may be skipped; waiters must keep defensive timeouts.
+
 It does not provide:
 
 - durable delivery;
@@ -136,64 +144,51 @@ turning `EventManager` into a broker abstraction.
 - `StationLifecycleExtension`: observes station lifecycle.
 - `ExecutorWrapperExtension`: decorates executors used by asynchronous work.
 
-The extension order matters. Keep extensions small and explicit. Prefer separate extensions over one large extension
-that owns unrelated behavior.
+The extension order matters. Lower order values run first; ties are resolved by implementation class name to keep
+resolution deterministic. Keep extensions small and explicit. Prefer separate extensions over one large extension that
+owns unrelated behavior. Extensions that require isolated nested-run execution or a specific inline runtime requirement
+should expose that through `RuntimeExtension.requiresNestedRun()` or `requiredInlineRequirement()`.
+
+## Worker concurrency
+
+By default, worker instance reuse is guarded by the process-wide `WorkerConcurrencyManager.global()` when the
+concurrency policy is `LOCK_PER_WORKER_INSTANCE`. This protects stateful singleton operators across independent engines
+in the same JVM, but it can also serialize unrelated runs that share the same operator instance. Choose an engine-local
+manager or an explicit parallel policy when that global safety trade-off is not desired.
+
+A worker guard must be released by the same thread that acquired it. Current station strategies preserve that invariant;
+future strategies that hand work off between threads must transfer or redesign the guard explicitly.
 
 ## Payload cloning
 
 The core provides the `PayloadCloner` SPI and immutable-aware defaults.
 
-Do not hard-code Jackson into this module. Use `gear4jtest-jackson` when mutable DTOs must be isolated across branches.
+Do not add Jackson-based payload cloning to this module. Use `gear4jtest-jackson` when mutable DTOs must be isolated
+across branches. Storage-specific JSON codecs belong to their integration module, not core.
 
-## Pipeline calls
+## AssemblyLine calls
 
-`PipelineCallStation` supports two execution modes:
+`AssemblyLineCallStation` supports two execution modes:
 
 - `INLINE`: executes a child pipeline inside the current run boundary when its runtime requirements are compatible.
 - `NESTED_RUN`: creates a nested run with its own execution trace and runtime setup while inheriting selected parent
   context for the current MVP.
 
-A running pipeline graph must remain stable for the duration of the run.
+A running pipeline graph must remain stable for the duration of the run. Inline pipeline recursion detection is
+thread-confined and propagated to parallel branch tasks so sibling branches do not contaminate each other's call stack.
 
 ## JDBC persistence support
 
-The built-in JDBC persistence is intentionally provider-scoped rather than advertised as generic JDBC support.
+JDBC execution persistence is intentionally outside core. Use the optional `gear4jtest-jdbc` module for
+`DatabaseExecutionManager`, `DatabaseAssemblyRunRepository`, `Gear4jDatabaseDialect` and schema migrations.
 
-Supported for the MVP:
+Core applications can still depend only on the generic contracts:
 
-- PostgreSQL;
-- MySQL 8;
-- MariaDB through the MySQL-compatible script and dialect path;
-- Oracle through its dedicated schema and JDBC dialect path;
-- H2 for tests and local development.
-
-Applications must explicitly supply a `Gear4jDatabaseDialect` when constructing JDBC persistence components. Gear4J
-does not infer the dialect from `DatabaseMetaData`: dialect selection controls migration resources, SQL syntax and
-JDBC bindings, so configuration must be deterministic before a run starts.
-
-For example:
-
-```java
-var persistenceRuntime = PersistenceRuntimeConfiguration.builder()
-        .batchSize(500)
-        .maxPendingLogsPerRun(10_000)
-        .flushInterval(Duration.ofSeconds(1))
-        .build();
-DatabaseExecutionManager.builder()
-        .dataSource(dataSource)
-        .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
-        .configuration(persistenceRuntime)
-        .autoCreateTables(true)
-        .build();
-DatabaseAssemblyRunRepository.builder().dataSource(dataSource).databaseDialect(Gear4jDatabaseDialect.POSTGRESQL).build();
-```
-
-`DatabaseExecutionManager` keeps station-log buffers bounded, periodically flushes low-volume runs and exposes
-`PersistenceRuntimeStats`. If an application supplies executors to it, those executors remain owned by the application.
-Use `SensitiveDataRedactor` for persisted values that can contain secrets or personal information.
-
-Extending support for a new provider should add a `Gear4jDatabaseDialect` entry, versioned migration resources, and integration tests
-for run and station-log persistence.
+- `AssemblyRunManager`;
+- `AssemblyRunRepository`;
+- `AssemblyRunRecord`;
+- `StationLogRecord`;
+- `PersistenceRuntimeMonitor` / `PersistenceRuntimeStats` for implementation-neutral observability.
 
 ## Testing
 
@@ -204,7 +199,7 @@ Useful focused tasks:
 ```bash
 ./gradlew :gear4jtest-core:test
 ./gradlew :gear4jtest-core:test --tests '*EventManagerTest'
-./gradlew :gear4jtest-core:test --tests '*PipelineCallStationStrategyTest'
+./gradlew :gear4jtest-core:test --tests '*AssemblyLineCallStationStrategyTest'
 ./gradlew :gear4jtest-core:test --tests '*ContainerStationStrategyTest'
 ./gradlew :gear4jtest-core:integrationTest
 ```

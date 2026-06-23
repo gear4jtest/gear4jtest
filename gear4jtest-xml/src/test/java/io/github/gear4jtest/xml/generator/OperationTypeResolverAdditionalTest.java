@@ -8,18 +8,18 @@ import java.util.Map;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Condition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ConditionalOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContainerOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IfElseOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.IteratorOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Operation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Parameters;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ProcessingOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SignalOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.SubLine;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Transformer;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Condition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ConditionalOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ContainerOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IfElseOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IteratorOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Operation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Parameters;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ProcessingOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SignalOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SubLine;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Transformer;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,7 +31,7 @@ class OperationTypeResolverAdditionalTest {
         // Given
         ProcessingOperation operation = new ProcessingOperation("operation", ObjectToStringOperator.class.getName(),
                 null, params(), List.of(), List.of(), new Transformer("fallback", null, "java.lang.Integer"));
-        XmlPipelineDefinition definition = definition("java.lang.Long", operation);
+        XmlAssemblyLineDefinition definition = definition("java.lang.Long", operation);
 
         // When
         OperationSignature signature = resolve(definition).get(operation);
@@ -68,7 +68,7 @@ class OperationTypeResolverAdditionalTest {
         IfElseOperation ifElse = new IfElseOperation("choice", null, "java.lang.Double",
                 List.of(new ConditionalOperation("when", new Condition("true", null), whenChild)), elseChild);
         SignalOperation signal = new SignalOperation("stop", "STOP", null, null);
-        XmlPipelineDefinition definition = definition("java.lang.Long", container, ifElse, signal);
+        XmlAssemblyLineDefinition definition = definition("java.lang.Long", container, ifElse, signal);
 
         // When
         Map<Operation, OperationSignature> signatures = resolve(definition);
@@ -89,7 +89,7 @@ class OperationTypeResolverAdditionalTest {
         // Given
         ProcessingOperation operation = new ProcessingOperation("operation", ItemOperator.class.getName(), null,
                 params(), List.of(), List.of(), null);
-        XmlPipelineDefinition definition = definition("java.lang.Object", operation);
+        XmlAssemblyLineDefinition definition = definition("java.lang.Object", operation);
 
         // When
         OperationSignature signature = resolve(definition).get(operation);
@@ -137,18 +137,18 @@ class OperationTypeResolverAdditionalTest {
                 .contains("actualTypeArguments=[class java.lang.String, class java.lang.Integer]");
     }
 
-    private static Map<Operation, OperationSignature> resolve(XmlPipelineDefinition definition) {
+    private static Map<Operation, OperationSignature> resolve(XmlAssemblyLineDefinition definition) {
         return new OperationTypeResolver(OperationTypeResolverAdditionalTest.class.getClassLoader())
                 .resolve(definition);
     }
 
     private static void assertIteratorOutput(IteratorOperation operation, String expectedOutputType) {
-        XmlPipelineDefinition definition = definition("java.util.List<java.lang.Integer>", operation);
+        XmlAssemblyLineDefinition definition = definition("java.util.List<java.lang.Integer>", operation);
         assertThat(resolve(definition).get(operation).outputType().canonical()).isEqualTo(expectedOutputType);
     }
 
-    private static XmlPipelineDefinition definition(String inputType, Operation... operations) {
-        return new XmlPipelineDefinition("pipeline", inputType, null, List.of(operations), null, List.of());
+    private static XmlAssemblyLineDefinition definition(String inputType, Operation... operations) {
+        return new XmlAssemblyLineDefinition("pipeline", inputType, null, List.of(operations), null, List.of());
     }
 
     private static ProcessingOperation child(String id) {

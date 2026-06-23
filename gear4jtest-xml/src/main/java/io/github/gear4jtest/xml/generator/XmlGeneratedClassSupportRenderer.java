@@ -2,17 +2,17 @@ package io.github.gear4jtest.xml.generator;
 
 import java.util.Map;
 
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.ContainerOperation;
-import io.github.gear4jtest.xml.model.XmlPipelineDefinition.Operation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ContainerOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Operation;
 
 final class XmlGeneratedClassSupportRenderer {
     private static final String INDENT_PRIVATE = "    private ";
     private static final String FIELD_SUFFIX = "\")\n";
     private static final String METHOD_END = "    }\n\n";
 
-    void appendDependencies(StringBuilder code, JavaImportManager imports, XmlPipelineDefinition definition) {
-        for (XmlPipelineDefinition.Dependency dependency : definition.dependencies()) {
+    void appendDependencies(StringBuilder code, JavaImportManager imports, XmlAssemblyLineDefinition definition) {
+        for (XmlAssemblyLineDefinition.Dependency dependency : definition.dependencies()) {
             code.append("    @").append(imports.use("io.github.gear4jtest.external.api.loader.Inject")).append("(\"")
                     .append(JavaStringEscaper.escapeJava(dependency.name())).append(FIELD_SUFFIX);
             code.append(INDENT_PRIVATE).append(JavaTypeName.parse(dependency.type()).render(imports)).append(" ")
@@ -43,7 +43,7 @@ final class XmlGeneratedClassSupportRenderer {
         code.append(METHOD_END);
     }
 
-    void appendGelHelper(StringBuilder code, JavaImportManager imports, XmlPipelineDefinition definition) {
+    void appendGelHelper(StringBuilder code, JavaImportManager imports, XmlAssemblyLineDefinition definition) {
         if (!XmlGelUsageAnalyzer.usesGel(definition)) {
             return;
         }
@@ -84,7 +84,9 @@ final class XmlGeneratedClassSupportRenderer {
         code.append(METHOD_END);
     }
 
-    void appendConfigurationMethod(StringBuilder code, JavaImportManager imports, XmlPipelineDefinition definition) {
+    void appendConfigurationMethod(StringBuilder code,
+                                   JavaImportManager imports,
+                                   XmlAssemblyLineDefinition definition) {
         if (definition.configuration() == null) {
             return;
         }
@@ -124,10 +126,10 @@ final class XmlGeneratedClassSupportRenderer {
 
     void appendAssemblyMethod(StringBuilder code,
                               JavaImportManager imports,
-                              XmlPipelineDefinition definition,
+                              XmlAssemblyLineDefinition definition,
                               Map<Operation, OperationSignature> signatures) {
         JavaTypeName inputType = JavaTypeName.parse(definition.inputType());
-        JavaTypeName outputType = resolvePipelineOutput(definition, signatures, inputType);
+        JavaTypeName outputType = resolveAssemblyLineOutput(definition, signatures, inputType);
 
         code.append("    @Override\n");
         code.append("    public ").append(imports.use("io.github.gear4jtest.core.api.AssemblyLine")).append("<")
@@ -151,9 +153,9 @@ final class XmlGeneratedClassSupportRenderer {
         code.append(METHOD_END);
     }
 
-    private JavaTypeName resolvePipelineOutput(XmlPipelineDefinition definition,
-                                               Map<Operation, OperationSignature> signatures,
-                                               JavaTypeName inputType) {
+    private JavaTypeName resolveAssemblyLineOutput(XmlAssemblyLineDefinition definition,
+                                                   Map<Operation, OperationSignature> signatures,
+                                                   JavaTypeName inputType) {
         JavaTypeName current = inputType;
         for (Operation operation : definition.operations()) {
             current = signatures.get(operation).outputType();

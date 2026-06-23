@@ -16,13 +16,14 @@ public enum WorkerConcurrencyPolicy {
      * <p>
      * This is the safest default when worker instances may be singletons and not
      * thread-safe. The same worker instance shared by several
-     * {@code PipelineEngine} instances is still protected.
+     * {@code AssemblyLineEngine} instances is still protected.
      * </p>
      */
     LOCK_PER_WORKER_INSTANCE,
 
     /**
-     * Protect each stateful worker instance only inside one {@code PipelineEngine}.
+     * Protect each stateful worker instance only inside one
+     * {@code AssemblyLineEngine}.
      *
      * <p>
      * This mode does not protect a worker instance shared by several engines.

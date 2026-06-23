@@ -10,7 +10,7 @@ import com.myorg.services.ModelsService;
 import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
-import io.github.gear4jtest.core.engine.PipelineEngine;
+import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
 import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
@@ -29,8 +29,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class XmlOperationChainTranslatorTest {
     private final XmlOperationChainTranslator translator = XmlOperationChainTranslator.trusted();
 
-    private static PipelineEngine engine() {
-        return PipelineEngine.builder().resourceFactory(reflectiveResourceFactory())
+    private static AssemblyLineEngine engine() {
+        return AssemblyLineEngine.builder().resourceFactory(reflectiveResourceFactory())
                 .runnerChainFactory(new RunnerChainFactory(StrategyRegistry.defaultRegistry()))
                 .extensionResolver(new RuntimeExtensionResolver(null))
                 .executionContextRegistry(new ExecutionContextRegistry()).build();
@@ -94,7 +94,7 @@ class XmlOperationChainTranslatorTest {
         // Then
         assertThat(result.formattedSource()).contains("private SignalStation<String> signalStop_when_a()")
                 .contains("new SignalStation.Builder<String>()").contains(".id(\"stop_when_a\")")
-                .contains(".type(SignalType.STOP)").contains("String input = sig.getItem();")
+                .contains(".type(StationSignalType.STOP)").contains("String input = sig.getItem();")
                 .contains("var ctx = sig.getItemExecution();").contains("return input.endsWith(\"a\");");
     }
 

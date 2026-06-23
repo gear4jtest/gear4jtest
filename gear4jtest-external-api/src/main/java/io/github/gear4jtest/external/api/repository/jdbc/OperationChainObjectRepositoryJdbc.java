@@ -18,12 +18,12 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
 
-import io.github.gear4jtest.core.persistence.Gear4jDatabaseDialect;
-import io.github.gear4jtest.core.persistence.JdbcStatementOptions;
 import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.ExecutionMode;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
+import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.jdbc.persistence.JdbcStatementOptions;
 
 public final class OperationChainObjectRepositoryJdbc implements OperationChainObjectRepository {
     private static final Pattern SHA_256_HEX = Pattern.compile("[0-9a-fA-F]{64}");

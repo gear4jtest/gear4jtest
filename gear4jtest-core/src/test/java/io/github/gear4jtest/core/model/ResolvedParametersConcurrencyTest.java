@@ -52,7 +52,7 @@ class ResolvedParametersConcurrencyTest {
 
         ExecutionContext executionContext = ExecutionContext.builder()
                 .executionId(UUID.randomUUID())
-                .pipelineId("pipe")
+                .assemblyLineId("pipe")
                 .services(new ExecutionServices(null, new NoOpResourceFactory()))
                 .assemblyRun(new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of()))
                 .build();

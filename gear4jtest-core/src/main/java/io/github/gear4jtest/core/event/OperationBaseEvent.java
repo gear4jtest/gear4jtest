@@ -10,20 +10,20 @@ public class OperationBaseEvent extends Event {
     private final Object input;
     private Object output;
 
-    public OperationBaseEvent(String pipelineId,
+    public OperationBaseEvent(String assemblyLineId,
                               UUID executionId,
                               String type,
                               String operationId,
                               Object input,
                               Object output) {
-        super(pipelineId, executionId, type);
+        super(assemblyLineId, executionId, type);
         this.operationId = operationId;
         this.input = input;
         this.output = output;
     }
 
-    public OperationBaseEvent(String pipelineId, UUID executionId, String type, String operationId, Object input) {
-        super(pipelineId, executionId, type);
+    public OperationBaseEvent(String assemblyLineId, UUID executionId, String type, String operationId, Object input) {
+        super(assemblyLineId, executionId, type);
         this.operationId = operationId;
         this.input = input;
     }

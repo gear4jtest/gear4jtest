@@ -69,7 +69,7 @@ The `DATABASE` artifact-store plugin must require a `dialect` property instead o
 
 ## Module boundary
 
-`Gear4jDatabaseDialect` belongs to `gear4jtest-core` and is the single public database choice used by all modules.
+`Gear4jDatabaseDialect` belongs to `gear4jtest-jdbc` and is the single public database choice used by all modules.
 Each JDBC-owning module keeps its SQL implementation local; the shared enum is not intended to become a large generic
 SQL abstraction.
 

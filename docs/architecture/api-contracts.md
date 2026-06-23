@@ -14,8 +14,9 @@ Current public API packages include:
 - `io.github.gear4jtest.core.event` event contracts used by applications that subscribe to runtime events
 - `io.github.gear4jtest.core.exception` application-visible exception hierarchy
 - `io.github.gear4jtest.core.model` application-visible runtime status values
-- `io.github.gear4jtest.core.persistence` records and repositories used by
-  applications that enable JDBC persistence
+- `io.github.gear4jtest.core.persistence` persistence records and repository contracts independent of a storage provider
+- `io.github.gear4jtest.jdbc.execution` optional JDBC execution persistence entry points
+- `io.github.gear4jtest.jdbc.persistence` optional JDBC repository and dialect entry points
 - `io.github.gear4jtest.external.api.AssemblyLineManager`
 - `io.github.gear4jtest.external.api.ExecutionMode`
 - `io.github.gear4jtest.external.api.StoreType`
@@ -65,7 +66,7 @@ Known internal implementation areas:
 - `io.github.gear4jtest.core.engine.*`
 - `io.github.gear4jtest.core.execution.*`
 - `io.github.gear4jtest.core.event.*` except documented event contracts
-- `io.github.gear4jtest.core.persistence.migration.*`
+- `io.github.gear4jtest.jdbc.migration.*`
 - `io.github.gear4jtest.xml.generator.*`
 - `io.github.gear4jtest.xml.parser.*`
 

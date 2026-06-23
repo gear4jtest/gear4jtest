@@ -126,7 +126,7 @@ class StationErrorPolicyExecutorTest {
     }
 
     @Test
-    void apply_shouldMarkSkippedWhenIgnoreFallbackFails() {
+    void apply_shouldMarkFailedWhenIgnoreFallbackFails() {
         // Given
         RuntimeException original = new RuntimeException("boom");
         RuntimeException fallbackFailure = new RuntimeException("fallback failed");
@@ -139,8 +139,8 @@ class StationErrorPolicyExecutorTest {
         StationLogTrace stationLog = executor.apply(station, "input", context, original);
 
         // Then
-        assertThat(stationLog.getStatus()).isEqualTo(StationLogStatus.SKIPPED);
-        assertThat(stationLog.getErrorMessage()).isEqualTo("boom");
+        assertThat(stationLog.getStatus()).isEqualTo(StationLogStatus.FAILED);
+        assertThat(stationLog.getErrorMessage()).isEqualTo("fallback failed");
         assertThat(stationLog.getErrorHandlerMessages()).contains("fallback failed").contains("boom");
     }
 
@@ -202,7 +202,7 @@ class StationErrorPolicyExecutorTest {
     private static StationExecutionContext stationContext(String operationId) {
         ExecutionContext globalContext = ExecutionContext.builder()
                 .executionId(UUID.randomUUID())
-                .pipelineId("pipeline")
+                .assemblyLineId("pipeline")
                 .services(new ExecutionServices(null, noResources()))
                 .assemblyRun(new AssemblyRunTrace(UUID.randomUUID(), "pipeline", Map.of()))
                 .build();
@@ -223,10 +223,7 @@ class StationErrorPolicyExecutorTest {
         private TestStation(List<BaseError<String>> onErrors,
                             Operator<String, String> fallbackOperator,
                             boolean unary) {
-            super("station", StationKind.PROCESSING);
-            this.onErrors = onErrors;
-            this.fallbackOperator = fallbackOperator;
-            this.unary = unary;
+            super("station", StationKind.PROCESSING, null, onErrors, fallbackOperator, unary, null, null);
         }
     }
 }
