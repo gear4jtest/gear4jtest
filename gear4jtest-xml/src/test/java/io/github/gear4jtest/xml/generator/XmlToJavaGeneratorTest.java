@@ -84,7 +84,7 @@ class XmlToJavaGeneratorTest {
 
         // Then
         assertThat(source).contains("private ContainerBaseStation<String, String> containerSingle_container()")
-                .contains("return container(String.class)")
+                .contains("return container(\"single-container\", String.class)")
                 .contains(".withBranch(\"only\", processOnly_operation())")
                 .contains(".returns(results -> results.get(\"only\", String.class));")
                 .doesNotContain("withSubLine")
@@ -199,7 +199,7 @@ class XmlToJavaGeneratorTest {
         String source = generator.generate(definition).formattedSource();
 
         // Then
-        assertThat(source).contains("ifElseContainer(String.class)")
+        assertThat(source).contains("ifElseContainer(\"choice\", String.class)")
                 .doesNotContain("gear4j.executor.choice")
                 .doesNotContain("ExecutorService")
                 .doesNotContain("requireExecutorService");

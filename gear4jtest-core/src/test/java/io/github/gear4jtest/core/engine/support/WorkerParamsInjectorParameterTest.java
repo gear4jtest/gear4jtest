@@ -1,7 +1,10 @@
 package io.github.gear4jtest.core.engine.support;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
-import io.github.gear4jtest.core.engine.support.WorkerParamsInjector.Parameter;
+import io.github.gear4jtest.core.api.context.ParameterResolutionContextParameterModel;
+import io.github.gear4jtest.core.api.context.StationParameter;
+import io.github.gear4jtest.core.api.context.StationParameterModel;
+import io.github.gear4jtest.core.api.context.StationParameters;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -10,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class WorkerParamsInjectorParameterTest {
     @Test
     void of_shouldCreatePersistentParameterWithNullDefaultValue() {
-        Parameter<String> parameter = Parameter.<String>newBuilder().build();
+        StationParameter<String> parameter = StationParameter.<String>newBuilder().build();
 
         assertThat(parameter.getValue()).isNull();
 
@@ -24,7 +27,7 @@ class WorkerParamsInjectorParameterTest {
 
     @Test
     void ofDefault_shouldInitializeWithDefaultValueAndPersistentLifecycle() {
-        Parameter<Integer> parameter = Parameter.<Integer>newBuilder().defaultValue(123).build();
+        StationParameter<Integer> parameter = StationParameter.<Integer>newBuilder().defaultValue(123).build();
 
         assertThat(parameter.getValue()).isEqualTo(123);
 
@@ -38,8 +41,8 @@ class WorkerParamsInjectorParameterTest {
 
     @Test
     void builder_perExecution_shouldResetToDefaultAfterExecution() {
-        Parameter<String> parameter = Parameter.<String>newBuilder().defaultValue("default")
-                .lifecyclePolicy(Parameter.LifecyclePolicy.PER_EXECUTION).build();
+        StationParameter<String> parameter = StationParameter.<String>newBuilder().defaultValue("default")
+                .lifecyclePolicy(StationParameter.LifecyclePolicy.PER_EXECUTION).build();
 
         // au départ : valeur par défaut
         assertThat(parameter.getValue()).isEqualTo("default");
@@ -54,11 +57,11 @@ class WorkerParamsInjectorParameterTest {
 
     @Test
     void parametersBuilder_shouldExposeImmutableSnapshot() {
-        WorkerParamsInjector.ParameterModel<Operator<?, ?>, String> model = new WorkerParamsInjector.InterpretationContextParameterModel<>(
+        StationParameterModel<Operator<?, ?>, String> model = new ParameterResolutionContextParameterModel<>(
                 operator -> null, ctx -> "value");
-        WorkerParamsInjector.Parameters.Builder builder = WorkerParamsInjector.Parameters.newBuilder();
+        StationParameters.Builder builder = StationParameters.newBuilder();
 
-        WorkerParamsInjector.Parameters parameters = builder.withParameter(model).build();
+        StationParameters parameters = builder.withParameter(model).build();
         builder.withParameter(model);
 
         assertThat(parameters.getParameters()).containsExactly(model);

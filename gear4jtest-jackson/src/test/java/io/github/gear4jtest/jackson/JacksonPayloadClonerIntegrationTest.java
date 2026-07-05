@@ -59,7 +59,8 @@ class JacksonPayloadClonerIntegrationTest {
                 .unaryProcessingOperation("branch-two", AddBranchTwoOperator.class).build();
 
         ContainerBaseStation<MutablePayload, MutablePayload> container = Stations
-                .container(MutablePayload.class, executor).withBranch("id1", branchOne).withBranch("id2", branchTwo)
+                .container("mutable-payload-parallel-container", MutablePayload.class, executor)
+                .withBranch("id1", branchOne).withBranch("id2", branchTwo)
                 .returns(results -> MutablePayload.merge(results.get("id1", MutablePayload.class),
                                                          results.get("id2", MutablePayload.class)));
 

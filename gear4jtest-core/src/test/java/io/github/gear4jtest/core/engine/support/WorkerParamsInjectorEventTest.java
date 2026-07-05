@@ -11,7 +11,9 @@ import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.api.context.ParameterResolutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.api.context.StationParameter;
 import io.github.gear4jtest.core.api.util.AssemblyLines;
 import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
@@ -45,7 +47,7 @@ class WorkerParamsInjectorEventTest {
                 .then(Stations
                         .<String, Integer, ParamEchoOperator>processingOperation("step-1", ParamEchoOperator.class)
                         .parameter(ParamEchoOperator::getLengthParam,
-                                   (Function<WorkerParamsInjector.InterpretationContext<String>, Integer>) ctx -> ctx
+                                   (Function<ParameterResolutionContext<String>, Integer>) ctx -> ctx
                                            .getItem().length())
                         .build())
                 .build();
@@ -67,7 +69,7 @@ class WorkerParamsInjectorEventTest {
     }
 
     static final class ParamEchoOperator implements Operator<String, Integer> {
-        private final WorkerParamsInjector.Parameter<Integer> lengthParam = WorkerParamsInjector.Parameter
+        private final StationParameter<Integer> lengthParam = StationParameter
                 .<Integer>newBuilder().build();
 
         @Override
@@ -75,7 +77,7 @@ class WorkerParamsInjectorEventTest {
             return lengthParam.getValue();
         }
 
-        WorkerParamsInjector.Parameter<Integer> getLengthParam() {
+        StationParameter<Integer> getLengthParam() {
             return lengthParam;
         }
     }

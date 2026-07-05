@@ -13,7 +13,6 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.IteratorStation;
 import io.github.gear4jtest.core.api.station.SequenceStation;
 import io.github.gear4jtest.core.api.station.StationKind;
-import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
@@ -78,11 +77,6 @@ class IteratorStationStrategyTest {
         @Override
         public StationLogTrace getRecord() {
             return stationLogTrace;
-        }
-
-        @Override
-        public ExecutionSupport getSupport() {
-            return null;
         }
 
         @Override

@@ -5,7 +5,7 @@ import java.util.function.Supplier;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
+import io.github.gear4jtest.core.api.context.StationParameter;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class WorkStationTest {
     @Test
-    void builder_shouldAddWorkerParamsInjectorOnlyOnceAndStoreParameters() {
+    void builder_shouldStoreParametersWithoutLeakingInternalInjector() {
         // Given
         WorkStation.Builder<String, String, PrefixOperator> builder = new WorkStation.Builder<>();
         Supplier<String> suppliedPrefix = () -> "supplied-";
@@ -27,7 +27,7 @@ class WorkStationTest {
         assertThat(station.getId()).isEqualTo("prefix");
         assertThat(station.getType()).isEqualTo(PrefixOperator.class);
         assertThat(station.getParameters()).hasSize(2);
-        assertThat(station.getProcessors()).filteredOn(WorkerParamsInjector.class::isInstance).hasSize(1);
+        assertThat(station.getProcessors()).isEmpty();
     }
 
     @Test
@@ -100,10 +100,10 @@ class WorkStationTest {
     }
 
     private static final class PrefixOperator implements Operator<String, String> {
-        private final WorkerParamsInjector.Parameter<String> prefix = WorkerParamsInjector.Parameter
+        private final StationParameter<String> prefix = StationParameter
                 .<String>newBuilder().defaultValue("").build();
 
-        private WorkerParamsInjector.Parameter<String> getPrefix() {
+        private StationParameter<String> getPrefix() {
             return prefix;
         }
 

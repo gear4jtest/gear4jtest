@@ -28,13 +28,15 @@ class StationBuilderTest {
                     .build();
 
             UnaryContainerStation<String> station = new UnaryContainerStation.Builder<String>()
+                    .id("unary-container")
                     .parallel(executor)
                     .awaitTimeout(Duration.ofSeconds(2))
                     .withOneLine("branch-1", branchStation, (input, ctx) -> true, value -> value + "!")
                     .build();
 
+            assertThat(station.getId()).isEqualTo("unary-container");
             assertThat(station.isParallel()).isTrue();
-            assertThat(station.getUnary()).isTrue();
+            assertThat(station.isUnary()).isTrue();
             assertThat(station.getExecutorService()).isSameAs(executor);
             assertThat(station.getAwaitTimeout()).isEqualTo(Duration.ofSeconds(2));
             assertThat(station.getAssemblyLines()).hasSize(1);
@@ -61,6 +63,7 @@ class StationBuilderTest {
                 .build();
 
         var duplicatedBranchBuilder = new ContainerBaseStation.Builder<String, Void>()
+                .id("container")
                 .withBranch(ContainerBranch.of("same", branchStation))
                 .withBranch(ContainerBranch.of("same", branchStation));
 
@@ -68,9 +71,37 @@ class StationBuilderTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Container contains duplicated branch id 'same'");
 
-        assertThatThrownBy(() -> new UnaryContainerStation.Builder<String>().withOneLine(" ", branchStation))
+        assertThatThrownBy(() -> new UnaryContainerStation.Builder<String>()
+                .id("unary-container")
+                .withOneLine(" ", branchStation))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("branch id is required");
+    }
+
+    @Test
+    void containerBuilders_shouldRejectMissingContainerId() {
+        WorkStation<String, String> branchStation = new WorkStation.Builder<String, String, IdentityOperator>()
+                .type(IdentityOperator.class)
+                .id("branch-op")
+                .build();
+
+        assertThatThrownBy(() -> new ContainerBaseStation.Builder<String, Void>()
+                .withBranch("branch", branchStation)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("container id is required");
+
+        assertThatThrownBy(() -> new UnaryContainerStation.Builder<String>()
+                .withOneLine("branch", branchStation)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("container id is required");
+
+        assertThatThrownBy(() -> new UnaryIfElseContainerStation.Builder<String>()
+                .conditionally("branch", branchStation, (input, ctx) -> true)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("container id is required");
     }
 
     @Test
@@ -90,14 +121,14 @@ class StationBuilderTest {
 
         assertThat(station.getId()).isEqualTo("unary");
         assertThat(station.getType()).isEqualTo(IdentityOperator.class);
-        assertThat(station.getUnary()).isTrue();
+        assertThat(station.isUnary()).isTrue();
         assertThat(station.getOnErrors()).containsExactly(unsafeError);
         assertThat(station.getFallbackOperator()).isSameAs(fallback);
         assertThat(station.getSkippers()).hasSize(2);
     }
 
     @Test
-    void workStationBuilder_shouldAddParameterInjectorOnlyOnceAndPreserveMetadata() {
+    void workStationBuilder_shouldPreserveExplicitProcessorsParametersAndMetadata() {
         Processor processor = new NoOpProcessor();
 
         WorkStation<String, String> station = new WorkStation.Builder<String, String, ParameterizedOperator>()
@@ -110,8 +141,7 @@ class StationBuilderTest {
                 .reuseOperatorInstanceWithinRun()
                 .build();
 
-        assertThat(station.getProcessors()).hasSize(2);
-        assertThat(station.getProcessors()).contains(processor);
+        assertThat(station.getProcessors()).containsExactly(processor);
         assertThat(station.getParameters()).hasSize(2);
         assertThat(station.isReuseOperatorInstanceWithinRun()).isTrue();
         assertThat(station.getMetadata().get(String.class)).contains("meta");
@@ -128,11 +158,13 @@ class StationBuilderTest {
         ContainerBranch<String, String> third = ContainerBranch.of("third", branchStation);
 
         ContainerBaseStation<String, String> station = new ContainerBaseStation.Builder<String, String>()
+                .id("container")
                 .withBranch(first)
                 .withBranch(second, (input, ctx) -> true)
                 .withBranch(third, (input, ctx, siblings) -> true)
                 .returns(results -> results.get(first) + results.get(second) + results.get(third));
 
+        assertThat(station.getId()).isEqualTo("container");
         assertThat(station.getAssemblyLines()).extracting(ContainerBaseStation.Branch::getId)
                 .containsExactly("first", "second", "third");
         assertThat(station.getAssemblyLines().get(1).getCondition()).isNotNull();
@@ -173,11 +205,13 @@ class StationBuilderTest {
         ContainerBranch<String, String> second = ContainerBranch.of("b", branchStation);
 
         ContainerBaseStation<String, String> station = new ContainerBaseStation.Builder<String, String>()
+                .id("container")
                 .withBranch(first)
                 .withBranch(second, (input, ctx, siblings) -> true)
                 .returns(results -> results.get(first) + results.get(second));
 
-        assertThat(station.getUnary()).isFalse();
+        assertThat(station.getId()).isEqualTo("container");
+        assertThat(station.isUnary()).isFalse();
         assertThat(station.getAssemblyLines()).extracting(ContainerBaseStation.Branch::getId)
                 .containsExactly("a", "b");
         assertThat(station.getAssemblyLines().get(1).getSiblingCondition()).isNotNull();
@@ -194,7 +228,7 @@ class StationBuilderTest {
                 .build();
 
         assertThat(station.getSignalType()).isEqualTo(SignalType.FATAL);
-        assertThat(station.getUnary()).isTrue();
+        assertThat(station.isUnary()).isTrue();
         assertThat(station.getProcessors()).isEmpty();
         assertThat(station.getOnErrors()).isEmpty();
     }
@@ -214,7 +248,7 @@ class StationBuilderTest {
     }
 
     static class ParameterizedOperator implements Operator<String, String> {
-        private final io.github.gear4jtest.core.engine.support.WorkerParamsInjector.Parameter<String> parameter = io.github.gear4jtest.core.engine.support.WorkerParamsInjector.Parameter
+        private final io.github.gear4jtest.core.api.context.StationParameter<String> parameter = io.github.gear4jtest.core.api.context.StationParameter
                 .<String>newBuilder().build();
 
         @Override
@@ -222,7 +256,7 @@ class StationBuilderTest {
             return input;
         }
 
-        io.github.gear4jtest.core.engine.support.WorkerParamsInjector.Parameter<String> parameter() {
+        io.github.gear4jtest.core.api.context.StationParameter<String> parameter() {
             return parameter;
         }
     }

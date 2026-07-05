@@ -13,11 +13,12 @@ public class UnaryIfElseContainerStation<A> extends ContainerBaseStation<A, A> {
     private final String elseBranchId;
     private final AbstractStation<A, A> elseOp;
 
-    private UnaryIfElseContainerStation(List<Branch<A>> branches,
+    private UnaryIfElseContainerStation(String id,
+                                        List<Branch<A>> branches,
                                         FlowConfig flowConfig,
                                         String elseBranchId,
                                         AbstractStation<A, A> elseOp) {
-        super(branches, null, false, null, flowConfig, null, true);
+        super(id, branches, null, false, null, flowConfig, null, true);
         this.elseBranchId = elseBranchId;
         this.elseOp = elseOp;
     }
@@ -32,9 +33,15 @@ public class UnaryIfElseContainerStation<A> extends ContainerBaseStation<A, A> {
 
     public static class Builder<A> {
         private final List<Branch<A>> branches = new ArrayList<>();
+        private String id;
         private FlowConfig flowConfig;
         private String elseBranchId;
         private AbstractStation<A, A> elseOp;
+
+        public Builder<A> id(String id) {
+            this.id = id;
+            return this;
+        }
 
         public Builder<A> flowConfig(FlowConfig flowConfig) {
             this.flowConfig = flowConfig;
@@ -63,7 +70,7 @@ public class UnaryIfElseContainerStation<A> extends ContainerBaseStation<A, A> {
         public UnaryIfElseContainerStation<A> build() {
             ContainerBaseStation.validateUniqueBranchIds(branches);
             validateElseBranchId();
-            return new UnaryIfElseContainerStation<>(branches, flowConfig, elseBranchId, elseOp);
+            return new UnaryIfElseContainerStation<>(id, branches, flowConfig, elseBranchId, elseOp);
         }
 
         private void validateElseBranchId() {

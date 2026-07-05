@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import io.github.gear4jtest.core.api.behavior.SignalType;
-import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
@@ -12,6 +11,7 @@ import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.SignalStation;
 import io.github.gear4jtest.core.api.station.StationKind;
 import io.github.gear4jtest.core.api.station.WorkStation;
+import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;

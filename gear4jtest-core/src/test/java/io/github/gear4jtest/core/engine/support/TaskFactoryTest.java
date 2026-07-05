@@ -7,12 +7,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
-import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.StationKind;
+import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;

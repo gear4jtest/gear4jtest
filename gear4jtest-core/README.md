@@ -101,7 +101,7 @@ For containers, use named typed branches and `ContainerResults` aggregation inst
 var price = Stations.branch("price", priceStation);
 var stock = Stations.branch("stock", stockStation);
 
-Stations.container(Product.class)
+Stations.container("product-enrichment", Product.class)
         .withBranch(price)
         .withBranch(stock)
         .returns(results -> new ProductEnrichment(results.get(price), results.get(stock)));

@@ -224,12 +224,16 @@ final class XmlOperationMethodRenderer {
                 throw new IllegalArgumentException("Parallel container '" + operation.id()
                         + "' has no generated executor dependency");
             }
-            code.append("        return container(").append(signature.inputType().renderClassLiteral(imports))
+            code.append("        return container(\"")
+                    .append(JavaStringEscaper.escapeJava(operation.id()))
+                    .append("\", ").append(signature.inputType().renderClassLiteral(imports))
                     .append(", requireExecutorService(").append(executorField).append(", \"")
                     .append(JavaStringEscaper.escapeJava(XmlGeneratedNames.parallelExecutorBeanName(operation)))
                     .append("\"))\n");
         } else {
-            code.append("        return container(").append(signature.inputType().renderClassLiteral(imports))
+            code.append("        return container(\"")
+                    .append(JavaStringEscaper.escapeJava(operation.id()))
+                    .append("\", ").append(signature.inputType().renderClassLiteral(imports))
                     .append(")\n");
         }
 
@@ -272,7 +276,9 @@ final class XmlOperationMethodRenderer {
 
         code.append(INDENT_PRIVATE).append(unaryIfElse).append("<").append(signature.inputType().render(imports))
                 .append("> ").append(XmlGeneratedNames.operationMethodName(operation)).append(METHOD_OPEN);
-        code.append("        return ifElseContainer(").append(signature.inputType().renderClassLiteral(imports))
+        code.append("        return ifElseContainer(\"")
+                .append(JavaStringEscaper.escapeJava(operation.id()))
+                .append("\", ").append(signature.inputType().renderClassLiteral(imports))
                 .append(")\n");
 
         for (XmlAssemblyLineDefinition.ConditionalOperation conditionalOperation : operation.conditionalOperations()) {

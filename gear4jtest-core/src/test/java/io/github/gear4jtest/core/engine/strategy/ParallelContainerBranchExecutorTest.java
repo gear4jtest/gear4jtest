@@ -11,10 +11,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.context.ResolvedParameters;
-import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.api.station.StationKind;
+import io.github.gear4jtest.core.engine.context.EngineStationExecutionContext;
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
@@ -33,6 +33,7 @@ class ParallelContainerBranchExecutorTest {
         ExecutorService rejectedExecutor = Executors.newSingleThreadExecutor();
         rejectedExecutor.shutdown();
         ContainerBaseStation<String, Void> station = new ContainerBaseStation.Builder<String, Void>(rejectedExecutor)
+                .id("container")
                 .withBranch("rejected", new TestStation("branch"))
                 .build();
         TestStationExecutionContext context = stationContext("container");
@@ -56,6 +57,7 @@ class ParallelContainerBranchExecutorTest {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
             ContainerBaseStation<String, Void> station = new ContainerBaseStation.Builder<String, Void>(executor)
+                    .id("container")
                     .withBranch("skipped", new TestStation("branch"), (input, ctx) -> false)
                     .build();
             TestStationExecutionContext context = stationContext("container");
@@ -81,6 +83,7 @@ class ParallelContainerBranchExecutorTest {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
             ContainerBaseStation<String, Void> station = new ContainerBaseStation.Builder<String, Void>(executor)
+                    .id("container")
                     .withBranch("branch-1", new TestStation("branch"))
                     .build();
             TestStationExecutionContext context = stationContext("container");
@@ -152,7 +155,7 @@ class ParallelContainerBranchExecutorTest {
                                                ExecutionContext globalContext,
                                                StationLogTrace stationLogTrace,
                                                ExecutionSupport support)
-            implements StationExecutionContext {
+            implements EngineStationExecutionContext {
         @Override
         public String getOperationId() {
             return operationId;
@@ -181,6 +184,11 @@ class ParallelContainerBranchExecutorTest {
         @Override
         public <T> Optional<T> getCapability(Class<T> type) {
             return Optional.empty();
+        }
+
+        @Override
+        public <T> void addCapability(Class<T> type, T instance) {
+            // test context does not expose mutable capabilities
         }
 
         @Override

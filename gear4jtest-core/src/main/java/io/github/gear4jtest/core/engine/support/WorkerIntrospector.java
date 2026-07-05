@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static io.github.gear4jtest.core.engine.support.WorkerParamsInjector.Parameter;
+import io.github.gear4jtest.core.api.context.StationParameter;
 
 public final class WorkerIntrospector {
     private static final ConcurrentMap<Class<?>, Boolean> STATEFUL_CACHE = new ConcurrentHashMap<>();
@@ -36,7 +36,7 @@ public final class WorkerIntrospector {
         Class<?> current = type;
         while (current != null && current != Object.class) {
             for (Field field : current.getDeclaredFields()) {
-                if (Parameter.class.isAssignableFrom(field.getType())) {
+                if (StationParameter.class.isAssignableFrom(field.getType())) {
                     return true;
                 }
             }

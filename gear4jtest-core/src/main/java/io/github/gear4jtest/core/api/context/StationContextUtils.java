@@ -4,7 +4,6 @@ import java.util.Optional;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.station.StationKind;
-import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 
 public final class StationContextUtils {
     private StationContextUtils() {
@@ -50,7 +49,7 @@ public final class StationContextUtils {
         return op.transform((I) input, ctx);
     }
 
-    public static Optional<WorkerParamsInjector.Parameters> getProcessingParameters(StationExecutionContext ctx) {
-        return ctx.getCapability(WorkerParamsInjector.Parameters.class);
+    public static Optional<StationParameters> getProcessingParameters(StationExecutionContext ctx) {
+        return ctx.getCapability(StationParameters.class);
     }
 }

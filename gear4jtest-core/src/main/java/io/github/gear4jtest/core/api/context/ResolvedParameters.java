@@ -4,22 +4,20 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
-
 public final class ResolvedParameters {
-    private final Map<WorkerParamsInjector.ParameterModel<?, ?>, Object> resolved = new ConcurrentHashMap<>();
+    private final Map<StationParameterModel<?, ?>, Object> resolved = new ConcurrentHashMap<>();
 
-    public boolean has(WorkerParamsInjector.ParameterModel<?, ?> model) {
+    public boolean has(StationParameterModel<?, ?> model) {
         return resolved.containsKey(model);
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T get(WorkerParamsInjector.ParameterModel<?, ?> model) {
+    public <T> T get(StationParameterModel<?, ?> model) {
         return (T) resolved.get(model);
     }
 
-    public <T> Resolution<T> resolve(WorkerParamsInjector.ParameterModel<?, ?> rawModel,
-                                     WorkerParamsInjector.InterpretationContext<?> interpretationCtx) {
+    public <T> Resolution<T> resolve(StationParameterModel<?, ?> rawModel,
+                                     ParameterResolutionContext<?> interpretationCtx) {
         Objects.requireNonNull(rawModel, "rawModel");
         Objects.requireNonNull(interpretationCtx, "interpretationCtx");
 
@@ -28,14 +26,14 @@ public final class ResolvedParameters {
         @SuppressWarnings("unchecked")
         T value = (T) resolved.computeIfAbsent(rawModel, model -> {
             computedHere[0] = true;
-            return ((WorkerParamsInjector.ParameterModel<?, T>) model).getValue(interpretationCtx);
+            return ((StationParameterModel<?, T>) model).getValue(interpretationCtx);
         });
 
         return new Resolution<>(value, !computedHere[0]);
     }
 
-    public <T> T resolveIfAbsent(WorkerParamsInjector.ParameterModel<?, ?> rawModel,
-                                 WorkerParamsInjector.InterpretationContext<?> interpretationCtx) {
+    public <T> T resolveIfAbsent(StationParameterModel<?, ?> rawModel,
+                                 ParameterResolutionContext<?> interpretationCtx) {
         return this.<T>resolve(rawModel, interpretationCtx).value();
     }
 

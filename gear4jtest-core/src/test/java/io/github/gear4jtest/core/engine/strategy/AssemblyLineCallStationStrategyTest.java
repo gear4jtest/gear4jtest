@@ -75,7 +75,7 @@ class AssemblyLineCallStationStrategyTest {
                 .then(processingOperation("child-step", AwaitBothBranches.class).build()).build();
         var left = Stations.branch("left", AssemblyLineCallStation.inline("call-left", child));
         var right = Stations.branch("right", AssemblyLineCallStation.inline("call-right", child));
-        var parallelContainer = Stations.container(String.class, executor)
+        var parallelContainer = Stations.container("parallel-inline-container", String.class, executor)
                 .withBranch(left)
                 .withBranch(right)
                 .returns(results -> results.get(left) + "|" + results.get(right));
@@ -114,7 +114,7 @@ class AssemblyLineCallStationStrategyTest {
                 .then(processingOperation("child-step", AwaitBothBranches.class).build()).build();
         var left = Stations.branch("left", AssemblyLineCallStation.nestedRun("call-left", child));
         var right = Stations.branch("right", AssemblyLineCallStation.nestedRun("call-right", child));
-        var parallelContainer = Stations.container(String.class, executor)
+        var parallelContainer = Stations.container("parallel-nested-container", String.class, executor)
                 .withBranch(left)
                 .withBranch(right)
                 .returns(results -> results.get(left) + "|" + results.get(right));

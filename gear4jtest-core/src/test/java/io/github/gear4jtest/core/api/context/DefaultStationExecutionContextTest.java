@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import io.github.gear4jtest.core.api.station.StationKind;
+import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;

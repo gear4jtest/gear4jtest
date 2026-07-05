@@ -45,7 +45,7 @@ fall back silently to station ids for container branches.
 XML containers are generated against the single post-H.2 container API:
 
 ```java
-Stations.container(Input.class)
+Stations.container("enrich-input", Input.class)
         .withBranch("alpha", alpha())
         .withBranch("beta", beta())
         .returns(results -> results.orderedOutputs());

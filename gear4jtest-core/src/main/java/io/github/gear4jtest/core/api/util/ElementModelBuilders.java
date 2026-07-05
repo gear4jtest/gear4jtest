@@ -88,12 +88,26 @@ public final class ElementModelBuilders {
         return Stations.container(clazz);
     }
 
+    public static <T> ContainerBaseStation.Builder<T, T> container(String id, Class<T> clazz) {
+        return Stations.container(id, clazz);
+    }
+
     public static <T> ContainerBaseStation.Builder<T, T> container(Class<T> clazz, ExecutorService executorService) {
         return Stations.container(clazz, executorService);
     }
 
+    public static <T> ContainerBaseStation.Builder<T, T> container(String id,
+                                                                   Class<T> clazz,
+                                                                   ExecutorService executorService) {
+        return Stations.container(id, clazz, executorService);
+    }
+
     public static <T> UnaryIfElseContainerStation.Builder<T> ifElseContainer(Class<T> clazz) {
         return Stations.ifElseContainer(clazz);
+    }
+
+    public static <T> UnaryIfElseContainerStation.Builder<T> ifElseContainer(String id, Class<T> clazz) {
+        return Stations.ifElseContainer(id, clazz);
     }
 
     public static Configuration.Builder configuration() {

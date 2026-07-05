@@ -3,7 +3,6 @@ package io.github.gear4jtest.core.api.context;
 import java.util.Optional;
 
 import io.github.gear4jtest.core.api.station.StationKind;
-import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 
 /**
@@ -11,8 +10,7 @@ import io.github.gear4jtest.core.execution.trace.StationLogTrace;
  *
  * <p>
  * The context exposes the station identity, station kind, global run context,
- * station trace, framework support and typed capabilities used by
- * station-specific features.
+ * station trace and typed capabilities used by station-specific features.
  * </p>
  */
 public interface StationExecutionContext {
@@ -27,8 +25,6 @@ public interface StationExecutionContext {
     }
 
     StationLogTrace getRecord();
-
-    ExecutionSupport getSupport();
 
     /**
      * Returns an optional typed capability attached to this station execution.

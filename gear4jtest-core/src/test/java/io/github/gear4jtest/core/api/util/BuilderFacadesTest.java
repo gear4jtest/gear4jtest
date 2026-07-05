@@ -44,16 +44,17 @@ class BuilderFacadesTest {
             assertThat(Stations.<String, String, IdentityOperator>processingOperation("work", IdentityOperator.class)
                     .build().getId()).isEqualTo("work");
             assertThat(Stations.<String, IdentityOperator>unaryProcessingOperation("unary", IdentityOperator.class)
-                    .build().getUnary()).isTrue();
+                    .build().isUnary()).isTrue();
             assertThat(Stations.iterate("items").accumulator(Stations.toList()).build()
                     .getId()).isEqualTo("items");
             var named = Stations.branch("named", branch);
-            assertThat(Stations.container(String.class).withBranch(named)
+            assertThat(Stations.container("facade-container", String.class).withBranch(named)
                     .returns(results -> results.get(named)).getAssemblyLines()).hasSize(1);
             var parallel = Stations.branch("parallel", branch);
-            assertThat(Stations.container(String.class, executor).withBranch(parallel)
+            assertThat(Stations.container("facade-parallel-container", String.class, executor).withBranch(parallel)
                     .returns(results -> results.get(parallel)).getExecutorService()).isSameAs(executor);
-            assertThat(Stations.ifElseContainer(String.class).build().getAssemblyLines()).isEmpty();
+            assertThat(Stations.ifElseContainer("facade-if-else-container", String.class).build().getAssemblyLines())
+                    .isEmpty();
         } finally {
             executor.shutdownNow();
         }

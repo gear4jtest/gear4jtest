@@ -34,7 +34,7 @@ var stock = Stations.branch("stock", stockStation);
 Then build containers with those branch handles:
 
 ```java
-Stations.container(Product.class)
+Stations.container("product-enrichment", Product.class)
         .withBranch(price)
         .withBranch(stock)
         .returns(results -> new ProductEnrichment(results.get(price), results.get(stock)));

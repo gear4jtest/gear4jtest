@@ -3,6 +3,9 @@ package io.github.gear4jtest.core.spi.extension;
 import io.github.gear4jtest.core.api.annotation.Spi;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.event.StationCancellationReason;
+import io.github.gear4jtest.core.event.StationInterruptionReason;
+import io.github.gear4jtest.core.event.StationSkipReason;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 
 /**
@@ -15,7 +18,10 @@ import io.github.gear4jtest.core.persistence.StationLogRecord;
  * <ul>
  * <li>once the station scope has been initialized, before delegate
  * execution,</li>
- * <li>once the station completion has been normalized.</li>
+ * <li>once the station completion has been normalized,</li>
+ * <li>or once a station receives a synthetic terminal outcome without actually
+ * starting, for example because a container branch was skipped or cancelled
+ * before its worker ran.</li>
  * </ul>
  *
  * <p>
@@ -43,6 +49,37 @@ public interface StationLifecycleExtension extends RuntimeExtension {
     default void onStationCompleted(ExecutionContext runCtx,
                                     StationExecutionContext stationCtx,
                                     StationLogRecord snapshot) {
+        // no-op
+    }
+
+    default void onStationSkipped(ExecutionContext runCtx,
+                                  StationExecutionContext stationCtx,
+                                  StationLogRecord snapshot,
+                                  StationSkipReason reason) {
+        // no-op
+    }
+
+    default void onStationCancelled(ExecutionContext runCtx,
+                                    StationExecutionContext stationCtx,
+                                    StationLogRecord snapshot,
+                                    StationCancellationReason reason,
+                                    Exception error) {
+        // no-op
+    }
+
+    default void onStationInterrupted(ExecutionContext runCtx,
+                                      StationExecutionContext stationCtx,
+                                      StationLogRecord snapshot,
+                                      StationInterruptionReason reason,
+                                      String interruptingOperationId,
+                                      Exception error) {
+        // no-op
+    }
+
+    default void onStationFailedBeforeStart(ExecutionContext runCtx,
+                                            StationExecutionContext stationCtx,
+                                            StationLogRecord snapshot,
+                                            Exception error) {
         // no-op
     }
 }

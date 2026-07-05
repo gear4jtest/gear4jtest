@@ -23,6 +23,7 @@ Gear4J aims to provide:
 | Module                       | Purpose                                                                                                                                                        |
 |------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `gear4jtest-core`            | Runtime engine, public Java API, stations, flow policies, events, side-compute, persistence traces and extension SPI.                                          |
+| `gear4jtest-experimental-cache` | Experimental assembly-line cache helpers intended for opt-in personal/advanced usage; API may disappear before 1.0.                              |
 | `gear4jtest-external-api`    | Contracts and infrastructure for externally stored pipeline definitions: artifacts, translators, in-memory compilation, classloaders and dependency injection. |
 | `gear4jtest-xml`             | XML parser, validator and Java source generator for externalized Gear4J pipelines.                                                                             |
 | `gear4jtest-gradle-xml2java` | Gradle plugin that generates Java pipeline classes from XML files at build time.                                                                               |

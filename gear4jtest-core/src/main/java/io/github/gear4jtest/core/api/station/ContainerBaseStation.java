@@ -20,20 +20,28 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
     private final FlowConfig flowConfig;
     private final Duration awaitTimeout;
 
-    protected ContainerBaseStation(List<Branch<IN>> pipelines,
+    protected ContainerBaseStation(String id,
+                                   List<Branch<IN>> pipelines,
                                    ContainerResultsFunction<OUT> resultsFunc,
                                    boolean parallel,
                                    ExecutorService executorService,
                                    FlowConfig flowConfig,
                                    Duration awaitTimeout,
                                    boolean unary) {
-        super("", StationKind.CONTAINER, null, null, null, unary, null, null);
+        super(requireContainerId(id), StationKind.CONTAINER, null, null, null, unary, null, null);
         this.pipelines = pipelines == null || pipelines.isEmpty() ? List.of() : List.copyOf(pipelines);
         this.resultsFunc = resultsFunc;
         this.parallel = parallel;
         this.executorService = executorService;
         this.flowConfig = flowConfig;
         this.awaitTimeout = awaitTimeout;
+    }
+
+    protected static String requireContainerId(String id) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("container id is required");
+        }
+        return id;
     }
 
     protected static void validateUniqueBranchIds(List<? extends Branch<?>> branches) {
@@ -86,6 +94,7 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
     public static class Builder<IN, OUT> {
         final List<Branch<IN>> branches = new ArrayList<>();
+        String id;
         boolean isParallel;
         ExecutorService executorService;
         FlowConfig flowConfig;
@@ -97,6 +106,11 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
         public Builder(ExecutorService executorService) {
             this.isParallel = true;
             this.executorService = executorService;
+        }
+
+        public Builder<IN, OUT> id(String id) {
+            this.id = id;
+            return this;
         }
 
         public Builder<IN, OUT> flowConfig(FlowConfig flowConfig) {
@@ -161,7 +175,8 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         public <C> ContainerBaseStation<IN, C> returns(ContainerResultsFunction<C> func) {
-            return ContainerBaseStation.buildStation(branches,
+            return ContainerBaseStation.buildStation(id,
+                                                     branches,
                                                      isParallel,
                                                      executorService,
                                                      flowConfig,
@@ -170,7 +185,8 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         public ContainerBaseStation<IN, Void> build() {
-            return ContainerBaseStation.buildStation(branches,
+            return ContainerBaseStation.buildStation(id,
+                                                     branches,
                                                      isParallel,
                                                      executorService,
                                                      flowConfig,
@@ -179,14 +195,16 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
     }
 
-    static <IN, OUT> ContainerBaseStation<IN, OUT> buildStation(List<Branch<IN>> branches,
+    static <IN, OUT> ContainerBaseStation<IN, OUT> buildStation(String id,
+                                                                List<Branch<IN>> branches,
                                                                 boolean isParallel,
                                                                 ExecutorService executorService,
                                                                 FlowConfig flowConfig,
                                                                 Duration awaitTimeout,
                                                                 ContainerResultsFunction<OUT> function) {
         validateUniqueBranchIds(branches);
-        return new ContainerBaseStation<>(branches,
+        return new ContainerBaseStation<>(id,
+                branches,
                 function,
                 isParallel,
                 executorService,

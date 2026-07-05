@@ -9,6 +9,9 @@ import java.util.concurrent.ConcurrentMap;
 
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.event.StationCancellationReason;
+import io.github.gear4jtest.core.event.StationInterruptionReason;
+import io.github.gear4jtest.core.event.StationSkipReason;
 import io.github.gear4jtest.core.execution.AssemblyRunManager;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
@@ -123,6 +126,45 @@ public class PersistenceExtension implements RunLifecycleExtension, StationLifec
     public void onStationCompleted(ExecutionContext runCtx,
                                    StationExecutionContext stationCtx,
                                    StationLogRecord snapshot) {
+        appendTerminal(snapshot);
+    }
+
+    @Override
+    public void onStationSkipped(ExecutionContext runCtx,
+                                 StationExecutionContext stationCtx,
+                                 StationLogRecord snapshot,
+                                 StationSkipReason reason) {
+        appendTerminal(snapshot);
+    }
+
+    @Override
+    public void onStationCancelled(ExecutionContext runCtx,
+                                   StationExecutionContext stationCtx,
+                                   StationLogRecord snapshot,
+                                   StationCancellationReason reason,
+                                   Exception error) {
+        appendTerminal(snapshot);
+    }
+
+    @Override
+    public void onStationInterrupted(ExecutionContext runCtx,
+                                     StationExecutionContext stationCtx,
+                                     StationLogRecord snapshot,
+                                     StationInterruptionReason reason,
+                                     String interruptingOperationId,
+                                     Exception error) {
+        appendTerminal(snapshot);
+    }
+
+    @Override
+    public void onStationFailedBeforeStart(ExecutionContext runCtx,
+                                           StationExecutionContext stationCtx,
+                                           StationLogRecord snapshot,
+                                           Exception error) {
+        appendTerminal(snapshot);
+    }
+
+    private void appendTerminal(StationLogRecord snapshot) {
         List<StationLogRecord> batch = bufferFor(snapshot.assemblyLineExecutionId()).add(snapshot,
                                                                                          terminalRecordBatchSize);
         flush(batch);

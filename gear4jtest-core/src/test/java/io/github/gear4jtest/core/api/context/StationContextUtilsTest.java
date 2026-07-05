@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.station.StationKind;
-import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
+import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
@@ -40,10 +40,10 @@ class StationContextUtilsTest {
     void getProcessingParameters_shouldReturnBoundParametersCapability() {
         // Given
         DefaultStationExecutionContext context = newContext("station-1");
-        WorkerParamsInjector.Parameters parameters = new WorkerParamsInjector.Parameters();
+        StationParameters parameters = new StationParameters();
 
         // When
-        context.addCapability(WorkerParamsInjector.Parameters.class, parameters);
+        context.addCapability(StationParameters.class, parameters);
 
         // Then
         assertThat(StationContextUtils.getProcessingParameters(context)).contains(parameters);

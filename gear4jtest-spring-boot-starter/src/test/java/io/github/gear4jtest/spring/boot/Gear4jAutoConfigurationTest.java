@@ -78,6 +78,7 @@ class Gear4jAutoConfigurationTest {
                                 .build();
                         ContainerBaseStation<String, String> container = new ContainerBaseStation.Builder<String, String>(
                                 branchExecutor)
+                                .id("parallel-container")
                                 .withBranch("slow-branch", slowStation)
                                 .returns(results -> results.get("slow-branch", String.class));
                         AssemblyLine<String, String> pipeline = AssemblyLines

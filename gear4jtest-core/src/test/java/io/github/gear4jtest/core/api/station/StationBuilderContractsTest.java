@@ -9,8 +9,9 @@ import io.github.gear4jtest.core.api.behavior.BaseError;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
 import io.github.gear4jtest.core.api.behavior.SignalType;
+import io.github.gear4jtest.core.api.context.ParameterResolutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
+import io.github.gear4jtest.core.api.context.StationParameter;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,7 +24,7 @@ class StationBuilderContractsTest {
         BaseError.SafeError<String> safeError = new BaseError.SafeError.Builder<String>(SignalType.STOP,
                 RuntimeException.class).build();
         IdentityOperator fallback = new IdentityOperator();
-        Function<WorkerParamsInjector.InterpretationContext<String>, String> resolver = ctx -> ctx.getItem()
+        Function<ParameterResolutionContext<String>, String> resolver = ctx -> ctx.getItem()
                 + "-resolved";
 
         // When
@@ -44,7 +45,7 @@ class StationBuilderContractsTest {
         assertThat(station.getId()).isEqualTo("work");
         assertThat(station.getType()).isEqualTo(ParamOperator.class);
         assertThat(station.isReuseOperatorInstanceWithinRun()).isTrue();
-        assertThat(station.getProcessors()).hasAtLeastOneElementOfType(WorkerParamsInjector.class).contains(processor);
+        assertThat(station.getProcessors()).containsExactly(processor);
         assertThat(station.getParameters()).hasSize(3);
         assertThat(station.getOnErrors()).containsExactly(safeError);
         assertThat(station.getFallbackOperator()).isSameAs(fallback);
@@ -89,7 +90,7 @@ class StationBuilderContractsTest {
 
         // Then
         assertThat(station.getId()).isEqualTo("unary");
-        assertThat(station.getUnary()).isTrue();
+        assertThat(station.isUnary()).isTrue();
         assertThat(station.getParameters()).hasSize(1);
         assertThat(station.getSkippers()).hasSize(1);
         assertThat(station.getFallbackOperator()).isNotNull();
@@ -142,7 +143,7 @@ class StationBuilderContractsTest {
     }
 
     static final class IdentityOperator implements Operator<String, String> {
-        private final WorkerParamsInjector.Parameter<String> ignored = WorkerParamsInjector.Parameter
+        private final StationParameter<String> ignored = StationParameter
                 .<String>newBuilder()
                 .build();
 
@@ -151,19 +152,19 @@ class StationBuilderContractsTest {
             return input;
         }
 
-        WorkerParamsInjector.Parameter<String> ignoredParameter() {
+        StationParameter<String> ignoredParameter() {
             return ignored;
         }
     }
 
     static final class ParamOperator implements Operator<String, String> {
-        private final WorkerParamsInjector.Parameter<String> fixed = WorkerParamsInjector.Parameter
+        private final StationParameter<String> fixed = StationParameter
                 .<String>newBuilder()
                 .build();
-        private final WorkerParamsInjector.Parameter<String> supplied = WorkerParamsInjector.Parameter
+        private final StationParameter<String> supplied = StationParameter
                 .<String>newBuilder()
                 .build();
-        private final WorkerParamsInjector.Parameter<String> resolved = WorkerParamsInjector.Parameter
+        private final StationParameter<String> resolved = StationParameter
                 .<String>newBuilder()
                 .build();
 
@@ -172,15 +173,15 @@ class StationBuilderContractsTest {
             return List.of(fixed.getValue(), supplied.getValue(), resolved.getValue()).toString();
         }
 
-        WorkerParamsInjector.Parameter<String> fixedParameter() {
+        StationParameter<String> fixedParameter() {
             return fixed;
         }
 
-        WorkerParamsInjector.Parameter<String> suppliedParameter() {
+        StationParameter<String> suppliedParameter() {
             return supplied;
         }
 
-        WorkerParamsInjector.Parameter<String> resolvedParameter() {
+        StationParameter<String> resolvedParameter() {
             return resolved;
         }
     }

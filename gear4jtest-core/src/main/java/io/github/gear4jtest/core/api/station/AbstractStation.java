@@ -98,7 +98,7 @@ public abstract class AbstractStation<I, O> {
         return fallbackOperator;
     }
 
-    public Boolean getUnary() {
+    public boolean isUnary() {
         return unary;
     }
 }

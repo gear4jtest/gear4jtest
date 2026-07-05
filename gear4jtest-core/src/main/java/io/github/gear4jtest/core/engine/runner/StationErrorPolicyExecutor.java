@@ -106,7 +106,7 @@ public class StationErrorPolicyExecutor {
             }
         }
 
-        if (Boolean.TRUE.equals(station.getUnary())) {
+        if (station.isUnary()) {
             stationLog.markSuccess(input);
             return stationLog;
         }

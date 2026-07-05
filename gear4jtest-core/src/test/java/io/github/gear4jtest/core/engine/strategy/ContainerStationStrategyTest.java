@@ -17,7 +17,6 @@ import io.github.gear4jtest.core.api.config.FailurePolicy;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
 import io.github.gear4jtest.core.api.config.StopPolicy;
-import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
@@ -25,6 +24,7 @@ import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.api.station.ContainerBranch;
 import io.github.gear4jtest.core.api.station.StationKind;
+import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.engine.support.ExecutorDecorator;
 import io.github.gear4jtest.core.engine.support.TaskFactory;
@@ -125,7 +125,11 @@ class ContainerStationStrategyTest {
         DummyStation first = station("first");
         DummyStation second = station("second");
 
-        var container = new ContainerBaseStation.Builder<>().withBranch("1", first).withBranch("2", second).build();
+        var container = new ContainerBaseStation.Builder<>()
+                .id("container")
+                .withBranch("1", first)
+                .withBranch("2", second)
+                .build();
 
         StationRunner runner = mock(StationRunner.class);
         StationExecutionContext operationExecution = newOperationExecutionContext("container");
@@ -154,7 +158,7 @@ class ContainerStationStrategyTest {
         FlowConfig flowConfig = new FlowConfig(FailurePolicy.IGNORE_AND_CONTINUE, StopPolicy.PROPAGATE_STOP,
                 CancelPolicy.PROPAGATE_CANCEL);
 
-        var container = new ContainerBaseStation.Builder<Object, Object>().flowConfig(flowConfig)
+        var container = new ContainerBaseStation.Builder<Object, Object>().id("container").flowConfig(flowConfig)
                 .withBranch("1", first).withBranch("2", second).returns(results -> results.orderedOutputs());
 
         StationRunner runner = mock(StationRunner.class);
@@ -185,7 +189,7 @@ class ContainerStationStrategyTest {
         FlowConfig flowConfig = new FlowConfig(FailurePolicy.COLLECT_AND_FAIL, StopPolicy.PROPAGATE_STOP,
                 CancelPolicy.PROPAGATE_CANCEL);
 
-        var container = new ContainerBaseStation.Builder<Object, Object>().flowConfig(flowConfig)
+        var container = new ContainerBaseStation.Builder<Object, Object>().id("container").flowConfig(flowConfig)
                 .withBranch("1", first).withBranch("2", second).returns(results -> results.orderedOutputs());
 
         StationRunner runner = mock(StationRunner.class);
@@ -214,6 +218,7 @@ class ContainerStationStrategyTest {
         DummyStation executed = station("executed");
 
         var container = new ContainerBaseStation.Builder<Object, Object>()
+                .id("container")
                 .withBranch("1", skipped, (input, ctx) -> false).withBranch("2", executed)
                 .returns(results -> results.orderedOutputs());
 
@@ -244,6 +249,7 @@ class ContainerStationStrategyTest {
         ContainerBranch<Object, String> right = ContainerBranch.of("right", third);
 
         var container = new ContainerBaseStation.Builder<Object, Object>()
+                .id("container")
                 .withBranch(left)
                 .withBranch(middle)
                 .withBranch(right)
@@ -276,6 +282,7 @@ class ContainerStationStrategyTest {
             DummyStation fast = station("fast");
 
             var container = new ContainerBaseStation.Builder<Object, Object>(executorService)
+                    .id("container")
                     .awaitTimeout(Duration.ofMillis(50)).withBranch("1", slow).withBranch("2", fast)
                     .returns(results -> results.orderedOutputs());
 
@@ -316,7 +323,9 @@ class ContainerStationStrategyTest {
             FlowConfig flowConfig = new FlowConfig(FailurePolicy.FAIL_FAST, StopPolicy.PROPAGATE_STOP,
                     CancelPolicy.IGNORE_AND_CONTINUE);
 
-            var container = new ContainerBaseStation.Builder<Object, Object>(executorService).flowConfig(flowConfig)
+            var container = new ContainerBaseStation.Builder<Object, Object>(executorService)
+                    .id("container")
+                    .flowConfig(flowConfig)
                     .awaitTimeout(Duration.ofMillis(50)).withBranch("1", slow).withBranch("2", fast)
                     .returns(results -> results.orderedOutputs());
 
@@ -355,7 +364,9 @@ class ContainerStationStrategyTest {
             DummyStation slow = station("slow");
             DummyStation failing = station("failing");
 
-            var container = new ContainerBaseStation.Builder<Object, Object>(executorService).withBranch("1", slow)
+            var container = new ContainerBaseStation.Builder<Object, Object>(executorService)
+                    .id("container")
+                    .withBranch("1", slow)
                     .withBranch("2", failing).returns(results -> results.orderedOutputs());
 
             StationExecutionContext operationExecution = newOperationExecutionContext("container");
@@ -414,7 +425,9 @@ class ContainerStationStrategyTest {
             ContainerStationStrategy strategy = new ContainerStationStrategy(
                     ParallelExecutionConfiguration.withDefaultAwaitTimeout(Duration.ofMillis(30)));
             DummyStation slow = station("slow");
-            var container = new ContainerBaseStation.Builder<Object, Object>(executorService).withBranch("1", slow)
+            var container = new ContainerBaseStation.Builder<Object, Object>(executorService)
+                    .id("container")
+                    .withBranch("1", slow)
                     .returns(results -> results.orderedOutputs());
             StationExecutionContext context = newOperationExecutionContext("container");
             StationRunner runner = (input, station, ctx) -> {
@@ -443,7 +456,9 @@ class ContainerStationStrategyTest {
         // Given
         ContainerStationStrategy strategy = new ContainerStationStrategy();
         DummyStation branch = station("rejected");
-        var container = new ContainerBaseStation.Builder<Object, Object>(executorService).withBranch("1", branch)
+        var container = new ContainerBaseStation.Builder<Object, Object>(executorService)
+                .id("container")
+                .withBranch("1", branch)
                 .returns(results -> results.orderedOutputs());
         StationExecutionContext context = newOperationExecutionContext("container");
 

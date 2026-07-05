@@ -1,6 +1,8 @@
 package io.github.gear4jtest.core.engine.strategy;
 
 import io.github.gear4jtest.core.api.config.FlowConfig;
+import io.github.gear4jtest.core.api.config.FlowDecider;
+import io.github.gear4jtest.core.api.config.FlowDecision;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
@@ -30,32 +32,67 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
 
         FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
         StationLogTrace selectedBranchLog = null;
+        String selectedBranchId = null;
 
         for (ContainerBaseStation.Branch<?> element : station.getAssemblyLines()) {
             if (element.getCondition() == null || evaluateBranchCondition(element, input, operationExecution)) {
                 Object newObject = clonePayload(input, operationExecution);
-                selectedBranchLog = runner.run(newObject, element.getStation(), operationExecution);
-                selectedBranchLog.setParentOperationId(operationExecution.getRecord().getId());
+                selectedBranchId = element.getId();
+                try (var ignored = operationExecution.getGlobalContext().enterBranch(selectedBranchId)) {
+                    selectedBranchLog = runner.run(newObject, element.getStation(), operationExecution);
+                }
                 break;
             }
         }
 
         if (selectedBranchLog == null && station.getElseOp() != null) {
             Object newObject = clonePayload(input, operationExecution);
-            selectedBranchLog = runner.run(newObject, station.getElseOp(), operationExecution);
-            selectedBranchLog.setParentOperationId(operationExecution.getRecord().getId());
+            selectedBranchId = station.getElseBranchId();
+            try (var ignored = operationExecution.getGlobalContext().enterBranch(selectedBranchId)) {
+                selectedBranchLog = runner.run(newObject, station.getElseOp(), operationExecution);
+            }
         }
 
         if (selectedBranchLog == null) {
-            return null;
+            return input;
         }
+        normalizeSelectedBranchLog(selectedBranchLog, selectedBranchId, operationExecution);
 
+        FlowDecision decision = FlowDecider.decide(selectedBranchLog, config);
+        return switch (decision) {
+            case PROCEED -> proceedOutput(input, selectedBranchLog);
+            case MARK_AND_PROCEED -> {
+                Throwable representative = FlowStrategySupport.representativeThrowable(
+                                                                                       selectedBranchLog,
+                                                                                       "If/else branch failed without exception: "
+                                                                                               + selectedBranchLog
+                                                                                                       .getOperationId());
+                operationExecution.getRecord().markFailed(representative instanceof Exception exception ? exception
+                        : new RuntimeException(representative.getMessage(), representative));
+                yield proceedOutput(input, selectedBranchLog);
+            }
+            case INTERRUPT -> {
+                FlowStrategySupport.applyInterruptToParentLog(operationExecution.getRecord(), selectedBranchLog,
+                                                              config);
+                yield null;
+            }
+        };
+    }
+
+    private static void normalizeSelectedBranchLog(StationLogTrace selectedBranchLog,
+                                                   String selectedBranchId,
+                                                   StationExecutionContext operationExecution) {
+        selectedBranchLog.setParentOperationId(operationExecution.getRecord().getId());
+        if (selectedBranchLog.getBranchId() == null) {
+            selectedBranchLog.setBranchId(selectedBranchId);
+        }
+    }
+
+    private static Object proceedOutput(Object input, StationLogTrace selectedBranchLog) {
         if (selectedBranchLog.getStatus() == StationLogStatus.SUCCEEDED
                 || selectedBranchLog.getStatus() == StationLogStatus.SKIPPED) {
             return selectedBranchLog.getOutput();
         }
-
-        FlowStrategySupport.applyInterruptToParentLog(operationExecution.getRecord(), selectedBranchLog, config);
-        return null;
+        return input;
     }
 }

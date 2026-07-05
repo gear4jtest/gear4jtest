@@ -14,7 +14,6 @@ import io.github.gear4jtest.core.api.context.ResolvedParameters;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
 import io.github.gear4jtest.core.api.station.StationKind;
-import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.exception.AssemblyLineCallException;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
@@ -270,11 +269,6 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
         @Override
         public StationLogTrace getRecord() {
             return stationLogTrace;
-        }
-
-        @Override
-        public ExecutionSupport getSupport() {
-            return null;
         }
 
         @Override

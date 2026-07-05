@@ -5,11 +5,12 @@ import java.util.Objects;
 import java.util.Optional;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
-import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.api.context.StationContextUtils;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.api.context.StationParameters;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.WorkStation;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfiguration;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyGuard;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyManager;
@@ -18,11 +19,13 @@ import io.github.gear4jtest.core.engine.support.WorkerIntrospector;
 import io.github.gear4jtest.core.engine.support.WorkerLockAcquisitionPolicy;
 import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 import io.github.gear4jtest.core.exception.ConcurrentTransformerUseException;
+import io.github.gear4jtest.core.exception.ResourceResolutionException;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, ?>> {
     private final WorkerConcurrencyManager concurrencyManager;
     private final WorkerConcurrencyConfiguration concurrencyConfiguration;
+    private final WorkerParamsInjector paramsInjector = new WorkerParamsInjector();
 
     public static Builder builder() {
         return new Builder();
@@ -93,18 +96,19 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
         if (station.isReuseOperatorInstanceWithinRun()) {
             operation = services
                     .getOrCreateStationResource(station.getId(), operatorType,
-                                                () -> services.getResourceFactory().getResource(operatorType));
+                                                () -> resolveOperator(station, operatorType,
+                                                                      services.getResourceFactory()
+                                                                              .getResource(operatorType)));
         } else {
-            operation = services.getResourceFactory().getResource(operatorType);
+            operation = resolveOperator(station, operatorType, services.getResourceFactory().getResource(operatorType));
         }
 
-        ((DefaultStationExecutionContext) operationExecution).addCapability(Operator.class, operation);
-        var parameters = WorkerParamsInjector.Parameters.newBuilder();
+        EngineStationContexts.addCapability(operationExecution, Operator.class, operation);
+        var parameters = StationParameters.newBuilder();
         Optional.ofNullable(station.getParameters()).stream()
                 .flatMap(List::stream)
                 .forEach(parameters::withParameter);
-        ((DefaultStationExecutionContext) operationExecution).addCapability(WorkerParamsInjector.Parameters.class,
-                                                                            parameters.build());
+        EngineStationContexts.addCapability(operationExecution, StationParameters.class, parameters.build());
 
         if (!shouldProtectWorker(station, operationExecution)) {
             return;
@@ -120,6 +124,24 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
                     + concurrencyConfiguration.lockWaitTimeout() + ". " + lockFailureAdvice(), e);
         }
         CURRENT_GUARD.set(guard);
+    }
+
+    @Override
+    protected void afterBeforeProcessors(WorkStation<?, ?> station,
+                                         Object input,
+                                         StationExecutionContext operationExecution) {
+        if (station.getParameters() != null && !station.getParameters().isEmpty()) {
+            paramsInjector.beforeExecution(input, operationExecution);
+        }
+    }
+
+    @Override
+    protected void afterProcessors(WorkStation<?, ?> station,
+                                   Object result,
+                                   StationExecutionContext operationExecution) {
+        if (station.getParameters() != null && !station.getParameters().isEmpty()) {
+            paramsInjector.afterExecution(result, operationExecution);
+        }
     }
 
     @Override
@@ -161,6 +183,21 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
             return false;
         }
         return isStateful(operationExecution);
+    }
+
+    private Operator<?, ?> resolveOperator(WorkStation<?, ?> station,
+                                           Class<Operator<?, ?>> operatorType,
+                                           Object resource) {
+        if (resource == null) {
+            throw new ResourceResolutionException("ResourceFactory returned null for operator "
+                    + operatorType.getName() + " required by station '" + station.getId() + "'");
+        }
+        if (!operatorType.isInstance(resource)) {
+            throw new ResourceResolutionException("ResourceFactory returned incompatible resource "
+                    + resource.getClass().getName() + " for operator " + operatorType.getName()
+                    + " required by station '" + station.getId() + "'");
+        }
+        return operatorType.cast(resource);
     }
 
     /**

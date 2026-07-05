@@ -12,9 +12,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
+import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.engine.support.TaskFactory;
-import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
@@ -29,10 +29,10 @@ class ResolvedParametersConcurrencyTest {
         CountDownLatch releaseCompute = new CountDownLatch(1);
         AtomicInteger computeInvocations = new AtomicInteger();
 
-        WorkerParamsInjector.ParameterModel<Operator<Object, Object>, Integer> parameterModel = new WorkerParamsInjector.ParameterModel<>(
+        StationParameterModel<Operator<Object, Object>, Integer> parameterModel = new StationParameterModel<>(
                 operator -> null) {
             @Override
-            public Integer getValue(WorkerParamsInjector.InterpretationContext<?> ctx) {
+            public Integer getValue(ParameterResolutionContext<?> ctx) {
                 computeInvocations.incrementAndGet();
                 computeStarted.countDown();
                 try {
@@ -53,7 +53,7 @@ class ResolvedParametersConcurrencyTest {
                 .build();
         DefaultStationExecutionContext stationExecutionContext = new DefaultStationExecutionContext("step-1",
                 executionContext, new ExecutionSupport(null, new TaskFactory(), PayloadCloners.immutableAware()));
-        WorkerParamsInjector.InterpretationContext<String> interpretationContext = new WorkerParamsInjector.InterpretationContext<>(
+        ParameterResolutionContext<String> interpretationContext = new ParameterResolutionContext<>(
                 "item", executionContext, stationExecutionContext);
 
         ExecutorService executorService = Executors.newFixedThreadPool(2);

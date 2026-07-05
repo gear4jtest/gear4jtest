@@ -1,6 +1,6 @@
 package io.github.gear4jtest.core.engine.support;
 
-import io.github.gear4jtest.core.engine.support.WorkerParamsInjector.Parameter;
+import io.github.gear4jtest.core.api.context.StationParameter;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +38,7 @@ class OperatorIntrospectorTest {
         // on triche : on met un champ Parameter malgré tout
         class ExplicitStatelessWithParameter extends ExplicitStatelessTransformer {
             @SuppressWarnings("unused")
-            private final Parameter<String> param = Parameter.<String>newBuilder().build();
+            private final StationParameter<String> param = StationParameter.<String>newBuilder().build();
         }
 
         ExplicitStatelessWithParameter transformer = new ExplicitStatelessWithParameter();
@@ -70,7 +70,7 @@ class OperatorIntrospectorTest {
      */
     static class StatefulByParameter {
         @SuppressWarnings("unused")
-        private final Parameter<String> param = Parameter.<String>newBuilder().build();
+        private final StationParameter<String> param = StationParameter.<String>newBuilder().build();
     }
 
     /**
@@ -98,6 +98,6 @@ class OperatorIntrospectorTest {
      */
     static class AutoWithParameter implements ConcurrencyAwareTransformer {
         @SuppressWarnings("unused")
-        private final Parameter<Integer> param = Parameter.<Integer>newBuilder().build();
+        private final StationParameter<Integer> param = StationParameter.<Integer>newBuilder().build();
     }
 }

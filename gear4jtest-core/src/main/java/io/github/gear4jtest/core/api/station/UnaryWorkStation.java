@@ -10,12 +10,14 @@ import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
 import io.github.gear4jtest.core.api.behavior.StationSkipTest;
 import io.github.gear4jtest.core.api.behavior.StationSkipper;
-import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
+import io.github.gear4jtest.core.api.context.ParameterResolutionContext;
+import io.github.gear4jtest.core.api.context.ParameterResolutionContextParameterModel;
+import io.github.gear4jtest.core.api.context.StationParameterModel;
 
 public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
     private UnaryWorkStation(String id,
                              Class<Operator<INOUT, INOUT>> type,
-                             List<WorkerParamsInjector.ParameterModel<?, ?>> parameters,
+                             List<StationParameterModel<?, ?>> parameters,
                              List<Processor> processors,
                              List<BaseError<INOUT>> onErrors,
                              Operator<INOUT, INOUT> fallbackOperator,
@@ -27,7 +29,7 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
     public static class Builder<INOUT, OP extends Operator<INOUT, INOUT>> {
         private String id = "";
         private Class<? extends Operator<?, ?>> type;
-        private final List<WorkerParamsInjector.ParameterModel<?, ?>> parameters;
+        private final List<StationParameterModel<?, ?>> parameters;
         private final List<Processor> processors;
         private final List<BaseError<INOUT>> onErrors;
         private final List<StationSkipper> skippers;
@@ -65,8 +67,7 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
          */
         public <A> Builder<INOUT, OP> parameter(WorkStation.ParamRetriever<OP, A> retriever, A value) {
 
-            addParameterInjectorIfNecessary();
-            parameters.add(new WorkerParamsInjector.InterpretationContextParameterModel<>(retriever, ctx -> value));
+            parameters.add(new ParameterResolutionContextParameterModel<>(retriever, ctx -> value));
             return this;
         }
 
@@ -76,8 +77,7 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
         public <A> Builder<INOUT, OP> parameter(WorkStation.ParamRetriever<OP, A> retriever,
                                                 java.util.function.Supplier<A> supplier) {
 
-            addParameterInjectorIfNecessary();
-            parameters.add(new WorkerParamsInjector.InterpretationContextParameterModel<>(retriever,
+            parameters.add(new ParameterResolutionContextParameterModel<>(retriever,
                     ctx -> supplier.get()));
             return this;
         }
@@ -87,17 +87,10 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
          * and execution context.
          */
         public <A> Builder<INOUT, OP> parameter(WorkStation.ParamRetriever<OP, A> retriever,
-                                                Function<WorkerParamsInjector.InterpretationContext<INOUT>, A> resolver) {
+                                                Function<ParameterResolutionContext<INOUT>, A> resolver) {
 
-            addParameterInjectorIfNecessary();
-            parameters.add(new WorkerParamsInjector.InterpretationContextParameterModel<>(retriever, resolver));
+            parameters.add(new ParameterResolutionContextParameterModel<>(retriever, resolver));
             return this;
-        }
-
-        private void addParameterInjectorIfNecessary() {
-            if (processors.stream().noneMatch(WorkerParamsInjector.class::isInstance)) {
-                processors.add(new WorkerParamsInjector());
-            }
         }
 
         public Builder<INOUT, OP> addProcessor(Processor processor) {

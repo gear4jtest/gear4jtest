@@ -54,7 +54,7 @@ public class RunnerChainFactory {
     }
 
     private static final class LateBoundStationRunner implements StationRunner {
-        private StationRunner delegate;
+        private volatile StationRunner delegate;
 
         private void bind(StationRunner delegate) {
             this.delegate = Objects.requireNonNull(delegate, "delegate must not be null");

@@ -12,11 +12,14 @@ import io.github.gear4jtest.core.api.behavior.Processor;
 import io.github.gear4jtest.core.api.behavior.StationSkipTest;
 import io.github.gear4jtest.core.api.behavior.StationSkipper;
 import io.github.gear4jtest.core.api.config.OperationAdditionalModel;
-import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
+import io.github.gear4jtest.core.api.context.ParameterResolutionContext;
+import io.github.gear4jtest.core.api.context.ParameterResolutionContextParameterModel;
+import io.github.gear4jtest.core.api.context.StationParameter;
+import io.github.gear4jtest.core.api.context.StationParameterModel;
 
 public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
     private final Class<Operator<IN, OUT>> type;
-    private final List<WorkerParamsInjector.ParameterModel<?, ?>> parameters;
+    private final List<StationParameterModel<?, ?>> parameters;
     /**
      * Whether the operator instance is reused for the whole assembly line run.
      */
@@ -24,7 +27,7 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
     WorkStation(String id,
                 Class<Operator<IN, OUT>> type,
-                List<WorkerParamsInjector.ParameterModel<?, ?>> parameters,
+                List<StationParameterModel<?, ?>> parameters,
                 List<Processor> processors,
                 List<BaseError<IN>> onErrors,
                 Operator<IN, OUT> fallbackOperator,
@@ -38,7 +41,7 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
         this.reuseOperatorInstanceWithinRun = reuseOperatorInstanceWithinRun;
     }
 
-    public List<WorkerParamsInjector.ParameterModel<?, ?>> getParameters() {
+    public List<StationParameterModel<?, ?>> getParameters() {
         return parameters;
     }
 
@@ -52,13 +55,13 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
     @FunctionalInterface
     public interface ParamRetriever<T extends Operator<?, ?>, U> {
-        WorkerParamsInjector.Parameter<U> getParameterValue(T operation);
+        StationParameter<U> getParameterValue(T operation);
     }
 
     public static class Builder<IN, OUT, OP extends Operator<IN, OUT>> {
         private String id = "";
         private Class<? extends Operator<?, ?>> type;
-        private final List<WorkerParamsInjector.ParameterModel<?, ?>> parameters;
+        private final List<StationParameterModel<?, ?>> parameters;
         private final List<Processor> processors;
         private final List<BaseError<IN>> onErrors;
         private final List<StationSkipper> skippers;
@@ -113,8 +116,7 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
          */
         public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever, A value) {
 
-            addParameterInjectorIfNecessary();
-            addParameter(new WorkerParamsInjector.InterpretationContextParameterModel<>(retriever, ctx -> value));
+            addParameter(new ParameterResolutionContextParameterModel<>(retriever, ctx -> value));
             return this;
         }
 
@@ -124,8 +126,7 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
         public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever,
                                                   java.util.function.Supplier<A> supplier) {
 
-            addParameterInjectorIfNecessary();
-            addParameter(new WorkerParamsInjector.InterpretationContextParameterModel<>(retriever,
+            addParameter(new ParameterResolutionContextParameterModel<>(retriever,
                     ctx -> supplier.get()));
             return this;
         }
@@ -135,20 +136,13 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
          * and execution context.
          */
         public <A> Builder<IN, OUT, OP> parameter(ParamRetriever<OP, A> retriever,
-                                                  Function<WorkerParamsInjector.InterpretationContext<IN>, A> resolver) {
+                                                  Function<ParameterResolutionContext<IN>, A> resolver) {
 
-            addParameterInjectorIfNecessary();
-            addParameter(new WorkerParamsInjector.InterpretationContextParameterModel<>(retriever, resolver));
+            addParameter(new ParameterResolutionContextParameterModel<>(retriever, resolver));
             return this;
         }
 
-        private void addParameterInjectorIfNecessary() {
-            if (processors.stream().noneMatch(WorkerParamsInjector.class::isInstance)) {
-                processors.add(new WorkerParamsInjector());
-            }
-        }
-
-        private void addParameter(WorkerParamsInjector.ParameterModel<OP, ?> parameterModel) {
+        private void addParameter(StationParameterModel<OP, ?> parameterModel) {
             parameters.add(parameterModel);
         }
 

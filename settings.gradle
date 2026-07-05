@@ -1,5 +1,6 @@
 rootProject.name = 'gear4jtest'
 include 'gear4jtest-core'
+include 'gear4jtest-experimental-cache'
 include 'gear4jtest-external-api'
 include 'gear4jtest-gradle-xml2java'
 include 'gear4jtest-jackson'

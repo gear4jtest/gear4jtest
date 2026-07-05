@@ -1,8 +1,9 @@
 package io.github.gear4jtest.core.engine.runner;
 
-import io.github.gear4jtest.core.api.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
+import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
@@ -24,7 +25,7 @@ public class ScopeInitializingRunner implements StationRunner {
         stationLog.setStatus(StationLogStatus.RUNNING);
 
         StationExecutionContext currentCtx = new DefaultStationExecutionContext(station.getId(), station.getKind(),
-                parentCtx.getGlobalContext(), stationLog, parentCtx.getSupport());
+                parentCtx.getGlobalContext(), stationLog, EngineStationContexts.support(parentCtx));
         try (var ignored = parentCtx.getGlobalContext().enterParentOperation(stationLog.getId())) {
             return delegate.run(input, station, currentCtx);
         }

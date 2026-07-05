@@ -25,6 +25,7 @@ import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.api.context.StationParameter;
 import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
 import io.github.gear4jtest.core.api.station.SignalStation;
 import io.github.gear4jtest.core.api.util.AssemblyLines;
@@ -33,7 +34,6 @@ import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
-import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
 import io.github.gear4jtest.core.event.EventSubscription;
 import io.github.gear4jtest.core.execution.AssemblyRunManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -156,7 +156,7 @@ class FullAssemblyLineRuntimeIT {
                 .then(processingOperation("prefix", SuffixOperator.class)
                         .parameter(SuffixOperator::getSuffix, "|prefix")
                         .build())
-                .then(container(String.class, parallelExecutor)
+                .then(container("parallel-suffix-container", String.class, parallelExecutor)
                         .withBranch("left", processingOperation("left-suffix", SuffixOperator.class)
                                 .parameter(SuffixOperator::getSuffix, "|left")
                                 .build())
@@ -167,7 +167,7 @@ class FullAssemblyLineRuntimeIT {
                                 .map(Object::toString)
                                 .sorted()
                                 .collect(Collectors.joining("+"))))
-                .then(ifElseContainer(String.class)
+                .then(ifElseContainer("case-normalization-container", String.class)
                         .conditionally("contains-left", processingOperation("uppercase", UppercaseOperator.class)
                                 .build(), (input, ctx) -> input.contains("left"))
                         .elseOp("missing-left", processingOperation("lowercase", LowercaseOperator.class).build()))
@@ -274,12 +274,12 @@ class FullAssemblyLineRuntimeIT {
     }
 
     public static final class SuffixOperator implements Operator<String, String> {
-        private final WorkerParamsInjector.Parameter<String> suffix = WorkerParamsInjector.Parameter
+        private final StationParameter<String> suffix = StationParameter
                 .<String>newBuilder()
                 .defaultValue("")
                 .build();
 
-        public WorkerParamsInjector.Parameter<String> getSuffix() {
+        public StationParameter<String> getSuffix() {
             return suffix;
         }
 

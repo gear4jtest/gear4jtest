@@ -2,10 +2,10 @@ package io.github.gear4jtest.core.service.steps;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.engine.support.WorkerParamsInjector;
+import io.github.gear4jtest.core.api.context.StationParameter;
 
 public class Step6 implements Operator<String, String> {
-    private final WorkerParamsInjector.Parameter<String> param = WorkerParamsInjector.Parameter.<String>newBuilder()
+    private final StationParameter<String> param = StationParameter.<String>newBuilder()
             .build();
 
     @Override
@@ -13,7 +13,7 @@ public class Step6 implements Operator<String, String> {
         return "b";
     }
 
-    public WorkerParamsInjector.Parameter<String> getParam() {
+    public StationParameter<String> getParam() {
         return param;
     }
 }

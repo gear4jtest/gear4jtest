@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 final class ApiBoundarySourceTest {
     private static final List<String> MODULES_WITH_STABILITY_MARKERS = List.of(
                                                                                "gear4jtest-core",
+                                                                               "gear4jtest-experimental-cache",
                                                                                "gear4jtest-external-api",
                                                                                "gear4jtest-jdbc",
                                                                                "gear4jtest-xml");
@@ -28,13 +29,8 @@ final class ApiBoundarySourceTest {
                                                                                          "io/github/gear4jtest/core/api/ExecutionResult.java -> execution",
                                                                                          "io/github/gear4jtest/core/api/assemblyline/NestedRunContext.java -> execution",
                                                                                          "io/github/gear4jtest/core/api/config/FlowDecider.java -> execution",
-                                                                                         "io/github/gear4jtest/core/api/context/DefaultStationExecutionContext.java -> engine, execution",
                                                                                          "io/github/gear4jtest/core/api/context/ExecutionContext.java -> execution",
-                                                                                         "io/github/gear4jtest/core/api/context/ResolvedParameters.java -> engine",
-                                                                                         "io/github/gear4jtest/core/api/context/StationContextUtils.java -> engine",
-                                                                                         "io/github/gear4jtest/core/api/context/StationExecutionContext.java -> engine, execution",
-                                                                                         "io/github/gear4jtest/core/api/station/UnaryWorkStation.java -> engine",
-                                                                                         "io/github/gear4jtest/core/api/station/WorkStation.java -> engine",
+                                                                                         "io/github/gear4jtest/core/api/context/StationExecutionContext.java -> execution",
                                                                                          "io/github/gear4jtest/core/api/util/Concurrency.java -> engine",
                                                                                          "io/github/gear4jtest/core/api/util/Persistence.java -> execution",
                                                                                          "io/github/gear4jtest/core/persistence/AssemblyRunRecord.java -> execution",

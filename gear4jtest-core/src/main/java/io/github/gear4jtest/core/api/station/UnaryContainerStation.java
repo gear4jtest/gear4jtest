@@ -11,22 +11,29 @@ import io.github.gear4jtest.core.api.behavior.Condition;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 
 public class UnaryContainerStation<A> extends ContainerBaseStation<A, A> {
-    private UnaryContainerStation(List<Branch<A>> branches,
+    private UnaryContainerStation(String id,
+                                  List<Branch<A>> branches,
                                   ContainerResultsFunction<A> function,
                                   boolean parallel,
                                   ExecutorService executorService,
                                   FlowConfig flowConfig,
                                   Duration awaitTimeout) {
-        super(branches, function, parallel, executorService, flowConfig, awaitTimeout, true);
+        super(id, branches, function, parallel, executorService, flowConfig, awaitTimeout, true);
     }
 
     public static class Builder<A> {
         private final List<Branch<A>> branches = new ArrayList<>();
+        private String id;
         private boolean isParallel;
         private ExecutorService executorService;
         private FlowConfig flowConfig;
         private Duration awaitTimeout;
         private ContainerResultsFunction<A> function;
+
+        public Builder<A> id(String id) {
+            this.id = id;
+            return this;
+        }
 
         public Builder<A> parallel(ExecutorService executorService) {
             this.isParallel = true;
@@ -83,7 +90,7 @@ public class UnaryContainerStation<A> extends ContainerBaseStation<A, A> {
 
         public UnaryContainerStation<A> build() {
             ContainerBaseStation.validateUniqueBranchIds(branches);
-            return new UnaryContainerStation<>(branches, function, isParallel, executorService, flowConfig,
+            return new UnaryContainerStation<>(id, branches, function, isParallel, executorService, flowConfig,
                     awaitTimeout);
         }
 

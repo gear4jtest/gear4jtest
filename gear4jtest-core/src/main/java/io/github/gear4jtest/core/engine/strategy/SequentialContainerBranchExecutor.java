@@ -10,6 +10,7 @@ import io.github.gear4jtest.core.api.config.FlowDecider;
 import io.github.gear4jtest.core.api.config.FlowDecision;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
+import io.github.gear4jtest.core.event.StationSkipReason;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
@@ -30,8 +31,10 @@ final class SequentialContainerBranchExecutor {
 
         for (ContainerBaseStation.Branch<?> branch : station.getAssemblyLines()) {
             StationLogTrace childLog;
-            if (!ContainerBranchExecutionSupport.isBranchEligible(branch, input, context, siblingStatuses)) {
-                childLog = ContainerBranchExecutionSupport.conditionSkippedLog(branch, context);
+            StationSkipReason skipReason = ContainerBranchExecutionSupport.skipReason(branch, input, context,
+                                                                                      siblingStatuses);
+            if (skipReason != null) {
+                childLog = ContainerBranchExecutionSupport.conditionSkippedLog(branch, input, context, skipReason);
             } else {
                 Object branchInput = ContainerBranchExecutionSupport.clonePayload(input, context);
                 try (var ignored = context.getGlobalContext().enterBranch(branch.getId())) {

@@ -10,6 +10,7 @@ import io.github.gear4jtest.core.api.behavior.SkipPhase;
 import io.github.gear4jtest.core.api.behavior.StationSkipper;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.exception.StationExecutionException;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
@@ -58,6 +59,8 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
                 }
             }
 
+            afterBeforeProcessors(station, input, context);
+
             SkipDecision postCause = runSkippers(station, input, context, SkipPhase.POST_PROCESSORS);
             if (postCause.shouldSkip()) {
                 result = handleSkip(station, input, context, context.getRecord(), postCause.reason());
@@ -87,6 +90,8 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
                     }
                 }
             }
+
+            afterProcessors(station, result, context);
 
             return context.getRecord();
         } catch (Exception e) {
@@ -138,7 +143,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
             }
         }
 
-        if (Boolean.TRUE.equals(station.getUnary())) {
+        if (station.isUnary()) {
             markSkipped(stationLog, reason);
             stationLog.setOutput(input);
             return input;
@@ -178,11 +183,17 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
     protected void setUp(S station, Object input, StationExecutionContext operationExecution) {
     }
 
+    protected void afterBeforeProcessors(S station, Object input, StationExecutionContext operationExecution) {
+    }
+
+    protected void afterProcessors(S station, Object result, StationExecutionContext operationExecution) {
+    }
+
     protected void release(S station, Object result, StationExecutionContext context, List<Throwable> errors) {
     }
 
     protected <T> T clonePayload(T payload, StationExecutionContext context) {
-        return context.getSupport().getPayloadCloner().clonePayload(payload);
+        return EngineStationContexts.support(context).getPayloadCloner().clonePayload(payload);
     }
 
     protected abstract Object doExecute(S station,

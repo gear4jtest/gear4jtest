@@ -55,9 +55,21 @@ public final class Stations {
         return new ContainerBaseStation.Builder<>();
     }
 
+    public static <T> ContainerBaseStation.Builder<T, T> container(String id, Class<T> clazz) {
+        Objects.requireNonNull(clazz, CLAZZ_MUST_NOT_BE_NULL);
+        return new ContainerBaseStation.Builder<T, T>().id(id);
+    }
+
     public static <T> ContainerBaseStation.Builder<T, T> container(Class<T> clazz, ExecutorService executorService) {
         Objects.requireNonNull(clazz, CLAZZ_MUST_NOT_BE_NULL);
         return new ContainerBaseStation.Builder<>(executorService);
+    }
+
+    public static <T> ContainerBaseStation.Builder<T, T> container(String id,
+                                                                   Class<T> clazz,
+                                                                   ExecutorService executorService) {
+        Objects.requireNonNull(clazz, CLAZZ_MUST_NOT_BE_NULL);
+        return new ContainerBaseStation.Builder<T, T>(executorService).id(id);
     }
 
     public static <IN, OUT> ContainerBranch<IN, OUT> branch(String id, AbstractStation<IN, OUT> station) {
@@ -67,6 +79,11 @@ public final class Stations {
     public static <T> UnaryIfElseContainerStation.Builder<T> ifElseContainer(Class<T> clazz) {
         Objects.requireNonNull(clazz, CLAZZ_MUST_NOT_BE_NULL);
         return new UnaryIfElseContainerStation.Builder<>();
+    }
+
+    public static <T> UnaryIfElseContainerStation.Builder<T> ifElseContainer(String id, Class<T> clazz) {
+        Objects.requireNonNull(clazz, CLAZZ_MUST_NOT_BE_NULL);
+        return new UnaryIfElseContainerStation.Builder<T>().id(id);
     }
 
     public static ListAccumulator toList() {
