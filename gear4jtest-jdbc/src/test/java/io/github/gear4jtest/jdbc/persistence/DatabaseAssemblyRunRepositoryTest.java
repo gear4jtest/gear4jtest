@@ -34,6 +34,42 @@ import static org.mockito.Mockito.when;
 class DatabaseAssemblyRunRepositoryTest {
 
     @Test
+    void checkConnectivity_shouldExecuteBoundedDialectValidationQuery() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        ResultSet resultSet = mock(ResultSet.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement("SELECT 1 FROM dual")).thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(true);
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.ORACLE);
+
+        // When
+        boolean available = repository.checkConnectivity(Duration.ofMillis(1_500));
+
+        // Then
+        assertThat(available).isTrue();
+        verify(statement).setQueryTimeout(2);
+        verify(statement).executeQuery();
+    }
+
+    @Test
+    void checkConnectivity_shouldExposeSqlFailureAsPersistenceFailure() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        when(dataSource.getConnection()).thenThrow(new SQLException("database unavailable"));
+        DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.H2);
+
+        // When / Then
+        assertThatThrownBy(() -> repository.checkConnectivity(Duration.ofSeconds(1)))
+                .isInstanceOf(ExecutionPersistenceException.class)
+                .hasMessageContaining("connectivity probe failed")
+                .hasCauseInstanceOf(SQLException.class);
+    }
+
+    @Test
     void save_shouldCommitAndRestorePreviousAutoCommit() throws Exception {
         // Given
         DataSource dataSource = mock(DataSource.class);

@@ -52,7 +52,7 @@ public record StationLogRecord(UUID id,
 
     @SuppressWarnings("unchecked")
     public StationLogRecord redactedWith(SensitiveDataRedactor redactor) {
-        SensitiveDataRedactor effective = redactor != null ? redactor : SensitiveDataRedactor.none();
+        SensitiveDataRedactor effective = redactor != null ? redactor : SensitiveDataRedactor.discardSensitiveValues();
         Object redactedContext = effective.redact(RedactionTarget.STATION_CONTEXT, context);
         Map<String, Object> storedContext = redactedContext instanceof Map<?, ?> map
                 ? Collections.unmodifiableMap(new LinkedHashMap<>((Map<String, Object>) map)) : Map.of();

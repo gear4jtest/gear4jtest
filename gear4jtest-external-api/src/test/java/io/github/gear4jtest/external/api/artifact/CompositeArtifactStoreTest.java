@@ -81,7 +81,7 @@ class CompositeArtifactStoreTest {
         @Override
         public String put(InputStream in, long maxBytes) throws IOException {
             streamWrites++;
-            String hash = Hashing.sha256Hex(in, maxBytes).hashHex();
+            String hash = ArtifactHashes.sha256Hex(in, maxBytes).hashHex();
             storedHashes.add(hash);
             return hash;
         }

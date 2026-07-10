@@ -21,11 +21,31 @@ belong to `gear4jtest-external-api` and `gear4jtest-core`.
 The module also contains the first minimal Gear Expression Language (GEL) parser/evaluator under
 `io.github.gear4jtest.xml.expression`. GEL is the safe alternative to inline Java for untrusted or BO-authored conditions. Trusted Java snippets remain available only through explicit trusted generator/translator factories.
 
+GEL property access is deny-by-default for Java objects. Maps are copied to an
+inert context representation. Direct evaluator users can approve exact runtime
+types and properties, then optionally snapshot an approved record before
+evaluation:
+
+```java
+var policy = PropertyAccessPolicy.allowlist()
+        .allowRecordType(OrderView.class)
+        .build();
+var inertInput = GearExpressionValues.snapshot(orderView, policy);
+boolean accepted = GearExpressionParser.parse("input.status == 'READY'")
+        .evaluateBoolean(GearExpressionContext.ofInput(inertInput));
+```
+
+Existing applications can temporarily call `GearExpressionContext.legacy(...)`.
+That mode logs newly invoked accessors, is deprecated for removal and is unsafe
+for untrusted object graphs. Generated XML always uses secure defaults, so rich
+objects must be converted upstream to inert maps before a GEL condition reads
+their properties.
+
 ## Supported media types
 
 - `application/xml`
 - `text/xml`
-- `application/vnd.gear4j.pipeline+xml`
+- `application/vnd.gear4j.assembly-line+xml` (canonical)
 - vendor media types ending with `+xml`
 
 ## Generated class contract
@@ -33,7 +53,7 @@ The module also contains the first minimal Gear Expression Language (GEL) parser
 The generated Java source must:
 
 - be fully-qualified;
-- implement `io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine`;
+- implement `io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine<IN, OUT>`;
 - expose a no-arg constructor;
 - build an `AssemblyLine` using the current core Java API;
 - generate dependency fields annotated with `@Inject` when XML references external services;

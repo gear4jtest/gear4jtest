@@ -8,20 +8,22 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
- * Policy used to derive the context map of a nested run from its parent run.
+ * Policy used to derive a run context map from an immutable source snapshot.
  *
  * <p>
  * The default policy used by the engine is {@link #inheritAllShallow()}, which
- * preserves the historical behavior: the child receives a distinct map
- * instance, but values inside that map are shared references. Use a custom
- * policy when a nested run must receive no context, only selected keys, or
+ * preserves the historical behavior: the target run receives a distinct map
+ * instance, but values inside that map are shared references. The engine uses
+ * this contract for parent-to-child nested propagation and may also apply it to
+ * merged assembly-line/request values at the top-level run boundary. Use a
+ * custom policy when a run must receive no context, only selected keys, or
  * defensive copies of mutable values.
  * </p>
  */
 @FunctionalInterface
 public interface ContextPropagationPolicy {
     /**
-     * Returns the context values that should be attached to the child run.
+     * Returns the context values that should be attached to the target run.
      *
      * <p>
      * Implementations should return a new mutable or immutable map and must not
@@ -29,8 +31,8 @@ public interface ContextPropagationPolicy {
      * context by the engine.
      * </p>
      *
-     * @param parentContext immutable snapshot of the parent run context
-     * @return context values to attach to the child run
+     * @param parentContext immutable source context snapshot
+     * @return context values to attach to the target run
      */
     Map<String, Object> propagate(Map<String, Object> parentContext);
 
@@ -43,7 +45,7 @@ public interface ContextPropagationPolicy {
     }
 
     /**
-     * Propagates no user context to nested runs.
+     * Propagates no user context to the target run.
      */
     static ContextPropagationPolicy none() {
         return ignored -> Map.of();
@@ -81,9 +83,9 @@ public interface ContextPropagationPolicy {
      * Propagates every key after applying the provided value copier.
      *
      * <p>
-     * Returning {@code null} from the copier omits that key from the child context.
-     * This avoids introducing null values, which are not accepted by Gear4J's
-     * runtime context map.
+     * Returning {@code null} from the copier omits that key from the target
+     * context. This avoids introducing null values, which are not accepted by
+     * Gear4J's runtime context map.
      * </p>
      */
     static ContextPropagationPolicy copyValues(ContextValueCopier copier) {
@@ -94,9 +96,9 @@ public interface ContextPropagationPolicy {
      * Propagates matching keys after applying the provided value copier.
      *
      * <p>
-     * Returning {@code null} from the copier omits that key from the child context.
-     * This avoids introducing null values, which are not accepted by Gear4J's
-     * runtime context map.
+     * Returning {@code null} from the copier omits that key from the target
+     * context. This avoids introducing null values, which are not accepted by
+     * Gear4J's runtime context map.
      * </p>
      */
     static ContextPropagationPolicy copyValues(Predicate<String> keyFilter, ContextValueCopier copier) {

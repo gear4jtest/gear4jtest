@@ -20,6 +20,9 @@ gear4j:
     flush-interval: 1s
     shutdown-timeout: 30s
     jdbc-statement-timeout: 30s # use 0 to disable Statement#setQueryTimeout
+    readiness-max-buffered-station-logs: 5000
+    readiness-max-backlog-age: 30s
+    connectivity-probe-timeout: 2s
     redaction-mode: WARN # WARN | REQUIRE | DISABLED
   metrics:
     enabled: true
@@ -55,9 +58,32 @@ statement/query timeout.
 ## Actuator health
 
 If Spring Boot Actuator is on the classpath and JDBC persistence is enabled, the
-starter contributes a `gear4jPersistenceHealthIndicator` bean. The indicator is
-`UP` when persistence statistics can be read and includes the current number of
-active run buffers, buffered station logs, scheduled/completed/failed flushes and
-rejected appends. Failed flushes or rejected appends make the indicator `DOWN`
-because persistence is no longer healthy. If the manager cannot expose its
-snapshot, the indicator is `DOWN` with the thrown exception.
+starter contributes separate liveness and readiness indicators:
+
+- `gear4jPersistenceLivenessIndicator` checks only that the persistence runtime
+  has not shut down. It never queries the database;
+- `gear4jPersistenceReadinessIndicator` executes a provider-specific bounded
+  connectivity query and evaluates current backlog size, age and recovery state;
+- `gear4jPersistenceHealthIndicator` remains an alias of the readiness bean for
+  compatibility.
+
+`connectivity-probe-timeout` is applied through JDBC
+`Statement#setQueryTimeout` after a connection is acquired. The host application
+must also configure a finite datasource/pool connection-acquisition timeout;
+JDBC has no portable per-call timeout for `DataSource#getConnection()`.
+
+A historical flush failure or rejected append remains visible in metrics and
+health details, but does not keep readiness permanently `DOWN`. Readiness returns
+to `UP` once connectivity is available and a successful flush has recovered the
+pending backlog.
+
+Example Spring Boot health groups (indicator IDs omit the `Indicator` suffix):
+
+```properties
+management.endpoint.health.group.liveness.include=livenessState,gear4jPersistenceLiveness
+management.endpoint.health.group.readiness.include=readinessState,gear4jPersistenceReadiness
+```
+
+Do not include the database-backed readiness indicator in the liveness group: a
+database incident must remove the instance from traffic, not force a restart
+loop.

@@ -15,6 +15,10 @@ on:
         required: false
         type: boolean
         default: true
+      api-baseline-version:
+        description: 'Previous stable release used by Japicmp; required after 1.0.0'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -24,8 +28,32 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  database-matrix:
+    name: Release JDBC ${{ matrix.dialect }} integration
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dialect: [postgresql, mysql, mariadb, oracle]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+
+      - name: Run selected JDBC dialect
+        run: ./gradlew --no-daemon :gear4jtest-jdbc:integrationTest -Pgear4jDatabaseDialect=${{ matrix.dialect }}
+
   publish:
     name: Publish to Maven Central
+    needs: database-matrix
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -57,7 +85,15 @@ jobs:
       - name: Verify, test and stage artifacts
         env:
           PROJECT_VERSION: ${{ steps.version.outputs.value }}
-        run: ./gradlew --no-daemon clean releaseCheck stageMavenCentral -PprojectVersion="${PROJECT_VERSION}"
+          API_BASELINE_VERSION: ${{ inputs['api-baseline-version'] || vars.GEAR4J_API_BASELINE_VERSION }}
+        shell: bash
+        run: |
+          BASELINE_ARGS=()
+          if [[ -n "${API_BASELINE_VERSION}" ]]; then
+            BASELINE_ARGS+=("-Pgear4j.apiBaselineVersion=${API_BASELINE_VERSION}")
+          fi
+          ./gradlew --no-daemon --warning-mode=all clean releaseCheck stageMavenCentral \
+            -PprojectVersion="${PROJECT_VERSION}" "${BASELINE_ARGS[@]}"
 
       - name: Publish release through JReleaser
         env:

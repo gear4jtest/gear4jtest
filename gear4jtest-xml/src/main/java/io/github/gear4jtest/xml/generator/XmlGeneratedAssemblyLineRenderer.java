@@ -29,6 +29,11 @@ final class XmlGeneratedAssemblyLineRenderer {
 
         JavaImportManager imports = new JavaImportManager(packageName);
         Map<Operation, OperationSignature> signatures = new OperationTypeResolver(classLoader).resolve(definition);
+        JavaTypeName inputType = JavaTypeName.parse(definition.inputType());
+        JavaTypeName outputType = inputType;
+        for (Operation operation : definition.operations()) {
+            outputType = signatures.get(operation).outputType();
+        }
         Map<ContainerOperation, String> parallelExecutorFields = XmlParallelExecutorDependencies.collect(definition);
         XmlGenerationContext context = new XmlGenerationContext(
                 imports, expressions, signatures, parallelExecutorFields, new LinkedHashMap<>());
@@ -37,7 +42,8 @@ final class XmlGeneratedAssemblyLineRenderer {
         body.append("/** Generated from a Gear4J XML pipeline definition. */\n");
         body.append("public final class ").append(simpleClassName).append(" implements ")
                 .append(imports.use("io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine"))
-                .append(" {\n\n");
+                .append("<").append(inputType.render(imports)).append(", ").append(outputType.render(imports))
+                .append("> {\n\n");
 
         supportRenderer.appendDependencies(body, imports, definition);
         supportRenderer.appendParallelExecutorDependencies(body, imports, parallelExecutorFields);

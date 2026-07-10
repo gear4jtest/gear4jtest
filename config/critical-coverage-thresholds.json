@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "policy": "Ratchet these branch ratios upward only after a green CI report on the pinned Java 17 runner.",
+  "classes": [
+    {
+      "className": "io.github.gear4jtest.core.event.EventManager",
+      "minimumBranchRatio": 0.60
+    },
+    {
+      "className": "io.github.gear4jtest.core.engine.strategy.WorkStationStrategy",
+      "minimumBranchRatio": 0.60
+    },
+    {
+      "className": "io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator",
+      "minimumBranchRatio": 0.55
+    },
+    {
+      "className": "io.github.gear4jtest.external.api.AssemblyLinePublicationService",
+      "minimumBranchRatio": 0.60
+    }
+  ]
+}

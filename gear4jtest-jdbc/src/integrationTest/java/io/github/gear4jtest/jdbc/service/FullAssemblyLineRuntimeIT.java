@@ -46,6 +46,7 @@ import io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
+import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
@@ -69,7 +70,8 @@ class FullAssemblyLineRuntimeIT {
     void fullAssemblyLineRun_withInMemoryPersistenceAndEvents_shouldExerciseStationTypesAndPersistHierarchy() {
         // Given
         InMemoryAssemblyRunRepository repository = new InMemoryAssemblyRunRepository();
-        AssemblyRunManager manager = InMemoryExecutionManager.builder().repository(repository).build();
+        AssemblyRunManager manager = InMemoryExecutionManager.builder().repository(repository)
+                .redactor(SensitiveDataRedactor.none()).build();
 
         // When / Then
         runFullAssemblyLineScenario(manager, repository);
@@ -83,6 +85,8 @@ class FullAssemblyLineRuntimeIT {
         DatabaseExecutionManager manager = DatabaseExecutionManager.builder()
                 .dataSource(dataSource)
                 .databaseDialect(Gear4jDatabaseDialect.H2)
+                .autoCreateTables(true)
+                .redactor(SensitiveDataRedactor.none())
                 .build();
         DatabaseAssemblyRunRepository repository = DatabaseAssemblyRunRepository.builder()
                 .dataSource(dataSource)

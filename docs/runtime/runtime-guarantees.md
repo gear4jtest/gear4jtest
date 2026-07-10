@@ -58,8 +58,11 @@ Not guaranteed today:
 - user code is forcibly stopped by persistence shutdown;
 - JDBC migrations provide the same feature set as Flyway or Liquibase.
 
-If persistence is enabled without a `SensitiveDataRedactor`, payloads, contexts and results are persisted as-is. This is
-acceptable for local development only unless the application data model is known to be non-sensitive.
+Direct persistence managers use a metadata-only policy when no
+`SensitiveDataRedactor` is configured: contexts are empty and inputs, results
+and error messages are discarded. `SensitiveDataRedactor.none()` is an explicit
+opt-in to raw capture. The Spring Boot `WARN` mode retains compatibility by
+supplying that no-op policy and emitting a warning; use `REQUIRE` in production.
 
 ## External RUN publication
 
@@ -88,15 +91,19 @@ Guaranteed today:
 - the default translator/generator rejects inline Java;
 - the Gradle XML plugin is GEL-only by default and requires an explicit `trustedXml()` opt-in for inline Java;
 - GEL does not support method-call syntax, type lookup, constructors, static access or Java class metadata traversal.
+- GEL contexts use secure property access by default: expression evaluation reads inert map snapshots and rejects
+  record/JavaBean access unless the exact runtime type and property were explicitly allowlisted.
 
 Not guaranteed today:
 
 - inline Java is sandboxed;
 - generated Java is safe when XML comes from an untrusted source and trusted mode is enabled;
-- GEL can safely evaluate arbitrary rich domain objects with side-effecting accessors.
+- the safety of a caller-provided custom `PropertyAccessPolicy`; it is trusted application code and becomes part of the
+  GEL security boundary.
 
-GEL property paths are intended for maps, records and JavaBean DTOs. Arbitrary zero-argument methods are not treated as
-readable properties.
+For untrusted definitions, pass maps or values created by `GearExpressionValues.snapshot(...)`. Record components and
+JavaBean getters are rejected by default. Trusted callers can build an exact-type `PropertyAccessPolicy` allowlist. The
+deprecated legacy policy exists only for a bounded migration period and emits warnings when it invokes an accessor.
 
 ## Cancellation and timeouts
 

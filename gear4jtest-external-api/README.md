@@ -10,7 +10,7 @@ It is the common layer for XML today and potentially JSON, YAML or other formats
 This module owns:
 
 - external artifact storage abstractions;
-- in-memory, filesystem and database artifact stores;
+- in-memory and filesystem artifact stores;
 - pipeline object/config repositories;
 - translator discovery through `OperationChainTranslator`;
 - generated-source compiler SPI with JDT and JDK `javax.tools` implementations;
@@ -111,9 +111,14 @@ promoting a TEST object to RUN through `AssemblyLineManager` clears that alias. 
 repository again and points the alias to the concrete compiled loader id. Exact version loaders remain cached; already
 running graphs are not mutated. This is local cache invalidation, not a distributed cross-JVM protocol.
 
+Concurrent cache misses for the same immutable loader id share one compilation and one generated instance. Failed
+single-flight entries are removed so a later lookup can retry. Loading an explicit RUN version never rewrites the
+`latest` alias. A latest lookup records the local invalidation generation before compiling; if a publication invalidates
+the alias in the meantime, the older compilation cannot restore the stale alias.
+
 ## Dependency injection contract
 
-Generated classes should remain no-arg constructible and implement `GeneratedAssemblyLine`.
+Generated classes should remain no-arg constructible and implement `GeneratedAssemblyLine<IN, OUT>`.
 
 Dependencies should be represented as fields annotated with `@Inject`. The manager instantiates the class first, then
 delegates dependency resolution to the configured `DependencyInjector`.
@@ -146,37 +151,9 @@ Do not add:
 - durable distributed cache invalidation;
 - runtime engine behavior that belongs in `gear4jtest-core`.
 
-## JDBC repository support
+## Optional JDBC integration
 
-The built-in JDBC repositories and the database artifact store are provider-scoped rather than a generic
-provider-agnostic SQL layer. Supported providers are PostgreSQL, MySQL, MariaDB and Oracle; H2 is also supported for
-local and integration testing.
-
-All JDBC entrypoints require the single shared `Gear4jDatabaseDialect` value from `gear4jtest-core`. Gear4J deliberately
-does not auto-detect the database through JDBC metadata. For example:
-
-```java
-OperationChainTagRepositoryJdbc.builder()
-        .dataSource(dataSource)
-        .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
-        .build();
-DatabaseArtifactStore.builder()
-        .dataSource(dataSource)
-        .table("artifact_store")
-        .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
-        .build();
-```
-
-The `DATABASE` artifact-store plugin similarly requires a `dialect` property such as `POSTGRESQL` or `ORACLE`.
-Provider-specific statements such as PostgreSQL `ON CONFLICT`, MySQL/MariaDB `ON DUPLICATE KEY UPDATE` and Oracle/H2
-`MERGE` are intentional, but must remain isolated behind `ExternalRepositorySqlDialect`. Adding another provider
-requires an enum value, matching schema/migration resources and integration tests for every JDBC-backed component.
-
-Repository methods that can grow with the number of published definitions expose SQL-level pagination through
-`PageRequest` variants, for example `OperationChainObjectRepository.findAll(alId, pageRequest)`,
-`OperationChainTagRepository.listTags(alId, pageRequest)` and
-`OperationChainTagRepository.findAssemblyLineIdsByTag(tag, pageRequest)`. Prefer those methods in UIs, CLIs and
-maintenance jobs instead of loading full histories.
+JDBC repositories, schema migrations and database-backed artifact storage live in the optional `gear4jtest-external-jdbc` module. This keeps the provider-neutral API free from JDBC and Jackson dependencies. Existing pre-1.0 imports under `io.github.gear4jtest.external.api.repository.jdbc` must be migrated as documented in `../gear4jtest-external-jdbc/README.md`.
 
 ## Testing
 

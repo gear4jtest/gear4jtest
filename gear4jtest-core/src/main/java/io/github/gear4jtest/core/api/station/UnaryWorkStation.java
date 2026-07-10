@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.api.station;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 import io.github.gear4jtest.core.api.StationMetadata;
@@ -52,9 +53,10 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
             this.fallbackOperator = source.fallbackOperator;
         }
 
-        public <A, T extends Operator<INOUT, INOUT>> Builder<INOUT, T> type(Class<T> type) {
-            this.type = type;
-            return new Builder<>(this);
+        public <T extends Operator<INOUT, INOUT>> Builder<INOUT, T> type(Class<T> type) {
+            Builder<INOUT, T> next = new Builder<>(this);
+            next.type = Objects.requireNonNull(type, "operator type must not be null");
+            return next;
         }
 
         public Builder<INOUT, OP> id(String id) {

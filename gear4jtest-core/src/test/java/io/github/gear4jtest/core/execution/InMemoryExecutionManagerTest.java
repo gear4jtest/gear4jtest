@@ -67,6 +67,40 @@ class InMemoryExecutionManagerTest {
                 .withMessage("finalExecution must not be null");
     }
 
+    @Test
+    void defaultPolicy_shouldPersistMetadataWithoutSensitiveValues() {
+        // Given
+        String secret = "fixture-secret-must-not-leak";
+        InMemoryAssemblyRunRepository repository = new InMemoryAssemblyRunRepository();
+        InMemoryExecutionManager manager = InMemoryExecutionManager.builder().repository(repository).build();
+        UUID runId = UUID.randomUUID();
+        AssemblyRunTrace run = new AssemblyRunTrace(runId, "pipe", Map.of("token", secret));
+        run.setContext(Map.of("token", secret));
+        run.setResult(secret);
+        run.setErrorMessage(secret);
+
+        // When
+        manager.start(run);
+        manager.append(new StationLogRecord(UUID.randomUUID(), runId, "root", null, null,
+                StationLogStatus.FAILED, Instant.now(), Instant.now(), secret, secret, Map.of("token", secret), null));
+        manager.end(run);
+
+        // Then
+        var storedRun = repository.findById(runId).orElseThrow();
+        assertThat(storedRun.context()).isEmpty();
+        assertThat(storedRun.inputParams()).isNull();
+        assertThat(storedRun.result()).isNull();
+        assertThat(storedRun.errorMessage()).isNull();
+        assertThat(storedRun.toString()).doesNotContain(secret);
+        assertThat(repository.findAllLogsByRunId(runId, PageRequest.first(10))).singleElement()
+                .satisfies(log -> {
+                    assertThat(log.context()).isEmpty();
+                    assertThat(log.errorMessage()).isNull();
+                    assertThat(log.errorHandlerMessages()).isNull();
+                    assertThat(log.toString()).doesNotContain(secret);
+                });
+    }
+
     private static StationLogRecord record(UUID runId, String operationId) {
         return new StationLogRecord(UUID.randomUUID(), runId, operationId, null, null, StationLogStatus.RUNNING,
                 Instant.now(), null, null, null, Map.of("secret", "value"), null);

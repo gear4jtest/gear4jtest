@@ -4,6 +4,8 @@ import java.util.Objects;
 import java.util.function.ToDoubleFunction;
 
 import io.github.gear4jtest.core.event.EventManager;
+import io.github.gear4jtest.core.event.EventRuntimeMetrics;
+import io.github.gear4jtest.core.event.ProcessEventRuntimeStats;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 
@@ -48,6 +50,43 @@ public final class EventMetricsBinder {
         registerGauge(meterRegistry, manager, "gear4j.reactions.in.flight",
                       "Current number of event reactions executing in the configured reaction executor",
                       value -> value.snapshotStats().inFlightReactions());
+    }
+
+    /**
+     * Registers tag-free gauges aggregated across every event runtime in this JVM.
+     */
+    public static void bindProcessWide(MeterRegistry meterRegistry) {
+        Objects.requireNonNull(meterRegistry, "meterRegistry must not be null");
+        registerProcessGauge(meterRegistry, "gear4j.events.process.active.runtimes",
+                             "Current number of active in-memory event runtimes",
+                             ProcessEventRuntimeStats::activeRuntimes);
+        registerProcessGauge(meterRegistry, "gear4j.events.process.queued",
+                             "Current number of queued events across all runtimes",
+                             ProcessEventRuntimeStats::queuedEvents);
+        registerProcessGauge(meterRegistry, "gear4j.events.process.dropped",
+                             "Number of events dropped across all runtimes", ProcessEventRuntimeStats::droppedEvents);
+        registerProcessGauge(meterRegistry, "gear4j.reactions.process.dropped",
+                             "Number of reactions dropped across all runtimes",
+                             ProcessEventRuntimeStats::droppedReactions);
+        registerProcessGauge(meterRegistry, "gear4j.events.process.dispatcher.rejected",
+                             "Number of tasks rejected by the shared event dispatcher",
+                             ProcessEventRuntimeStats::dispatcherRejectedTasks);
+        registerProcessGauge(meterRegistry, "gear4j.events.process.dispatch.latency.average.nanos",
+                             "Average event queue-to-dispatch latency in nanoseconds",
+                             ProcessEventRuntimeStats::averageDispatchLatencyNanos);
+        registerProcessGauge(meterRegistry, "gear4j.events.process.dispatch.latency.max.nanos",
+                             "Maximum observed event queue-to-dispatch latency in nanoseconds",
+                             ProcessEventRuntimeStats::maxDispatchLatencyNanos);
+    }
+
+    private static void registerProcessGauge(MeterRegistry meterRegistry,
+                                             String name,
+                                             String description,
+                                             ToDoubleFunction<ProcessEventRuntimeStats> valueFunction) {
+        Gauge.builder(name, EventRuntimeMetrics.class,
+                      ignored -> valueFunction.applyAsDouble(EventRuntimeMetrics.snapshot()))
+                .description(description)
+                .register(meterRegistry);
     }
 
     private static void registerGauge(MeterRegistry meterRegistry,

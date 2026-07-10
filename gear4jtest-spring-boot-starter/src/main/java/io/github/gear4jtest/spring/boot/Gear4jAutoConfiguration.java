@@ -9,6 +9,7 @@ import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfiguration;
+import io.github.gear4jtest.micrometer.EventMetricsBinder;
 import io.github.gear4jtest.micrometer.Gear4jMeterTagPolicy;
 import io.github.gear4jtest.micrometer.Gear4jMicrometerExtension;
 import io.github.gear4jtest.micrometer.PersistenceMetricsBinder;
@@ -53,15 +54,21 @@ public class Gear4jAutoConfiguration {
                 .maxPendingLogsPerRun(persistence.getMaxPendingLogsPerRun())
                 .flushInterval(persistence.getFlushInterval())
                 .shutdownTimeout(persistence.getShutdownTimeout())
+                .shutdownRetryInitialBackoff(persistence.getShutdownRetryInitialBackoff())
+                .shutdownRetryMaxBackoff(persistence.getShutdownRetryMaxBackoff())
                 .jdbcStatementTimeout(persistence.getJdbcStatementTimeout())
                 .flushThreadCount(persistence.getFlushThreads())
                 .maxScheduledFlushTasks(persistence.getMaxScheduledFlushTasks())
+                .readinessMaxBufferedStationLogs(persistence.getReadinessMaxBufferedStationLogs())
+                .readinessMaxBacklogAge(persistence.getReadinessMaxBacklogAge())
+                .connectivityProbeTimeout(persistence.getConnectivityProbeTimeout())
                 .build();
         return DatabaseExecutionManager.builder()
                 .dataSource(dataSource)
                 .databaseDialect(persistence.getDialect())
                 .configuration(runtimeConfiguration)
                 .autoCreateTables(persistence.isAutoCreateTables())
+                .baselineOnMigrate(persistence.isBaselineOnMigrate())
                 .redactor(redactor)
                 .build();
     }
@@ -75,7 +82,7 @@ public class Gear4jAutoConfiguration {
         if (redactionMode == Gear4jProperties.RedactionMode.DISABLED && SensitiveDataRedactor.isNone(redactor)) {
             return (target, value) -> value;
         }
-        return redactor;
+        return SensitiveDataRedactor.isNone(redactor) ? SensitiveDataRedactor.none() : redactor;
     }
 
     @Bean
@@ -98,6 +105,15 @@ public class Gear4jAutoConfiguration {
 
     @Bean
     @ConditionalOnClass(MeterRegistry.class)
+    @ConditionalOnBean(MeterRegistry.class)
+    @ConditionalOnProperty(prefix = "gear4j.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
+    Gear4jEventMetricsRegistrar gear4jEventMetricsRegistrar(MeterRegistry meterRegistry) {
+        EventMetricsBinder.bindProcessWide(meterRegistry);
+        return new Gear4jEventMetricsRegistrar();
+    }
+
+    @Bean
+    @ConditionalOnClass(MeterRegistry.class)
     @ConditionalOnBean({ MeterRegistry.class, PersistenceRuntimeMonitor.class })
     @ConditionalOnProperty(prefix = "gear4j.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
     Gear4jPersistenceMetricsRegistrar gear4jPersistenceMetricsRegistrar(MeterRegistry meterRegistry,
@@ -107,5 +123,8 @@ public class Gear4jAutoConfiguration {
     }
 
     static final class Gear4jPersistenceMetricsRegistrar {
+    }
+
+    static final class Gear4jEventMetricsRegistrar {
     }
 }

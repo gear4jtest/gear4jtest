@@ -23,7 +23,7 @@ final class AssemblyLineExecutionResultMapper {
 
     @SuppressWarnings("unchecked")
     static <IN, OUT> ExecutionResult<OUT> executeRootStation(AssemblyLine<IN, OUT> pipeline,
-                                                             RunRequest request,
+                                                             RunRequest<IN> request,
                                                              StationRunner rootRunner,
                                                              StationExecutionContext rootContext,
                                                              AssemblyRunTrace execution) {
@@ -82,6 +82,14 @@ final class AssemblyLineExecutionResultMapper {
                                       AssemblyRunTrace execution,
                                       ExecutionResult<?> result,
                                       Throwable fatalError) {
+        finalizeRunFromResult(context, execution, result, fatalError, true);
+    }
+
+    static void finalizeRunFromResult(ExecutionContext context,
+                                      AssemblyRunTrace execution,
+                                      ExecutionResult<?> result,
+                                      Throwable fatalError,
+                                      boolean storeResultObject) {
         if (execution.getEndTime() == null) {
             execution.setEndTime(Instant.now());
         }
@@ -97,7 +105,7 @@ final class AssemblyLineExecutionResultMapper {
             execution.setStatus(ExecutionStatus.FAILED);
             execution.setErrorMessage("CRITICAL JVM ERROR: " + fatalError);
         } else if (result != null) {
-            execution.setResult(result.getResult());
+            execution.setResult(storeResultObject ? result.getResult() : null);
             execution.setStatus(result.getOutcome().toExecutionStatus());
             if ((result.getOutcome() == ExecutionOutcome.FAILED || result.getOutcome() == ExecutionOutcome.CANCELLED)
                     && result.getError() != null) {

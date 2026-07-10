@@ -1,3 +1,2 @@
 io.github.gear4jtest.external.api.spi.InMemoryArtifactStorePlugin
 io.github.gear4jtest.external.api.spi.FilesystemArtifactStorePlugin
-io.github.gear4jtest.external.api.spi.DatabaseArtifactStorePlugin

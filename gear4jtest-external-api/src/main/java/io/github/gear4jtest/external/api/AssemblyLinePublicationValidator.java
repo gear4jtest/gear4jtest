@@ -73,7 +73,7 @@ final class AssemblyLinePublicationValidator {
                 .orElseThrow(() -> new IOException("Artifact not found for hash=" + object.contentHash()));
         AssemblyLineIdentifiers.requireAllowedArtifactSize(artifact.size(), maxArtifactSizeBytes,
                                                            "Assembly line artifact " + object.contentHash());
-        try (InputStream in = artifact.openStream()) {
+        try (InputStream in = artifact.openStreamChecked()) {
             return ArtifactStore.readAllBytes(in, maxArtifactSizeBytes);
         }
     }

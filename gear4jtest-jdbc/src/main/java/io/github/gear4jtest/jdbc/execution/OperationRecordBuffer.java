@@ -1,5 +1,6 @@
 package io.github.gear4jtest.jdbc.execution;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -18,10 +19,13 @@ final class OperationRecordBuffer {
     private final int capacity;
     private final ArrayBlockingQueue<StationLogRecord> queue;
     private final AtomicInteger pendingCount = new AtomicInteger();
+    private final AtomicInteger retainedCount = new AtomicInteger();
     private final AtomicBoolean flushScheduled = new AtomicBoolean(false);
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final ReentrantLock flushLock = new ReentrantLock();
     private final AtomicReference<ExecutionPersistenceException> firstFailure = new AtomicReference<>();
+    private final AtomicReference<Exception> finalizationFailure = new AtomicReference<>();
+    private volatile Instant oldestRetainedAt;
 
     OperationRecordBuffer(UUID runId, int capacity) {
         this.runId = runId;
@@ -35,6 +39,10 @@ final class OperationRecordBuffer {
 
     int pendingCount() {
         return pendingCount.get();
+    }
+
+    int retainedCount() {
+        return retainedCount.get();
     }
 
     boolean isClosed() {
@@ -70,6 +78,8 @@ final class OperationRecordBuffer {
                 throw new ExecutionPersistenceException("Station log persistence buffer is full. runId=" + runId
                         + ", maxPendingLogsPerRun=" + capacity);
             }
+            retainedCount.incrementAndGet();
+            markRetained();
             return pendingCount.incrementAndGet() >= batchSize;
         } finally {
             flushLock.unlock();
@@ -100,6 +110,8 @@ final class OperationRecordBuffer {
             for (StationLogRecord stationLogRecord : stationLogRecords) {
                 queue.offer(stationLogRecord);
             }
+            retainedCount.addAndGet(stationLogRecords.size());
+            markRetained();
             return pendingCount.addAndGet(stationLogRecords.size()) >= batchSize;
         } finally {
             flushLock.unlock();
@@ -123,6 +135,15 @@ final class OperationRecordBuffer {
         return batch;
     }
 
+    void acknowledgeDrainedBatch(List<StationLogRecord> batch) {
+        if (batch == null || batch.isEmpty()) {
+            return;
+        }
+        if (retainedCount.addAndGet(-batch.size()) == 0) {
+            oldestRetainedAt = null;
+        }
+    }
+
     void restoreDrainedBatch(List<StationLogRecord> batch) {
         if (batch == null || batch.isEmpty()) {
             return;
@@ -142,6 +163,32 @@ final class OperationRecordBuffer {
         firstFailure.compareAndSet(null,
                                    new ExecutionPersistenceException("Persistence failed for runId=" + runId,
                                            failure));
+    }
+
+    ExecutionPersistenceException currentFailure() {
+        return firstFailure.get();
+    }
+
+    void recordFinalizationFailure(Exception failure) {
+        finalizationFailure.set(failure);
+    }
+
+    Exception currentFinalizationFailure() {
+        return finalizationFailure.get();
+    }
+
+    void clearFinalizationFailure() {
+        finalizationFailure.set(null);
+    }
+
+    Instant oldestRetainedAt() {
+        return oldestRetainedAt;
+    }
+
+    private void markRetained() {
+        if (oldestRetainedAt == null) {
+            oldestRetainedAt = Instant.now();
+        }
     }
 
     void assertHealthy() {

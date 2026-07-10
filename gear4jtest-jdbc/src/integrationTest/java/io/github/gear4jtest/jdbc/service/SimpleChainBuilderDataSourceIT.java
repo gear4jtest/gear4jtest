@@ -26,6 +26,7 @@ import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
+import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
@@ -114,6 +115,8 @@ public class SimpleChainBuilderDataSourceIT {
                         DatabaseExecutionManager.builder()
                                 .dataSource(dataSource)
                                 .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+                                .autoCreateTables(true)
+                                .redactor(SensitiveDataRedactor.none())
                                 .build()))
                 .build();
 

@@ -1,6 +1,8 @@
 name: CI
 
 on:
+  schedule:
+    - cron: '17 3 * * 1'
   push:
     branches:
       - main
@@ -48,8 +50,14 @@ jobs:
             echo "gradle/verification-metadata.xml not committed yet; see docs/security/dependency-supply-chain.md"
           fi
 
+      - name: Store Gradle 9 configuration cache
+        run: ./gradlew --no-daemon help --configuration-cache --configuration-cache-problems=fail --warning-mode=all
+
+      - name: Reuse Gradle 9 configuration cache
+        run: ./gradlew --no-daemon help --configuration-cache --configuration-cache-problems=fail --warning-mode=all
+
       - name: Build and coverage
-        run: ./gradlew --no-daemon clean build coverageReport verifySupplyChainConfiguration
+        run: ./gradlew --no-daemon --warning-mode=all clean build coverageReport verifySupplyChainConfiguration
 
       - name: SonarQube scan
         if: ${{ env.SONAR_TOKEN != '' }}
@@ -66,4 +74,66 @@ jobs:
             **/build/test-results/integrationTest/*.xml
             **/build/reports/tests/integrationTest/**
             build/reports/jacoco/**
+          if-no-files-found: ignore
+
+  database-matrix:
+    name: JDBC ${{ matrix.dialect }} integration
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dialect: [postgresql, mysql, mariadb, oracle]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+
+      - name: Run selected JDBC dialect
+        run: ./gradlew --no-daemon :gear4jtest-jdbc:integrationTest -Pgear4jDatabaseDialect=${{ matrix.dialect }}
+
+      - name: Upload JDBC test report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: jdbc-${{ matrix.dialect }}-report
+          path: |
+            gear4jtest-jdbc/build/test-results/integrationTest/*.xml
+            gear4jtest-jdbc/build/reports/tests/integrationTest/**
+          if-no-files-found: ignore
+
+  performance-budget:
+    name: Versioned JMH performance budgets
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+
+      - name: Verify performance budgets
+        run: ./gradlew --no-daemon verifyPerformanceBudgets
+
+      - name: Upload JMH reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: jmh-performance-reports
+          path: gear4jtest-core/build/reports/jmh/**
           if-no-files-found: ignore

@@ -1,7 +1,10 @@
 package io.github.gear4jtest.core.engine;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
@@ -9,6 +12,7 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStack;
 import io.github.gear4jtest.core.api.assemblyline.NestedRunContext;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.api.context.ContextPropagationPolicy;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.context.StationScopedResourceRegistry;
@@ -32,14 +36,16 @@ final class AssemblyLineExecutionContextFactory {
     }
 
     <IN, OUT> AssemblyLineRunContext create(AssemblyLine<IN, OUT> pipeline,
-                                            RunRequest request,
+                                            RunRequest<IN> request,
                                             AssemblyLineCallStack callStack,
                                             EventHandlingDefinition eventHandlingDefinition,
-                                            EventManager eventManager) {
-        Map<String, Object> effectiveContext = new HashMap<>(pipeline.getDefaultContext());
+                                            EventManager eventManager,
+                                            ContextPropagationPolicy initialRunContextPolicy) {
+        Map<String, Object> mergedContext = new LinkedHashMap<>(pipeline.getDefaultContext());
         if (request.getContext() != null) {
-            effectiveContext.putAll(request.getContext());
+            mergedContext.putAll(request.getContext());
         }
+        Map<String, Object> effectiveContext = isolateInitialContext(mergedContext, initialRunContextPolicy);
 
         ExecutionContext.EventRuntimeOptions eventRuntimeOptions = ExecutionContext.EventRuntimeOptions
                 .from(eventHandlingDefinition);
@@ -70,6 +76,23 @@ final class AssemblyLineExecutionContextFactory {
 
         executionContextRegistry.register(context);
         return new AssemblyLineRunContext(context, execution, effectiveContext, effectiveGenerator);
+    }
+
+    private static Map<String, Object> isolateInitialContext(Map<String, Object> mergedContext,
+                                                             ContextPropagationPolicy initialRunContextPolicy) {
+        ContextPropagationPolicy policy = initialRunContextPolicy != null ? initialRunContextPolicy
+                : ContextPropagationPolicy.inheritAllShallow();
+        Map<String, Object> source = Collections.unmodifiableMap(new LinkedHashMap<>(mergedContext));
+        Map<String, Object> isolated = policy.propagate(source);
+        if (isolated == null || isolated.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Object> copy = new HashMap<>(isolated);
+        copy.forEach((key, value) -> {
+            Objects.requireNonNull(key, "run context key must not be null");
+            Objects.requireNonNull(value, "run context value must not be null for key=" + key);
+        });
+        return copy;
     }
 
     private static void applyNestedRunContext(AssemblyRunTrace execution, NestedRunContext nestedRunContext) {

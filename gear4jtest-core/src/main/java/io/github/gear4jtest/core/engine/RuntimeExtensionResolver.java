@@ -29,7 +29,7 @@ public final class RuntimeExtensionResolver {
                 .toList();
     }
 
-    public ResolvedExtensions resolve(AssemblyLine<?, ?> pipeline, RunRequest request) {
+    public ResolvedExtensions resolve(AssemblyLine<?, ?> pipeline, RunRequest<?> request) {
         List<RuntimeExtension> merged = new ArrayList<>(globalExtensions);
 
         if (pipeline != null && pipeline.getConfiguration() != null

@@ -11,13 +11,14 @@ class GearExpressionParserTest {
     @Test
     void evaluateBoolean_shouldResolveInputAndVariablesWithoutExecutingJavaCode() {
         // Given
-        record Document(String productType, boolean active) {}
+        PropertyAccessPolicy accessPolicy = PropertyAccessPolicy.allowlist().allowRecordType(Document.class).build();
         GearExpression expression = GearExpressionParser
                 .parse("input.productType == 'BOOK' && variables.enabled && input.active");
 
         // When
-        boolean result = expression
-                .evaluateBoolean(new GearExpressionContext(new Document("BOOK", true), Map.of("enabled", true)));
+        boolean result = expression.evaluateBoolean(
+                                                    new GearExpressionContext(new Document("BOOK", true),
+                                                            Map.of("enabled", true), accessPolicy));
 
         // Then
         assertThat(result).as("safe GEL expression resolves only data properties and boolean operators").isTrue();
@@ -34,10 +35,9 @@ class GearExpressionParserTest {
     @Test
     void evaluate_shouldRejectJavaClassMetadataAccessOnObjects() {
         // Given
-        record Document(String productType) {}
         GearExpression expression = GearExpressionParser.parse("input.class.name == 'Document'");
 
-        GearExpressionContext context = new GearExpressionContext(new Document("BOOK"), Map.of());
+        GearExpressionContext context = new GearExpressionContext(new SimpleDocument("BOOK"), Map.of());
 
         // When / Then
         assertThatThrownBy(() -> expression.evaluate(context))
@@ -49,10 +49,9 @@ class GearExpressionParserTest {
     @Test
     void evaluate_shouldRejectDirectObjectMethodsAsProperties() {
         // Given
-        record Document(String productType) {}
         GearExpression expression = GearExpressionParser.parse("input.toString == 'BOOK'");
 
-        GearExpressionContext context = new GearExpressionContext(new Document("BOOK"), Map.of());
+        GearExpressionContext context = new GearExpressionContext(new SimpleDocument("BOOK"), Map.of());
 
         // When / Then
         assertThatThrownBy(() -> expression.evaluate(context))
@@ -74,6 +73,37 @@ class GearExpressionParserTest {
     }
 
     @Test
+    void evaluate_shouldReadTheContextSnapshotInsteadOfCallingTheSourceMap() {
+        // Given
+        SideEffectMap source = new SideEffectMap();
+        source.put("productType", "BOOK");
+        GearExpressionContext context = GearExpressionContext.ofInput(source);
+        GearExpression expression = GearExpressionParser.parse("input.productType == 'BOOK'");
+
+        // When
+        boolean result = expression.evaluateBoolean(context);
+
+        // Then
+        assertThat(result).isTrue();
+        assertThat(source.getCalls()).as("expression evaluation must not call an application Map implementation")
+                .isZero();
+    }
+
+    @Test
+    void evaluate_shouldRejectEqualityOnApplicationObjectsWithoutCallingEquals() {
+        // Given
+        SideEffectEquality value = new SideEffectEquality();
+        GearExpressionContext context = GearExpressionContext.ofInput(Map.of("value", value));
+        GearExpression expression = GearExpressionParser.parse("input.value == input.value");
+
+        // When / Then
+        assertThatThrownBy(() -> expression.evaluate(context))
+                .isInstanceOf(GearExpressionException.class)
+                .hasMessageContaining("inert scalar");
+        assertThat(value.equalsCalls()).as("GEL must not invoke application equals implementations").isZero();
+    }
+
+    @Test
     void evaluate_shouldRejectZeroArgumentMethodsThatAreNotRecordComponentsOrBeanGetters() {
         // Given
         DangerousDocument document = new DangerousDocument();
@@ -85,9 +115,84 @@ class GearExpressionParserTest {
         assertThatThrownBy(() -> expression.evaluate(context))
                 .as("GEL property access must not call arbitrary zero-argument methods")
                 .isInstanceOf(GearExpressionException.class)
-                .hasMessageContaining("No readable property");
+                .hasMessageContaining("not allowlisted");
         assertThat(document.calls()).as("the arbitrary method must not be invoked as a pseudo property")
                 .isZero();
+    }
+
+    @Test
+    void evaluate_shouldRejectJavaBeanGetterByDefaultWithoutInvokingIt() {
+        // Given
+        SideEffectBean document = new SideEffectBean();
+        GearExpression expression = GearExpressionParser.parse("input.secret == 'secret'");
+
+        // When / Then
+        assertThatThrownBy(() -> expression.evaluate(GearExpressionContext.ofInput(document)))
+                .isInstanceOf(GearExpressionException.class)
+                .hasMessageContaining("not allowlisted");
+        assertThat(document.calls()).as("the denied getter must not run").isZero();
+    }
+
+    @Test
+    void evaluate_shouldAllowOnlyExplicitlyAllowlistedBeanProperty() {
+        // Given
+        BeanDocument document = new BeanDocument("BOOK", true);
+        PropertyAccessPolicy accessPolicy = PropertyAccessPolicy.allowlist()
+                .allowProperty(BeanDocument.class, "productType")
+                .build();
+        GearExpression allowed = GearExpressionParser.parse("input.productType == 'BOOK'");
+        GearExpression denied = GearExpressionParser.parse("input.active");
+        GearExpressionContext context = GearExpressionContext.ofInput(document, accessPolicy);
+
+        // When / Then
+        assertThat(allowed.evaluateBoolean(context)).isTrue();
+        assertThatThrownBy(() -> denied.evaluate(context))
+                .isInstanceOf(GearExpressionException.class)
+                .hasMessageContaining("not allowlisted");
+    }
+
+    @Test
+    void evaluate_shouldNotApplyAnAllowlistToUnknownSubclasses() {
+        // Given
+        PropertyAccessPolicy accessPolicy = PropertyAccessPolicy.allowlist()
+                .allowProperty(BeanDocument.class, "productType")
+                .build();
+        GearExpression expression = GearExpressionParser.parse("input.productType == 'BOOK'");
+
+        // When / Then
+        assertThatThrownBy(
+                           () -> expression.evaluate(GearExpressionContext.ofInput(new ExtendedBeanDocument("BOOK"),
+                                                                                   accessPolicy)))
+                .isInstanceOf(GearExpressionException.class)
+                .hasMessageContaining("not allowlisted");
+    }
+
+    @Test
+    void evaluate_shouldAllowAnApprovedRecordSnapshotThroughSecureMapAccess() {
+        // Given
+        Document document = new Document("BOOK", true);
+        PropertyAccessPolicy snapshotPolicy = PropertyAccessPolicy.allowlist().allowRecordType(Document.class).build();
+        Object inertInput = GearExpressionValues.snapshot(document, snapshotPolicy);
+        GearExpression expression = GearExpressionParser.parse("input.productType == 'BOOK' && input.active");
+
+        // When
+        boolean result = expression.evaluateBoolean(GearExpressionContext.ofInput(inertInput));
+
+        // Then
+        assertThat(result).isTrue();
+        assertThat(inertInput).isInstanceOf(Map.class);
+    }
+
+    @Test
+    void snapshot_shouldRejectCycles() {
+        // Given
+        Map<String, Object> cyclic = new java.util.HashMap<>();
+        cyclic.put("self", cyclic);
+
+        // When / Then
+        assertThatThrownBy(() -> GearExpressionValues.snapshot(cyclic))
+                .isInstanceOf(GearExpressionException.class)
+                .hasMessageContaining("cycle");
     }
 
     @Test
@@ -137,17 +242,22 @@ class GearExpressionParserTest {
     }
 
     @Test
-    void evaluate_shouldAllowJavaBeanGettersOnPojoObjects() {
+    @SuppressWarnings("removal")
+    void evaluate_shouldProvideTemporaryLegacyBeanCompatibility() {
         // Given
         BeanDocument document = new BeanDocument("BOOK", true);
         GearExpression expression = GearExpressionParser.parse("input.productType == 'BOOK' && input.active");
 
         // When
-        boolean result = expression.evaluateBoolean(new GearExpressionContext(document, Map.of()));
+        boolean result = expression.evaluateBoolean(GearExpressionContext.legacy(document, Map.of()));
 
         // Then
         assertThat(result).isTrue();
     }
+
+    public record Document(String productType, boolean active) {}
+
+    public record SimpleDocument(String productType) {}
 
     private static final class DangerousDocument {
         private int calls;
@@ -162,11 +272,11 @@ class GearExpressionParserTest {
         }
     }
 
-    private static final class BeanDocument {
+    public static class BeanDocument {
         private final String productType;
         private final boolean active;
 
-        private BeanDocument(String productType, boolean active) {
+        public BeanDocument(String productType, boolean active) {
             this.productType = productType;
             this.active = active;
         }
@@ -177,6 +287,59 @@ class GearExpressionParserTest {
 
         public boolean isActive() {
             return active;
+        }
+    }
+
+    public static final class ExtendedBeanDocument extends BeanDocument {
+        public ExtendedBeanDocument(String productType) {
+            super(productType, true);
+        }
+    }
+
+    public static final class SideEffectBean {
+        private int calls;
+
+        public String getSecret() {
+            calls++;
+            return "secret";
+        }
+
+        int calls() {
+            return calls;
+        }
+    }
+
+    public static final class SideEffectMap extends java.util.HashMap<String, Object> {
+        private static final long serialVersionUID = 1L;
+        private int getCalls;
+
+        @Override
+        public Object get(Object key) {
+            getCalls++;
+            return super.get(key);
+        }
+
+        int getCalls() {
+            return getCalls;
+        }
+    }
+
+    public static final class SideEffectEquality {
+        private int equalsCalls;
+
+        @Override
+        public boolean equals(Object other) {
+            equalsCalls++;
+            return this == other;
+        }
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(this);
+        }
+
+        int equalsCalls() {
+            return equalsCalls;
         }
     }
 }

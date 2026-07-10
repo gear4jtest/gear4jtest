@@ -48,6 +48,7 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
     private final WorkerConcurrencyManager workerConcurrencyManager;
     private final WorkerConcurrencyConfiguration workerConcurrencyConfiguration;
     private final ParallelExecutionConfiguration parallelExecutionConfiguration;
+    private final ContextPropagationPolicy initialRunContextPolicy;
     private final ContextPropagationPolicy nestedRunContextPropagationPolicy;
     private final AssemblyLineExecutionContextFactory executionContextFactory;
     private final AssemblyLineRootExecutionChain rootExecutionChain;
@@ -74,6 +75,8 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
                 : AssemblyLineEngineConfiguration.defaultWorkerConcurrencyManager(this.workerConcurrencyConfiguration);
         this.parallelExecutionConfiguration = builder.parallelExecutionConfiguration != null
                 ? builder.parallelExecutionConfiguration : ParallelExecutionConfiguration.defaults();
+        this.initialRunContextPolicy = builder.initialRunContextPolicy != null
+                ? builder.initialRunContextPolicy : ContextPropagationPolicy.inheritAllShallow();
         this.nestedRunContextPropagationPolicy = builder.nestedRunContextPropagationPolicy != null
                 ? builder.nestedRunContextPropagationPolicy : ContextPropagationPolicy.inheritAllShallow();
         this.runnerChainFactory = builder.runnerChainFactory != null ? builder.runnerChainFactory
@@ -94,9 +97,9 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
     }
 
     @Override
-    public <IN, OUT> ExecutionResult<OUT> execute(AssemblyLine<IN, OUT> pipeline, RunRequest request) {
+    public <IN, OUT> ExecutionResult<OUT> execute(AssemblyLine<IN, OUT> pipeline, RunRequest<IN> request) {
         Objects.requireNonNull(pipeline, "pipeline must not be null");
-        RunRequest effectiveRequest = request != null ? request : RunRequest.builder().build();
+        RunRequest<IN> effectiveRequest = request != null ? request : RunRequest.<IN>builder().build();
         AssemblyLineCallStack callStack = effectiveRequest.getAssemblyLineCallStack() != null
                 ? effectiveRequest.getAssemblyLineCallStack().copy() : AssemblyLineCallStack.create();
 
@@ -110,20 +113,21 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
                                                          AssemblyLine<?, ?> childAssemblyLine,
                                                          Object input,
                                                          StationExecutionContext parentContext) {
-        RunRequest childRequest = NestedRunRequestFactory.create(input, parentContext, defaultIdGenerator,
-                                                                 nestedRunContextPropagationPolicy);
+        RunRequest<Object> childRequest = NestedRunRequestFactory.create(input, parentContext, defaultIdGenerator,
+                                                                         nestedRunContextPropagationPolicy);
         return execute((AssemblyLine) childAssemblyLine, childRequest);
     }
 
     private <IN, OUT> ExecutionResult<OUT> executeWithCallStack(AssemblyLine<IN, OUT> pipeline,
-                                                                RunRequest request,
+                                                                RunRequest<IN> request,
                                                                 AssemblyLineCallStack callStack) {
         ResolvedExtensions resolvedExtensions = extensionResolver.resolve(pipeline, request);
         EventHandlingDefinition eventHandlingDefinition = OptionalEventHandlingDefinition.from(pipeline);
         EventManager eventManager = new EventManager(eventHandlingDefinition, executionContextRegistry);
         ExecutionSupport support = AssemblyLineRunSupportFactory.create(resolvedExtensions, taskFactory, payloadCloner);
         AssemblyLineRunContext runContext = executionContextFactory.create(pipeline, request, callStack,
-                                                                           eventHandlingDefinition, eventManager);
+                                                                           eventHandlingDefinition, eventManager,
+                                                                           initialRunContextPolicy);
         ExecutionContext context = runContext.context();
 
         try (MdcScope ignored = MdcScope.open(context)) {
@@ -139,7 +143,7 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
     }
 
     private <IN, OUT> ExecutionResult<OUT> executeRegisteredContext(AssemblyLine<IN, OUT> pipeline,
-                                                                    RunRequest request,
+                                                                    RunRequest<IN> request,
                                                                     ResolvedExtensions resolvedExtensions,
                                                                     ExecutionSupport support,
                                                                     AssemblyLineRunContext runContext) {
@@ -159,18 +163,20 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
             result = ExecutionResult.failure(AssemblyLineExecutionResultMapper.asException(e), runContext.execution());
         } finally {
             if (recoverablePath) {
-                result = finalizeRecoverableExecution(resolvedExtensions, runContext, result);
+                result = finalizeRecoverableExecution(pipeline, resolvedExtensions, runContext, result);
             }
         }
         return result;
     }
 
-    private <OUT> ExecutionResult<OUT> finalizeRecoverableExecution(ResolvedExtensions resolvedExtensions,
+    private <OUT> ExecutionResult<OUT> finalizeRecoverableExecution(AssemblyLine<?, OUT> pipeline,
+                                                                    ResolvedExtensions resolvedExtensions,
                                                                     AssemblyLineRunContext runContext,
                                                                     ExecutionResult<OUT> result) {
         ExecutionResult<OUT> finalizedResult = result;
         AssemblyLineExecutionResultMapper.finalizeRunFromResult(runContext.context(), runContext.execution(),
-                                                                finalizedResult, null);
+                                                                finalizedResult, null,
+                                                                shouldStoreResultObject(pipeline));
         if (finalizedResult == null) {
             Exception failure = runContext.execution().getError() != null ? runContext.execution().getError()
                     : new IllegalStateException("AssemblyLine execution returned no result");
@@ -189,6 +195,11 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
         return finalizedResult;
     }
 
+    private static boolean shouldStoreResultObject(AssemblyLine<?, ?> pipeline) {
+        var persistence = pipeline.getConfiguration().getPersistence();
+        return persistence == null || persistence.isStoreResultObject();
+    }
+
     private void shutdownEventRuntimeAndCleanup(EventManager eventManager, ExecutionContext context) {
         EventManager.ShutdownHandle shutdownHandle = eventManager.shutdown();
         Runnable cleanup = AssemblyLineRunCleanup.cleanup(context, executionContextRegistry);
@@ -200,7 +211,7 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
         }
     }
 
-    private static <IN, OUT> void logStart(AssemblyLine<IN, OUT> pipeline, RunRequest request) {
+    private static <IN, OUT> void logStart(AssemblyLine<IN, OUT> pipeline, RunRequest<IN> request) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Starting pipeline execution. assemblyLineId={}, rootStation={}, requestExtensions={}",
                          pipeline.getId(), pipeline.getRootStation() != null ? pipeline.getRootStation().getId() : null,
@@ -262,6 +273,7 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
         private Duration workerLockWaitTimeout;
         private WorkerConcurrencyRegistryConfiguration workerConcurrencyRegistryConfiguration;
         private ParallelExecutionConfiguration parallelExecutionConfiguration;
+        private ContextPropagationPolicy initialRunContextPolicy;
         private ContextPropagationPolicy nestedRunContextPropagationPolicy;
 
         public Builder resourceFactory(ResourceFactory resourceFactory) {
@@ -332,6 +344,17 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
 
         public Builder parallelExecutionConfiguration(ParallelExecutionConfiguration parallelExecutionConfiguration) {
             this.parallelExecutionConfiguration = parallelExecutionConfiguration;
+            return this;
+        }
+
+        /**
+         * Configures how assembly-line defaults and request context values are copied
+         * into every new run. The default preserves the historical shallow-copy
+         * behavior. Use {@link ContextPropagationPolicy#copyValues} when mutable values
+         * must be isolated between independent executions.
+         */
+        public Builder initialRunContextPolicy(ContextPropagationPolicy initialRunContextPolicy) {
+            this.initialRunContextPolicy = initialRunContextPolicy;
             return this;
         }
 

@@ -1,6 +1,7 @@
 package io.github.gear4jtest.jdbc.execution;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -43,6 +44,27 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         assertThatThrownBy(() -> coordinator.shutdown(Duration.ofMillis(-1)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("timeout must not be negative");
+    }
+
+    @Test
+    void shutdown_shouldReportDroppedTasksAndOwnedExecutorTermination() throws Exception {
+        // Given
+        ExecutorService flushExecutor = mock(ExecutorService.class);
+        Runnable droppedTask = () -> {
+            // queued task superseded by the synchronous shutdown drain
+        };
+        doReturn(List.of(droppedTask)).when(flushExecutor).shutdownNow();
+        doReturn(true).when(flushExecutor).awaitTermination(anyLong(), eq(TimeUnit.NANOSECONDS));
+        PersistenceFlushCoordinator coordinator = coordinator(mock(ScheduledFuture.class), flushExecutor, true, true);
+
+        // When
+        PersistenceShutdownReport report = coordinator.shutdown(Duration.ofSeconds(1));
+
+        // Then
+        assertThat(report.successful()).isTrue();
+        assertThat(report.droppedFlushTasks()).isEqualTo(1);
+        assertThat(report.flushExecutorTerminated()).isTrue();
+        verify(flushExecutor).shutdownNow();
     }
 
     @Test

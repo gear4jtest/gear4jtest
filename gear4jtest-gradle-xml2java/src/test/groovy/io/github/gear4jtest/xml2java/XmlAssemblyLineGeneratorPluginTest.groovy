@@ -70,7 +70,7 @@ class XmlAssemblyLineGeneratorPluginTest {
 '''
         def outputDir = new File(project.buildDir, 'generated-test')
         def extension = project.extensions.getByType(XmlAssemblyLineGeneratorExtension)
-        extension.setOutputDir(outputDir)
+        extension.outputDir.fileValue(outputDir)
         extension.trustedXml()
 
         // When
@@ -147,7 +147,7 @@ class XmlAssemblyLineGeneratorPluginTest {
         def previous = new File(outputDir, 'previous.java')
         previous.text = 'keep me'
         def extension = project.extensions.getByType(XmlAssemblyLineGeneratorExtension)
-        extension.setOutputDir(outputDir)
+        extension.outputDir.fileValue(outputDir)
 
         // When / Then
         assertThatThrownBy { project.tasks.getByName(XmlAssemblyLineGeneratorPlugin.TASK_NAME).generate() }

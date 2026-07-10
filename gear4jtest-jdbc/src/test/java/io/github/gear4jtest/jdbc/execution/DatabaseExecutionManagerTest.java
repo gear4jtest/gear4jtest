@@ -5,19 +5,24 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
+import io.github.gear4jtest.core.execution.PersistenceOperationalStatus;
 import io.github.gear4jtest.core.execution.PersistenceRuntimeStats;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
+import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,9 +32,95 @@ import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class DatabaseExecutionManagerTest {
+    @Test
+    void defaultRedactionPolicy_shouldPersistMetadataWithoutSensitiveValues() {
+        // Given
+        String secret = "fixture-secret-must-not-leak";
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        DatabaseExecutionManager manager = DatabaseExecutionManager.builder()
+                .repository(repository)
+                .flushExecutor(flushExecutor)
+                .maintenanceExecutor(scheduler)
+                .build();
+        AssemblyRunTrace trace = new AssemblyRunTrace(UUID.randomUUID(), "line", Map.of("secret", secret));
+        trace.setContext(Map.of("secret", secret));
+        trace.setResult(secret);
+        trace.setErrorMessage(secret);
+
+        try {
+            // When
+            manager.start(trace);
+            manager.end(trace);
+
+            // Then
+            ArgumentCaptor<AssemblyRunRecord> started = ArgumentCaptor.forClass(AssemblyRunRecord.class);
+            ArgumentCaptor<AssemblyRunRecord> completed = ArgumentCaptor.forClass(AssemblyRunRecord.class);
+            verify(repository).save(started.capture());
+            verify(repository).update(completed.capture());
+            assertMetadataOnly(started.getValue(), secret);
+            assertMetadataOnly(completed.getValue(), secret);
+        } finally {
+            manager.shutdown(Duration.ofSeconds(1));
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void builder_shouldNotInitializeSchemaUnlessExplicitlyEnabled() {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+        DatabaseExecutionManager manager = DatabaseExecutionManager.builder()
+                .repository(repository)
+                .flushExecutor(flushExecutor)
+                .maintenanceExecutor(scheduler)
+                .build();
+
+        try {
+            // Then
+            verify(repository, never()).initialize();
+        } finally {
+            manager.shutdown(Duration.ofSeconds(1));
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void builder_shouldInitializeSchemaWhenExplicitlyEnabled() {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+        DatabaseExecutionManager manager = DatabaseExecutionManager.builder()
+                .repository(repository)
+                .autoCreateTables(true)
+                .flushExecutor(flushExecutor)
+                .maintenanceExecutor(scheduler)
+                .build();
+
+        try {
+            // Then
+            verify(repository).initialize();
+        } finally {
+            manager.shutdown(Duration.ofSeconds(1));
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
     @Test
     void append_shouldRejectRecordsWhenPerRunBufferIsFull() {
         // Given
@@ -99,7 +190,7 @@ class DatabaseExecutionManagerTest {
     }
 
     @Test
-    void failedAsyncFlush_shouldRestoreDrainedRecordsForLaterRetry() throws Exception {
+    void failedAsyncFlush_shouldRestoreRecordsAndReadinessAfterSuccessfulRetry() throws Exception {
         // Given
         DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
         AtomicInteger attempts = new AtomicInteger();
@@ -113,6 +204,7 @@ class DatabaseExecutionManagerTest {
             succeededOnce.countDown();
             return null;
         }).when(repository).saveOperationRecordsBatch(anyList());
+        when(repository.checkConnectivity(any(Duration.class))).thenReturn(true);
         ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder().batchSize(2)
@@ -128,6 +220,9 @@ class DatabaseExecutionManagerTest {
             // Then
             assertThat(failedOnce.await(2, TimeUnit.SECONDS)).as("first asynchronous flush should fail").isTrue();
             awaitStats(manager, 1L, 2);
+            PersistenceOperationalStatus pending = manager.probeHealth();
+            assertThat(pending.ready()).isFalse();
+            assertThat(pending.reason()).isEqualTo(PersistenceOperationalStatus.Reason.RECOVERY_PENDING);
 
             // When
             manager.flush(runId);
@@ -135,6 +230,10 @@ class DatabaseExecutionManagerTest {
             // Then
             assertThat(succeededOnce.await(2, TimeUnit.SECONDS)).isTrue();
             assertThat(manager.snapshotStats().bufferedStationLogs()).isZero();
+            PersistenceOperationalStatus recovered = manager.probeHealth();
+            assertThat(recovered.ready()).isTrue();
+            assertThat(recovered.recoveredAfterFailure()).isTrue();
+            assertThat(recovered.reason()).isEqualTo(PersistenceOperationalStatus.Reason.READY);
             verify(repository, atLeast(2)).saveOperationRecordsBatch(anyList());
         } finally {
             manager.shutdown(Duration.ofSeconds(1));
@@ -181,7 +280,47 @@ class DatabaseExecutionManagerTest {
     }
 
     @Test
-    void shutdown_shouldKeepBufferedRecordsWhenFinalFlushFails() {
+    void shutdownWithReport_shouldExposeAnUnresolvedRunFinalizationFailure() {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        doThrow(new ExecutionPersistenceException("final run update unavailable"))
+                .when(repository).update(any());
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        DatabaseExecutionManager manager = manager(repository, PersistenceRuntimeConfiguration.defaults(),
+                                                   flushExecutor, scheduler);
+        UUID runId = UUID.randomUUID();
+        AssemblyRunTrace trace = new AssemblyRunTrace(runId, "assembly-line", Map.of());
+        trace.markSuccess("ok");
+
+        try {
+            assertThatThrownBy(() -> manager.end(trace))
+                    .isInstanceOf(ExecutionPersistenceException.class)
+                    .hasMessageContaining("final run update unavailable");
+
+            // When
+            PersistenceShutdownReport report = manager.shutdownWithReport(Duration.ofSeconds(1));
+
+            // Then
+            assertThat(report.successful()).isFalse();
+            assertThat(report.deadlineReached()).isFalse();
+            assertThat(report.initialActiveRuns()).isEqualTo(1);
+            assertThat(report.remainingActiveRuns()).isEqualTo(1);
+            assertThat(report.remainingStationLogs()).isZero();
+            assertThat(report.failures()).singleElement().satisfies(failure -> {
+                assertThat(failure.runId()).isEqualTo(runId);
+                assertThat(failure.attempts()).isZero();
+                assertThat(failure.remainingStationLogs()).isZero();
+                assertThat(failure.message()).contains("final run update unavailable");
+            });
+        } finally {
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void shutdownWithReport_shouldKeepAndReportRecordsWhenRetriesReachDeadline() {
         // Given
         DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
         doThrow(new ExecutionPersistenceException("database unavailable"))
@@ -189,7 +328,11 @@ class DatabaseExecutionManagerTest {
         ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder().batchSize(10)
-                .maxPendingLogsPerRun(10).flushInterval(Duration.ofDays(1)).build();
+                .maxPendingLogsPerRun(10)
+                .flushInterval(Duration.ofDays(1))
+                .shutdownRetryInitialBackoff(Duration.ofMillis(5))
+                .shutdownRetryMaxBackoff(Duration.ofMillis(10))
+                .build();
         DatabaseExecutionManager manager = manager(repository, configuration, flushExecutor, scheduler);
         UUID runId = UUID.randomUUID();
 
@@ -197,20 +340,178 @@ class DatabaseExecutionManagerTest {
             manager.append(stationRecord(runId));
 
             // When
-            manager.shutdown(Duration.ofSeconds(1));
+            PersistenceShutdownReport report = manager.shutdownWithReport(Duration.ofMillis(30));
 
             // Then
             PersistenceRuntimeStats stats = manager.snapshotStats();
+            assertThat(report.successful()).isFalse();
+            assertThat(report.deadlineReached()).isTrue();
+            assertThat(report.initialBufferedStationLogs()).isEqualTo(1);
+            assertThat(report.flushedStationLogs()).isZero();
+            assertThat(report.remainingStationLogs()).isEqualTo(1);
+            assertThat(report.flushAttempts()).isGreaterThanOrEqualTo(1);
+            assertThat(report.failures()).singleElement().satisfies(failure -> {
+                assertThat(failure.runId()).isEqualTo(runId);
+                assertThat(failure.remainingStationLogs()).isEqualTo(1);
+                assertThat(failure.attempts()).isEqualTo(report.flushAttempts());
+                assertThat(failure.message()).contains("database unavailable");
+            });
+            assertThat(manager.lastShutdownReport()).contains(report);
             assertThat(stats.activeRuns()).as("a failed shutdown flush must keep the run buffer for diagnostics")
                     .isEqualTo(1);
             assertThat(stats.bufferedStationLogs())
                     .as("drained records must be restored when shutdown persistence fails")
                     .isEqualTo(1);
-            assertThat(stats.failedFlushes()).as("shutdown flush failures must be visible in runtime stats")
-                    .isEqualTo(1L);
+            assertThat(stats.failedFlushes()).as("every shutdown flush failure must be visible in runtime stats")
+                    .isEqualTo((long) report.flushAttempts());
         } finally {
             flushExecutor.shutdownNow();
             scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void shutdownWithReport_shouldRetryTransientFailureAndDrainBeforeDeadline() {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        doThrow(new ExecutionPersistenceException("temporary database outage"))
+                .doNothing()
+                .when(repository)
+                .saveOperationRecordsBatch(anyList());
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder().batchSize(10)
+                .maxPendingLogsPerRun(10)
+                .flushInterval(Duration.ofDays(1))
+                .shutdownRetryInitialBackoff(Duration.ofMillis(1))
+                .shutdownRetryMaxBackoff(Duration.ofMillis(5))
+                .build();
+        DatabaseExecutionManager manager = manager(repository, configuration, flushExecutor, scheduler);
+        UUID runId = UUID.randomUUID();
+
+        try {
+            manager.append(stationRecord(runId));
+
+            // When
+            PersistenceShutdownReport report = manager.shutdownWithReport(Duration.ofSeconds(1));
+
+            // Then
+            assertThat(report.successful()).isTrue();
+            assertThat(report.flushAttempts()).isEqualTo(2);
+            assertThat(report.flushedStationLogs()).isEqualTo(1);
+            assertThat(report.remainingStationLogs()).isZero();
+            assertThat(report.failures()).isEmpty();
+            assertThat(manager.shutdownWithReport(Duration.ofSeconds(1))).isSameAs(report);
+            verify(repository, times(2)).saveOperationRecordsBatch(anyList());
+        } finally {
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void shutdownWithReport_shouldWaitForInFlightFlushAndRecoverItsRestoredRecords() throws Exception {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        AtomicInteger attempts = new AtomicInteger();
+        CountDownLatch firstFlushStarted = new CountDownLatch(1);
+        CountDownLatch releaseFirstFlush = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            if (attempts.incrementAndGet() == 1) {
+                firstFlushStarted.countDown();
+                releaseFirstFlush.await();
+                throw new ExecutionPersistenceException("in-flight database outage");
+            }
+            return null;
+        }).when(repository).saveOperationRecordsBatch(anyList());
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        ExecutorService shutdownExecutor = Executors.newSingleThreadExecutor();
+        PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder().batchSize(1)
+                .maxPendingLogsPerRun(10)
+                .flushInterval(Duration.ofDays(1))
+                .shutdownRetryInitialBackoff(Duration.ofMillis(1))
+                .shutdownRetryMaxBackoff(Duration.ofMillis(5))
+                .build();
+        DatabaseExecutionManager manager = manager(repository, configuration, flushExecutor, scheduler);
+
+        try {
+            manager.append(stationRecord(UUID.randomUUID()));
+            assertThat(firstFlushStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+            // When
+            Future<PersistenceShutdownReport> shutdown = shutdownExecutor.submit(
+                                                                                 () -> manager
+                                                                                         .shutdownWithReport(Duration
+                                                                                                 .ofSeconds(1)));
+            releaseFirstFlush.countDown();
+            PersistenceShutdownReport report = shutdown.get(2, TimeUnit.SECONDS);
+
+            // Then
+            assertThat(report.successful()).isTrue();
+            assertThat(report.initialBufferedStationLogs()).isEqualTo(1);
+            assertThat(report.flushedStationLogs()).isEqualTo(1);
+            assertThat(report.remainingStationLogs()).isZero();
+            assertThat(report.flushAttempts()).isEqualTo(1);
+            verify(repository, times(2)).saveOperationRecordsBatch(anyList());
+        } finally {
+            releaseFirstFlush.countDown();
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+            shutdownExecutor.shutdownNow();
+        }
+    }
+
+    @Test
+    void shutdownWithReport_shouldRejectAppendThatFinishesRedactionAfterShutdownStarts() throws Exception {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        CountDownLatch redactionStarted = new CountDownLatch(1);
+        CountDownLatch releaseRedaction = new CountDownLatch(1);
+        AtomicInteger redactions = new AtomicInteger();
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        ExecutorService appendExecutor = Executors.newSingleThreadExecutor();
+        DatabaseExecutionManager manager = DatabaseExecutionManager.builder()
+                .repository(repository)
+                .configuration(PersistenceRuntimeConfiguration.defaults())
+                .autoCreateTables(false)
+                .flushExecutor(flushExecutor)
+                .maintenanceExecutor(scheduler)
+                .redactor((target, value) -> {
+                    if (redactions.getAndIncrement() == 0) {
+                        redactionStarted.countDown();
+                        try {
+                            releaseRedaction.await();
+                        } catch (InterruptedException exception) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                    return value;
+                })
+                .build();
+
+        try {
+            Future<?> append = appendExecutor.submit(() -> manager.append(stationRecord(UUID.randomUUID())));
+            assertThat(redactionStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+            // When
+            PersistenceShutdownReport report = manager.shutdownWithReport(Duration.ofSeconds(1));
+            releaseRedaction.countDown();
+
+            // Then
+            assertThat(report.successful()).isTrue();
+            assertThat(report.initialBufferedStationLogs()).isZero();
+            assertThatThrownBy(() -> append.get(2, TimeUnit.SECONDS))
+                    .isInstanceOf(ExecutionException.class)
+                    .hasCauseInstanceOf(ExecutionPersistenceException.class);
+            assertThat(manager.snapshotStats().bufferedStationLogs()).isZero();
+            verify(repository, never()).saveOperationRecordsBatch(anyList());
+        } finally {
+            releaseRedaction.countDown();
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+            appendExecutor.shutdownNow();
         }
     }
 
@@ -287,5 +588,13 @@ class DatabaseExecutionManagerTest {
     private static StationLogRecord stationRecord(UUID runId) {
         return new StationLogRecord(UUID.randomUUID(), runId, "station", null, StationLogStatus.SUCCEEDED,
                 Instant.now(), Instant.now(), null, null, Map.of(), null);
+    }
+
+    private static void assertMetadataOnly(AssemblyRunRecord record, String secret) {
+        assertThat(record.context()).isEmpty();
+        assertThat(record.inputParams()).isNull();
+        assertThat(record.result()).isNull();
+        assertThat(record.errorMessage()).isNull();
+        assertThat(record.toString()).doesNotContain(secret);
     }
 }

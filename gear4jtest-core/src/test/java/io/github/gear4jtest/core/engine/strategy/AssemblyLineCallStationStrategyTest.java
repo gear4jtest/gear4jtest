@@ -292,7 +292,7 @@ class AssemblyLineCallStationStrategyTest {
 
         @Override
         public <IN, OUT> ExecutionResult<OUT> aroundRun(AssemblyLine<IN, OUT> pipeline,
-                                                        RunRequest request,
+                                                        RunRequest<IN> request,
                                                         ExecutionContext ctx,
                                                         RunChain<IN, OUT> chain) {
             invocations.incrementAndGet();

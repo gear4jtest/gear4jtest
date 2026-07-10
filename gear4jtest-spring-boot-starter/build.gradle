@@ -4,7 +4,7 @@ dependencies {
     implementation project(':gear4jtest-micrometer')
     implementation libs.spring.boot.autoconfigure
     implementation libs.spring.boot.starter.validation
-    compileOnly libs.spring.boot.actuator
+    compileOnlyApi libs.spring.boot.actuator
 
     annotationProcessor libs.spring.boot.configuration.processor
 

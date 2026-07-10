@@ -2,9 +2,12 @@ package io.github.gear4jtest.core.event;
 
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -90,6 +93,70 @@ class EventManagerFailureTest {
             assertThat(stats.pendingReactions()).isZero();
         } finally {
             manager.shutdown();
+        }
+    }
+
+    @Test
+    void dispatch_shouldEvaluateUserPredicateOnReactionExecutor() throws Exception {
+        // Given
+        ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> new Thread(runnable,
+                "predicate-reaction-executor"));
+        AtomicReference<String> predicateThread = new AtomicReference<>();
+        CountDownLatch reactionRan = new CountDownLatch(1);
+        EventHandlingDefinition definition = EventHandlingDefinition.builder()
+                .subscription(EventSubscription.on(Event.class, event -> {
+                    predicateThread.set(Thread.currentThread().getName());
+                    return true;
+                }, event -> reactionRan.countDown()))
+                .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                        .sharedReactionExecutor(executor)
+                        .shutdownTimeout(Duration.ofSeconds(2))
+                        .build())
+                .build();
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+
+        try {
+            // When
+            manager.publish(new Event("pipe", UUID.randomUUID(), "PREDICATE_THREAD"));
+
+            // Then
+            assertThat(reactionRan.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(predicateThread.get()).isEqualTo("predicate-reaction-executor");
+        } finally {
+            manager.shutdown();
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void dispatch_shouldIsolateFailingPredicateAndContinueOtherSubscriptions() throws Exception {
+        // Given
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        CountDownLatch healthyReactionRan = new CountDownLatch(1);
+        EventHandlingDefinition definition = EventHandlingDefinition.builder()
+                .subscription(EventSubscription.on(Event.class, event -> {
+                    throw new IllegalStateException("predicate failed");
+                }, event -> {
+                }))
+                .subscription(EventSubscription.on(Event.class, event -> healthyReactionRan.countDown()))
+                .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                        .sharedReactionExecutor(executor)
+                        .shutdownTimeout(Duration.ofSeconds(2))
+                        .build())
+                .build();
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+
+        try {
+            // When
+            manager.publish(new Event("pipe", UUID.randomUUID(), "FAILING_PREDICATE"));
+
+            // Then
+            assertThat(healthyReactionRan.await(2, TimeUnit.SECONDS)).isTrue();
+            awaitStats(manager, stats -> stats.failedReactions() == 1 && stats.completedReactions() == 2);
+            assertThat(manager.snapshotStats().failedReactions()).isEqualTo(1L);
+        } finally {
+            manager.shutdown();
+            executor.shutdownNow();
         }
     }
 

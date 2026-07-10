@@ -24,7 +24,7 @@ public class RunnerChainFactory {
     }
 
     public StationRunner createRootRunner(AssemblyLine<?, ?> pipeline,
-                                          RunRequest request,
+                                          RunRequest<?> request,
                                           ExecutionContext ctx,
                                           ResolvedExtensions extensions) {
         Objects.requireNonNull(request, "request must not be null");

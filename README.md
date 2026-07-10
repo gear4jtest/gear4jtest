@@ -24,7 +24,8 @@ Gear4J aims to provide:
 |------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `gear4jtest-core`            | Runtime engine, public Java API, stations, flow policies, events, side-compute, persistence traces and extension SPI.                                          |
 | `gear4jtest-experimental-cache` | Experimental assembly-line cache helpers intended for opt-in personal/advanced usage; API may disappear before 1.0.                              |
-| `gear4jtest-external-api`    | Contracts and infrastructure for externally stored pipeline definitions: artifacts, translators, in-memory compilation, classloaders and dependency injection. |
+| `gear4jtest-external-api`    | Provider-neutral contracts and infrastructure for externally stored pipeline definitions: artifacts, repositories, translators, compilation and loading. |
+| `gear4jtest-external-jdbc`   | Optional JDBC repositories, schema migrations and database-backed artifact storage for external definitions.                                         |
 | `gear4jtest-xml`             | XML parser, validator and Java source generator for externalized Gear4J pipelines.                                                                             |
 | `gear4jtest-gradle-xml2java` | Gradle plugin that generates Java pipeline classes from XML files at build time.                                                                               |
 | `gear4jtest-jackson`         | Optional Jackson-backed `PayloadCloner` implementation.                                                                                                        |
@@ -39,7 +40,7 @@ Gear4J aims to provide:
 - **Station**: an executable pipeline element. The core supports work stations, sequences, containers, if/else
   containers, iterators, signal stations and pipeline calls.
 - **Operator / Processor**: user code invoked by stations.
-- **RunRequest**: per-run input, context, resource factory override, id generator override and runtime extensions.
+- **RunRequest&lt;IN&gt;**: typed per-run input, context, resource factory override, id generator override and runtime extensions.
 - **ExecutionContext**: mutable state for a single run.
 - **ExecutionServices**: run-scoped services such as event manager, resource factory and station-scoped resources.
 - **RuntimeExtension**: extension SPI used to wrap runs, stations, executors or observe lifecycle events.
@@ -53,8 +54,9 @@ Gear4J is a runtime library, so the most important operational limits are explic
 - the in-memory event runtime is best-effort and does not provide durable delivery, replay or exactly-once semantics;
 - cancellation and timeouts are cooperative for user Java code and cannot forcibly stop arbitrary blocking operators;
 - XML trusted mode is equivalent to compiling reviewed Java source in the application JVM, not a sandbox;
-- JDBC persistence can store input/context/result/error payloads, so production deployments should provide a
-  `SensitiveDataRedactor` and use strict redaction policy where possible;
+- direct persistence managers discard input/context/result/error payloads by default; production deployments that
+  capture them should provide a `SensitiveDataRedactor`. The Spring Boot `WARN` compatibility mode still permits raw
+  capture with a warning;
 - generated classloaders are cached locally per JVM; alias invalidation is local, not a distributed cache protocol.
 
 ## Build and test
@@ -68,24 +70,37 @@ Common commands:
 ```bash
 ./gradlew clean build
 ./gradlew coverageReport
+./gradlew coverageVerification
+./gradlew verifyPerformanceBudgets
 ./gradlew sonarqube
 ./gradlew dependencyCheckAggregate
 ./gradlew stageMavenCentral -PprojectVersion=1.0.0
+./gradlew consumerSmokeTest -PprojectVersion=1.0.0
 ./gradlew :gear4jtest-core:test
 ./gradlew :gear4jtest-xml:test
 ```
 
 `./gradlew clean build` is the normal project verification command: it compiles the modules, runs unit tests, runs
-integration tests through `integrationCheck`, executes the fast style/check tasks, packages the artifacts and finalizes
-with the aggregate JaCoCo XML/HTML coverage report. `./gradlew coverageReport` can still be run directly when only the
-aggregate coverage report is needed. `./gradlew sonarqube` only sends analysis data to SonarQube/SonarCloud and depends
-on the aggregate coverage report; it is not wired into `build`.
+integration tests through `integrationCheck`, executes style checks and enforces the critical-class branch-coverage
+ratchets. Aggregate JaCoCo report generation is explicit through `./gradlew coverageReport`; a targeted subproject
+build no longer triggers every test and report in the repository. `./gradlew sonarqube` depends on that aggregate
+report but is not wired into `build`.
+
+`verifyPerformanceBudgets` runs the versioned JMH scenarios for event filtering, GEL, payload cloning, generated-source
+compilation, the experimental cache, JDBC batching and 8 MiB artifact streaming. It is intentionally slower than the
+normal PR build and runs on the main branch, on the weekly schedule and as part of `releaseCheck`. See
+`docs/performance.md`.
 
 Unit tests live under `src/test`. Integration tests live under `src/integrationTest` and are executed by the
 `integrationTest` tasks, which are part of the default `check`/`build` lifecycle. Tests that need databases use
-Testcontainers, so the container lifecycle is declared in the JUnit tests themselves. Maven Central staging writes
+Testcontainers, so the container lifecycle is declared in the JUnit tests themselves. PostgreSQL is the default fast
+dialect; use `-Pgear4jDatabaseDialect=all` locally for the complete matrix. Maven Central staging writes
 artifacts under `build/staging-deploy`; deployment is handled by JReleaser from the `release.yml` GitHub Actions
 workflow.
+
+`releaseCheck` also builds the standalone project under `config/consumer-smoke` against the staged repository. This
+guards the published POM scopes and the Gradle plugin marker instead of relying only on intra-repository project
+dependencies. See `docs/releasing.md` for the release contract and required credentials.
 
 The Gradle wrapper must be complete in the working copy: `gradlew`, `gradle/wrapper/gradle-wrapper.jar` and
 `gradle/wrapper/gradle-wrapper.properties`.
@@ -126,9 +141,11 @@ deterministic output, but transient generated files should not be edited directl
 
 - `gear4jtest-core/README.md`: runtime concepts and extension model.
 - `gear4jtest-external-api/README.md`: external pipeline loading and compilation.
+- `gear4jtest-external-jdbc/README.md`: optional external-definition JDBC storage and migrations.
 - `gear4jtest-xml/README.md`: XML translation model.
 - `gear4jtest-gradle-xml2java/README.md`: Gradle XML generation plugin.
 - `docs/architecture/`: durable architecture notes.
+- `docs/audit/closure-matrix-2026-07-13.md`: status and residual backlog for all 47 audit findings.
 - `docs/contributing/code-style.md`: style, formatter and Checkstyle rules.
 - `docs/decisions/`: decision records and future-direction notes, including source-level API boundary policy.
 - `docs/roadmap/future-work.md`: known work items and non-MVP ideas.

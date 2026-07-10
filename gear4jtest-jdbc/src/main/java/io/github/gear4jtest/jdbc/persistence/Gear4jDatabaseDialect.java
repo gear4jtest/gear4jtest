@@ -9,7 +9,9 @@ import java.sql.Types;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Calendar;
 import java.util.Locale;
+import java.util.TimeZone;
 import java.util.UUID;
 
 import io.github.gear4jtest.core.persistence.PageRequest;
@@ -50,6 +52,11 @@ public enum Gear4jDatabaseDialect {
         return resourceDirectory;
     }
 
+    /** Minimal provider-specific query used by current-connectivity probes. */
+    public String validationQuery() {
+        return this == ORACLE ? "SELECT 1 FROM dual" : "SELECT 1";
+    }
+
     void setJson(PreparedStatement stmt, int index, String json) throws SQLException {
         if (json == null) {
             stmt.setNull(index, this == POSTGRESQL ? Types.OTHER : this == ORACLE ? Types.CLOB : Types.VARCHAR);
@@ -68,7 +75,8 @@ public enum Gear4jDatabaseDialect {
         return rs.getString(column);
     }
 
-    void setInstant(PreparedStatement stmt, int index, Instant value) throws SQLException {
+    /** Binds an instant without depending on the JVM default time zone. */
+    public void setInstant(PreparedStatement stmt, int index, Instant value) throws SQLException {
         if (value == null) {
             stmt.setNull(index, this == POSTGRESQL ? Types.TIMESTAMP_WITH_TIMEZONE : Types.TIMESTAMP);
             return;
@@ -76,17 +84,22 @@ public enum Gear4jDatabaseDialect {
         if (this == POSTGRESQL) {
             stmt.setObject(index, value.atOffset(ZoneOffset.UTC));
         } else {
-            stmt.setTimestamp(index, Timestamp.from(value));
+            stmt.setTimestamp(index, Timestamp.from(value), utcCalendar());
         }
     }
 
-    Instant getInstant(ResultSet rs, String column) throws SQLException {
+    /** Reads an instant without depending on the JVM default time zone. */
+    public Instant getInstant(ResultSet rs, String column) throws SQLException {
         if (this == POSTGRESQL) {
             OffsetDateTime value = rs.getObject(column, OffsetDateTime.class);
             return value != null ? value.toInstant() : null;
         }
-        Timestamp value = rs.getTimestamp(column);
+        Timestamp value = rs.getTimestamp(column, utcCalendar());
         return value != null ? value.toInstant() : null;
+    }
+
+    private static Calendar utcCalendar() {
+        return Calendar.getInstance(TimeZone.getTimeZone("UTC"));
     }
 
     void setUuid(PreparedStatement stmt, int index, UUID value) throws SQLException {

@@ -2,9 +2,9 @@ package io.github.gear4jtest.external.api.artifact;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -13,7 +13,7 @@ import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class CompositeArtifactStore implements ArtifactStore {
+public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoolMonitor {
     private static final Logger LOGGER = LoggerFactory.getLogger(CompositeArtifactStore.class);
 
     private final ArtifactStore primary;
@@ -23,6 +23,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
     private final boolean verifyOnRead;
     private final boolean selfHealing;
     private final long verificationMaxArtifactSizeBytes;
+    private final ManagedArtifactSpool spool;
     private final Executor asyncExec;
 
     public CompositeArtifactStore(ArtifactStore primary,
@@ -33,7 +34,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
                                   boolean selfHealing,
                                   Executor asyncExec) {
         this(primary, fallbacks, writeMode, readMode, verifyOnRead, selfHealing,
-                ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES, asyncExec);
+                ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES, ArtifactSpoolPolicy.defaults(), asyncExec);
     }
 
     public CompositeArtifactStore(ArtifactStore primary,
@@ -44,6 +45,32 @@ public final class CompositeArtifactStore implements ArtifactStore {
                                   boolean selfHealing,
                                   long verificationMaxArtifactSizeBytes,
                                   Executor asyncExec) {
+        this(primary, fallbacks, writeMode, readMode, verifyOnRead, selfHealing, verificationMaxArtifactSizeBytes,
+                ArtifactSpoolPolicy.defaults(), asyncExec);
+    }
+
+    public CompositeArtifactStore(ArtifactStore primary,
+                                  java.util.List<ArtifactStore> fallbacks,
+                                  WriteMode writeMode,
+                                  ReadMode readMode,
+                                  boolean verifyOnRead,
+                                  boolean selfHealing,
+                                  long verificationMaxArtifactSizeBytes,
+                                  Path spoolDirectory,
+                                  Executor asyncExec) {
+        this(primary, fallbacks, writeMode, readMode, verifyOnRead, selfHealing, verificationMaxArtifactSizeBytes,
+                ArtifactSpoolPolicy.builder().directory(spoolDirectory).build(), asyncExec);
+    }
+
+    public CompositeArtifactStore(ArtifactStore primary,
+                                  java.util.List<ArtifactStore> fallbacks,
+                                  WriteMode writeMode,
+                                  ReadMode readMode,
+                                  boolean verifyOnRead,
+                                  boolean selfHealing,
+                                  long verificationMaxArtifactSizeBytes,
+                                  ArtifactSpoolPolicy spoolPolicy,
+                                  Executor asyncExec) {
         this.primary = Objects.requireNonNull(primary);
         this.fallbacks = java.util.List.copyOf(Objects.requireNonNull(fallbacks));
         this.writeMode = writeMode == null ? WriteMode.PRIMARY_ONLY : writeMode;
@@ -52,7 +79,17 @@ public final class CompositeArtifactStore implements ArtifactStore {
         this.selfHealing = selfHealing;
         this.verificationMaxArtifactSizeBytes = validateVerificationMaxArtifactSizeBytes(
                                                                                          verificationMaxArtifactSizeBytes);
+        try {
+            this.spool = new ManagedArtifactSpool(spoolPolicy);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Failed to initialize the private artifact spool", exception);
+        }
         this.asyncExec = asyncExec != null ? asyncExec : ArtifactStoreExecutors.defaultAsyncExecutor();
+    }
+
+    @Override
+    public ArtifactSpoolStats snapshotSpoolStats() {
+        return spool.snapshotStats();
     }
 
     @Override
@@ -91,7 +128,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
         try {
             return putFromTempFile(temp.path());
         } finally {
-            deleteTempFile(temp.path());
+            spool.delete(temp.path());
         }
     }
 
@@ -122,7 +159,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
 
     @Override
     public Optional<Artifact> get(String hashHex) throws IOException {
-        String hash = Hashing.requireSha256Hex(hashHex);
+        String hash = ArtifactHashes.requireSha256Hex(hashHex);
         var artifact = primary.get(hash);
         if (artifact.isPresent()) {
             return maybeVerifyAndHeal(hash, artifact.get(), true);
@@ -138,7 +175,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
 
     @Override
     public boolean exists(String hashHex) throws IOException {
-        String hash = Hashing.requireSha256Hex(hashHex);
+        String hash = ArtifactHashes.requireSha256Hex(hashHex);
         if (primary.exists(hash)) {
             return true;
         }
@@ -155,7 +192,7 @@ public final class CompositeArtifactStore implements ArtifactStore {
         if (!verifyOnRead) {
             return Optional.of(artifact);
         }
-        try (var in = artifact.openStream()) {
+        try (var in = artifact.openStreamChecked()) {
             if (!fromPrimary && selfHealing) {
                 TempArtifact temp = spoolToTempFile(in, verificationMaxArtifactSizeBytes);
                 try {
@@ -164,10 +201,10 @@ public final class CompositeArtifactStore implements ArtifactStore {
                     }
                     scheduleAsyncPrimaryHealing(hash, temp.path());
                 } finally {
-                    deleteTempFile(temp.path());
+                    spool.delete(temp.path());
                 }
             } else {
-                String rehash = Hashing.sha256Hex(in, verificationMaxArtifactSizeBytes).hashHex();
+                String rehash = ArtifactHashes.sha256Hex(in, verificationMaxArtifactSizeBytes).hashHex();
                 if (!rehash.equals(hash)) {
                     throw new IOException("Corrupt artifact: " + hash);
                 }
@@ -193,11 +230,11 @@ public final class CompositeArtifactStore implements ArtifactStore {
                 } catch (IOException e) {
                     LOGGER.warn("Asynchronous artifact self-healing write failed.", e);
                 } finally {
-                    deleteTempFile(asyncCopy);
+                    spool.delete(asyncCopy);
                 }
             });
         } catch (RuntimeException e) {
-            deleteTempFile(asyncCopy);
+            spool.delete(asyncCopy);
             LOGGER.warn("Asynchronous artifact self-healing write was rejected.", e);
         }
     }
@@ -217,25 +254,25 @@ public final class CompositeArtifactStore implements ArtifactStore {
                 } catch (IOException e) {
                     LOGGER.warn(failureMessage, e);
                 } finally {
-                    deleteTempFile(asyncCopy);
+                    spool.delete(asyncCopy);
                 }
             });
         } catch (RuntimeException e) {
-            deleteTempFile(asyncCopy);
+            spool.delete(asyncCopy);
             LOGGER.warn("Asynchronous artifact write was rejected.", e);
         }
     }
 
     private TempArtifact spoolToTempFile(InputStream in, long maxBytes) throws IOException {
-        Path tmp = Files.createTempFile("gear4j-artifact-composite-", ".tmp");
+        Path tmp = spool.createTempFile("composite-");
         try {
             copyWithLimit(in, tmp, maxBytes);
             try (InputStream digestInput = Files.newInputStream(tmp)) {
-                String hash = Hashing.sha256Hex(digestInput, ArtifactStore.UNLIMITED_SIZE).hashHex();
+                String hash = ArtifactHashes.sha256Hex(digestInput, ArtifactStore.UNLIMITED_SIZE).hashHex();
                 return new TempArtifact(tmp, hash);
             }
         } catch (IOException | RuntimeException e) {
-            deleteTempFile(tmp);
+            spool.delete(tmp);
             throw e;
         }
     }
@@ -247,10 +284,10 @@ public final class CompositeArtifactStore implements ArtifactStore {
         return maxBytes;
     }
 
-    private static void copyWithLimit(InputStream in, Path target, long maxBytes) throws IOException {
+    private void copyWithLimit(InputStream in, Path target, long maxBytes) throws IOException {
         byte[] buffer = new byte[8192];
         long total = 0L;
-        try (var out = Files.newOutputStream(target)) {
+        try (var out = spool.openOutput(target)) {
             int read;
             while ((read = in.read(buffer)) != -1) {
                 total += read;
@@ -262,22 +299,16 @@ public final class CompositeArtifactStore implements ArtifactStore {
         }
     }
 
-    private static Path copyTempFile(Path sourceFile) throws IOException {
-        Path copy = Files.createTempFile("gear4j-artifact-async-", ".tmp");
+    private Path copyTempFile(Path sourceFile) throws IOException {
+        Path copy = spool.createTempFile("async-");
         try {
-            Files.copy(sourceFile, copy, StandardCopyOption.REPLACE_EXISTING);
+            try (InputStream source = Files.newInputStream(sourceFile)) {
+                spool.copy(source, copy);
+            }
             return copy;
         } catch (IOException | RuntimeException e) {
-            deleteTempFile(copy);
+            spool.delete(copy);
             throw e;
-        }
-    }
-
-    private static void deleteTempFile(Path file) {
-        try {
-            Files.deleteIfExists(file);
-        } catch (IOException e) {
-            LOGGER.warn("Unable to delete temporary artifact file {}.", file, e);
         }
     }
 

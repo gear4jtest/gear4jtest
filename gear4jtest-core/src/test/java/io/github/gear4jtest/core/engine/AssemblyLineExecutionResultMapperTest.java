@@ -131,6 +131,22 @@ class AssemblyLineExecutionResultMapperTest {
                 .hasCause(error);
     }
 
+    @Test
+    void finalizeRunFromResult_shouldNotCaptureResultWhenPersistenceDisablesIt() {
+        // Given
+        ExecutionContext context = executionContext();
+        AssemblyRunTrace trace = new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of());
+        ExecutionResult<String> result = ExecutionResult.success("fixture-secret-must-not-leak", trace);
+
+        // When
+        AssemblyLineExecutionResultMapper.finalizeRunFromResult(context, trace, result, null, false);
+
+        // Then
+        assertThat(result.getResult()).isEqualTo("fixture-secret-must-not-leak");
+        assertThat(trace.getResult()).isNull();
+        assertThat(trace.getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
+    }
+
     private static Stream<Arguments> terminalRootStatuses() {
         return Stream.of(
                          Arguments.of(StationLogStatus.SUCCEEDED, ExecutionOutcome.SUCCEEDED,

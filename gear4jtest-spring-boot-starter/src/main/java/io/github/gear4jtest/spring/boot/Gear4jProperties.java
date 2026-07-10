@@ -66,6 +66,11 @@ public class Gear4jProperties {
          * false.
          */
         private boolean autoCreateTables;
+        /**
+         * Explicitly allows a compatible existing schema without Gear4J migration
+         * history to be baselined. Default: false.
+         */
+        private boolean baselineOnMigrate;
         @Min(1) private int batchSize = 500;
         @Min(1) private int maxPendingLogsPerRun = 10_000;
         /**
@@ -80,11 +85,16 @@ public class Gear4jProperties {
         @Min(1) private int maxScheduledFlushTasks = 1_000;
         @NotNull private Duration flushInterval = Duration.ofSeconds(1);
         @NotNull private Duration shutdownTimeout = Duration.ofSeconds(30);
+        @NotNull private Duration shutdownRetryInitialBackoff = Duration.ofMillis(100);
+        @NotNull private Duration shutdownRetryMaxBackoff = Duration.ofSeconds(2);
         /**
          * JDBC Statement query timeout applied to Gear4J persistence statements. Use 0
          * to disable the statement-level timeout. Default: 30s.
          */
         @NotNull private Duration jdbcStatementTimeout = Duration.ofSeconds(30);
+        @Min(1) private int readinessMaxBufferedStationLogs = 5_000;
+        @NotNull private Duration readinessMaxBacklogAge = Duration.ofSeconds(30);
+        @NotNull private Duration connectivityProbeTimeout = Duration.ofSeconds(2);
         /**
          * Controls startup behavior when persistence is enabled without a
          * SensitiveDataRedactor bean. Default: WARN.
@@ -113,6 +123,14 @@ public class Gear4jProperties {
 
         public void setAutoCreateTables(boolean autoCreateTables) {
             this.autoCreateTables = autoCreateTables;
+        }
+
+        public boolean isBaselineOnMigrate() {
+            return baselineOnMigrate;
+        }
+
+        public void setBaselineOnMigrate(boolean baselineOnMigrate) {
+            this.baselineOnMigrate = baselineOnMigrate;
         }
 
         public int getBatchSize() {
@@ -163,12 +181,52 @@ public class Gear4jProperties {
             this.shutdownTimeout = shutdownTimeout;
         }
 
+        public Duration getShutdownRetryInitialBackoff() {
+            return shutdownRetryInitialBackoff;
+        }
+
+        public void setShutdownRetryInitialBackoff(Duration shutdownRetryInitialBackoff) {
+            this.shutdownRetryInitialBackoff = shutdownRetryInitialBackoff;
+        }
+
+        public Duration getShutdownRetryMaxBackoff() {
+            return shutdownRetryMaxBackoff;
+        }
+
+        public void setShutdownRetryMaxBackoff(Duration shutdownRetryMaxBackoff) {
+            this.shutdownRetryMaxBackoff = shutdownRetryMaxBackoff;
+        }
+
         public Duration getJdbcStatementTimeout() {
             return jdbcStatementTimeout;
         }
 
         public void setJdbcStatementTimeout(Duration jdbcStatementTimeout) {
             this.jdbcStatementTimeout = jdbcStatementTimeout;
+        }
+
+        public int getReadinessMaxBufferedStationLogs() {
+            return readinessMaxBufferedStationLogs;
+        }
+
+        public void setReadinessMaxBufferedStationLogs(int readinessMaxBufferedStationLogs) {
+            this.readinessMaxBufferedStationLogs = readinessMaxBufferedStationLogs;
+        }
+
+        public Duration getReadinessMaxBacklogAge() {
+            return readinessMaxBacklogAge;
+        }
+
+        public void setReadinessMaxBacklogAge(Duration readinessMaxBacklogAge) {
+            this.readinessMaxBacklogAge = readinessMaxBacklogAge;
+        }
+
+        public Duration getConnectivityProbeTimeout() {
+            return connectivityProbeTimeout;
+        }
+
+        public void setConnectivityProbeTimeout(Duration connectivityProbeTimeout) {
+            this.connectivityProbeTimeout = connectivityProbeTimeout;
         }
 
         public RedactionMode getRedactionMode() {
@@ -179,6 +237,12 @@ public class Gear4jProperties {
             this.redactionMode = redactionMode;
         }
 
+        private static void requirePositive(Duration value, String property) {
+            if (value == null || value.isZero() || value.isNegative()) {
+                throw new IllegalStateException(property + " must be > 0");
+            }
+        }
+
         public void validateWhenEnabled() {
             if (!enabled) {
                 return;
@@ -186,11 +250,33 @@ public class Gear4jProperties {
             if (dialect == null) {
                 throw new IllegalStateException("gear4j.persistence.dialect is required when persistence is enabled");
             }
+            if (baselineOnMigrate && !autoCreateTables) {
+                throw new IllegalStateException(
+                        "gear4j.persistence.baseline-on-migrate requires auto-create-tables=true");
+            }
             if (maxPendingLogsPerRun < batchSize) {
                 throw new IllegalStateException("gear4j.persistence.max-pending-logs-per-run must be >= batch-size");
             }
+            if (readinessMaxBufferedStationLogs <= 0) {
+                throw new IllegalStateException("gear4j.persistence.readiness-max-buffered-station-logs must be > 0");
+            }
             if (jdbcStatementTimeout != null && jdbcStatementTimeout.isNegative()) {
                 throw new IllegalStateException("gear4j.persistence.jdbc-statement-timeout must be >= 0");
+            }
+            requirePositive(readinessMaxBacklogAge, "gear4j.persistence.readiness-max-backlog-age");
+            requirePositive(connectivityProbeTimeout, "gear4j.persistence.connectivity-probe-timeout");
+            if (shutdownRetryInitialBackoff == null || shutdownRetryInitialBackoff.isZero()
+                    || shutdownRetryInitialBackoff.isNegative()) {
+                throw new IllegalStateException("gear4j.persistence.shutdown-retry-initial-backoff must be > 0");
+            }
+            if (shutdownRetryMaxBackoff == null || shutdownRetryMaxBackoff.isZero()
+                    || shutdownRetryMaxBackoff.isNegative()) {
+                throw new IllegalStateException("gear4j.persistence.shutdown-retry-max-backoff must be > 0");
+            }
+            if (shutdownRetryInitialBackoff != null && shutdownRetryMaxBackoff != null
+                    && shutdownRetryInitialBackoff.compareTo(shutdownRetryMaxBackoff) > 0) {
+                throw new IllegalStateException("gear4j.persistence.shutdown-retry-initial-backoff must be <= "
+                        + "shutdown-retry-max-backoff");
             }
         }
     }

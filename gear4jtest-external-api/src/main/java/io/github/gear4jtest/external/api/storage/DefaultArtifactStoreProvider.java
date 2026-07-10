@@ -1,5 +1,7 @@
 package io.github.gear4jtest.external.api.storage;
 
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -10,6 +12,7 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
+import io.github.gear4jtest.external.api.artifact.ArtifactSpoolPolicy;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.artifact.ArtifactStoreExecutors;
 import io.github.gear4jtest.external.api.artifact.CompositeArtifactStore;
@@ -123,6 +126,19 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         long verificationMaxArtifactSizeBytes = parseLong(props.get("verificationMaxArtifactSizeBytes"),
                                                           ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES,
                                                           "verificationMaxArtifactSizeBytes");
+        String spoolDirectoryProperty = props.get("spoolDirectory");
+        Path spoolDirectory = spoolDirectoryProperty == null || spoolDirectoryProperty.isBlank() ? null
+                : Path.of(spoolDirectoryProperty);
+        long spoolMaxBytes = parseLong(props.get("spoolMaxBytes"), ArtifactSpoolPolicy.DEFAULT_MAX_BYTES,
+                                       "spoolMaxBytes");
+        Duration spoolStaleFileAge = parseDuration(props.get("spoolStaleFileAge"),
+                                                   ArtifactSpoolPolicy.DEFAULT_STALE_FILE_AGE,
+                                                   "spoolStaleFileAge");
+        ArtifactSpoolPolicy spoolPolicy = ArtifactSpoolPolicy.builder()
+                .directory(spoolDirectory)
+                .maxBytes(spoolMaxBytes)
+                .staleFileAge(spoolStaleFileAge)
+                .build();
 
         // Primary store type declared by the pipeline configuration.
         ArtifactStore primary = resolver.resolve(cfg.storeType().name(), props, ctx);
@@ -135,7 +151,19 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         }
 
         return new CompositeArtifactStore(primary, fallbacks, writeMode, readMode, verifyOnRead, selfHealing,
-                verificationMaxArtifactSizeBytes, asyncExec);
+                verificationMaxArtifactSizeBytes, spoolPolicy, asyncExec);
+    }
+
+    private static Duration parseDuration(String value, Duration defaultValue, String property) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            return Duration.parse(value.trim());
+        } catch (RuntimeException exception) {
+            throw new IllegalArgumentException("Invalid artifact store property '" + property + "': " + value
+                    + ". Expected an ISO-8601 duration such as PT24H.", exception);
+        }
     }
 
     private record FallbackGroup(int order, Map<String, String> properties) {}

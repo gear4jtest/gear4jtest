@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.api.station;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
@@ -91,13 +92,15 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         public <A> Builder<IN, A> iterableFunction(Function<IN, ? extends Iterable<A>> func) {
-            this.func = func;
-            return new Builder<>(this);
+            Builder<IN, A> next = new Builder<>(this);
+            next.func = Objects.requireNonNull(func, "iterable function must not be null");
+            return next;
         }
 
         public <A> Builder<IN, A> sequence(SequenceStation<OUT, A> sequenceStation) {
-            this.chain = sequenceStation;
-            return new Builder<>(this);
+            Builder<IN, A> next = new Builder<>(this);
+            next.chain = Objects.requireNonNull(sequenceStation, "sequence must not be null");
+            return next;
         }
 
         public Builder<IN, OUT> flowConfig(FlowConfig flowConfig) {
@@ -111,8 +114,9 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         public <C> Builder<IN, C> collector(Collector<OUT, ?, C> collector) {
-            this.collector = collector;
-            return new Builder<>(this);
+            Builder<IN, C> next = new Builder<>(this);
+            next.collector = Objects.requireNonNull(collector, "collector must not be null");
+            return next;
         }
 
         public IteratorStation<IN, OUT> build() {

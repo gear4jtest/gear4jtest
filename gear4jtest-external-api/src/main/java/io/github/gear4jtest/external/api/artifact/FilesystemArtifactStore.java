@@ -73,24 +73,18 @@ public final class FilesystemArtifactStore implements ArtifactStore {
 
     @Override
     public Optional<Artifact> get(String hashHex) throws IOException {
-        String hash = Hashing.requireSha256Hex(hashHex);
+        String hash = ArtifactHashes.requireSha256Hex(hashHex);
         Path path = pathForValidatedHash(hash);
         if (!Files.exists(path)) {
             return Optional.empty();
         }
         long size = Files.size(path);
-        return Optional.of(new Artifact(hash, size, Map.of(), () -> {
-            try {
-                return Files.newInputStream(path);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }));
+        return Optional.of(Artifact.streaming(hash, size, Map.of(), () -> Files.newInputStream(path)));
     }
 
     @Override
     public boolean exists(String hashHex) {
-        String hash = Hashing.requireSha256Hex(hashHex);
+        String hash = ArtifactHashes.requireSha256Hex(hashHex);
         return Files.exists(pathForValidatedHash(hash));
     }
 }

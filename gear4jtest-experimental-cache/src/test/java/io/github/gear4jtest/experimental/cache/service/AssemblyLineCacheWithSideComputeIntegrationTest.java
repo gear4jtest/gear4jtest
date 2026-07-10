@@ -14,6 +14,7 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
+import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.event.StationFinishedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -80,7 +81,7 @@ class AssemblyLineCacheWithSideComputeIntegrationTest {
 
     @Test
     void should_cache_pipeline_output_after_first_run_and_short_circuit_second_run() {
-        InMemoryAssemblyLineCacheRepository repository = new InMemoryAssemblyLineCacheRepository();
+        InMemoryAssemblyLineCacheRepository repository = cacheRepository();
 
         AssemblyLineCacheExtension extension = new AssemblyLineCacheExtension(
                 new AssemblyLineCachePolicy(true, NoDependencyCachePolicy.DO_NOT_CACHE, null),
@@ -168,7 +169,7 @@ class AssemblyLineCacheWithSideComputeIntegrationTest {
 
     @Test
     void should_not_cache_pipeline_when_side_compute_dependency_has_no_expiry() {
-        InMemoryAssemblyLineCacheRepository repository = new InMemoryAssemblyLineCacheRepository();
+        InMemoryAssemblyLineCacheRepository repository = cacheRepository();
 
         AssemblyLineCacheExtension extension = new AssemblyLineCacheExtension(
                 new AssemblyLineCachePolicy(true, NoDependencyCachePolicy.DO_NOT_CACHE, null),
@@ -254,6 +255,19 @@ class AssemblyLineCacheWithSideComputeIntegrationTest {
     private record CustomerDto(String name) {}
 
     private record FinalOutput(String customerName, String orderName) {}
+
+    private static InMemoryAssemblyLineCacheRepository cacheRepository() {
+        return new InMemoryAssemblyLineCacheRepository(128, knownImmutableTestOutputCloner());
+    }
+
+    private static PayloadCloner knownImmutableTestOutputCloner() {
+        return new PayloadCloner() {
+            @Override
+            public <T> T clonePayload(T payload) {
+                return payload;
+            }
+        };
+    }
 
     private record RichCustomerPayload(CustomerDto value, Instant expiresAt) {}
 

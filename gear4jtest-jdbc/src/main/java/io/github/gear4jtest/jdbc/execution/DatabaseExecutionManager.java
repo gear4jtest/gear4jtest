@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,6 +15,7 @@ import javax.sql.DataSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gear4jtest.core.execution.AssemblyRunManager;
+import io.github.gear4jtest.core.execution.PersistenceOperationalStatus;
 import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
 import io.github.gear4jtest.core.execution.PersistenceRuntimeStats;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
@@ -45,12 +47,13 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
         this.configuration = Objects.requireNonNull(builder.configuration, "configuration must not be null");
         this.repository = builder.repository != null
                 ? builder.repository
-                : createRepository(builder.dataSource, builder.databaseDialect, this.configuration);
+                : createRepository(builder.dataSource, builder.databaseDialect, this.configuration,
+                                   builder.baselineOnMigrate);
         this.buffers = new OperationRecordBufferRegistry(configuration.maxPendingLogsPerRun());
-        this.redactor = builder.redactor != null ? builder.redactor : SensitiveDataRedactor.none();
+        this.redactor = builder.redactor != null ? builder.redactor : SensitiveDataRedactor.discardSensitiveValues();
         if (SensitiveDataRedactor.isNone(this.redactor)) {
-            LOGGER.warn("[Gear4J] JDBC persistence is enabled with no SensitiveDataRedactor. "
-                    + "Assembly line payloads, contexts and results will be persisted as-is.");
+            LOGGER.warn("[Gear4J] JDBC persistence is configured to allow unredacted sensitive data capture. "
+                    + "Assembly line payloads, contexts, results and error messages will be persisted as-is.");
         }
         if (builder.autoCreateTables) {
             this.repository.initialize();
@@ -70,13 +73,15 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
 
     private static DatabaseAssemblyRunRepository createRepository(DataSource dataSource,
                                                                   Gear4jDatabaseDialect databaseDialect,
-                                                                  PersistenceRuntimeConfiguration configuration) {
+                                                                  PersistenceRuntimeConfiguration configuration,
+                                                                  boolean baselineOnMigrate) {
         Objects.requireNonNull(configuration, "configuration must not be null");
         return DatabaseAssemblyRunRepository.builder()
                 .dataSource(Objects.requireNonNull(dataSource, "dataSource must not be null"))
                 .databaseDialect(Objects.requireNonNull(databaseDialect, "databaseDialect must not be null"))
                 .objectMapper(new ObjectMapper())
                 .jdbcStatementTimeout(configuration.jdbcStatementTimeout())
+                .baselineOnMigrate(baselineOnMigrate)
                 .build();
     }
 
@@ -85,12 +90,13 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
         private Gear4jDatabaseDialect databaseDialect;
         private DatabaseAssemblyRunRepository repository;
         private PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.defaults();
-        private boolean autoCreateTables = true;
+        private boolean autoCreateTables;
+        private boolean baselineOnMigrate;
         private ExecutorService flushExecutor;
         private ScheduledExecutorService maintenanceExecutor;
         private boolean ownsFlushExecutor;
         private boolean ownsMaintenanceExecutor;
-        private SensitiveDataRedactor redactor = SensitiveDataRedactor.none();
+        private SensitiveDataRedactor redactor;
 
         private Builder() {
         }
@@ -125,6 +131,15 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
 
         public Builder autoCreateTables(boolean autoCreateTables) {
             this.autoCreateTables = autoCreateTables;
+            return this;
+        }
+
+        /**
+         * Explicitly allows auto-creation to baseline a compatible existing schema
+         * without Gear4J migration history. Disabled by default.
+         */
+        public Builder baselineOnMigrate(boolean baselineOnMigrate) {
+            this.baselineOnMigrate = baselineOnMigrate;
             return this;
         }
 
@@ -165,9 +180,10 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
     @Override
     public void start(AssemblyRunTrace execution) {
         Objects.requireNonNull(execution, "execution must not be null");
-        flushCoordinator.ensureOpen();
-        repository.save(AssemblyRunRecord.from(execution, redactor));
-        buffers.createFresh(execution.getId());
+        flushCoordinator.executeWhileOpen(() -> {
+            repository.save(AssemblyRunRecord.from(execution, redactor));
+            buffers.createFresh(execution.getId());
+        });
     }
 
     @Override
@@ -176,14 +192,8 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
             return;
         }
         flushCoordinator.ensureOpen();
-        stationLogRecord = stationLogRecord.redactedWith(redactor);
-        UUID runId = stationLogRecord.assemblyLineExecutionId();
-        OperationRecordBuffer buffer = buffers.getOrCreate(runId);
-        boolean shouldScheduleFlush = buffer.append(stationLogRecord, configuration.batchSize(),
-                                                    flushCoordinator.counters());
-        if (shouldScheduleFlush) {
-            flushCoordinator.scheduleAsyncFlush(buffer, false);
-        }
+        StationLogRecord redactedRecord = stationLogRecord.redactedWith(redactor);
+        flushCoordinator.executeWhileOpen(() -> appendRunBatch(List.of(redactedRecord)));
     }
 
     @Override
@@ -201,9 +211,7 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
             recordsByRun.computeIfAbsent(redactedRecord.assemblyLineExecutionId(), ignored -> new ArrayList<>())
                     .add(redactedRecord);
         }
-        for (List<StationLogRecord> runRecords : recordsByRun.values()) {
-            appendRunBatch(runRecords);
-        }
+        flushCoordinator.executeWhileOpen(() -> recordsByRun.values().forEach(this::appendRunBatch));
     }
 
     private void appendRunBatch(List<StationLogRecord> records) {
@@ -224,6 +232,10 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
         if (runId == null) {
             return;
         }
+        flushCoordinator.executeWhileOpen(() -> flushWhileOpen(runId));
+    }
+
+    private void flushWhileOpen(UUID runId) {
         OperationRecordBuffer buffer = buffers.get(runId);
         if (buffer != null) {
             buffer.assertHealthy();
@@ -235,6 +247,10 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
     @Override
     public void end(AssemblyRunTrace finalExecution) {
         Objects.requireNonNull(finalExecution, "finalExecution must not be null");
+        flushCoordinator.executeWhileOpen(() -> endWhileOpen(finalExecution));
+    }
+
+    private void endWhileOpen(AssemblyRunTrace finalExecution) {
         UUID runId = finalExecution.getId();
         OperationRecordBuffer buffer = buffers.getOrCreate(runId);
         buffer.close();
@@ -243,7 +259,13 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
             buffer.assertHealthy();
             flushCoordinator.flushBufferBlocking(buffer, true);
             buffer.assertHealthy();
-            repository.update(AssemblyRunRecord.from(finalExecution, redactor));
+            try {
+                repository.update(AssemblyRunRecord.from(finalExecution, redactor));
+                buffer.clearFinalizationFailure();
+            } catch (RuntimeException exception) {
+                buffer.recordFinalizationFailure(exception);
+                throw exception;
+            }
             completed = true;
         } finally {
             if (completed) {
@@ -257,11 +279,85 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
     }
 
     @Override
+    public boolean isAlive() {
+        return !flushCoordinator.isShutdown();
+    }
+
+    @Override
+    public PersistenceOperationalStatus probeHealth() {
+        PersistenceRuntimeStats stats = snapshotStats();
+        if (stats.shutdown()) {
+            return operationalStatus(false, false, false, false,
+                                     PersistenceOperationalStatus.Reason.SHUT_DOWN, stats);
+        }
+
+        boolean connectivityAvailable;
+        try {
+            connectivityAvailable = repository.checkConnectivity(configuration.connectivityProbeTimeout());
+        } catch (RuntimeException exception) {
+            connectivityAvailable = false;
+        }
+        if (!connectivityAvailable) {
+            return operationalStatus(true, false, true, false,
+                                     PersistenceOperationalStatus.Reason.CONNECTIVITY_UNAVAILABLE, stats);
+        }
+
+        boolean recoveredAfterFailure = isAfter(stats.lastSuccessfulFlushAt(), stats.lastFailedFlushAt());
+        boolean failedBacklogPending = stats.bufferedStationLogs() > 0
+                && stats.lastFailedFlushAt() != null
+                && !recoveredAfterFailure;
+        if (failedBacklogPending) {
+            return operationalStatus(true, false, true, true,
+                                     PersistenceOperationalStatus.Reason.RECOVERY_PENDING, stats);
+        }
+        if (stats.bufferedStationLogs() > configuration.readinessMaxBufferedStationLogs()) {
+            return operationalStatus(true, false, true, true,
+                                     PersistenceOperationalStatus.Reason.BACKLOG_SIZE_EXCEEDED, stats);
+        }
+        if (stats.oldestBufferedStationLogAge().compareTo(configuration.readinessMaxBacklogAge()) > 0) {
+            return operationalStatus(true, false, true, true,
+                                     PersistenceOperationalStatus.Reason.BACKLOG_AGE_EXCEEDED, stats);
+        }
+        return operationalStatus(true, true, true, true, PersistenceOperationalStatus.Reason.READY, stats);
+    }
+
+    private static PersistenceOperationalStatus operationalStatus(boolean live,
+                                                                  boolean ready,
+                                                                  boolean connectivityVerified,
+                                                                  boolean connectivityAvailable,
+                                                                  PersistenceOperationalStatus.Reason reason,
+                                                                  PersistenceRuntimeStats stats) {
+        return new PersistenceOperationalStatus(live, ready, connectivityVerified, connectivityAvailable,
+                isAfter(stats.lastSuccessfulFlushAt(), stats.lastFailedFlushAt()), reason, stats.observedAt(), stats);
+    }
+
+    private static boolean isAfter(java.time.Instant candidate, java.time.Instant reference) {
+        return candidate != null && reference != null && candidate.isAfter(reference);
+    }
+
+    @Override
     public void shutdown() {
-        shutdown(configuration.shutdownTimeout());
+        shutdownWithReport(configuration.shutdownTimeout());
     }
 
     public void shutdown(Duration timeout) {
-        flushCoordinator.shutdown(timeout);
+        shutdownWithReport(timeout);
+    }
+
+    /** Shuts down persistence and returns an immutable drain/retry report. */
+    public PersistenceShutdownReport shutdownWithReport() {
+        return shutdownWithReport(configuration.shutdownTimeout());
+    }
+
+    /**
+     * Shuts down persistence within the supplied deadline and reports any
+     * remainder.
+     */
+    public PersistenceShutdownReport shutdownWithReport(Duration timeout) {
+        return flushCoordinator.shutdown(timeout);
+    }
+
+    public Optional<PersistenceShutdownReport> lastShutdownReport() {
+        return Optional.ofNullable(flushCoordinator.shutdownReport());
     }
 }

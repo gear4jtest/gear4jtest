@@ -70,7 +70,7 @@ public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
     }
 
     @Override
-    public synchronized void register(String id, ClassLoader loader, GeneratedAssemblyLine bound) {
+    public synchronized void register(String id, ClassLoader loader, GeneratedAssemblyLine<?, ?> bound) {
         byId.put(id, new Holder(loader, bound, Instant.now()));
         evictOverflow(id);
     }
@@ -106,7 +106,7 @@ public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
     }
 
     @Override
-    public synchronized GeneratedAssemblyLine getBoundAssemblyLine(String id) {
+    public synchronized GeneratedAssemblyLine<?, ?> getBoundAssemblyLine(String id) {
         var h = byId.get(id);
         return h == null ? null : h.chain;
     }
@@ -168,5 +168,5 @@ public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
 
     public record RegistryStats(int cachedLoaders, int aliases, int maxLoaders, long evictedLoaders) {}
 
-    private record Holder(ClassLoader loader, GeneratedAssemblyLine chain, Instant registeredAt) {}
+    private record Holder(ClassLoader loader, GeneratedAssemblyLine<?, ?> chain, Instant registeredAt) {}
 }

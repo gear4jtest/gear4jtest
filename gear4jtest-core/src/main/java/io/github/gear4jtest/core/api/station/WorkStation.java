@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.api.station;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 import io.github.gear4jtest.core.api.MutableStationMetadata;
@@ -35,8 +36,8 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
                 List<StationSkipper> skippers,
                 StationMetadata metadata,
                 boolean unary) {
-        super(id, StationKind.PROCESSING, processors, onErrors, fallbackOperator, unary, skippers, metadata);
-        this.type = type;
+        super(requireId(id), StationKind.PROCESSING, processors, onErrors, fallbackOperator, unary, skippers, metadata);
+        this.type = Objects.requireNonNull(type, "operator type is required");
         this.parameters = parameters == null || parameters.isEmpty() ? List.of() : List.copyOf(parameters);
         this.reuseOperatorInstanceWithinRun = reuseOperatorInstanceWithinRun;
     }
@@ -51,6 +52,13 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
 
     public boolean isReuseOperatorInstanceWithinRun() {
         return reuseOperatorInstanceWithinRun;
+    }
+
+    private static String requireId(String id) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("station id is required");
+        }
+        return id;
     }
 
     @FunctionalInterface
@@ -92,8 +100,9 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         public <A, T extends Operator<IN, A>> Builder<IN, A, T> type(Class<T> type) {
-            this.type = type;
-            return new Builder<>(this);
+            Builder<IN, A, T> next = new Builder<>(this);
+            next.type = Objects.requireNonNull(type, "operator type must not be null");
+            return next;
         }
 
         public Builder<IN, OUT, OP> id(String id) {

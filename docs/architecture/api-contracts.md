@@ -21,10 +21,13 @@ Current public API packages include:
 - `io.github.gear4jtest.external.api.AssemblyLineManager`
 - `io.github.gear4jtest.external.api.ExecutionMode`
 - `io.github.gear4jtest.external.api.StoreType`
+- `io.github.gear4jtest.external.jdbc.repository.*`
+- `io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStore`
 - `io.github.gear4jtest.xml.translator.XmlOperationChainTranslator`
 - `io.github.gear4jtest.xml.validator.AssemblyLineValidator`
 
-Compatibility expectation after the first stable release:
+Compatibility after the first stable release is governed by `docs/compatibility-policy.md` and enforced against the
+configured N-1 release with Japicmp. In particular:
 
 - avoid removing public types or methods in patch/minor releases;
 - prefer additive changes;
@@ -88,10 +91,10 @@ Gear4J also provides lightweight source markers in
 - `@Experimental` for contracts that may still change before the first stable
   release.
 
-These annotations are documentation markers retained in class files. Public/SPI/internal markers are now also applied
+These annotations are documentation markers retained in class files. Public/SPI/internal markers are applied
 at the main package boundaries so consumers can distinguish stable contracts from implementation packages directly in
-the generated Javadocs and class files. They do not enforce binary compatibility by themselves; the package contract
-above remains the source of truth.
+the generated Javadocs and class files. `ApiBoundarySourceTest` requires exactly one marker on every production package
+across all published Java library modules. Japicmp supplies the separate binary/source enforcement.
 
 The repository intentionally does not introduce JPMS descriptors yet. Instead, source-level architecture tests enforce
 that production packages declare a package marker and that API/SPI dependencies on implementation packages do not grow

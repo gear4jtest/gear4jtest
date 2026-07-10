@@ -2,8 +2,10 @@
 
 ## Status
 
-MVP parser/evaluator implemented in `io.github.gear4jtest.xml.expression`; XML integration remains future work. The
-security-boundary decision is captured in `docs/decisions/0008-gear-expression-language-is-security-boundary.md`.
+MVP parser/evaluator and XML condition integration are implemented in
+`io.github.gear4jtest.xml.expression`. Property access is secure by default and
+defined by ADR 0018; the original language-boundary decision is captured in ADR
+0008.
 
 This note captures the target direction for replacing inline Java expressions in XML or BO-authored pipeline definitions.
 
@@ -83,6 +85,14 @@ record GearExpressionContext(
 Function calls should be resolved from a registry of explicitly allowed
 functions. No arbitrary Java method call should be possible.
 
+Implemented property-access rules:
+
+- secure contexts read inert map snapshots only;
+- records and JavaBeans require an exact-type/property allowlist;
+- approved records can be converted to immutable value trees before evaluation;
+- a deprecated legacy policy supports migration with warnings;
+- accessor lookup uses `ClassValue` and cached `MethodHandle` instances.
+
 ## XML integration direction
 
 Trusted XML can keep Java inline as an advanced developer feature.
@@ -103,8 +113,8 @@ a typed expression JSON model.
 
 ## Open questions
 
-- Should expressions be interpreted at runtime or compiled to generated Java?
+- Should expressions remain interpreted at runtime or gain an optional compiled form?
 - Should the syntax be text-first, JSON-AST-first, or both?
-- How should path access work for Java records, maps and beans?
+- Should allowlists support sealed hierarchies without weakening exact-type matching?
 - Should the expression language support custom user functions?
 - How should type errors be reported during pipeline validation?

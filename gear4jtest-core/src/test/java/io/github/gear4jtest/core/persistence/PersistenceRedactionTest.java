@@ -19,6 +19,26 @@ class PersistenceRedactionTest {
     };
 
     @Test
+    void defaultConversion_shouldDiscardSensitiveValues() {
+        // Given
+        String secret = "fixture-secret-must-not-leak";
+        AssemblyRunTrace trace = new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of("token", secret));
+        trace.setContext(Map.of("token", secret));
+        trace.setResult(secret);
+        trace.setErrorMessage(secret);
+
+        // When
+        AssemblyRunRecord record = AssemblyRunRecord.from(trace);
+
+        // Then
+        assertThat(record.context()).isEmpty();
+        assertThat(record.inputParams()).isNull();
+        assertThat(record.result()).isNull();
+        assertThat(record.errorMessage()).isNull();
+        assertThat(record.toString()).doesNotContain(secret);
+    }
+
+    @Test
     void assemblyRunRecord_shouldRedactPersistedValues() {
         // Given
         AssemblyRunTrace trace = new AssemblyRunTrace(UUID.randomUUID(), "pipe", Map.of("secret", "value"));

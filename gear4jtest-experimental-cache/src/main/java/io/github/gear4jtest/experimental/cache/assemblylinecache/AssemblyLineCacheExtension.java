@@ -1,5 +1,6 @@
 package io.github.gear4jtest.experimental.cache.assemblylinecache;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
@@ -39,7 +40,7 @@ public class AssemblyLineCacheExtension implements RunInterceptorExtension, Exec
 
     @Override
     public <IN, OUT> ExecutionResult<OUT> aroundRun(AssemblyLine<IN, OUT> pipeline,
-                                                    RunRequest request,
+                                                    RunRequest<IN> request,
                                                     ExecutionContext ctx,
                                                     RunChain<IN, OUT> chain) {
 
@@ -68,6 +69,7 @@ public class AssemblyLineCacheExtension implements RunInterceptorExtension, Exec
         ExpirableDependencyTracker tracker = new DefaultExpirableDependencyTracker();
         ctx.put(AssemblyLineCacheRuntimeKeys.EXPIRABLE_DEPENDENCY_TRACKER, tracker);
 
+        long loadStartedAt = System.nanoTime();
         try (CacheTrackerScope ignored = CacheTrackerScope.open(tracker)) {
             ExecutionResult<OUT> result = chain.proceed();
 
@@ -76,6 +78,10 @@ public class AssemblyLineCacheExtension implements RunInterceptorExtension, Exec
             }
 
             return result;
+        } finally {
+            if (repository instanceof AssemblyLineCacheMetrics metrics) {
+                metrics.recordLoadDuration(Duration.ofNanos(System.nanoTime() - loadStartedAt));
+            }
         }
     }
 

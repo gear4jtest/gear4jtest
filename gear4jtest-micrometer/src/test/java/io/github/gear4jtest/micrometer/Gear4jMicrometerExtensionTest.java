@@ -2,6 +2,7 @@ package io.github.gear4jtest.micrometer;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -30,16 +31,14 @@ class Gear4jMicrometerExtensionTest {
         extension.onRunCompleted(null, run);
 
         // Then
-        assertThat(meterRegistry.counter("gear4j.runs.started", "pipeline.id", "checkout").count())
+        assertThat(meterRegistry.counter("gear4j.runs.started").count())
                 .as("started runs counter")
                 .isEqualTo(1.0d);
-        assertThat(meterRegistry.counter("gear4j.runs.completed", "pipeline.id", "checkout", "status",
-                                         "SUCCEEDED")
+        assertThat(meterRegistry.counter("gear4j.runs.completed", "status", "SUCCEEDED")
                 .count())
                 .as("completed runs counter")
                 .isEqualTo(1.0d);
-        double durationMillis = meterRegistry.timer("gear4j.runs.duration", "pipeline.id", "checkout", "status",
-                                                    "SUCCEEDED")
+        double durationMillis = meterRegistry.timer("gear4j.runs.duration", "status", "SUCCEEDED")
                 .totalTime(TimeUnit.MILLISECONDS);
         assertThat(durationMillis)
                 .as("completed run duration")
@@ -60,18 +59,15 @@ class Gear4jMicrometerExtensionTest {
         extension.onStationCompleted(null, null, snapshot);
 
         // Then
-        assertThat(meterRegistry.counter("gear4j.stations.started", "operation.id", "normalize", "branch.id",
-                                         "branch-a")
+        assertThat(meterRegistry.counter("gear4j.stations.started")
                 .count())
                 .as("started stations counter")
                 .isEqualTo(1.0d);
-        assertThat(meterRegistry.counter("gear4j.stations.completed", "operation.id", "normalize", "branch.id",
-                                         "branch-a", "status", "SUCCEEDED")
+        assertThat(meterRegistry.counter("gear4j.stations.completed", "status", "SUCCEEDED")
                 .count())
                 .as("completed stations counter")
                 .isEqualTo(1.0d);
-        double durationMillis = meterRegistry.timer("gear4j.stations.duration", "operation.id", "normalize",
-                                                    "branch.id", "branch-a", "status", "SUCCEEDED")
+        double durationMillis = meterRegistry.timer("gear4j.stations.duration", "status", "SUCCEEDED")
                 .totalTime(TimeUnit.MILLISECONDS);
         assertThat(durationMillis)
                 .as("completed station duration")
@@ -121,6 +117,61 @@ class Gear4jMicrometerExtensionTest {
     }
 
     @Test
+    void default_policy_shouldKeepMeterCardinalityBoundedForDynamicIdentifiers() {
+        // Given
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        Gear4jMicrometerExtension extension = new Gear4jMicrometerExtension(meterRegistry);
+
+        // When
+        for (int index = 0; index < 1_000; index++) {
+            AssemblyRunTrace run = completedRun("pipeline-" + index);
+            StationLogRecord station = completedStation("operation-" + index, "branch-" + index);
+            extension.onRunStarted(null, run);
+            extension.onRunCompleted(null, run);
+            extension.onStationStarted(null, null, station);
+            extension.onStationCompleted(null, null, station);
+        }
+
+        // Then
+        assertThat(meterCount(meterRegistry, "gear4j.runs.started")).isEqualTo(1);
+        assertThat(meterCount(meterRegistry, "gear4j.runs.completed")).isEqualTo(1);
+        assertThat(meterCount(meterRegistry, "gear4j.runs.duration")).isEqualTo(1);
+        assertThat(meterCount(meterRegistry, "gear4j.stations.started")).isEqualTo(1);
+        assertThat(meterCount(meterRegistry, "gear4j.stations.completed")).isEqualTo(1);
+        assertThat(meterCount(meterRegistry, "gear4j.stations.duration")).isEqualTo(1);
+    }
+
+    @Test
+    void allowlist_policy_shouldCollapseUnknownIdentifiersIntoOneSeries() {
+        // Given
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        Gear4jMeterTagPolicy tagPolicy = Gear4jMeterTagPolicy.allowlistedIdentifiers(Set.of("checkout"),
+                                                                                     Set.of("normalize"),
+                                                                                     Set.of("main"));
+        Gear4jMicrometerExtension extension = new Gear4jMicrometerExtension(meterRegistry, tagPolicy);
+
+        // When
+        extension.onRunStarted(null, completedRun("checkout"));
+        extension.onRunStarted(null, completedRun("dynamic-a"));
+        extension.onRunStarted(null, completedRun("dynamic-b"));
+        extension.onStationStarted(null, null, completedStation("normalize", "main"));
+        extension.onStationStarted(null, null, completedStation("dynamic-a", "dynamic-a"));
+        extension.onStationStarted(null, null, completedStation("dynamic-b", "dynamic-b"));
+
+        // Then
+        assertThat(meterRegistry.counter("gear4j.runs.started", "pipeline.id", "checkout").count())
+                .isEqualTo(1.0d);
+        assertThat(meterRegistry.counter("gear4j.runs.started", "pipeline.id", "other").count())
+                .isEqualTo(2.0d);
+        assertThat(meterRegistry.counter("gear4j.stations.started", "operation.id", "normalize", "branch.id",
+                                         "main")
+                .count()).isEqualTo(1.0d);
+        assertThat(meterRegistry.counter("gear4j.stations.started", "operation.id", "other", "branch.id",
+                                         "other")
+                .count()).isEqualTo(2.0d);
+    }
+
+    @Test
     void should_not_record_duration_when_timestamps_are_incomplete() {
         // Given
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -135,5 +186,23 @@ class Gear4jMicrometerExtensionTest {
         assertThat(meterRegistry.find("gear4j.runs.duration").timer())
                 .as("duration timer is not registered without complete timestamps")
                 .isNull();
+    }
+
+    private static AssemblyRunTrace completedRun(String pipelineId) {
+        AssemblyRunTrace run = new AssemblyRunTrace(UUID.randomUUID(), pipelineId, Map.of());
+        run.setStartTime(Instant.parse("2026-06-08T10:15:30Z"));
+        run.setEndTime(Instant.parse("2026-06-08T10:15:31Z"));
+        run.setStatus(ExecutionStatus.SUCCEEDED);
+        return run;
+    }
+
+    private static StationLogRecord completedStation(String operationId, String branchId) {
+        return new StationLogRecord(UUID.randomUUID(), UUID.randomUUID(), operationId, null, branchId,
+                StationLogStatus.SUCCEEDED, Instant.parse("2026-06-08T10:15:30Z"),
+                Instant.parse("2026-06-08T10:15:31Z"), null, null, Map.of(), "item-1");
+    }
+
+    private static long meterCount(SimpleMeterRegistry meterRegistry, String name) {
+        return meterRegistry.getMeters().stream().filter(meter -> meter.getId().getName().equals(name)).count();
     }
 }

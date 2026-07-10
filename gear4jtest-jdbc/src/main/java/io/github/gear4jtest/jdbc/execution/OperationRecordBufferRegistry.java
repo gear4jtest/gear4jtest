@@ -1,5 +1,7 @@
 package io.github.gear4jtest.jdbc.execution;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,7 +43,17 @@ final class OperationRecordBufferRegistry {
     }
 
     int bufferedStationLogCount() {
-        return buffers.values().stream().mapToInt(OperationRecordBuffer::pendingCount).sum();
+        return buffers.values().stream().mapToInt(OperationRecordBuffer::retainedCount).sum();
+    }
+
+    Duration oldestBufferedStationLogAge(Instant now) {
+        return buffers.values().stream()
+                .map(OperationRecordBuffer::oldestRetainedAt)
+                .filter(java.util.Objects::nonNull)
+                .min(Instant::compareTo)
+                .map(oldest -> Duration.between(oldest, now))
+                .map(age -> age.isNegative() ? Duration.ZERO : age)
+                .orElse(Duration.ZERO);
     }
 
     void clear() {

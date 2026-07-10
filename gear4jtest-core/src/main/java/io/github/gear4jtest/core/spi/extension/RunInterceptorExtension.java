@@ -29,7 +29,7 @@ public interface RunInterceptorExtension extends RuntimeExtension {
      *         interceptor
      */
     <IN, OUT> ExecutionResult<OUT> aroundRun(AssemblyLine<IN, OUT> pipeline,
-                                             RunRequest request,
+                                             RunRequest<IN> request,
                                              ExecutionContext ctx,
                                              RunChain<IN, OUT> chain);
 

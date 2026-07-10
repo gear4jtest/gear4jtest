@@ -21,7 +21,7 @@ final class AssemblyLineLookupService {
         this.aliasService = requireNonNull(aliasService);
     }
 
-    GeneratedAssemblyLine getOperationChain(String alId, String version, ExecutionMode mode) throws IOException {
+    GeneratedAssemblyLine<?, ?> getOperationChain(String alId, String version, ExecutionMode mode) throws IOException {
         var obj = objectRepository.find(alId, version, mode).orElseThrow(
                                                                          () -> new NoSuchElementException(
                                                                                  "Object not found for %s:%s:%s"
@@ -30,13 +30,15 @@ final class AssemblyLineLookupService {
         return loader.loadOrCompile(alId, obj);
     }
 
-    GeneratedAssemblyLine getLatestRun(String alId, ExecutionMode mode) throws IOException {
+    GeneratedAssemblyLine<?, ?> getLatestRun(String alId, ExecutionMode mode) throws IOException {
         if (mode != ExecutionMode.RUN) {
             throw new IllegalArgumentException("Latest is only supported for RUN mode");
         }
         var latest = objectRepository.findLatestRun(alId)
                 .orElseThrow(() -> new NoSuchElementException("No RUN object found for alId=" + alId));
-        aliasService.clearLatestAliasIfResolutionChanged(alId, AssemblyLineIdentifiers.toInternalLoaderId(latest));
-        return loader.loadOrCompile(alId, latest);
+        var resolution = aliasService.beginLatestResolution(alId, AssemblyLineIdentifiers.toInternalLoaderId(latest));
+        GeneratedAssemblyLine<?, ?> generated = loader.loadOrCompile(alId, latest);
+        aliasService.completeLatestResolution(resolution);
+        return generated;
     }
 }

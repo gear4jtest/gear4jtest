@@ -30,6 +30,11 @@ Gear4J Expression Language (GEL): a restricted expression language with no
 reflection, class loading, file access, network access or arbitrary method calls.
 A minimal GEL parser/evaluator exists in `gear4jtest-xml`, and XML conditions can now opt into it with `language="gel"`. Keep all other inline Java XML behind trusted provenance and code review.
 
+GEL rejects Java object property access by default. Feed untrusted expressions
+inert maps/snapshots, or configure an exact `PropertyAccessPolicy` only for
+trusted types. Do not deploy the deprecated legacy bean policy as a permanent
+compatibility setting; its warnings should be treated as migration inventory.
+
 ## Persistence
 
 When JDBC persistence is enabled:
@@ -37,9 +42,12 @@ When JDBC persistence is enabled:
 - configure an explicit `gear4j.persistence.dialect`;
 - decide deliberately whether Gear4J may create/migrate its schema with
   `gear4j.persistence.auto-create-tables`;
-- configure a `SensitiveDataRedactor` when payloads may contain PII, secrets or
-  sensitive business data; `SensitiveDataRedactor.none()` means run context,
-  inputs, outputs, station context and error messages are persisted as-is;
+- direct managers default to `SensitiveDataRedactor.discardSensitiveValues()`:
+  identifiers/statuses/timestamps are retained, while contexts are empty and
+  inputs, outputs and error messages are discarded;
+- configure a `SensitiveDataRedactor` before enabling payload capture;
+  `SensitiveDataRedactor.none()` is the explicit unsafe choice that persists run
+  context, inputs, outputs, station context and error messages as-is;
 - set `gear4j.persistence.redaction-mode=REQUIRE` in Spring Boot deployments
   that must fail fast without an explicit redactor;
 - tune `gear4j.persistence.batch-size`, `max-pending-logs-per-run`,
@@ -72,15 +80,46 @@ bundles. `ArtifactStore.put(InputStream)`, composite-store verification and
 `ArtifactStore.UNLIMITED_SIZE` should be an explicit trusted-deployment choice,
 not an accidental default.
 
+The database store applies the same 5 MiB default to direct byte-array writes,
+streamed writes and reads. Configure `maxArtifactSizeBytes` in DATABASE store
+properties when a different bound is required. Configure `spoolDirectory` to a
+private application-owned path; Gear4J applies owner-only POSIX permissions
+when the filesystem supports them. The managed spool defaults to a 100 MiB
+quota and deletes `.tmp` residues older than 24 hours when a store is
+initialized. Recent residues count toward the quota.
+
+Database artifact reads are lazy and keep a JDBC connection open until the
+returned stream is closed. Use `Artifact#openStreamChecked()` in
+try-with-resources. Monitor `ArtifactStoreMonitor#snapshotStats()` for byte,
+latency, early-close and failure counters.
+Monitor `ArtifactSpoolMonitor#snapshotSpoolStats()` for current occupancy, stale
+cleanup, quota rejections and cleanup failures.
+
+Because operation-chain artifacts may use non-database backends, no invalid
+global foreign key is installed from `operation_chain_object` to
+`artifact_store`. Schedule `ArtifactConsistencyChecker` for important assembly
+lines and alert when its report is inconsistent.
+
 ## Metrics and health
 
 `gear4jtest-micrometer` exposes counters and duration timers. Keep metric tags
 low-cardinality in production; avoid unbounded operation or branch identifiers as
 metric labels for dynamically generated pipelines.
 
-When Spring Boot Actuator is present and JDBC persistence is enabled, the starter
-contributes a Gear4J persistence health indicator with current persistence buffer
-and flush statistics.
+When Spring Boot Actuator is present and JDBC persistence is enabled, put
+`gear4jPersistenceLiveness` in the liveness group and
+`gear4jPersistenceReadiness` in the readiness group. Liveness is process-local;
+readiness checks current database connectivity, backlog size/age and recovery
+after a failed flush. Do not restart an otherwise live process solely because the
+database is temporarily unavailable.
+Configure the datasource/pool connection-acquisition timeout in addition to the
+Gear4J connectivity-query timeout so a saturated pool cannot block readiness
+indefinitely.
+
+The default lifecycle metrics omit pipeline, operation and branch identifiers.
+If those dimensions are needed, use a reviewed finite allowlist; unknown values
+are aggregated under `other`. Event and reaction drop metrics remain aggregate
+and tagless.
 
 For the in-memory event runtime, monitor queued events, remaining queue capacity,
 dropped events, dropped reactions, pending reactions and in-flight reactions.
@@ -115,3 +154,20 @@ execution scopes.
 ## Generated classloader cache
 
 The default `InMemoryClassLoaderRegistry` is bounded and evicts least-recently-used unaliased loaders. Aliased loaders are protected from automatic eviction. Tune the registry capacity for applications with frequent TEST/RUN version churn or long rollback windows.
+
+## Shared event dispatcher capacity
+
+The process-wide in-memory event dispatcher uses a bounded non-blocking queue. Its default capacity is 4,096 lightweight
+drain tasks and it rejects new tasks when saturated; the affected `EventManager` drops its pending best-effort events and
+increments `EventRuntimeStats.droppedEvents()`.
+
+The startup-only system property `gear4j.event.dispatcher.queue-capacity` can override the shared capacity with a
+strictly positive integer. Invalid values fall back to 4,096 with a warning. Size this queue from observed concurrent run
+counts, not from the number of business events: one scheduled drain task can process several events from one manager.
+
+## Experimental assembly-line cache
+
+The experimental in-memory assembly-line cache is bounded by entry count and configurable weight. TTL cleanup runs on
+access and write paths. Cache values are cloned on write and read through an explicit `PayloadCloner`; the safe default
+rejects unknown mutable types. Monitor `AssemblyLineCacheStats` for rejected writes, capacity/TTL evictions, hit ratio,
+estimated weight and load-time growth.

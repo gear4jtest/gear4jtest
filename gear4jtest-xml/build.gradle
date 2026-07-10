@@ -1,6 +1,6 @@
 dependencies {
     implementation project(':gear4jtest-core')
-    implementation project(':gear4jtest-external-api')
+    api project(':gear4jtest-external-api')
 
     implementation libs.slf4j
     implementation libs.eclipse.jdt.core

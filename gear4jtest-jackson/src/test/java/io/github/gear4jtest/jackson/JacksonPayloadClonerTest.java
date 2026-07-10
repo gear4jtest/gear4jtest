@@ -5,12 +5,15 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gear4jtest.core.exception.PayloadCloneException;
@@ -250,12 +253,11 @@ class JacksonPayloadClonerTest {
         payload.add(new NestedValue("two"));
 
         // When
-        @SuppressWarnings("unchecked")
-        java.util.Collection<NestedValue> cloned = cloner.clonePayload(payload);
+        ArrayDeque<NestedValue> cloned = cloner.clonePayload(payload);
 
         // Then
         assertThat(cloned).isNotSameAs(payload)
-                .isInstanceOf(ArrayList.class)
+                .isInstanceOf(ArrayDeque.class)
                 .hasSize(2);
 
         NestedValue originalFirst = payload.iterator().next();
@@ -266,6 +268,41 @@ class JacksonPayloadClonerTest {
         clonedFirst.setValue("mutated");
 
         assertThat(originalFirst.getValue()).isEqualTo("one");
+    }
+
+    @Test
+    void should_preserve_supported_concrete_collection_types() {
+        // Given
+        LinkedList<NestedValue> list = new LinkedList<>();
+        list.add(new NestedValue("list"));
+        TreeSet<String> set = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        set.add("set");
+        TreeMap<String, NestedValue> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        map.put("key", new NestedValue("map"));
+
+        // When
+        LinkedList<NestedValue> clonedList = cloner.clonePayload(list);
+        TreeSet<String> clonedSet = cloner.clonePayload(set);
+        TreeMap<String, NestedValue> clonedMap = cloner.clonePayload(map);
+
+        // Then
+        assertThat(clonedList).isNotSameAs(list).isInstanceOf(LinkedList.class);
+        assertThat(clonedList.getFirst()).isNotSameAs(list.getFirst());
+        assertThat(clonedSet.comparator()).isSameAs(String.CASE_INSENSITIVE_ORDER);
+        assertThat(clonedMap.comparator()).isSameAs(String.CASE_INSENSITIVE_ORDER);
+        assertThat(clonedMap.get("key")).isNotSameAs(map.get("key"));
+    }
+
+    @Test
+    void should_reject_unsupported_concrete_collection_type_with_domain_exception() {
+        // Given
+        List<NestedValue> payload = List.of(new NestedValue("value"));
+
+        // When / Then
+        assertThatThrownBy(() -> cloner.clonePayload(payload))
+                .isInstanceOf(PayloadCloneException.class)
+                .hasMessageContaining(payload.getClass().getName())
+                .hasMessageContaining(ArrayList.class.getName());
     }
 
     @Test

@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.sidecompute;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.gear4jtest.core.api.context.ExecutionContext;
@@ -108,6 +109,54 @@ class SideComputerTest {
                 .build())
                 .isInstanceOf(NullPointerException.class)
                 .hasMessage("computer");
+    }
+
+    @Test
+    void toSubscription_shouldExecuteComputerAndHandlersOnlyOnce() throws Exception {
+        // Given
+        ExecutionContextRegistry registry = new ExecutionContextRegistry();
+        ExecutionContext context = executionContext();
+        registry.register(context);
+        AtomicInteger computations = new AtomicInteger();
+        AtomicInteger handlers = new AtomicInteger();
+        SideComputer<CustomEvent, String, String> computer = SideComputer
+                .<CustomEvent, String>onEvent(CustomEvent.class, "once")
+                .computer(event -> {
+                    computations.incrementAndGet();
+                    return event.payload();
+                })
+                .addHandler((key, event, value, executionContext) -> handlers.incrementAndGet())
+                .build();
+        EventSubscription<CustomEvent> subscription = computer.toSubscription(registry);
+
+        // When
+        subscription.handle(new CustomEvent("pipe", context.getExecutionId(), "first"));
+        subscription.handle(new CustomEvent("pipe", context.getExecutionId(), "second"));
+
+        // Then
+        assertThat(computations.get()).isEqualTo(1);
+        assertThat(handlers.get()).isEqualTo(1);
+        assertThat(context.getSideComputeContext().<String>getOrCreateFuture("once").join()).isEqualTo("first");
+    }
+
+    @Test
+    void toSubscription_shouldCompleteExceptionallyWhenMapperReturnsNull() throws Exception {
+        // Given
+        ExecutionContextRegistry registry = new ExecutionContextRegistry();
+        ExecutionContext context = executionContext();
+        registry.register(context);
+        SideComputer<CustomEvent, String, String> computer = SideComputer
+                .<CustomEvent, String>onEvent(CustomEvent.class, "null-result")
+                .computer(CustomEvent::payload)
+                .map(value -> (String) null)
+                .build();
+
+        // When
+        computer.toSubscription(registry).handle(new CustomEvent("pipe", context.getExecutionId(), "value"));
+
+        // Then
+        assertThatThrownBy(() -> context.getSideComputeContext().<String>getOrCreateFuture("null-result").join())
+                .hasRootCauseMessage("Side compute 'null-result' returned null; null results are not supported");
     }
 
     private static StationFinishedEvent stationFinished(String operationId, StationLogStatus status) {

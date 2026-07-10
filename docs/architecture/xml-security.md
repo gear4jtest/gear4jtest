@@ -67,8 +67,15 @@ The MVP language supports literals, paths such as `input.foo` and
 not support Java method calls, constructors, type lookup, class literals, static
 access, reflection, I/O or networking. Reflective Java metadata properties such
 as `class`, `getClass` and `metaClass` are rejected on object paths; map keys with
-those names remain regular data keys. Object property access is intentionally
-limited to maps, Java records and JavaBean getters (`getX` / `isX`); arbitrary
-zero-argument methods are not invoked as pseudo-properties.
+those names remain regular data keys. The default context snapshots maps and
+rejects Java object properties. Trusted applications can explicitly allow exact
+record/JavaBean types and properties with `PropertyAccessPolicy`; untrusted
+definitions should receive an immutable tree created by
+`GearExpressionValues.snapshot(...)`.
+
+Generated XML uses the secure default policy. A GEL expression that navigates a
+rich Java input must therefore receive an upstream inert map representation.
+The deprecated `legacyBeanAccess()` policy is intended only as a temporary
+migration aid for direct evaluator users and logs every newly used accessor.
 
 See [Gear4J expression language](../roadmap/gear-expression-language.md).

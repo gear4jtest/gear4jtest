@@ -5,6 +5,9 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 import io.github.gear4jtest.external.api.artifact.Artifact;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
@@ -27,7 +30,7 @@ final class GeneratedAssemblyLineLoader {
     private final DependencyInjector dependencyInjector;
     private final ClassLoader generatedClassParent;
     private final long maxArtifactSizeBytes;
-    private final AssemblyLineAliasService aliasService;
+    private final Map<String, CompletableFuture<GeneratedAssemblyLine<?, ?>>> inFlight = new ConcurrentHashMap<>();
 
     GeneratedAssemblyLineLoader(AssemblyLineStoreResolver storeResolver,
                                 ClassLoaderRegistry classLoaderRegistry,
@@ -35,8 +38,7 @@ final class GeneratedAssemblyLineLoader {
                                 GeneratedSourceCompiler compiler,
                                 DependencyInjector dependencyInjector,
                                 ClassLoader generatedClassParent,
-                                long maxArtifactSizeBytes,
-                                AssemblyLineAliasService aliasService) {
+                                long maxArtifactSizeBytes) {
         this.storeResolver = requireNonNull(storeResolver);
         this.classLoaderRegistry = requireNonNull(classLoaderRegistry);
         this.translatorResolver = requireNonNull(translatorResolver);
@@ -44,21 +46,45 @@ final class GeneratedAssemblyLineLoader {
         this.dependencyInjector = requireNonNull(dependencyInjector);
         this.generatedClassParent = requireNonNull(generatedClassParent);
         this.maxArtifactSizeBytes = AssemblyLineIdentifiers.requireValidArtifactSize(maxArtifactSizeBytes);
-        this.aliasService = requireNonNull(aliasService);
     }
 
-    GeneratedAssemblyLine loadOrCompile(String alId, OperationChainObject obj) throws IOException {
+    GeneratedAssemblyLine<?, ?> loadOrCompile(String alId, OperationChainObject obj) throws IOException {
         String internalLoaderId = AssemblyLineIdentifiers.toInternalLoaderId(obj);
 
-        var existing = classLoaderRegistry.get(internalLoaderId);
-        if (existing != null) {
-            var bound = classLoaderRegistry.getBoundAssemblyLine(internalLoaderId);
-            if (bound != null) {
-                aliasService.registerLatestAliasIfNeeded(alId, obj, internalLoaderId);
-                return bound;
-            }
+        GeneratedAssemblyLine<?, ?> cached = findCached(internalLoaderId);
+        if (cached != null) {
+            return cached;
         }
 
+        CompletableFuture<GeneratedAssemblyLine<?, ?>> owned = new CompletableFuture<>();
+        CompletableFuture<GeneratedAssemblyLine<?, ?>> current = inFlight.putIfAbsent(internalLoaderId, owned);
+        if (current != null) {
+            return awaitCompilation(internalLoaderId, current);
+        }
+        try {
+            GeneratedAssemblyLine<?, ?> generated = compileAndRegister(alId, obj, internalLoaderId);
+            owned.complete(generated);
+            return generated;
+        } catch (IOException | RuntimeException | Error failure) {
+            owned.completeExceptionally(failure);
+            return rethrow(internalLoaderId, failure);
+        } finally {
+            inFlight.remove(internalLoaderId, owned);
+        }
+    }
+
+    private GeneratedAssemblyLine<?, ?> findCached(String internalLoaderId) {
+        var existing = classLoaderRegistry.get(internalLoaderId);
+        if (existing == null) {
+            return null;
+        }
+        return classLoaderRegistry.getBoundAssemblyLine(internalLoaderId);
+    }
+
+    private GeneratedAssemblyLine<?, ?> compileAndRegister(String alId,
+                                                           OperationChainObject obj,
+                                                           String internalLoaderId)
+            throws IOException {
         byte[] bytes = readArtifact(alId, obj);
         String mediaType = AssemblyLineIdentifiers.normalizeMediaType(obj.mimeType());
         OperationChainTranslator.GenerationResult translated = translate(alId, obj, bytes, mediaType);
@@ -69,11 +95,37 @@ final class GeneratedAssemblyLineLoader {
         InMemoryClassLoader classLoader = new InMemoryClassLoader(generatedClassParent);
         classLoader.addCompiledClasses(compilationResult);
 
-        GeneratedAssemblyLine instance = instantiate(translated.className(), classLoader, obj.mode());
+        GeneratedAssemblyLine<?, ?> instance = instantiate(translated.className(), classLoader, obj.mode());
 
         classLoaderRegistry.register(internalLoaderId, classLoader, instance);
-        aliasService.registerLatestAliasIfNeeded(alId, obj, internalLoaderId);
         return instance;
+    }
+
+    private static GeneratedAssemblyLine<?, ?> awaitCompilation(String internalLoaderId,
+                                                                CompletableFuture<GeneratedAssemblyLine<?, ?>> compilation)
+            throws IOException {
+        try {
+            return compilation.get();
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while waiting for generated assembly line " + internalLoaderId,
+                    exception);
+        } catch (ExecutionException exception) {
+            return rethrow(internalLoaderId, exception.getCause());
+        }
+    }
+
+    private static GeneratedAssemblyLine<?, ?> rethrow(String internalLoaderId, Throwable failure) throws IOException {
+        if (failure instanceof IOException exception) {
+            throw exception;
+        }
+        if (failure instanceof RuntimeException exception) {
+            throw exception;
+        }
+        if (failure instanceof Error error) {
+            throw error;
+        }
+        throw new IOException("Generated assembly line compilation failed for " + internalLoaderId, failure);
     }
 
     private OperationChainTranslator.GenerationResult translate(String alId,
@@ -96,17 +148,17 @@ final class GeneratedAssemblyLineLoader {
                 .orElseThrow(() -> new IOException("Artifact not found for hash=" + obj.contentHash()));
         AssemblyLineIdentifiers.requireAllowedArtifactSize(artifact.size(), maxArtifactSizeBytes,
                                                            "Assembly line artifact " + obj.contentHash());
-        try (InputStream in = artifact.openStream()) {
+        try (InputStream in = artifact.openStreamChecked()) {
             return ArtifactStore.readAllBytes(in, maxArtifactSizeBytes);
         }
     }
 
-    private GeneratedAssemblyLine instantiate(String className, ClassLoader classLoader, ExecutionMode mode)
+    private GeneratedAssemblyLine<?, ?> instantiate(String className, ClassLoader classLoader, ExecutionMode mode)
             throws IOException {
         try {
             Class<?> operationChainClass = classLoader.loadClass(className);
             Object rawInstance = operationChainClass.getDeclaredConstructor().newInstance();
-            if (!(rawInstance instanceof GeneratedAssemblyLine generated)) {
+            if (!(rawInstance instanceof GeneratedAssemblyLine<?, ?> generated)) {
                 throw new IOException("Generated class does not implement GeneratedAssemblyLine: " + className);
             }
             dependencyInjector.injectDependencies(generated, mode);

@@ -17,6 +17,7 @@ contract.
 | Module                       | Responsibility                                                                   |
 |------------------------------|----------------------------------------------------------------------------------|
 | `gear4jtest-external-api`    | Common artifact, repository, compiler, classloader and injection infrastructure. |
+| `gear4jtest-external-jdbc`   | Optional JDBC repositories, migrations and database artifact implementation.     |
 | `gear4jtest-xml`             | XML-specific validation, parsing and Java generation.                            |
 | `gear4jtest-gradle-xml2java` | Build-time generation from XML.                                                  |
 | `gear4jtest-core`            | Runtime execution after an `AssemblyLine` exists.                                |
@@ -47,6 +48,9 @@ The runtime external loading path is coordinated by `AssemblyLineManager`:
 8. inject dependencies allowed for the requested `ExecutionMode`;
 9. cache the loaded generated assembly line.
 
+The cache-miss path is single-flight per immutable loader id. Concurrent requests for one artifact therefore share the
+same compilation, classloader and generated instance; an unsuccessful flight is evicted to allow a later retry.
+
 ## Translator contract
 
 An `OperationChainTranslator` should be format-specific and side-effect light.
@@ -62,7 +66,7 @@ Compilation and classloading remain external-api responsibilities.
 
 A generated class should:
 
-- implement `GeneratedAssemblyLine`;
+- implement `GeneratedAssemblyLine<IN, OUT>`;
 - have a public no-argument constructor;
 - build and return a core `AssemblyLine`;
 - receive external dependencies through fields annotated with `@Inject`.
@@ -82,7 +86,9 @@ latest lookup resolves the current repository state and registers a fresh alias 
 
 Pinned version lookups remain stable and are not evicted by alias invalidation. Already-running pipeline graphs are never
 mutated; invalidation only affects future latest lookups. This cache invalidation is local to the manager/classloader
-registry instance. It is not a distributed invalidation protocol across JVMs.
+registry. Exact-version RUN lookups never update `latest`. The latest lookup captures a local invalidation generation,
+so a compilation that began before a publication cannot restore its obsolete alias after publication completes. This
+does not provide distributed cache coherence between JVMs.
 
 The core pipeline-call model already supports both:
 

@@ -7,10 +7,12 @@ import java.sql.Types;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Calendar;
 import java.util.UUID;
 
 import io.github.gear4jtest.core.persistence.PageRequest;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,7 +55,7 @@ class Gear4jDatabaseDialectTest {
         Instant instant = Instant.parse("2026-06-22T08:00:00Z");
         OffsetDateTime offsetDateTime = instant.atOffset(ZoneOffset.UTC);
         when(resultSet.getObject("created_at", OffsetDateTime.class)).thenReturn(offsetDateTime);
-        when(resultSet.getTimestamp("created_at")).thenReturn(Timestamp.from(instant));
+        when(resultSet.getTimestamp(eq("created_at"), any(Calendar.class))).thenReturn(Timestamp.from(instant));
 
         // When
         Gear4jDatabaseDialect.POSTGRESQL.setInstant(statement, 1, null);
@@ -65,7 +67,9 @@ class Gear4jDatabaseDialectTest {
         verify(statement).setNull(1, Types.TIMESTAMP_WITH_TIMEZONE);
         verify(statement).setNull(2, Types.TIMESTAMP);
         verify(statement).setObject(3, offsetDateTime);
-        verify(statement).setTimestamp(4, Timestamp.from(instant));
+        ArgumentCaptor<Calendar> calendar = ArgumentCaptor.forClass(Calendar.class);
+        verify(statement).setTimestamp(eq(4), eq(Timestamp.from(instant)), calendar.capture());
+        assertThat(calendar.getValue().getTimeZone().getID()).isEqualTo("UTC");
         assertThat(Gear4jDatabaseDialect.POSTGRESQL.getInstant(resultSet, "created_at")).isEqualTo(instant);
         assertThat(Gear4jDatabaseDialect.H2.getInstant(resultSet, "created_at")).isEqualTo(instant);
     }

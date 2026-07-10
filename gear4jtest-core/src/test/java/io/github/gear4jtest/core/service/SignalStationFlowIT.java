@@ -23,6 +23,7 @@ import io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
+import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -73,7 +74,8 @@ class SignalStationFlowIT {
                 .resourceFactory(new ReflectiveResourceFactory())
                 .runnerChainFactory(new RunnerChainFactory(StrategyRegistry.defaultRegistry()))
                 .extensionResolver(new RuntimeExtensionResolver(List.of(new PersistenceExtension(
-                        InMemoryExecutionManager.builder().repository(repository).build()))))
+                        InMemoryExecutionManager.builder().repository(repository)
+                                .redactor(SensitiveDataRedactor.none()).build()))))
                 .executionContextRegistry(new ExecutionContextRegistry())
                 .build();
     }

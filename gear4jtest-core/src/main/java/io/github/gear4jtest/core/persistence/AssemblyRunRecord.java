@@ -22,7 +22,7 @@ public record AssemblyRunRecord(UUID id,
                                 UUID rootExecutionId,
                                 UUID parentStationLogId) {
     public static AssemblyRunRecord from(AssemblyRunTrace trace) {
-        return from(trace, SensitiveDataRedactor.none());
+        return from(trace, SensitiveDataRedactor.discardSensitiveValues());
     }
 
     @SuppressWarnings("unchecked")
@@ -30,7 +30,7 @@ public record AssemblyRunRecord(UUID id,
         if (trace == null) {
             throw new IllegalArgumentException("trace must not be null");
         }
-        SensitiveDataRedactor effective = redactor != null ? redactor : SensitiveDataRedactor.none();
+        SensitiveDataRedactor effective = redactor != null ? redactor : SensitiveDataRedactor.discardSensitiveValues();
         Map<String, Object> context = trace.getContext() == null ? Map.of()
                 : Map.copyOf(new LinkedHashMap<>(trace.getContext()));
         Object redactedContext = effective.redact(RedactionTarget.RUN_CONTEXT, context);

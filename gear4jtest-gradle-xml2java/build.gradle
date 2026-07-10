@@ -9,6 +9,52 @@ dependencies {
     testImplementation(libs.assertj)
 }
 
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+def projectHomepage = 'https://github.com/gear4jtest/gear4jtest'
+
+publishing {
+    repositories {
+        maven {
+            name = 'mavenCentralStaging'
+            url = rootProject.layout.buildDirectory.dir('staging-deploy')
+        }
+    }
+
+    publications.withType(MavenPublication).configureEach {
+        pom {
+            name = 'Gear4J XML to Java Gradle plugin'
+            description = 'Generates Java Gear4J assembly lines from XML definitions.'
+            url = projectHomepage
+
+            licenses {
+                license {
+                    name = 'Apache License, Version 2.0'
+                    url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                    distribution = 'repo'
+                }
+            }
+
+            developers {
+                developer {
+                    id = 'gear4jtest'
+                    name = 'Gear4J contributors'
+                }
+            }
+
+            scm {
+                connection = 'scm:git:https://github.com/gear4jtest/gear4jtest.git'
+                developerConnection = 'scm:git:ssh://git@github.com/gear4jtest/gear4jtest.git'
+                url = projectHomepage
+                tag = project.version.toString().endsWith('-SNAPSHOT') ? 'HEAD' : "v${project.version}"
+            }
+        }
+    }
+}
+
 gradlePlugin {
     plugins {
         create("gear4jXmlAssemblyLineGenerator") {

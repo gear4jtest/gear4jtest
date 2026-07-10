@@ -28,7 +28,15 @@ public final class EventSubscription<T extends Event> {
     }
 
     public boolean accepts(Event event) {
-        return eventType.isInstance(event) && predicate.test(eventType.cast(event));
+        return supports(event) && testPredicate(event);
+    }
+
+    boolean supports(Event event) {
+        return eventType.isInstance(event);
+    }
+
+    boolean testPredicate(Event event) {
+        return predicate.test(eventType.cast(event));
     }
 
     public void handle(Event event) throws Exception {

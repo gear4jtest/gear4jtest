@@ -1,7 +1,6 @@
 package io.github.gear4jtest.core.event;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.github.gear4jtest.core.api.annotation.Internal;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.sidecompute.SideComputeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -88,7 +86,7 @@ public final class EventManager {
 
         EventHandlingDefinition.RuntimeConfiguration runtimeConfiguration = effectiveDefinition
                 .getRuntimeConfiguration();
-        this.subscriptions = buildSubscriptions(effectiveDefinition, registry);
+        this.subscriptions = EventSubscriptionResolver.resolve(effectiveDefinition, registry);
         this.shutdownTimeout = runtimeConfiguration.getShutdownTimeout();
         this.shutdownMode = runtimeConfiguration.getShutdownMode();
         this.eventQueueCapacity = runtimeConfiguration.getEventQueueCapacity();
@@ -107,13 +105,8 @@ public final class EventManager {
         this.reactionExecutor = executorHandle.executorService();
         this.shutdownExecutorOnClose = executorHandle.shutdownOnClose();
         this.accepting = true;
-    }
-
-    private static List<EventSubscription<?>> buildSubscriptions(EventHandlingDefinition definition,
-                                                                 ExecutionContextRegistry registry) {
-        List<EventSubscription<?>> resolvedSubscriptions = new ArrayList<>(definition.getSubscriptions());
-        resolvedSubscriptions.addAll(SideComputeListener.subscriptions(definition.getSideComputers(), registry));
-        return List.copyOf(resolvedSubscriptions);
+        EventRuntimeMetrics.runtimeOpened();
+        this.terminationFuture.whenComplete((ignored, failure) -> EventRuntimeMetrics.runtimeClosed());
     }
 
     /**
@@ -138,8 +131,10 @@ public final class EventManager {
             }
             if (queue.offer(QueuedEvent.of(event, MDC.getCopyOfContextMap()))) {
                 publishedEvents.incrementAndGet();
+                EventRuntimeMetrics.eventPublished();
             } else {
                 droppedEvents.incrementAndGet();
+                EventRuntimeMetrics.eventRejectedBeforeQueue();
                 LOGGER.warn("Dropping event because the in-memory event queue is full. eventType={}, capacity={}",
                             event.getName(), eventQueueCapacity);
                 return;
@@ -199,6 +194,7 @@ public final class EventManager {
             dispatchTaskScheduled.set(false);
             dropPendingQueuedEvents();
             LOGGER.warn("Dropping pending events because the shared event dispatcher rejected the dispatch task.");
+            tryCompleteTermination();
         }
     }
 
@@ -208,6 +204,7 @@ public final class EventManager {
             QueuedEvent queuedEvent;
             while ((queuedEvent = queue.poll()) != null) {
                 dispatchedEvents.incrementAndGet();
+                EventRuntimeMetrics.eventDispatched(queuedEvent.queuedNanos());
                 dispatch(queuedEvent);
             }
         } catch (RuntimeException runtimeException) {
@@ -227,13 +224,14 @@ public final class EventManager {
         QueuedEvent ignored;
         while ((ignored = queue.poll()) != null) {
             droppedEvents.incrementAndGet();
+            EventRuntimeMetrics.eventDroppedFromQueue();
         }
     }
 
     private void dispatch(QueuedEvent queuedEvent) {
         Event event = queuedEvent.event();
         for (EventSubscription<?> subscription : subscriptions) {
-            if (!subscription.accepts(event)) {
+            if (!subscription.supports(event)) {
                 continue;
             }
             ReactionTask task = new ReactionTask(subscription, event, queuedEvent.mdcContext());
@@ -242,6 +240,7 @@ public final class EventManager {
             try {
                 reactionExecutor.execute(task);
                 submittedReactions.incrementAndGet();
+                EventRuntimeMetrics.reactionSubmitted();
             } catch (RejectedExecutionException rejectedExecutionException) {
                 markReactionDroppedBeforeExecution(task);
                 LOGGER.warn("Dropping event reaction because the reaction executor rejected the submission. "
@@ -261,14 +260,32 @@ public final class EventManager {
             subscription.handle(event);
         } catch (Exception exception) {
             failedReactions.incrementAndGet();
+            EventRuntimeMetrics.reactionFailed();
             LOGGER.error("Asynchronous event reaction failed. eventType={}, subscriptionType={}", event.getName(),
                          subscription.eventType().getName(), exception);
+        }
+    }
+
+    private void evaluateAndInvokeSafely(EventSubscription<?> subscription, Event event) {
+        boolean accepted;
+        try {
+            accepted = subscription.testPredicate(event);
+        } catch (RuntimeException exception) {
+            failedReactions.incrementAndGet();
+            EventRuntimeMetrics.reactionFailed();
+            LOGGER.error("Asynchronous event predicate failed. eventType={}, subscriptionType={}", event.getName(),
+                         subscription.eventType().getName(), exception);
+            return;
+        }
+        if (accepted) {
+            invokeSafely(subscription, event);
         }
     }
 
     private void markReactionCompleted(ReactionTask task) {
         if (task.markCompleted()) {
             completedReactions.incrementAndGet();
+            EventRuntimeMetrics.reactionCompleted();
             inFlightReactions.decrementAndGet();
             acceptedReactions.decrementAndGet();
             activeReactions.remove(task);
@@ -279,6 +296,7 @@ public final class EventManager {
     private void markReactionDroppedBeforeExecution(ReactionTask task) {
         if (task.markCancelledBeforeStart()) {
             droppedReactions.incrementAndGet();
+            EventRuntimeMetrics.reactionDropped();
             acceptedReactions.decrementAndGet();
             activeReactions.remove(task);
             tryCompleteTermination();
@@ -379,10 +397,10 @@ public final class EventManager {
         }
     }
 
-    private record QueuedEvent(Event event, Map<String, String> mdcContext) {
+    private record QueuedEvent(Event event, Map<String, String> mdcContext, long queuedNanos) {
         private static QueuedEvent of(Event event, Map<String, String> mdcContext) {
             Map<String, String> immutableContext = mdcContext == null ? null : Map.copyOf(mdcContext);
-            return new QueuedEvent(event, immutableContext);
+            return new QueuedEvent(event, immutableContext, System.nanoTime());
         }
     }
 
@@ -404,8 +422,9 @@ public final class EventManager {
                 return;
             }
             inFlightReactions.incrementAndGet();
+            EventRuntimeMetrics.reactionStarted();
             try (MdcScope ignored = MdcScope.install(mdcContext)) {
-                invokeSafely(subscription, event);
+                evaluateAndInvokeSafely(subscription, event);
             } finally {
                 markReactionCompleted(this);
             }

@@ -85,6 +85,9 @@ public final class SideComputer<E extends Event, T, R> {
 
         SideComputeContext sideComputeContext = executionContext.getSideComputeContext();
         CompletableFuture<R> future = sideComputeContext.getOrCreateFuture(key);
+        if (!sideComputeContext.tryStart(key)) {
+            return;
+        }
 
         try {
             T computeResult = computer.apply(event);
@@ -92,6 +95,10 @@ public final class SideComputer<E extends Event, T, R> {
                 handler.handle(key, event, computeResult, executionContext);
             }
             R finalResult = mapper.apply(computeResult);
+            if (finalResult == null) {
+                throw new IllegalStateException(
+                        "Side compute '" + key + "' returned null; null results are not supported");
+            }
             future.complete(finalResult);
         } catch (Exception exception) {
             future.completeExceptionally(exception);

@@ -23,7 +23,7 @@ final class AssemblyLineRootExecutionChain {
     }
 
     <IN, OUT> ExecutionResult<OUT> execute(AssemblyLine<IN, OUT> pipeline,
-                                           RunRequest request,
+                                           RunRequest<IN> request,
                                            ExecutionContext context,
                                            ExecutionSupport support,
                                            ResolvedExtensions resolvedExtensions,

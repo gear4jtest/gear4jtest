@@ -10,6 +10,8 @@ import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainTagRepository;
 
 import static java.util.Objects.requireNonNull;
@@ -18,6 +20,7 @@ final class AssemblyLinePublicationService {
     private final OperationChainConfigRepository configRepository;
     private final OperationChainObjectRepository objectRepository;
     private final OperationChainTagRepository tagRepository;
+    private final OperationChainPublicationRepository publicationRepository;
     private final AssemblyLineStoreResolver storeResolver;
     private final AssemblyLineAliasService aliasService;
     private final AssemblyLinePublicationValidator publicationValidator;
@@ -26,6 +29,7 @@ final class AssemblyLinePublicationService {
     AssemblyLinePublicationService(OperationChainConfigRepository configRepository,
                                    OperationChainObjectRepository objectRepository,
                                    OperationChainTagRepository tagRepository,
+                                   OperationChainPublicationRepository publicationRepository,
                                    AssemblyLineStoreResolver storeResolver,
                                    AssemblyLineAliasService aliasService,
                                    AssemblyLinePublicationValidator publicationValidator,
@@ -33,6 +37,7 @@ final class AssemblyLinePublicationService {
         this.configRepository = requireNonNull(configRepository);
         this.objectRepository = requireNonNull(objectRepository);
         this.tagRepository = requireNonNull(tagRepository);
+        this.publicationRepository = publicationRepository;
         this.storeResolver = requireNonNull(storeResolver);
         this.aliasService = requireNonNull(aliasService);
         this.publicationValidator = requireNonNull(publicationValidator);
@@ -71,15 +76,9 @@ final class AssemblyLinePublicationService {
         OperationChainObject obj = new OperationChainObject(null, alId, version, mode, hash, content.length,
                 AssemblyLineIdentifiers.normalizeMediaType(mediaType), Instant.now(), createdBy, Instant.now());
         publicationValidator.validatePublicationCandidate(alId, obj);
-        objectRepository.insert(obj);
+        publishMetadata(obj, tags);
         if (mode == ExecutionMode.RUN) {
             aliasService.invalidateLatestRun(alId);
-        }
-
-        if (tags != null && !tags.isEmpty()) {
-            for (String tag : tags) {
-                tagRepository.addTag(alId, tag);
-            }
         }
         return hash;
     }
@@ -102,7 +101,24 @@ final class AssemblyLinePublicationService {
         var runObj = new OperationChainObject(null, alId, version, ExecutionMode.RUN, testObj.contentHash(),
                 testObj.sizeBytes(), testObj.mimeType(), Instant.now(), promotedBy, Instant.now());
         publicationValidator.validateRunCandidate(alId, runObj);
-        objectRepository.insert(runObj);
+        publishMetadata(runObj, List.of());
         aliasService.invalidateLatestRun(alId);
+    }
+
+    private void publishMetadata(OperationChainObject object, List<String> tags)
+            throws AssemblyLineManager.PolicyViolationException {
+        List<String> publicationTags = tags == null ? List.of() : tags.stream().distinct().toList();
+        try {
+            if (publicationRepository != null) {
+                publicationRepository.publish(object, publicationTags);
+                return;
+            }
+            objectRepository.insert(object);
+            for (String tag : publicationTags) {
+                tagRepository.addTag(object.alId(), tag);
+            }
+        } catch (OperationChainPublicationConflictException exception) {
+            throw new AssemblyLineManager.PolicyViolationException(exception.getMessage(), exception);
+        }
     }
 }

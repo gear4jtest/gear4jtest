@@ -162,7 +162,7 @@ class AssemblyLineRuntimeContractValidatorTest {
     private static final class TestRunInterceptor implements RunInterceptorExtension {
         @Override
         public <IN, OUT> ExecutionResult<OUT> aroundRun(AssemblyLine<IN, OUT> pipeline,
-                                                        RunRequest request,
+                                                        RunRequest<IN> request,
                                                         ExecutionContext ctx,
                                                         RunChain<IN, OUT> chain) {
             return chain.proceed();

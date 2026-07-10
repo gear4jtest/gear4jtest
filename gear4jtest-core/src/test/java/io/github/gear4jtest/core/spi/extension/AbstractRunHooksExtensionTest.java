@@ -44,13 +44,13 @@ class AbstractRunHooksExtensionTest {
         private final List<String> events = new ArrayList<>();
 
         @Override
-        protected void onStart(AssemblyLine<?, ?> pipeline, RunRequest request, ExecutionContext ctx) {
+        protected void onStart(AssemblyLine<?, ?> pipeline, RunRequest<?> request, ExecutionContext ctx) {
             events.add("start");
         }
 
         @Override
         protected void onResult(AssemblyLine<?, ?> pipeline,
-                                RunRequest request,
+                                RunRequest<?> request,
                                 ExecutionContext ctx,
                                 ExecutionResult<?> result) {
             events.add("result:" + result.getResult());
@@ -58,14 +58,14 @@ class AbstractRunHooksExtensionTest {
 
         @Override
         protected void onException(AssemblyLine<?, ?> pipeline,
-                                   RunRequest request,
+                                   RunRequest<?> request,
                                    ExecutionContext ctx,
                                    RuntimeException error) {
             events.add("exception:" + error.getMessage());
         }
 
         @Override
-        protected void onEnd(AssemblyLine<?, ?> pipeline, RunRequest request, ExecutionContext ctx) {
+        protected void onEnd(AssemblyLine<?, ?> pipeline, RunRequest<?> request, ExecutionContext ctx) {
             events.add("end");
         }
     }

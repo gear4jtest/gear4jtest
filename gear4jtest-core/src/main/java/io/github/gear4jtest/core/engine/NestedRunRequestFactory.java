@@ -14,14 +14,14 @@ final class NestedRunRequestFactory {
     private NestedRunRequestFactory() {
     }
 
-    static RunRequest create(Object input,
-                             StationExecutionContext parentContext,
-                             IdGenerator defaultIdGenerator,
-                             ContextPropagationPolicy contextPropagationPolicy) {
+    static <IN> RunRequest<IN> create(IN input,
+                                      StationExecutionContext parentContext,
+                                      IdGenerator defaultIdGenerator,
+                                      ContextPropagationPolicy contextPropagationPolicy) {
         NestedRunContext nestedRunContext = NestedRunContext.from(parentContext);
 
         Map<String, Object> propagatedContext = propagatedContext(parentContext, contextPropagationPolicy);
-        return RunRequest.builder().input(input)
+        return RunRequest.<IN>builder().input(input)
                 .context(propagatedContext)
                 .resourceFactory(parentContext.getServices().getResourceFactory())
                 .withIdGenerator(Optional.ofNullable(parentContext.getGlobalContext().getIdGenerator())

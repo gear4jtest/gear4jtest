@@ -1,7 +1,7 @@
 dependencies {
     api project(':gear4jtest-core')
 
-    implementation libs.spring.context
+    api libs.spring.context
 
     testImplementation libs.spring.test
 }

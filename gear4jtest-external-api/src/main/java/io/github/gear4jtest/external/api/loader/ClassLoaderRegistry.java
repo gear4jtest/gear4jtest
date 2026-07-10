@@ -10,7 +10,7 @@ import io.github.gear4jtest.core.api.annotation.Spi;
 public interface ClassLoaderRegistry {
     ClassLoader get(String internalLoaderId);
 
-    void register(String internalLoaderId, ClassLoader loader, GeneratedAssemblyLine bound);
+    void register(String internalLoaderId, ClassLoader loader, GeneratedAssemblyLine<?, ?> bound);
 
     void evict(String internalLoaderId);
 
@@ -22,5 +22,5 @@ public interface ClassLoaderRegistry {
 
     String resolveAlias(String alias);
 
-    GeneratedAssemblyLine getBoundAssemblyLine(String internalLoaderId);
+    GeneratedAssemblyLine<?, ?> getBoundAssemblyLine(String internalLoaderId);
 }

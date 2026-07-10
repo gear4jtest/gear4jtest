@@ -59,8 +59,8 @@ abstract class XmlAssemblyLineGeneratorExtension {
         return xmlFiles
     }
 
-    /** Allows Groovy DSL assignment such as outputDir = layout.buildDirectory.dir(...). */
-    void setOutputDir(Object path) {
+    /** Configures the generated-source directory from a path accepted by {@link Project#file(Object)}. */
+    void outputDir(Object path) {
         outputDir.fileValue(project.file(path))
     }
 

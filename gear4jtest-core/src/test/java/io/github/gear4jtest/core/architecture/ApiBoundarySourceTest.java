@@ -18,7 +18,12 @@ final class ApiBoundarySourceTest {
                                                                                "gear4jtest-core",
                                                                                "gear4jtest-experimental-cache",
                                                                                "gear4jtest-external-api",
+                                                                               "gear4jtest-external-jdbc",
+                                                                               "gear4jtest-jackson",
                                                                                "gear4jtest-jdbc",
+                                                                               "gear4jtest-micrometer",
+                                                                               "gear4jtest-spring",
+                                                                               "gear4jtest-spring-boot-starter",
                                                                                "gear4jtest-xml");
     private static final Set<String> STABILITY_MARKERS = Set.of(
                                                                 "@io.github.gear4jtest.core.api.annotation.PublicApi",
@@ -164,8 +169,8 @@ final class ApiBoundarySourceTest {
     }
 
     private static boolean isInternalType(String source) {
-        return source.contains("\n@Internal\npublic")
-                || source.contains("\n@io.github.gear4jtest.core.api.annotation.Internal\npublic");
+        return source.contains("\n@Internal\n")
+                || source.contains("\n@io.github.gear4jtest.core.api.annotation.Internal\n");
     }
 
     private static List<String> internalDependencyGroups(String source) {

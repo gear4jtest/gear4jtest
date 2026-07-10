@@ -2,8 +2,9 @@
 
 ## Status
 
-Accepted. A minimal safe parser/evaluator MVP exists in `io.github.gear4jtest.xml.expression`. XML integration remains
-future work.
+Accepted. A restricted parser/evaluator and GEL XML conditions are implemented.
+ADR 0018 defines the deny-by-default property-access policy added after this
+initial language decision.
 
 ## Context
 
@@ -18,9 +19,9 @@ the same JVM.
 
 ## Decision
 
-Gear4J will keep inline Java as a trusted developer feature, but untrusted or
-semi-trusted pipeline definitions must use a restricted Gear4J Expression Language (GEL) once XML integration is
-available.
+Gear4J keeps inline Java as a trusted developer feature, but untrusted or
+semi-trusted pipeline definitions must use the restricted Gear4J Expression
+Language (GEL).
 
 GEL must be designed around an allowlisted AST and evaluator rather than around
 string filtering. It must not expose arbitrary Java objects, reflection, class
@@ -29,11 +30,11 @@ loading, I/O, networking, process execution or unchecked method invocation.
 ## Consequences
 
 - Inline Java XML remains a trusted-source feature.
-- Future BO editing should emit GEL expressions or a typed expression model, not
+- BO editing should emit GEL expressions or a typed expression model, not
   Java snippets.
 - The first GEL MVP supports literals, data paths and boolean/equality operators only. It deliberately rejects Java
   method invocation, type lookup, object creation and static access.
-- XML validation should eventually be able to reject inline Java unless the
-  import/generation mode is explicitly trusted.
+- The default XML translator/generator rejects inline Java unless generation is
+  explicitly trusted.
 - The expression language roadmap remains tracked in
   `docs/roadmap/gear-expression-language.md`.

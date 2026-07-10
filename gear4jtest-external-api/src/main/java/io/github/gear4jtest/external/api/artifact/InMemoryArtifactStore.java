@@ -13,14 +13,14 @@ public final class InMemoryArtifactStore implements ArtifactStore {
     @Override
     public String put(byte[] content) {
         byte[] stored = Arrays.copyOf(Objects.requireNonNull(content, "content must not be null"), content.length);
-        String hash = Hashing.sha256Hex(stored);
+        String hash = ArtifactHashes.sha256Hex(stored);
         map.putIfAbsent(hash, stored);
         return hash;
     }
 
     @Override
     public Optional<Artifact> get(String hashHex) {
-        String hash = Hashing.requireSha256Hex(hashHex);
+        String hash = ArtifactHashes.requireSha256Hex(hashHex);
         byte[] data = map.get(hash);
         if (data == null) {
             return Optional.empty();
@@ -31,7 +31,7 @@ public final class InMemoryArtifactStore implements ArtifactStore {
 
     @Override
     public boolean exists(String hashHex) {
-        String hash = Hashing.requireSha256Hex(hashHex);
+        String hash = ArtifactHashes.requireSha256Hex(hashHex);
         return map.containsKey(hash);
     }
 }

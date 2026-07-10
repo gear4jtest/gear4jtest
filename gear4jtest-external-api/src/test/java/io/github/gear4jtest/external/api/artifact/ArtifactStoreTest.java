@@ -57,4 +57,21 @@ class ArtifactStoreTest {
         // Then
         assertThat(store.exists(hash)).as("the artifact is stored through the limited InputStream API").isTrue();
     }
+
+    @Test
+    void artifactStreamOpener_shouldPropagateCheckedIoFailure() {
+        // Given
+        Artifact artifact = Artifact.streaming("a".repeat(64), 1, java.util.Map.of(),
+                                               () -> {
+                                                   throw new IOException("backend unavailable");
+                                               });
+
+        // When / Then
+        assertThatThrownBy(artifact::openStreamChecked)
+                .isInstanceOf(IOException.class)
+                .hasMessage("backend unavailable");
+        assertThatThrownBy(artifact::openStream)
+                .isInstanceOf(java.io.UncheckedIOException.class)
+                .hasCauseInstanceOf(IOException.class);
+    }
 }

@@ -72,6 +72,11 @@ The current event runtime does not provide:
 
 Use these counters for observability. Do not treat them as durable audit records.
 
+`EventRuntimeMetrics.snapshot()` adds a tag-free JVM-wide view across all run-local managers. It aggregates dropped
+events/reactions, shared-dispatcher rejections, current queued/in-flight work and queue-to-dispatch latency. The Spring
+Boot starter registers these process gauges automatically when Micrometer is enabled; they are operational signals, not
+durable audit records.
+
 ## Durable eventing
 
 Durable delivery should be handled by a separate subsystem or module.

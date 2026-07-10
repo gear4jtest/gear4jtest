@@ -2,6 +2,8 @@ package io.github.gear4jtest.core.sidecompute;
 
 import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -59,13 +61,13 @@ public final class SideComputeWaitProcessor implements Processor {
     @Override
     public <I> void beforeExecution(I input, StationExecutionContext opCtx) {
         ExecutionContext execCtx = opCtx.getGlobalContext();
-        var future = execCtx.getSideComputeContext().getOrCreateFuture(key);
+        CompletableFuture<Object> future = execCtx.getSideComputeContext().getOrCreateFuture(key);
 
         Duration effectiveTimeout = timeout != null ? timeout : safetyTimeout;
 
         try {
             Object result = future.get(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
-            execCtx.getContext().put(SideComputeKeys.valueKey(key), result);
+            storeResolvedValue(execCtx, result);
 
         } catch (TimeoutException te) {
             switch (onTimeout) {
@@ -74,9 +76,8 @@ public final class SideComputeWaitProcessor implements Processor {
                     throw new SideComputeTimeoutException(key, effectiveTimeout, te);
                 }
                 case USE_FALLBACK -> {
-                    Object fb = fallback != null ? fallback.get() : null;
-                    future.complete(fb);
-                    execCtx.getContext().put(SideComputeKeys.valueKey(key), fb);
+                    Object fallbackValue = resolveFallback(future);
+                    storeResolvedValue(execCtx, fallbackValue);
                 }
                 case IGNORE -> {
                     // Leave the value unresolved; parameter resolution can observe its absence.
@@ -85,10 +86,46 @@ public final class SideComputeWaitProcessor implements Processor {
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new SideComputeExecutionException(key, ex);
+        } catch (SideComputeExecutionException ex) {
+            throw ex;
         } catch (Exception ex) {
             // Other future failures are wrapped as side-compute execution failures.
             throw new SideComputeExecutionException(key, ex);
         }
+    }
+
+    private Object resolveFallback(CompletableFuture<Object> future) {
+        Object fallbackValue;
+        try {
+            fallbackValue = fallback.get();
+        } catch (RuntimeException exception) {
+            future.completeExceptionally(exception);
+            throw new SideComputeExecutionException(key, exception);
+        }
+        if (fallbackValue == null) {
+            IllegalStateException cause = new IllegalStateException(
+                    "Side compute '" + key + "' fallback returned null; null results are not supported");
+            future.completeExceptionally(cause);
+            throw new SideComputeExecutionException(key, cause);
+        }
+
+        if (future.complete(fallbackValue)) {
+            return fallbackValue;
+        }
+        try {
+            return future.getNow(null);
+        } catch (CompletionException exception) {
+            Throwable cause = exception.getCause() != null ? exception.getCause() : exception;
+            throw new SideComputeExecutionException(key, cause);
+        }
+    }
+
+    private void storeResolvedValue(ExecutionContext executionContext, Object value) {
+        if (value == null) {
+            throw new SideComputeExecutionException(key, new IllegalStateException(
+                    "Side compute '" + key + "' returned null; null results are not supported"));
+        }
+        executionContext.getContext().put(SideComputeKeys.valueKey(key), value);
     }
 
     @Override
@@ -114,12 +151,12 @@ public final class SideComputeWaitProcessor implements Processor {
         }
 
         public Builder timeout(Duration timeout) {
-            this.timeout = timeout;
+            this.timeout = timeout == null ? null : requirePositive(timeout, "timeout");
             return this;
         }
 
         Builder safetyTimeout(Duration safetyTimeout) {
-            this.safetyTimeout = Objects.requireNonNull(safetyTimeout, "safetyTimeout must not be null");
+            this.safetyTimeout = requirePositive(safetyTimeout, "safetyTimeout");
             return this;
         }
 
@@ -131,7 +168,7 @@ public final class SideComputeWaitProcessor implements Processor {
 
         public Builder onTimeoutUseFallback(Supplier<?> fallback) {
             this.onTimeout = OnTimeout.USE_FALLBACK;
-            this.fallback = fallback;
+            this.fallback = Objects.requireNonNull(fallback, "fallback must not be null");
             return this;
         }
 
@@ -143,6 +180,14 @@ public final class SideComputeWaitProcessor implements Processor {
 
         public SideComputeWaitProcessor build() {
             return new SideComputeWaitProcessor(this);
+        }
+
+        private static Duration requirePositive(Duration value, String name) {
+            Objects.requireNonNull(value, name + " must not be null");
+            if (value.isZero() || value.isNegative()) {
+                throw new IllegalArgumentException(name + " must be strictly positive");
+            }
+            return value;
         }
     }
 }

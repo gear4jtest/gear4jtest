@@ -37,6 +37,42 @@ MAVEN_CENTRAL_PASSWORD
 JRELEASER_DRY_RUN=true ./gradlew jreleaserDeploy -PprojectVersion=1.0.0
 ```
 
+From `1.0.1` onward, add the immediately preceding stable release so Japicmp can enforce public API/SPI compatibility:
+
+```bash
+./gradlew clean releaseCheck stageMavenCentral \
+  -PprojectVersion=1.1.0 \
+  -Pgear4j.apiBaselineVersion=1.0.0
+```
+
+Manual workflow dispatch exposes the same baseline input. Tag-driven releases read the repository variable
+`GEAR4J_API_BASELINE_VERSION`. See `docs/compatibility-policy.md`.
+
+`releaseCheck` stages the complete multi-module publication and then compiles and runs
+`config/consumer-smoke` as an autonomous Gradle build. The fixture resolves only from the staged Maven repository,
+applies `io.github.gear4jtest.xml2java` through its plugin marker and verifies the transitive public API scopes for
+core, Jackson, XML, execution JDBC, external JDBC, Spring, Spring Boot Actuator and Micrometer. It also enforces the critical JaCoCo branch
+ratchets and the versioned JMH latency, throughput, allocation, heap and thread budgets.
+
+The release workflow runs PostgreSQL, MySQL, MariaDB and Oracle integration tests as independent prerequisite jobs. A
+failed dialect blocks publication before credentials are used.
+
+The staged publication contains the implementation artifact for `gear4jtest-gradle-xml2java` and marker artifacts for
+both plugin ids:
+
+```text
+io.github.gear4jtest.xml2java
+io.github.gear4jtest.gradle.xml2java
+```
+
+The second id is retained only for compatibility. New consumers should use `io.github.gear4jtest.xml2java`.
+
+`jreleaser.yml` contains no secret. It activates signing and Maven Central rules only for non-snapshot releases; all
+credentials and armored GPG keys are supplied by the release environment.
+
+Dependency locks and Gradle verification metadata remain an optional MVP hardening step. To make their absence fatal,
+run the gate with `-Pgear4j.enforceSupplyChain=true` after generating and reviewing both files.
+
 ## GitHub release
 
 Create and push a version tag:
@@ -48,10 +84,13 @@ git push origin v1.0.0
 
 The release workflow will:
 
-1. run checks;
-2. run integration tests;
-3. run dependency vulnerability scan;
-4. stage Maven artifacts under `build/staging-deploy`;
-5. sign and deploy staged artifacts with JReleaser.
+1. run the four-dialect JDBC matrix;
+2. run checks and critical branch-coverage ratchets;
+3. verify the versioned JMH performance budgets;
+4. run the dependency vulnerability scan;
+5. stage Maven libraries, the Gradle plugin and its markers under `build/staging-deploy`;
+6. compile and execute the autonomous staged-artifact consumer;
+7. compare every stable public library with the configured N-1 release after 1.0.0;
+8. sign, validate and deploy staged artifacts with JReleaser.
 
 Manual dispatch is also available. It defaults to dry-run mode.

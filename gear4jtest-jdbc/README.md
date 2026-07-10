@@ -14,6 +14,9 @@ Applications must explicitly select a `Gear4jDatabaseDialect`; Gear4J does not i
 Use a pooled `DataSource` in production and provide a `SensitiveDataRedactor` when persisted values can contain secrets
 or personal data.
 
+Runtime schema creation is disabled by default for both direct and Spring Boot usage. Enable it explicitly only when
+Gear4J is intended to own its schema lifecycle.
+
 ```java
 var persistenceRuntime = PersistenceRuntimeConfiguration.builder()
         .batchSize(500)
@@ -28,3 +31,23 @@ DatabaseExecutionManager manager = DatabaseExecutionManager.builder()
         .autoCreateTables(true)
         .build();
 ```
+
+Auto-migration does not silently adopt a pre-existing Gear4J schema that has no
+`gear4j_schema_history` entry. For a verified compatible schema, adoption must
+be explicitly enabled with `.baselineOnMigrate(true)`; the migrator then checks
+all expected V1 tables, columns and named indexes before writing history.
+
+For an observable shutdown, call `manager.shutdownWithReport(timeout)`. The
+returned `PersistenceShutdownReport` states how many station logs were drained,
+which runs still retain data, how many retry attempts occurred, whether the
+deadline was reached, whether an earlier run finalization remains unresolved and
+whether owned flush workers terminated. The existing `shutdown()` methods remain
+available and delegate to the same bounded retry workflow. Retry backoff defaults
+to `100ms` and grows exponentially up to `2s`; both values are configurable
+through `PersistenceRuntimeConfiguration`.
+
+Failed batches remain in memory and are listed in the report; no durable
+dead-letter store is enabled implicitly. The shutdown deadline bounds retries,
+backoff and executor termination. A JDBC call already in progress still depends
+on the configured `jdbcStatementTimeout` and on the driver honoring interruption
+and query timeouts.

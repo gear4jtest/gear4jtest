@@ -18,5 +18,5 @@ public interface AssemblyLineExecutor {
      * @param <OUT>    pipeline output type
      * @return execution result including the user result and runtime trace
      */
-    <IN, OUT> ExecutionResult<OUT> execute(AssemblyLine<IN, OUT> pipeline, RunRequest request);
+    <IN, OUT> ExecutionResult<OUT> execute(AssemblyLine<IN, OUT> pipeline, RunRequest<IN> request);
 }

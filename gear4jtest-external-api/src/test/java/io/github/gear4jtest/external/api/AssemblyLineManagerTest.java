@@ -15,6 +15,8 @@ import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainTagRepository;
 import io.github.gear4jtest.external.api.storage.ArtifactStoreProvider;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslator;
@@ -26,14 +28,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 class AssemblyLineManagerTest {
     private final OperationChainConfigRepository configRepository = mock(OperationChainConfigRepository.class);
     private final OperationChainObjectRepository objectRepository = mock(OperationChainObjectRepository.class);
+    private final OperationChainPublicationRepository publicationRepository = mock(
+                                                                                   OperationChainPublicationRepository.class);
     private final OperationChainTagRepository tagRepository = mock(OperationChainTagRepository.class);
     private final ArtifactStoreProvider storeProvider = mock(ArtifactStoreProvider.class);
     private final ClassLoaderRegistry classLoaderRegistry = mock(ClassLoaderRegistry.class);
@@ -68,6 +74,54 @@ class AssemblyLineManagerTest {
                                  "application/xml", "tester");
         verify(tagRepository).addTag("line", "fast");
         verify(tagRepository).addTag("line", "xml");
+    }
+
+    @Test
+    void registerAssemblyLine_shouldDelegateAtomicMetadataPublicationWhenObjectRepositorySupportsIt()
+            throws Exception {
+        // Given
+        OperationChainObjectRepository atomicObjectRepository = mock(OperationChainObjectRepository.class,
+                                                                     withSettings()
+                                                                             .extraInterfaces(OperationChainPublicationRepository.class));
+        OperationChainPublicationRepository atomicPublicationRepository = (OperationChainPublicationRepository) atomicObjectRepository;
+        InMemoryArtifactStore artifactStore = new InMemoryArtifactStore();
+        AssemblyLineManager manager = manager(atomicObjectRepository, null);
+        when(configRepository.findByAssemblyLineId("line")).thenReturn(Optional.of(memoryConfig("line")));
+        when(storeProvider.forConfig(any())).thenReturn(artifactStore);
+        stubSuccessfulRunValidation();
+        byte[] content = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
+
+        // When
+        String hash = manager.registerAssemblyLine("line", "1.0.0", ExecutionMode.TEST, content,
+                                                   "application/xml", List.of("fast", "xml", "fast"), "tester");
+
+        // Then
+        ArgumentCaptor<OperationChainObject> objectCaptor = ArgumentCaptor.forClass(OperationChainObject.class);
+        verify(atomicPublicationRepository).publish(objectCaptor.capture(), eq(List.of("fast", "xml")));
+        assertThat(objectCaptor.getValue().contentHash()).isEqualTo(hash);
+        verify(atomicObjectRepository, never()).insert(any());
+        verify(tagRepository, never()).addTag(any(), any());
+    }
+
+    @Test
+    void registerAssemblyLine_shouldExposeConflictingRetryAsPolicyViolation() throws Exception {
+        // Given
+        InMemoryArtifactStore artifactStore = new InMemoryArtifactStore();
+        AssemblyLineManager manager = manager(publicationRepository);
+        when(configRepository.findByAssemblyLineId("line")).thenReturn(Optional.of(memoryConfig("line")));
+        when(storeProvider.forConfig(any())).thenReturn(artifactStore);
+        stubSuccessfulRunValidation();
+        var conflict = new OperationChainPublicationConflictException(
+                "Publication line:1.0.0:TEST already exists with different content or metadata");
+        doThrow(conflict).when(publicationRepository).publish(any(), any());
+
+        // When / Then
+        assertThatThrownBy(() -> manager.registerAssemblyLine("line", "1.0.0", ExecutionMode.TEST,
+                                                              "<pipeline/>".getBytes(StandardCharsets.UTF_8),
+                                                              "application/xml", List.of(), "tester"))
+                .isInstanceOf(AssemblyLineManager.PolicyViolationException.class)
+                .hasMessageContaining("different content or metadata")
+                .hasCause(conflict);
     }
 
     @Test
@@ -179,7 +233,7 @@ class AssemblyLineManagerTest {
 
         // Then
         assertThat(result).as("cached generated assembly line is returned directly").isSameAs(generated);
-        verify(classLoaderRegistry).setAlias("al/line/RUN/latest", loaderId);
+        verify(classLoaderRegistry, never()).setAlias(any(), any());
     }
 
     @Test
@@ -204,10 +258,20 @@ class AssemblyLineManagerTest {
     }
 
     private AssemblyLineManager manager() {
+        return manager(objectRepository, null);
+    }
+
+    private AssemblyLineManager manager(OperationChainPublicationRepository atomicPublicationRepository) {
+        return manager(objectRepository, atomicPublicationRepository);
+    }
+
+    private AssemblyLineManager manager(OperationChainObjectRepository operationChainObjectRepository,
+                                        OperationChainPublicationRepository atomicPublicationRepository) {
         return AssemblyLineManager.builder()
                 .configRepository(configRepository)
-                .objectRepository(objectRepository)
+                .objectRepository(operationChainObjectRepository)
                 .tagRepository(tagRepository)
+                .publicationRepository(atomicPublicationRepository)
                 .storeProvider(storeProvider)
                 .classLoaderRegistry(classLoaderRegistry)
                 .translatorResolver(translatorResolver)

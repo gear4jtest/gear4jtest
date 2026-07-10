@@ -111,3 +111,10 @@ propagate through the call tree. Independent top-level runs should not reuse tho
 `RunRequest.toIndependentBuilder()` when a request is used as a reusable template.
 
 A running pipeline graph must not be mutated while a run is in progress.
+
+Assembly-line default context and `RunRequest` context are merged into a new map
+for every execution. Values remain shallow references by default for compatibility.
+Applications that place mutable lists, maps or DTOs in these contexts should set
+`AssemblyLineEngine.Builder.initialRunContextPolicy(ContextPropagationPolicy.copyValues(...))`
+to make defensive per-run copies. This policy is independent from
+`nestedRunContextPropagationPolicy`, which controls the parent-to-child boundary.

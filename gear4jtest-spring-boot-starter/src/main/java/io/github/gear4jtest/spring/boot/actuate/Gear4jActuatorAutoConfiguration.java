@@ -13,10 +13,18 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration(after = Gear4jAutoConfiguration.class)
 @ConditionalOnClass(HealthIndicator.class)
 public class Gear4jActuatorAutoConfiguration {
+    @Bean(name = { "gear4jPersistenceReadinessIndicator", "gear4jPersistenceHealthIndicator" })
+    @ConditionalOnBean(PersistenceRuntimeMonitor.class)
+    @ConditionalOnMissingBean(name = { "gear4jPersistenceReadinessIndicator",
+            "gear4jPersistenceHealthIndicator" })
+    Gear4jPersistenceHealthIndicator gear4jPersistenceReadinessIndicator(PersistenceRuntimeMonitor manager) {
+        return new Gear4jPersistenceHealthIndicator(manager);
+    }
+
     @Bean
     @ConditionalOnBean(PersistenceRuntimeMonitor.class)
-    @ConditionalOnMissingBean(name = "gear4jPersistenceHealthIndicator")
-    Gear4jPersistenceHealthIndicator gear4jPersistenceHealthIndicator(PersistenceRuntimeMonitor manager) {
-        return new Gear4jPersistenceHealthIndicator(manager);
+    @ConditionalOnMissingBean(name = "gear4jPersistenceLivenessIndicator")
+    Gear4jPersistenceLivenessIndicator gear4jPersistenceLivenessIndicator(PersistenceRuntimeMonitor manager) {
+        return new Gear4jPersistenceLivenessIndicator(manager);
     }
 }

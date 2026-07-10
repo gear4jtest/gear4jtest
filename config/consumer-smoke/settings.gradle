@@ -1,0 +1,21 @@
+pluginManagement {
+    repositories {
+        maven {
+            url = uri(providers.gradleProperty('gear4jRepository').get())
+        }
+    }
+    plugins {
+        id 'io.github.gear4jtest.xml2java' version providers.gradleProperty('gear4jVersion').get()
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        maven {
+            url = uri(providers.gradleProperty('gear4jRepository').get())
+        }
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'gear4jtest-consumer-smoke'

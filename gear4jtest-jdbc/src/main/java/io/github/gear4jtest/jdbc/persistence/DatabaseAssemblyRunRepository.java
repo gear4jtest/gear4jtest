@@ -38,6 +38,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     private final AssemblyRunRecordStatementBinder assemblyRunBinder;
     private final StationLogRecordStatementBinder stationLogBinder;
     private final JdbcStatementOptions statementOptions;
+    private final boolean baselineOnMigrate;
 
     public static Builder builder() {
         return new Builder();
@@ -48,6 +49,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         this.databaseDialect = Objects.requireNonNull(builder.databaseDialect, "databaseDialect must not be null");
         this.statementOptions = Objects.requireNonNull(builder.statementOptions,
                                                        "statementOptions must not be null");
+        this.baselineOnMigrate = builder.baselineOnMigrate;
         DatabasePersistenceJsonCodec jsonCodec = new DatabasePersistenceJsonCodec(
                 Objects.requireNonNull(builder.objectMapper, "objectMapper must not be null"));
         this.assemblyRunMapper = new AssemblyRunRecordRowMapper(databaseDialect, jsonCodec);
@@ -61,6 +63,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         private Gear4jDatabaseDialect databaseDialect;
         private ObjectMapper objectMapper = new ObjectMapper();
         private JdbcStatementOptions statementOptions = JdbcStatementOptions.defaults();
+        private boolean baselineOnMigrate;
 
         private Builder() {
         }
@@ -90,6 +93,16 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
             return this;
         }
 
+        /**
+         * Explicitly allows a compatible pre-existing schema without Gear4J migration
+         * history to be baselined during
+         * {@link DatabaseAssemblyRunRepository#initialize()}.
+         */
+        public Builder baselineOnMigrate(boolean baselineOnMigrate) {
+            this.baselineOnMigrate = baselineOnMigrate;
+            return this;
+        }
+
         public DatabaseAssemblyRunRepository build() {
             return new DatabaseAssemblyRunRepository(this);
         }
@@ -98,7 +111,36 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     @Override
     public void initialize() {
         LOGGER.info("[Gear4J] Applying core schema migrations for {}", databaseDialect);
-        JdbcSchemaMigrator.core(databaseDialect).migrate(dataSource);
+        JdbcSchemaMigrator.core(databaseDialect, baselineOnMigrate).migrate(dataSource);
+    }
+
+    /**
+     * Executes a bounded provider-specific query to verify current connectivity.
+     */
+    public boolean checkConnectivity(Duration timeout) {
+        Objects.requireNonNull(timeout, "timeout must not be null");
+        if (timeout.isNegative() || timeout.isZero()) {
+            throw new IllegalArgumentException("timeout must be > 0");
+        }
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(databaseDialect.validationQuery())) {
+            statement.setQueryTimeout(toQueryTimeoutSeconds(timeout));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        } catch (SQLException exception) {
+            throw new ExecutionPersistenceException("Persistence connectivity probe failed for " + databaseDialect,
+                    exception);
+        }
+    }
+
+    private static int toQueryTimeoutSeconds(Duration timeout) {
+        long seconds = timeout.getSeconds();
+        if (timeout.getNano() > 0 && seconds < Long.MAX_VALUE) {
+            seconds++;
+        }
+        seconds = Math.max(1L, seconds);
+        return (int) Math.min(Integer.MAX_VALUE, seconds);
     }
 
     @Override

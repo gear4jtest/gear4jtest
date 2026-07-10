@@ -178,4 +178,61 @@ class SideComputeWaitProcessorTest {
         }
     }
 
+    @Test
+    void beforeExecution_shouldRejectNullResolvedValue() {
+        // Given
+        ExecutionContext execCtx = mock(ExecutionContext.class);
+        StationExecutionContext opCtx = mock(StationExecutionContext.class);
+        SideComputeContext sideComputeContext = new SideComputeContext();
+        Map<String, Object> globalMap = new HashMap<>();
+        when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getSideComputeContext()).thenReturn(sideComputeContext);
+        when(execCtx.getContext()).thenReturn(globalMap);
+        sideComputeContext.getOrCreateFuture("null-result").complete(null);
+        SideComputeWaitProcessor processor = SideComputeWaitProcessor.builder("null-result").build();
+
+        // When / Then
+        assertThatThrownBy(() -> processor.beforeExecution("input", opCtx))
+                .isInstanceOf(SideComputeExecutionException.class)
+                .hasRootCauseMessage("Side compute 'null-result' returned null; null results are not supported");
+        assertThat(globalMap).doesNotContainKey(SideComputeKeys.valueKey("null-result"));
+    }
+
+    @Test
+    void beforeExecution_shouldRejectNullFallbackValue() {
+        // Given
+        ExecutionContext execCtx = mock(ExecutionContext.class);
+        StationExecutionContext opCtx = mock(StationExecutionContext.class);
+        SideComputeContext sideComputeContext = new SideComputeContext();
+        when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getSideComputeContext()).thenReturn(sideComputeContext);
+        when(execCtx.getContext()).thenReturn(new HashMap<>());
+        SideComputeWaitProcessor processor = SideComputeWaitProcessor.builder("null-fallback")
+                .timeout(Duration.ofMillis(10))
+                .onTimeoutUseFallback(() -> null)
+                .build();
+
+        // When / Then
+        assertThatThrownBy(() -> processor.beforeExecution("input", opCtx))
+                .isInstanceOf(SideComputeExecutionException.class)
+                .hasRootCauseMessage("Side compute 'null-fallback' fallback returned null; null results are not supported");
+        assertThat(sideComputeContext.getOrCreateFuture("null-fallback")).isCompletedExceptionally();
+    }
+
+    @Test
+    void builder_shouldRejectInvalidTimeoutConfiguration() {
+        assertThatThrownBy(() -> SideComputeWaitProcessor.builder("timeout").timeout(Duration.ZERO))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("timeout must be strictly positive");
+        assertThatThrownBy(() -> SideComputeWaitProcessor.builder("timeout").timeout(Duration.ofMillis(-1)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("timeout must be strictly positive");
+        assertThatThrownBy(() -> SideComputeWaitProcessor.builder("timeout").safetyTimeout(Duration.ZERO))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("safetyTimeout must be strictly positive");
+        assertThatThrownBy(() -> SideComputeWaitProcessor.builder("timeout").onTimeoutUseFallback(null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("fallback must not be null");
+    }
+
 }

@@ -19,12 +19,12 @@ public class InMemoryExecutionManager implements AssemblyRunManager {
 
     private InMemoryExecutionManager(Builder builder) {
         this.repository = Objects.requireNonNull(builder.repository, "repository must not be null");
-        this.redactor = builder.redactor != null ? builder.redactor : SensitiveDataRedactor.none();
+        this.redactor = builder.redactor != null ? builder.redactor : SensitiveDataRedactor.discardSensitiveValues();
     }
 
     public static final class Builder {
         private InMemoryAssemblyRunRepository repository = new InMemoryAssemblyRunRepository();
-        private SensitiveDataRedactor redactor = SensitiveDataRedactor.none();
+        private SensitiveDataRedactor redactor;
 
         private Builder() {
         }

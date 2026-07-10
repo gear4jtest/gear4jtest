@@ -25,6 +25,7 @@ gear4j.stations.started
 gear4j.stations.completed
 gear4j.stations.duration
 gear4j.persistence.buffered.station.logs
+gear4j.persistence.buffered.station.logs.oldest.age.seconds
 gear4j.persistence.active.runs
 gear4j.persistence.flushes.scheduled
 gear4j.persistence.flushes.completed
@@ -41,6 +42,13 @@ gear4j.reactions.dropped
 gear4j.reactions.failed
 gear4j.reactions.pending
 gear4j.reactions.in.flight
+gear4j.events.process.active.runtimes
+gear4j.events.process.queued
+gear4j.events.process.dropped
+gear4j.reactions.process.dropped
+gear4j.events.process.dispatcher.rejected
+gear4j.events.process.dispatch.latency.average.nanos
+gear4j.events.process.dispatch.latency.max.nanos
 ```
 
 These metrics are useful to confirm that Gear4J is active, track completed run
@@ -49,8 +57,9 @@ runtime are not silently accumulating, saturating, running late reactions or dro
 intentionally conservative.
 
 `PersistenceMetricsBinder` is auto-registered by the Spring Boot starter when a
-`DatabaseExecutionManager` and a `MeterRegistry` are available. `EventMetricsBinder`
-is explicit because `EventManager` is per-run runtime state today.
+`DatabaseExecutionManager` and a `MeterRegistry` are available. The starter also calls
+`EventMetricsBinder.bindProcessWide(...)` once for the tag-free aggregate. Per-run binding remains available explicitly
+through `EventMetricsBinder.bind(...)` for diagnostics that own a specific `EventManager` lifecycle.
 
 ## Why the current surface is conservative
 
@@ -100,19 +109,22 @@ Avoid exposing raw exception messages as metric tags. Exception class names may
 also be too high-cardinality depending on the application and should be
 configurable.
 
-## Tag policy direction
+## Tag policy
 
-A future `MetricsTagPolicy` should let users decide which tags are emitted:
+The default `Gear4jMeterTagPolicy` emits no identifier tag. Completed run and
+station metrics retain only the bounded `status` tag. This keeps the number of
+time series independent of the number of generated pipelines, operations and
+branches.
 
-```yaml
-gear4j:
-  metrics:
-    tags:
-      include-pipeline-id: true
-      include-pipeline-version: true
-      include-operation-id: false
-      include-operation-type: true
-      include-error-category: true
+Use an explicit allowlist when selected identifiers are operationally useful:
+
+```java
+Gear4jMeterTagPolicy policy = Gear4jMeterTagPolicy.allowlistedIdentifiers(
+        Set.of("checkout", "billing"),
+        Set.of("validate", "persist"),
+        Set.of("main", "fallback"));
 ```
 
-The default should stay safe for common monitoring backends.
+Unknown identifiers are aggregated under `other`. A custom implementation can
+provide other bounded dimensions. The deprecated `legacyIdentifiers()` policy
+restores raw identifier tags only to support a controlled migration.

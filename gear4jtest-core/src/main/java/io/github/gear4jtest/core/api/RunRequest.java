@@ -24,8 +24,8 @@ import io.github.gear4jtest.core.spi.factory.ResourceFactory;
  * the run starts.
  * </p>
  */
-public class RunRequest {
-    private final Object input;
+public class RunRequest<IN> {
+    private final IN input;
     private final Map<String, Object> context;
     private final ResourceFactory resourceFactory;
     private final List<RuntimeExtension> extensions;
@@ -34,7 +34,7 @@ public class RunRequest {
     private final AssemblyLineCallStack assemblyLineCallStack;
     private final CancellationToken cancellationToken;
 
-    private RunRequest(Builder builder) {
+    private RunRequest(Builder<IN> builder) {
         this.input = builder.input;
         this.context = builder.context == null ? Map.of()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(builder.context));
@@ -46,15 +46,15 @@ public class RunRequest {
         this.cancellationToken = builder.cancellationToken;
     }
 
-    public static Builder builder() {
-        return new Builder();
+    public static <IN> Builder<IN> builder() {
+        return new Builder<>();
     }
 
     public List<RuntimeExtension> getExtensions() {
         return Collections.unmodifiableList(extensions);
     }
 
-    public Object getInput() {
+    public IN getInput() {
         return input;
     }
 
@@ -94,8 +94,8 @@ public class RunRequest {
      * replace those fields explicitly before building the copy.
      * </p>
      */
-    public Builder toBuilder() {
-        Builder builder = copyIntoBuilder()
+    public Builder<IN> toBuilder() {
+        Builder<IN> builder = copyIntoBuilder()
                 .nestedRunContext(nestedRunContext)
                 .assemblyLineCallStack(assemblyLineCallStack)
                 .cancellationToken(cancellationToken);
@@ -115,14 +115,14 @@ public class RunRequest {
      * unless the caller explicitly supplies them again on the returned builder.
      * </p>
      */
-    public Builder toIndependentBuilder() {
-        Builder builder = copyIntoBuilder();
+    public Builder<IN> toIndependentBuilder() {
+        Builder<IN> builder = copyIntoBuilder();
         extensions.forEach(builder::with);
         return builder;
     }
 
-    private Builder copyIntoBuilder() {
-        return new Builder()
+    private Builder<IN> copyIntoBuilder() {
+        return new Builder<IN>()
                 .input(input)
                 .context(context)
                 .resourceFactory(resourceFactory)
@@ -132,9 +132,9 @@ public class RunRequest {
     /**
      * Builder for per-run request values.
      */
-    public static class Builder {
+    public static class Builder<IN> {
         private final List<RuntimeExtension> extensions = new ArrayList<>();
-        private Object input;
+        private IN input;
         private Map<String, Object> context;
         private ResourceFactory resourceFactory;
         private IdGenerator idGenerator;
@@ -142,32 +142,44 @@ public class RunRequest {
         private AssemblyLineCallStack assemblyLineCallStack;
         private CancellationToken cancellationToken;
 
-        public Builder input(Object input) {
+        /**
+         * Sets the request input and narrows the builder type to the concrete input
+         * type used by this call.
+         *
+         * <p>
+         * The bounded type parameter preserves the convenient
+         * {@code RunRequest.builder().input(value).build()} form while preventing a
+         * builder whose input type is already specific from being widened to an
+         * unrelated type.
+         * </p>
+         */
+        @SuppressWarnings("unchecked")
+        public <NEW_IN extends IN> Builder<NEW_IN> input(NEW_IN input) {
             this.input = input;
-            return this;
+            return (Builder<NEW_IN>) this;
         }
 
-        public Builder context(Map<String, Object> context) {
+        public Builder<IN> context(Map<String, Object> context) {
             this.context = context == null ? null : new LinkedHashMap<>(context);
             return this;
         }
 
-        public Builder resourceFactory(ResourceFactory resourceFactory) {
+        public Builder<IN> resourceFactory(ResourceFactory resourceFactory) {
             this.resourceFactory = resourceFactory;
             return this;
         }
 
-        public Builder withIdGenerator(IdGenerator idGenerator) {
+        public Builder<IN> withIdGenerator(IdGenerator idGenerator) {
             this.idGenerator = idGenerator;
             return this;
         }
 
-        public Builder nestedRunContext(NestedRunContext nestedRunContext) {
+        public Builder<IN> nestedRunContext(NestedRunContext nestedRunContext) {
             this.nestedRunContext = nestedRunContext;
             return this;
         }
 
-        public Builder assemblyLineCallStack(AssemblyLineCallStack assemblyLineCallStack) {
+        public Builder<IN> assemblyLineCallStack(AssemblyLineCallStack assemblyLineCallStack) {
             this.assemblyLineCallStack = assemblyLineCallStack;
             return this;
         }
@@ -176,7 +188,7 @@ public class RunRequest {
          * Supplies a token that allows callers and long-running operators to cooperate
          * on cancellation.
          */
-        public Builder cancellationToken(CancellationToken cancellationToken) {
+        public Builder<IN> cancellationToken(CancellationToken cancellationToken) {
             this.cancellationToken = cancellationToken;
             return this;
         }
@@ -184,14 +196,14 @@ public class RunRequest {
         /**
          * Adds a run-scoped extension.
          */
-        public Builder with(RuntimeExtension extension) {
+        public Builder<IN> with(RuntimeExtension extension) {
             Objects.requireNonNull(extension);
             this.extensions.add(extension);
             return this;
         }
 
-        public RunRequest build() {
-            return new RunRequest(this);
+        public RunRequest<IN> build() {
+            return new RunRequest<>(this);
         }
     }
 }

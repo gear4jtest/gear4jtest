@@ -15,6 +15,7 @@ import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ParameterResolutionContext;
+import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.context.StationParameter;
 import io.github.gear4jtest.core.api.station.WorkStation;
@@ -50,7 +51,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AssemblyLineCacheWithWaitProcessorIT {
     @Test
     void should_wait_side_compute_via_processor_and_cache_pipeline_result() {
-        InMemoryAssemblyLineCacheRepository cacheRepository = new InMemoryAssemblyLineCacheRepository();
+        InMemoryAssemblyLineCacheRepository cacheRepository = new InMemoryAssemblyLineCacheRepository(128,
+                knownImmutableTestOutputCloner());
 
         AssemblyLineCacheExtension cacheExtension = new AssemblyLineCacheExtension(
                 new AssemblyLineCachePolicy(true, NoDependencyCachePolicy.DO_NOT_CACHE, null),
@@ -244,4 +246,13 @@ class AssemblyLineCacheWithWaitProcessorIT {
     record OrderDto(String orderCode) {}
 
     record FinalOutput(String customerName, String orderCode) {}
+
+    private static PayloadCloner knownImmutableTestOutputCloner() {
+        return new PayloadCloner() {
+            @Override
+            public <T> T clonePayload(T payload) {
+                return payload;
+            }
+        };
+    }
 }

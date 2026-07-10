@@ -8,7 +8,7 @@ public interface OperationChainTranslator {
      *
      * <p>
      * Examples: {@code application/xml}, {@code application/json},
-     * {@code application/vnd.gear4j.pipeline+xml}.
+     * {@code application/vnd.gear4j.assembly-line+xml}.
      * </p>
      */
     boolean supports(String mediaType);

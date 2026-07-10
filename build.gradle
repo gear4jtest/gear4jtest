@@ -3,8 +3,7 @@ plugins {
     id "org.sonarqube" version "7.3.1.8318"
     id "org.jreleaser" version "1.24.0"
     id "org.owasp.dependencycheck" version "12.2.2"
-    id "me.champeau.gradle.jmh" version "0.5.3"
-    id 'org.asciidoctor.convert' version '2.4.0'
+    id "me.champeau.jmh" version "0.7.3"
     id 'idea'
 }
 
@@ -184,7 +183,6 @@ configure(project.coreProjects) {
 
 configure(project.coreProjects.findAll { !it.name.contains("gradle") }) {
     apply plugin: 'java-library'
-    apply plugin: 'me.champeau.gradle.jmh'
     apply from: "${rootDir}/publishing.gradle"
 
     dependencies {
@@ -231,8 +229,42 @@ configure(project.coreProjects.findAll { !it.name.contains("gradle") }) {
     }
 }
 
+project(':gear4jtest-core') {
+    apply plugin: 'me.champeau.jmh'
+
+    dependencies {
+        jmh project(':gear4jtest-experimental-cache')
+        jmh project(':gear4jtest-external-api')
+        jmh project(':gear4jtest-jackson')
+        jmh project(':gear4jtest-jdbc')
+        jmh project(':gear4jtest-xml')
+    }
+
+    jmh {
+        jmhVersion = '1.37'
+        warmupIterations = 2
+        iterations = 3
+        fork = 1
+        threads = 1
+        timeOnIteration = '1s'
+        failOnError = true
+        jvmArgs = ['-Xms256m', '-Xmx1024m']
+        resultFormat = 'JSON'
+        resultsFile = file("${buildDir}/reports/jmh/results.json")
+        humanOutputFile = file("${buildDir}/reports/jmh/human.txt")
+        profilers = ['gc', 'io.github.gear4jtest.benchmark.LiveThreadProfiler']
+    }
+}
+
 configure(project.coreProjects.findAll { it.name.contains("gradle") }) {
     apply plugin: 'groovy-gradle-plugin'
+}
+
+project(':gear4jtest-jdbc') {
+    tasks.named('integrationTest') {
+        systemProperty 'gear4j.test.databaseDialect',
+            providers.gradleProperty('gear4jDatabaseDialect').orElse('postgresql').get()
+    }
 }
 
 def allTestCoverageFile = "${rootProject.projectDir}/build/reports/jacoco/report.xml"
@@ -273,8 +305,26 @@ dependencyCheck {
 tasks.register('stageMavenCentral') {
     group = 'publishing'
     description = 'Stages all Maven publications under build/staging-deploy for JReleaser.'
-    dependsOn(coreProjects.findAll { !it.name.contains('gradle') }
-            .collect { it.tasks.named('publishAllPublicationsToMavenCentralStagingRepository') })
+    dependsOn(coreProjects.collect { it.tasks.named('publishAllPublicationsToMavenCentralStagingRepository') })
+}
+
+tasks.register('consumerSmokeTest', Exec) {
+    group = 'verification'
+    description = 'Compiles and runs an autonomous consumer against the staged Maven artifacts and plugin marker.'
+    dependsOn tasks.named('stageMavenCentral')
+
+    def consumerProject = layout.projectDirectory.dir('config/consumer-smoke')
+    def stagingRepository = layout.buildDirectory.dir('staging-deploy')
+    inputs.dir(consumerProject)
+    inputs.dir(stagingRepository)
+
+    workingDir consumerProject
+    commandLine rootProject.file('gradlew').absolutePath,
+        '--no-daemon',
+        '-p', consumerProject.asFile.absolutePath,
+        'clean', 'consumerSmoke',
+        "-Pgear4jVersion=${project.version}",
+        "-Pgear4jRepository=${stagingRepository.get().asFile.absolutePath}"
 }
 
 tasks.register('jacocoRootAllReport', JacocoReport) {
@@ -307,6 +357,46 @@ tasks.register('jacocoRootAllReport', JacocoReport) {
     }
 }
 
+def criticalCoverageThresholdsFile = layout.projectDirectory.file('config/critical-coverage-thresholds.json')
+def criticalCoverageThresholds = new groovy.json.JsonSlurper().parse(criticalCoverageThresholdsFile.asFile)
+def criticalCoverageProjects = [
+    project(':gear4jtest-core'),
+    project(':gear4jtest-external-api'),
+    project(':gear4jtest-jdbc')
+]
+
+tasks.register('jacocoCriticalCoverageVerification', JacocoCoverageVerification) {
+    group = 'verification'
+    description = 'Enforces branch-coverage ratchets on the runtime, concurrency, migration and publication hot spots.'
+
+    dependsOn criticalCoverageProjects.collect { it.tasks.named('test') }
+    dependsOn criticalCoverageProjects.collect { it.tasks.named('integrationTest') }
+    inputs.file(criticalCoverageThresholdsFile)
+
+    sourceDirectories.from(criticalCoverageProjects.collect { it.sourceSets.main.allSource.srcDirs }.flatten())
+    classDirectories.from(criticalCoverageProjects.collect { it.sourceSets.main.output })
+    executionData.from(criticalCoverageProjects.collect { testedProject ->
+        [
+            testedProject.layout.buildDirectory.file('jacoco/test.exec'),
+            testedProject.layout.buildDirectory.file('jacoco/integrationTest.exec')
+        ]
+    }.flatten())
+
+    violationRules {
+        criticalCoverageThresholds.classes.each { threshold ->
+            rule {
+                element = 'CLASS'
+                includes = [threshold.className]
+                limit {
+                    counter = 'BRANCH'
+                    value = 'COVEREDRATIO'
+                    minimum = threshold.minimumBranchRatio as BigDecimal
+                }
+            }
+        }
+    }
+}
+
 tasks.register('integrationCheck') {
     group = 'verification'
     description = 'Runs integration tests for every module. Database-dependent tests use Testcontainers.'
@@ -319,9 +409,79 @@ tasks.register('coverageReport') {
     dependsOn tasks.named('jacocoRootAllReport')
 }
 
-allprojects {
-    tasks.matching { it.name == 'build' }.configureEach {
-        finalizedBy rootProject.tasks.named('coverageReport')
+tasks.register('coverageVerification') {
+    group = 'verification'
+    description = 'Runs the versioned critical-class JaCoCo branch-coverage ratchets.'
+    dependsOn tasks.named('jacocoCriticalCoverageVerification')
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('coverageVerification')
+}
+
+tasks.register('verifyPerformanceBudgets') {
+    group = 'verification'
+    description = 'Runs the versioned JMH scenarios and verifies latency, throughput, allocation and thread budgets.'
+    dependsOn project(':gear4jtest-core').tasks.named('jmh')
+
+    def budgetsFile = layout.projectDirectory.file('config/performance-budgets.json')
+    def resultsFile = project(':gear4jtest-core').layout.buildDirectory.file('reports/jmh/results.json')
+    inputs.file(budgetsFile)
+    inputs.file(resultsFile)
+
+    doLast {
+        def budgets = new groovy.json.JsonSlurper().parse(budgetsFile.asFile)
+        def results = new groovy.json.JsonSlurper().parse(resultsFile.get().asFile)
+        def indexedResults = results.collectEntries { result ->
+            [(result.benchmark + '|' + result.mode): result]
+        }
+        def failures = []
+
+        budgets.benchmarks.each { budget ->
+            def key = budget.benchmark + '|' + budget.mode
+            def result = indexedResults[key]
+            if (result == null) {
+                failures << "Missing JMH result for ${key}"
+                return
+            }
+            def expectedScoreUnit = budgets.scoreUnits.get(budget.mode)
+            if (result.primaryMetric.scoreUnit != expectedScoreUnit) {
+                failures << "${key} uses ${result.primaryMetric.scoreUnit}; expected ${expectedScoreUnit}"
+            }
+            def score = result.primaryMetric.score as BigDecimal
+            if (budget.maximumScore != null && score > (budget.maximumScore as BigDecimal)) {
+                failures << "${key} score ${score} exceeds maximum ${budget.maximumScore} ${result.primaryMetric.scoreUnit}"
+            }
+            if (budget.minimumScore != null && score < (budget.minimumScore as BigDecimal)) {
+                failures << "${key} score ${score} is below minimum ${budget.minimumScore} ${result.primaryMetric.scoreUnit}"
+            }
+
+            def allocation = result.secondaryMetrics?.get('gc.alloc.rate.norm')?.score
+            if (allocation == null) {
+                failures << "Missing gc.alloc.rate.norm for ${key}"
+            } else if ((allocation as BigDecimal) > (budget.maximumAllocationBytesPerOperation as BigDecimal)) {
+                failures << "${key} allocation ${allocation} B/op exceeds maximum ${budget.maximumAllocationBytesPerOperation} B/op"
+            }
+
+            def liveThreads = result.secondaryMetrics?.get('threads.live')?.score
+            if (liveThreads == null) {
+                failures << "Missing threads.live for ${key}"
+            } else if ((liveThreads as BigDecimal) > (budget.maximumLiveThreads as BigDecimal)) {
+                failures << "${key} live threads ${liveThreads} exceeds maximum ${budget.maximumLiveThreads}"
+            }
+
+            def heapUsed = result.secondaryMetrics?.get('heap.used.bytes')?.score
+            def maximumHeapUsedBytes = budget.maximumHeapUsedBytes ?: budgets.defaults.maximumHeapUsedBytes
+            if (heapUsed == null) {
+                failures << "Missing heap.used.bytes for ${key}"
+            } else if ((heapUsed as BigDecimal) > (maximumHeapUsedBytes as BigDecimal)) {
+                failures << "${key} heap usage ${heapUsed} bytes exceeds maximum ${maximumHeapUsedBytes} bytes"
+            }
+        }
+
+        if (!failures.isEmpty()) {
+            throw new GradleException('Performance budget violations:\n - ' + failures.join('\n - '))
+        }
     }
 }
 
@@ -332,5 +492,96 @@ tasks.matching { it.name == 'sonarqube' || it.name == 'sonar' }.configureEach {
 tasks.register('releaseCheck') {
     group = 'verification'
     description = 'Runs the checks expected before staging a Maven Central release.'
-    dependsOn tasks.named('check'), tasks.named('dependencyCheckAggregate'), tasks.named('verifySupplyChainConfiguration')
+    dependsOn tasks.named('check'), tasks.named('consumerSmokeTest'), tasks.named('dependencyCheckAggregate'),
+        tasks.named('verifySupplyChainConfiguration'), tasks.named('verifyPerformanceBudgets')
+}
+
+configurations {
+    japicmp
+}
+
+dependencies {
+    japicmp('com.github.siom79.japicmp:japicmp:0.26.1:jar-with-dependencies') {
+        transitive = false
+    }
+}
+
+def apiBaselineVersion = providers.gradleProperty('gear4j.apiBaselineVersion')
+def publishedLibraryProjects = coreProjects.findAll { !it.name.contains('gradle') }
+def apiCompatibilityTasks = []
+
+if (apiBaselineVersion.isPresent()) {
+    def baselineVersion = apiBaselineVersion.get()
+    publishedLibraryProjects.each { candidate ->
+        def oldApi = configurations.detachedConfiguration(
+            dependencies.create("${candidate.group}:${candidate.name}:${baselineVersion}"))
+        oldApi.transitive = false
+        def taskSuffix = candidate.name.split('-').collect { it.capitalize() }.join('')
+        apiCompatibilityTasks << tasks.register("japicmp${taskSuffix}", JavaExec) {
+            group = 'verification'
+            description = "Checks ${candidate.name} against published baseline ${baselineVersion}."
+            dependsOn candidate.tasks.named('jar')
+            classpath = configurations.japicmp
+            mainClass = 'japicmp.JApiCmp'
+            outputs.file(layout.buildDirectory.file("reports/japicmp/${candidate.name}.xml"))
+
+            doFirst {
+                def exclusions = ['@io.github.gear4jtest.core.api.annotation.Internal',
+                                  '@io.github.gear4jtest.core.api.annotation.Experimental']
+                fileTree(candidate.layout.projectDirectory.dir('src/main/java')) {
+                    include '**/package-info.java'
+                }.files.each { packageInfo ->
+                    def source = packageInfo.getText('UTF-8')
+                    if (source.contains('@io.github.gear4jtest.core.api.annotation.Internal')
+                            || source.contains('@io.github.gear4jtest.core.api.annotation.Experimental')) {
+                        def matcher = source =~ /(?m)^package\s+([A-Za-z0-9_.]+);/
+                        if (matcher.find()) {
+                            exclusions << matcher.group(1) + '.*'
+                        }
+                    }
+                }
+                def currentJar = candidate.tasks.named('jar').get().archiveFile.get().asFile
+                args '--old', oldApi.singleFile.absolutePath,
+                    '--new', currentJar.absolutePath,
+                    '-a', 'public',
+                    '--only-modified',
+                    '--ignore-missing-classes',
+                    '--exclude', exclusions.unique().join(';'),
+                    '--no-error-on-exclusion-incompatibility',
+                    '--error-on-binary-incompatibility',
+                    '--error-on-source-incompatibility',
+                    '--xml-file', layout.buildDirectory.file("reports/japicmp/${candidate.name}.xml").get().asFile.absolutePath
+            }
+        }
+    }
+}
+
+tasks.register('verifyApiCompatibilityConfiguration') {
+    group = 'verification'
+    description = 'Requires an N-1 API baseline after the first stable 1.0.0 release.'
+    doLast {
+        String currentVersion = project.version.toString()
+        boolean stableVersion = currentVersion ==~ /\d+\.\d+\.\d+/
+        boolean firstStableRelease = currentVersion == '1.0.0'
+        if (stableVersion && !firstStableRelease && !apiBaselineVersion.isPresent()) {
+            throw new GradleException('Stable releases after 1.0.0 require '
+                    + '-Pgear4j.apiBaselineVersion=<previous-release> for source/binary compatibility checks')
+        }
+    }
+}
+
+tasks.register('apiCompatibilityCheck') {
+    group = 'verification'
+    description = 'Checks public source and binary compatibility against the configured N-1 release.'
+    dependsOn tasks.named('verifyApiCompatibilityConfiguration')
+    dependsOn apiCompatibilityTasks
+    if (!apiBaselineVersion.isPresent()) {
+        doLast {
+            logger.lifecycle('No API baseline configured; this is allowed only for snapshots, prereleases and 1.0.0.')
+        }
+    }
+}
+
+tasks.named('releaseCheck') {
+    dependsOn tasks.named('apiCompatibilityCheck')
 }

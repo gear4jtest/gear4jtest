@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.api.station;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.config.FlowConfig;
@@ -59,9 +60,9 @@ public class SequenceStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         public <NEXT_OUT> Builder<IN, NEXT_OUT> next(AbstractStation<OUT, NEXT_OUT> nextStep) {
-            this.accumulatedSteps.add(nextStep);
-
-            Builder<IN, NEXT_OUT> next = new Builder<>(this.id, this.accumulatedSteps);
+            List<AbstractStation<?, ?>> nextSteps = new ArrayList<>(this.accumulatedSteps);
+            nextSteps.add(Objects.requireNonNull(nextStep, "nextStep must not be null"));
+            Builder<IN, NEXT_OUT> next = new Builder<>(this.id, nextSteps);
             next.flowConfig = this.flowConfig;
             return next;
         }

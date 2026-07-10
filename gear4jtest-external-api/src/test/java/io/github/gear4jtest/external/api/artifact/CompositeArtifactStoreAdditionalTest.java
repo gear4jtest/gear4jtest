@@ -64,7 +64,7 @@ class CompositeArtifactStoreAdditionalTest {
     void get_shouldRejectCorruptFallbackBeforeHealingPrimary() throws IOException {
         InMemoryArtifactStore primary = new InMemoryArtifactStore();
         InMemoryArtifactStore fallback = new InMemoryArtifactStore();
-        String expectedHash = Hashing.sha256Hex("expected".getBytes(StandardCharsets.UTF_8));
+        String expectedHash = ArtifactHashes.sha256Hex("expected".getBytes(StandardCharsets.UTF_8));
         String actualHash = fallback.put("corrupt".getBytes(StandardCharsets.UTF_8));
         assertThat(actualHash).isNotEqualTo(expectedHash);
         CompositeArtifactStore store = new CompositeArtifactStore(primary, List.of(new AliasArtifactStore(fallback,
@@ -87,7 +87,7 @@ class CompositeArtifactStoreAdditionalTest {
                 false, false, Runnable::run);
 
         assertThat(store.exists(hash)).isTrue();
-        assertThat(store.get(Hashing.sha256Hex("missing".getBytes(StandardCharsets.UTF_8)))).isEmpty();
+        assertThat(store.get(ArtifactHashes.sha256Hex("missing".getBytes(StandardCharsets.UTF_8)))).isEmpty();
     }
 
     private record AliasArtifactStore(InMemoryArtifactStore delegate, String aliasHash, String storedHash)

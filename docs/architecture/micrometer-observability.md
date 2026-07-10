@@ -24,9 +24,10 @@ The built-in duration timers are recorded only when both start and end timestamp
 are present and consistent. Missing or inverted timestamps are ignored rather than
 emitting misleading zero or negative durations.
 
-`PersistenceMetricsBinder` exposes all fields from `PersistenceRuntimeStats`:
-active run buffers, buffered station logs, scheduled/completed/failed flushes and
-rejected appends.
+`PersistenceMetricsBinder` exposes active run buffers, buffered station logs,
+the age of the oldest buffered log, scheduled/completed/failed flushes and
+rejected appends. Cumulative failure and rejection counters are alert signals;
+they are not used as permanent health state.
 
 `EventMetricsBinder` can be bound manually to an `EventManager` to expose the
 best-effort in-memory event runtime counters: published/dispatched/dropped/queued
@@ -66,32 +67,21 @@ UNKNOWN
 Users can still implement their own `RuntimeExtension` if they need custom
 metrics or application-specific tagging.
 
-## Cardinality policy
-
-Metric tags must remain configurable. Tags such as `pipeline.id` and
-`operation.id` can be extremely useful, but they may explode cardinality in a
-large BO-driven environment.
-
-The future default should be safe, with opt-in detailed tags:
-
-```yaml
-gear4j:
-  metrics:
-    tags:
-      include-pipeline-id: true
-      include-pipeline-version: true
-      include-operation-id: false
-      include-operation-type: true
-      include-error-category: true
-```
-
 ## Tag cardinality
 
-The default Micrometer extension keeps the historical tags such as `pipeline.id`,
-`operation.id`, `branch.id` and `status`. Applications that generate dynamic
-pipeline or operation identifiers should avoid exporting unbounded-cardinality
-tags. They can provide a custom `Gear4jMeterTagPolicy` bean to control the exact
-set of tags emitted by the Micrometer extension.
+The default policy is bounded: started counters have no tags and completed
+counters/timers expose only the finite `status` value. Raw `pipeline.id`,
+`operation.id` and `branch.id` values are not emitted by default.
+
+Applications that need selected identifiers can use
+`Gear4jMeterTagPolicy.allowlistedIdentifiers(...)`. Known identifiers retain
+their value and every unknown value is aggregated as `other`, so the maximum
+series count is reviewable before deployment. A custom policy remains available
+for application-specific bounded dimensions.
+
+`Gear4jMeterTagPolicy.legacyIdentifiers()` temporarily restores the old raw-ID
+behavior for migration only. It is deprecated for removal because dynamically
+generated identifiers can exhaust a metrics backend.
 
 ## Recommended MVP dashboards
 
@@ -103,7 +93,7 @@ saturation, latency and drops:
 | Run throughput | `gear4j.runs.started`, `gear4j.runs.completed` | completed much lower than started for a sustained period |
 | Run latency | `gear4j.runs.duration` | p95/p99 above the application SLO |
 | Station latency | `gear4j.stations.duration` | one station class starts dominating runtime |
-| Persistence backlog | `gear4j.persistence.buffered.station.logs`, `gear4j.persistence.active.runs` | steadily increasing backlog |
+| Persistence backlog | `gear4j.persistence.buffered.station.logs`, `gear4j.persistence.buffered.station.logs.oldest.age.seconds`, `gear4j.persistence.active.runs` | steadily increasing backlog or age |
 | Persistence flush health | `gear4j.persistence.flushes.scheduled`, `gear4j.persistence.flushes.completed`, `gear4j.persistence.flushes.failed` | failed flushes increasing or completed no longer following scheduled |
 | Persistence backpressure | `gear4j.persistence.appends.rejected` | any sustained non-zero value |
 | Event queue pressure | `gear4j.events.queued`, `gear4j.events.queue.remaining.capacity`, `gear4j.events.dropped` | remaining capacity near zero or dropped events increasing |

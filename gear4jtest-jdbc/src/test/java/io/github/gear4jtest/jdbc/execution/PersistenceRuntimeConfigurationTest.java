@@ -21,7 +21,12 @@ class PersistenceRuntimeConfigurationTest {
         assertThat(configuration.maxPendingLogsPerRun()).isGreaterThanOrEqualTo(configuration.batchSize());
         assertThat(configuration.flushInterval()).isPositive();
         assertThat(configuration.maxScheduledFlushTasks()).isPositive();
+        assertThat(configuration.shutdownRetryInitialBackoff()).isEqualTo(Duration.ofMillis(100));
+        assertThat(configuration.shutdownRetryMaxBackoff()).isEqualTo(Duration.ofSeconds(2));
         assertThat(configuration.jdbcStatementTimeout()).isEqualTo(Duration.ofSeconds(30));
+        assertThat(configuration.readinessMaxBufferedStationLogs()).isEqualTo(5_000);
+        assertThat(configuration.readinessMaxBacklogAge()).isEqualTo(Duration.ofSeconds(30));
+        assertThat(configuration.connectivityProbeTimeout()).isEqualTo(Duration.ofSeconds(2));
     }
 
     @Test
@@ -94,6 +99,43 @@ class PersistenceRuntimeConfigurationTest {
         assertThatThrownBy(builder::build)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("maxScheduledFlushTasks");
+    }
+
+    @Test
+    void build_shouldRejectInvalidShutdownRetryBackoff() {
+        assertThatThrownBy(() -> PersistenceRuntimeConfiguration.builder()
+                .shutdownRetryInitialBackoff(Duration.ZERO)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("shutdownRetryInitialBackoff");
+
+        assertThatThrownBy(() -> PersistenceRuntimeConfiguration.builder()
+                .shutdownRetryInitialBackoff(Duration.ofSeconds(2))
+                .shutdownRetryMaxBackoff(Duration.ofMillis(100))
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("shutdownRetryInitialBackoff must be <= shutdownRetryMaxBackoff");
+    }
+
+    @Test
+    void build_shouldRejectInvalidReadinessThresholds() {
+        assertThatThrownBy(() -> PersistenceRuntimeConfiguration.builder()
+                .readinessMaxBufferedStationLogs(0)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("readinessMaxBufferedStationLogs");
+
+        assertThatThrownBy(() -> PersistenceRuntimeConfiguration.builder()
+                .readinessMaxBacklogAge(Duration.ZERO)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("readinessMaxBacklogAge");
+
+        assertThatThrownBy(() -> PersistenceRuntimeConfiguration.builder()
+                .connectivityProbeTimeout(Duration.ZERO)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("connectivityProbeTimeout");
     }
 
     private static void await(CountDownLatch latch) {

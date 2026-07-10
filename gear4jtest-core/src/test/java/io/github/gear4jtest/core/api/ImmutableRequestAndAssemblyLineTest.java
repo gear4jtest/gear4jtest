@@ -8,6 +8,7 @@ import io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStack;
 import io.github.gear4jtest.core.api.assemblyline.NestedRunContext;
 import io.github.gear4jtest.core.api.context.CancellationToken;
 import io.github.gear4jtest.core.api.station.AbstractStation;
+import io.github.gear4jtest.core.api.station.SequenceStation;
 import io.github.gear4jtest.core.api.station.StationKind;
 import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
 import io.github.gear4jtest.core.spi.factory.IdGenerator;
@@ -116,6 +117,33 @@ class ImmutableRequestAndAssemblyLineTest {
 
         // Then
         assertThat(typed.build().getDefaultContext()).containsEntry("initial", "value").doesNotContainKey("late");
+    }
+
+    @Test
+    void assemblyLineTypedTransition_shouldNotMutateSourceBuilder() {
+        // Given
+        AssemblyLine.Builder<String, String> source = AssemblyLine.builder("pipeline");
+        TestStation station = new TestStation();
+
+        // When
+        AssemblyLine.Builder<String, Integer> typed = source.then(station);
+        AssemblyLine<String, String> sourceAssemblyLine = source.build();
+        AssemblyLine<String, Integer> typedAssemblyLine = typed.build();
+
+        // Then
+        assertThat(sourceAssemblyLine.getRootStation()).isInstanceOf(SequenceStation.class);
+        assertThat(((SequenceStation<?, ?>) sourceAssemblyLine.getRootStation()).getSteps()).isEmpty();
+        assertThat(typedAssemblyLine.getRootStation()).isSameAs(station);
+    }
+
+    @Test
+    void assemblyLineBuilder_shouldRejectBlankIdentityAndVersion() {
+        assertThatThrownBy(() -> AssemblyLine.builder(" ").build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("assembly line id must not be blank");
+        assertThatThrownBy(() -> AssemblyLine.builder("pipeline").version(" ").build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("assembly line version must not be blank");
     }
 
     private static final class TestStation extends AbstractStation<String, Integer> {

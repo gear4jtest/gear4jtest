@@ -146,6 +146,100 @@ class JdbcSchemaMigratorTest {
     }
 
     @Test
+    void migrate_shouldRejectImplicitBaselineForExistingSchema() throws Exception {
+        // Given
+        Connection connection = mock(Connection.class);
+        DatabaseMetaData metadata = mock(DatabaseMetaData.class);
+        PreparedStatement insertLock = mock(PreparedStatement.class);
+        PreparedStatement selectLock = mock(PreparedStatement.class);
+        PreparedStatement updateLock = mock(PreparedStatement.class);
+        PreparedStatement hasHistory = mock(PreparedStatement.class);
+        ResultSet selectedLock = resultSet(true);
+        ResultSet emptyHistory = resultSet(false);
+        when(connection.getAutoCommit()).thenReturn(true);
+        when(connection.getMetaData()).thenReturn(metadata);
+        when(metadata.getTables(isNull(), isNull(), anyString(), isNull())).thenAnswer(invocation -> resultSet(true));
+        when(connection.prepareStatement("INSERT INTO gear4j_schema_lock(lock_name, locked_at) VALUES (?,?) "
+                + "ON CONFLICT (lock_name) DO NOTHING"))
+                .thenReturn(insertLock);
+        when(connection.prepareStatement("SELECT lock_name FROM gear4j_schema_lock WHERE lock_name = ? FOR UPDATE"))
+                .thenReturn(selectLock);
+        when(selectLock.executeQuery()).thenReturn(selectedLock);
+        when(connection.prepareStatement("UPDATE gear4j_schema_lock SET locked_at = ? WHERE lock_name = ?"))
+                .thenReturn(updateLock);
+        when(connection.prepareStatement("SELECT 1 FROM gear4j_schema_history WHERE module_id=?"))
+                .thenReturn(hasHistory);
+        when(hasHistory.executeQuery()).thenReturn(emptyHistory);
+        var resources = Map.of(
+                               "db/migrations.list", "V1__create_execution_schema.sql\n",
+                               "db/V1__create_execution_schema.sql", "CREATE TABLE assembly_run(id VARCHAR(36));");
+        var migrator = JdbcSchemaMigrator.builder()
+                .moduleId("gear4j-core")
+                .dialect(Gear4jDatabaseDialect.POSTGRESQL)
+                .migrationListResource("db/migrations.list")
+                .baselineTableName("assembly_run")
+                .classLoader(resources(resources))
+                .build();
+
+        // When / Then
+        assertThatThrownBy(() -> migrator.migrate(connection))
+                .isInstanceOf(SchemaMigrationException.class)
+                .hasMessageContaining("Existing Gear4J schema detected")
+                .hasMessageContaining("baselineOnMigrate");
+        verify(connection).rollback();
+    }
+
+    @Test
+    void migrate_shouldRejectBaselineWhenARequiredColumnIsMissing() throws Exception {
+        // Given
+        Connection connection = mock(Connection.class);
+        DatabaseMetaData metadata = mock(DatabaseMetaData.class);
+        PreparedStatement insertLock = mock(PreparedStatement.class);
+        PreparedStatement selectLock = mock(PreparedStatement.class);
+        PreparedStatement updateLock = mock(PreparedStatement.class);
+        PreparedStatement hasHistory = mock(PreparedStatement.class);
+        ResultSet selectedLock = resultSet(true);
+        ResultSet emptyHistory = resultSet(false);
+        when(connection.getAutoCommit()).thenReturn(true);
+        when(connection.getMetaData()).thenReturn(metadata);
+        when(metadata.getTables(isNull(), isNull(), anyString(), isNull())).thenAnswer(invocation -> resultSet(true));
+        when(metadata.getColumns(isNull(), isNull(), anyString(), anyString())).thenAnswer(invocation -> {
+            String column = invocation.getArgument(3, String.class);
+            return resultSet(!"context".equalsIgnoreCase(column));
+        });
+        when(connection.prepareStatement("INSERT INTO gear4j_schema_lock(lock_name, locked_at) VALUES (?,?) "
+                + "ON CONFLICT (lock_name) DO NOTHING"))
+                .thenReturn(insertLock);
+        when(connection.prepareStatement("SELECT lock_name FROM gear4j_schema_lock WHERE lock_name = ? FOR UPDATE"))
+                .thenReturn(selectLock);
+        when(selectLock.executeQuery()).thenReturn(selectedLock);
+        when(connection.prepareStatement("UPDATE gear4j_schema_lock SET locked_at = ? WHERE lock_name = ?"))
+                .thenReturn(updateLock);
+        when(connection.prepareStatement("SELECT 1 FROM gear4j_schema_history WHERE module_id=?"))
+                .thenReturn(hasHistory);
+        when(hasHistory.executeQuery()).thenReturn(emptyHistory);
+        var resources = Map.of(
+                               "db/migrations.list", "V1__create_execution_schema.sql\n",
+                               "db/V1__create_execution_schema.sql", "CREATE TABLE assembly_run(id VARCHAR(36));");
+        var migrator = JdbcSchemaMigrator.builder()
+                .moduleId("gear4j-core")
+                .dialect(Gear4jDatabaseDialect.POSTGRESQL)
+                .migrationListResource("db/migrations.list")
+                .baselineTableName("assembly_run")
+                .baselineOnMigrate(true)
+                .requiredColumns("assembly_run", "id", "context")
+                .classLoader(resources(resources))
+                .build();
+
+        // When / Then
+        assertThatThrownBy(() -> migrator.migrate(connection))
+                .isInstanceOf(SchemaMigrationException.class)
+                .hasMessageContaining("Missing expected column(s)")
+                .hasMessageContaining("assembly_run.context");
+        verify(connection).rollback();
+    }
+
+    @Test
     void migrate_shouldRollbackWhenBaselineSchemaIsIncomplete() throws Exception {
         // Given
         Connection connection = mock(Connection.class);
@@ -187,6 +281,7 @@ class JdbcSchemaMigratorTest {
                 .dialect(Gear4jDatabaseDialect.POSTGRESQL)
                 .migrationListResource("db/migrations.list")
                 .baselineTableName("assembly_run")
+                .baselineOnMigrate(true)
                 .classLoader(resources(resources))
                 .build();
 

@@ -1,0 +1,36 @@
+package io.github.gear4jtest.consumer;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.gear4jtest.core.api.AssemblyLine;
+import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
+import io.github.gear4jtest.external.api.translator.OperationChainTranslator;
+import io.github.gear4jtest.external.jdbc.repository.ExternalJdbcSchemaMigrator;
+import io.github.gear4jtest.jackson.JacksonPayloadCloner;
+import io.github.gear4jtest.micrometer.PersistenceMetricsBinder;
+import io.github.gear4jtest.spring.SpringResourceFactory;
+import io.github.gear4jtest.spring.boot.actuate.Gear4jPersistenceHealthIndicator;
+import io.github.gear4jtest.xml.translator.XmlOperationChainTranslator;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.context.ApplicationContext;
+
+/**
+ * Compilation-only probe for types exposed transitively by published module APIs.
+ * The consumer deliberately declares no direct dependency on those libraries.
+ */
+final class PublishedScopeCompilationProbe {
+    private AssemblyLine<?, ?> assemblyLine;
+    private OperationChainTranslator translator;
+    private ExternalJdbcSchemaMigrator externalJdbcSchemaMigrator;
+    private ObjectMapper objectMapper;
+    private ApplicationContext applicationContext;
+    private MeterRegistry meterRegistry;
+    private HealthIndicator healthIndicator;
+    private PersistenceRuntimeMonitor persistenceRuntimeMonitor;
+
+    private JacksonPayloadCloner jacksonPayloadCloner;
+    private XmlOperationChainTranslator xmlTranslator;
+    private SpringResourceFactory springResourceFactory;
+    private PersistenceMetricsBinder persistenceMetricsBinder;
+    private Gear4jPersistenceHealthIndicator persistenceHealthIndicator;
+}

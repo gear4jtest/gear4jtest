@@ -89,10 +89,12 @@ class OperationRecordBufferTargetedCoverageTest {
 
         assertThat(drained).containsExactly(first);
         assertThat(buffer.pendingCount()).isEqualTo(1);
+        assertThat(buffer.retainedCount()).isEqualTo(2);
 
         buffer.restoreDrainedBatch(drained);
 
         assertThat(buffer.pendingCount()).isEqualTo(2);
+        assertThat(buffer.retainedCount()).isEqualTo(2);
     }
 
     @Test

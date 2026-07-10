@@ -201,6 +201,12 @@ across branches. Storage-specific JSON codecs belong to their integration module
 A running pipeline graph must remain stable for the duration of the run. Inline pipeline recursion detection is
 thread-confined and propagated to parallel branch tasks so sibling branches do not contaminate each other's call stack.
 
+Top-level runs receive a distinct context map, but mutable values are shallow
+references by default. Configure
+`AssemblyLineEngine.Builder.initialRunContextPolicy(ContextPropagationPolicy.copyValues(...))`
+when independent runs must receive defensive copies of mutable default/request
+context values.
+
 ## JDBC persistence support
 
 JDBC execution persistence is intentionally outside core. Use the optional `gear4jtest-jdbc` module for
@@ -212,6 +218,15 @@ calling `end(run)`. Build it with
 `PersistenceExtension.builder(manager).terminalRecordBatchSize(1)` when an
 application prefers one terminal flush per station over batched completion
 persistence.
+
+Direct persistence managers are metadata-only by default. They keep execution
+identity, status and timing, but discard contexts, inputs, results and error
+messages through `SensitiveDataRedactor.discardSensitiveValues()`. Configure a
+thread-safe redactor to capture protected values. Passing
+`SensitiveDataRedactor.none()` is the explicit opt-in to unredacted capture.
+`PersistenceConfiguration.storeResultObject(false)` additionally prevents the
+final result from being copied into the persisted run trace while leaving the
+value returned by `ExecutionResult` unchanged.
 
 Core applications can still depend only on the generic contracts:
 

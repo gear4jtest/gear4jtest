@@ -17,6 +17,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RunRequestBuilderTest {
     @Test
+    void builder_shouldPreserveTheCompileTimeInputType() {
+        // Given / When
+        RunRequest<String> request = RunRequest.builder().input("typed-input").build();
+
+        // Then
+        String input = request.getInput();
+        assertThat(input).isEqualTo("typed-input");
+    }
+
+    @Test
     void builder_shouldExposeDefaultsAndCopyNullContextToEmptyMap() {
         // When
         RunRequest request = RunRequest.builder().context(null).build();

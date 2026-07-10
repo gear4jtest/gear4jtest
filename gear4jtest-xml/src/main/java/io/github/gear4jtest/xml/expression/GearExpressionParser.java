@@ -1,13 +1,8 @@
 package io.github.gear4jtest.xml.expression;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * MVP parser for Gear Expression Language (GEL).
@@ -139,7 +134,7 @@ public final class GearExpressionParser {
                 current = context.variables().get(root);
             }
             for (int i = 1; i < segments.size(); i++) {
-                current = readProperty(current, segments.get(i));
+                current = context.propertyAccessPolicy().readProperty(current, segments.get(i));
             }
             return current;
         }
@@ -161,8 +156,8 @@ public final class GearExpressionParser {
             return switch (operator) {
                 case "&&" -> truthy(left.evaluate(context)) && truthy(right.evaluate(context));
                 case "||" -> truthy(left.evaluate(context)) || truthy(right.evaluate(context));
-                case "==" -> Objects.equals(left.evaluate(context), right.evaluate(context));
-                case "!=" -> !Objects.equals(left.evaluate(context), right.evaluate(context));
+                case "==" -> safeEquals(left.evaluate(context), right.evaluate(context));
+                case "!=" -> !safeEquals(left.evaluate(context), right.evaluate(context));
                 default -> throw new GearExpressionException("Unsupported binary operator: " + operator);
             };
         }
@@ -178,71 +173,19 @@ public final class GearExpressionParser {
         throw new GearExpressionException("Expected boolean value but got " + value.getClass().getName());
     }
 
-    private static Object readProperty(Object target, String property) {
-        if (target == null) {
-            return null;
+    private static boolean safeEquals(Object left, Object right) {
+        if (left != null && !GearExpressionValues.isSafeScalar(left)) {
+            throw unsafeEqualityOperand(left);
         }
-        if (target instanceof Map<?, ?> map) {
-            return map.get(property);
+        if (right != null && !GearExpressionValues.isSafeScalar(right)) {
+            throw unsafeEqualityOperand(right);
         }
-        validateSafePropertyName(property);
-        Class<?> type = target.getClass();
-        Method accessor = findAccessor(type, property);
-        try {
-            return accessor.invoke(target);
-        } catch (ReflectiveOperationException e) {
-            throw new GearExpressionException("Unable to read property '" + property + "' from " + type.getName(), e);
-        }
+        return Objects.equals(left, right);
     }
 
-    private static final Set<String> FORBIDDEN_OBJECT_PROPERTY_NAMES = Set.of(
-                                                                              "class",
-                                                                              "getClass",
-                                                                              "metaClass",
-                                                                              "toString",
-                                                                              "hashCode",
-                                                                              "equals",
-                                                                              "clone",
-                                                                              "finalize",
-                                                                              "wait",
-                                                                              "notify",
-                                                                              "notifyAll");
-
-    private static void validateSafePropertyName(String property) {
-        if ("class".equals(property) || "getClass".equals(property) || "metaClass".equals(property)) {
-            throw new GearExpressionException("Access to Java class metadata is forbidden in GEL: " + property);
-        }
-        if (FORBIDDEN_OBJECT_PROPERTY_NAMES.contains(property)) {
-            throw new GearExpressionException("No readable property '" + property + "' on safe GEL objects");
-        }
-    }
-
-    private static Method findAccessor(Class<?> type, String property) {
-        for (RecordComponent component : type.getRecordComponents() == null ? new RecordComponent[0]
-                : type.getRecordComponents()) {
-            if (component.getName().equals(property)) {
-                return component.getAccessor();
-            }
-        }
-        String suffix = Character.toUpperCase(property.charAt(0)) + property.substring(1);
-        for (String candidate : List.of("get" + suffix, "is" + suffix)) {
-            try {
-                Method method = type.getMethod(candidate);
-                if (isSafeAccessor(method)) {
-                    return method;
-                }
-            } catch (NoSuchMethodException ignored) {
-                // Try the next JavaBean accessor candidate.
-            }
-        }
-        throw new GearExpressionException("No readable property '" + property + "' on " + type.getName());
-    }
-
-    private static boolean isSafeAccessor(Method method) {
-        return method.getParameterCount() == 0
-                && method.getDeclaringClass() != Object.class
-                && !Modifier.isStatic(method.getModifiers())
-                && method.getReturnType() != Void.TYPE;
+    private static GearExpressionException unsafeEqualityOperand(Object value) {
+        return new GearExpressionException("GEL equality only supports inert scalar values, not "
+                + value.getClass().getName());
     }
 
     private static final class Parser {

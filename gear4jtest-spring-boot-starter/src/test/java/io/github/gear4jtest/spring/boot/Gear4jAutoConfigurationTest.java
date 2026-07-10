@@ -102,7 +102,12 @@ class Gear4jAutoConfigurationTest {
     void should_create_micrometer_extension_when_registry_is_available() {
         // Given / When / Then
         contextRunner.withBean(SimpleMeterRegistry.class)
-                .run(context -> assertThat(context).hasSingleBean(Gear4jMicrometerExtension.class));
+                .run(context -> {
+                    assertThat(context).hasSingleBean(Gear4jMicrometerExtension.class);
+                    assertThat(context).hasSingleBean(Gear4jAutoConfiguration.Gear4jEventMetricsRegistrar.class);
+                    assertThat(context.getBean(SimpleMeterRegistry.class)
+                            .find("gear4j.events.process.active.runtimes").gauge()).isNotNull();
+                });
     }
 
     @Test
@@ -138,13 +143,20 @@ class Gear4jAutoConfigurationTest {
     }
 
     @Test
-    void should_create_persistence_health_indicator_when_actuator_and_persistence_are_available() {
+    void should_create_persistence_liveness_and_readiness_indicators_whenPersistenceIsAvailable() {
         // Given / When / Then
         contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
                 .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
-                .run(context -> assertThat(context).hasBean("gear4jPersistenceHealthIndicator")
-                        .getBean("gear4jPersistenceHealthIndicator")
-                        .isInstanceOf(HealthIndicator.class));
+                .run(context -> {
+                    assertThat(context).hasBean("gear4jPersistenceReadinessIndicator")
+                            .hasBean("gear4jPersistenceHealthIndicator")
+                            .hasBean("gear4jPersistenceLivenessIndicator");
+                    assertThat(context.getBean("gear4jPersistenceReadinessIndicator"))
+                            .isSameAs(context.getBean("gear4jPersistenceHealthIndicator"))
+                            .isInstanceOf(HealthIndicator.class);
+                    assertThat(context.getBean("gear4jPersistenceLivenessIndicator"))
+                            .isInstanceOf(HealthIndicator.class);
+                });
     }
 
     @Test

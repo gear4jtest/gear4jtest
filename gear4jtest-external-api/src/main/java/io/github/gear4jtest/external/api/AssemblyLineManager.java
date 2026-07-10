@@ -13,6 +13,7 @@ import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
 import io.github.gear4jtest.external.api.loader.SimpleDependencyInjector;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainTagRepository;
 import io.github.gear4jtest.external.api.storage.ArtifactStoreProvider;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslatorResolver;
@@ -57,11 +58,15 @@ public class AssemblyLineManager {
         this.aliasService = new AssemblyLineAliasService(builder.classLoaderRegistry);
         var loader = new GeneratedAssemblyLineLoader(storeResolver, builder.classLoaderRegistry,
                 builder.translatorResolver, effectiveCompiler, effectiveDependencyInjector, parent,
-                effectiveMaxArtifactSizeBytes, aliasService);
+                effectiveMaxArtifactSizeBytes);
         var publicationValidator = new AssemblyLinePublicationValidator(storeResolver, builder.translatorResolver,
                 effectiveCompiler, effectiveMaxArtifactSizeBytes);
+        OperationChainPublicationRepository effectivePublicationRepository = builder.publicationRepository != null
+                ? builder.publicationRepository
+                : builder.objectRepo instanceof OperationChainPublicationRepository repository ? repository : null;
         this.publicationService = new AssemblyLinePublicationService(builder.configRepo, builder.objectRepo,
-                builder.chainTagRepo, storeResolver, aliasService, publicationValidator, effectiveMaxArtifactSizeBytes);
+                builder.chainTagRepo, effectivePublicationRepository, storeResolver, aliasService, publicationValidator,
+                effectiveMaxArtifactSizeBytes);
         this.lookupService = new AssemblyLineLookupService(builder.objectRepo, loader, aliasService);
     }
 
@@ -69,6 +74,7 @@ public class AssemblyLineManager {
         private OperationChainConfigRepository configRepo;
         private OperationChainObjectRepository objectRepo;
         private OperationChainTagRepository chainTagRepo;
+        private OperationChainPublicationRepository publicationRepository;
         private ArtifactStoreProvider storeProvider;
         private ClassLoaderRegistry classLoaderRegistry;
         private OperationChainTranslatorResolver translatorResolver;
@@ -92,6 +98,16 @@ public class AssemblyLineManager {
 
         public Builder tagRepository(OperationChainTagRepository chainTagRepo) {
             this.chainTagRepo = chainTagRepo;
+            return this;
+        }
+
+        /**
+         * Sets the repository responsible for atomic and idempotent publication of
+         * object metadata and tags. JDBC object repositories provide this contract
+         * directly and are detected automatically.
+         */
+        public Builder publicationRepository(OperationChainPublicationRepository publicationRepository) {
+            this.publicationRepository = publicationRepository;
             return this;
         }
 
@@ -187,14 +203,15 @@ public class AssemblyLineManager {
         return aliasService.resolveLatestRunLoaderId(alId);
     }
 
-    public GeneratedAssemblyLine getOperationChain(String alId, String version, ExecutionMode mode) throws IOException {
+    public GeneratedAssemblyLine<?, ?> getOperationChain(String alId, String version, ExecutionMode mode)
+            throws IOException {
         return lookupService.getOperationChain(alId, version, mode);
     }
 
     /**
      * latest lookup is supported for RUN mode only.
      */
-    public GeneratedAssemblyLine getOperationChain(String alId, ExecutionMode mode) throws IOException {
+    public GeneratedAssemblyLine<?, ?> getOperationChain(String alId, ExecutionMode mode) throws IOException {
         return lookupService.getLatestRun(alId, mode);
     }
 

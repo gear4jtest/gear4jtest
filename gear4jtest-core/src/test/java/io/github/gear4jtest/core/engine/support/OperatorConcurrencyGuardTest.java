@@ -90,15 +90,44 @@ class OperatorConcurrencyGuardTest {
     @Test
     void beforeUse_shouldTimeoutWhenBlockCallerWaitsTooLong() {
         WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
 
         guard.beforeUse();
 
         Duration timeout = Duration.ofMillis(50);
 
         try {
-            assertThatThrownBy(() -> guard.beforeUse(WorkerLockAcquisitionPolicy.BLOCK_CALLER, timeout))
-                    .isInstanceOf(ConcurrentTransformerUseException.class)
+            Thread contender = new Thread(() -> {
+                try {
+                    guard.beforeUse(WorkerLockAcquisitionPolicy.BLOCK_CALLER, timeout);
+                } catch (RuntimeException exception) {
+                    failure.set(exception);
+                }
+            });
+            contender.start();
+            contender.join(2_000);
+
+            assertThat(contender.isAlive()).isFalse();
+            assertThat(failure.get()).isInstanceOf(ConcurrentTransformerUseException.class)
                     .hasMessageContaining("Timed out after PT0.05S while waiting for worker lock");
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError(exception);
+        } finally {
+            guard.afterUse();
+        }
+    }
+
+    @Test
+    void beforeUse_shouldFailImmediatelyOnSameThreadReentrance() {
+        WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard();
+        guard.beforeUse();
+
+        try {
+            assertThatThrownBy(() -> guard.beforeUse(WorkerLockAcquisitionPolicy.BLOCK_CALLER,
+                                                     Duration.ofMinutes(1)))
+                    .isInstanceOf(ConcurrentTransformerUseException.class)
+                    .hasMessage("Reentrant worker lock acquisition is not supported");
         } finally {
             guard.afterUse();
         }

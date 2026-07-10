@@ -71,7 +71,8 @@ class XmlOperationChainTranslatorTest {
 
         // Then
         assertThat(result.className()).isEqualTo("io.github.gear4jtest.xml.generated.Test_iteratorLine");
-        assertThat(result.formattedSource()).contains("implements GeneratedAssemblyLine")
+        assertThat(result.formattedSource())
+                .contains("implements GeneratedAssemblyLine<String, List<List<String>>>")
                 .contains("@Inject(\"modelsService\")")
                 .contains("private WorkStation<String, Map<String, String>> processStep3()")
                 .contains("private IteratorStation<List<Integer>, List<List<String>>> iterateIterator()")

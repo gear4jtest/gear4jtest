@@ -25,12 +25,17 @@ import java.time.chrono.HijrahDate;
 import java.time.chrono.JapaneseDate;
 import java.time.chrono.MinguoDate;
 import java.time.chrono.ThaiBuddhistDate;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Currency;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,6 +44,10 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -70,7 +79,13 @@ public final class JacksonPayloadCloner implements PayloadCloner {
         }
 
         try {
-            return (T) cloneValue(payload, new IdentityHashMap<>());
+            Object cloned = cloneValue(payload, new IdentityHashMap<>());
+            if (!payload.getClass().isInstance(cloned)) {
+                throw new PayloadCloneException("Jackson cloned payload type " + payload.getClass().getName()
+                        + " into incompatible type " + cloned.getClass().getName()
+                        + "; convert the payload to a supported concrete collection type before cloning");
+            }
+            return (T) cloned;
         } catch (PayloadCloneException e) {
             throw e;
         } catch (Exception e) {
@@ -150,7 +165,7 @@ public final class JacksonPayloadCloner implements PayloadCloner {
     }
 
     private List<Object> cloneList(List<?> source, IdentityHashMap<Object, Object> visited) {
-        List<Object> cloned = new ArrayList<>(source.size());
+        List<Object> cloned = source instanceof LinkedList<?> ? new LinkedList<>() : new ArrayList<>(source.size());
         visited.put(source, cloned);
 
         for (Object element : source) {
@@ -160,8 +175,19 @@ public final class JacksonPayloadCloner implements PayloadCloner {
         return cloned;
     }
 
+    @SuppressWarnings("unchecked")
     private Set<Object> cloneSet(Set<?> source, IdentityHashMap<Object, Object> visited) {
-        Set<Object> cloned = new LinkedHashSet<>(Math.max(16, source.size()));
+        Set<Object> cloned;
+        if (source instanceof SortedSet<?> sortedSet) {
+            Comparator<Object> comparator = (Comparator<Object>) sortedSet.comparator();
+            cloned = comparator != null ? new TreeSet<>(comparator) : new TreeSet<>();
+        } else if (source instanceof LinkedHashSet<?>) {
+            cloned = new LinkedHashSet<>(Math.max(16, source.size()));
+        } else if (source instanceof HashSet<?>) {
+            cloned = new HashSet<>(Math.max(16, source.size()));
+        } else {
+            cloned = new LinkedHashSet<>(Math.max(16, source.size()));
+        }
         visited.put(source, cloned);
 
         for (Object element : source) {
@@ -172,8 +198,8 @@ public final class JacksonPayloadCloner implements PayloadCloner {
     }
 
     private Collection<Object> cloneCollection(Collection<?> source, IdentityHashMap<Object, Object> visited) {
-
-        Collection<Object> cloned = new ArrayList<>(source.size());
+        Collection<Object> cloned = source instanceof ArrayDeque<?> ? new ArrayDeque<>(source.size())
+                : new ArrayList<>(source.size());
         visited.put(source, cloned);
 
         for (Object element : source) {
@@ -183,8 +209,19 @@ public final class JacksonPayloadCloner implements PayloadCloner {
         return cloned;
     }
 
+    @SuppressWarnings("unchecked")
     private Map<Object, Object> cloneMap(Map<?, ?> source, IdentityHashMap<Object, Object> visited) {
-        Map<Object, Object> cloned = new LinkedHashMap<>(Math.max(16, source.size()));
+        Map<Object, Object> cloned;
+        if (source instanceof SortedMap<?, ?> sortedMap) {
+            Comparator<Object> comparator = (Comparator<Object>) sortedMap.comparator();
+            cloned = comparator != null ? new TreeMap<>(comparator) : new TreeMap<>();
+        } else if (source instanceof LinkedHashMap<?, ?>) {
+            cloned = new LinkedHashMap<>(Math.max(16, source.size()));
+        } else if (source instanceof HashMap<?, ?>) {
+            cloned = new HashMap<>(Math.max(16, source.size()));
+        } else {
+            cloned = new LinkedHashMap<>(Math.max(16, source.size()));
+        }
         visited.put(source, cloned);
 
         for (Map.Entry<?, ?> entry : source.entrySet()) {

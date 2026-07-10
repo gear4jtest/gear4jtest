@@ -100,8 +100,8 @@ optional modules lighter and reduces the transitive surface exposed to consumers
 Current policy:
 
 - `gear4jtest-core` owns SLF4J only; `gear4jtest-jdbc` owns the Jackson API used by JDBC persistence;
-- `gear4jtest-external-api` owns SLF4J, Jackson for external repository JSON and
-  JDT for the default compiler implementation;
+- `gear4jtest-external-api` owns SLF4J and JDT for the default compiler implementation;
+- `gear4jtest-external-jdbc` owns JDBC external repositories and their Jackson JSON mapping;
 - `gear4jtest-xml` owns SLF4J and Eclipse formatter dependencies;
 - optional modules declare their own integration dependencies.
 

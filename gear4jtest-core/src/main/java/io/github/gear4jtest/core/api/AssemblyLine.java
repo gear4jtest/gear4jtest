@@ -175,13 +175,19 @@ public class AssemblyLine<IN, OUT> {
          * output type.
          */
         public <T> Builder<IN, T> then(AbstractStation<OUT, T> operation) {
-            Objects.requireNonNull(operation);
-            this.operations.add(operation);
-            return new Builder<>(this);
+            Objects.requireNonNull(operation, "operation must not be null");
+            Builder<IN, T> next = new Builder<>(this);
+            next.operations.add(operation);
+            return next;
         }
 
         public AssemblyLine<IN, OUT> build() {
-            Objects.requireNonNull(id, "id");
+            if (id == null || id.isBlank()) {
+                throw new IllegalArgumentException("assembly line id must not be blank");
+            }
+            if (version != null && version.isBlank()) {
+                throw new IllegalArgumentException("assembly line version must not be blank");
+            }
             Configuration finalConfig = this.configBuilder.build();
             AbstractStation<?, ?> root;
             if (operations.isEmpty()) {

@@ -8,22 +8,20 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
@@ -48,13 +46,13 @@ public final class JdbcSchemaMigrator {
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcSchemaMigrator.class);
     private static final String HISTORY_TABLE = "gear4j_schema_history";
     private static final String LOCK_TABLE = "gear4j_schema_lock";
-    private static final Pattern CREATE_TABLE_PATTERN = Pattern
-            .compile("(?is)\\bCREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?([A-Z0-9_]+)");
 
     private final String moduleId;
     private final Gear4jDatabaseDialect dialect;
     private final String migrationListResource;
     private final String baselineTableName;
+    private final boolean baselineOnMigrate;
+    private final BaselineSchemaValidator baselineSchemaValidator;
     private final ClassLoader classLoader;
     private final JdbcStatementOptions statementOptions;
 
@@ -68,6 +66,9 @@ public final class JdbcSchemaMigrator {
         this.migrationListResource = normalizeResource(requireNonBlank(builder.migrationListResource,
                                                                        "migrationListResource"));
         this.baselineTableName = requireNonBlank(builder.baselineTableName, "baselineTableName");
+        this.baselineOnMigrate = builder.baselineOnMigrate;
+        this.baselineSchemaValidator = new BaselineSchemaValidator(moduleId, baselineTableName,
+                immutableRequirements(builder.requiredColumns), immutableRequirements(builder.requiredIndexes));
         this.classLoader = builder.classLoader != null ? builder.classLoader
                 : JdbcSchemaMigrator.class.getClassLoader();
         this.statementOptions = Objects.requireNonNull(builder.statementOptions,
@@ -79,6 +80,9 @@ public final class JdbcSchemaMigrator {
         private Gear4jDatabaseDialect dialect;
         private String migrationListResource;
         private String baselineTableName;
+        private boolean baselineOnMigrate;
+        private final Map<String, Set<String>> requiredColumns = new LinkedHashMap<>();
+        private final Map<String, Set<String>> requiredIndexes = new LinkedHashMap<>();
         private ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         private JdbcStatementOptions statementOptions = JdbcStatementOptions.defaults();
 
@@ -105,6 +109,28 @@ public final class JdbcSchemaMigrator {
             return this;
         }
 
+        /**
+         * Explicitly allows an existing schema without Gear4J history to be marked at
+         * the first migration after its expected tables, columns and indexes have been
+         * validated.
+         */
+        public Builder baselineOnMigrate(boolean baselineOnMigrate) {
+            this.baselineOnMigrate = baselineOnMigrate;
+            return this;
+        }
+
+        /** Adds columns that must exist before an existing schema can be baselined. */
+        public Builder requiredColumns(String tableName, String... columns) {
+            addRequirements(requiredColumns, tableName, "column", columns);
+            return this;
+        }
+
+        /** Adds indexes that must exist before an existing schema can be baselined. */
+        public Builder requiredIndexes(String tableName, String... indexes) {
+            addRequirements(requiredIndexes, tableName, "index", indexes);
+            return this;
+        }
+
         public Builder classLoader(ClassLoader classLoader) {
             this.classLoader = classLoader;
             return this;
@@ -121,12 +147,27 @@ public final class JdbcSchemaMigrator {
     }
 
     public static JdbcSchemaMigrator core(Gear4jDatabaseDialect dialect) {
+        return core(dialect, false);
+    }
+
+    public static JdbcSchemaMigrator core(Gear4jDatabaseDialect dialect, boolean baselineOnMigrate) {
         return builder()
                 .moduleId("gear4j-core")
                 .dialect(dialect)
                 .migrationListResource("io/github/gear4j/db/" + dialect.resourceDirectory()
                         + "/migrations/migrations.list")
                 .baselineTableName(ASSEMBLY_RUN_TABLE)
+                .baselineOnMigrate(baselineOnMigrate)
+                .requiredColumns(ASSEMBLY_RUN_TABLE, "id", "assembly_line_id", "input_parameters", "context",
+                                 "result", "status", "start_time", "end_time", "error_message",
+                                 "parent_execution_id", "root_execution_id", "parent_station_log_id")
+                .requiredColumns("station_log", "id", "assembly_line_execution_id", "operation_id",
+                                 "parent_log_id", "branch_id", "status", "start_time", "end_time",
+                                 "error_message", "error_handler_messages", "context", "item_id")
+                .requiredIndexes(ASSEMBLY_RUN_TABLE, "idx_ar_assembly_line_id", "idx_ar_status",
+                                 "idx_ar_assembly_line_start", "idx_ar_status_start")
+                .requiredIndexes("station_log", "idx_sl_assembly_line_execution_id",
+                                 "idx_station_log_exec_parent", "idx_station_log_run_start")
                 .build();
     }
 
@@ -191,7 +232,12 @@ public final class JdbcSchemaMigrator {
         if (migrations.isEmpty()) {
             return;
         }
-        if (hasNoHistory(connection) && tableExists(connection, baselineTableName)) {
+        if (hasNoHistory(connection) && baselineSchemaValidator.tableExists(connection, baselineTableName)) {
+            if (!baselineOnMigrate) {
+                throw new SchemaMigrationException("Existing Gear4J schema detected for module " + moduleId
+                        + " without migration history. Enable baselineOnMigrate explicitly only after verifying "
+                        + "that the schema is compatible with the bundled migrations");
+            }
             baselineExistingSchema(connection, migrations.get(0));
             migrations = migrations.subList(1, migrations.size());
         }
@@ -209,13 +255,13 @@ public final class JdbcSchemaMigrator {
     }
 
     private void executeCreateTableIfMissing(Connection connection, String tableName, String sql) throws SQLException {
-        if (tableExists(connection, tableName)) {
+        if (baselineSchemaValidator.tableExists(connection, tableName)) {
             return;
         }
         try (Statement statement = createStatement(connection)) {
             statement.execute(sql);
         } catch (SQLException e) {
-            if (tableExists(connection, tableName)) {
+            if (baselineSchemaValidator.tableExists(connection, tableName)) {
                 LOGGER.debug("[Gear4J] Schema infrastructure table {} was created concurrently", tableName);
                 return;
             }
@@ -276,7 +322,7 @@ public final class JdbcSchemaMigrator {
     private void ensureLockRow(Connection connection) throws SQLException {
         try (PreparedStatement statement = prepare(connection, lockRowInsertSql())) {
             statement.setString(1, moduleId);
-            statement.setTimestamp(2, Timestamp.from(Instant.now()));
+            dialect.setInstant(statement, 2, Instant.now());
             statement.executeUpdate();
         }
     }
@@ -307,7 +353,7 @@ public final class JdbcSchemaMigrator {
         }
         try (PreparedStatement statement = prepare(connection,
                                                    "UPDATE gear4j_schema_lock SET locked_at = ? WHERE lock_name = ?")) {
-            statement.setTimestamp(1, Timestamp.from(Instant.now()));
+            dialect.setInstant(statement, 1, Instant.now());
             statement.setString(2, moduleId);
             statement.executeUpdate();
         }
@@ -326,62 +372,11 @@ public final class JdbcSchemaMigrator {
     private void baselineExistingSchema(Connection connection, SchemaMigration baseline)
             throws SQLException, IOException {
         String content = readResource(baseline.resourcePath());
-        validateBaselineSchema(connection, baseline, content);
+        baselineSchemaValidator.validate(connection, baseline.version(), content);
         String checksum = sha256(content);
         LOGGER.info("[Gear4J] Baselining existing schema for module {} at migration {}", moduleId,
                     baseline.version());
         insertHistory(connection, baseline, checksum);
-    }
-
-    private void validateBaselineSchema(Connection connection, SchemaMigration baseline, String baselineContent)
-            throws SQLException {
-        Set<String> requiredTables = extractCreatedTableNames(baselineContent);
-        requiredTables.add(baselineTableName);
-        List<String> missingTables = new ArrayList<>();
-        for (String table : requiredTables) {
-            if (!tableExists(connection, table)) {
-                missingTables.add(table);
-            }
-        }
-        if (!missingTables.isEmpty()) {
-            throw new SchemaMigrationException("Cannot baseline Gear4J schema for module " + moduleId
-                    + " at migration " + baseline.version() + ". Missing expected table(s): " + missingTables);
-        }
-        validateKnownCoreColumns(connection, requiredTables, baseline.version());
-    }
-
-    private void validateKnownCoreColumns(Connection connection, Set<String> requiredTables, String version)
-            throws SQLException {
-        if (requiredTables.contains(ASSEMBLY_RUN_TABLE)) {
-            requireColumns(connection, ASSEMBLY_RUN_TABLE, version, "id", "assembly_line_id", "status", "start_time");
-        }
-        if (requiredTables.contains("station_log")) {
-            requireColumns(connection, "station_log", version, "id", "assembly_line_execution_id", "operation_id",
-                           "status", "start_time");
-        }
-    }
-
-    private void requireColumns(Connection connection, String tableName, String version, String... columns)
-            throws SQLException {
-        List<String> missingColumns = new ArrayList<>();
-        for (String column : columns) {
-            if (!columnExists(connection, tableName, column)) {
-                missingColumns.add(tableName + "." + column);
-            }
-        }
-        if (!missingColumns.isEmpty()) {
-            throw new SchemaMigrationException("Cannot baseline Gear4J schema for module " + moduleId
-                    + " at migration " + version + ". Missing expected column(s): " + missingColumns);
-        }
-    }
-
-    private Set<String> extractCreatedTableNames(String sql) {
-        Set<String> names = new LinkedHashSet<>();
-        Matcher matcher = CREATE_TABLE_PATTERN.matcher(sql);
-        while (matcher.find()) {
-            names.add(matcher.group(1).toLowerCase(Locale.ROOT));
-        }
-        return names;
     }
 
     private void applyIfNeeded(Connection connection, SchemaMigration migration) throws SQLException, IOException {
@@ -420,7 +415,7 @@ public final class JdbcSchemaMigrator {
             statement.setString(2, migration.version());
             statement.setString(3, migration.description());
             statement.setString(4, checksum);
-            statement.setTimestamp(5, Timestamp.from(Instant.now()));
+            dialect.setInstant(statement, 5, Instant.now());
             statement.executeUpdate();
         }
     }
@@ -479,31 +474,6 @@ public final class JdbcSchemaMigrator {
         return SqlScriptSplitter.split(scriptContent);
     }
 
-    private boolean tableExists(Connection connection, String tableName) throws SQLException {
-        DatabaseMetaData metadata = connection.getMetaData();
-        return tableExists(metadata, tableName) || tableExists(metadata, tableName.toLowerCase(Locale.ROOT))
-                || tableExists(metadata, tableName.toUpperCase(Locale.ROOT));
-    }
-
-    private boolean tableExists(DatabaseMetaData metadata, String tableName) throws SQLException {
-        try (ResultSet resultSet = metadata.getTables(null, null, tableName, null)) {
-            return resultSet.next();
-        }
-    }
-
-    private boolean columnExists(Connection connection, String tableName, String columnName) throws SQLException {
-        DatabaseMetaData metadata = connection.getMetaData();
-        return columnExists(metadata, tableName, columnName)
-                || columnExists(metadata, tableName.toLowerCase(Locale.ROOT), columnName.toLowerCase(Locale.ROOT))
-                || columnExists(metadata, tableName.toUpperCase(Locale.ROOT), columnName.toUpperCase(Locale.ROOT));
-    }
-
-    private boolean columnExists(DatabaseMetaData metadata, String tableName, String columnName) throws SQLException {
-        try (ResultSet resultSet = metadata.getColumns(null, null, tableName, columnName)) {
-            return resultSet.next();
-        }
-    }
-
     private static void rollback(Connection connection, Throwable failure) {
         try {
             connection.rollback();
@@ -530,6 +500,24 @@ public final class JdbcSchemaMigrator {
             throw new IllegalArgumentException(name + " must not be blank");
         }
         return value;
+    }
+
+    private static void addRequirements(Map<String, Set<String>> target,
+                                        String tableName,
+                                        String kind,
+                                        String... names) {
+        String requiredTable = requireNonBlank(tableName, "tableName").toLowerCase(Locale.ROOT);
+        Objects.requireNonNull(names, kind + " names must not be null");
+        Set<String> requirements = target.computeIfAbsent(requiredTable, ignored -> new LinkedHashSet<>());
+        for (String name : names) {
+            requirements.add(requireNonBlank(name, kind + " name").toLowerCase(Locale.ROOT));
+        }
+    }
+
+    private static Map<String, Set<String>> immutableRequirements(Map<String, Set<String>> source) {
+        Map<String, Set<String>> copy = new LinkedHashMap<>();
+        source.forEach((table, names) -> copy.put(table, Set.copyOf(names)));
+        return Map.copyOf(copy);
     }
 
     private record MigrationState(String checksum) {}

@@ -42,7 +42,7 @@ plugins {
 
 xmlAssemblyLineGenerator {
     inputDir 'src/main/gear4j'
-    outputDir = layout.buildDirectory.dir('generated/sources/gear4j/xml2java/main').get().asFile
+    outputDir.set(layout.buildDirectory.dir('generated/sources/gear4j/xml2java/main'))
 }
 ```
 

@@ -70,6 +70,9 @@ public final class WorkerConcurrencyGuard {
         monitor.lock();
         try {
             if (inUse) {
+                if (owner == Thread.currentThread()) {
+                    throw new ConcurrentTransformerUseException("Reentrant worker lock acquisition is not supported");
+                }
                 throw new ConcurrentTransformerUseException("Worker lock is already held");
             }
             markInUseByCurrentThread();
@@ -83,6 +86,9 @@ public final class WorkerConcurrencyGuard {
         monitor.lock();
         try {
             while (inUse) {
+                if (owner == Thread.currentThread()) {
+                    throw new ConcurrentTransformerUseException("Reentrant worker lock acquisition is not supported");
+                }
                 if (remainingNanos <= 0L) {
                     throw new ConcurrentTransformerUseException("Timed out after " + lockWaitTimeout
                             + " while waiting for worker lock");

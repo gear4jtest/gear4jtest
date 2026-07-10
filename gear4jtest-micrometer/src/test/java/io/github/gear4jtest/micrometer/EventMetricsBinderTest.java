@@ -31,5 +31,29 @@ class EventMetricsBinderTest {
         assertThat(meterRegistry.get("gear4j.reactions.failed").gauge().value()).isZero();
         assertThat(meterRegistry.get("gear4j.reactions.pending").gauge().value()).isZero();
         assertThat(meterRegistry.get("gear4j.reactions.in.flight").gauge().value()).isZero();
+        assertThat(meterRegistry.getMeters())
+                .as("event drop and rejection metrics must stay aggregate and tagless")
+                .allSatisfy(meter -> assertThat(meter.getId().getTags()).isEmpty());
+    }
+
+    @Test
+    void bindProcessWide_shouldExposeAggregateTaglessMetrics() {
+        // Given
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+
+        // When
+        EventMetricsBinder.bindProcessWide(meterRegistry);
+
+        // Then
+        assertThat(meterRegistry.get("gear4j.events.process.active.runtimes").gauge().value()).isNotNegative();
+        assertThat(meterRegistry.get("gear4j.events.process.queued").gauge().value()).isNotNegative();
+        assertThat(meterRegistry.get("gear4j.events.process.dropped").gauge().value()).isNotNegative();
+        assertThat(meterRegistry.get("gear4j.reactions.process.dropped").gauge().value()).isNotNegative();
+        assertThat(meterRegistry.get("gear4j.events.process.dispatcher.rejected").gauge().value()).isNotNegative();
+        assertThat(meterRegistry.get("gear4j.events.process.dispatch.latency.average.nanos").gauge().value())
+                .isNotNegative();
+        assertThat(meterRegistry.get("gear4j.events.process.dispatch.latency.max.nanos").gauge().value())
+                .isNotNegative();
+        assertThat(meterRegistry.getMeters()).allSatisfy(meter -> assertThat(meter.getId().getTags()).isEmpty());
     }
 }

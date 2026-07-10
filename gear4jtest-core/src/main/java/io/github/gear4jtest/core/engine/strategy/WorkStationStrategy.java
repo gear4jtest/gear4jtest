@@ -75,11 +75,6 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
         }
     }
 
-    /**
-     * Thread-local guard acquired for the current execution, if any.
-     */
-    private static final ThreadLocal<WorkerConcurrencyGuard> CURRENT_GUARD = new ThreadLocal<>();
-
     @Override
     public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
         return WorkStation.class.isAssignableFrom(type);
@@ -123,7 +118,7 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
                     + concurrencyPolicy() + " with " + lockAcquisitionPolicy() + " and timeout "
                     + concurrencyConfiguration.lockWaitTimeout() + ". " + lockFailureAdvice(), e);
         }
-        CURRENT_GUARD.set(guard);
+        EngineStationContexts.addCapability(operationExecution, WorkerConcurrencyGuard.class, guard);
     }
 
     @Override
@@ -160,15 +155,8 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
                            StationExecutionContext context,
                            List<Throwable> errors) {
         try {
-            if (isStateful(context)) {
-                WorkerConcurrencyGuard guard = CURRENT_GUARD.get();
-                if (guard != null) {
-                    guard.afterUse();
-                }
-            }
+            context.getCapability(WorkerConcurrencyGuard.class).ifPresent(WorkerConcurrencyGuard::afterUse);
         } finally {
-            // Clear the ThreadLocal to avoid leaks on pooled threads.
-            CURRENT_GUARD.remove();
             // Delegate remaining cleanup to the base strategy.
             super.release(station, result, context, errors);
         }

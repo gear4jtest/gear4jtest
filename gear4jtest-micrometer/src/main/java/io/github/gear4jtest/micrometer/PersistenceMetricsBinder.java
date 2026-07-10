@@ -20,6 +20,9 @@ public final class PersistenceMetricsBinder {
         registerGauge(meterRegistry, manager, "gear4j.persistence.buffered.station.logs",
                       "Buffered station log records waiting for persistence flush",
                       value -> value.snapshotStats().bufferedStationLogs());
+        registerGauge(meterRegistry, manager, "gear4j.persistence.buffered.station.logs.oldest.age.seconds",
+                      "Age in seconds of the oldest station log waiting for persistence flush",
+                      value -> value.snapshotStats().oldestBufferedStationLogAge().toMillis() / 1_000.0d);
         registerGauge(meterRegistry, manager, "gear4j.persistence.active.runs",
                       "Number of active run buffers in the JDBC persistence manager",
                       value -> value.snapshotStats().activeRuns());
