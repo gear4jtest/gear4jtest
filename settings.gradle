@@ -1,3 +1,5 @@
+includeBuild 'release-tools'
+
 rootProject.name = 'gear4jtest'
 include 'gear4jtest-core'
 include 'gear4jtest-experimental-cache'

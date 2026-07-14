@@ -1,9 +1,5 @@
 # gear4jtest-external-jdbc
 
-> Lors d'une mise à jour par extraction de l'archive phase 7 sur un checkout existant, exécutez une fois
-> `./scripts/cleanup-phase7-overlay.sh` avant le build. Voir
-> [`docs/migration-phase7-overlay.md`](../docs/migration-phase7-overlay.md).
-
 Optional JDBC persistence for external assembly-line definitions. The module depends on `gear4jtest-external-api`,
 `gear4jtest-jdbc` and Jackson; applications that use only memory or filesystem artifacts do not pull those dependencies.
 

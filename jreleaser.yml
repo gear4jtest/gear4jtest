@@ -14,6 +14,21 @@ project:
       groupId: io.github.gear4jtest
       version: 17
 
+# JReleaser 1.25 requires one enabled release provider even when only the
+# deploy command is used. GitHub is therefore configured as an inert metadata
+# provider: it cannot create a tag, release, changelog, or upload assets.
+release:
+  github:
+    enabled: true
+    # JReleaser requires a non-blank token for every enabled release provider.
+    # This fixed, non-secret sentinel is safe because all GitHub side effects are disabled below.
+    token: not-used-maven-central-only
+    skipTag: true
+    skipRelease: true
+    uploadAssets: NEVER
+    changelog:
+      enabled: false
+
 signing:
   active: RELEASE
   pgp:

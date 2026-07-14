@@ -14,6 +14,7 @@ The build must therefore provide:
 - separated integration tests, with database lifecycles owned by Testcontainers;
 - dependency vulnerability scanning;
 - deterministic Maven artifact staging;
+- legal files and complete Maven Central metadata in every staged publication;
 - publication to Maven Central from tags or manual release workflow.
 
 ## Decision
@@ -27,7 +28,11 @@ Reasons:
 - the official GitHub Java/Gradle guidance uses `actions/setup-java` and `gradle/actions/setup-gradle`;
 - the Gradle action handles Gradle caching and wrapper validation.
 
-Use JReleaser for Maven Central deployment through the Central Publishing Portal.
+Use JReleaser for Maven Central deployment through the Central Publishing Portal. The GitHub tag starts the workflow,
+but the workflow does not create or update a GitHub Release. JReleaser 1.25 requires one enabled release provider even
+for deploy-only usage, so the GitHub provider remains configured with tag creation, release creation, asset upload and
+changelog generation all disabled. A scoped non-secret placeholder satisfies the provider's mandatory non-blank token
+validation.
 
 Reasons:
 
@@ -37,7 +42,7 @@ Reasons:
 
 ## Workflows
 
-- `ci.yml`: unit build, integration checks, coverage and SonarQube scan on push and pull request.
+- `ci.yml`: release-metadata validation, unit build, integration checks, coverage and SonarQube scan on push and pull request.
 - `security.yml`: scheduled/manual OWASP Dependency-Check scan.
 - `release.yml`: verifies, stages and publishes artifacts to Maven Central.
 
@@ -64,3 +69,9 @@ v1.2.3
 ```
 
 The Maven artifact version will be `1.2.3`.
+
+## Release metadata and legal assets
+
+`LICENSE`, `NOTICE` and `jreleaser.yml` are versioned release inputs. The lightweight `releaseMetadataCheck` validates
+these files, repository-local Markdown links and the JReleaser model on ordinary CI changes. The complete
+`releaseCheck` additionally inspects the staged JAR and POM contents before JReleaser receives credentials.

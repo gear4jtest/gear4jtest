@@ -1,0 +1,33 @@
+plugins {
+    id 'base'
+    id 'org.jreleaser' version '1.25.0'
+}
+
+group = 'io.github.gear4jtest'
+def releaseVersion = providers.environmentVariable('PROJECT_VERSION')
+    .orElse(providers.gradleProperty('projectVersion'))
+version = releaseVersion.orElse('1.0.0-SNAPSHOT').get()
+description = 'Isolated JReleaser execution for Gear4J.'
+
+layout.buildDirectory = file('../build/release-tools')
+
+def repositoryRoot = layout.projectDirectory.dir('..')
+
+jreleaser {
+    configFile = file('../jreleaser.yml')
+    dependsOnAssemble = false
+}
+
+tasks.named('jreleaserConfig') {
+    projectDirectory.set(repositoryRoot)
+}
+
+tasks.named('jreleaserDeploy') {
+    projectDirectory.set(repositoryRoot)
+    doFirst {
+        if (!releaseVersion.isPresent()) {
+            throw new GradleException(
+                'JReleaser deployment requires PROJECT_VERSION or -PprojectVersion in the isolated release build')
+        }
+    }
+}

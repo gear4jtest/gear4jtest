@@ -2,6 +2,14 @@ pluginManagement {
     repositories {
         maven {
             url = uri(providers.gradleProperty('gear4jRepository').get())
+            content {
+                includeGroupByRegex 'io[.]github[.]gear4jtest([.].*)?'
+            }
+        }
+        mavenCentral {
+            content {
+                excludeGroupByRegex 'io[.]github[.]gear4jtest([.].*)?'
+            }
         }
     }
     plugins {
@@ -13,8 +21,15 @@ dependencyResolutionManagement {
     repositories {
         maven {
             url = uri(providers.gradleProperty('gear4jRepository').get())
+            content {
+                includeGroupByRegex 'io[.]github[.]gear4jtest([.].*)?'
+            }
         }
-        mavenCentral()
+        mavenCentral {
+            content {
+                excludeGroupByRegex 'io[.]github[.]gear4jtest([.].*)?'
+            }
+        }
     }
 }
 

@@ -1,0 +1,126 @@
+# Phase 0 — Remediation baseline revalidation
+
+**Date:** 14 July 2026
+**Source archive:** `gear4jtest-20260714-115024(1).zip`
+**Reference audit:** `audit-technique-gear4j-2026-07-13(1).md`
+**Purpose:** verify the audit findings against the latest supplied sources before functional remediation.
+
+## Outcome
+
+The audit remains materially valid on the latest sources.
+
+- **27 findings are still present.**
+- **1 finding is partially obsolete:** `jreleaser.yml` is now present, while `LICENSE`, `NOTICE`, the release dry-run gate and related release completeness checks remain missing.
+- **1 low-priority finding is no longer applicable:** the audited `InMemoryExternalConfigCache` implementation is absent from the latest sources, and no equivalent `loader.get()` / `putIfAbsent` miss path was found in the experimental cache module.
+- **No runtime P0/P1 finding was disproved.**
+
+The remediation order defined after the audit remains appropriate. The release phase must be adjusted so that it does not recreate `jreleaser.yml`; it must validate the current file and complete the missing legal and CI assets instead.
+
+## Dynamic validation status
+
+The repository contains a complete Gradle wrapper targeting Gradle 9.6.1 with a pinned distribution checksum. The build could not be started in the audit execution environment because the distribution was not cached and the environment could not resolve `services.gradle.org`:
+
+```text
+Downloading https://services.gradle.org/distributions/gradle-9.6.1-bin.zip
+java.net.UnknownHostException: services.gradle.org
+```
+
+Consequences:
+
+- `check`, integration tests, JaCoCo, TestKit and JReleaser validation were not executed in this phase;
+- source findings were revalidated directly against the latest files;
+- autonomous reproductions not requiring project dependencies were executed where possible;
+- no unexecuted test was added to the repository merely to create a nominal phase-0 change.
+
+## Confirmed autonomous reproduction: UUIDv7 clock rollback
+
+`DefaultUuidGenerator` was compiled in isolation with `javac --release 17`. Its thread-local state was placed 1.2 seconds ahead of wall-clock time with the 12-bit sequence exhausted, reproducing a clock rollback/VM snapshot scenario.
+
+Observed result:
+
+```text
+configuredRollbackMs=1200
+generateElapsedMs=1190
+wall=1.31 cpu=97%
+```
+
+This confirms that `DefaultUuidGenerator.generate()` actively spins for approximately the complete clock rollback duration after sequence exhaustion. The finding is therefore not merely theoretical.
+
+## Revalidated finding matrix
+
+| ID | Audit finding | Current status | Current evidence | Remediation phase |
+|---|---|---|---|---:|
+| A01 | Public API depends on packages marked internal | **Confirmed** | `ApiBoundarySourceTest` still baselines 13 API/SPI-to-internal dependencies; Japicmp still excludes internal packages. | 10 |
+| A02 | Provider-neutral `external-api` contains duplicated JDBC code | **Confirmed** | `external-api/artifact/JdbcArtifactInputStream.java` still imports `java.sql.*`; both it and `ArtifactStoreMetrics` have separate counterparts in `external-jdbc`, while only the latter pair is used. | 10 |
+| A03 | Publication atomicity depends implicitly on repository capability | **Confirmed** | `AssemblyLineManager` still auto-detects `OperationChainPublicationRepository`; `AssemblyLinePublicationService.publishMetadata` otherwise inserts the object and then tags sequentially without compensation. | 8 |
+| A04 | Generated compiler fallback/classloader semantics are inconsistent | **Confirmed** | Any javac `CompilationException` still triggers JDT; javac classpath still comes only from `java.class.path`; JDT still uses internal Eclipse compiler APIs with release mode disabled. | 11 |
+| A05 | Parallel cancellation can replace an already completed result | **Confirmed** | `cancelPendingForCancellation` still calls `future.cancel(true)` and synthesizes `CANCELLED` without first resolving an already-completed future or checking the cancellation result. | 3 |
+| A06 | UUIDv7 can spin after clock rollback | **Confirmed dynamically** | `DefaultUuidGenerator` still loops on `Thread.onSpinWait()`; autonomous reproduction consumed about 97% CPU for the simulated 1.2-second rollback. | 4 |
+| A07 | Java domain objects do not enforce database/runtime invariants | **Confirmed** | `OperationChainObject` has no compact constructor; `OperationChainConfig` validates only store fields; `FlowConfig` still accepts null policies. | 9 |
+| A08 | Some invalid parallel configurations fail only during execution | **Confirmed** | sibling-condition compatibility remains checked by `ContainerStationStrategy` at execution time; station-level timeout validation remains deferred to `effectiveAwaitTimeout`. | 3 |
+| A09 | Execution-context ID collision silently replaces an active context | **Confirmed** | `ExecutionContextRegistry.register` still uses `put`; cleanup still removes only by execution ID. | 3 |
+| A10 | External API error taxonomy is unstable | **Confirmed** | checked `IOException`/policy errors remain mixed with `NoSuchElementException`, compilation exceptions and repository-specific unchecked exceptions. | 10 |
+| A11 | `external-jdbc` is not covered by the advertised multi-dialect matrix | **Confirmed** | its three integration tests still use H2; CI and release matrices still run only `:gear4jtest-jdbc:integrationTest`. | 7 |
+| A12 | Coverage gate protects only four classes | **Confirmed** | `critical-coverage-thresholds.json` still contains exactly four class thresholds and no module/global ratchet. | 12 |
+| A13 | Gradle plugin lacks TestKit/configuration-cache execution tests | **Confirmed** | plugin tests still use `ProjectBuilder`; CI executes configuration-cache checks only on `help`; task action still calls `project.delete`. | 11 |
+| A14 | Spring Boot persistence is unredacted by default | **Confirmed** | default remains `RedactionMode.WARN`; missing redactor resolves to `SensitiveDataRedactor.none()`. | 2 |
+| A15 | XML size limit is enforced after schema validation | **Confirmed** | translator still calls `validator.validate(content)` before the bounded parser; public `validate(InputStream)` remains unbounded. | 9 |
+| A16 | Dependency locking and cryptographic verification are optional in practice | **Confirmed** | no lockfile or `verification-metadata.xml` exists; CI skips strict verification when absent; release does not pass `gear4j.enforceSupplyChain=true`; CVSS threshold remains 9.0. | 12 |
+| A17 | Global persistence monitor is held during JDBC I/O | **Confirmed** | `PersistenceFlushCoordinator.executeWhileOpen` remains `synchronized` and executes callbacks inline; manager callbacks perform repository writes and blocking flush/finalization. | 5 |
+| A18 | Immutable generated content can be compiled repeatedly | **Confirmed** | publication validation and generated-line loading still call the compiler separately; loader single-flight does not reuse publication validation bytecode. | 11 |
+| A19 | Experimental cache duplicates concurrent loads on miss | **No longer applicable** | audited `InMemoryExternalConfigCache` is absent; no equivalent loader miss path was found under `gear4jtest-experimental-cache/src/main`. | Closed |
+| A20 | Persistence shutdown timeout is not a real end-to-end bound | **Confirmed** | `shutdown` remains synchronized; the deadline starts after monitor acquisition; initial flushes and buffer lock acquisition do not consume/check the remaining deadline. | 6 |
+| A21 | Artifact is stored before validation/metadata with no orphan cleanup capability | **Confirmed** | `store.put` still precedes compilation and metadata publication; `ArtifactStore` still has no list/delete capability; consistency checking traverses metadata to artifacts only. | 9 |
+| A22 | Connection acquisition is outside JDBC statement timeout | **Confirmed** | repositories obtain `DataSource#getConnection()` before statement timeout configuration; no supported pool acquisition-budget validation was found. | 6 |
+| A23 | Latest-RUN index does not fully match filter/order | **Confirmed structurally** | query orders by `published_at DESC, id DESC`; indexes omit `id`, and non-PostgreSQL indexes also omit `mode`. Actual cost still requires dialect-specific `EXPLAIN`. | 7 |
+| A24 | Artifact-store provider accepts malformed configuration silently | **Confirmed** | boolean parsing still accepts only recognised truthy values and maps every other value to false; incomplete fallback groups are skipped; `availableTypes()` still returns the mutable key-set view. | 9 |
+| A25 | JDBC/Testcontainers test dependencies are injected into unrelated modules | **Confirmed** | root `build.gradle` still adds all drivers and database Testcontainers dependencies to every non-Gradle subproject. | 12 |
+| A26 | Release assets/configuration are incomplete | **Partially fixed** | `jreleaser.yml` is now present. `LICENSE`, `NOTICE` and `CHANGELOG.md` remain absent; CI does not run a JReleaser config/dry-run check on ordinary changes; legal files are not explicitly packaged. | 1 |
+| A27 | Java 17 compatibility relies on build JDK instead of `--release` | **Confirmed** | main modules still use `sourceCompatibility`/`targetCompatibility` only; no project Java 17 toolchain or `options.release = 17` is configured. | 12 |
+| A28 | Artifact reproducibility is not demonstrated | **Confirmed** | manifest still embeds current Java vendor/version; archive reproducibility flags and double-build hash comparison are absent. | 12 |
+| A29 | Documentation contains claims/links not supported by delivered sources | **Confirmed, narrowed** | orphan detection claim remains overstated; `gear4jtest-external-jdbc/README.md` still references a missing migration document and a missing cleanup script. The prior `jreleaser.yml` claim is now accurate. | 1 |
+
+## P0/P1 remediation gates
+
+The following findings must be treated as release blockers before broad pre-1.0 stabilization:
+
+1. **A26 / A29 — release and documentation completeness.**
+2. **A14 — safe Spring Boot redaction default.**
+3. **A05 — exact parallel cancellation outcome.**
+4. **A06 — bounded UUIDv7 generation under clock rollback.**
+5. **A17 — no global monitor across JDBC I/O.**
+6. **A20 / A22 — bounded shutdown and connection-acquisition contract.**
+7. **A11 — real `external-jdbc` multi-dialect coverage.**
+8. **A03 — mandatory atomic publication capability.**
+9. **A13 — real Gradle TestKit/configuration-cache validation.**
+
+## Test gaps to add with the corresponding fixes
+
+Tests for unresolved behavior should be committed with the phase that changes the behavior, rather than as intentionally failing tests in phase 0.
+
+- Phase 2: persistence enabled without a redactor must prove that raw values are not persisted by default.
+- Phase 3: deterministic completed-but-not-collected cancellation race; registry collision and expected-context cleanup; build-time invalid parallel configuration.
+- Phase 4: injected frozen/rolled-back clock, sequence exhaustion, latency bound and UUID invariants.
+- Phase 5: two independent slow persistence operations must overlap rather than serialize globally.
+- Phase 6: wall-clock shutdown bounds for an occupied buffer lock, exhausted connection pool and slow statement.
+- Phase 7: external schema, transaction rollback, tags, BLOB and latest-RUN behavior on PostgreSQL, MySQL, MariaDB and Oracle.
+- Phase 8: Nth-tag failure must roll back the complete publication and permit idempotent retry.
+- Phase 9: failed compilation/metadata publication must clean or retain a reconcilable staged artifact; malformed store configuration must fail fast; XML must reject oversize input before XSD work.
+- Phase 11: javac parent-only dependency, syntax failure without JDT retry, and Gradle TestKit cache reuse.
+- Phase 12: supply-chain files mandatory on release, Java 17 consumer check, reproducible double build and expanded coverage ratchets.
+
+## Phase 0 exit decision
+
+**Phase 0 is complete from a source-revalidation standpoint.** No production code has been changed. The audit roadmap remains valid with these two adjustments:
+
+- phase 1 validates and completes the already-present JReleaser configuration instead of creating it;
+- the former experimental-cache single-flight item is removed from the remediation backlog unless a future cache loader reintroduces the same pattern.
+
+A connected Java 17 environment must still execute the standard validation sequence before any remediation branch is merged:
+
+```bash
+./gradlew --no-daemon spotlessCheck
+./gradlew --no-daemon check
+./gradlew --no-daemon releaseCheck -Pgear4j.enforceSupplyChain=true
+JRELEASER_DRY_RUN=true ./gradlew --no-daemon jreleaserDeploy -PprojectVersion=1.0.0-rc1
+```

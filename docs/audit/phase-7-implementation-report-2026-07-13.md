@@ -125,7 +125,7 @@ la résolution réseau de cet environnement.
 ./gradlew verifyPerformanceBudgets
 ./gradlew :gear4jtest-jdbc:integrationTest -Pgear4jDatabaseDialect=all
 ./gradlew releaseCheck -PprojectVersion=1.0.0-rc1
-JRELEASER_DRY_RUN=true ./gradlew jreleaserDeploy -PprojectVersion=1.0.0-rc1
+PROJECT_VERSION=1.0.0-rc1 JRELEASER_DRY_RUN=true ./gradlew jreleaserDeploy
 ```
 
 À partir de 1.0.1 :

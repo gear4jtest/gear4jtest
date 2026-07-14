@@ -155,10 +155,14 @@ deterministic output, but transient generated files should not be edited directl
 - `CLAUDE.md`: Claude-specific entrypoint that delegates to `AGENTS.md`.
 - `.github/copilot-instructions.md`: GitHub Copilot guidance.
 
+## License
+
+Gear4J is distributed under the [Apache License, Version 2.0](LICENSE). Project attribution is recorded in
+[NOTICE](NOTICE). Published JARs include both files under `META-INF`.
+
 ## Status
 
 The project is in active design and implementation. Prefer small, well-tested changes. When in doubt, keep the core
 simple and move optional integrations to dedicated modules.
-
 
 See `docs/production-readiness.md` before using Gear4J operationally.

@@ -58,6 +58,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
 
       - name: Resolve release version
         id: version
@@ -81,6 +83,9 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+
+      - name: Validate release metadata
+        run: ./gradlew --no-daemon --warning-mode=all releaseMetadataCheck
 
       - name: Verify, test and stage artifacts
         env:
@@ -113,5 +118,6 @@ jobs:
           name: maven-central-staging-${{ steps.version.outputs.value }}
           path: |
             build/staging-deploy/**
-            build/jreleaser/**
+            build/release-tools/jreleaser/**
+            build/reports/release/**
           if-no-files-found: ignore

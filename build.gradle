@@ -1,7 +1,6 @@
 plugins {
     id "com.diffplug.spotless" version "8.4.0" apply false
     id "org.sonarqube" version "7.3.1.8318"
-    id "org.jreleaser" version "1.24.0"
     id "org.owasp.dependencycheck" version "12.2.2"
     id "me.champeau.jmh" version "0.7.3"
     id 'idea'
@@ -24,7 +23,8 @@ spotless {
             '.github/**/*.md',
             'config/**/*.xml',
             'config/**/*.md',
-            'docs/**/*.md'
+            'docs/**/*.md',
+            'release-tools/*.gradle'
 
         trimTrailingWhitespace()
         endWithNewline()
@@ -34,6 +34,142 @@ spotless {
 tasks.named('check') {
     dependsOn 'spotlessCheck'
     dependsOn 'integrationCheck'
+}
+
+
+def licenseAsset = layout.projectDirectory.file('LICENSE')
+def noticeAsset = layout.projectDirectory.file('NOTICE')
+def jreleaserAsset = layout.projectDirectory.file('jreleaser.yml')
+def releaseToolsBuildAsset = layout.projectDirectory.file('release-tools/build.gradle')
+def releaseToolsSettingsAsset = layout.projectDirectory.file('release-tools/settings.gradle')
+def requiredReleaseAssets = [licenseAsset, noticeAsset, jreleaserAsset, releaseToolsBuildAsset,
+    releaseToolsSettingsAsset]
+
+tasks.register('verifyReleaseAssets') {
+    group = 'verification'
+    description = 'Verifies the legal and JReleaser files required by the release pipeline.'
+    inputs.files(requiredReleaseAssets)
+
+    doLast {
+        def missingOrEmpty = requiredReleaseAssets.findAll { asset ->
+            !asset.asFile.isFile() || asset.asFile.length() == 0L
+        }.collect { it.asFile.name }
+        if (!missingOrEmpty.isEmpty()) {
+            throw new GradleException('Required release assets are missing or empty: ' + missingOrEmpty.join(', '))
+        }
+
+        def licenseText = licenseAsset.asFile.getText('UTF-8')
+        if (!licenseText.contains('Apache License') || !licenseText.contains('Version 2.0')) {
+            throw new GradleException('LICENSE must contain the Apache License, Version 2.0 text')
+        }
+
+        def noticeText = noticeAsset.asFile.getText('UTF-8')
+        if (!noticeText.contains('Gear4J') || !noticeText.contains('Gear4J contributors')) {
+            throw new GradleException('NOTICE must identify Gear4J and its contributors')
+        }
+
+        def jreleaserText = jreleaserAsset.asFile.getText('UTF-8')
+        def requiredJreleaserFragments = [
+            'license: Apache-2.0',
+            'active: RELEASE',
+            'stagingRepositories:',
+            'build/staging-deploy'
+        ]
+        def missingFragments = requiredJreleaserFragments.findAll { !jreleaserText.contains(it) }
+        if (!missingFragments.isEmpty()) {
+            throw new GradleException('jreleaser.yml is missing required release configuration: '
+                    + missingFragments.join(', '))
+        }
+
+        def jreleaserLines = jreleaserText.readLines()
+            .collect { it.trim() }
+            .findAll { it && !it.startsWith('#') }
+        def expectedGithubProvider = [
+            'release:',
+            'github:',
+            'enabled: true',
+            'token: not-used-maven-central-only',
+            'skipTag: true',
+            'skipRelease: true',
+            'uploadAssets: NEVER',
+            'changelog:',
+            'enabled: false'
+        ]
+        def releaseIndex = jreleaserLines.indexOf('release:')
+        def actualGithubProvider = releaseIndex >= 0
+                && releaseIndex + expectedGithubProvider.size() <= jreleaserLines.size()
+            ? jreleaserLines.subList(releaseIndex, releaseIndex + expectedGithubProvider.size())
+            : []
+        if (actualGithubProvider != expectedGithubProvider) {
+            throw new GradleException(
+                    'jreleaser.yml must configure an inert GitHub provider for deploy-only validation')
+        }
+
+        def releaseToolsText = releaseToolsBuildAsset.asFile.getText('UTF-8')
+        if (!releaseToolsText.contains("id 'base'")
+                || !releaseToolsText.contains("id 'org.jreleaser' version '1.25.0'")
+                || !releaseToolsText.contains("configFile = file('../jreleaser.yml')")
+                || !releaseToolsText.contains("tasks.named('jreleaserConfig')")
+                || !releaseToolsText.contains("projectDirectory.set(repositoryRoot)")
+                || releaseToolsText.contains('basedir =')) {
+            throw new GradleException(
+                    'release-tools/build.gradle must apply base and isolate JReleaser 1.25.0')
+        }
+    }
+}
+
+def repositoryRootDirectory = layout.projectDirectory.asFile
+def releaseMarkdownFiles = files(
+    layout.projectDirectory.file('README.md'),
+    fileTree(layout.projectDirectory.dir('docs')) {
+        include '**/*.md'
+    },
+    fileTree(layout.projectDirectory) {
+        include 'gear4jtest-*/README.md'
+    })
+
+tasks.register('verifyDocumentationLinks') {
+    group = 'verification'
+    description = 'Checks that repository-local Markdown links resolve to existing files.'
+    inputs.files(releaseMarkdownFiles)
+
+    doLast {
+        def brokenLinks = []
+        releaseMarkdownFiles.files.findAll { it.isFile() }.sort().each { markdownFile ->
+            def source = markdownFile.getText('UTF-8')
+            def matcher = source =~ /!?\[[^\]]*\]\(([^)]+)\)/
+            matcher.each { match ->
+                def expression = match[1].trim()
+                def target
+                if (expression.startsWith('<') && expression.contains('>')) {
+                    target = expression.substring(1, expression.indexOf('>'))
+                } else {
+                    target = expression.split(/\s+/, 2)[0]
+                }
+                if (target.isEmpty() || target.startsWith('#')
+                        || target ==~ /(?i)^[a-z][a-z0-9+.-]*:.*/) {
+                    return
+                }
+
+                def pathOnly = target.split('#', 2)[0].split(/\?/, 2)[0]
+                if (pathOnly.isEmpty()) {
+                    return
+                }
+                def resolved = new File(markdownFile.parentFile, pathOnly).canonicalFile
+                if (!resolved.exists()) {
+                    def relativeSource = repositoryRootDirectory.toPath().relativize(markdownFile.toPath())
+                    brokenLinks << "${relativeSource}: ${target}"
+                }
+            }
+        }
+        if (!brokenLinks.isEmpty()) {
+            throw new GradleException('Broken repository-local Markdown links:\n - ' + brokenLinks.join('\n - '))
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyDocumentationLinks')
 }
 
 tasks.register('verifySupplyChainConfiguration') {
@@ -135,6 +271,15 @@ configure(project.coreProjects) {
         options.encoding = 'UTF-8'
         options.addBooleanOption('Xdoclint:all,-missing', true)
         options.addBooleanOption('quiet', true)
+    }
+
+    tasks.withType(Jar).configureEach {
+        from(rootProject.file('LICENSE')) {
+            into 'META-INF'
+        }
+        from(rootProject.file('NOTICE')) {
+            into 'META-INF'
+        }
     }
 
     tasks.named('check') {
@@ -285,8 +430,25 @@ sonar {
 }
 
 
-jreleaser {
-    configFile = file('jreleaser.yml')
+def releaseToolsBuild = gradle.includedBuild('release-tools')
+
+tasks.register('jreleaserConfig') {
+    group = 'verification'
+    description = 'Validates the JReleaser model in an isolated Gradle build.'
+    dependsOn releaseToolsBuild.task(':jreleaserConfig')
+}
+
+tasks.register('jreleaserDeploy') {
+    group = 'publishing'
+    description = 'Deploys the staged Maven repository through the isolated JReleaser build.'
+    dependsOn releaseToolsBuild.task(':jreleaserDeploy')
+}
+
+tasks.register('releaseMetadataCheck') {
+    group = 'verification'
+    description = 'Validates release assets, documentation links and the JReleaser configuration.'
+    dependsOn tasks.named('verifyReleaseAssets'), tasks.named('verifyDocumentationLinks'),
+        tasks.named('jreleaserConfig')
 }
 
 dependencyCheck {
@@ -308,6 +470,79 @@ tasks.register('stageMavenCentral') {
     dependsOn(coreProjects.collect { it.tasks.named('publishAllPublicationsToMavenCentralStagingRepository') })
 }
 
+tasks.register('verifyStagedReleaseArtifacts') {
+    group = 'verification'
+    description = 'Verifies legal files in staged JARs and Maven Central metadata in staged POMs.'
+    dependsOn tasks.named('stageMavenCentral')
+
+    def stagingRepository = layout.buildDirectory.dir('staging-deploy')
+    def stagedJarFiles = fileTree(stagingRepository) {
+        include '**/*.jar'
+    }
+    def stagedPomFiles = fileTree(stagingRepository) {
+        include '**/*.pom'
+    }
+    def reportFile = layout.buildDirectory.file('reports/release/staged-artifacts.txt')
+    inputs.files(stagedJarFiles, stagedPomFiles)
+    outputs.file(reportFile)
+
+    doLast {
+        def jarFiles = stagedJarFiles.files.sort()
+        def pomFiles = stagedPomFiles.files.sort()
+        if (jarFiles.isEmpty() || pomFiles.isEmpty()) {
+            throw new GradleException('Staged Maven repository must contain both JAR and POM artifacts')
+        }
+
+        def failures = []
+        jarFiles.each { jarFile ->
+            new java.util.zip.ZipFile(jarFile).withCloseable { archive ->
+                ['META-INF/LICENSE', 'META-INF/NOTICE'].each { entryName ->
+                    if (archive.getEntry(entryName) == null) {
+                        failures << "${jarFile.name} is missing ${entryName}"
+                    }
+                }
+            }
+        }
+
+        pomFiles.each { pomFile ->
+            def pom = new groovy.xml.XmlSlurper(false, false).parse(pomFile)
+            if (pom.name.text().trim().isEmpty()) {
+                failures << "${pomFile.name} is missing project name"
+            }
+            if (pom.description.text().trim().isEmpty()) {
+                failures << "${pomFile.name} is missing project description"
+            }
+            if (pom.url.text().trim().isEmpty()) {
+                failures << "${pomFile.name} is missing project URL"
+            }
+            def apacheLicense = pom.licenses.license.find { license ->
+                license.name.text() == 'Apache License, Version 2.0'
+                        && license.url.text() == 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                        && license.distribution.text() == 'repo'
+            }
+            if (apacheLicense.size() == 0) {
+                failures << "${pomFile.name} is missing the Apache-2.0 Maven license metadata"
+            }
+            if (pom.developers.developer.name.text().trim().isEmpty()) {
+                failures << "${pomFile.name} is missing developer metadata"
+            }
+            if (pom.scm.connection.text().trim().isEmpty()
+                    || pom.scm.developerConnection.text().trim().isEmpty()
+                    || pom.scm.url.text().trim().isEmpty()) {
+                failures << "${pomFile.name} is missing SCM metadata"
+            }
+        }
+
+        if (!failures.isEmpty()) {
+            throw new GradleException('Invalid staged Maven artifacts:\n - ' + failures.join('\n - '))
+        }
+
+        def output = reportFile.get().asFile
+        output.parentFile.mkdirs()
+        output.setText("Verified ${jarFiles.size()} JARs and ${pomFiles.size()} POMs.\n", 'UTF-8')
+    }
+}
+
 tasks.register('consumerSmokeTest', Exec) {
     group = 'verification'
     description = 'Compiles and runs an autonomous consumer against the staged Maven artifacts and plugin marker.'
@@ -321,6 +556,7 @@ tasks.register('consumerSmokeTest', Exec) {
     workingDir consumerProject
     commandLine rootProject.file('gradlew').absolutePath,
         '--no-daemon',
+        '--refresh-dependencies',
         '-p', consumerProject.asFile.absolutePath,
         'clean', 'consumerSmoke',
         "-Pgear4jVersion=${project.version}",
@@ -493,6 +729,7 @@ tasks.register('releaseCheck') {
     group = 'verification'
     description = 'Runs the checks expected before staging a Maven Central release.'
     dependsOn tasks.named('check'), tasks.named('consumerSmokeTest'), tasks.named('dependencyCheckAggregate'),
+        tasks.named('verifyReleaseAssets'), tasks.named('verifyStagedReleaseArtifacts'),
         tasks.named('verifySupplyChainConfiguration'), tasks.named('verifyPerformanceBudgets')
 }
 

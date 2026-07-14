@@ -20,7 +20,7 @@ build did not prove that staged artifacts or the Gradle plugin were consumable o
   defaults or request context configure `AssemblyLineEngine.Builder.initialRunContextPolicy(...)` to copy or filter
   those values before execution.
 - `releaseCheck` stages every library, the Gradle plugin and both plugin markers, then compiles and executes the
-  autonomous `config/consumer-smoke` project exclusively against that repository.
+  autonomous `config/consumer-smoke` project with Gear4J coordinates exclusively resolved from that repository and third-party dependencies from Maven Central.
 - JReleaser applies Maven Central validation and signing to non-snapshot releases. Secrets remain external to source.
 - Dependency locks and verification metadata remain optional during the MVP period; their absence can be made fatal
   explicitly with `gear4j.enforceSupplyChain=true`.
