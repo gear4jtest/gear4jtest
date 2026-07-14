@@ -31,9 +31,9 @@ The engine now marks a run as `RUNNING` and assigns `startTime` before invoking 
 
 ## Parallel execution safety
 
-A parallel container without its own `awaitTimeout` uses `ParallelExecutionConfiguration.defaults()`. The default is finite so one blocked branch cannot keep the run waiting forever by accident.
+A parallel container without its own `awaitTimeout` uses `ParallelExecutionConfiguration.defaults()`. The default is finite so one blocked branch cannot keep the run waiting forever by accident. Container construction rejects non-positive station timeouts, parallel containers without an executor and sibling-dependent conditions in parallel mode. The execution-time compatibility check remains as defense in depth.
 
-Cancellation remains cooperative: thread interruption is attempted for submitted branch tasks, but long user operators should inspect `StationExecutionContext.getGlobalContext().getCancellationToken()` when they can stop safely.
+Cancellation remains cooperative: thread interruption is attempted for submitted branch tasks, but long user operators should inspect `StationExecutionContext.getGlobalContext().getCancellationToken()` when they can stop safely. When branch completion races with timeout, interruption or cancellation, a completed branch result wins over a synthetic cancellation trace.
 
 ## Persistence safety
 

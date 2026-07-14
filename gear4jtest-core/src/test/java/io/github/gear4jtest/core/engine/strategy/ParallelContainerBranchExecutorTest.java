@@ -1,13 +1,20 @@
 package io.github.gear4jtest.core.engine.strategy;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.github.gear4jtest.core.api.context.CancellationToken;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.context.ResolvedParameters;
@@ -122,6 +129,29 @@ class ParallelContainerBranchExecutorTest {
         }
     }
 
+    @Test
+    void execute_shouldPreserveCompletedResultWhenCompletionWinsCancellationRace() {
+        // Given
+        CancellationToken cancellationToken = new CancellationToken();
+        ExecutorService executor = new CompletesDuringCancellationExecutor(cancellationToken);
+        ContainerBaseStation<String, Void> station = new ContainerBaseStation.Builder<String, Void>(executor)
+                .id("container")
+                .withBranch("completed", new TestStation("branch"))
+                .build();
+        TestStationExecutionContext context = stationContext("container", cancellationToken);
+
+        // When
+        ContainerExecutionAggregation aggregation = new ParallelContainerBranchExecutor()
+                .execute(station, "input", successfulRunner(), context, DEFAULT, Duration.ofSeconds(1));
+
+        // Then
+        assertThat(aggregation.results()).hasSize(1);
+        StationLogTrace branchLog = aggregation.results().get(0);
+        assertThat(branchLog.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
+        assertThat(branchLog.<String>getOutput()).isEqualTo("input");
+        assertThat(aggregation.interruptingChild()).isNull();
+    }
+
     private static io.github.gear4jtest.core.spi.runner.StationRunner successfulRunner() {
         return (input, station, ctx) -> {
             StationLogTrace log = StationLogTrace.start(ctx.getGlobalContext().getExecutionId(), station.getId(), null);
@@ -131,12 +161,17 @@ class ParallelContainerBranchExecutorTest {
     }
 
     private static TestStationExecutionContext stationContext(String operationId) {
+        return stationContext(operationId, new CancellationToken());
+    }
+
+    private static TestStationExecutionContext stationContext(String operationId, CancellationToken cancellationToken) {
         AssemblyRunTrace run = new AssemblyRunTrace(UUID.randomUUID(), "pipeline", Map.of());
         ExecutionContext globalContext = ExecutionContext.builder()
                 .executionId(run.getId())
                 .assemblyLineId("pipeline")
                 .services(new ExecutionServices(null, noResources()))
                 .assemblyRun(run)
+                .cancellationToken(cancellationToken)
                 .build();
         return new TestStationExecutionContext(operationId, globalContext,
                 StationLogTrace.start(run.getId(), operationId, null), new ExecutionSupport(null, null, null));
@@ -194,6 +229,57 @@ class ParallelContainerBranchExecutorTest {
         @Override
         public ResolvedParameters getResolvedParameters() {
             return new ResolvedParameters();
+        }
+    }
+
+    private static final class CompletesDuringCancellationExecutor extends AbstractExecutorService {
+        private final CancellationToken cancellationToken;
+        private boolean shutdown;
+
+        private CompletesDuringCancellationExecutor(CancellationToken cancellationToken) {
+            this.cancellationToken = cancellationToken;
+        }
+
+        @Override
+        public void shutdown() {
+            shutdown = true;
+        }
+
+        @Override
+        public List<Runnable> shutdownNow() {
+            shutdown = true;
+            return List.of();
+        }
+
+        @Override
+        public boolean isShutdown() {
+            return shutdown;
+        }
+
+        @Override
+        public boolean isTerminated() {
+            return shutdown;
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit) {
+            return shutdown;
+        }
+
+        @Override
+        public void execute(Runnable command) {
+            cancellationToken.cancel("test cancellation");
+        }
+
+        @Override
+        protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
+            return new FutureTask<>(callable) {
+                @Override
+                public boolean cancel(boolean mayInterruptIfRunning) {
+                    run();
+                    return false;
+                }
+            };
         }
     }
 

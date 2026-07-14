@@ -200,12 +200,11 @@ final class ParallelContainerBranchExecutor {
             if (orderedResults[submitted.index] != null) {
                 continue;
             }
-            StationLogTrace completed = tryResolveAlreadyCompletedBranch(submitted, input, context);
+            StationLogTrace completed = tryResolveCompletedAroundCancellation(submitted, input, context);
             if (completed != null) {
                 orderedResults[submitted.index] = completed;
                 continue;
             }
-            submitted.future.cancel(true);
             StationLogTrace timeout = ContainerBranchExecutionSupport.timeoutCancelledLog(submitted.branch, input,
                                                                                           context,
                                                                                           awaitTimeout);
@@ -226,12 +225,11 @@ final class ParallelContainerBranchExecutor {
             if (orderedResults[submitted.index] != null) {
                 continue;
             }
-            StationLogTrace completed = tryResolveAlreadyCompletedBranch(submitted, input, context);
+            StationLogTrace completed = tryResolveCompletedAroundCancellation(submitted, input, context);
             if (completed != null) {
                 orderedResults[submitted.index] = completed;
                 continue;
             }
-            submitted.future.cancel(true);
             orderedResults[submitted.index] = ContainerBranchExecutionSupport
                     .siblingInterruptedCancellationLog(submitted.branch, input, context, interruptingChild);
         }
@@ -246,7 +244,11 @@ final class ParallelContainerBranchExecutor {
             if (orderedResults[submitted.index] != null) {
                 continue;
             }
-            submitted.future.cancel(true);
+            StationLogTrace completed = tryResolveCompletedAroundCancellation(submitted, input, context);
+            if (completed != null) {
+                orderedResults[submitted.index] = completed;
+                continue;
+            }
             StationLogTrace cancellation = ContainerBranchExecutionSupport.cooperativeCancellationLog(submitted.branch,
                                                                                                       input, context);
             orderedResults[submitted.index] = cancellation;
@@ -265,17 +267,29 @@ final class ParallelContainerBranchExecutor {
             if (orderedResults[submitted.index] != null) {
                 continue;
             }
-            StationLogTrace completed = tryResolveAlreadyCompletedBranch(submitted, input, context);
+            StationLogTrace completed = tryResolveCompletedAroundCancellation(submitted, input, context);
             if (completed != null) {
                 orderedResults[submitted.index] = completed;
                 continue;
             }
-            submitted.future.cancel(true);
             orderedResults[submitted.index] = ContainerBranchExecutionSupport.waitInterruptedCancellationLog(
                                                                                                              submitted.branch,
                                                                                                              input,
                                                                                                              context);
         }
+    }
+
+    private StationLogTrace tryResolveCompletedAroundCancellation(SubmittedBranch submitted,
+                                                                  Object input,
+                                                                  StationExecutionContext context) {
+        StationLogTrace completed = tryResolveAlreadyCompletedBranch(submitted, input, context);
+        if (completed != null) {
+            return completed;
+        }
+        if (submitted.future.cancel(true)) {
+            return null;
+        }
+        return tryResolveAlreadyCompletedBranch(submitted, input, context);
     }
 
     private StationLogTrace tryResolveAlreadyCompletedBranch(SubmittedBranch submitted,

@@ -20,12 +20,22 @@ public final class ExecutionContextRegistry {
 
     /**
      * Registers the provided context when it has an execution id.
+     *
+     * @throws IllegalStateException when another active context already uses the
+     *                               same execution id
      */
     public void register(ExecutionContext ctx) {
-        if (ctx == null || ctx.getExecutionId() == null) {
+        if (ctx == null) {
             return;
         }
-        contexts.put(ctx.getExecutionId(), ctx);
+        UUID executionId = ctx.getExecutionId();
+        if (executionId == null) {
+            return;
+        }
+        ExecutionContext previous = contexts.putIfAbsent(executionId, ctx);
+        if (previous != null && previous != ctx) {
+            throw new IllegalStateException("Duplicate active execution id: " + executionId);
+        }
     }
 
     /**
@@ -47,5 +57,16 @@ public final class ExecutionContextRegistry {
             return;
         }
         contexts.remove(executionId);
+    }
+
+    /**
+     * Removes the context only when the registry still points to the expected
+     * instance.
+     */
+    public void remove(UUID executionId, ExecutionContext expectedContext) {
+        if (executionId == null || expectedContext == null) {
+            return;
+        }
+        contexts.remove(executionId, expectedContext);
     }
 }

@@ -13,7 +13,7 @@ final class AssemblyLineRunCleanup {
                 context.getSideComputeContext().cancelUnresolvedFutures();
                 context.getServices().getStationScopedResources().clearAll();
             } finally {
-                executionContextRegistry.remove(context.getExecutionId());
+                executionContextRegistry.remove(context.getExecutionId(), context);
             }
         };
     }

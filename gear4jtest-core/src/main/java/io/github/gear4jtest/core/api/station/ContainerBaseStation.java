@@ -30,6 +30,8 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
                                    boolean unary) {
         super(requireContainerId(id), StationKind.CONTAINER, null, null, null, unary, null, null);
         this.pipelines = pipelines == null || pipelines.isEmpty() ? List.of() : List.copyOf(pipelines);
+        validateUniqueBranchIds(this.pipelines);
+        validateExecutionConfiguration(this.pipelines, parallel, executorService, awaitTimeout);
         this.resultsFunc = resultsFunc;
         this.parallel = parallel;
         this.executorService = executorService;
@@ -42,6 +44,27 @@ public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
             throw new IllegalArgumentException("container id is required");
         }
         return id;
+    }
+
+    private static void validateExecutionConfiguration(List<? extends Branch<?>> branches,
+                                                       boolean parallel,
+                                                       ExecutorService executorService,
+                                                       Duration awaitTimeout) {
+        if (parallel && executorService == null) {
+            throw new IllegalArgumentException("parallel container requires an executor service");
+        }
+        if (awaitTimeout != null && (awaitTimeout.isZero() || awaitTimeout.isNegative())) {
+            throw new IllegalArgumentException("container await timeout must be > 0");
+        }
+        if (!parallel) {
+            return;
+        }
+        for (Branch<?> branch : branches) {
+            if (branch.getSiblingCondition() != null) {
+                throw new IllegalArgumentException(
+                        "Sibling branch conditions are only supported in sequential containers");
+            }
+        }
     }
 
     protected static void validateUniqueBranchIds(List<? extends Branch<?>> branches) {

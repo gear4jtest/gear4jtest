@@ -240,6 +240,63 @@ class StationBuilderTest {
                 .hasMessage("SignalStation does not support IGNORE; use STOP or FATAL");
     }
 
+    @Test
+    void containerBuilder_shouldRejectSiblingConditionsInParallelMode() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            WorkStation<String, String> branchStation = new WorkStation.Builder<String, String, IdentityOperator>()
+                    .type(IdentityOperator.class)
+                    .id("branch-op")
+                    .build();
+
+            assertThatThrownBy(() -> new ContainerBaseStation.Builder<String, String>(executor)
+                    .id("container")
+                    .withBranch("branch", branchStation, (input, ctx, siblings) -> true)
+                    .returns(results -> results.get("branch", String.class)))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Sibling branch conditions are only supported in sequential containers");
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void containerBuilder_shouldRejectNonPositiveAwaitTimeoutAtBuildTime() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            WorkStation<String, String> branchStation = new WorkStation.Builder<String, String, IdentityOperator>()
+                    .type(IdentityOperator.class)
+                    .id("branch-op")
+                    .build();
+
+            assertThatThrownBy(() -> new ContainerBaseStation.Builder<String, Void>(executor)
+                    .id("container")
+                    .awaitTimeout(Duration.ZERO)
+                    .withBranch("branch", branchStation)
+                    .build())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("container await timeout must be > 0");
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void unaryContainerBuilder_shouldRejectParallelModeWithoutExecutor() {
+        WorkStation<String, String> branchStation = new WorkStation.Builder<String, String, IdentityOperator>()
+                .type(IdentityOperator.class)
+                .id("branch-op")
+                .build();
+
+        assertThatThrownBy(() -> new UnaryContainerStation.Builder<String>()
+                .id("container")
+                .parallel(null)
+                .withOneLine("branch", branchStation)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("parallel container requires an executor service");
+    }
+
     static class IdentityOperator implements Operator<String, String> {
         @Override
         public String transform(String input, StationExecutionContext ctx) {

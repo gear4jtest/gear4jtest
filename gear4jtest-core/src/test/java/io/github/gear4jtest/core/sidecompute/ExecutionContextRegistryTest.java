@@ -7,6 +7,7 @@ import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -41,5 +42,59 @@ class ExecutionContextRegistryTest {
         ExecutionContextRegistry registry = new ExecutionContextRegistry();
 
         assertThat(registry.get(UUID.randomUUID())).isNull();
+    }
+
+    @Test
+    void registerShouldRejectDuplicateActiveExecutionId() {
+        // Given
+        ExecutionContextRegistry registry = new ExecutionContextRegistry();
+        UUID id = UUID.randomUUID();
+        ExecutionContext first = mock(ExecutionContext.class);
+        ExecutionContext duplicate = mock(ExecutionContext.class);
+        when(first.getExecutionId()).thenReturn(id);
+        when(duplicate.getExecutionId()).thenReturn(id);
+        registry.register(first);
+
+        // When / Then
+        assertThatThrownBy(() -> registry.register(duplicate))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Duplicate active execution id: " + id);
+        assertThat(registry.get(id)).isSameAs(first);
+    }
+
+    @Test
+    void conditionalRemoveShouldNotRemoveReplacementContext() {
+        // Given
+        ExecutionContextRegistry registry = new ExecutionContextRegistry();
+        UUID id = UUID.randomUUID();
+        ExecutionContext completed = mock(ExecutionContext.class);
+        ExecutionContext replacement = mock(ExecutionContext.class);
+        when(completed.getExecutionId()).thenReturn(id);
+        when(replacement.getExecutionId()).thenReturn(id);
+        registry.register(completed);
+        registry.remove(id, completed);
+        registry.register(replacement);
+
+        // When
+        registry.remove(id, completed);
+
+        // Then
+        assertThat(registry.get(id)).isSameAs(replacement);
+    }
+
+    @Test
+    void conditionalRemoveShouldRemoveExpectedContext() {
+        // Given
+        ExecutionContextRegistry registry = new ExecutionContextRegistry();
+        ExecutionContext context = mock(ExecutionContext.class);
+        UUID id = UUID.randomUUID();
+        when(context.getExecutionId()).thenReturn(id);
+        registry.register(context);
+
+        // When
+        registry.remove(id, context);
+
+        // Then
+        assertThat(registry.get(id)).isNull();
     }
 }
