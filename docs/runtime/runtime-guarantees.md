@@ -65,6 +65,33 @@ or Spring Boot `redaction-mode=DISABLED` are explicit opt-ins to raw capture.
 `REQUIRE` fails startup without an effective redactor. The deprecated Spring
 Boot `WARN` mode retains the former raw-capture behavior and emits a warning.
 
+## Default identifier generation
+
+Status: Implemented.
+
+The default `IdGenerator` produces UUIDv7 values with per-thread monotonic
+state. It reads wall time once per identifier and uses the UUIDv7 12-bit
+sequence while time is unchanged or has moved backwards. After 4096 values in
+one logical millisecond, it advances a thread-local logical timestamp by one
+millisecond rather than waiting for the wall clock.
+
+Guaranteed today:
+
+- no spin-wait or clock-polling loop after sequence exhaustion;
+- UUID version 7 and RFC 4122 variant bits;
+- non-decreasing encoded timestamps within one generator thread;
+- automatic return to wall-clock time when it moves beyond logical time.
+
+Not guaranteed today:
+
+- exact wall-clock timestamps during clock rollback or sustained frozen-clock
+  generation;
+- deterministic ordering between different threads or processes;
+- absolute collision impossibility across processes.
+
+See [ADR 0024](../decisions/0024-uuidv7-uses-bounded-logical-time.md)
+for the selected clock-rollback tradeoff.
+
 ## External RUN publication
 
 Status: Implemented.

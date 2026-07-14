@@ -46,6 +46,10 @@ wall=1.31 cpu=97%
 
 This confirms that `DefaultUuidGenerator.generate()` actively spins for approximately the complete clock rollback duration after sequence exhaustion. The finding is therefore not merely theoretical.
 
+Phase 4 closes this historical reproduction by replacing clock polling with a
+bounded logical-timestamp advance. The measurement above describes the
+pre-phase-4 implementation retained as audit evidence.
+
 ## Revalidated finding matrix
 
 | ID | Audit finding | Current status | Current evidence | Remediation phase |
@@ -55,7 +59,7 @@ This confirms that `DefaultUuidGenerator.generate()` actively spins for approxim
 | A03 | Publication atomicity depends implicitly on repository capability | **Confirmed** | `AssemblyLineManager` still auto-detects `OperationChainPublicationRepository`; `AssemblyLinePublicationService.publishMetadata` otherwise inserts the object and then tags sequentially without compensation. | 8 |
 | A04 | Generated compiler fallback/classloader semantics are inconsistent | **Confirmed** | Any javac `CompilationException` still triggers JDT; javac classpath still comes only from `java.class.path`; JDT still uses internal Eclipse compiler APIs with release mode disabled. | 11 |
 | A05 | Parallel cancellation can replace an already completed result | **Fixed in phase 3** | all timeout/interruption/cancellation paths now resolve completed futures before cancellation and retry resolution when `cancel(true)` loses the completion race; a deterministic regression test covers the exact window. | Closed |
-| A06 | UUIDv7 can spin after clock rollback | **Confirmed dynamically** | `DefaultUuidGenerator` still loops on `Thread.onSpinWait()`; autonomous reproduction consumed about 97% CPU for the simulated 1.2-second rollback. | 4 |
+| A06 | UUIDv7 can spin after clock rollback | **Fixed in phase 4** | the spin loop was removed; sequence exhaustion advances a thread-local logical timestamp, and deterministic frozen/rolled-back clock tests prove one clock read per generated UUID. | Closed |
 | A07 | Java domain objects do not enforce database/runtime invariants | **Confirmed** | `OperationChainObject` has no compact constructor; `OperationChainConfig` validates only store fields; `FlowConfig` still accepts null policies. | 9 |
 | A08 | Some invalid parallel configurations fail only during execution | **Fixed in phase 3** | container construction now rejects sibling conditions in parallel mode, missing parallel executors and non-positive station await timeouts; the runtime compatibility check remains as defense in depth. | Closed |
 | A09 | Execution-context ID collision silently replaces an active context | **Fixed in phase 3** | registration now uses `putIfAbsent` and fails on an active duplicate; run cleanup removes only `(executionId, expectedContext)`, with registry and cleanup regression tests. | Closed |

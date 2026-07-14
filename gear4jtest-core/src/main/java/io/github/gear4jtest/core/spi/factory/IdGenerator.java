@@ -16,7 +16,9 @@ import io.github.gear4jtest.core.util.DefaultUuidGenerator;
  *
  * <p>
  * The default implementation is a dependency-free, thread-safe UUIDv7
- * generator.
+ * generator. During clock rollback or a frozen clock, it advances a per-thread
+ * logical timestamp after the UUIDv7 sequence is exhausted instead of waiting
+ * for wall time to recover.
  * </p>
  */
 @FunctionalInterface
