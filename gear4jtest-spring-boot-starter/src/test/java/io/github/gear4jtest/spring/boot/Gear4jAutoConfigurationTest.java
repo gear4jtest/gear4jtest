@@ -1,5 +1,6 @@
 package io.github.gear4jtest.spring.boot;
 
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.sql.DataSource;
@@ -15,6 +16,7 @@ import io.github.gear4jtest.core.api.util.AssemblyLines;
 import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
+import io.github.gear4jtest.core.spi.security.RedactionTarget;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.micrometer.Gear4jMicrometerExtension;
@@ -24,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -119,6 +122,70 @@ class Gear4jAutoConfigurationTest {
     }
 
     @Test
+    void should_discard_sensitive_values_by_default_when_persistence_is_enabled() {
+        // Given / When / Then
+        contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> {
+                    DatabaseExecutionManager manager = context.getBean(DatabaseExecutionManager.class);
+                    SensitiveDataRedactor redactor = (SensitiveDataRedactor) ReflectionTestUtils.getField(manager,
+                                                                                                          "redactor");
+
+                    assertThat(SensitiveDataRedactor.isDiscardingSensitiveValues(redactor)).isTrue();
+                    assertThat(redactor.redact(RedactionTarget.RUN_INPUT, "secret-input")).isNull();
+                    assertThat(redactor.redact(RedactionTarget.RUN_RESULT, "secret-result")).isNull();
+                    assertThat(redactor.redact(RedactionTarget.RUN_ERROR_MESSAGE, "secret-error")).isNull();
+                    assertThat(redactor.redact(RedactionTarget.RUN_CONTEXT, Map.of("token", "secret")))
+                            .isEqualTo(Map.of());
+                });
+    }
+
+    @Test
+    void should_allow_raw_capture_when_explicitly_disabled() {
+        // Given / When / Then
+        contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2",
+                                    "gear4j.persistence.redaction-mode=DISABLED")
+                .run(context -> {
+                    DatabaseExecutionManager manager = context.getBean(DatabaseExecutionManager.class);
+                    SensitiveDataRedactor redactor = (SensitiveDataRedactor) ReflectionTestUtils.getField(manager,
+                                                                                                          "redactor");
+
+                    assertThat(redactor.redact(RedactionTarget.RUN_INPUT, "secret-input"))
+                            .isEqualTo("secret-input");
+                    assertThat(redactor.redact(RedactionTarget.RUN_CONTEXT, Map.of("token", "secret")))
+                            .isEqualTo(Map.of("token", "secret"));
+                });
+    }
+
+    @SuppressWarnings("removal")
+    @Test
+    void should_keep_explicit_warn_mode_as_deprecated_raw_capture_compatibility() {
+        // Given / When
+        SensitiveDataRedactor redactor = Gear4jAutoConfiguration.resolveRedactor(null,
+                                                                                 Gear4jProperties.RedactionMode.WARN);
+
+        // Then
+        assertThat(SensitiveDataRedactor.isNone(redactor)).isTrue();
+        assertThat(redactor.redact(RedactionTarget.RUN_INPUT, "secret-input")).isEqualTo("secret-input");
+    }
+
+    @Test
+    void should_use_explicit_redactor_with_safe_default_mode() {
+        // Given
+        SensitiveDataRedactor customRedactor = (target, value) -> "redacted";
+
+        // When / Then
+        contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
+                .withBean(SensitiveDataRedactor.class, () -> customRedactor)
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> {
+                    DatabaseExecutionManager manager = context.getBean(DatabaseExecutionManager.class);
+                    assertThat(ReflectionTestUtils.getField(manager, "redactor")).isSameAs(customRedactor);
+                });
+    }
+
+    @Test
     void should_fail_fast_when_redaction_mode_requires_redactor_but_none_is_available() {
         // Given / When / Then
         contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
@@ -133,10 +200,25 @@ class Gear4jAutoConfigurationTest {
     }
 
     @Test
+    void should_reject_builtin_noop_redactor_when_redaction_is_required() {
+        // Given / When / Then
+        contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
+                .withBean(SensitiveDataRedactor.class, SensitiveDataRedactor::none)
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2",
+                                    "gear4j.persistence.redaction-mode=REQUIRE")
+                .run(context -> {
+                    assertThat(context).hasFailed();
+                    assertThat(context.getStartupFailure())
+                            .hasRootCauseMessage("gear4j.persistence.redaction-mode=REQUIRE requires a "
+                                    + "SensitiveDataRedactor bean when persistence is enabled");
+                });
+    }
+
+    @Test
     void should_create_database_execution_manager_when_redaction_mode_requires_existing_redactor() {
         // Given / When / Then
         contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
-                .withBean(SensitiveDataRedactor.class, () -> (target, value) -> value)
+                .withBean(SensitiveDataRedactor.class, () -> (target, value) -> "redacted")
                 .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2",
                                     "gear4j.persistence.redaction-mode=REQUIRE")
                 .run(context -> assertThat(context).hasSingleBean(DatabaseExecutionManager.class));

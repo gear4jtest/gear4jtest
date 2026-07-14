@@ -43,13 +43,23 @@ public class Gear4jProperties {
 
     public enum RedactionMode {
         /**
-         * Persist as-is when no SensitiveDataRedactor bean is available, with a startup
-         * warning.
+         * Use Gear4J's metadata-only policy when no {@code SensitiveDataRedactor} bean
+         * is available. Contexts are replaced by empty maps and payloads, results and
+         * error messages are discarded.
          */
+        DISCARD,
+        /**
+         * Persist as-is when no {@code SensitiveDataRedactor} bean is available, with a
+         * startup warning.
+         *
+         * @deprecated use {@link #DISCARD} for the safe default, {@link #REQUIRE} to
+         *             fail fast or {@link #DISABLED} for an explicit raw-capture opt-in
+         */
+        @Deprecated(forRemoval = true)
         WARN,
         /**
-         * Fail startup when persistence is enabled and no SensitiveDataRedactor bean is
-         * available.
+         * Fail startup when persistence is enabled and no effective
+         * {@code SensitiveDataRedactor} bean is available.
          */
         REQUIRE,
         /** Explicitly allow persistence without redaction. */
@@ -96,10 +106,10 @@ public class Gear4jProperties {
         @NotNull private Duration readinessMaxBacklogAge = Duration.ofSeconds(30);
         @NotNull private Duration connectivityProbeTimeout = Duration.ofSeconds(2);
         /**
-         * Controls startup behavior when persistence is enabled without a
-         * SensitiveDataRedactor bean. Default: WARN.
+         * Controls sensitive-value handling when persistence is enabled without a
+         * SensitiveDataRedactor bean. Default: DISCARD.
          */
-        @NotNull private RedactionMode redactionMode = RedactionMode.WARN;
+        @NotNull private RedactionMode redactionMode = RedactionMode.DISCARD;
 
         public boolean isEnabled() {
             return enabled;

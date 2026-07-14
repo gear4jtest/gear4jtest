@@ -58,11 +58,12 @@ Not guaranteed today:
 - user code is forcibly stopped by persistence shutdown;
 - JDBC migrations provide the same feature set as Flyway or Liquibase.
 
-Direct persistence managers use a metadata-only policy when no
-`SensitiveDataRedactor` is configured: contexts are empty and inputs, results
-and error messages are discarded. `SensitiveDataRedactor.none()` is an explicit
-opt-in to raw capture. The Spring Boot `WARN` mode retains compatibility by
-supplying that no-op policy and emitting a warning; use `REQUIRE` in production.
+Direct persistence managers and the Spring Boot starter use a metadata-only
+policy when no `SensitiveDataRedactor` is configured: contexts are empty and
+inputs, results and error messages are discarded. `SensitiveDataRedactor.none()`
+or Spring Boot `redaction-mode=DISABLED` are explicit opt-ins to raw capture.
+`REQUIRE` fails startup without an effective redactor. The deprecated Spring
+Boot `WARN` mode retains the former raw-capture behavior and emits a warning.
 
 ## External RUN publication
 

@@ -45,9 +45,12 @@ When JDBC persistence is enabled:
 - direct managers default to `SensitiveDataRedactor.discardSensitiveValues()`:
   identifiers/statuses/timestamps are retained, while contexts are empty and
   inputs, outputs and error messages are discarded;
-- configure a `SensitiveDataRedactor` before enabling payload capture;
-  `SensitiveDataRedactor.none()` is the explicit unsafe choice that persists run
-  context, inputs, outputs, station context and error messages as-is;
+- the Spring Boot starter also defaults to metadata-only `DISCARD` mode;
+- configure a `SensitiveDataRedactor` before enabling selected payload capture;
+  `SensitiveDataRedactor.none()` or Spring Boot `redaction-mode=DISABLED` are the
+  preferred explicit unsafe choices that persist run context, inputs, outputs,
+  station context and error messages as-is; deprecated explicit `WARN` retains
+  the same raw-capture compatibility behavior with a warning;
 - set `gear4j.persistence.redaction-mode=REQUIRE` in Spring Boot deployments
   that must fail fast without an explicit redactor;
 - tune `gear4j.persistence.batch-size`, `max-pending-logs-per-run`,

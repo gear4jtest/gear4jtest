@@ -23,7 +23,7 @@ gear4j:
     readiness-max-buffered-station-logs: 5000
     readiness-max-backlog-age: 30s
     connectivity-probe-timeout: 2s
-    redaction-mode: WARN # WARN | REQUIRE | DISABLED
+    redaction-mode: DISCARD # DISCARD | REQUIRE | DISABLED | WARN (deprecated)
   metrics:
     enabled: true
 ```
@@ -31,12 +31,13 @@ gear4j:
 Persistence is opt-in. When enabled, `gear4j.persistence.dialect` is mandatory.
 Gear4J never auto-detects the database dialect.
 
-`gear4j.persistence.redaction-mode` defaults to `WARN`. In this mode, Gear4J
-starts without a `SensitiveDataRedactor` but logs that payloads, contexts and
-results are persisted as-is. Set it to `REQUIRE` in production environments that
-must fail fast when no redactor bean is available. `DISABLED` is an explicit
-opt-out for trusted/test deployments that deliberately persist raw values without
-emitting the missing-redactor startup warning.
+`gear4j.persistence.redaction-mode` defaults to `DISCARD`. Without a
+`SensitiveDataRedactor` bean, Gear4J stores empty context maps and discards
+inputs, results and error messages. Set it to `REQUIRE` when the application must
+fail fast unless an explicit redactor bean is available. `DISABLED` is the
+explicit opt-in for trusted/test deployments that deliberately persist raw
+values. `WARN` is retained temporarily as a deprecated raw-capture compatibility
+mode and emits the persistence manager warning.
 
 `gear4j.persistence.auto-create-tables` defaults to `false`. With the default,
 Gear4J expects the core schema to already exist, typically because the host

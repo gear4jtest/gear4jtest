@@ -22,9 +22,10 @@ limits, but no aggregate quota, startup cleanup or residual occupancy signal.
   capture. A custom redactor is the preferred production choice.
 - `PersistenceConfiguration.storeResultObject(false)` is now enforced when the
   final run trace is built; it does not remove the value returned to the caller.
-- Spring Boot keeps its existing compatibility contract: `WARN` starts with an
-  explicit no-op redactor and logs a warning, `REQUIRE` fails without a bean and
-  `DISABLED` explicitly permits raw capture.
+- Spring Boot now defaults to `DISCARD`, matching direct persistence managers.
+  `REQUIRE` fails without an effective bean and `DISABLED` explicitly permits
+  raw capture. `WARN` remains temporarily as a deprecated compatibility mode
+  that supplies a no-op redactor and logs a warning.
 - Artifact stores use an `ArtifactSpoolPolicy`. Its defaults are a 100 MiB quota
   per managed spool and deletion at initialization of `.tmp` files older than
   24 hours.
@@ -39,9 +40,10 @@ limits, but no aggregate quota, startup cleanup or residual occupancy signal.
 
 ## Consequences
 
-This is an intentional pre-1.0 behavior change for direct manager users.
-Applications that require full audit payloads must now configure a redactor or
-explicitly choose `SensitiveDataRedactor.none()`.
+This is an intentional pre-1.0 behavior change for direct manager and Spring
+Boot users. Applications that require full audit payloads must now configure a
+redactor, explicitly choose `SensitiveDataRedactor.none()`, or set Spring Boot
+`redaction-mode=DISABLED`.
 
 The spool quota is local to each managed store instance. Operators should still
 set filesystem/container limits and avoid sharing the configured directory with

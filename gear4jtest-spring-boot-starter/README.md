@@ -30,7 +30,7 @@ also contributes separate persistence liveness and readiness indicators.
 | `gear4j.persistence.readiness-max-buffered-station-logs` | `int` | `5000` | Readiness becomes `DOWN` above this current backlog size. |
 | `gear4j.persistence.readiness-max-backlog-age` | `Duration` | `30s` | Readiness becomes `DOWN` when the oldest buffered log exceeds this age. |
 | `gear4j.persistence.connectivity-probe-timeout` | `Duration` | `2s` | Timeout for the provider-specific readiness connectivity query. |
-| `gear4j.persistence.redaction-mode` | `WARN` / `REQUIRE` / `DISABLED` | `WARN` | Controls startup behavior when persistence is enabled without a `SensitiveDataRedactor` bean. |
+| `gear4j.persistence.redaction-mode` | `DISCARD` / `REQUIRE` / `DISABLED` / `WARN` | `DISCARD` | Controls sensitive-value handling when persistence is enabled without a `SensitiveDataRedactor` bean. `WARN` is deprecated compatibility behavior. |
 | `gear4j.metrics.enabled` | `boolean` | `true` | Enables Micrometer integration when a `MeterRegistry` bean is available. |
 
 ## JDBC persistence examples
@@ -52,9 +52,11 @@ gear4j.persistence.baseline-on-migrate=true
 
 For production deployments that manage DDL outside the application, keep
 auto-creation disabled and apply the SQL migrations from the core module for the
-selected dialect. Production applications should also provide a
-`SensitiveDataRedactor` bean and set `gear4j.persistence.redaction-mode=REQUIRE`
-when persisted payloads may contain PII, secrets or sensitive business data:
+selected dialect. The default `DISCARD` mode stores only metadata: contexts are
+empty and payloads, results and error messages are removed. Applications that
+need selected persisted values should provide a `SensitiveDataRedactor` bean.
+Set `gear4j.persistence.redaction-mode=REQUIRE` when startup must fail unless
+that bean is available:
 
 ```properties
 gear4j.persistence.enabled=true
@@ -62,6 +64,23 @@ gear4j.persistence.dialect=POSTGRESQL
 gear4j.persistence.auto-create-tables=false
 gear4j.persistence.redaction-mode=REQUIRE
 ```
+
+
+## Redaction migration
+
+Before this change, the starter defaulted to `WARN`, which persisted raw values
+when no `SensitiveDataRedactor` bean was available. The default is now
+`DISCARD`. Applications that intentionally depend on complete raw persistence
+must opt in explicitly with:
+
+```properties
+gear4j.persistence.redaction-mode=DISABLED
+```
+
+`WARN` remains temporarily available as a deprecated compatibility mode. It
+also permits raw capture but emits the persistence manager warning. New
+configurations should use `DISCARD`, `REQUIRE` or `DISABLED` according to their
+intended security posture.
 
 ## Actuator probes
 

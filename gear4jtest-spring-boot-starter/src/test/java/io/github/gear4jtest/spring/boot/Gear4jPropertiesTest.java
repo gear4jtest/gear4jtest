@@ -32,7 +32,7 @@ class Gear4jPropertiesTest {
         assertThat(properties.getPersistence().getReadinessMaxBufferedStationLogs()).isEqualTo(5_000);
         assertThat(properties.getPersistence().getReadinessMaxBacklogAge()).isEqualTo(Duration.ofSeconds(30));
         assertThat(properties.getPersistence().getConnectivityProbeTimeout()).isEqualTo(Duration.ofSeconds(2));
-        assertThat(properties.getPersistence().getRedactionMode()).isEqualTo(Gear4jProperties.RedactionMode.WARN);
+        assertThat(properties.getPersistence().getRedactionMode()).isEqualTo(Gear4jProperties.RedactionMode.DISCARD);
     }
 
     @Test

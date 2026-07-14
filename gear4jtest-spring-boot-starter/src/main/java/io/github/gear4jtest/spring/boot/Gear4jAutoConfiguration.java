@@ -73,16 +73,27 @@ public class Gear4jAutoConfiguration {
                 .build();
     }
 
-    private static SensitiveDataRedactor resolveRedactor(SensitiveDataRedactor redactor,
-                                                         Gear4jProperties.RedactionMode redactionMode) {
-        if (redactionMode == Gear4jProperties.RedactionMode.REQUIRE && SensitiveDataRedactor.isNone(redactor)) {
-            throw new IllegalStateException("gear4j.persistence.redaction-mode=REQUIRE requires a "
-                    + "SensitiveDataRedactor bean when persistence is enabled");
+    @SuppressWarnings("removal")
+    static SensitiveDataRedactor resolveRedactor(SensitiveDataRedactor redactor,
+                                                 Gear4jProperties.RedactionMode redactionMode) {
+        if (redactor != null) {
+            if (redactionMode == Gear4jProperties.RedactionMode.REQUIRE
+                    && SensitiveDataRedactor.isNone(redactor)) {
+                throw missingRequiredRedactor();
+            }
+            return redactor;
         }
-        if (redactionMode == Gear4jProperties.RedactionMode.DISABLED && SensitiveDataRedactor.isNone(redactor)) {
-            return (target, value) -> value;
-        }
-        return SensitiveDataRedactor.isNone(redactor) ? SensitiveDataRedactor.none() : redactor;
+        return switch (redactionMode) {
+            case DISCARD -> SensitiveDataRedactor.discardSensitiveValues();
+            case REQUIRE -> throw missingRequiredRedactor();
+            case WARN -> SensitiveDataRedactor.none();
+            case DISABLED -> (target, value) -> value;
+        };
+    }
+
+    private static IllegalStateException missingRequiredRedactor() {
+        return new IllegalStateException("gear4j.persistence.redaction-mode=REQUIRE requires a "
+                + "SensitiveDataRedactor bean when persistence is enabled");
     }
 
     @Bean
