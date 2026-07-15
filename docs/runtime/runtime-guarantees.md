@@ -48,14 +48,17 @@ Guaranteed today:
 - scheduled asynchronous flush tasks are bounded by `maxScheduledFlushTasks`;
 - failed flushes restore drained records when possible before reporting the failure;
 - JDBC statements created by Gear4J persistence apply the configured statement timeout when supported by the driver;
-- shutdown stops accepting new flush scheduling, cancels periodic maintenance and performs a final blocking drain of
-  active buffers.
+- shutdown starts one end-to-end deadline before closing admission, bounds per-run lock waits and executes final JDBC
+  drains through shutdown-only daemon workers;
+- a timed-out or uncertain batch is restored in memory and reported instead of keeping the shutdown caller blocked;
+- the shutdown report exposes admitted operations that did not finish before the deadline.
 
 Not guaranteed today:
 
 - persistence can survive a process crash before buffered logs are flushed;
 - final shutdown flush can succeed when the database is unavailable;
-- user code is forcibly stopped by persistence shutdown;
+- user code or JDBC driver calls are forcibly stopped by persistence shutdown;
+- a JDBC call that ignores interruption cannot outlive the immutable shutdown report on a daemon worker;
 - JDBC migrations provide the same feature set as Flyway or Liquibase.
 
 Direct persistence managers and the Spring Boot starter use a metadata-only

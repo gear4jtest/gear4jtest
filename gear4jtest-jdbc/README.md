@@ -41,7 +41,8 @@ For an observable shutdown, call `manager.shutdownWithReport(timeout)`. The
 returned `PersistenceShutdownReport` states how many station logs were drained,
 which runs still retain data, how many retry attempts occurred, whether the
 deadline was reached, whether an earlier run finalization remains unresolved and
-whether owned flush workers terminated. The existing `shutdown()` methods remain
+whether owned flush workers terminated, and how many normal operations admitted
+before closure were still running. The existing `shutdown()` methods remain
 available and delegate to the same bounded retry workflow. Retry backoff defaults
 to `100ms` and grows exponentially up to `2s`; both values are configurable
 through `PersistenceRuntimeConfiguration`.
@@ -51,11 +52,13 @@ lifecycle state and updating an in-flight counter. JDBC calls are not executed
 under a manager-wide lock, so independent runs may write concurrently according
 to the application threads and configured flush executor. Per-run buffer drains
 remain serialized by their own lock. Custom repositories and data sources supplied
-to the builder must be thread-safe. Shutdown closes admission first and waits for
-already admitted operations before taking its drain snapshot.
+to the builder must be thread-safe. Shutdown closes admission first and waits for already admitted operations only
+until the shared end-to-end deadline. If they remain active, the report exposes
+`unfinishedOperations` and the drain is not started concurrently with them.
 
 Failed batches remain in memory and are listed in the report; no durable
-dead-letter store is enabled implicitly. The shutdown deadline bounds retries,
-backoff and executor termination. A JDBC call already in progress still depends
-on the configured `jdbcStatementTimeout` and on the driver honoring interruption
-and query timeouts.
+dead-letter store is enabled implicitly. The shutdown deadline starts before admission closure and bounds operation waits,
+per-run locks, retries, backoff and worker termination. Shutdown-only JDBC calls
+run on daemon workers, so a pool or driver that ignores interruption may outlive
+the report without blocking the caller. In that case the drained batch is
+restored, `deadlineReached` is true and `flushExecutorTerminated` is false.

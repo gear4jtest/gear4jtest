@@ -16,6 +16,10 @@ final class PersistenceThreadFactories {
         return namedDaemonFactory("gear4j-db-flush-timer-");
     }
 
+    static ThreadFactory shutdownWorker() {
+        return namedDaemonFactory("gear4j-db-shutdown-");
+    }
+
     private static ThreadFactory namedDaemonFactory(String prefix) {
         AtomicInteger counter = new AtomicInteger();
         return runnable -> {

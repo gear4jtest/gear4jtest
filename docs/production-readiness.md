@@ -134,6 +134,11 @@ Pending/in-flight reactions after shutdown usually mean user code ignored
 interruption or blocked on an external resource longer than the configured
 shutdown timeout.
 
+JDBC persistence uses the same end-to-end shutdown-budget principle. A driver
+call that ignores interruption may continue on a daemon worker, but the manager
+returns a conservative report instead of blocking the application shutdown.
+Configure the connection-pool acquisition timeout separately for normal writes.
+
 
 ## Worker concurrency
 

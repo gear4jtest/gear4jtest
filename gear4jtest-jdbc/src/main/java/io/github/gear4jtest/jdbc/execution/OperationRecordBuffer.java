@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -120,6 +121,10 @@ final class OperationRecordBuffer {
 
     void lockFlush() {
         flushLock.lock();
+    }
+
+    boolean tryLockFlush(long timeoutNanos) throws InterruptedException {
+        return flushLock.tryLock(timeoutNanos, TimeUnit.NANOSECONDS);
     }
 
     void unlockFlush() {

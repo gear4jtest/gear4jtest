@@ -182,7 +182,7 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
     @Override
     public void start(AssemblyRunTrace execution) {
         Objects.requireNonNull(execution, "execution must not be null");
-        flushCoordinator.executeWhileOpen(() -> {
+        flushCoordinator.executeWhileOpen(execution.getId(), () -> {
             repository.save(AssemblyRunRecord.from(execution, redactor));
             buffers.createFresh(execution.getId());
         });
@@ -195,7 +195,8 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
         }
         flushCoordinator.ensureOpen();
         StationLogRecord redactedRecord = stationLogRecord.redactedWith(redactor);
-        flushCoordinator.executeWhileOpen(() -> appendRunBatch(List.of(redactedRecord)));
+        flushCoordinator.executeWhileOpen(redactedRecord.assemblyLineExecutionId(),
+                                          () -> appendRunBatch(List.of(redactedRecord)));
     }
 
     @Override
@@ -213,7 +214,11 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
             recordsByRun.computeIfAbsent(redactedRecord.assemblyLineExecutionId(), ignored -> new ArrayList<>())
                     .add(redactedRecord);
         }
-        flushCoordinator.executeWhileOpen(() -> recordsByRun.values().forEach(this::appendRunBatch));
+        if (recordsByRun.isEmpty()) {
+            return;
+        }
+        flushCoordinator.executeWhileOpen(List.copyOf(recordsByRun.keySet()),
+                                          () -> recordsByRun.values().forEach(this::appendRunBatch));
     }
 
     private void appendRunBatch(List<StationLogRecord> records) {
@@ -234,7 +239,7 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
         if (runId == null) {
             return;
         }
-        flushCoordinator.executeWhileOpen(() -> flushWhileOpen(runId));
+        flushCoordinator.executeWhileOpen(runId, () -> flushWhileOpen(runId));
     }
 
     private void flushWhileOpen(UUID runId) {
@@ -249,7 +254,7 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
     @Override
     public void end(AssemblyRunTrace finalExecution) {
         Objects.requireNonNull(finalExecution, "finalExecution must not be null");
-        flushCoordinator.executeWhileOpen(() -> endWhileOpen(finalExecution));
+        flushCoordinator.executeWhileOpen(finalExecution.getId(), () -> endWhileOpen(finalExecution));
     }
 
     private void endWhileOpen(AssemblyRunTrace finalExecution) {

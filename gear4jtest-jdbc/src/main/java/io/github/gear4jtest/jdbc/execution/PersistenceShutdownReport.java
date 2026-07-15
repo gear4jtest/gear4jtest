@@ -20,6 +20,9 @@ public record PersistenceShutdownReport(Instant startedAt,
                                         boolean flushExecutorTerminated,
                                         int droppedFlushTasks,
                                         List<RunFailure> failures) {
+
+    private static final String UNFINISHED_OPERATION_ERROR_TYPE = "io.github.gear4jtest.jdbc.execution.UnfinishedPersistenceOperation";
+
     public PersistenceShutdownReport {
         Objects.requireNonNull(startedAt, "startedAt must not be null");
         Objects.requireNonNull(elapsed, "elapsed must not be null");
@@ -36,6 +39,22 @@ public record PersistenceShutdownReport(Instant startedAt,
     public boolean successful() {
         return remainingActiveRuns == 0 && remainingStationLogs == 0 && !deadlineReached && !interrupted
                 && flushExecutorTerminated && failures.isEmpty();
+    }
+
+    /**
+     * Number of normal operations admitted before shutdown that exceeded the
+     * deadline.
+     */
+    public int unfinishedOperations() {
+        return (int) failures.stream()
+                .filter(failure -> UNFINISHED_OPERATION_ERROR_TYPE.equals(failure.errorType()))
+                .count();
+    }
+
+    static RunFailure unfinishedOperation(UUID runId, int remainingStationLogs, List<UUID> affectedRunIds) {
+        return new RunFailure(runId, 0, remainingStationLogs, UNFINISHED_OPERATION_ERROR_TYPE,
+                "Persistence operation admitted before shutdown did not finish within the deadline. affectedRunIds="
+                        + affectedRunIds);
     }
 
     private static void requireNonNegative(int value, String name) {

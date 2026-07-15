@@ -294,6 +294,162 @@ class DatabaseExecutionManagerTest {
     }
 
     @Test
+    void shutdownWithReport_shouldRespectDeadlineWhileAnAdmittedJdbcWriteIsStillRunning() throws Exception {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        CountDownLatch writeStarted = new CountDownLatch(1);
+        CountDownLatch releaseWrite = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            writeStarted.countDown();
+            releaseWrite.await();
+            return null;
+        }).when(repository).save(any());
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        ExecutorService operationExecutor = Executors.newSingleThreadExecutor();
+        DatabaseExecutionManager manager = manager(repository, PersistenceRuntimeConfiguration.defaults(),
+                                                   flushExecutor, scheduler);
+        Future<?> admittedStart = operationExecutor.submit(
+                                                           () -> manager.start(new AssemblyRunTrace(UUID.randomUUID(),
+                                                                   "admitted", Map.of())));
+
+        try {
+            assertThat(writeStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+            // When
+            long startedNanos = System.nanoTime();
+            PersistenceShutdownReport report = manager.shutdownWithReport(Duration.ofMillis(75));
+            long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
+
+            // Then
+            assertThat(elapsedMillis).isLessThan(500L);
+            assertThat(report.deadlineReached()).isTrue();
+            assertThat(report.unfinishedOperations()).isEqualTo(1);
+            assertThat(report.successful()).isFalse();
+            assertThat(manager.isAlive()).isFalse();
+        } finally {
+            releaseWrite.countDown();
+            admittedStart.get(2, TimeUnit.SECONDS);
+            operationExecutor.shutdownNow();
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void shutdownWithReport_shouldReturnWhenShutdownJdbcIgnoresInterruption() throws Exception {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        CountDownLatch writeStarted = new CountDownLatch(1);
+        CountDownLatch releaseWrite = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            writeStarted.countDown();
+            boolean interrupted = false;
+            while (releaseWrite.getCount() > 0) {
+                try {
+                    releaseWrite.await();
+                } catch (InterruptedException exception) {
+                    interrupted = true;
+                }
+            }
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
+            return null;
+        }).when(repository).saveOperationRecordsBatch(anyList());
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        ExecutorService shutdownExecutor = Executors.newSingleThreadExecutor();
+        PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder()
+                .batchSize(10)
+                .maxPendingLogsPerRun(10)
+                .flushInterval(Duration.ofDays(1))
+                .build();
+        DatabaseExecutionManager manager = manager(repository, configuration, flushExecutor, scheduler);
+        UUID runId = UUID.randomUUID();
+        manager.append(stationRecord(runId));
+
+        try {
+            // When
+            long startedNanos = System.nanoTime();
+            Future<PersistenceShutdownReport> shutdown = shutdownExecutor.submit(
+                                                                                 () -> manager
+                                                                                         .shutdownWithReport(Duration
+                                                                                                 .ofMillis(100)));
+            assertThat(writeStarted.await(2, TimeUnit.SECONDS)).isTrue();
+            PersistenceShutdownReport report = shutdown.get(1, TimeUnit.SECONDS);
+            long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
+
+            // Then
+            assertThat(elapsedMillis).isLessThan(750L);
+            assertThat(report.deadlineReached()).isTrue();
+            assertThat(report.unfinishedOperations()).isZero();
+            assertThat(report.remainingStationLogs()).isEqualTo(1);
+            assertThat(report.flushExecutorTerminated()).isFalse();
+            assertThat(report.failures()).hasSize(1);
+            assertThat(report.failures().get(0).message()).contains("deadline reached");
+        } finally {
+            releaseWrite.countDown();
+            shutdownExecutor.shutdownNow();
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void shutdownWithReport_shouldRespectDeadlineWhileAnAsyncFlushHoldsTheBufferLock() throws Exception {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        CountDownLatch writeStarted = new CountDownLatch(1);
+        CountDownLatch releaseWrite = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            writeStarted.countDown();
+            boolean interrupted = false;
+            while (releaseWrite.getCount() > 0) {
+                try {
+                    releaseWrite.await();
+                } catch (InterruptedException exception) {
+                    interrupted = true;
+                }
+            }
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
+            return null;
+        }).when(repository).saveOperationRecordsBatch(anyList());
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder()
+                .batchSize(1)
+                .maxPendingLogsPerRun(10)
+                .flushInterval(Duration.ofDays(1))
+                .build();
+        DatabaseExecutionManager manager = manager(repository, configuration, flushExecutor, scheduler);
+        UUID runId = UUID.randomUUID();
+
+        try {
+            manager.append(stationRecord(runId));
+            assertThat(writeStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+            // When
+            long startedNanos = System.nanoTime();
+            PersistenceShutdownReport report = manager.shutdownWithReport(Duration.ofMillis(100));
+            long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
+
+            // Then
+            assertThat(elapsedMillis).isLessThan(750L);
+            assertThat(report.deadlineReached()).isTrue();
+            assertThat(report.remainingStationLogs()).isEqualTo(1);
+            assertThat(report.failures()).hasSize(1);
+            assertThat(report.failures().get(0).message()).contains("in-flight buffer flush");
+        } finally {
+            releaseWrite.countDown();
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
     void failedAsyncFlush_shouldRestoreRecordsAndReadinessAfterSuccessfulRetry() throws Exception {
         // Given
         DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
