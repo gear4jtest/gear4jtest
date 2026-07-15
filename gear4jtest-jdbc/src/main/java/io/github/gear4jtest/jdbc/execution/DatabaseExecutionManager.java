@@ -29,7 +29,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * JDBC-backed run manager with bounded station-log buffering and asynchronous
- * batched flushes.
+ * batched flushes. Independent run operations may invoke the repository
+ * concurrently; supplied repositories and data sources must therefore be
+ * thread-safe.
  */
 public class DatabaseExecutionManager implements AssemblyRunManager, PersistenceRuntimeMonitor {
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseExecutionManager.class);

@@ -46,6 +46,14 @@ available and delegate to the same bounded retry workflow. Retry backoff default
 to `100ms` and grows exponentially up to `2s`; both values are configurable
 through `PersistenceRuntimeConfiguration`.
 
+Normal persistence operations use a short admission gate only while checking
+lifecycle state and updating an in-flight counter. JDBC calls are not executed
+under a manager-wide lock, so independent runs may write concurrently according
+to the application threads and configured flush executor. Per-run buffer drains
+remain serialized by their own lock. Custom repositories and data sources supplied
+to the builder must be thread-safe. Shutdown closes admission first and waits for
+already admitted operations before taking its drain snapshot.
+
 Failed batches remain in memory and are listed in the report; no durable
 dead-letter store is enabled implicitly. The shutdown deadline bounds retries,
 backoff and executor termination. A JDBC call already in progress still depends

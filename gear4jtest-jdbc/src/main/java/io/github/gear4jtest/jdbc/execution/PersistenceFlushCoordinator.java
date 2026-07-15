@@ -15,7 +15,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
 import io.github.gear4jtest.core.execution.PersistenceRuntimeStats;
@@ -37,7 +36,7 @@ final class PersistenceFlushCoordinator {
     private final boolean ownsMaintenanceExecutor;
     private final PersistenceRuntimeCounters counters = new PersistenceRuntimeCounters();
     private final ScheduledFuture<?> periodicFlushTask;
-    private final AtomicBoolean shutdown = new AtomicBoolean();
+    private final PersistenceOperationGate operationGate = new PersistenceOperationGate();
     private volatile PersistenceShutdownReport shutdownReport;
 
     PersistenceFlushCoordinator(DatabaseAssemblyRunRepository repository,
@@ -75,11 +74,11 @@ final class PersistenceFlushCoordinator {
     }
 
     PersistenceRuntimeStats snapshotStats() {
-        return counters.snapshot(buffers, shutdown.get());
+        return counters.snapshot(buffers, !operationGate.isOpen());
     }
 
     boolean isShutdown() {
-        return shutdown.get();
+        return !operationGate.isOpen();
     }
 
     PersistenceShutdownReport shutdownReport() {
@@ -87,21 +86,18 @@ final class PersistenceFlushCoordinator {
     }
 
     void ensureOpen() {
-        if (shutdown.get()) {
-            throw new ExecutionPersistenceException("DatabaseExecutionManager is already shut down");
-        }
+        operationGate.ensureOpen();
     }
 
-    synchronized void executeWhileOpen(Runnable operation) {
-        ensureOpen();
-        operation.run();
+    void executeWhileOpen(Runnable operation) {
+        operationGate.executeWhileOpen(operation);
     }
 
     void scheduleAsyncFlush(OperationRecordBuffer buffer, boolean drainCompletely) {
         if (!buffer.markFlushScheduled()) {
             return;
         }
-        if (shutdown.get()) {
+        if (!operationGate.isOpen()) {
             buffer.clearFlushScheduled();
             return;
         }
@@ -166,7 +162,7 @@ final class PersistenceFlushCoordinator {
             buffer.clearFlushScheduled();
             buffer.unlockFlush();
         }
-        if (!shutdown.get() && buffer.pendingCount() >= configuration.batchSize()) {
+        if (operationGate.isOpen() && buffer.pendingCount() >= configuration.batchSize()) {
             scheduleAsyncFlush(buffer, false);
         }
     }
@@ -179,14 +175,12 @@ final class PersistenceFlushCoordinator {
         if (shutdownReport != null) {
             return shutdownReport;
         }
+        boolean interrupted = operationGate.closeAdmissionAndAwaitIdle();
         Instant startedAt = Instant.now();
         long startedNanos = System.nanoTime();
         long deadlineNanos = deadlineAfter(startedNanos, timeout);
         int initialActiveRuns = buffers.activeRunCount();
         int initialBufferedStationLogs = buffers.bufferedStationLogCount();
-        if (!shutdown.compareAndSet(false, true)) {
-            return shutdownReport;
-        }
         periodicFlushTask.cancel(false);
         if (ownsMaintenanceExecutor) {
             maintenanceExecutor.shutdownNow();
@@ -198,7 +192,6 @@ final class PersistenceFlushCoordinator {
 
         Map<UUID, ShutdownRunState> runStates = shutdownRunStates();
         int flushAttempts = attemptInitialShutdownFlushes(runStates);
-        boolean interrupted = false;
         while (hasPendingLogs(runStates) && !deadlineReached(deadlineNanos)) {
             RetryPass retryPass = retryEligibleBuffers(runStates, deadlineNanos);
             flushAttempts += retryPass.attempts();
@@ -355,7 +348,7 @@ final class PersistenceFlushCoordinator {
     }
 
     private void flushPendingBuffersSafely() {
-        if (shutdown.get()) {
+        if (!operationGate.isOpen()) {
             return;
         }
         for (OperationRecordBuffer buffer : buffers.activeBuffers()) {

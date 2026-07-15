@@ -56,6 +56,10 @@ When JDBC persistence is enabled:
 - tune `gear4j.persistence.batch-size`, `max-pending-logs-per-run`,
   `flush-threads`, `max-scheduled-flush-tasks` and
   `jdbc-statement-timeout` for expected volume and database latency;
+- normal run operations do not hold a manager-wide lock during JDBC I/O.
+  Independent runs may call the repository concurrently, while each run buffer
+  serializes its own drains. Any custom repository or datasource supplied to the
+  manager must therefore be thread-safe;
 - the built-in core `PersistenceExtension` persists station start snapshots
   immediately and batches terminal station snapshots with `appendAll(...)` before
   ending the run; use `terminalRecordBatchSize(1)` for the most immediate

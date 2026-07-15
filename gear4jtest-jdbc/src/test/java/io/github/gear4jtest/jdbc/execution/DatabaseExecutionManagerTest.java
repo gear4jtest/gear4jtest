@@ -190,6 +190,110 @@ class DatabaseExecutionManagerTest {
     }
 
     @Test
+    void start_shouldAllowIndependentJdbcWritesToProgressConcurrently() throws Exception {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        CountDownLatch bothWritesStarted = new CountDownLatch(2);
+        CountDownLatch releaseWrites = new CountDownLatch(1);
+        AtomicInteger activeWrites = new AtomicInteger();
+        AtomicInteger maxConcurrentWrites = new AtomicInteger();
+        doAnswer(invocation -> {
+            int concurrentWrites = activeWrites.incrementAndGet();
+            maxConcurrentWrites.accumulateAndGet(concurrentWrites, Math::max);
+            bothWritesStarted.countDown();
+            try {
+                releaseWrites.await();
+            } finally {
+                activeWrites.decrementAndGet();
+            }
+            return null;
+        }).when(repository).save(any());
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        ExecutorService operationExecutor = Executors.newFixedThreadPool(2);
+        DatabaseExecutionManager manager = manager(repository, PersistenceRuntimeConfiguration.defaults(),
+                                                   flushExecutor, scheduler);
+        AssemblyRunTrace firstTrace = new AssemblyRunTrace(UUID.randomUUID(), "first", Map.of());
+        AssemblyRunTrace secondTrace = new AssemblyRunTrace(UUID.randomUUID(), "second", Map.of());
+
+        try {
+            // When
+            Future<?> firstStart = operationExecutor.submit(() -> manager.start(firstTrace));
+            Future<?> secondStart = operationExecutor.submit(() -> manager.start(secondTrace));
+
+            // Then
+            assertThat(bothWritesStarted.await(2, TimeUnit.SECONDS))
+                    .as("independent JDBC writes must not be serialized by a manager-wide lifecycle lock")
+                    .isTrue();
+            releaseWrites.countDown();
+            firstStart.get(2, TimeUnit.SECONDS);
+            secondStart.get(2, TimeUnit.SECONDS);
+            assertThat(maxConcurrentWrites).hasValue(2);
+        } finally {
+            releaseWrites.countDown();
+            manager.shutdown(Duration.ofSeconds(1));
+            operationExecutor.shutdownNow();
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void shutdownWithReport_shouldCloseAdmissionBeforeWaitingForAnInFlightJdbcWrite() throws Exception {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        CountDownLatch writeStarted = new CountDownLatch(1);
+        CountDownLatch releaseWrite = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            writeStarted.countDown();
+            releaseWrite.await();
+            return null;
+        }).when(repository).save(any());
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        ExecutorService operationExecutor = Executors.newSingleThreadExecutor();
+        ExecutorService shutdownExecutor = Executors.newSingleThreadExecutor();
+        DatabaseExecutionManager manager = manager(repository, PersistenceRuntimeConfiguration.defaults(),
+                                                   flushExecutor, scheduler);
+        AssemblyRunTrace admittedTrace = new AssemblyRunTrace(UUID.randomUUID(), "admitted", Map.of());
+        AssemblyRunTrace rejectedTrace = new AssemblyRunTrace(UUID.randomUUID(), "rejected", Map.of());
+
+        try {
+            Future<?> admittedStart = operationExecutor.submit(() -> manager.start(admittedTrace));
+            assertThat(writeStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+            // When
+            Future<PersistenceShutdownReport> shutdown = shutdownExecutor.submit(
+                                                                                 () -> manager
+                                                                                         .shutdownWithReport(Duration
+                                                                                                 .ofSeconds(1)));
+            awaitShutdownAdmissionClosure(manager);
+
+            // Then
+            assertThat(shutdown.isDone())
+                    .as("shutdown must wait for the JDBC operation admitted before closure")
+                    .isFalse();
+            assertThatThrownBy(() -> manager.start(rejectedTrace))
+                    .isInstanceOf(ExecutionPersistenceException.class)
+                    .hasMessage("DatabaseExecutionManager is already shut down");
+
+            releaseWrite.countDown();
+            admittedStart.get(2, TimeUnit.SECONDS);
+            PersistenceShutdownReport report = shutdown.get(2, TimeUnit.SECONDS);
+            assertThat(report.successful()).isTrue();
+            assertThat(report.initialActiveRuns()).isEqualTo(1);
+            assertThat(report.remainingActiveRuns()).isZero();
+            verify(repository).save(any());
+        } finally {
+            releaseWrite.countDown();
+            operationExecutor.shutdownNow();
+            shutdownExecutor.shutdownNow();
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
     void failedAsyncFlush_shouldRestoreRecordsAndReadinessAfterSuccessfulRetry() throws Exception {
         // Given
         DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
@@ -548,6 +652,14 @@ class DatabaseExecutionManagerTest {
                 .flushExecutor(flushExecutor)
                 .maintenanceExecutor(scheduler)
                 .build();
+    }
+
+    private static void awaitShutdownAdmissionClosure(DatabaseExecutionManager manager) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        while (manager.isAlive() && System.nanoTime() < deadline) {
+            TimeUnit.MILLISECONDS.sleep(10);
+        }
+        assertThat(manager.isAlive()).as("shutdown must close operation admission before waiting").isFalse();
     }
 
     private static void awaitCompletedFlushes(DatabaseExecutionManager manager, long expectedCompletedFlushes)
