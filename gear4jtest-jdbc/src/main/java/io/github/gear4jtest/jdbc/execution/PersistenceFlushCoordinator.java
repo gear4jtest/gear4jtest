@@ -302,7 +302,7 @@ final class PersistenceFlushCoordinator {
         try {
             locked = state.buffer().tryLockFlush(deadline.remainingNanos());
             if (!locked) {
-                state.recordTerminalFailure(deadlineFailure(state.buffer(), "waiting for an in-flight buffer flush"));
+                state.recordDeadlineFailure(deadlineFailure(state.buffer(), "waiting for an in-flight buffer flush"));
                 return new PendingCheck(true, false);
             }
             return new PendingCheck(state.buffer().pendingCount() > 0, false);
@@ -356,6 +356,8 @@ final class PersistenceFlushCoordinator {
         counters.recordFailedFlush();
         if (outcome.retryable()) {
             state.recordRetryableFailure(outcome.failure(), configuration.shutdownRetryMaxBackoff());
+        } else if (outcome.deadlineReached()) {
+            state.recordDeadlineFailure(outcome.failure());
         } else {
             state.recordTerminalFailure(outcome.failure());
         }
@@ -374,11 +376,11 @@ final class PersistenceFlushCoordinator {
         try {
             locked = buffer.tryLockFlush(deadline.remainingNanos());
             if (!locked) {
-                return ShutdownFlushOutcome.terminal(deadlineFailure(buffer, "acquiring its flush lock"));
+                return ShutdownFlushOutcome.deadline(deadlineFailure(buffer, "acquiring its flush lock"));
             }
             do {
                 if (deadline.reached()) {
-                    return ShutdownFlushOutcome.terminal(deadlineFailure(buffer, "starting the next JDBC batch"));
+                    return ShutdownFlushOutcome.deadline(deadlineFailure(buffer, "starting the next JDBC batch"));
                 }
                 List<StationLogRecord> batch = buffer.drainBatch(configuration.batchSize());
                 if (batch.isEmpty()) {
@@ -422,7 +424,7 @@ final class PersistenceFlushCoordinator {
         } catch (TimeoutException exception) {
             write.cancel(true);
             buffer.restoreDrainedBatch(batch);
-            return ShutdownFlushOutcome.terminal(deadlineFailure(buffer, "waiting for JDBC batch completion"));
+            return ShutdownFlushOutcome.deadline(deadlineFailure(buffer, "waiting for JDBC batch completion"));
         } catch (InterruptedException exception) {
             write.cancel(true);
             buffer.restoreDrainedBatch(batch);
@@ -619,6 +621,15 @@ final class PersistenceFlushCoordinator {
             this.lastFailure = failure;
             this.retryable = false;
         }
+
+        private void recordDeadlineFailure(Exception failure) {
+            if (lastFailure == null) {
+                lastFailure = failure;
+            } else {
+                lastFailure.addSuppressed(failure);
+            }
+            retryable = false;
+        }
     }
 
     private record RetryPass(boolean attempted, int attempts) {}
@@ -630,21 +641,26 @@ final class PersistenceFlushCoordinator {
     private record ShutdownFlushOutcome(boolean successful,
                                         boolean retryable,
                                         boolean interrupted,
+                                        boolean deadlineReached,
                                         Exception failure) {
         private static ShutdownFlushOutcome success() {
-            return new ShutdownFlushOutcome(true, false, false, null);
+            return new ShutdownFlushOutcome(true, false, false, false, null);
         }
 
         private static ShutdownFlushOutcome retryable(Exception failure) {
-            return new ShutdownFlushOutcome(false, true, false, failure);
+            return new ShutdownFlushOutcome(false, true, false, false, failure);
         }
 
         private static ShutdownFlushOutcome terminal(Exception failure) {
-            return new ShutdownFlushOutcome(false, false, false, failure);
+            return new ShutdownFlushOutcome(false, false, false, false, failure);
         }
 
         private static ShutdownFlushOutcome interrupted(Exception failure) {
-            return new ShutdownFlushOutcome(false, false, true, failure);
+            return new ShutdownFlushOutcome(false, false, true, false, failure);
+        }
+
+        private static ShutdownFlushOutcome deadline(Exception failure) {
+            return new ShutdownFlushOutcome(false, false, false, true, failure);
         }
     }
 }

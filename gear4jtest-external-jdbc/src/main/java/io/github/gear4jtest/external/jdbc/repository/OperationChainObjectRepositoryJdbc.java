@@ -28,6 +28,8 @@ import io.github.gear4jtest.jdbc.persistence.JdbcStatementOptions;
 public final class OperationChainObjectRepositoryJdbc
         implements OperationChainObjectRepository, OperationChainPublicationRepository {
     private static final Pattern SHA_256_HEX = Pattern.compile("[0-9a-fA-F]{64}");
+    private static final String OBJECT_COLUMNS = "id, al_id, version, publication_mode, content_hash, size_bytes, "
+            + "mime_type, created_at, created_by, published_at";
 
     private final DataSource ds;
     private final Gear4jDatabaseDialect databaseDialect;
@@ -99,8 +101,9 @@ public final class OperationChainObjectRepositoryJdbc
 
     private OperationChainObject map(ResultSet rs) throws SQLException {
         return new OperationChainObject(rs.getLong("id"), rs.getString("al_id"), rs.getString("version"),
-                ExecutionMode.valueOf(rs.getString("mode")), requireContentHash(rs.getString("content_hash")),
-                rs.getLong("size_bytes"), rs.getString("mime_type"), instantOrNull(rs, "created_at"),
+                ExecutionMode.valueOf(rs.getString("publication_mode")),
+                requireContentHash(rs.getString("content_hash")), rs.getLong("size_bytes"),
+                rs.getString("mime_type"), instantOrNull(rs, "created_at"),
                 rs.getString("created_by"), instantOrNull(rs, "published_at"));
     }
 
@@ -148,12 +151,12 @@ public final class OperationChainObjectRepositoryJdbc
     }
 
     private long insert(Connection connection, OperationChainObject object) throws SQLException {
-        String sql = "INSERT INTO operation_chain_object(al_id, version, mode, content_hash, size_bytes, "
+        String sql = "INSERT INTO operation_chain_object(al_id, version, publication_mode, content_hash, size_bytes, "
                 + "mime_type, created_at, created_by, published_at) VALUES (?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement statement = prepareGeneratedKeyInsert(connection, sql)) {
             statement.setString(1, object.alId());
             statement.setString(2, object.version());
-            statement.setString(3, object.mode().name());
+            ExternalRepositorySqlDialect.bindExecutionMode(databaseDialect, statement, 3, object.mode());
             statement.setString(4, requireContentHash(object.contentHash()));
             statement.setLong(5, object.sizeBytes());
             statement.setString(6, object.mimeType());
@@ -218,12 +221,12 @@ public final class OperationChainObjectRepositoryJdbc
                                                 String version,
                                                 ExecutionMode mode)
             throws SQLException {
-        String sql = "SELECT id, al_id, version, mode, content_hash, size_bytes, mime_type, created_at, created_by, published_at "
-                + "FROM operation_chain_object WHERE al_id=? AND version=? AND mode=?";
+        String sql = "SELECT " + OBJECT_COLUMNS
+                + " FROM operation_chain_object WHERE al_id=? AND version=? AND publication_mode=?";
         try (PreparedStatement statement = prepare(connection, sql)) {
             statement.setString(1, assemblyLineId);
             statement.setString(2, version);
-            statement.setString(3, mode.name());
+            ExternalRepositorySqlDialect.bindExecutionMode(databaseDialect, statement, 3, mode);
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next() ? Optional.of(map(resultSet)) : Optional.empty();
             }
@@ -266,8 +269,9 @@ public final class OperationChainObjectRepositoryJdbc
 
     @Override
     public Optional<OperationChainObject> findLatestRun(String alId) {
-        String sql = "SELECT id, al_id, version, mode, content_hash, size_bytes, mime_type, created_at, created_by, published_at "
-                + "FROM operation_chain_object WHERE al_id=? AND mode='RUN' ORDER BY published_at DESC, id DESC";
+        String sql = "SELECT " + OBJECT_COLUMNS
+                + " FROM operation_chain_object WHERE al_id=? AND publication_mode='RUN' "
+                + "ORDER BY published_at DESC, id DESC";
         try (var c = ds.getConnection(); var ps = prepare(c, sql)) {
             ps.setString(1, alId);
             ps.setMaxRows(1);
@@ -281,11 +285,11 @@ public final class OperationChainObjectRepositoryJdbc
 
     @Override
     public boolean exists(String alId, String version, ExecutionMode mode) {
-        String sql = "SELECT 1 FROM operation_chain_object WHERE al_id=? AND version=? AND mode=?";
+        String sql = "SELECT 1 FROM operation_chain_object WHERE al_id=? AND version=? AND publication_mode=?";
         try (var c = ds.getConnection(); var ps = prepare(c, sql)) {
             ps.setString(1, alId);
             ps.setString(2, version);
-            ps.setString(3, mode.name());
+            ExternalRepositorySqlDialect.bindExecutionMode(databaseDialect, ps, 3, mode);
             try (var rs = ps.executeQuery()) {
                 return rs.next();
             }
@@ -301,8 +305,8 @@ public final class OperationChainObjectRepositoryJdbc
 
     @Override
     public List<OperationChainObject> findAll(String alId, PageRequest pageRequest) {
-        String orderedSql = "SELECT id, al_id, version, mode, content_hash, size_bytes, mime_type, created_at, created_by, published_at "
-                + "FROM operation_chain_object WHERE al_id=? ORDER BY published_at DESC, id DESC";
+        String orderedSql = "SELECT " + OBJECT_COLUMNS
+                + " FROM operation_chain_object WHERE al_id=? ORDER BY published_at DESC, id DESC";
         String sql = pageRequest == null ? orderedSql
                 : ExternalRepositorySqlDialect.pagedSql(databaseDialect, orderedSql);
         try (var c = ds.getConnection(); var ps = prepare(c, sql)) {

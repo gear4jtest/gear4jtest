@@ -51,18 +51,19 @@ finalizer.
 
 ## Database matrix
 
-The JDBC multi-dialect integration test starts only the selected container. PostgreSQL is the default on pull requests:
+The unqualified JDBC integration tasks execute the complete supported matrix:
 
 ```bash
 ./gradlew :gear4jtest-jdbc:integrationTest
+./gradlew :gear4jtest-external-jdbc:integrationTest
 ```
 
-Select one dialect or the complete local matrix with:
+Select one dialect only when a faster diagnostic loop is explicitly required:
 
 ```bash
 ./gradlew :gear4jtest-jdbc:integrationTest -Pgear4jDatabaseDialect=mysql
-./gradlew :gear4jtest-jdbc:integrationTest -Pgear4jDatabaseDialect=all
 ```
 
-GitHub Actions distributes PostgreSQL, MySQL, MariaDB and Oracle across independent jobs on main-branch pushes, on the
-weekly schedule and before Maven Central publication.
+GitHub Actions distributes PostgreSQL, MySQL, MariaDB and Oracle across independent mandatory jobs on pull requests,
+main-branch pushes, the weekly schedule and before Maven Central publication. The general build/coverage job selects
+PostgreSQL explicitly to avoid repeating the complete matrix that those four jobs already enforce.

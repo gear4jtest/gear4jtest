@@ -5,10 +5,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.Locale;
 import java.util.Objects;
 
 import io.github.gear4jtest.core.persistence.PageRequest;
+import io.github.gear4jtest.external.api.ExecutionMode;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 
 /**
@@ -97,6 +99,19 @@ public final class ExternalRepositorySqlDialect {
             return connection.prepareStatement(sql, new String[] { "ID" });
         }
         return connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+    }
+
+    static void bindExecutionMode(Gear4jDatabaseDialect dialect,
+                                  PreparedStatement statement,
+                                  int index,
+                                  ExecutionMode mode)
+            throws SQLException {
+        Objects.requireNonNull(mode, "mode must not be null");
+        if (requireDialect(dialect) == Gear4jDatabaseDialect.POSTGRESQL) {
+            statement.setObject(index, mode.name(), Types.OTHER);
+        } else {
+            statement.setString(index, mode.name());
+        }
     }
 
     static void setBoolean(Gear4jDatabaseDialect dialect, PreparedStatement statement, int index, boolean value)

@@ -27,8 +27,9 @@ public final class ExternalJdbcSchemaMigrator {
                 .requiredColumns("artifact_store", "hash_hex", "size_bytes", "content", "created_at")
                 .requiredColumns("operation_chain_config", "al_id", "allow_run_publication_without_test",
                                  "store_type", "store_props", "created_at", "updated_at")
-                .requiredColumns("operation_chain_object", "id", "al_id", "version", "mode", "content_hash",
-                                 "size_bytes", "mime_type", "created_at", "created_by", "published_at")
+                .requiredColumns("operation_chain_object", "id", "al_id", "version", "publication_mode",
+                                 "content_hash", "size_bytes", "mime_type", "created_at", "created_by",
+                                 "published_at")
                 .requiredColumns("operation_chain_tag", "al_id", "tag")
                 .requiredIndexes("operation_chain_object", "idx_op_chain_latest_run", "idx_op_chain_by_hash")
                 .requiredIndexes("operation_chain_tag", "idx_tag_value")

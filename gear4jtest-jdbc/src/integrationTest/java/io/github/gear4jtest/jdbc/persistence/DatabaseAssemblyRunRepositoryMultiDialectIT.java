@@ -87,7 +87,7 @@ class DatabaseAssemblyRunRepositoryMultiDialectIT {
     }
 
     private static Stream<Arguments> databases() {
-        String selectedDialect = System.getProperty("gear4j.test.databaseDialect", "postgresql")
+        String selectedDialect = System.getProperty("gear4j.test.databaseDialect", "all")
                 .trim().toLowerCase(Locale.ROOT);
         List<DatabaseScenario> scenarios = List.of(
                                                    new DatabaseScenario("postgresql", Gear4jDatabaseDialect.POSTGRESQL,

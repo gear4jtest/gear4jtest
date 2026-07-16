@@ -580,13 +580,33 @@ class DatabaseExecutionManagerTest {
     }
 
     @Test
-    void shutdownWithReport_shouldKeepAndReportRecordsWhenRetriesReachDeadline() {
+    void shutdownWithReport_shouldKeepFirstJdbcFailureWhenRetryReachesDeadline() throws Exception {
         // Given
         DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
-        doThrow(new ExecutionPersistenceException("database unavailable"))
-                .when(repository).saveOperationRecordsBatch(anyList());
+        AtomicInteger attempts = new AtomicInteger();
+        CountDownLatch retryStarted = new CountDownLatch(1);
+        CountDownLatch releaseRetry = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            if (attempts.incrementAndGet() == 1) {
+                throw new ExecutionPersistenceException("database unavailable");
+            }
+            retryStarted.countDown();
+            boolean interrupted = false;
+            while (releaseRetry.getCount() > 0) {
+                try {
+                    releaseRetry.await();
+                } catch (InterruptedException exception) {
+                    interrupted = true;
+                }
+            }
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
+            return null;
+        }).when(repository).saveOperationRecordsBatch(anyList());
         ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        ExecutorService shutdownExecutor = Executors.newSingleThreadExecutor();
         PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder().batchSize(10)
                 .maxPendingLogsPerRun(10)
                 .flushInterval(Duration.ofDays(1))
@@ -600,7 +620,13 @@ class DatabaseExecutionManagerTest {
             manager.append(stationRecord(runId));
 
             // When
-            PersistenceShutdownReport report = manager.shutdownWithReport(Duration.ofMillis(30));
+            Future<PersistenceShutdownReport> shutdown = shutdownExecutor.submit(
+                                                                                 () -> manager
+                                                                                         .shutdownWithReport(Duration
+                                                                                                 .ofMillis(100)));
+            assertThat(retryStarted.await(2, TimeUnit.SECONDS)).as("the retry should reach the JDBC repository")
+                    .isTrue();
+            PersistenceShutdownReport report = shutdown.get(1, TimeUnit.SECONDS);
 
             // Then
             PersistenceRuntimeStats stats = manager.snapshotStats();
@@ -609,7 +635,8 @@ class DatabaseExecutionManagerTest {
             assertThat(report.initialBufferedStationLogs()).isEqualTo(1);
             assertThat(report.flushedStationLogs()).isZero();
             assertThat(report.remainingStationLogs()).isEqualTo(1);
-            assertThat(report.flushAttempts()).isGreaterThanOrEqualTo(1);
+            assertThat(report.flushAttempts()).isEqualTo(2);
+            assertThat(attempts).hasValue(2);
             assertThat(report.failures()).singleElement().satisfies(failure -> {
                 assertThat(failure.runId()).isEqualTo(runId);
                 assertThat(failure.remainingStationLogs()).isEqualTo(1);
@@ -625,6 +652,8 @@ class DatabaseExecutionManagerTest {
             assertThat(stats.failedFlushes()).as("every shutdown flush failure must be visible in runtime stats")
                     .isEqualTo((long) report.flushAttempts());
         } finally {
+            releaseRetry.countDown();
+            shutdownExecutor.shutdownNow();
             flushExecutor.shutdownNow();
             scheduler.shutdownNow();
         }

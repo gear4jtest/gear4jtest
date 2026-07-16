@@ -25,14 +25,14 @@ CREATE TABLE operation_chain_object
     id           BIGSERIAL PRIMARY KEY,
     al_id        VARCHAR(200)   NOT NULL,
     version      VARCHAR(100)   NOT NULL,
-    mode         execution_mode NOT NULL,
+    publication_mode execution_mode NOT NULL,
     content_hash CHAR(64)       NOT NULL,
     size_bytes   BIGINT         NOT NULL,
     mime_type    VARCHAR(100)   NOT NULL DEFAULT 'application/xml',
     created_at   TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
     created_by   VARCHAR(200) NULL,
     published_at TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
-    UNIQUE (al_id, version, mode)
+    UNIQUE (al_id, version, publication_mode)
 );
 
 CREATE TABLE operation_chain_tag
@@ -43,6 +43,6 @@ CREATE TABLE operation_chain_tag
     FOREIGN KEY (al_id) REFERENCES operation_chain_config (al_id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_op_chain_latest_run ON operation_chain_object (al_id, published_at DESC) WHERE mode = 'RUN';
+CREATE INDEX idx_op_chain_latest_run ON operation_chain_object (al_id, published_at DESC) WHERE publication_mode = 'RUN';
 CREATE INDEX idx_op_chain_by_hash ON operation_chain_object (content_hash);
 CREATE INDEX idx_tag_value ON operation_chain_tag (tag);

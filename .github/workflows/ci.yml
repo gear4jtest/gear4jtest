@@ -60,11 +60,11 @@ jobs:
         run: ./gradlew --no-daemon help --configuration-cache --configuration-cache-problems=fail --warning-mode=all
 
       - name: Build and coverage
-        run: ./gradlew --no-daemon --warning-mode=all clean build coverageReport verifySupplyChainConfiguration
+        run: ./gradlew --no-daemon --warning-mode=all clean build coverageReport verifySupplyChainConfiguration -Pgear4jDatabaseDialect=postgresql
 
       - name: SonarQube scan
         if: ${{ env.SONAR_TOKEN != '' }}
-        run: ./gradlew --no-daemon sonar -Dsonar.qualitygate.wait=true
+        run: ./gradlew --no-daemon sonar -Dsonar.qualitygate.wait=true -Pgear4jDatabaseDialect=postgresql
 
       - name: Upload test and coverage reports
         if: always()
@@ -80,8 +80,7 @@ jobs:
           if-no-files-found: ignore
 
   database-matrix:
-    name: JDBC ${{ matrix.dialect }} integration
-    if: ${{ github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) }}
+    name: JDBC modules ${{ matrix.dialect }} integration
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -101,7 +100,11 @@ jobs:
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
 
       - name: Run selected JDBC dialect
-        run: ./gradlew --no-daemon :gear4jtest-jdbc:integrationTest -Pgear4jDatabaseDialect=${{ matrix.dialect }}
+        run: |
+          ./gradlew --no-daemon \
+            :gear4jtest-jdbc:integrationTest \
+            :gear4jtest-external-jdbc:integrationTest \
+            -Pgear4jDatabaseDialect=${{ matrix.dialect }}
 
       - name: Upload JDBC test report
         if: always()
@@ -111,6 +114,8 @@ jobs:
           path: |
             gear4jtest-jdbc/build/test-results/integrationTest/*.xml
             gear4jtest-jdbc/build/reports/tests/integrationTest/**
+            gear4jtest-external-jdbc/build/test-results/integrationTest/*.xml
+            gear4jtest-external-jdbc/build/reports/tests/integrationTest/**
           if-no-files-found: ignore
 
   performance-budget:

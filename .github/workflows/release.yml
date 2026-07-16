@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   database-matrix:
-    name: Release JDBC ${{ matrix.dialect }} integration
+    name: Release JDBC modules ${{ matrix.dialect }} integration
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -49,7 +49,23 @@ jobs:
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
 
       - name: Run selected JDBC dialect
-        run: ./gradlew --no-daemon :gear4jtest-jdbc:integrationTest -Pgear4jDatabaseDialect=${{ matrix.dialect }}
+        run: |
+          ./gradlew --no-daemon \
+            :gear4jtest-jdbc:integrationTest \
+            :gear4jtest-external-jdbc:integrationTest \
+            -Pgear4jDatabaseDialect=${{ matrix.dialect }}
+
+      - name: Upload JDBC integration reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-jdbc-${{ matrix.dialect }}-report
+          path: |
+            gear4jtest-jdbc/build/test-results/integrationTest/*.xml
+            gear4jtest-jdbc/build/reports/tests/integrationTest/**
+            gear4jtest-external-jdbc/build/test-results/integrationTest/*.xml
+            gear4jtest-external-jdbc/build/reports/tests/integrationTest/**
+          if-no-files-found: ignore
 
   publish:
     name: Publish to Maven Central

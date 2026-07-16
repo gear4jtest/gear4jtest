@@ -161,7 +161,7 @@ class OperationChainObjectRepositoryJdbcBehaviorTest {
         when(resultSet.getLong("id")).thenReturn(id);
         when(resultSet.getString("al_id")).thenReturn("pipeline");
         when(resultSet.getString("version")).thenReturn("1");
-        when(resultSet.getString("mode")).thenReturn("RUN");
+        when(resultSet.getString("publication_mode")).thenReturn("RUN");
         when(resultSet.getString("content_hash")).thenReturn(hash);
         when(resultSet.getLong("size_bytes")).thenReturn(10L);
         when(resultSet.getString("mime_type")).thenReturn("application/xml");

@@ -36,7 +36,7 @@ run on a host able to resolve the Gradle 9.6.1 distribution and execute Testcont
 | F11 | Missing generic contract tests | Closed | Builder and Jackson generic regressions are characterized. |
 | F12 | Missing reentrancy/predicate tests | Closed | Guard reentrancy/release and isolated slow/failing predicates are tested. |
 | F13 | Coverage without thresholds | Closed in phase 6, pending first CI calibration | `critical-coverage-thresholds.json` and `jacocoCriticalCoverageVerification` enforce branch ratchets on four critical classes from combined unit/integration data. |
-| F14 | Monolithic multi-dialect suite | Closed in phase 6 | PostgreSQL is the fast default; scheduled/main/release workflows distribute four independently started Testcontainers dialects. |
+| F14 | Monolithic multi-dialect suite | Closed and strengthened in phase 7 | The local default is the complete four-dialect matrix; pull-request/main/scheduled/release workflows distribute independently selected Testcontainers dialects in parallel. |
 | F15 | Vulnerable Jackson 2.19.0 | Closed | Version catalog uses Jackson 2.21.5; the dependency scan remains part of `releaseCheck`. |
 | F16 | Arbitrary property methods in GEL | Closed | Explicit `PropertyAccessPolicy`, inert value trees and cached safe accessors are the default boundary. |
 | F17 | Implicit temporary spool | Closed | Private, bounded, observable and cleanable spool policy replaces the implicit temp path. |
@@ -104,7 +104,8 @@ declared qualified.
 ./gradlew help --configuration-cache --configuration-cache-problems=fail --warning-mode=all
 ./gradlew clean build
 ./gradlew verifyPerformanceBudgets
-./gradlew :gear4jtest-jdbc:integrationTest -Pgear4jDatabaseDialect=all
+./gradlew :gear4jtest-jdbc:integrationTest
+./gradlew :gear4jtest-external-jdbc:integrationTest
 ./gradlew releaseCheck -PprojectVersion=1.0.0-rc1
 ./gradlew verifyStagedReleaseArtifacts -PprojectVersion=1.0.0-rc1
 ./gradlew apiCompatibilityCheck -PprojectVersion=1.0.1 -Pgear4j.apiBaselineVersion=1.0.0

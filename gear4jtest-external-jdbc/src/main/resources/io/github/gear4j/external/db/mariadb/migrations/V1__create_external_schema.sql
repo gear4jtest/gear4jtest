@@ -23,14 +23,14 @@ CREATE TABLE operation_chain_object
     id           BIGINT AUTO_INCREMENT PRIMARY KEY,
     al_id        VARCHAR(200) NOT NULL,
     version      VARCHAR(100) NOT NULL,
-    mode         ENUM('TEST','RUN') NOT NULL,
+    publication_mode ENUM('TEST','RUN') NOT NULL,
     content_hash CHAR(64)     NOT NULL,
     size_bytes   BIGINT       NOT NULL,
     mime_type    VARCHAR(100) NOT NULL DEFAULT 'application/xml',
     created_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by   VARCHAR(200) NULL,
     published_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_op_chain (al_id, version, mode),
+    UNIQUE KEY uq_op_chain (al_id, version, publication_mode),
     KEY          idx_op_chain_by_hash (content_hash),
     KEY          idx_op_chain_latest_run (al_id, published_at)
 );

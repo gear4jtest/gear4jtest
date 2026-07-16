@@ -93,10 +93,11 @@ normal PR build and runs on the main branch, on the weekly schedule and as part 
 
 Unit tests live under `src/test`. Integration tests live under `src/integrationTest` and are executed by the
 `integrationTest` tasks, which are part of the default `check`/`build` lifecycle. Tests that need databases use
-Testcontainers, so the container lifecycle is declared in the JUnit tests themselves. PostgreSQL is the default fast
-dialect; use `-Pgear4jDatabaseDialect=all` locally for the complete matrix. Maven Central staging writes
-artifacts under `build/staging-deploy`; deployment is handled by JReleaser from the `release.yml` GitHub Actions
-workflow.
+Testcontainers, so the container lifecycle is declared in the JUnit tests themselves. The default JDBC selection is
+`all`: an unqualified `build`, `check` or JDBC `integrationTest` validates PostgreSQL, MySQL, MariaDB and Oracle. Use
+`-Pgear4jDatabaseDialect=<dialect>` only for an explicit local fast path or for an individual CI matrix job. Maven
+Central staging writes artifacts under `build/staging-deploy`; deployment is handled by JReleaser from the
+`release.yml` GitHub Actions workflow.
 
 `releaseCheck` also builds the standalone project under `config/consumer-smoke` against the staged repository. This
 guards the published POM scopes and the Gradle plugin marker instead of relying only on intra-repository project

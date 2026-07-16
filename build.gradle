@@ -405,10 +405,29 @@ configure(project.coreProjects.findAll { it.name.contains("gradle") }) {
     apply plugin: 'groovy-gradle-plugin'
 }
 
-project(':gear4jtest-jdbc') {
-    tasks.named('integrationTest') {
-        systemProperty 'gear4j.test.databaseDialect',
-            providers.gradleProperty('gear4jDatabaseDialect').orElse('postgresql').get()
+def supportedDatabaseDialects = ['postgresql', 'mysql', 'mariadb', 'oracle']
+def selectedDatabaseDialect = providers.gradleProperty('gear4jDatabaseDialect')
+    .map { it.trim().toLowerCase(java.util.Locale.ROOT) }
+    .orElse('all')
+
+tasks.register('verifyDatabaseDialectSelection') {
+    group = 'verification'
+    description = 'Validates the requested JDBC integration-test dialect.'
+    inputs.property('gear4jDatabaseDialect', selectedDatabaseDialect)
+
+    doLast {
+        def selected = selectedDatabaseDialect.get()
+        if (selected != 'all' && !supportedDatabaseDialects.contains(selected)) {
+            throw new GradleException('Unsupported gear4jDatabaseDialect: ' + selected
+                + '. Expected one of: all, ' + supportedDatabaseDialects.join(', '))
+        }
+    }
+}
+
+configure([project(':gear4jtest-jdbc'), project(':gear4jtest-external-jdbc')]) { testedProject ->
+    testedProject.tasks.named('integrationTest') {
+        dependsOn rootProject.tasks.named('verifyDatabaseDialectSelection')
+        systemProperty 'gear4j.test.databaseDialect', selectedDatabaseDialect.get()
     }
 }
 
@@ -725,12 +744,26 @@ tasks.matching { it.name == 'sonarqube' || it.name == 'sonar' }.configureEach {
     dependsOn tasks.named('coverageReport')
 }
 
+tasks.register('verifyReleaseDatabaseMatrixSelection') {
+    group = 'verification'
+    description = 'Requires release validation to execute every supported JDBC dialect.'
+    inputs.property('gear4jDatabaseDialect', selectedDatabaseDialect)
+
+    doLast {
+        if (selectedDatabaseDialect.get() != 'all') {
+            throw new GradleException('releaseCheck requires the complete JDBC matrix. '
+                + 'Remove -Pgear4jDatabaseDialect or set it to all.')
+        }
+    }
+}
+
 tasks.register('releaseCheck') {
     group = 'verification'
     description = 'Runs the checks expected before staging a Maven Central release.'
     dependsOn tasks.named('check'), tasks.named('consumerSmokeTest'), tasks.named('dependencyCheckAggregate'),
         tasks.named('verifyReleaseAssets'), tasks.named('verifyStagedReleaseArtifacts'),
-        tasks.named('verifySupplyChainConfiguration'), tasks.named('verifyPerformanceBudgets')
+        tasks.named('verifySupplyChainConfiguration'), tasks.named('verifyPerformanceBudgets'),
+        tasks.named('verifyReleaseDatabaseMatrixSelection')
 }
 
 configurations {

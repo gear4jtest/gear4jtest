@@ -52,8 +52,14 @@ class ExternalRepositorySqlDialectContractTest {
                     .as("external migration %s for %s creates the core external tables", script, dialect)
                     .contains("operation_chain_config")
                     .contains("operation_chain_object")
+                    .contains("publication_mode")
                     .contains("operation_chain_tag")
                     .contains("artifact_store");
+            if (dialect == Gear4jDatabaseDialect.ORACLE) {
+                assertThat(sql)
+                        .as("Oracle migration %s must not use reserved MODE as a column", script)
+                        .doesNotContainPattern("(?im)^\\s*mode\\s+");
+            }
         }
     }
 

@@ -119,6 +119,9 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
+`releaseCheck` requires the default `all` JDBC selection and fails if it is invoked with a single
+`-Pgear4jDatabaseDialect=<dialect>`. This keeps the local release gate equivalent to the four required workflow jobs.
+
 The release workflow will:
 
 1. run the four-dialect JDBC matrix;

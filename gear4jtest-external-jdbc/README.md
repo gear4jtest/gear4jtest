@@ -23,7 +23,9 @@ classpath. Memory and filesystem plugins remain in `gear4jtest-external-api`.
 ## Supported databases
 
 PostgreSQL, MySQL, MariaDB and Oracle are supported in production. H2 is supported for local and integration testing.
-Every entry point requires an explicit `Gear4jDatabaseDialect`; no JDBC metadata fallback selects a dialect silently.
+The CI and release matrices execute migrations, checksum enforcement, transactional publication/rollback, tag and object
+pagination, and streaming BLOB round-trips against each production dialect. Every entry point requires an explicit
+`Gear4jDatabaseDialect`; no JDBC metadata fallback selects a dialect silently.
 
 ```java
 OperationChainTagRepositoryJdbc tags = OperationChainTagRepositoryJdbc.builder()
@@ -77,4 +79,9 @@ The `DATABASE` plugin accepts:
 ```bash
 ./gradlew :gear4jtest-external-jdbc:test
 ./gradlew :gear4jtest-external-jdbc:integrationTest
+./gradlew :gear4jtest-external-jdbc:integrationTest -Pgear4jDatabaseDialect=mysql
+./gradlew :gear4jtest-external-jdbc:integrationTest -Pgear4jDatabaseDialect=all
 ```
+
+The selected dialect defaults to `postgresql`. Accepted values are `postgresql`, `mysql`, `mariadb`, `oracle` and
+`all`. Docker is required for the production-dialect suite; H2-only integration tests remain available without Docker.
