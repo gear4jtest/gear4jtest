@@ -51,9 +51,11 @@ DatabaseArtifactStore artifacts = DatabaseArtifactStore.builder()
 operator has verified a compatible V1 schema, `forDialect(dialect, true)` validates all required tables, columns and named
 indexes before recording the explicit baseline.
 
-`OperationChainObjectRepositoryJdbc` implements `OperationChainPublicationRepository`. Object metadata and tags are
-published atomically on the repository's `DataSource`; the object and tag repositories must target the same schema.
-Repeated publication of identical `(al_id, version, mode)` content is idempotent and conflicting content is rejected.
+`OperationChainObjectRepositoryJdbc` implements `OperationChainPublicationRepository`. `AssemblyLineManager` requires
+this atomic capability and refuses a configuration that would publish the object and tags through independent calls.
+Object metadata and tags are published transactionally on the repository's `DataSource`; the object and tag repositories
+must target the same schema. Repeated publication of identical `(al_id, version, mode)` content is idempotent and
+conflicting content is rejected without changing existing metadata.
 
 ## Database artifact streaming
 
@@ -83,5 +85,5 @@ The `DATABASE` plugin accepts:
 ./gradlew :gear4jtest-external-jdbc:integrationTest -Pgear4jDatabaseDialect=all
 ```
 
-The selected dialect defaults to `postgresql`. Accepted values are `postgresql`, `mysql`, `mariadb`, `oracle` and
-`all`. Docker is required for the production-dialect suite; H2-only integration tests remain available without Docker.
+The selected dialect defaults to `all`. Accepted values are `postgresql`, `mysql`, `mariadb`, `oracle` and `all`.
+Docker is required for the production-dialect suite; H2-only integration tests remain available without Docker.

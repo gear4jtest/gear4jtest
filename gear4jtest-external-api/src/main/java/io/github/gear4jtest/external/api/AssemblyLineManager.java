@@ -52,6 +52,7 @@ public class AssemblyLineManager {
                 : new SimpleDependencyInjector();
         long effectiveMaxArtifactSizeBytes = AssemblyLineIdentifiers.requireValidArtifactSize(
                                                                                               builder.maxArtifactSizeBytes);
+        OperationChainPublicationRepository effectivePublicationRepository = requireAtomicPublicationRepository(builder);
 
         this.chainTagRepo = requireNonNull(builder.chainTagRepo);
         this.storeResolver = new AssemblyLineStoreResolver(builder.configRepo, builder.storeProvider);
@@ -61,11 +62,8 @@ public class AssemblyLineManager {
                 effectiveMaxArtifactSizeBytes);
         var publicationValidator = new AssemblyLinePublicationValidator(storeResolver, builder.translatorResolver,
                 effectiveCompiler, effectiveMaxArtifactSizeBytes);
-        OperationChainPublicationRepository effectivePublicationRepository = builder.publicationRepository != null
-                ? builder.publicationRepository
-                : builder.objectRepo instanceof OperationChainPublicationRepository repository ? repository : null;
         this.publicationService = new AssemblyLinePublicationService(builder.configRepo, builder.objectRepo,
-                builder.chainTagRepo, effectivePublicationRepository, storeResolver, aliasService, publicationValidator,
+                effectivePublicationRepository, storeResolver, aliasService, publicationValidator,
                 effectiveMaxArtifactSizeBytes);
         this.lookupService = new AssemblyLineLookupService(builder.objectRepo, loader, aliasService);
     }
@@ -103,8 +101,16 @@ public class AssemblyLineManager {
 
         /**
          * Sets the repository responsible for atomic and idempotent publication of
-         * object metadata and tags. JDBC object repositories provide this contract
-         * directly and are detected automatically.
+         * object metadata and tags.
+         *
+         * <p>
+         * This capability is mandatory. It may be provided explicitly here or by an
+         * object repository that also implements
+         * {@link OperationChainPublicationRepository}. JDBC object repositories provide
+         * the contract directly and are detected automatically. An explicitly supplied
+         * repository must publish into the same backing metadata state read by the
+         * configured object and tag repositories.
+         * </p>
          */
         public Builder publicationRepository(OperationChainPublicationRepository publicationRepository) {
             this.publicationRepository = publicationRepository;
@@ -173,6 +179,17 @@ public class AssemblyLineManager {
                 .dependencyInjector(new SimpleDependencyInjector())
                 .generatedClassParent(cl)
                 .build();
+    }
+
+    private static OperationChainPublicationRepository requireAtomicPublicationRepository(Builder builder) {
+        if (builder.publicationRepository != null) {
+            return builder.publicationRepository;
+        }
+        if (builder.objectRepo instanceof OperationChainPublicationRepository repository) {
+            return repository;
+        }
+        throw new IllegalStateException("Atomic metadata publication is required. Configure publicationRepository(...) "
+                + "or use an object repository that implements OperationChainPublicationRepository.");
     }
 
     private static ClassLoader contextClassLoader() {

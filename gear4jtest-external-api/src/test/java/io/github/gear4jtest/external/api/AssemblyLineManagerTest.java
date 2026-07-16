@@ -47,7 +47,7 @@ class AssemblyLineManagerTest {
     private final GeneratedSourceCompiler compiler = mock(GeneratedSourceCompiler.class);
 
     @Test
-    void registerAssemblyLine_shouldStoreArtifactPersistObjectAndTags() throws Exception {
+    void registerAssemblyLine_shouldStoreArtifactAndPublishMetadataAtomically() throws Exception {
         // Given
         InMemoryArtifactStore artifactStore = new InMemoryArtifactStore();
         AssemblyLineManager manager = manager();
@@ -64,7 +64,7 @@ class AssemblyLineManagerTest {
         assertThat(artifactStore.exists(hash)).as("the external artifact is stored before publishing metadata")
                 .isTrue();
         ArgumentCaptor<OperationChainObject> objectCaptor = ArgumentCaptor.forClass(OperationChainObject.class);
-        verify(objectRepository).insert(objectCaptor.capture());
+        verify(publicationRepository).publish(objectCaptor.capture(), eq(List.of("fast", "xml")));
         assertThat(objectCaptor.getValue())
                 .as("published TEST metadata points to the stored artifact hash")
                 .extracting(OperationChainObject::alId, OperationChainObject::version, OperationChainObject::mode,
@@ -72,8 +72,8 @@ class AssemblyLineManagerTest {
                             OperationChainObject::mimeType, OperationChainObject::createdBy)
                 .containsExactly("line", "1.0.0", ExecutionMode.TEST, hash, (long) content.length,
                                  "application/xml", "tester");
-        verify(tagRepository).addTag("line", "fast");
-        verify(tagRepository).addTag("line", "xml");
+        verify(objectRepository, never()).insert(any());
+        verify(tagRepository, never()).addTag(any(), any());
     }
 
     @Test
@@ -146,6 +146,46 @@ class AssemblyLineManagerTest {
                 .hasCauseInstanceOf(IllegalStateException.class);
         verify(objectRepository, never()).insert(any());
         verify(tagRepository, never()).addTag(any(), any());
+        verify(publicationRepository, never()).publish(any(), any());
+    }
+
+    @Test
+    void registerAssemblyLine_shouldRejectNullAndBlankVersions() {
+        // Given
+        AssemblyLineManager manager = manager();
+        byte[] content = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
+
+        // When / Then
+        assertThatThrownBy(() -> manager.registerAssemblyLine("line", null, ExecutionMode.TEST, content,
+                                                              "application/xml", List.of(), "tester"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("version is required");
+        assertThatThrownBy(() -> manager.registerAssemblyLine("line", "   ", ExecutionMode.TEST, content,
+                                                              "application/xml", List.of(), "tester"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("version is required");
+    }
+
+    @Test
+    void registerAssemblyLine_shouldAllowDirectRunAndInvalidateLatestAliasWhenConfigured() throws Exception {
+        // Given
+        InMemoryArtifactStore artifactStore = new InMemoryArtifactStore();
+        AssemblyLineManager manager = manager();
+        when(configRepository.findByAssemblyLineId("line")).thenReturn(Optional.of(memoryConfig("line", true)));
+        when(storeProvider.forConfig(any())).thenReturn(artifactStore);
+        stubSuccessfulRunValidation();
+        byte[] content = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
+
+        // When
+        String hash = manager.registerAssemblyLine("line", "1.0.0", ExecutionMode.RUN, content,
+                                                   "application/xml", null, "tester");
+
+        // Then
+        ArgumentCaptor<OperationChainObject> objectCaptor = ArgumentCaptor.forClass(OperationChainObject.class);
+        verify(publicationRepository).publish(objectCaptor.capture(), eq(List.of()));
+        assertThat(objectCaptor.getValue().contentHash()).isEqualTo(hash);
+        assertThat(objectCaptor.getValue().mode()).isEqualTo(ExecutionMode.RUN);
+        verify(classLoaderRegistry).clearAlias("al/line/RUN/latest");
     }
 
     @Test
@@ -180,7 +220,7 @@ class AssemblyLineManagerTest {
 
         // Then
         ArgumentCaptor<OperationChainObject> objectCaptor = ArgumentCaptor.forClass(OperationChainObject.class);
-        verify(objectRepository).insert(objectCaptor.capture());
+        verify(publicationRepository).publish(objectCaptor.capture(), eq(List.of()));
         assertThat(objectCaptor.getValue())
                 .as("promotion creates a RUN object reusing the tested artifact")
                 .extracting(OperationChainObject::alId, OperationChainObject::version, OperationChainObject::mode,
@@ -189,6 +229,42 @@ class AssemblyLineManagerTest {
                 .containsExactly("line", "1.0.0", ExecutionMode.RUN, testObject.contentHash(),
                                  testObject.sizeBytes(), "promoter");
         verify(classLoaderRegistry).clearAlias("al/line/RUN/latest");
+    }
+
+    @Test
+    void promoteTestToRun_shouldReturnWhenMatchingRunAlreadyExists() throws Exception {
+        // Given
+        AssemblyLineManager manager = manager();
+        OperationChainObject testObject = object("line", "1.0.0", ExecutionMode.TEST, "a".repeat(64), 42L);
+        OperationChainObject runObject = object("line", "1.0.0", ExecutionMode.RUN, "a".repeat(64), 42L);
+        when(objectRepository.find("line", "1.0.0", ExecutionMode.TEST)).thenReturn(Optional.of(testObject));
+        when(objectRepository.exists("line", "1.0.0", ExecutionMode.RUN)).thenReturn(true);
+        when(objectRepository.find("line", "1.0.0", ExecutionMode.RUN)).thenReturn(Optional.of(runObject));
+
+        // When
+        manager.promoteTestToRun("line", "1.0.0", "promoter");
+
+        // Then
+        verify(publicationRepository, never()).publish(any(), any());
+        verify(classLoaderRegistry, never()).clearAlias(any());
+    }
+
+    @Test
+    void promoteTestToRun_shouldRejectExistingRunWithDifferentContent() {
+        // Given
+        AssemblyLineManager manager = manager();
+        OperationChainObject testObject = object("line", "1.0.0", ExecutionMode.TEST, "a".repeat(64), 42L);
+        OperationChainObject runObject = object("line", "1.0.0", ExecutionMode.RUN, "b".repeat(64), 42L);
+        when(objectRepository.find("line", "1.0.0", ExecutionMode.TEST)).thenReturn(Optional.of(testObject));
+        when(objectRepository.exists("line", "1.0.0", ExecutionMode.RUN)).thenReturn(true);
+        when(objectRepository.find("line", "1.0.0", ExecutionMode.RUN)).thenReturn(Optional.of(runObject));
+
+        // When / Then
+        assertThatThrownBy(() -> manager.promoteTestToRun("line", "1.0.0", "promoter"))
+                .isInstanceOf(AssemblyLineManager.PolicyViolationException.class)
+                .hasMessageContaining("different content_hash");
+        verify(publicationRepository, never()).publish(any(), any());
+        verify(classLoaderRegistry, never()).clearAlias(any());
     }
 
     @Test
@@ -215,6 +291,16 @@ class AssemblyLineManagerTest {
                 .hasMessageContaining("RUN candidate validation failed")
                 .hasCauseInstanceOf(IllegalStateException.class);
         verify(objectRepository, never()).insert(any());
+        verify(publicationRepository, never()).publish(any(), any());
+    }
+
+    @Test
+    void build_shouldRejectRepositoriesWithoutAtomicPublicationCapability() {
+        // When / Then
+        assertThatThrownBy(() -> manager(objectRepository, null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Atomic metadata publication is required")
+                .hasMessageContaining("publicationRepository");
     }
 
     @Test
@@ -258,7 +344,7 @@ class AssemblyLineManagerTest {
     }
 
     private AssemblyLineManager manager() {
-        return manager(objectRepository, null);
+        return manager(objectRepository, publicationRepository);
     }
 
     private AssemblyLineManager manager(OperationChainPublicationRepository atomicPublicationRepository) {
@@ -292,7 +378,11 @@ class AssemblyLineManagerTest {
     }
 
     private static OperationChainConfig memoryConfig(String alId) {
-        return new OperationChainConfig(alId, false, StoreType.MEMORY, Map.of());
+        return memoryConfig(alId, false);
+    }
+
+    private static OperationChainConfig memoryConfig(String alId, boolean allowRunPublicationWithoutTest) {
+        return new OperationChainConfig(alId, allowRunPublicationWithoutTest, StoreType.MEMORY, Map.of());
     }
 
     private static OperationChainObject object(String alId,

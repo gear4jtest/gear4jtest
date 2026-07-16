@@ -32,7 +32,7 @@ Typical flow:
 3. Resolve a translator based on media type.
 4. Translate external content into Java source.
 5. Compile Java source with the configured `GeneratedSourceCompiler`.
-6. Store metadata in the object repository only after publication validation succeeds.
+6. Publish object metadata and tags atomically only after publication validation succeeds.
 7. Load compiled classes through an `InMemoryClassLoader` on demand.
 8. Instantiate a `GeneratedAssemblyLine` with a no-arg constructor.
 9. Inject dependencies through `DependencyInjector`.
@@ -52,7 +52,36 @@ Typical flow:
 | `ClassLoaderRegistry`              | Tracks generated classloaders and aliases.                                        |
 | `DependencyInjector`               | Injects external dependencies into generated pipeline instances.                  |
 | `ArtifactStore`                    | Stores raw external pipeline artifacts by content hash; supports bounded streaming writes. |
+| `OperationChainPublicationRepository` | Atomic object-and-tags publication capability required by `AssemblyLineManager`.            |
+| `InMemoryOperationChainRepository` | Non-durable atomic metadata repository for tests and small single-JVM deployments.          |
 
+
+
+## Atomic publication contract
+
+`AssemblyLineManager` requires an `OperationChainPublicationRepository`. The capability may be supplied explicitly with
+`publicationRepository(...)` or by an object repository that implements the interface itself. The manager refuses to
+build when only independent object and tag repositories are provided, because sequential object-then-tag writes can leave
+partial metadata after a failure.
+
+For tests and small single-process deployments, one repository can provide all three contracts:
+
+```java
+InMemoryOperationChainRepository metadata = new InMemoryOperationChainRepository();
+
+AssemblyLineManager manager = AssemblyLineManager.builder()
+        .configRepository(configRepository)
+        .objectRepository(metadata)
+        .tagRepository(metadata)
+        .publicationRepository(metadata)
+        .storeProvider(storeProvider)
+        .classLoaderRegistry(classLoaderRegistry)
+        .translatorResolver(translatorResolver)
+        .build();
+```
+
+The in-memory implementation is thread-safe and atomic within one JVM, but it is not durable or distributed. JDBC
+applications should use `OperationChainObjectRepositoryJdbc`, which implements the publication capability transactionally.
 
 ## Compiler SPI
 

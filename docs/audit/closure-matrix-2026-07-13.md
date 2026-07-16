@@ -49,7 +49,7 @@ run on a host able to resolve the Gradle 9.6.1 distribution and execute Testcont
 | F24 | BLOB fully materialized in heap | Closed | JDBC artifacts stream with configured size limits and spool fallback; large-volume tests cover the boundary. |
 | F25 | Uncached GEL reflection | Closed | Safe accessor metadata is cached with `ClassValue`/method handles without a global class-retention map. |
 | F26 | Incomplete schema baseline | Closed | Baseline is explicit, disabled by default and validates required V1 tables, columns and indexes. |
-| F27 | Non-transactional publication | Closed | Metadata and tags publish atomically through the publication repository with idempotent conflict behavior. |
+| F27 | Non-transactional publication | Closed in phase 8 | `AssemblyLineManager` refuses repositories without an atomic publication capability. JDBC publishes transactionally and the in-memory implementation publishes under one monitor with idempotent conflict behavior. |
 | F28 | `Instant` depends on JVM/DB timezone | Closed | JDBC conversions use UTC and tests vary timezone assumptions. |
 | F29 | Shutdown flush loses retry state | Closed | Bounded retry/backoff and `PersistenceShutdownReport` preserve and expose residual records. |
 | F30 | Inconsistent automatic schema creation | Closed | Auto-create and baseline remain explicit, validated and disabled by default. |

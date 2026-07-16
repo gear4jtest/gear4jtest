@@ -12,14 +12,12 @@ import io.github.gear4jtest.external.api.repository.OperationChainConfigReposito
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
-import io.github.gear4jtest.external.api.repository.OperationChainTagRepository;
 
 import static java.util.Objects.requireNonNull;
 
 final class AssemblyLinePublicationService {
     private final OperationChainConfigRepository configRepository;
     private final OperationChainObjectRepository objectRepository;
-    private final OperationChainTagRepository tagRepository;
     private final OperationChainPublicationRepository publicationRepository;
     private final AssemblyLineStoreResolver storeResolver;
     private final AssemblyLineAliasService aliasService;
@@ -28,7 +26,6 @@ final class AssemblyLinePublicationService {
 
     AssemblyLinePublicationService(OperationChainConfigRepository configRepository,
                                    OperationChainObjectRepository objectRepository,
-                                   OperationChainTagRepository tagRepository,
                                    OperationChainPublicationRepository publicationRepository,
                                    AssemblyLineStoreResolver storeResolver,
                                    AssemblyLineAliasService aliasService,
@@ -36,8 +33,7 @@ final class AssemblyLinePublicationService {
                                    long maxArtifactSizeBytes) {
         this.configRepository = requireNonNull(configRepository);
         this.objectRepository = requireNonNull(objectRepository);
-        this.tagRepository = requireNonNull(tagRepository);
-        this.publicationRepository = publicationRepository;
+        this.publicationRepository = requireNonNull(publicationRepository);
         this.storeResolver = requireNonNull(storeResolver);
         this.aliasService = requireNonNull(aliasService);
         this.publicationValidator = requireNonNull(publicationValidator);
@@ -109,14 +105,7 @@ final class AssemblyLinePublicationService {
             throws AssemblyLineManager.PolicyViolationException {
         List<String> publicationTags = tags == null ? List.of() : tags.stream().distinct().toList();
         try {
-            if (publicationRepository != null) {
-                publicationRepository.publish(object, publicationTags);
-                return;
-            }
-            objectRepository.insert(object);
-            for (String tag : publicationTags) {
-                tagRepository.addTag(object.alId(), tag);
-            }
+            publicationRepository.publish(object, publicationTags);
         } catch (OperationChainPublicationConflictException exception) {
             throw new AssemblyLineManager.PolicyViolationException(exception.getMessage(), exception);
         }

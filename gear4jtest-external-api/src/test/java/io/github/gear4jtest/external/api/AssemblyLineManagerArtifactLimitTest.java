@@ -5,6 +5,7 @@ import java.io.IOException;
 import io.github.gear4jtest.external.api.loader.ClassLoaderRegistry;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainTagRepository;
 import io.github.gear4jtest.external.api.storage.ArtifactStoreProvider;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslatorResolver;
@@ -21,6 +22,7 @@ class AssemblyLineManagerArtifactLimitTest {
         OperationChainConfigRepository configRepository = mock(OperationChainConfigRepository.class);
         OperationChainObjectRepository objectRepository = mock(OperationChainObjectRepository.class);
         OperationChainTagRepository tagRepository = mock(OperationChainTagRepository.class);
+        OperationChainPublicationRepository publicationRepository = mock(OperationChainPublicationRepository.class);
         ArtifactStoreProvider storeProvider = mock(ArtifactStoreProvider.class);
         ClassLoaderRegistry classLoaderRegistry = mock(ClassLoaderRegistry.class);
         OperationChainTranslatorResolver translatorResolver = mock(OperationChainTranslatorResolver.class);
@@ -28,6 +30,7 @@ class AssemblyLineManagerArtifactLimitTest {
                 .configRepository(configRepository)
                 .objectRepository(objectRepository)
                 .tagRepository(tagRepository)
+                .publicationRepository(publicationRepository)
                 .storeProvider(storeProvider)
                 .classLoaderRegistry(classLoaderRegistry)
                 .translatorResolver(translatorResolver)
@@ -40,7 +43,7 @@ class AssemblyLineManagerArtifactLimitTest {
                 .isInstanceOf(IOException.class)
                 .hasMessageContaining("exceeds configured maxArtifactSizeBytes=")
                 .hasMessageContaining(String.valueOf(AssemblyLineManager.DEFAULT_MAX_ARTIFACT_SIZE_BYTES));
-        verifyNoInteractions(configRepository, objectRepository, tagRepository, storeProvider, classLoaderRegistry,
-                             translatorResolver);
+        verifyNoInteractions(configRepository, objectRepository, tagRepository, publicationRepository, storeProvider,
+                             classLoaderRegistry, translatorResolver);
     }
 }
