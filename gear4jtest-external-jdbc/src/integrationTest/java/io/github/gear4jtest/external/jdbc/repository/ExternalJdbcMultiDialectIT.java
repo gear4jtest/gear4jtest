@@ -88,6 +88,8 @@ class ExternalJdbcMultiDialectIT {
             assertThat(tableExists(connection, "artifact_store")).isTrue();
             assertThat(tableExists(connection, "operation_chain_config")).isTrue();
             assertThat(tableExists(connection, "operation_chain_object")).isTrue();
+            assertThat(tableExists(connection, "operation_chain_publication_stage")).isTrue();
+            assertThat(tableExists(connection, "operation_chain_publication_stage_tag")).isTrue();
             assertThat(tableExists(connection, "operation_chain_tag")).isTrue();
             assertThat(tableExists(connection, "gear4j_schema_history")).isTrue();
         }
@@ -170,15 +172,28 @@ class ExternalJdbcMultiDialectIT {
                 + assemblyLineId + "'"))
                 .isEqualTo(4);
 
-        // When / Then: a tag failure rolls the object back on every supported database.
-        assertThatThrownBy(() -> objects.publish(
-                                                 publication(assemblyLineId, "rollback", ExecutionMode.TEST, HASH_D,
-                                                             baseTime.plusSeconds(3)),
-                                                 List.of("inserted-before-failure", "x".repeat(101))))
+        // When / Then: a tag foreign-key failure rolls the object back on every
+        // supported database.
+        String rollbackAssemblyLineId = assemblyLineId + "-rollback";
+        OperationChainConfigRepositoryJdbc configs = OperationChainConfigRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(dialect)
+                .build();
+        configs.upsert(new OperationChainConfig(rollbackAssemblyLineId, false, StoreType.MEMORY, Map.of()));
+        var rollbackStage = objects.stage(
+                                          publication(rollbackAssemblyLineId, "rollback", ExecutionMode.TEST, HASH_D,
+                                                      baseTime.plusSeconds(3)),
+                                          List.of("inserted-before-failure"));
+        deleteConfig(dataSource, rollbackAssemblyLineId);
+
+        assertThatThrownBy(() -> objects.commit(rollbackStage.stageId()))
                 .isInstanceOf(OperationChainRepositoryException.class)
-                .hasMessageContaining("publish operation-chain object");
-        assertThat(objects.exists(assemblyLineId, "rollback", ExecutionMode.TEST)).isFalse();
-        assertThat(tags.listTags(assemblyLineId)).doesNotContain("inserted-before-failure");
+                .hasMessageContaining("commit operation-chain stage");
+        assertThat(objects.exists(rollbackAssemblyLineId, "rollback", ExecutionMode.TEST)).isFalse();
+        assertThat(objects.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(100)))
+                .extracting(io.github.gear4jtest.external.api.repository.OperationChainPublicationStage::stageId)
+                .contains(rollbackStage.stageId());
+        objects.abort(rollbackStage.stageId());
 
         // When / Then: a conflicting retry must preserve the committed metadata.
         assertThatThrownBy(() -> objects.publish(
@@ -232,6 +247,15 @@ class ExternalJdbcMultiDialectIT {
                                                     Instant publishedAt) {
         return new OperationChainObject(null, assemblyLineId, version, mode, hash, 42L, "application/xml",
                 publishedAt.minusSeconds(1), "phase-7", publishedAt);
+    }
+
+    private static void deleteConfig(DataSource dataSource, String assemblyLineId) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+                var statement = connection.prepareStatement(
+                                                            "DELETE FROM operation_chain_config WHERE al_id=?")) {
+            statement.setString(1, assemblyLineId);
+            statement.executeUpdate();
+        }
     }
 
     private static boolean tableExists(Connection connection, String tableName) throws SQLException {

@@ -50,8 +50,8 @@ public class AssemblyLineManager {
                 : GeneratedSourceCompilers.defaultCompiler(parent);
         DependencyInjector effectiveDependencyInjector = builder.dependencyInjector != null ? builder.dependencyInjector
                 : new SimpleDependencyInjector();
-        long effectiveMaxArtifactSizeBytes = AssemblyLineIdentifiers.requireValidArtifactSize(
-                                                                                              builder.maxArtifactSizeBytes);
+        long effectiveMaxArtifactSizeBytes = AssemblyLineIdentifiers
+                .requireValidArtifactSize(builder.maxArtifactSizeBytes);
         OperationChainPublicationRepository effectivePublicationRepository = requireAtomicPublicationRepository(builder);
 
         this.chainTagRepo = requireNonNull(builder.chainTagRepo);
@@ -60,7 +60,7 @@ public class AssemblyLineManager {
         var loader = new GeneratedAssemblyLineLoader(storeResolver, builder.classLoaderRegistry,
                 builder.translatorResolver, effectiveCompiler, effectiveDependencyInjector, parent,
                 effectiveMaxArtifactSizeBytes);
-        var publicationValidator = new AssemblyLinePublicationValidator(storeResolver, builder.translatorResolver,
+        var publicationValidator = new AssemblyLinePublicationValidator(builder.translatorResolver,
                 effectiveCompiler, effectiveMaxArtifactSizeBytes);
         this.publicationService = new AssemblyLinePublicationService(builder.configRepo, builder.objectRepo,
                 effectivePublicationRepository, storeResolver, aliasService, publicationValidator,
@@ -182,14 +182,21 @@ public class AssemblyLineManager {
     }
 
     private static OperationChainPublicationRepository requireAtomicPublicationRepository(Builder builder) {
-        if (builder.publicationRepository != null) {
-            return builder.publicationRepository;
+        OperationChainPublicationRepository repository = builder.publicationRepository;
+        if (repository == null && builder.objectRepo instanceof OperationChainPublicationRepository detected) {
+            repository = detected;
         }
-        if (builder.objectRepo instanceof OperationChainPublicationRepository repository) {
-            return repository;
+        if (repository == null) {
+            throw new IllegalStateException(
+                    "Atomic metadata publication is required. Configure publicationRepository(...) "
+                            + "or use an object repository that implements OperationChainPublicationRepository.");
         }
-        throw new IllegalStateException("Atomic metadata publication is required. Configure publicationRepository(...) "
-                + "or use an object repository that implements OperationChainPublicationRepository.");
+        if (!repository.supportsStaging()) {
+            throw new IllegalStateException("Staged metadata publication is required. The configured publication "
+                    + "repository must implement stage renewal, commit, abortIfUnchanged and reconciliation lookup "
+                    + "operations.");
+        }
+        return repository;
     }
 
     private static ClassLoader contextClassLoader() {

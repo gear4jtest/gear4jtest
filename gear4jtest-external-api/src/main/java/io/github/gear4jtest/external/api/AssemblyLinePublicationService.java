@@ -6,16 +6,20 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
+import io.github.gear4jtest.external.api.artifact.ArtifactHashes;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationStage;
 
 import static java.util.Objects.requireNonNull;
 
 final class AssemblyLinePublicationService {
+    private static final int MAX_TAG_LENGTH = 100;
+
     private final OperationChainConfigRepository configRepository;
     private final OperationChainObjectRepository objectRepository;
     private final OperationChainPublicationRepository publicationRepository;
@@ -48,31 +52,29 @@ final class AssemblyLinePublicationService {
                                 List<String> tags,
                                 String createdBy)
             throws IOException, AssemblyLineManager.PolicyViolationException {
-        if (version == null || version.isBlank()) {
-            throw new IllegalArgumentException("version is required for persisted TEST/RUN publication");
-        }
-        requireNonNull(alId);
-        requireNonNull(mode);
-        requireNonNull(content);
+        requireNonNull(content, "content must not be null");
+        String normalizedMediaType = AssemblyLineIdentifiers.normalizeMediaType(mediaType);
+        List<String> publicationTags = normalizeTags(tags);
+        String hash = ArtifactHashes.sha256Hex(content);
+        Instant now = Instant.now();
+        OperationChainObject object = new OperationChainObject(null, alId, version, mode, hash, content.length,
+                normalizedMediaType, now, createdBy, now);
 
-        if (mode == ExecutionMode.RUN) {
-            var config = configRepository.findByAssemblyLineId(alId)
-                    .orElseThrow(() -> new NoSuchElementException("Config not found for alId=" + alId));
-            if (!Boolean.TRUE.equals(config.allowRunPublicationWithoutTest())) {
-                throw new AssemblyLineManager.PolicyViolationException(
-                        "Direct RUN publication is disabled for alId=" + alId);
-            }
-        }
-
+        validateDirectRunPolicy(object);
         AssemblyLineIdentifiers.requireAllowedArtifactSize(content.length, maxArtifactSizeBytes,
                                                            "Assembly line artifact");
-        ArtifactStore store = storeResolver.resolve(alId);
-        String hash = store.put(content);
+        publicationValidator.validatePublicationCandidate(alId, object, content);
 
-        OperationChainObject obj = new OperationChainObject(null, alId, version, mode, hash, content.length,
-                AssemblyLineIdentifiers.normalizeMediaType(mediaType), Instant.now(), createdBy, Instant.now());
-        publicationValidator.validatePublicationCandidate(alId, obj);
-        publishMetadata(obj, tags);
+        AssemblyLineStoreResolver.ResolvedStore resolvedStore = storeResolver.resolveForPublication(alId);
+        OperationChainPublicationStage stage = stage(object, publicationTags,
+                                                     resolvedStore.configurationFingerprint());
+        ArtifactStore store = resolvedStore.store();
+        String storedHash = store.put(content);
+        if (!hash.equals(storedHash)) {
+            throw new IOException("Artifact store returned hash=" + storedHash + " but expected hash=" + hash);
+        }
+
+        commit(stage);
         if (mode == ExecutionMode.RUN) {
             aliasService.invalidateLatestRun(alId);
         }
@@ -81,11 +83,9 @@ final class AssemblyLinePublicationService {
 
     void promoteTestToRun(String alId, String version, String promotedBy)
             throws AssemblyLineManager.PolicyViolationException {
-        var testObj = objectRepository.find(alId, version, ExecutionMode.TEST).orElseThrow(
-                                                                                           () -> new NoSuchElementException(
-                                                                                                   "TEST object not found for %s:%s"
-                                                                                                           .formatted(alId,
-                                                                                                                      version)));
+        var testObj = objectRepository.find(alId, version, ExecutionMode.TEST)
+                .orElseThrow(() -> new NoSuchElementException(
+                        "TEST object not found for %s:%s".formatted(alId, version)));
         if (objectRepository.exists(alId, version, ExecutionMode.RUN)) {
             var runObj = objectRepository.find(alId, version, ExecutionMode.RUN).orElseThrow();
             if (!Objects.equals(runObj.contentHash(), testObj.contentHash())) {
@@ -94,20 +94,74 @@ final class AssemblyLinePublicationService {
             }
             return;
         }
+        Instant now = Instant.now();
         var runObj = new OperationChainObject(null, alId, version, ExecutionMode.RUN, testObj.contentHash(),
-                testObj.sizeBytes(), testObj.mimeType(), Instant.now(), promotedBy, Instant.now());
-        publicationValidator.validateRunCandidate(alId, runObj);
-        publishMetadata(runObj, List.of());
+                testObj.sizeBytes(), testObj.mimeType(), now, promotedBy, now);
+        AssemblyLineStoreResolver.ResolvedStore resolvedStore = storeResolver.resolveForPublication(alId);
+        publicationValidator.validateRunCandidate(alId, runObj, resolvedStore.store());
+        commit(stage(runObj, List.of(), resolvedStore.configurationFingerprint()));
         aliasService.invalidateLatestRun(alId);
     }
 
-    private void publishMetadata(OperationChainObject object, List<String> tags)
+    private void validateDirectRunPolicy(OperationChainObject object)
             throws AssemblyLineManager.PolicyViolationException {
-        List<String> publicationTags = tags == null ? List.of() : tags.stream().distinct().toList();
+        if (object.mode() != ExecutionMode.RUN) {
+            return;
+        }
+        var config = configRepository.findByAssemblyLineId(object.alId())
+                .orElseThrow(() -> new NoSuchElementException("Config not found for alId=" + object.alId()));
+        if (!Boolean.TRUE.equals(config.allowRunPublicationWithoutTest())) {
+            throw new AssemblyLineManager.PolicyViolationException(
+                    "Direct RUN publication is disabled for alId=" + object.alId());
+        }
+    }
+
+    private OperationChainPublicationStage stage(OperationChainObject object,
+                                                 List<String> tags,
+                                                 String storeFingerprint)
+            throws AssemblyLineManager.PolicyViolationException {
         try {
-            publicationRepository.publish(object, publicationTags);
+            return publicationRepository.stage(object, tags, storeFingerprint);
         } catch (OperationChainPublicationConflictException exception) {
             throw new AssemblyLineManager.PolicyViolationException(exception.getMessage(), exception);
         }
+    }
+
+    private void commit(OperationChainPublicationStage stage) throws AssemblyLineManager.PolicyViolationException {
+        try {
+            publicationRepository.commit(stage.stageId());
+        } catch (OperationChainPublicationConflictException exception) {
+            abortAfterConflict(stage.stageId(), exception);
+            throw new AssemblyLineManager.PolicyViolationException(exception.getMessage(), exception);
+        }
+    }
+
+    private void abortAfterConflict(String stageId, RuntimeException failure) {
+        try {
+            publicationRepository.abort(stageId);
+        } catch (RuntimeException abortFailure) {
+            failure.addSuppressed(abortFailure);
+        }
+    }
+
+    private static List<String> normalizeTags(List<String> tags) {
+        if (tags == null) {
+            return List.of();
+        }
+        return tags.stream()
+                .map(tag -> requireValidTag(tag))
+                .distinct()
+                .sorted()
+                .toList();
+    }
+
+    private static String requireValidTag(String tag) {
+        if (tag == null || tag.isBlank()) {
+            throw new IllegalArgumentException("tag must not be blank");
+        }
+        if (tag.length() > MAX_TAG_LENGTH) {
+            throw new IllegalArgumentException("tag must not exceed " + MAX_TAG_LENGTH + " characters");
+        }
+        return tag;
     }
 }

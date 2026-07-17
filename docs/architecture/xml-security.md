@@ -79,3 +79,9 @@ The deprecated `legacyBeanAccess()` policy is intended only as a temporary
 migration aid for direct evaluator users and logs every newly used accessor.
 
 See [Gear4J expression language](../roadmap/gear-expression-language.md).
+
+## Input size boundary
+
+`AssemblyLineValidator` applies a configurable byte limit before XSD processing. Both byte-array and stream entry points
+use the same default of 2 MiB; stream validation reads at most `maxXmlBytes + 1` bytes before rejecting oversized input.
+Applications accepting untrusted XML should keep this limit finite and align it with the external artifact-size policy.

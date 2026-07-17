@@ -55,8 +55,8 @@ class DefaultArtifactStoreProviderTest {
                 Map.of("fallback.2.type", "MEMORY",
                        "fallback.2.props.ignored", "value",
                        "fallback.1.type", "MEMORY",
-                       "verifyOnRead", "yes",
-                       "selfHealing", "1"));
+                       "verifyOnRead", "true",
+                       "selfHealing", "true"));
 
         ArtifactStore store = provider.forConfig(config);
 
@@ -75,6 +75,51 @@ class DefaultArtifactStoreProviderTest {
     }
 
     @Test
+    void forConfig_shouldRejectNonBooleanFlags() {
+        DefaultArtifactStoreProvider provider = new DefaultArtifactStoreProvider(
+                new ArtifactStoreResolver(getClass().getClassLoader()), null, Runnable::run);
+
+        assertThatThrownBy(() -> provider.forConfig(new OperationChainConfig("pipeline", false, StoreType.MEMORY,
+                Map.of("verifyOnRead", "yes"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("verifyOnRead")
+                .hasMessageContaining("true or false");
+        assertThatThrownBy(() -> provider.forConfig(new OperationChainConfig("pipeline", false, StoreType.MEMORY,
+                Map.of("selfHealing", "1"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("selfHealing")
+                .hasMessageContaining("true or false");
+    }
+
+    @Test
+    void forConfig_shouldRejectIncompleteFallbackAndReplicationWithoutFallback() {
+        DefaultArtifactStoreProvider provider = new DefaultArtifactStoreProvider(
+                new ArtifactStoreResolver(getClass().getClassLoader()), null, Runnable::run);
+
+        assertThatThrownBy(() -> provider.forConfig(new OperationChainConfig("pipeline", false, StoreType.MEMORY,
+                Map.of("fallback.1.props.path", "/tmp/store"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("fallback.1.type");
+        assertThatThrownBy(() -> provider.forConfig(new OperationChainConfig("pipeline", false, StoreType.MEMORY,
+                Map.of("mode.write", "SYNC_ALL"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("requires at least one complete fallback");
+        assertThatThrownBy(() -> provider.forConfig(new OperationChainConfig("pipeline", false, StoreType.MEMORY,
+                Map.of("selfHealing", "true"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("selfHealing=true");
+    }
+
+    @Test
+    void resolver_shouldExposeImmutableAvailableTypes() {
+        ArtifactStoreResolver resolver = new ArtifactStoreResolver(getClass().getClassLoader());
+
+        assertThatThrownBy(() -> resolver.availableTypes().clear())
+                .isInstanceOf(UnsupportedOperationException.class);
+        assertThat(resolver.availableTypes()).contains("MEMORY");
+    }
+
+    @Test
     void forConfig_shouldRejectInvalidFallbackIndex() {
         DefaultArtifactStoreProvider provider = new DefaultArtifactStoreProvider(
                 new ArtifactStoreResolver(getClass().getClassLoader()), null, Runnable::run);
@@ -84,5 +129,9 @@ class DefaultArtifactStoreProviderTest {
         assertThatThrownBy(() -> provider.forConfig(config))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Invalid artifact fallback index 'alpha'");
+        assertThatThrownBy(() -> provider.forConfig(new OperationChainConfig("pipeline", false, StoreType.MEMORY,
+                Map.of("fallback.0.type", "MEMORY"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("positive integer");
     }
 }

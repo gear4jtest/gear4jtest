@@ -3,6 +3,7 @@ package io.github.gear4jtest.external.api.repository;
 import java.time.Instant;
 import java.util.List;
 
+import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.ExecutionMode;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import org.junit.jupiter.api.Test;
@@ -68,6 +69,104 @@ class InMemoryOperationChainRepositoryTest {
         assertThat(repository.findAll("line"))
                 .extracting(OperationChainObject::version)
                 .containsExactly("3.0.0", "2.0.0", "1.0.0");
+    }
+
+    @Test
+    void stagedPublication_shouldRemainInvisibleUntilCommitAndBeRecoverable() {
+        // Given
+        OperationChainObject object = object("line", "4.0.0", ExecutionMode.TEST, "d".repeat(64),
+                                             Instant.parse("2026-07-16T13:00:00Z"));
+
+        // When
+        OperationChainPublicationStage stage = repository.stage(object, List.of("xml", "xml", "staged"));
+
+        // Then
+        assertThat(repository.find("line", "4.0.0", ExecutionMode.TEST)).isEmpty();
+        assertThat(repository.listTags("line")).isEmpty();
+        assertThat(repository.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10)))
+                .containsExactly(stage);
+
+        // When
+        repository.commit(stage.stageId());
+
+        // Then
+        assertThat(repository.find("line", "4.0.0", ExecutionMode.TEST)).isPresent();
+        assertThat(repository.listTags("line")).containsExactly("staged", "xml");
+        assertThat(repository.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10))).isEmpty();
+    }
+
+    @Test
+    void stagedPublication_shouldMergeIdempotentTagsAndAbortWithoutVisibility() {
+        // Given
+        OperationChainObject object = object("line", "5.0.0", ExecutionMode.TEST, "e".repeat(64),
+                                             Instant.parse("2026-07-16T14:00:00Z"));
+
+        // When
+        OperationChainPublicationStage first = repository.stage(object, List.of("xml"));
+        OperationChainPublicationStage second = repository.stage(object, List.of("stable"));
+
+        // Then
+        assertThat(second.stageId()).isEqualTo(first.stageId());
+        assertThat(second.tags()).containsExactly("stable", "xml");
+
+        // When
+        repository.abort(first.stageId());
+
+        // Then
+        assertThat(repository.find("line", "5.0.0", ExecutionMode.TEST)).isEmpty();
+        assertThat(repository.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10))).isEmpty();
+    }
+
+    @Test
+    void stagedPublication_shouldRejectConflictingCandidateWithoutChangingStage() {
+        // Given
+        OperationChainObject existing = object("line", "6.0.0", ExecutionMode.TEST, "f".repeat(64),
+                                               Instant.parse("2026-07-16T15:00:00Z"));
+        OperationChainObject conflicting = object("line", "6.0.0", ExecutionMode.TEST, "a".repeat(64),
+                                                  Instant.parse("2026-07-16T15:01:00Z"));
+        OperationChainPublicationStage stage = repository.stage(existing, List.of("stable"));
+
+        // When / Then
+        assertThatThrownBy(() -> repository.stage(conflicting, List.of("conflict")))
+                .isInstanceOf(OperationChainPublicationConflictException.class);
+        assertThat(repository.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10)))
+                .containsExactly(stage);
+    }
+
+    @Test
+    void stagedPublication_shouldRenewGracePeriodAndProtectActiveRetryFromStaleAbort() {
+        // Given
+        OperationChainObject object = object("line", "7.0.0", ExecutionMode.TEST, "b".repeat(64),
+                                             Instant.parse("2026-07-16T16:00:00Z"));
+        OperationChainPublicationStage stale = repository.stage(object, List.of("initial"));
+
+        // When
+        OperationChainPublicationStage renewed = repository.stage(object, List.of("retry"));
+
+        // Then
+        assertThat(renewed.stageId()).isEqualTo(stale.stageId());
+        assertThat(renewed.revision()).isEqualTo(stale.revision() + 1L);
+        assertThat(renewed.stagedAt()).isAfterOrEqualTo(stale.stagedAt());
+        assertThat(repository.abortIfUnchanged(stale)).isFalse();
+        assertThat(repository.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10)))
+                .containsExactly(renewed);
+        assertThat(repository.abortIfUnchanged(renewed)).isTrue();
+    }
+
+    @Test
+    void stagedPublication_shouldRejectRetryUsingDifferentStoreConfiguration() {
+        // Given
+        OperationChainObject object = object("line", "8.0.0", ExecutionMode.TEST, "c".repeat(64),
+                                             Instant.parse("2026-07-16T17:00:00Z"));
+        String firstFingerprint = "1".repeat(64);
+        String secondFingerprint = "2".repeat(64);
+        OperationChainPublicationStage stage = repository.stage(object, List.of("initial"), firstFingerprint);
+
+        // When / Then
+        assertThatThrownBy(() -> repository.stage(object, List.of("retry"), secondFingerprint))
+                .isInstanceOf(OperationChainPublicationConflictException.class);
+        assertThat(repository.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10)))
+                .containsExactly(stage);
     }
 
     private static OperationChainObject object(String assemblyLineId,

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 class AssemblyLineManagerArtifactLimitTest {
     @Test
@@ -23,6 +24,7 @@ class AssemblyLineManagerArtifactLimitTest {
         OperationChainObjectRepository objectRepository = mock(OperationChainObjectRepository.class);
         OperationChainTagRepository tagRepository = mock(OperationChainTagRepository.class);
         OperationChainPublicationRepository publicationRepository = mock(OperationChainPublicationRepository.class);
+        when(publicationRepository.supportsStaging()).thenReturn(true);
         ArtifactStoreProvider storeProvider = mock(ArtifactStoreProvider.class);
         ClassLoaderRegistry classLoaderRegistry = mock(ClassLoaderRegistry.class);
         OperationChainTranslatorResolver translatorResolver = mock(OperationChainTranslatorResolver.class);
@@ -43,7 +45,7 @@ class AssemblyLineManagerArtifactLimitTest {
                 .isInstanceOf(IOException.class)
                 .hasMessageContaining("exceeds configured maxArtifactSizeBytes=")
                 .hasMessageContaining(String.valueOf(AssemblyLineManager.DEFAULT_MAX_ARTIFACT_SIZE_BYTES));
-        verifyNoInteractions(configRepository, objectRepository, tagRepository, publicationRepository, storeProvider,
-                             classLoaderRegistry, translatorResolver);
+        verifyNoInteractions(configRepository, objectRepository, tagRepository, storeProvider, classLoaderRegistry,
+                             translatorResolver);
     }
 }

@@ -3,6 +3,8 @@ package io.github.gear4jtest.external.jdbc.repository;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Calendar;
 import javax.sql.DataSource;
 
@@ -53,7 +55,7 @@ class OperationChainObjectRepositoryJdbcTest {
     }
 
     @Test
-    void find_shouldMapNullableTimestampsAsNull() throws Exception {
+    void find_shouldMapRequiredTimestamps() throws Exception {
         // Given
         DataSource dataSource = mock(DataSource.class);
         Connection connection = mock(Connection.class);
@@ -70,8 +72,12 @@ class OperationChainObjectRepositoryJdbcTest {
         when(resultSet.getString("content_hash")).thenReturn("a".repeat(64));
         when(resultSet.getLong("size_bytes")).thenReturn(123L);
         when(resultSet.getString("mime_type")).thenReturn("application/xml");
-        when(resultSet.getTimestamp(eq("created_at"), any(Calendar.class))).thenReturn(null);
-        when(resultSet.getTimestamp(eq("published_at"), any(Calendar.class))).thenReturn(null);
+        Instant createdAt = Instant.parse("2026-01-01T00:00:00Z");
+        Instant publishedAt = Instant.parse("2026-01-02T00:00:00Z");
+        when(resultSet.getTimestamp(eq("created_at"), any(Calendar.class)))
+                .thenReturn(Timestamp.from(createdAt));
+        when(resultSet.getTimestamp(eq("published_at"), any(Calendar.class)))
+                .thenReturn(Timestamp.from(publishedAt));
 
         OperationChainObjectRepositoryJdbc repository = OperationChainObjectRepositoryJdbc.builder()
                 .dataSource(dataSource)
@@ -82,7 +88,7 @@ class OperationChainObjectRepositoryJdbcTest {
         var result = repository.find("pipeline", "1.0.0", ExecutionMode.RUN).orElseThrow();
 
         // Then
-        assertThat(result.createdAt()).isNull();
-        assertThat(result.publishedAt()).isNull();
+        assertThat(result.createdAt()).isEqualTo(createdAt);
+        assertThat(result.publishedAt()).isEqualTo(publishedAt);
     }
 }

@@ -107,6 +107,24 @@ global foreign key is installed from `operation_chain_object` to
 `artifact_store`. Schedule `ArtifactConsistencyChecker` for important assembly
 lines and alert when its report is inconsistent.
 
+External publication now stages metadata before writing an artifact. Schedule
+`ArtifactPublicationReconciler` with a grace period longer than the slowest
+expected artifact upload. Alert on reconciliation failures and on stages that
+remain older than that grace period. A present artifact is committed; a missing
+artifact is conditionally abandoned without deleting content from a shared
+content-addressed store. Idempotent retries renew stage age and revision, so an
+older reconciliation pass cannot abort an active retry. Store configuration is
+fingerprinted in each stage; if configuration changes while a stage exists, the
+stage is retained and reported instead of being checked against the new backend.
+Avoid changing store configuration until old stages have been reconciled or
+explicitly resolved. The generic SPI still cannot enumerate legacy store-only
+objects.
+
+Artifact-store booleans accept only `true` or `false`; replication and
+self-healing require at least one complete `fallback.N.type` group. Treat a
+startup rejection as a configuration defect rather than silently disabling the
+requested durability behavior.
+
 ## Metrics and health
 
 `gear4jtest-micrometer` exposes counters and duration timers. Keep metric tags

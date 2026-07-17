@@ -28,6 +28,6 @@ public final class ArtifactStoreResolver {
     }
 
     public Set<String> availableTypes() {
-        return byType.keySet();
+        return Set.copyOf(byType.keySet());
     }
 }

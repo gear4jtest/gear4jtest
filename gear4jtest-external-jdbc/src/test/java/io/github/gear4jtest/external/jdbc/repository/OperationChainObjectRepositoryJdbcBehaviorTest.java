@@ -85,8 +85,9 @@ class OperationChainObjectRepositoryJdbcBehaviorTest {
         // When / Then
         assertThatIllegalArgumentException()
                 .isThrownBy(() -> repository.insert(new OperationChainObject(null, "pipeline", "1.0.0",
-                        ExecutionMode.TEST, "bad", 42L, "application/xml", null, "tester", null)))
-                .withMessageContaining("Invalid SHA-256 content hash");
+                        ExecutionMode.TEST, "bad", 42L, "application/xml", Instant.EPOCH, "tester",
+                        Instant.EPOCH)))
+                .withMessageContaining("SHA-256");
     }
 
     @Test
@@ -113,7 +114,9 @@ class OperationChainObjectRepositoryJdbcBehaviorTest {
     void findLatestRun_shouldLimitRowsAndReturnLatestRun() throws Exception {
         // Given
         JdbcMocks jdbc = JdbcMocks.query(true);
-        stubObjectRow(jdbc.resultSet(), 7L, HASH, null, null);
+        Instant createdAt = Instant.parse("2026-02-01T00:00:00Z");
+        Instant publishedAt = Instant.parse("2026-02-02T00:00:00Z");
+        stubObjectRow(jdbc.resultSet(), 7L, HASH, Timestamp.from(createdAt), Timestamp.from(publishedAt));
         OperationChainObjectRepositoryJdbc repository = repository(jdbc.dataSource());
 
         // When
@@ -121,6 +124,8 @@ class OperationChainObjectRepositoryJdbcBehaviorTest {
 
         // Then
         assertThat(result.id()).isEqualTo(7L);
+        assertThat(result.createdAt()).isEqualTo(createdAt);
+        assertThat(result.publishedAt()).isEqualTo(publishedAt);
         verify(jdbc.statement()).setString(1, "pipeline");
         verify(jdbc.statement()).setMaxRows(1);
     }

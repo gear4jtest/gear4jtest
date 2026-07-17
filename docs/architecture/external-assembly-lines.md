@@ -22,17 +22,33 @@ contract.
 | `gear4jtest-gradle-xml2java` | Build-time generation from XML.                                                  |
 | `gear4jtest-core`            | Runtime execution after an `AssemblyLine` exists.                                |
 
-## Publication validation
+## Publication validation and staged commit
 
-Before TEST or direct RUN metadata is persisted, `AssemblyLineManager` validates the publication candidate by reading the
-artifact, resolving the translator, translating the external definition and compiling the generated Java source. Promotion
-from TEST to RUN runs the same validation against the RUN candidate before inserting RUN metadata or invalidating the
-latest alias.
+For TEST and direct RUN publication, `AssemblyLineManager` validates identifiers, tags, media type, size and content hash,
+then translates the supplied bytes and compiles the generated Java **before any artifact write**. Promotion from TEST to
+RUN validates the already stored TEST artifact before staging RUN metadata or invalidating the latest alias.
 
-This validation intentionally stops before instantiating the generated class or injecting application dependencies.
-Instantiation can have dependency-container side effects and remains part of the normal runtime loading path. The
-publication contract is therefore: the artifact is present, readable, translatable and compilable before it can be stored
-as TEST or RUN metadata.
+After validation, Gear4J resolves the exact store configuration and computes a stable fingerprint. Publication then
+follows a durable three-step protocol:
+
+1. stage object metadata, tags and the store fingerprint in `OperationChainPublicationRepository`;
+2. write the content-addressed artifact;
+3. atomically commit the stage so object metadata and tags become visible together.
+
+A stage is durable but invisible to normal object and tag repositories. A storage or commit failure therefore cannot leave
+a newly written artifact completely unknown to the metadata system. `ArtifactPublicationReconciler` processes stages older
+than an operator-selected grace period: it commits a stage when the expected hash exists, conditionally aborts it when the
+artifact is missing, and leaves it untouched when the store cannot be checked. An idempotent retry renews the stage age and
+revision; a stale reconciliation snapshot cannot abort that renewed stage. If the current store configuration fingerprint
+does not match the staged fingerprint, the reconciler retains the stage without probing the new backend. The grace period
+must exceed the maximum expected artifact-write duration to avoid racing a legitimate slow upload.
+
+The protocol does not require unsafe deletion from a shared content-addressed store. It also does not retroactively detect
+store-only artifacts created before this protocol or written outside `AssemblyLineManager`, because the generic
+`ArtifactStore` SPI still cannot enumerate all hashes.
+
+Validation intentionally stops before instantiating the generated class or injecting application dependencies.
+Instantiation can have dependency-container side effects and remains part of the normal runtime loading path.
 
 ## Runtime loading path
 

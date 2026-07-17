@@ -11,6 +11,7 @@ import java.util.UUID;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 
+import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.ExecutionMode;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
@@ -45,21 +46,22 @@ class OperationChainPublicationRepositoryJdbcIT {
     }
 
     @Test
-    void publish_shouldRollbackObjectWhenTagPersistenceFails() throws Exception {
+    void commit_shouldRollbackObjectWhenTagPersistenceFails() throws Exception {
         // Given
         DataSource dataSource = h2DataSource();
         ExternalJdbcSchemaMigrator.forDialect(Gear4jDatabaseDialect.H2).migrate(dataSource);
         insertConfig(dataSource, "line");
         OperationChainObjectRepositoryJdbc repository = repository(dataSource);
+        var stage = repository.stage(publication("2.0.0", HASH), List.of("inserted-before-failure"));
+        deleteConfig(dataSource, "line");
 
         // When / Then
-        assertThatThrownBy(() -> repository.publish(publication("2.0.0", HASH),
-                                                    List.of("inserted-before-failure", "x".repeat(101))))
+        assertThatThrownBy(() -> repository.commit(stage.stageId()))
                 .isInstanceOf(OperationChainRepositoryException.class)
-                .hasMessageContaining("publish operation-chain object line:2.0.0:TEST");
+                .hasMessageContaining("commit operation-chain stage");
         assertThat(count(dataSource, "SELECT COUNT(*) FROM operation_chain_object WHERE version='2.0.0'"))
                 .isZero();
-        assertThat(count(dataSource, "SELECT COUNT(*) FROM operation_chain_tag")).isZero();
+        assertThat(count(dataSource, "SELECT COUNT(*) FROM operation_chain_publication_stage")).isEqualTo(1);
     }
 
     @Test
@@ -79,6 +81,65 @@ class OperationChainPublicationRepositoryJdbcIT {
         assertThat(count(dataSource, "SELECT COUNT(*) FROM operation_chain_object WHERE version='3.0.0'"))
                 .isEqualTo(1);
         assertThat(count(dataSource, "SELECT COUNT(*) FROM operation_chain_tag")).isEqualTo(1);
+    }
+
+    @Test
+    void stage_shouldRemainInvisibleUntilCommitAndAbortCleanly() throws Exception {
+        // Given
+        DataSource dataSource = h2DataSource();
+        ExternalJdbcSchemaMigrator.forDialect(Gear4jDatabaseDialect.H2).migrate(dataSource);
+        insertConfig(dataSource, "line");
+        OperationChainObjectRepositoryJdbc repository = repository(dataSource);
+        OperationChainObject publication = publication("4.0.0", "a".repeat(64));
+
+        // When
+        var stage = repository.stage(publication, List.of("xml", "staged"));
+
+        // Then
+        assertThat(repository.find("line", "4.0.0", ExecutionMode.TEST)).isEmpty();
+        assertThat(count(dataSource, "SELECT COUNT(*) FROM operation_chain_publication_stage")).isEqualTo(1);
+        assertThat(count(dataSource, "SELECT COUNT(*) FROM operation_chain_publication_stage_tag")).isEqualTo(2);
+        assertThat(repository.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10)))
+                .extracting(io.github.gear4jtest.external.api.repository.OperationChainPublicationStage::stageId)
+                .containsExactly(stage.stageId());
+
+        // When
+        repository.commit(stage.stageId());
+
+        // Then
+        assertThat(repository.find("line", "4.0.0", ExecutionMode.TEST)).isPresent();
+        assertThat(count(dataSource, "SELECT COUNT(*) FROM operation_chain_publication_stage")).isZero();
+        assertThat(count(dataSource, "SELECT COUNT(*) FROM operation_chain_publication_stage_tag")).isZero();
+
+        // When
+        var aborted = repository.stage(publication("5.0.0", "b".repeat(64)), List.of("abort"));
+        repository.abort(aborted.stageId());
+
+        // Then
+        assertThat(repository.find("line", "5.0.0", ExecutionMode.TEST)).isEmpty();
+        assertThat(count(dataSource, "SELECT COUNT(*) FROM operation_chain_publication_stage")).isZero();
+    }
+
+    @Test
+    void conditionalAbort_shouldNotRemoveRenewedStage() throws Exception {
+        // Given
+        DataSource dataSource = h2DataSource();
+        ExternalJdbcSchemaMigrator.forDialect(Gear4jDatabaseDialect.H2).migrate(dataSource);
+        insertConfig(dataSource, "line");
+        OperationChainObjectRepositoryJdbc repository = repository(dataSource);
+        OperationChainObject publication = publication("6.0.0", "c".repeat(64));
+        var stale = repository.stage(publication, List.of("initial"));
+
+        // When
+        var renewed = repository.stage(publication, List.of("retry"));
+
+        // Then
+        assertThat(renewed.stageId()).isEqualTo(stale.stageId());
+        assertThat(renewed.revision()).isGreaterThan(stale.revision());
+        assertThat(repository.abortIfUnchanged(stale)).isFalse();
+        assertThat(repository.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10)))
+                .containsExactly(renewed);
+        assertThat(repository.abortIfUnchanged(renewed)).isTrue();
     }
 
     private static OperationChainObjectRepositoryJdbc repository(DataSource dataSource) {
@@ -103,6 +164,15 @@ class OperationChainPublicationRepositoryJdbcIT {
             statement.setBoolean(2, false);
             statement.setString(3, "MEMORY");
             statement.setString(4, "{}");
+            statement.executeUpdate();
+        }
+    }
+
+    private static void deleteConfig(DataSource dataSource, String assemblyLineId) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+                var statement = connection.prepareStatement(
+                                                            "DELETE FROM operation_chain_config WHERE al_id=?")) {
+            statement.setString(1, assemblyLineId);
             statement.executeUpdate();
         }
     }

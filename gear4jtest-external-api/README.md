@@ -27,16 +27,16 @@ It should not contain XML-specific parsing or generation logic. Format-specific 
 
 Typical flow:
 
-1. Register an artifact for an assembly line id, version and execution mode.
-2. Store the raw content in the configured `ArtifactStore`.
-3. Resolve a translator based on media type.
-4. Translate external content into Java source.
-5. Compile Java source with the configured `GeneratedSourceCompiler`.
-6. Publish object metadata and tags atomically only after publication validation succeeds.
-7. Load compiled classes through an `InMemoryClassLoader` on demand.
-8. Instantiate a `GeneratedAssemblyLine` with a no-arg constructor.
-9. Inject dependencies through `DependencyInjector`.
-10. Cache and return the generated assembly line.
+1. Validate identifiers, tags, media type, size and content hash.
+2. Resolve a translator, translate the supplied bytes and compile the generated Java before storage.
+3. Resolve the exact store configuration and persist an invisible publication stage containing object metadata, tags and
+   its configuration fingerprint.
+4. Store the raw content in the configured `ArtifactStore`.
+5. Atomically commit the staged object and tags.
+6. Load compiled classes through an `InMemoryClassLoader` on demand.
+7. Instantiate a `GeneratedAssemblyLine` with a no-arg constructor.
+8. Inject dependencies through `DependencyInjector`.
+9. Cache and return the generated assembly line.
 
 ## Important types
 
@@ -63,6 +63,17 @@ Typical flow:
 `publicationRepository(...)` or by an object repository that implements the interface itself. The manager refuses to
 build when only independent object and tag repositories are provided, because sequential object-then-tag writes can leave
 partial metadata after a failure.
+
+The publication repository must also support the durable staged lifecycle. Stages are not visible through normal
+object or tag lookups. If the process fails after metadata staging, `ArtifactPublicationReconciler` checks the configured
+store after an operator-selected grace period: it commits stages whose expected content hash exists and conditionally
+aborts stages whose artifact is still missing. Idempotent publication retries renew the stage age and revision, preventing
+a stale reconciliation pass from deleting an active retry. A changed store configuration retains the stage and reports a
+fingerprint mismatch instead of probing a different backend. Store or metadata failures leave the stage available for a
+later retry.
+
+This design makes every artifact written by the manager discoverable through durable metadata. It does not retroactively
+enumerate or delete store-only artifacts created by older versions or by code that bypasses `AssemblyLineManager`.
 
 For tests and small single-process deployments, one repository can provide all three contracts:
 

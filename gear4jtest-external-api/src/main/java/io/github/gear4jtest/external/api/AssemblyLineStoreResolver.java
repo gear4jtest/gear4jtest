@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
+import io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFingerprint;
 import io.github.gear4jtest.external.api.storage.ArtifactStoreProvider;
 
 import static java.util.Objects.requireNonNull;
@@ -22,22 +23,29 @@ final class AssemblyLineStoreResolver {
     }
 
     ArtifactStore resolve(String alId) {
+        return resolveForPublication(alId).store();
+    }
+
+    ResolvedStore resolveForPublication(String alId) {
         var config = configRepository.findByAssemblyLineId(alId)
                 .orElseThrow(() -> new NoSuchElementException("Config not found for alId=" + alId));
         StoreFingerprint fingerprint = StoreFingerprint.from(config);
         StoreCacheEntry cached = storeCacheByAl.get(alId);
+        ArtifactStore store;
         if (cached != null && cached.fingerprint().equals(fingerprint)) {
-            return cached.store();
+            store = cached.store();
+        } else {
+            store = storeProvider.forConfig(config);
+            storeCacheByAl.put(alId, new StoreCacheEntry(fingerprint, store));
         }
-
-        ArtifactStore store = storeProvider.forConfig(config);
-        storeCacheByAl.put(alId, new StoreCacheEntry(fingerprint, store));
-        return store;
+        return new ResolvedStore(store, ArtifactStoreConfigurationFingerprint.from(config));
     }
 
     void invalidate(String alId) {
         storeCacheByAl.remove(alId);
     }
+
+    record ResolvedStore(ArtifactStore store, String configurationFingerprint) {}
 
     private record StoreCacheEntry(StoreFingerprint fingerprint, ArtifactStore store) {}
 

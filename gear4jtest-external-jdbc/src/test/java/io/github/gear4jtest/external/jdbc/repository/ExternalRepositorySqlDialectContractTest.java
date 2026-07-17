@@ -53,6 +53,10 @@ class ExternalRepositorySqlDialectContractTest {
                     .contains("operation_chain_config")
                     .contains("operation_chain_object")
                     .contains("publication_mode")
+                    .contains("operation_chain_publication_stage")
+                    .contains("operation_chain_publication_stage_tag")
+                    .contains("stage_revision")
+                    .contains("store_fingerprint")
                     .contains("operation_chain_tag")
                     .contains("artifact_store");
             if (dialect == Gear4jDatabaseDialect.ORACLE) {

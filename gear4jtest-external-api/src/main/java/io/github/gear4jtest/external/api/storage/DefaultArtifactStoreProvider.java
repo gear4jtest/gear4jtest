@@ -87,8 +87,18 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         }
     }
 
-    private static boolean isTrue(String v) {
-        return v != null && (v.equalsIgnoreCase("true") || v.equalsIgnoreCase("yes") || v.equals("1"));
+    private static boolean parseBoolean(String value, boolean defaultValue, String propertyName) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        if ("true".equalsIgnoreCase(value.trim())) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(value.trim())) {
+            return false;
+        }
+        throw new IllegalArgumentException("Invalid artifact store property '" + propertyName
+                + "': " + value + ". Expected true or false.");
     }
 
     private static long parseLong(String value, long defaultValue, String propertyName) {
@@ -108,9 +118,15 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
 
     private static int parseFallbackIndex(String index) {
         try {
-            return Integer.parseInt(index);
+            int parsed = Integer.parseInt(index);
+            if (parsed <= 0) {
+                throw new IllegalArgumentException("Invalid artifact fallback index '" + index
+                        + "'. Expected a positive integer.");
+            }
+            return parsed;
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid artifact fallback index '" + index + "'. Expected integer.", e);
+            throw new IllegalArgumentException("Invalid artifact fallback index '" + index
+                    + "'. Expected a positive integer.", e);
         }
     }
 
@@ -121,8 +137,8 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
 
         CompositeArtifactStore.WriteMode writeMode = parseWriteMode(props.get("mode.write"));
         CompositeArtifactStore.ReadMode readMode = parseReadMode(props.get("mode.read"));
-        boolean verifyOnRead = isTrue(props.get("verifyOnRead"));
-        boolean selfHealing = isTrue(props.get("selfHealing"));
+        boolean verifyOnRead = parseBoolean(props.get("verifyOnRead"), false, "verifyOnRead");
+        boolean selfHealing = parseBoolean(props.get("selfHealing"), false, "selfHealing");
         long verificationMaxArtifactSizeBytes = parseLong(props.get("verificationMaxArtifactSizeBytes"),
                                                           ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES,
                                                           "verificationMaxArtifactSizeBytes");
@@ -147,6 +163,14 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         List<ArtifactStore> fallbacks = buildFallbacks(props);
 
         if (fallbacks.isEmpty()) {
+            if (writeMode != CompositeArtifactStore.WriteMode.PRIMARY_ONLY) {
+                throw new IllegalArgumentException("Artifact store property 'mode.write' requires at least one "
+                        + "complete fallback store");
+            }
+            if (selfHealing) {
+                throw new IllegalArgumentException("Artifact store property 'selfHealing=true' requires at least "
+                        + "one complete fallback store");
+            }
             return primary;
         }
 
@@ -172,14 +196,25 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         Map<String, Map<String, String>> groups = new HashMap<>();
         for (var e : props.entrySet()) {
             String k = e.getKey();
-            if (!k.startsWith("fallback."))
+            if (!k.startsWith("fallback.")) {
                 continue;
+            }
             String rest = k.substring("fallback.".length());
             int dot = rest.indexOf('.');
-            if (dot < 0)
-                continue;
+            if (dot < 1 || dot == rest.length() - 1) {
+                throw new IllegalArgumentException("Invalid artifact fallback property '" + k
+                        + "'. Expected fallback.N.type or fallback.N.props.name.");
+            }
             String idx = rest.substring(0, dot);
             String tail = rest.substring(dot + 1);
+            if (!"type".equals(tail) && !tail.startsWith("props.")) {
+                throw new IllegalArgumentException("Invalid artifact fallback property '" + k
+                        + "'. Expected fallback.N.type or fallback.N.props.name.");
+            }
+            if (tail.startsWith("props.") && tail.length() == "props.".length()) {
+                throw new IllegalArgumentException("Invalid artifact fallback property '" + k
+                        + "'. Child property name must not be blank.");
+            }
             groups.computeIfAbsent(idx, __ -> new HashMap<>()).put(tail, e.getValue());
         }
 
@@ -187,13 +222,20 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
                 .map(entry -> new FallbackGroup(parseFallbackIndex(entry.getKey()), entry.getValue()))
                 .sorted(Comparator.comparingInt(FallbackGroup::order))
                 .toList();
+        for (int index = 1; index < ordered.size(); index++) {
+            if (ordered.get(index - 1).order() == ordered.get(index).order()) {
+                throw new IllegalArgumentException("Duplicate artifact fallback index " + ordered.get(index).order());
+            }
+        }
 
         List<ArtifactStore> out = new ArrayList<>();
         for (FallbackGroup fallback : ordered) {
             Map<String, String> g = fallback.properties();
             String type = opt(g, "type");
-            if (type == null || type.isBlank())
-                continue;
+            if (type == null || type.isBlank()) {
+                throw new IllegalArgumentException("Artifact fallback " + fallback.order()
+                        + " must define fallback." + fallback.order() + ".type");
+            }
 
             // Convert props.* entries into the child store property map.
             Map<String, String> childProps = g.entrySet().stream()

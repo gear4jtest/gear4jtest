@@ -35,6 +35,35 @@ CREATE TABLE operation_chain_object
     KEY          idx_op_chain_latest_run (al_id, published_at)
 );
 
+
+CREATE TABLE operation_chain_publication_stage
+(
+    stage_id         VARCHAR(36) PRIMARY KEY,
+    al_id            VARCHAR(200) NOT NULL,
+    version          VARCHAR(100) NOT NULL,
+    publication_mode ENUM('TEST','RUN') NOT NULL,
+    content_hash     CHAR(64) NOT NULL,
+    size_bytes       BIGINT NOT NULL,
+    mime_type        VARCHAR(100) NOT NULL,
+    created_at       TIMESTAMP NOT NULL,
+    created_by       VARCHAR(200) NULL,
+    published_at     TIMESTAMP NOT NULL,
+    store_fingerprint CHAR(64) NOT NULL,
+    staged_at        TIMESTAMP NOT NULL,
+    stage_revision   BIGINT NOT NULL DEFAULT 1,
+    UNIQUE KEY uq_op_chain_stage (al_id, version, publication_mode),
+    KEY idx_op_chain_stage_age (staged_at, stage_id)
+);
+
+CREATE TABLE operation_chain_publication_stage_tag
+(
+    stage_id VARCHAR(36) NOT NULL,
+    tag      VARCHAR(100) NOT NULL,
+    PRIMARY KEY (stage_id, tag),
+    CONSTRAINT fk_op_chain_stage_tag FOREIGN KEY (stage_id)
+        REFERENCES operation_chain_publication_stage (stage_id) ON DELETE CASCADE
+);
+
 CREATE TABLE operation_chain_tag
 (
     al_id VARCHAR(200) NOT NULL,

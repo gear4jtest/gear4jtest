@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Objects;
 
 import io.github.gear4jtest.external.api.artifact.Artifact;
+import io.github.gear4jtest.external.api.artifact.ArtifactHashes;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompiler;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
@@ -15,36 +17,42 @@ import io.github.gear4jtest.external.api.translator.OperationChainTranslatorReso
 import static java.util.Objects.requireNonNull;
 
 final class AssemblyLinePublicationValidator {
-    private final AssemblyLineStoreResolver storeResolver;
     private final OperationChainTranslatorResolver translatorResolver;
     private final GeneratedSourceCompiler compiler;
     private final long maxArtifactSizeBytes;
 
-    AssemblyLinePublicationValidator(AssemblyLineStoreResolver storeResolver,
-                                     OperationChainTranslatorResolver translatorResolver,
+    AssemblyLinePublicationValidator(OperationChainTranslatorResolver translatorResolver,
                                      GeneratedSourceCompiler compiler,
                                      long maxArtifactSizeBytes) {
-        this.storeResolver = requireNonNull(storeResolver);
         this.translatorResolver = requireNonNull(translatorResolver);
         this.compiler = requireNonNull(compiler);
         this.maxArtifactSizeBytes = AssemblyLineIdentifiers.requireValidArtifactSize(maxArtifactSizeBytes);
     }
 
-    void validatePublicationCandidate(String alId, OperationChainObject object)
+    void validatePublicationCandidate(String alId, OperationChainObject object, byte[] content)
             throws AssemblyLineManager.PolicyViolationException {
-        validateCandidate(alId, object, object.mode() + " publication candidate");
+        Objects.requireNonNull(content, "content must not be null");
+        if (!ArtifactHashes.sha256Hex(content).equals(object.contentHash())) {
+            throw new AssemblyLineManager.PolicyViolationException(
+                    "Publication candidate content does not match contentHash=" + object.contentHash());
+        }
+        validateBytes(alId, object, content, object.mode() + " publication candidate");
     }
 
-    void validateRunCandidate(String alId, OperationChainObject object)
+    void validateRunCandidate(String alId, OperationChainObject object, ArtifactStore store)
             throws AssemblyLineManager.PolicyViolationException {
-        validateCandidate(alId, object, "RUN candidate");
+        validateBytes(alId, object, readArtifact(alId, object, store), "RUN candidate");
     }
 
-    private void validateCandidate(String alId, OperationChainObject object, String candidateLabel)
+    private void validateBytes(String alId,
+                               OperationChainObject object,
+                               byte[] bytes,
+                               String candidateLabel)
             throws AssemblyLineManager.PolicyViolationException {
         String mediaType = AssemblyLineIdentifiers.normalizeMediaType(object.mimeType());
         try {
-            byte[] bytes = readArtifact(alId, object);
+            AssemblyLineIdentifiers.requireAllowedArtifactSize(bytes.length, maxArtifactSizeBytes,
+                                                               "Assembly line artifact");
             OperationChainTranslator.GenerationResult translated = translate(bytes, mediaType);
             Map<String, byte[]> compiled = compiler.compile(translated.className(),
                                                             translated.formattedSource()
@@ -67,14 +75,20 @@ final class AssemblyLinePublicationValidator {
         return translator.translate(bytes, mediaType);
     }
 
-    private byte[] readArtifact(String alId, OperationChainObject object) throws IOException {
-        ArtifactStore store = storeResolver.resolve(alId);
-        Artifact artifact = store.get(object.contentHash())
-                .orElseThrow(() -> new IOException("Artifact not found for hash=" + object.contentHash()));
-        AssemblyLineIdentifiers.requireAllowedArtifactSize(artifact.size(), maxArtifactSizeBytes,
-                                                           "Assembly line artifact " + object.contentHash());
-        try (InputStream in = artifact.openStreamChecked()) {
-            return ArtifactStore.readAllBytes(in, maxArtifactSizeBytes);
+    private byte[] readArtifact(String alId, OperationChainObject object, ArtifactStore store)
+            throws AssemblyLineManager.PolicyViolationException {
+        try {
+            Artifact artifact = requireNonNull(store, "store must not be null").get(object.contentHash())
+                    .orElseThrow(() -> new IOException("Artifact not found for hash=" + object.contentHash()));
+            AssemblyLineIdentifiers.requireAllowedArtifactSize(artifact.size(), maxArtifactSizeBytes,
+                                                               "Assembly line artifact " + object.contentHash());
+            try (InputStream in = artifact.openStreamChecked()) {
+                return ArtifactStore.readAllBytes(in, maxArtifactSizeBytes);
+            }
+        } catch (Exception exception) {
+            throw new AssemblyLineManager.PolicyViolationException(
+                    "RUN candidate artifact could not be read for alId=" + alId + ", version=" + object.version(),
+                    exception);
         }
     }
 }

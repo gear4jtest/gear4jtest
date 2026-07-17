@@ -38,8 +38,9 @@ class RepositoryDefaultPaginationTest {
     }
 
     private static OperationChainObject object(Long id) {
+        String contentHash = Long.toHexString(id).repeat(64).substring(0, 64);
         return new OperationChainObject(id, "pipeline", "v" + id, ExecutionMode.TEST,
-                "hash" + id, 10L, "application/xml", Instant.EPOCH, "test", null);
+                contentHash, 10L, "application/xml", Instant.EPOCH, "test", Instant.EPOCH);
     }
 
     private record InMemoryObjectRepository(List<OperationChainObject> objects)
