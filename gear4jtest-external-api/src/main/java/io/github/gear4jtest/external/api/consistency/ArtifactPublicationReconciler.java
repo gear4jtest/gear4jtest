@@ -5,11 +5,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
+import io.github.gear4jtest.external.api.repository.OperationChainNotFoundException;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationStage;
 import io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFingerprint;
@@ -74,7 +74,7 @@ public final class ArtifactPublicationReconciler {
         for (OperationChainPublicationStage stage : stages) {
             try {
                 var config = configRepository.findByAssemblyLineId(stage.object().alId())
-                        .orElseThrow(() -> new NoSuchElementException(
+                        .orElseThrow(() -> new OperationChainNotFoundException(
                                 "Config not found for alId=" + stage.object().alId()));
                 String currentFingerprint = ArtifactStoreConfigurationFingerprint.from(config);
                 if (!Objects.equals(currentFingerprint, stage.storeFingerprint())) {

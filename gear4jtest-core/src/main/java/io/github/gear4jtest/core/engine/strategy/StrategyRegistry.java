@@ -6,11 +6,11 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyPolicy;
+import io.github.gear4jtest.core.api.config.WorkerLockAcquisitionPolicy;
 import io.github.gear4jtest.core.api.station.AbstractStation;
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfiguration;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyManager;
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyPolicy;
-import io.github.gear4jtest.core.engine.support.WorkerLockAcquisitionPolicy;
 
 public class StrategyRegistry {
     private final Map<Class<? extends AbstractStation<?, ?>>, StationExecutionStrategy<?>> cache = new ConcurrentHashMap<>();

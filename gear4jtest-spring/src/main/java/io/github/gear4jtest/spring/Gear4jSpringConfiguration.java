@@ -3,6 +3,10 @@ package io.github.gear4jtest.spring;
 import java.util.Comparator;
 import java.util.List;
 
+import io.github.gear4jtest.core.api.AssemblyLineExecutor;
+import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyConfiguration;
+import io.github.gear4jtest.core.api.context.ContextPropagationPolicy;
 import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
@@ -29,17 +33,18 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 public class Gear4jSpringConfiguration {
     @Bean
-    public ResourceFactory gear4jResourceFactory(ApplicationContext applicationContext) {
+    ResourceFactory gear4jResourceFactory(ApplicationContext applicationContext) {
         return new SpringResourceFactory(applicationContext);
     }
 
     @Bean
-    public ExecutionContextRegistry gear4jExecutionContextRegistry() {
+    ExecutionContextRegistry gear4jExecutionContextRegistry() {
         return new ExecutionContextRegistry();
     }
 
     @Bean
-    public RuntimeExtensionResolver gear4jRuntimeExtensionResolver(ObjectProvider<RuntimeExtension> runtimeExtensionsProvider) {
+    RuntimeExtensionResolver gear4jRuntimeExtensionResolver(
+                                                            ObjectProvider<RuntimeExtension> runtimeExtensionsProvider) {
 
         List<RuntimeExtension> runtimeExtensions = runtimeExtensionsProvider.orderedStream()
                 .sorted(Comparator
@@ -51,19 +56,20 @@ public class Gear4jSpringConfiguration {
     }
 
     @Bean
-    public AssemblyLineRegistry gear4jAssemblyLineRegistry(ListableBeanFactory beanFactory) {
+    AssemblyLineRegistry gear4jAssemblyLineRegistry(ListableBeanFactory beanFactory) {
         return new SpringAssemblyLineRegistry(beanFactory);
     }
 
     @Bean
-    public AssemblyLineEngine gear4jAssemblyLineEngine(ResourceFactory resourceFactory,
-                                                       ObjectProvider<RunnerChainFactory> runnerChainFactoryProvider,
-                                                       RuntimeExtensionResolver extensionResolver,
-                                                       ExecutionContextRegistry executionContextRegistry,
-                                                       ObjectProvider<IdGenerator> idGeneratorProvider,
-                                                       ObjectProvider<TaskFactory> taskFactoryProvider,
-                                                       ObjectProvider<PayloadCloner> payloadClonerProvider,
-                                                       ObjectProvider<Gear4jAssemblyLineEngineBuilderCustomizer> customizersProvider) {
+    AssemblyLineExecutor gear4jAssemblyLineExecutor(
+                                                    ResourceFactory resourceFactory,
+                                                    ObjectProvider<RunnerChainFactory> runnerChainFactoryProvider,
+                                                    RuntimeExtensionResolver extensionResolver,
+                                                    ExecutionContextRegistry executionContextRegistry,
+                                                    ObjectProvider<IdGenerator> idGeneratorProvider,
+                                                    ObjectProvider<TaskFactory> taskFactoryProvider,
+                                                    ObjectProvider<PayloadCloner> payloadClonerProvider,
+                                                    ObjectProvider<Gear4jAssemblyLineExecutorCustomizer> customizersProvider) {
 
         AssemblyLineEngine.Builder builder = AssemblyLineEngine.builder().resourceFactory(resourceFactory)
                 .extensionResolver(extensionResolver).executionContextRegistry(executionContextRegistry);
@@ -88,10 +94,61 @@ public class Gear4jSpringConfiguration {
             builder.payloadCloner(payloadCloner);
         }
 
-        for (Gear4jAssemblyLineEngineBuilderCustomizer customizer : customizersProvider.orderedStream().toList()) {
-            customizer.customize(builder);
+        MutableExecutorOptions options = new MutableExecutorOptions();
+        for (Gear4jAssemblyLineExecutorCustomizer customizer : customizersProvider.orderedStream().toList()) {
+            customizer.customize(options);
         }
+        options.applyTo(builder);
 
         return builder.build();
+    }
+
+    private static final class MutableExecutorOptions implements Gear4jAssemblyLineExecutorCustomizer.Builder {
+        private ParallelExecutionConfiguration parallelExecutionConfiguration;
+        private WorkerConcurrencyConfiguration workerConcurrencyConfiguration;
+        private ContextPropagationPolicy initialRunContextPolicy;
+        private ContextPropagationPolicy nestedRunContextPropagationPolicy;
+
+        @Override
+        public Gear4jAssemblyLineExecutorCustomizer.Builder parallelExecutionConfiguration(
+                                                                                           ParallelExecutionConfiguration configuration) {
+            this.parallelExecutionConfiguration = configuration;
+            return this;
+        }
+
+        @Override
+        public Gear4jAssemblyLineExecutorCustomizer.Builder workerConcurrencyConfiguration(
+                                                                                           WorkerConcurrencyConfiguration configuration) {
+            this.workerConcurrencyConfiguration = configuration;
+            return this;
+        }
+
+        @Override
+        public Gear4jAssemblyLineExecutorCustomizer.Builder initialRunContextPolicy(ContextPropagationPolicy policy) {
+            this.initialRunContextPolicy = policy;
+            return this;
+        }
+
+        @Override
+        public Gear4jAssemblyLineExecutorCustomizer.Builder nestedRunContextPropagationPolicy(
+                                                                                              ContextPropagationPolicy policy) {
+            this.nestedRunContextPropagationPolicy = policy;
+            return this;
+        }
+
+        private void applyTo(AssemblyLineEngine.Builder builder) {
+            if (parallelExecutionConfiguration != null) {
+                builder.parallelExecutionConfiguration(parallelExecutionConfiguration);
+            }
+            if (workerConcurrencyConfiguration != null) {
+                builder.workerConcurrencyConfiguration(workerConcurrencyConfiguration);
+            }
+            if (initialRunContextPolicy != null) {
+                builder.initialRunContextPolicy(initialRunContextPolicy);
+            }
+            if (nestedRunContextPropagationPolicy != null) {
+                builder.nestedRunContextPropagationPolicy(nestedRunContextPropagationPolicy);
+            }
+        }
     }
 }

@@ -3,13 +3,14 @@ package io.github.gear4jtest.core.execution;
 import java.util.List;
 import java.util.Objects;
 
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 import io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepository;
+import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 
-public class InMemoryExecutionManager implements AssemblyRunManager {
+public class InMemoryExecutionManager implements RunPersistenceManager {
     private final InMemoryAssemblyRunRepository repository;
     private final SensitiveDataRedactor redactor;
 
@@ -45,7 +46,7 @@ public class InMemoryExecutionManager implements AssemblyRunManager {
     }
 
     @Override
-    public void start(AssemblyRunTrace execution) {
+    public void start(RunTrace execution) {
         Objects.requireNonNull(execution, "execution must not be null");
         repository.save(AssemblyRunRecord.from(execution, redactor));
     }
@@ -62,7 +63,7 @@ public class InMemoryExecutionManager implements AssemblyRunManager {
     }
 
     @Override
-    public void end(AssemblyRunTrace finalExecution) {
+    public void end(RunTrace finalExecution) {
         Objects.requireNonNull(finalExecution, "finalExecution must not be null");
         repository.update(AssemblyRunRecord.from(finalExecution, redactor));
     }

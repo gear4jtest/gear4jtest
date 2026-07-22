@@ -179,7 +179,8 @@ public final class SyntheticStationLifecycleRecorder {
         try {
             extension.onStationSkipped(runCtx, stationCtx, snapshot, reason);
         } catch (Exception exception) {
-            handleLifecycleFailure(extension, stationCtx.getRecord(), snapshot.operationId(), "onStationSkipped",
+            handleLifecycleFailure(extension, EngineStationContexts.trace(stationCtx), snapshot.operationId(),
+                                   "onStationSkipped",
                                    exception);
         }
     }
@@ -193,7 +194,8 @@ public final class SyntheticStationLifecycleRecorder {
         try {
             extension.onStationCancelled(runCtx, stationCtx, snapshot, reason, error);
         } catch (Exception exception) {
-            handleLifecycleFailure(extension, stationCtx.getRecord(), snapshot.operationId(), "onStationCancelled",
+            handleLifecycleFailure(extension, EngineStationContexts.trace(stationCtx), snapshot.operationId(),
+                                   "onStationCancelled",
                                    exception);
         }
     }
@@ -208,7 +210,8 @@ public final class SyntheticStationLifecycleRecorder {
         try {
             extension.onStationInterrupted(runCtx, stationCtx, snapshot, reason, interruptingOperationId, error);
         } catch (Exception exception) {
-            handleLifecycleFailure(extension, stationCtx.getRecord(), snapshot.operationId(), "onStationInterrupted",
+            handleLifecycleFailure(extension, EngineStationContexts.trace(stationCtx), snapshot.operationId(),
+                                   "onStationInterrupted",
                                    exception);
         }
     }
@@ -221,7 +224,7 @@ public final class SyntheticStationLifecycleRecorder {
         try {
             extension.onStationFailedBeforeStart(runCtx, stationCtx, snapshot, error);
         } catch (Exception exception) {
-            handleLifecycleFailure(extension, stationCtx.getRecord(), snapshot.operationId(),
+            handleLifecycleFailure(extension, EngineStationContexts.trace(stationCtx), snapshot.operationId(),
                                    "onStationFailedBeforeStart", exception);
         }
     }

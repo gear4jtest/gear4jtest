@@ -15,6 +15,7 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.StationKind;
 import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
@@ -48,7 +49,7 @@ class StationErrorPolicyExecutorTest {
         RuntimeException failure = new RuntimeException("late");
         TestStation station = new TestStation(List.of(ignore(RuntimeException.class)), null, false);
         StationExecutionContext context = stationContext("station");
-        context.getRecord().markSuccess("already-done");
+        EngineStationContexts.trace(context).markSuccess("already-done");
 
         // When
         StationLogTrace stationLog = executor.apply(station, "input", context, failure);

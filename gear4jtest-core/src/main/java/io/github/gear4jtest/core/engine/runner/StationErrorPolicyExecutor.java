@@ -8,6 +8,7 @@ import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 
@@ -27,7 +28,7 @@ public class StationErrorPolicyExecutor {
                                  StationExecutionContext stationCtx,
                                  Exception exception) {
 
-        StationLogTrace stationLog = stationCtx.getRecord();
+        StationLogTrace stationLog = EngineStationContexts.trace(stationCtx);
 
         if (stationLog.getStatus() != StationLogStatus.RUNNING) {
             stationLog.addErrorHandlerException(exception);

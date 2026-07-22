@@ -6,6 +6,7 @@ import java.util.concurrent.Executors;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
+import io.github.gear4jtest.core.api.AssemblyLineExecutor;
 import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
@@ -14,7 +15,6 @@ import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.api.util.AssemblyLines;
 import io.github.gear4jtest.core.api.util.Stations;
-import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.security.RedactionTarget;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
@@ -42,7 +42,7 @@ class Gear4jAutoConfigurationTest {
         contextRunner.run(context -> {
             assertThat(context).hasSingleBean(Gear4jProperties.class);
             assertThat(context).hasSingleBean(ExecutionContextRegistry.class);
-            assertThat(context).hasSingleBean(AssemblyLineEngine.class);
+            assertThat(context).hasSingleBean(AssemblyLineExecutor.class);
             assertThat(context).doesNotHaveBean(DatabaseExecutionManager.class);
         });
     }
@@ -60,7 +60,7 @@ class Gear4jAutoConfigurationTest {
                             .then(AssemblyLineCallStation.nestedRun("call-child", child))
                             .build();
 
-                    ExecutionResult<String> result = context.getBean(AssemblyLineEngine.class)
+                    ExecutionResult<String> result = context.getBean(AssemblyLineExecutor.class)
                             .execute(parent, RunRequest.builder().input("hello").build());
 
                     assertThat(result.isSuccess()).isTrue();
@@ -90,7 +90,7 @@ class Gear4jAutoConfigurationTest {
                                 .build();
 
                         // When
-                        ExecutionResult<String> result = context.getBean(AssemblyLineEngine.class)
+                        ExecutionResult<String> result = context.getBean(AssemblyLineExecutor.class)
                                 .execute(pipeline, RunRequest.builder().input("hello").build());
 
                         // Then

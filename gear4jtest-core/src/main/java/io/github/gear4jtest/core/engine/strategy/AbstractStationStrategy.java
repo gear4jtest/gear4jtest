@@ -33,17 +33,17 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
         Exception mainException = null;
         try {
             if (context.getGlobalContext().getCancellationToken().isCancellationRequested()) {
-                context.getRecord().markCancelled(context.getGlobalContext().getCancellationToken()
+                EngineStationContexts.trace(context).markCancelled(context.getGlobalContext().getCancellationToken()
                         .cancellationCause().orElse(null));
-                return context.getRecord();
+                return EngineStationContexts.trace(context);
             }
 
             setUp(station, input, context);
 
             SkipDecision preCause = runSkippers(station, input, context, SkipPhase.PRE_PROCESSORS);
             if (preCause.shouldSkip()) {
-                result = handleSkip(station, input, context, context.getRecord(), preCause.reason());
-                return context.getRecord();
+                result = handleSkip(station, input, context, EngineStationContexts.trace(context), preCause.reason());
+                return EngineStationContexts.trace(context);
             }
 
             if (station.getProcessors() != null && !station.getProcessors().isEmpty()) {
@@ -51,7 +51,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
                     try {
                         processor.beforeExecution(input, context);
                     } catch (Exception e) {
-                        context.getRecord().addErrorHandlerException(e);
+                        EngineStationContexts.trace(context).addErrorHandlerException(e);
                         if (processor.beforeExecutionFailureMode() == Processor.FailureMode.FAIL_STATION) {
                             throw e;
                         }
@@ -63,18 +63,18 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
 
             SkipDecision postCause = runSkippers(station, input, context, SkipPhase.POST_PROCESSORS);
             if (postCause.shouldSkip()) {
-                result = handleSkip(station, input, context, context.getRecord(), postCause.reason());
-                return context.getRecord();
+                result = handleSkip(station, input, context, EngineStationContexts.trace(context), postCause.reason());
+                return EngineStationContexts.trace(context);
             }
 
             result = doExecute(station, input, runner, context);
 
-            if (context.getRecord().getStatus() == StationLogStatus.RUNNING) {
-                context.getRecord().markSuccess(result);
+            if (EngineStationContexts.trace(context).getStatus() == StationLogStatus.RUNNING) {
+                EngineStationContexts.trace(context).markSuccess(result);
             } else {
-                context.getRecord().setOutput(result);
-                if (context.getRecord().getEndedAt() == null) {
-                    context.getRecord().setEndedAt(java.time.Instant.now());
+                EngineStationContexts.trace(context).setOutput(result);
+                if (EngineStationContexts.trace(context).getEndedAt() == null) {
+                    EngineStationContexts.trace(context).setEndedAt(java.time.Instant.now());
                 }
             }
 
@@ -83,7 +83,7 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
                     try {
                         processor.afterExecution(result, context);
                     } catch (Exception e) {
-                        context.getRecord().addErrorHandlerException(e);
+                        EngineStationContexts.trace(context).addErrorHandlerException(e);
                         if (processor.afterExecutionFailureMode() == Processor.FailureMode.FAIL_STATION) {
                             throw e;
                         }
@@ -93,16 +93,17 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
 
             afterProcessors(station, result, context);
 
-            return context.getRecord();
+            return EngineStationContexts.trace(context);
         } catch (Exception e) {
             mainException = e;
             throw StationExecutionException.wrap(e);
         } finally {
             try {
-                List<Throwable> errorsForRelease = buildErrorListForRelease(context.getRecord(), mainException);
+                List<Throwable> errorsForRelease = buildErrorListForRelease(EngineStationContexts.trace(context),
+                                                                            mainException);
                 release(station, result, context, errorsForRelease);
             } catch (Exception releaseException) {
-                context.getRecord().addErrorHandlerException(releaseException);
+                EngineStationContexts.trace(context).addErrorHandlerException(releaseException);
             }
         }
     }

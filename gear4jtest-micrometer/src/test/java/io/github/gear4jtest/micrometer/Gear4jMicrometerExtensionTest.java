@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
@@ -80,12 +81,12 @@ class Gear4jMicrometerExtensionTest {
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         Gear4jMeterTagPolicy tagPolicy = new Gear4jMeterTagPolicy() {
             @Override
-            public String[] runStartedTags(AssemblyRunTrace run) {
+            public String[] runStartedTags(RunTrace run) {
                 return new String[] { "scope", "low-cardinality" };
             }
 
             @Override
-            public String[] runCompletedTags(AssemblyRunTrace run) {
+            public String[] runCompletedTags(RunTrace run) {
                 return new String[] { "scope", "low-cardinality", "status",
                         Gear4jMeterTagPolicy.safe(run.getStatus()) };
             }

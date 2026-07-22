@@ -1,7 +1,9 @@
 package io.github.gear4jtest.core.engine.context;
 
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.api.trace.StationTrace;
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
+import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 
 public final class EngineStationContexts {
     private EngineStationContexts() {
@@ -13,6 +15,18 @@ public final class EngineStationContexts {
 
     public static <T> void addCapability(StationExecutionContext context, Class<T> type, T instance) {
         engineContext(context).addCapability(type, instance);
+    }
+
+    public static StationLogTrace trace(StationExecutionContext context) {
+        return engineContext(context).getRecord();
+    }
+
+    public static StationLogTrace mutableTrace(StationTrace trace) {
+        if (trace instanceof StationLogTrace mutableTrace) {
+            return mutableTrace;
+        }
+        throw new IllegalStateException("StationRunner returned a trace not owned by the engine runtime: "
+                + (trace == null ? "null" : trace.getClass().getName()));
     }
 
     private static EngineStationExecutionContext engineContext(StationExecutionContext context) {

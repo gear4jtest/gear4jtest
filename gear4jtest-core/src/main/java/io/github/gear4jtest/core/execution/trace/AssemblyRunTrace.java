@@ -3,9 +3,10 @@ package io.github.gear4jtest.core.execution.trace;
 import java.util.Map;
 import java.util.UUID;
 
+import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.internal.AbstractAssemblyRunState;
 
-public class AssemblyRunTrace extends AbstractAssemblyRunState {
+public class AssemblyRunTrace extends AbstractAssemblyRunState implements RunTrace {
     public AssemblyRunTrace() {
         super();
     }

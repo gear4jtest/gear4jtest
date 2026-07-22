@@ -2,7 +2,7 @@ package io.github.gear4jtest.core.api;
 
 import java.util.Objects;
 
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.api.trace.RunTrace;
 
 /**
  * Public result returned after a pipeline execution reaches a terminal state.
@@ -16,10 +16,10 @@ import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 public class ExecutionResult<T> {
     private final T result;
     private final ExecutionOutcome outcome;
-    private final AssemblyRunTrace execution;
+    private final RunTrace execution;
     private final Exception error;
 
-    public ExecutionResult(T result, ExecutionOutcome outcome, AssemblyRunTrace execution, Exception error) {
+    public ExecutionResult(T result, ExecutionOutcome outcome, RunTrace execution, Exception error) {
         this.result = result;
         this.outcome = Objects.requireNonNull(outcome, "outcome must not be null");
         this.execution = execution;
@@ -27,27 +27,27 @@ public class ExecutionResult<T> {
     }
 
     /** Creates a normally completed execution result. */
-    public static <OUT> ExecutionResult<OUT> success(OUT result, AssemblyRunTrace exec) {
+    public static <OUT> ExecutionResult<OUT> success(OUT result, RunTrace exec) {
         return new ExecutionResult<>(result, ExecutionOutcome.SUCCEEDED, exec, null);
     }
 
     /** Creates a functionally skipped execution result. */
-    public static <OUT> ExecutionResult<OUT> skipped(OUT result, AssemblyRunTrace exec) {
+    public static <OUT> ExecutionResult<OUT> skipped(OUT result, RunTrace exec) {
         return new ExecutionResult<>(result, ExecutionOutcome.SKIPPED, exec, null);
     }
 
     /** Creates a functionally stopped execution result. */
-    public static <OUT> ExecutionResult<OUT> stopped(OUT result, AssemblyRunTrace exec) {
+    public static <OUT> ExecutionResult<OUT> stopped(OUT result, RunTrace exec) {
         return new ExecutionResult<>(result, ExecutionOutcome.STOPPED, exec, null);
     }
 
     /** Creates a technically cancelled execution result. */
-    public static <OUT> ExecutionResult<OUT> cancelled(OUT result, AssemblyRunTrace exec, Exception error) {
+    public static <OUT> ExecutionResult<OUT> cancelled(OUT result, RunTrace exec, Exception error) {
         return new ExecutionResult<>(result, ExecutionOutcome.CANCELLED, exec, error);
     }
 
     /** Creates a failed execution result from a normalized exception. */
-    public static <OUT> ExecutionResult<OUT> failure(Exception error, AssemblyRunTrace exec) {
+    public static <OUT> ExecutionResult<OUT> failure(Exception error, RunTrace exec) {
         return new ExecutionResult<>(null, ExecutionOutcome.FAILED, exec, error);
     }
 
@@ -80,7 +80,7 @@ public class ExecutionResult<T> {
         return outcome;
     }
 
-    public AssemblyRunTrace getExecution() {
+    public RunTrace getExecution() {
         return execution;
     }
 

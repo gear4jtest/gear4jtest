@@ -202,7 +202,11 @@ public abstract class AbstractStationLogState<T extends AbstractStationLogState<
     }
 
     public Map<String, Object> getContext() {
-        return context;
+        return context == null ? null : Collections.unmodifiableMap(context);
+    }
+
+    public Map<String, Object> mutableContext() {
+        return ensureContext();
     }
 
     public void setContext(Map<String, Object> context) {

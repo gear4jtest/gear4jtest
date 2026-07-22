@@ -2,7 +2,7 @@ package io.github.gear4jtest.core.spi.extension;
 
 import io.github.gear4jtest.core.api.annotation.Spi;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.api.trace.RunTrace;
 
 /**
  * Passive lifecycle hooks around an assembly line run.
@@ -12,14 +12,13 @@ import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
  * </p>
  *
  * <ul>
- * <li>{@link #onRunStarted(ExecutionContext, AssemblyRunTrace)} is called after
- * the run trace has been marked {@code RUNNING} and after its {@code startTime}
- * has been assigned.</li>
- * <li>{@link #onRunCompleted(ExecutionContext, AssemblyRunTrace)} is called
- * after the engine has fully finalized the run (status, result, error, final
- * context, end time). A critical completion failure is normalized back into a
- * failed {@code ExecutionResult} instead of escaping as a raw hook
- * exception.</li>
+ * <li>{@link #onRunStarted(ExecutionContext, RunTrace)} is called after the run
+ * trace has been marked {@code RUNNING} and after its {@code startTime} has
+ * been assigned.</li>
+ * <li>{@link #onRunCompleted(ExecutionContext, RunTrace)} is called after the
+ * engine has fully finalized the run (status, result, error, final context, end
+ * time). A critical completion failure is normalized back into a failed
+ * {@code ExecutionResult} instead of escaping as a raw hook exception.</li>
  * </ul>
  *
  * <p>
@@ -33,11 +32,11 @@ public interface RunLifecycleExtension extends RuntimeExtension {
         return LifecycleFailureMode.BEST_EFFORT;
     }
 
-    default void onRunStarted(ExecutionContext ctx, AssemblyRunTrace run) {
+    default void onRunStarted(ExecutionContext ctx, RunTrace run) {
         // no-op
     }
 
-    default void onRunCompleted(ExecutionContext ctx, AssemblyRunTrace run) {
+    default void onRunCompleted(ExecutionContext ctx, RunTrace run) {
         // no-op
     }
 }

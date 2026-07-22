@@ -9,13 +9,13 @@ import io.github.gear4jtest.core.api.assemblyline.AssemblyLineExecutionMode;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyPolicy;
+import io.github.gear4jtest.core.api.config.WorkerLockAcquisitionPolicy;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.SignalStation;
 import io.github.gear4jtest.core.api.station.WorkStation;
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyPolicy;
-import io.github.gear4jtest.core.engine.support.WorkerLockAcquisitionPolicy;
-import io.github.gear4jtest.core.execution.AssemblyRunManager;
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.api.trace.RunTrace;
+import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -130,14 +130,14 @@ class BuilderFacadesTest {
                 .isEqualTo(WorkerLockAcquisitionPolicy.FAIL_FAST);
     }
 
-    private static final class NoOpRunManager implements AssemblyRunManager {
+    private static final class NoOpRunManager implements RunPersistenceManager {
         @Override
-        public void start(AssemblyRunTrace execution) {
+        public void start(RunTrace execution) {
             // no-op
         }
 
         @Override
-        public void end(AssemblyRunTrace finalExecution) {
+        public void end(RunTrace finalExecution) {
             // no-op
         }
     }

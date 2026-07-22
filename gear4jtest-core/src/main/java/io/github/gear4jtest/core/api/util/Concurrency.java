@@ -3,9 +3,9 @@ package io.github.gear4jtest.core.api.util;
 import java.time.Duration;
 
 import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfiguration;
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyPolicy;
-import io.github.gear4jtest.core.engine.support.WorkerLockAcquisitionPolicy;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyPolicy;
+import io.github.gear4jtest.core.api.config.WorkerLockAcquisitionPolicy;
 
 /**
  * Shortcuts for engine-level concurrency configuration.

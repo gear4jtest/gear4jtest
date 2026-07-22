@@ -34,7 +34,7 @@ There is no durable hand-off, replay log or persistent acknowledgement.
 ## Shutdown behavior
 
 `RuntimeConfiguration` defaults to `ShutdownMode.WAIT_FOR_DRAIN`. With this mode, once the pipeline itself has completed,
-`AssemblyLineEngine.execute(...)` waits for already accepted event reactions to drain until the configured shutdown
+`AssemblyLineExecutor.execute(...)` waits for already accepted event reactions to drain until the configured shutdown
 timeout expires. This preserves a simple "result returned after reactions drained or timed out" contract, but it means an
 otherwise asynchronous event subscription can still make the caller wait at the end of the run.
 

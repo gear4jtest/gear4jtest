@@ -8,6 +8,7 @@ import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
@@ -27,7 +28,10 @@ final class AssemblyLineExecutionResultMapper {
                                                              StationRunner rootRunner,
                                                              StationExecutionContext rootContext,
                                                              AssemblyRunTrace execution) {
-        StationLogTrace rootLog = rootRunner.run(request.getInput(), pipeline.getRootStation(), rootContext);
+        StationLogTrace rootLog = EngineStationContexts.mutableTrace(
+                                                                     rootRunner.run(request.getInput(),
+                                                                                    pipeline.getRootStation(),
+                                                                                    rootContext));
         Object result = rootLog.getOutput();
 
         ExecutionStatus rootStatus = rootLog.getStatus().toExecutionStatus();

@@ -126,7 +126,7 @@ class AssemblyLineManagerTest {
         assertThatThrownBy(() -> manager.registerAssemblyLine("line", "1.0.0", ExecutionMode.TEST,
                                                               "<pipeline/>".getBytes(StandardCharsets.UTF_8),
                                                               "application/xml", List.of(), "tester"))
-                .isInstanceOf(AssemblyLineManager.PolicyViolationException.class)
+                .isInstanceOf(io.github.gear4jtest.external.api.exception.PolicyViolationException.class)
                 .hasMessageContaining("different content or metadata")
                 .hasCause(conflict);
     }
@@ -148,7 +148,7 @@ class AssemblyLineManagerTest {
         // When / Then
         assertThatThrownBy(() -> manager.registerAssemblyLine("line", "1.0.0", ExecutionMode.TEST, content,
                                                               "application/xml", List.of("fast"), "tester"))
-                .isInstanceOf(AssemblyLineManager.PolicyViolationException.class)
+                .isInstanceOf(io.github.gear4jtest.external.api.exception.PolicyViolationException.class)
                 .hasMessageContaining("TEST publication candidate validation failed")
                 .hasCauseInstanceOf(IllegalStateException.class);
         assertThat(artifactStore.exists(io.github.gear4jtest.external.api.artifact.ArtifactHashes.sha256Hex(content)))
@@ -235,7 +235,7 @@ class AssemblyLineManagerTest {
         assertThatThrownBy(() -> manager.registerAssemblyLine("line", "1.0.0", ExecutionMode.TEST,
                                                               "<pipeline/>".getBytes(StandardCharsets.UTF_8),
                                                               "application/xml", List.of("xml"), "tester"))
-                .isInstanceOf(AssemblyLineManager.PolicyViolationException.class)
+                .isInstanceOf(io.github.gear4jtest.external.api.exception.PolicyViolationException.class)
                 .hasMessageContaining("publication changed")
                 .hasCause(conflict);
         verify(publicationRepository).abort("stage-1.0.0-TEST");
@@ -326,7 +326,7 @@ class AssemblyLineManagerTest {
         // When / Then
         assertThatThrownBy(() -> manager.registerAssemblyLine("line", "1.0.0", ExecutionMode.RUN, new byte[] { 1 },
                                                               "application/xml", List.of(), "tester"))
-                .isInstanceOf(AssemblyLineManager.PolicyViolationException.class)
+                .isInstanceOf(io.github.gear4jtest.external.api.exception.PolicyViolationException.class)
                 .hasMessageContaining("Direct RUN publication is disabled");
     }
 
@@ -391,7 +391,7 @@ class AssemblyLineManagerTest {
 
         // When / Then
         assertThatThrownBy(() -> manager.promoteTestToRun("line", "1.0.0", "promoter"))
-                .isInstanceOf(AssemblyLineManager.PolicyViolationException.class)
+                .isInstanceOf(io.github.gear4jtest.external.api.exception.PolicyViolationException.class)
                 .hasMessageContaining("different content_hash");
         verify(publicationRepository, never()).stage(any(), any(), any());
         verify(classLoaderRegistry, never()).clearAlias(any());
@@ -417,7 +417,7 @@ class AssemblyLineManagerTest {
 
         // When / Then
         assertThatThrownBy(() -> manager.promoteTestToRun("line", "1.0.0", "promoter"))
-                .isInstanceOf(AssemblyLineManager.PolicyViolationException.class)
+                .isInstanceOf(io.github.gear4jtest.external.api.exception.PolicyViolationException.class)
                 .hasMessageContaining("RUN candidate validation failed")
                 .hasCauseInstanceOf(IllegalStateException.class);
         verify(objectRepository, never()).insert(any());

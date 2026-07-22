@@ -12,8 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStack;
 import io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContract;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.event.EventPayloadPolicy;
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.sidecompute.SideComputeContext;
 import io.github.gear4jtest.core.spi.factory.IdGenerator;
 
@@ -25,7 +25,7 @@ public class ExecutionContext {
     private final String assemblyLineId;
     private final Map<String, Object> context = new ConcurrentHashMap<>();
     private final SideComputeContext sideComputeContext = new SideComputeContext();
-    private final AssemblyRunTrace assemblyRun;
+    private final RunTrace assemblyRun;
     private final ExecutionServices services;
     private final EventRuntimeOptions eventRuntimeOptions;
     private final AssemblyLineRuntimeContract runtimeContract;
@@ -57,7 +57,7 @@ public class ExecutionContext {
         private UUID executionId;
         private String assemblyLineId;
         private ExecutionServices services;
-        private AssemblyRunTrace assemblyRun;
+        private RunTrace assemblyRun;
         private EventRuntimeOptions eventRuntimeOptions;
         private AssemblyLineRuntimeContract runtimeContract;
         private AssemblyLineCallStack assemblyLineCallStack;
@@ -82,7 +82,7 @@ public class ExecutionContext {
             return this;
         }
 
-        public Builder assemblyRun(AssemblyRunTrace assemblyRun) {
+        public Builder assemblyRun(RunTrace assemblyRun) {
             this.assemblyRun = assemblyRun;
             return this;
         }
@@ -162,7 +162,7 @@ public class ExecutionContext {
         return sideComputeContext;
     }
 
-    public AssemblyRunTrace getAssemblyLineExecution() {
+    public RunTrace getAssemblyLineExecution() {
         return assemblyRun;
     }
 

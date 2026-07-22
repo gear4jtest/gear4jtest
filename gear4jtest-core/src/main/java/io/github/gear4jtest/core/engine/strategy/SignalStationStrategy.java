@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.engine.strategy;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.SignalStation;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class SignalStationStrategy extends AbstractStationStrategy<SignalStation<?>> {
@@ -26,8 +27,8 @@ public class SignalStationStrategy extends AbstractStationStrategy<SignalStation
 
         if (eligible) {
             switch (station.getSignalType()) {
-                case FATAL -> operationExecution.getRecord().markFailed(null);
-                case STOP -> operationExecution.getRecord().markStopped(null);
+                case FATAL -> EngineStationContexts.trace(operationExecution).markFailed(null);
+                case STOP -> EngineStationContexts.trace(operationExecution).markStopped(null);
                 case IGNORE -> throw new IllegalStateException("SignalStation cannot emit IGNORE");
             }
         }

@@ -9,13 +9,13 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.api.util.AssemblyLines;
 import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
-import io.github.gear4jtest.core.execution.AssemblyRunManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
+import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.extension.LifecycleFailureMode;
 import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
@@ -130,7 +130,7 @@ class RunLifecycleExtensionTest {
         private final AtomicReference<java.time.Instant> startTime = new AtomicReference<>();
 
         @Override
-        public void onRunStarted(ExecutionContext ctx, AssemblyRunTrace run) {
+        public void onRunStarted(ExecutionContext ctx, RunTrace run) {
             status.set(run.getStatus());
             startTime.set(run.getStartTime());
         }
@@ -144,11 +144,11 @@ class RunLifecycleExtensionTest {
         }
     }
 
-    private static final class RecordingRunManager implements AssemblyRunManager {
+    private static final class RecordingRunManager implements RunPersistenceManager {
         private final AtomicReference<ExecutionStatus> completedStatus = new AtomicReference<>();
 
         @Override
-        public void start(AssemblyRunTrace execution) {
+        public void start(RunTrace execution) {
             // no-op
         }
 
@@ -158,7 +158,7 @@ class RunLifecycleExtensionTest {
         }
 
         @Override
-        public void end(AssemblyRunTrace finalExecution) {
+        public void end(RunTrace finalExecution) {
             completedStatus.set(finalExecution.getStatus());
         }
 
@@ -180,14 +180,14 @@ class RunLifecycleExtensionTest {
         }
 
         @Override
-        public void onRunStarted(ExecutionContext ctx, AssemblyRunTrace run) {
+        public void onRunStarted(ExecutionContext ctx, RunTrace run) {
             if (failOnStart) {
                 throw new IllegalStateException("run start failed");
             }
         }
 
         @Override
-        public void onRunCompleted(ExecutionContext ctx, AssemblyRunTrace run) {
+        public void onRunCompleted(ExecutionContext ctx, RunTrace run) {
             if (!failOnStart) {
                 throw new IllegalStateException("run completion failed");
             }

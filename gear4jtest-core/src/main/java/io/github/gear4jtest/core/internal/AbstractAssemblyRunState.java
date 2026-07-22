@@ -1,6 +1,7 @@
 package io.github.gear4jtest.core.internal;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
@@ -71,6 +72,10 @@ public abstract class AbstractAssemblyRunState {
     }
 
     public Map<String, Object> getContext() {
+        return context == null ? null : Collections.unmodifiableMap(context);
+    }
+
+    public Map<String, Object> mutableContext() {
         return context;
     }
 

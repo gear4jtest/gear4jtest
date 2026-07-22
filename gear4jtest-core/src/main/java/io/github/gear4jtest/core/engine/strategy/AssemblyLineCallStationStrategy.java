@@ -13,8 +13,9 @@ import io.github.gear4jtest.core.api.assemblyline.AssemblyLineTarget;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
+import io.github.gear4jtest.core.api.trace.RunTrace;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.exception.AssemblyLineCallException;
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
@@ -39,7 +40,7 @@ public class AssemblyLineCallStationStrategy extends AbstractStationStrategy<Ass
                             StationRunner runner,
                             StationExecutionContext operationExecution) {
         AssemblyLine<?, ?> childAssemblyLine = resolveAssemblyLine(station);
-        writeTargetMetadata(station, childAssemblyLine, operationExecution.getRecord());
+        writeTargetMetadata(station, childAssemblyLine, EngineStationContexts.trace(operationExecution));
 
         if (station.getExecutionMode() == AssemblyLineExecutionMode.INLINE) {
             return executeInline(station, input, runner, operationExecution, childAssemblyLine);
@@ -58,8 +59,13 @@ public class AssemblyLineCallStationStrategy extends AbstractStationStrategy<Ass
         AssemblyLineReference childReference = targetReference(station.getTarget(), childAssemblyLine);
         try (AssemblyLineCallStack.Scope ignored = operationExecution.getGlobalContext().getAssemblyLineCallStack()
                 .enter(childReference)) {
-            StationLogTrace childRootLog = runner.run(input, childAssemblyLine.getRootStation(), operationExecution);
-            return mapInlineChildStatus(station, childAssemblyLine, childRootLog, operationExecution.getRecord());
+            StationLogTrace childRootLog = EngineStationContexts.mutableTrace(
+                                                                              runner.run(input,
+                                                                                         childAssemblyLine
+                                                                                                 .getRootStation(),
+                                                                                         operationExecution));
+            return mapInlineChildStatus(station, childAssemblyLine, childRootLog,
+                                        EngineStationContexts.trace(operationExecution));
         }
     }
 
@@ -69,12 +75,13 @@ public class AssemblyLineCallStationStrategy extends AbstractStationStrategy<Ass
                                  AssemblyLine<?, ?> childAssemblyLine) {
         ExecutionResult<?> childResult = nestedAssemblyLineExecutor.executeNested(station, childAssemblyLine, input,
                                                                                   operationExecution);
-        AssemblyRunTrace childExecution = childResult.getExecution();
+        RunTrace childExecution = childResult.getExecution();
         if (childExecution != null) {
-            operationExecution.getRecord().getContext().put(CONTEXT_PREFIX + "childExecutionId",
-                                                            childExecution.getId());
+            EngineStationContexts.trace(operationExecution).mutableContext().put(CONTEXT_PREFIX + "childExecutionId",
+                                                                                 childExecution.getId());
         }
-        return mapNestedChildStatus(station, childAssemblyLine, childResult, operationExecution.getRecord());
+        return mapNestedChildStatus(station, childAssemblyLine, childResult,
+                                    EngineStationContexts.trace(operationExecution));
     }
 
     private Object mapInlineChildStatus(AssemblyLineCallStation<?, ?> station,
@@ -117,7 +124,7 @@ public class AssemblyLineCallStationStrategy extends AbstractStationStrategy<Ass
                                         AssemblyLine<?, ?> childAssemblyLine,
                                         ExecutionResult<?> childResult,
                                         StationLogTrace callLog) {
-        AssemblyRunTrace childExecution = childResult.getExecution();
+        RunTrace childExecution = childResult.getExecution();
         ExecutionStatus childStatus = childExecution != null ? childExecution.getStatus() : null;
         Object childOutput = childResult.getResult();
 
@@ -165,7 +172,7 @@ public class AssemblyLineCallStationStrategy extends AbstractStationStrategy<Ass
     private void writeTargetMetadata(AssemblyLineCallStation<?, ?> station,
                                      AssemblyLine<?, ?> childAssemblyLine,
                                      StationLogTrace callLog) {
-        Map<String, Object> context = callLog.getContext();
+        Map<String, Object> context = callLog.mutableContext();
         context.put(CONTEXT_PREFIX + "mode", station.getExecutionMode().name());
         context.put(CONTEXT_PREFIX + "declaredReference", station.getTarget().declaredReference().displayName());
         context.put(CONTEXT_PREFIX + "resolvedReference",
@@ -188,7 +195,7 @@ public class AssemblyLineCallStationStrategy extends AbstractStationStrategy<Ass
         if (result.getError() != null) {
             return result.getError();
         }
-        AssemblyRunTrace execution = result.getExecution();
+        RunTrace execution = result.getExecution();
         String message = execution != null && execution.getErrorMessage() != null ? execution.getErrorMessage()
                 : fallbackMessage;
         return new RuntimeException(message);

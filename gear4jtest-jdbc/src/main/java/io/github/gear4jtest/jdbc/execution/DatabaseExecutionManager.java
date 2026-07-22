@@ -14,12 +14,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.sql.DataSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.gear4jtest.core.execution.AssemblyRunManager;
-import io.github.gear4jtest.core.execution.PersistenceOperationalStatus;
-import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
-import io.github.gear4jtest.core.execution.PersistenceRuntimeStats;
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
+import io.github.gear4jtest.core.persistence.PersistenceOperationalStatus;
+import io.github.gear4jtest.core.persistence.PersistenceRuntimeMonitor;
+import io.github.gear4jtest.core.persistence.PersistenceRuntimeStats;
+import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * concurrently; supplied repositories and data sources must therefore be
  * thread-safe.
  */
-public class DatabaseExecutionManager implements AssemblyRunManager, PersistenceRuntimeMonitor {
+public class DatabaseExecutionManager implements RunPersistenceManager, PersistenceRuntimeMonitor {
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseExecutionManager.class);
     private final DatabaseAssemblyRunRepository repository;
     private final PersistenceRuntimeConfiguration configuration;
@@ -180,7 +180,7 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
     }
 
     @Override
-    public void start(AssemblyRunTrace execution) {
+    public void start(RunTrace execution) {
         Objects.requireNonNull(execution, "execution must not be null");
         flushCoordinator.executeWhileOpen(execution.getId(), () -> {
             repository.save(AssemblyRunRecord.from(execution, redactor));
@@ -252,12 +252,12 @@ public class DatabaseExecutionManager implements AssemblyRunManager, Persistence
     }
 
     @Override
-    public void end(AssemblyRunTrace finalExecution) {
+    public void end(RunTrace finalExecution) {
         Objects.requireNonNull(finalExecution, "finalExecution must not be null");
         flushCoordinator.executeWhileOpen(finalExecution.getId(), () -> endWhileOpen(finalExecution));
     }
 
-    private void endWhileOpen(AssemblyRunTrace finalExecution) {
+    private void endWhileOpen(RunTrace finalExecution) {
         UUID runId = finalExecution.getId();
         OperationRecordBuffer buffer = buffers.getOrCreate(runId);
         buffer.close();

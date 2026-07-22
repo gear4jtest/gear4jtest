@@ -13,6 +13,7 @@ import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
+import io.github.gear4jtest.external.api.repository.OperationChainNotFoundException;
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
 import io.github.gear4jtest.external.api.storage.ArtifactStoreProvider;
 import org.junit.jupiter.api.Test;
@@ -89,7 +90,7 @@ class ArtifactConsistencyCheckerTest {
 
         // When / Then
         assertThatThrownBy(() -> checker.check("missing"))
-                .isInstanceOf(java.util.NoSuchElementException.class)
+                .isInstanceOf(OperationChainNotFoundException.class)
                 .hasMessageContaining("missing");
         assertThatThrownBy(() -> new ArtifactConsistencyChecker(configRepository, objectRepository, storeProvider, 0))
                 .isInstanceOf(IllegalArgumentException.class)

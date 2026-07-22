@@ -6,7 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.api.trace.StationTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.security.RedactionTarget;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
@@ -39,7 +39,7 @@ public record StationLogRecord(UUID id,
                 errorHandlerMessages, context, itemId);
     }
 
-    public static StationLogRecord from(StationLogTrace log) {
+    public static StationLogRecord from(StationTrace log) {
         if (log == null) {
             throw new IllegalArgumentException("log must not be null");
         }

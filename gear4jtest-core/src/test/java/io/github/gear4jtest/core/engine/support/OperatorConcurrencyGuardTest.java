@@ -5,6 +5,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.github.gear4jtest.core.api.config.WorkerLockAcquisitionPolicy;
 import io.github.gear4jtest.core.exception.ConcurrentTransformerUseException;
 import org.junit.jupiter.api.Test;
 

@@ -1,5 +1,6 @@
 package io.github.gear4jtest.core.engine.support;
 
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyRegistryConfiguration;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

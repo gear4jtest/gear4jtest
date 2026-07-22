@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.exception.StationExecutionException;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
@@ -24,7 +25,7 @@ public class StationExceptionBoundaryRunner implements StationRunner {
     @Override
     public StationLogTrace run(Object input, AbstractStation<?, ?> station, StationExecutionContext ctx) {
         try {
-            return delegate.run(input, station, ctx);
+            return EngineStationContexts.mutableTrace(delegate.run(input, station, ctx));
         } catch (Exception throwable) {
             Exception effectiveException = StationExecutionException.unwrap(throwable);
             try {
@@ -33,7 +34,7 @@ public class StationExceptionBoundaryRunner implements StationRunner {
                 LOGGER.error("Station error policy failed. Falling back to markFailed. stationId={}", station.getId(),
                              policyFailure);
 
-                StationLogTrace stationLog = ctx.getRecord();
+                StationLogTrace stationLog = EngineStationContexts.trace(ctx);
                 if (stationLog.getStatus() == StationLogStatus.RUNNING) {
                     stationLog.markFailed(effectiveException);
                 } else {

@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.engine.strategy;
 import java.util.List;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
+import io.github.gear4jtest.core.api.config.WorkerLockAcquisitionPolicy;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
@@ -12,7 +13,6 @@ import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.engine.support.ConcurrencyAwareTransformer;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyGuard;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyManager;
-import io.github.gear4jtest.core.engine.support.WorkerLockAcquisitionPolicy;
 import io.github.gear4jtest.core.engine.support.WorkerStatefulness;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;

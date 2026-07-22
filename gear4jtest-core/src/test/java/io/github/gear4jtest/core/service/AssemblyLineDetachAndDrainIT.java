@@ -34,7 +34,7 @@ class AssemblyLineDetachAndDrainIT {
             throws InterruptedException {
         long deadline = System.currentTimeMillis() + 2_000L;
         while (System.currentTimeMillis() < deadline) {
-            if (registry.get(executionId) == null) {
+            if (registry.find(executionId) == null) {
                 return;
             }
             Thread.sleep(25L);
@@ -74,11 +74,11 @@ class AssemblyLineDetachAndDrainIT {
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.getResult()).isEqualTo(4);
         assertThat(reactionStarted.await(2, TimeUnit.SECONDS)).isTrue();
-        assertThat(registry.get(executionId)).isNotNull();
+        assertThat(registry.find(executionId)).isNotNull();
 
         releaseReaction.countDown();
         awaitRegistryRemoval(registry, executionId);
-        assertThat(registry.get(executionId)).isNull();
+        assertThat(registry.find(executionId)).isNull();
     }
 
     static final class LengthOperator implements Operator<String, Integer> {

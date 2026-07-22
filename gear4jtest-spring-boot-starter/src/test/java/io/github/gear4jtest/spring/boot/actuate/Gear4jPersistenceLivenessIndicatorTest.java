@@ -1,6 +1,6 @@
 package io.github.gear4jtest.spring.boot.actuate;
 
-import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
+import io.github.gear4jtest.core.persistence.PersistenceRuntimeMonitor;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.actuate.health.Status;
 

@@ -9,6 +9,7 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.StationKind;
 import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.exception.StationExecutionException;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
@@ -24,7 +25,7 @@ class StationExceptionBoundaryRunnerTargetedCoverageTest {
     void run_shouldReturnDelegateTraceWhenDelegateSucceeds() {
         TestStation station = new TestStation();
         StationExecutionContext context = stationContext();
-        context.getRecord().markSuccess("ok");
+        EngineStationContexts.trace(context).markSuccess("ok");
         StationRunner delegate = (input, currentStation, currentContext) -> currentContext.getRecord();
         StationExceptionBoundaryRunner runner = new StationExceptionBoundaryRunner(delegate,
                 new StationErrorPolicyExecutor());
@@ -53,8 +54,8 @@ class StationExceptionBoundaryRunnerTargetedCoverageTest {
                 assertThat(currentStation).isSameAs(station);
                 assertThat(input).isEqualTo("input");
                 assertThat(exception).isSameAs(original);
-                stationCtx.getRecord().markSkipped(exception);
-                return stationCtx.getRecord();
+                EngineStationContexts.trace(stationCtx).markSkipped(exception);
+                return EngineStationContexts.trace(stationCtx);
             }
         };
         StationExceptionBoundaryRunner runner = new StationExceptionBoundaryRunner(delegate, policy);
@@ -89,7 +90,7 @@ class StationExceptionBoundaryRunnerTargetedCoverageTest {
     void run_shouldPreserveExistingTerminalStatusWhenPolicyFails() {
         TestStation station = new TestStation();
         StationExecutionContext context = stationContext();
-        context.getRecord().markStopped(new RuntimeException("already stopped"));
+        EngineStationContexts.trace(context).markStopped(new RuntimeException("already stopped"));
         IllegalStateException original = new IllegalStateException("delegate failed");
         RuntimeException policyFailure = new RuntimeException("policy failed");
         StationRunner delegate = (input, currentStation, currentContext) -> {

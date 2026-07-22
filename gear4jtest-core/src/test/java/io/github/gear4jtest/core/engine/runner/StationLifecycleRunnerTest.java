@@ -15,15 +15,15 @@ import io.github.gear4jtest.core.api.config.StopPolicy;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.SequenceStation;
+import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.api.util.AssemblyLines;
 import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
-import io.github.gear4jtest.core.execution.AssemblyRunManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
+import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.extension.LifecycleFailureMode;
 import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
@@ -165,7 +165,7 @@ class StationLifecycleRunnerTest {
         }
     }
 
-    private static final class RecordingAssemblyRunManager implements AssemblyRunManager {
+    private static final class RecordingAssemblyRunManager implements RunPersistenceManager {
         private final String stationId;
         private final AtomicReference<StationLogStatus> lastStatus = new AtomicReference<>();
 
@@ -174,7 +174,7 @@ class StationLifecycleRunnerTest {
         }
 
         @Override
-        public void start(AssemblyRunTrace execution) {
+        public void start(RunTrace execution) {
             // no-op
         }
 
@@ -186,7 +186,7 @@ class StationLifecycleRunnerTest {
         }
 
         @Override
-        public void end(AssemblyRunTrace finalExecution) {
+        public void end(RunTrace finalExecution) {
             // no-op
         }
 

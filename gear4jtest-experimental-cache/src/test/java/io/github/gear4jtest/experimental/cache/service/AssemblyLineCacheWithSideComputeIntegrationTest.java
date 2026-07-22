@@ -20,7 +20,6 @@ import io.github.gear4jtest.core.event.StationFinishedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
-import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.sidecompute.SideComputeHandler;
 import io.github.gear4jtest.core.sidecompute.SideComputer;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
@@ -127,8 +126,6 @@ class AssemblyLineCacheWithSideComputeIntegrationTest {
                 TaskHistoryResult<CustomerDto> order = taskHistoryApi.get("order:42", CustomerDto.class);
 
                 FinalOutput output = new FinalOutput(customer.name(), order.value().name());
-                firstCtx.getAssemblyLineExecution().setStatus(ExecutionStatus.SUCCEEDED);
-                firstCtx.getAssemblyLineExecution().setResult(output);
                 return ExecutionResult.success(output, firstCtx.getAssemblyLineExecution());
             });
 
@@ -153,8 +150,6 @@ class AssemblyLineCacheWithSideComputeIntegrationTest {
             ExecutionResult<FinalOutput> secondResult = extension.aroundRun(pipeline, request, secondCtx, () -> {
                 businessExecutions.incrementAndGet();
                 FinalOutput unexpected = new FinalOutput("SHOULD", "NOT-RUN");
-                secondCtx.getAssemblyLineExecution().setStatus(ExecutionStatus.SUCCEEDED);
-                secondCtx.getAssemblyLineExecution().setResult(unexpected);
                 return ExecutionResult.success(unexpected, secondCtx.getAssemblyLineExecution());
             });
 
@@ -206,8 +201,6 @@ class AssemblyLineCacheWithSideComputeIntegrationTest {
                         .<CustomerDto>getOrCreateFuture("customer-profile").join();
 
                 FinalOutput output = new FinalOutput(customer.name(), "no-order");
-                firstCtx.getAssemblyLineExecution().setStatus(ExecutionStatus.SUCCEEDED);
-                firstCtx.getAssemblyLineExecution().setResult(output);
                 return ExecutionResult.success(output, firstCtx.getAssemblyLineExecution());
             });
 
@@ -239,8 +232,6 @@ class AssemblyLineCacheWithSideComputeIntegrationTest {
                         .<CustomerDto>getOrCreateFuture("customer-profile").join();
 
                 FinalOutput output = new FinalOutput(customer.name(), "no-order");
-                secondCtx.getAssemblyLineExecution().setStatus(ExecutionStatus.SUCCEEDED);
-                secondCtx.getAssemblyLineExecution().setResult(output);
                 return ExecutionResult.success(output, secondCtx.getAssemblyLineExecution());
             });
 

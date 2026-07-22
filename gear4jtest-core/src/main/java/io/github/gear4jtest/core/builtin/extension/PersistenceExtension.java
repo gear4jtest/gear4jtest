@@ -9,11 +9,11 @@ import java.util.concurrent.ConcurrentMap;
 
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.event.StationCancellationReason;
 import io.github.gear4jtest.core.event.StationInterruptionReason;
 import io.github.gear4jtest.core.event.StationSkipReason;
-import io.github.gear4jtest.core.execution.AssemblyRunManager;
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.extension.LifecycleFailureMode;
 import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
@@ -30,7 +30,7 @@ import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
  * Station start snapshots are persisted immediately so long-running stations
  * are visible as {@code RUNNING} even if the JVM exits before station
  * completion. Terminal station snapshots are buffered per run and flushed with
- * {@link AssemblyRunManager#appendAll(List)} before the run record is ended.
+ * {@link RunPersistenceManager#appendAll(List)} before the run record is ended.
  * This amortizes completion writes while keeping run finalization blocked on
  * the durability of all pending station terminal records.
  * </p>
@@ -38,11 +38,11 @@ import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
 public class PersistenceExtension implements RunLifecycleExtension, StationLifecycleExtension {
     private static final int DEFAULT_TERMINAL_RECORD_BATCH_SIZE = 128;
 
-    private final AssemblyRunManager manager;
+    private final RunPersistenceManager manager;
     private final int terminalRecordBatchSize;
     private final ConcurrentMap<UUID, TerminalRecordBuffer> terminalBuffers = new ConcurrentHashMap<>();
 
-    public PersistenceExtension(AssemblyRunManager manager) {
+    public PersistenceExtension(RunPersistenceManager manager) {
         this(builder(manager));
     }
 
@@ -51,21 +51,21 @@ public class PersistenceExtension implements RunLifecycleExtension, StationLifec
         this.terminalRecordBatchSize = positive(builder.terminalRecordBatchSize, "terminalRecordBatchSize");
     }
 
-    public static Builder builder(AssemblyRunManager manager) {
+    public static Builder builder(RunPersistenceManager manager) {
         return new Builder(manager);
     }
 
     public static final class Builder {
-        private final AssemblyRunManager manager;
+        private final RunPersistenceManager manager;
         private int terminalRecordBatchSize = DEFAULT_TERMINAL_RECORD_BATCH_SIZE;
 
-        private Builder(AssemblyRunManager manager) {
+        private Builder(RunPersistenceManager manager) {
             this.manager = Objects.requireNonNull(manager, "manager must not be null");
         }
 
         /**
          * Maximum number of terminal station snapshots buffered per run before a
-         * synchronous {@link AssemblyRunManager#appendAll(List)} is triggered.
+         * synchronous {@link RunPersistenceManager#appendAll(List)} is triggered.
          *
          * <p>
          * Use {@code 1} to preserve one terminal append call per station. Larger values
@@ -104,13 +104,13 @@ public class PersistenceExtension implements RunLifecycleExtension, StationLifec
     }
 
     @Override
-    public void onRunStarted(ExecutionContext ctx, AssemblyRunTrace run) {
+    public void onRunStarted(ExecutionContext ctx, RunTrace run) {
         manager.start(run);
         terminalBuffers.put(run.getId(), new TerminalRecordBuffer());
     }
 
     @Override
-    public void onRunCompleted(ExecutionContext ctx, AssemblyRunTrace run) {
+    public void onRunCompleted(ExecutionContext ctx, RunTrace run) {
         flushRun(run.getId());
         manager.end(run);
     }

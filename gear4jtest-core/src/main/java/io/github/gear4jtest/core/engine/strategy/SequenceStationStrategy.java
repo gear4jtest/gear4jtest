@@ -9,6 +9,7 @@ import io.github.gear4jtest.core.api.config.FlowDecision;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.SequenceStation;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
@@ -30,7 +31,9 @@ public class SequenceStationStrategy extends AbstractStationStrategy<SequenceSta
         List<Throwable> collectedErrors = new ArrayList<>();
 
         for (AbstractStation<?, ?> child : station.getSteps()) {
-            StationLogTrace childLog = runner.run(currentInput, child, operationExecution);
+            StationLogTrace childLog = EngineStationContexts.mutableTrace(
+                                                                          runner.run(currentInput, child,
+                                                                                     operationExecution));
 
             FlowDecision decision = FlowDecider.decide(childLog, config);
             switch (decision) {
@@ -43,7 +46,7 @@ public class SequenceStationStrategy extends AbstractStationStrategy<SequenceSta
                 case MARK_AND_PROCEED -> collectedErrors.add(FlowStrategySupport
                         .representativeThrowable(childLog, "Step failed without exception: " + child.getId()));
                 case INTERRUPT -> {
-                    StationLogTrace parentLog = operationExecution.getRecord();
+                    StationLogTrace parentLog = EngineStationContexts.trace(operationExecution);
                     FlowStrategySupport.applyInterruptToParentLog(parentLog, childLog, config);
                     parentLog.setOutput(currentInput);
                     return currentInput;
@@ -52,7 +55,7 @@ public class SequenceStationStrategy extends AbstractStationStrategy<SequenceSta
         }
 
         if (!collectedErrors.isEmpty()) {
-            StationLogTrace parentLog = operationExecution.getRecord();
+            StationLogTrace parentLog = EngineStationContexts.trace(operationExecution);
             Throwable first = collectedErrors.get(0);
             if (first instanceof Exception ex) {
                 parentLog.markFailed(ex);

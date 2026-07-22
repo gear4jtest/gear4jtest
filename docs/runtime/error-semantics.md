@@ -9,11 +9,11 @@ This prevents infrastructure or user-code failures from escaping unpredictably t
 
 Validation failures occur before a pipeline run begins and before any station is executed. Examples include an invalid runtime contract, a missing mandatory dependency, an unresolved strategy, or an invalid compiled pipeline definition.
 
-These failures may be raised directly to the caller because no runtime execution has started and no `AssemblyRunTrace` is expected to represent partial work.
+These failures may be raised directly to the caller because no runtime execution has started and no `RunTrace` is expected to represent partial work.
 
 ## Runtime station failures
 
-Once station execution begins, non-fatal failures must be represented through `StationLogTrace` and the resulting `ExecutionResult` rather than through an uncaught infrastructure exception.
+Once station execution begins, non-fatal failures must be represented through `StationTrace` and the resulting `ExecutionResult` rather than through an uncaught infrastructure exception.
 
 A station failure is reduced to its terminal log status. Parent strategies inspect that status using `FlowDecider` and their configured `FlowConfig`:
 
@@ -48,7 +48,7 @@ Fatal `Error` instances are not normalized into station failures. They continue 
 - `CRITICAL` start failures are normalized into a failed execution result because the run has already begun.
 - `CRITICAL` completion failures are also normalized into a failed execution result instead of escaping as raw infrastructure exceptions.
 
-This keeps the caller contract consistent once a run trace exists: non-fatal runtime failures are represented by `ExecutionResult` and `AssemblyRunTrace`.
+This keeps the caller contract consistent once a run trace exists: non-fatal runtime failures are represented by `ExecutionResult` and `RunTrace`.
 
 ## Public terminal outcomes
 

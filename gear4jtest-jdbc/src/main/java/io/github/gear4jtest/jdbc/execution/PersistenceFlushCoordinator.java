@@ -21,7 +21,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
-import io.github.gear4jtest.core.execution.PersistenceRuntimeStats;
+import io.github.gear4jtest.core.persistence.PersistenceRuntimeStats;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
 import org.slf4j.Logger;

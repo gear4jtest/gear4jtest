@@ -3,7 +3,7 @@ package io.github.gear4jtest.micrometer;
 import java.util.Objects;
 import java.util.function.ToDoubleFunction;
 
-import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
+import io.github.gear4jtest.core.persistence.PersistenceRuntimeMonitor;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 

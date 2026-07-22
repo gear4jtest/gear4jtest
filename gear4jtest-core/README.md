@@ -10,7 +10,7 @@ behavior, external transport systems or storage-specific implementations. JDBC p
 
 - `AssemblyLine`, `RunRequest`, `ExecutionResult` and explicit terminal outcomes.
 - Station models and builders.
-- Runtime execution through `AssemblyLineEngine`.
+- Runtime execution through the public `AssemblyLineExecutor` facade.
 - Station strategies and runner chain construction.
 - Flow decisions, stop/cancel semantics and error handling.
 - Runtime events and side-compute hooks.
@@ -23,7 +23,7 @@ behavior, external transport systems or storage-specific implementations. JDBC p
 
 | Package           | Responsibility                                                                         |
 |-------------------|----------------------------------------------------------------------------------------|
-| `api`             | Public pipeline API: assembly lines, run requests, execution results and metadata.     |
+| `api`             | Public pipeline API, executor facade, run requests, execution results and metadata.    |
 | `api.behavior`    | User-facing operators, processors, conditions, skippers, signals and sibling outcomes. |
 | `api.config`      | Flow, persistence, event and station configuration.                                    |
 | `api.context`     | Execution context, execution services, station context and payload cloning SPI.        |
@@ -34,7 +34,8 @@ behavior, external transport systems or storage-specific implementations. JDBC p
 | `engine.runner`   | Runner-chain layers around station execution.                                          |
 | `engine.strategy` | Station execution strategies.                                                          |
 | `event`           | In-memory asynchronous event runtime and subscriptions.                                |
-| `execution.trace` | Runtime trace objects for runs and stations.                                           |
+| `api.trace`       | Read-only public run and station trace views.                                          |
+| `execution.trace` | Internal mutable trace implementations owned by the runtime.                           |
 | `persistence`     | Persistence status and repository abstractions.                                        |
 | `sidecompute`     | Side-compute registry and listener integration.                                        |
 | `spi`             | Extension, factory and runner SPIs.                                                    |
@@ -43,9 +44,17 @@ behavior, external transport systems or storage-specific implementations. JDBC p
 
 A run starts from a fully built `AssemblyLine` and a `RunRequest`.
 
-`AssemblyLineEngine` resolves default and request-level runtime extensions, creates the `EventManager`, merges default and
+Applications execute pipelines through `AssemblyLineExecutor`, normally created with `AssemblyLineExecutors.builder()`.
+The internal engine resolves default and request-level runtime extensions, creates the `EventManager`, merges default and
 request context, registers an `ExecutionContext`, builds the root station runner, then executes the root station through
 the runner chain.
+
+```java
+AssemblyLineExecutor executor = AssemblyLineExecutors.builder()
+        .resourceFactory(resourceFactory)
+        .runtimeExtensions(runtimeExtensions)
+        .build();
+```
 
 The default runner chain separates concerns:
 
@@ -203,7 +212,7 @@ thread-confined and propagated to parallel branch tasks so sibling branches do n
 
 Top-level runs receive a distinct context map, but mutable values are shallow
 references by default. Configure
-`AssemblyLineEngine.Builder.initialRunContextPolicy(ContextPropagationPolicy.copyValues(...))`
+`AssemblyLineExecutors.builder().initialRunContextPolicy(ContextPropagationPolicy.copyValues(...))`
 when independent runs must receive defensive copies of mutable default/request
 context values.
 
@@ -230,7 +239,7 @@ value returned by `ExecutionResult` unchanged.
 
 Core applications can still depend only on the generic contracts:
 
-- `AssemblyRunManager`;
+- `RunPersistenceManager`;
 - `AssemblyRunRepository`;
 - `AssemblyRunRecord`;
 - `StationLogRecord`;

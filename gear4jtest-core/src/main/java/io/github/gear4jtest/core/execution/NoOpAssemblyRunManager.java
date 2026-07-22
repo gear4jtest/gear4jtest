@@ -1,9 +1,10 @@
 package io.github.gear4jtest.core.execution;
 
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.api.trace.RunTrace;
+import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 
-public class NoOpAssemblyRunManager implements AssemblyRunManager {
-    public static final AssemblyRunManager NO_OP_INSTANCE = new NoOpAssemblyRunManager();
+public class NoOpAssemblyRunManager implements RunPersistenceManager {
+    public static final RunPersistenceManager NO_OP_INSTANCE = new NoOpAssemblyRunManager();
 
     public NoOpAssemblyRunManager() {
         // Public constructor allows tests and lightweight integrations to opt out
@@ -11,12 +12,12 @@ public class NoOpAssemblyRunManager implements AssemblyRunManager {
     }
 
     @Override
-    public void start(AssemblyRunTrace execution) {
+    public void start(RunTrace execution) {
         // No op
     }
 
     @Override
-    public void end(AssemblyRunTrace finalExecution) {
+    public void end(RunTrace finalExecution) {
         // No op
     }
 }

@@ -17,12 +17,12 @@ import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
+import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.api.util.AssemblyLines;
 import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.spi.extension.RunInterceptorExtension;
 import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
@@ -167,7 +167,7 @@ class AssemblyLineCallStationStrategyTest {
                 .isEqualTo("input-child-parent");
         assertThat(childRunCapture.completedRuns).as("the child assembly line should have its own run lifecycle")
                 .hasSize(1);
-        AssemblyRunTrace childRun = childRunCapture.completedRuns.get(0);
+        RunTrace childRun = childRunCapture.completedRuns.get(0);
         assertThat(childRun.getId()).as("child run should have a distinct execution id")
                 .isNotEqualTo(result.getExecution().getId());
         assertThat(childRun.getParentExecutionId()).as("child run should be linked to the parent execution")
@@ -279,10 +279,10 @@ class AssemblyLineCallStationStrategyTest {
     }
 
     private static final class RunCaptureExtension implements RunLifecycleExtension {
-        private final List<AssemblyRunTrace> completedRuns = new ArrayList<>();
+        private final List<RunTrace> completedRuns = new ArrayList<>();
 
         @Override
-        public void onRunCompleted(ExecutionContext ctx, AssemblyRunTrace run) {
+        public void onRunCompleted(ExecutionContext ctx, RunTrace run) {
             completedRuns.add(run);
         }
     }

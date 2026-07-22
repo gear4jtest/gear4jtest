@@ -3,7 +3,7 @@ package io.github.gear4jtest.core.api.assemblyline;
 import java.util.UUID;
 
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.api.trace.RunTrace;
 
 /**
  * Lineage information linking a nested run to the parent station that triggered
@@ -15,7 +15,7 @@ public record NestedRunContext(UUID parentExecutionId,
                                String parentAssemblyLineId,
                                String parentStationId) {
     public static NestedRunContext from(StationExecutionContext parentStationContext) {
-        AssemblyRunTrace parentRun = parentStationContext.getGlobalContext().getAssemblyLineExecution();
+        RunTrace parentRun = parentStationContext.getGlobalContext().getAssemblyLineExecution();
         UUID parentExecutionId = parentRun.getId();
         UUID rootExecutionId = parentRun.getRootExecutionId() != null ? parentRun.getRootExecutionId()
                 : parentExecutionId;

@@ -6,6 +6,7 @@ import java.util.Objects;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.event.StationFinishedEvent;
 import io.github.gear4jtest.core.event.StationStartedEvent;
 import io.github.gear4jtest.core.exception.StationLifecycleException;
@@ -31,7 +32,7 @@ public class StationLifecycleRunner implements StationRunner {
     @Override
     public StationLogTrace run(Object input, AbstractStation<?, ?> station, StationExecutionContext ctx) {
         ExecutionContext runCtx = ctx.getGlobalContext();
-        StationLogRecord startedSnapshot = StationLogRecord.from(ctx.getRecord());
+        StationLogRecord startedSnapshot = StationLogRecord.from(EngineStationContexts.trace(ctx));
 
         publishStartedEvent(runCtx, ctx, input);
 
@@ -40,7 +41,8 @@ public class StationLifecycleRunner implements StationRunner {
             criticalStartFailure |= invokeStartedSafely(extension, runCtx, ctx, startedSnapshot);
         }
 
-        StationLogTrace result = criticalStartFailure ? ctx.getRecord() : delegate.run(input, station, ctx);
+        StationLogTrace result = criticalStartFailure ? EngineStationContexts.trace(ctx)
+                : EngineStationContexts.mutableTrace(delegate.run(input, station, ctx));
 
         for (StationLifecycleExtension extension : lifecycleExtensions) {
             invokeCompletedSafely(extension, runCtx, ctx, result);
@@ -55,10 +57,10 @@ public class StationLifecycleRunner implements StationRunner {
     }
 
     private void publishStartedEvent(ExecutionContext runCtx, StationExecutionContext stationCtx, Object input) {
-        if (runCtx.getServices().getEventManager() == null || stationCtx.getRecord() == null) {
+        if (runCtx.getServices().getEventManager() == null || EngineStationContexts.trace(stationCtx) == null) {
             return;
         }
-        StationLogTrace stationLog = stationCtx.getRecord();
+        StationLogTrace stationLog = EngineStationContexts.trace(stationCtx);
         runCtx.getServices().getEventManager()
                 .publish(new StationStartedEvent(runCtx.getAssemblyLineId(), runCtx.getExecutionId(),
                         stationLog.getId(),
@@ -103,7 +105,7 @@ public class StationLifecycleRunner implements StationRunner {
             extension.onStationStarted(runCtx, stationCtx, snapshot);
             return false;
         } catch (Exception exception) {
-            return handleLifecycleFailure(extension, stationCtx.getRecord(), snapshot.operationId(),
+            return handleLifecycleFailure(extension, EngineStationContexts.trace(stationCtx), snapshot.operationId(),
                                           "onStationStarted", exception);
         }
     }

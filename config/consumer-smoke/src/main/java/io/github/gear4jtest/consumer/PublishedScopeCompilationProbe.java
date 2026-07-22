@@ -2,7 +2,8 @@ package io.github.gear4jtest.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gear4jtest.core.api.AssemblyLine;
-import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
+import io.github.gear4jtest.core.api.AssemblyLineExecutor;
+import io.github.gear4jtest.core.persistence.PersistenceRuntimeMonitor;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslator;
 import io.github.gear4jtest.external.jdbc.repository.ExternalJdbcSchemaMigrator;
 import io.github.gear4jtest.jackson.JacksonPayloadCloner;
@@ -20,6 +21,7 @@ import org.springframework.context.ApplicationContext;
  */
 final class PublishedScopeCompilationProbe {
     private AssemblyLine<?, ?> assemblyLine;
+    private AssemblyLineExecutor assemblyLineExecutor;
     private OperationChainTranslator translator;
     private ExternalJdbcSchemaMigrator externalJdbcSchemaMigrator;
     private ObjectMapper objectMapper;

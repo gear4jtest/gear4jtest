@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionContextLookup;
 
 /**
  * Thread-safe registry mapping execution identifiers to their active
@@ -15,7 +16,7 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
  * completes.
  * </p>
  */
-public final class ExecutionContextRegistry {
+public final class ExecutionContextRegistry implements ExecutionContextLookup {
     private final ConcurrentMap<UUID, ExecutionContext> contexts = new ConcurrentHashMap<>();
 
     /**
@@ -42,11 +43,18 @@ public final class ExecutionContextRegistry {
      * Returns the context associated with the execution id, or {@code null} when
      * none is registered.
      */
-    public ExecutionContext get(UUID executionId) {
+    @Override
+    public ExecutionContext find(UUID executionId) {
         if (executionId == null) {
             return null;
         }
         return contexts.get(executionId);
+    }
+
+    /** @deprecated Use {@link #find(UUID)}. */
+    @Deprecated(forRemoval = true)
+    public ExecutionContext get(UUID executionId) {
+        return find(executionId);
     }
 
     /**

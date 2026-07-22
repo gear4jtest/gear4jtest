@@ -11,6 +11,7 @@ import io.github.gear4jtest.core.api.config.FlowDecision;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.IteratorStation;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
@@ -54,7 +55,9 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
 
             StationLogTrace chainResult;
             try (var ignored = operationExecution.getGlobalContext().enterItem(itemId)) {
-                chainResult = runner.run(element, station.getChain(), operationExecution);
+                chainResult = EngineStationContexts.mutableTrace(
+                                                                 runner.run(element, station.getChain(),
+                                                                            operationExecution));
             }
 
             FlowDecision decision = FlowDecider.decide(chainResult, config);
@@ -67,7 +70,8 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
                 case MARK_AND_PROCEED -> collectedErrors.add(FlowStrategySupport
                         .representativeThrowable(chainResult, "Item failed without exception: " + itemId));
                 case INTERRUPT ->
-                    FlowStrategySupport.applyInterruptToParentLog(operationExecution.getRecord(), chainResult, config);
+                    FlowStrategySupport.applyInterruptToParentLog(EngineStationContexts.trace(operationExecution),
+                                                                  chainResult, config);
             }
 
             if (decision == FlowDecision.INTERRUPT) {
@@ -79,7 +83,7 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
 
         if (!collectedErrors.isEmpty()) {
             Throwable first = collectedErrors.iterator().next();
-            operationExecution.getRecord()
+            EngineStationContexts.trace(operationExecution)
                     .markFailed(first instanceof Exception ex ? ex : new RuntimeException(first.getMessage(), first));
         }
 

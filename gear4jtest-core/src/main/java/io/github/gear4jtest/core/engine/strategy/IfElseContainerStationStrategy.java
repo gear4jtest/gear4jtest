@@ -7,6 +7,7 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.api.station.UnaryIfElseContainerStation;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
@@ -39,7 +40,9 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
                 Object newObject = clonePayload(input, operationExecution);
                 selectedBranchId = element.getId();
                 try (var ignored = operationExecution.getGlobalContext().enterBranch(selectedBranchId)) {
-                    selectedBranchLog = runner.run(newObject, element.getStation(), operationExecution);
+                    selectedBranchLog = EngineStationContexts.mutableTrace(
+                                                                           runner.run(newObject, element.getStation(),
+                                                                                      operationExecution));
                 }
                 break;
             }
@@ -49,7 +52,9 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
             Object newObject = clonePayload(input, operationExecution);
             selectedBranchId = station.getElseBranchId();
             try (var ignored = operationExecution.getGlobalContext().enterBranch(selectedBranchId)) {
-                selectedBranchLog = runner.run(newObject, station.getElseOp(), operationExecution);
+                selectedBranchLog = EngineStationContexts.mutableTrace(
+                                                                       runner.run(newObject, station.getElseOp(),
+                                                                                  operationExecution));
             }
         }
 
@@ -67,12 +72,14 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
                                                                                        "If/else branch failed without exception: "
                                                                                                + selectedBranchLog
                                                                                                        .getOperationId());
-                operationExecution.getRecord().markFailed(representative instanceof Exception exception ? exception
-                        : new RuntimeException(representative.getMessage(), representative));
+                EngineStationContexts.trace(operationExecution)
+                        .markFailed(representative instanceof Exception exception ? exception
+                                : new RuntimeException(representative.getMessage(), representative));
                 yield proceedOutput(input, selectedBranchLog);
             }
             case INTERRUPT -> {
-                FlowStrategySupport.applyInterruptToParentLog(operationExecution.getRecord(), selectedBranchLog,
+                FlowStrategySupport.applyInterruptToParentLog(EngineStationContexts.trace(operationExecution),
+                                                              selectedBranchLog,
                                                               config);
                 yield null;
             }
@@ -82,7 +89,7 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
     private static void normalizeSelectedBranchLog(StationLogTrace selectedBranchLog,
                                                    String selectedBranchId,
                                                    StationExecutionContext operationExecution) {
-        selectedBranchLog.setParentOperationId(operationExecution.getRecord().getId());
+        selectedBranchLog.setParentOperationId(EngineStationContexts.trace(operationExecution).getId());
         if (selectedBranchLog.getBranchId() == null) {
             selectedBranchLog.setBranchId(selectedBranchId);
         }

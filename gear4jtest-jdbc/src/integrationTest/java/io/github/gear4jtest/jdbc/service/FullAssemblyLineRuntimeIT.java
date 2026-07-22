@@ -35,7 +35,6 @@ import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.event.EventSubscription;
-import io.github.gear4jtest.core.execution.AssemblyRunManager;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.execution.InMemoryExecutionManager;
 import io.github.gear4jtest.core.model.StationLogStatus;
@@ -44,6 +43,7 @@ import io.github.gear4jtest.core.persistence.AssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepository;
 import io.github.gear4jtest.core.persistence.PageRequest;
+import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
@@ -70,7 +70,7 @@ class FullAssemblyLineRuntimeIT {
     void fullAssemblyLineRun_withInMemoryPersistenceAndEvents_shouldExerciseStationTypesAndPersistHierarchy() {
         // Given
         InMemoryAssemblyRunRepository repository = new InMemoryAssemblyRunRepository();
-        AssemblyRunManager manager = InMemoryExecutionManager.builder().repository(repository)
+        RunPersistenceManager manager = InMemoryExecutionManager.builder().repository(repository)
                 .redactor(SensitiveDataRedactor.none()).build();
 
         // When / Then
@@ -97,7 +97,7 @@ class FullAssemblyLineRuntimeIT {
         runFullAssemblyLineScenario(manager, repository);
     }
 
-    private static void runFullAssemblyLineScenario(AssemblyRunManager manager, AssemblyRunRepository repository) {
+    private static void runFullAssemblyLineScenario(RunPersistenceManager manager, AssemblyRunRepository repository) {
         EventCollector eventCollector = new EventCollector();
         EventHandlingDefinition eventHandling = eventHandlingDefinition(eventCollector);
         ExecutorService parallelExecutor = Executors.newFixedThreadPool(2);
@@ -124,7 +124,7 @@ class FullAssemblyLineRuntimeIT {
         }
     }
 
-    private static AssemblyLineEngine engine(AssemblyRunManager manager) {
+    private static AssemblyLineEngine engine(RunPersistenceManager manager) {
         return AssemblyLineEngine.builder()
                 .resourceFactory(new ReflectiveResourceFactory())
                 .extensionResolver(new RuntimeExtensionResolver(List.of(new PersistenceExtension(manager))))

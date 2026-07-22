@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.github.gear4jtest.core.execution.PersistenceRuntimeStats;
+import io.github.gear4jtest.core.persistence.PersistenceRuntimeStats;
 
 /** Mutable counters backing {@link PersistenceRuntimeStats}. */
 final class PersistenceRuntimeCounters {

@@ -2,7 +2,7 @@ package io.github.gear4jtest.external.api.exception;
 
 import java.util.List;
 
-public class CompilationException extends RuntimeException {
+public class CompilationException extends Gear4jExternalException {
     private final List<String> diagnostics;
 
     public CompilationException(String message) {
@@ -18,7 +18,7 @@ public class CompilationException extends RuntimeException {
     }
 
     public CompilationException(String message, List<String> diagnostics, Throwable cause) {
-        super(messageWithDiagnostics(message, diagnostics), cause);
+        super(ExternalErrorCode.COMPILATION, messageWithDiagnostics(message, diagnostics), cause);
         this.diagnostics = diagnostics == null ? List.of() : List.copyOf(diagnostics);
     }
 

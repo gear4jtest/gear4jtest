@@ -27,7 +27,7 @@ public class ScopeInitializingRunner implements StationRunner {
         StationExecutionContext currentCtx = new DefaultStationExecutionContext(station.getId(), station.getKind(),
                 parentCtx.getGlobalContext(), stationLog, EngineStationContexts.support(parentCtx));
         try (var ignored = parentCtx.getGlobalContext().enterParentOperation(stationLog.getId())) {
-            return delegate.run(input, station, currentCtx);
+            return EngineStationContexts.mutableTrace(delegate.run(input, station, currentCtx));
         }
     }
 }

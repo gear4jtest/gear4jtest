@@ -7,10 +7,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import io.github.gear4jtest.core.api.context.ExecutionContextLookup;
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventSubscription;
 import io.github.gear4jtest.core.event.StationFinishedEvent;
-import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +67,7 @@ public final class SideComputer<E extends Event, T, R> {
                 .filter(event -> event.getStatus() == status);
     }
 
-    EventSubscription<E> toSubscription(ExecutionContextRegistry registry) {
+    EventSubscription<E> toSubscription(ExecutionContextLookup registry) {
         return EventSubscription.on(eventType, trigger, event -> runCompute(event, registry));
     }
 
@@ -75,8 +75,8 @@ public final class SideComputer<E extends Event, T, R> {
         return key;
     }
 
-    private void runCompute(E event, ExecutionContextRegistry registry) {
-        var executionContext = registry.get(event.getExecutionId());
+    private void runCompute(E event, ExecutionContextLookup registry) {
+        var executionContext = registry.find(event.getExecutionId());
         if (executionContext == null) {
             LOGGER.warn("Skipping side-compute '{}' for event {} because execution context {} is no longer registered",
                         key, event.getClass().getSimpleName(), event.getExecutionId());

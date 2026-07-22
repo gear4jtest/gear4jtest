@@ -2,7 +2,7 @@ package io.github.gear4jtest.spring.boot.actuate;
 
 import java.util.Objects;
 
-import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
+import io.github.gear4jtest.core.persistence.PersistenceRuntimeMonitor;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 

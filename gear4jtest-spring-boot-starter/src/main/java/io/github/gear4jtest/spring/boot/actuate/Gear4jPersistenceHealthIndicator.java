@@ -1,8 +1,8 @@
 package io.github.gear4jtest.spring.boot.actuate;
 
-import io.github.gear4jtest.core.execution.PersistenceOperationalStatus;
-import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
-import io.github.gear4jtest.core.execution.PersistenceRuntimeStats;
+import io.github.gear4jtest.core.persistence.PersistenceOperationalStatus;
+import io.github.gear4jtest.core.persistence.PersistenceRuntimeMonitor;
+import io.github.gear4jtest.core.persistence.PersistenceRuntimeStats;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 

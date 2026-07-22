@@ -7,6 +7,7 @@ import java.util.Set;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompiler;
 import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompilers;
+import io.github.gear4jtest.external.api.exception.PolicyViolationException;
 import io.github.gear4jtest.external.api.loader.ClassLoaderRegistry;
 import io.github.gear4jtest.external.api.loader.DependencyInjector;
 import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
@@ -249,15 +250,5 @@ public class AssemblyLineManager {
 
     public void invalidateStore(String alId) {
         storeResolver.invalidate(alId);
-    }
-
-    public static final class PolicyViolationException extends Exception {
-        public PolicyViolationException(String message) {
-            super(message);
-        }
-
-        public PolicyViolationException(String message, Throwable cause) {
-            super(message, cause);
-        }
     }
 }

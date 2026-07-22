@@ -28,7 +28,7 @@ class AssemblyLineRunCleanupTest {
         AssemblyLineRunCleanup.cleanup(completed, registry).run();
 
         // Then
-        assertThat(registry.get(executionId)).isSameAs(replacement);
+        assertThat(registry.find(executionId)).isSameAs(replacement);
     }
 
     private static ExecutionContext executionContext(UUID executionId) {

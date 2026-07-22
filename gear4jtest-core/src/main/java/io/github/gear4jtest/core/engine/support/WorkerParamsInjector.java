@@ -8,6 +8,7 @@ import io.github.gear4jtest.core.api.context.StationContextUtils;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.context.StationParameter;
 import io.github.gear4jtest.core.api.context.StationParameterModel;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.event.ParameterResolvedEvent;
 
 public class WorkerParamsInjector implements Processor {
@@ -69,9 +70,12 @@ public class WorkerParamsInjector implements Processor {
 
         operationExecution.getServices().getEventManager()
                 .publish(new ParameterResolvedEvent(operationExecution.getGlobalContext().getAssemblyLineId(),
-                        operationExecution.getGlobalContext().getExecutionId(), operationExecution.getRecord().getId(),
-                        operationExecution.getOperationId(), operationExecution.getRecord().getParentOperationId(),
-                        operationExecution.getRecord().getItemId(), rawParam.describe(), resolution.cacheHit(),
+                        operationExecution.getGlobalContext().getExecutionId(),
+                        EngineStationContexts.trace(operationExecution).getId(),
+                        operationExecution.getOperationId(),
+                        EngineStationContexts.trace(operationExecution).getParentOperationId(),
+                        EngineStationContexts.trace(operationExecution).getItemId(), rawParam.describe(),
+                        resolution.cacheHit(),
                         value != null ? value.getClass().getName() : null));
     }
 

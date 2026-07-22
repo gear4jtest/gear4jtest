@@ -2,11 +2,11 @@ package io.github.gear4jtest.core.engine;
 
 import java.time.Duration;
 
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyPolicy;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyRegistryConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerLockAcquisitionPolicy;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyManager;
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyPolicy;
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyRegistryConfiguration;
-import io.github.gear4jtest.core.engine.support.WorkerLockAcquisitionPolicy;
 
 final class AssemblyLineEngineConfiguration {
     private AssemblyLineEngineConfiguration() {

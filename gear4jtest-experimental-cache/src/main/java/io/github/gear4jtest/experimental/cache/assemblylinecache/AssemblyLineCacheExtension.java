@@ -57,9 +57,6 @@ public class AssemblyLineCacheExtension implements RunInterceptorExtension, Exec
             OUT output = cached.get().output();
 
             ctx.put(AssemblyLineCacheRuntimeKeys.CACHE_HIT, Boolean.TRUE);
-            ctx.getAssemblyLineExecution().setStatus(io.github.gear4jtest.core.persistence.ExecutionStatus.SUCCEEDED);
-            ctx.getAssemblyLineExecution().setResult(output);
-
             LOGGER.debug("AssemblyLine cache hit. assemblyLineId={}, version={}, executionId={}", pipeline.getId(),
                          pipeline.getVersion(), ctx.getExecutionId());
 

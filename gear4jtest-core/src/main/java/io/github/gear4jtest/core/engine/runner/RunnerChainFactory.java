@@ -8,6 +8,7 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.engine.ResolvedExtensions;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
@@ -65,7 +66,7 @@ public class RunnerChainFactory {
             if (delegate == null) {
                 throw new IllegalStateException("Runner chain has not been fully initialized");
             }
-            return delegate.run(input, station, ctx);
+            return EngineStationContexts.mutableTrace(delegate.run(input, station, ctx));
         }
     }
 }

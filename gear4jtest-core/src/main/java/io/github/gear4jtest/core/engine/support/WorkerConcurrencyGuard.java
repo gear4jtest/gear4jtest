@@ -5,6 +5,8 @@ import java.util.Objects;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerLockAcquisitionPolicy;
 import io.github.gear4jtest.core.exception.ConcurrentTransformerUseException;
 
 public final class WorkerConcurrencyGuard {

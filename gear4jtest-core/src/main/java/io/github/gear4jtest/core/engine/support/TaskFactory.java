@@ -10,6 +10,7 @@ import io.github.gear4jtest.core.api.assemblyline.AssemblyLineReference;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 import org.slf4j.MDC;
@@ -44,7 +45,7 @@ public class TaskFactory {
                     var ignoredBranch = context.enterBranch(branchId);
                     var ignoredParent = context.enterParentOperation(parentOperationId)) {
                 Object safeInput = inputSupplier.get();
-                return runner.run(safeInput, station, ctx);
+                return EngineStationContexts.mutableTrace(runner.run(safeInput, station, ctx));
             } finally {
                 restoreMdc(previousMdcContext);
             }

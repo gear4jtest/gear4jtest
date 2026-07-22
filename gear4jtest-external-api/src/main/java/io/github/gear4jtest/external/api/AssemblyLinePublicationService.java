@@ -3,13 +3,14 @@ package io.github.gear4jtest.external.api;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import io.github.gear4jtest.external.api.artifact.ArtifactHashes;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
+import io.github.gear4jtest.external.api.exception.PolicyViolationException;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
+import io.github.gear4jtest.external.api.repository.OperationChainNotFoundException;
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
@@ -51,7 +52,7 @@ final class AssemblyLinePublicationService {
                                 String mediaType,
                                 List<String> tags,
                                 String createdBy)
-            throws IOException, AssemblyLineManager.PolicyViolationException {
+            throws IOException, PolicyViolationException {
         requireNonNull(content, "content must not be null");
         String normalizedMediaType = AssemblyLineIdentifiers.normalizeMediaType(mediaType);
         List<String> publicationTags = normalizeTags(tags);
@@ -82,14 +83,16 @@ final class AssemblyLinePublicationService {
     }
 
     void promoteTestToRun(String alId, String version, String promotedBy)
-            throws AssemblyLineManager.PolicyViolationException {
+            throws PolicyViolationException {
         var testObj = objectRepository.find(alId, version, ExecutionMode.TEST)
-                .orElseThrow(() -> new NoSuchElementException(
+                .orElseThrow(() -> new OperationChainNotFoundException(
                         "TEST object not found for %s:%s".formatted(alId, version)));
         if (objectRepository.exists(alId, version, ExecutionMode.RUN)) {
-            var runObj = objectRepository.find(alId, version, ExecutionMode.RUN).orElseThrow();
+            var runObj = objectRepository.find(alId, version, ExecutionMode.RUN)
+                    .orElseThrow(() -> new OperationChainNotFoundException(
+                            "RUN object disappeared for %s:%s".formatted(alId, version)));
             if (!Objects.equals(runObj.contentHash(), testObj.contentHash())) {
-                throw new AssemblyLineManager.PolicyViolationException(
+                throw new PolicyViolationException(
                         "RUN object already exists with different content_hash");
             }
             return;
@@ -104,14 +107,14 @@ final class AssemblyLinePublicationService {
     }
 
     private void validateDirectRunPolicy(OperationChainObject object)
-            throws AssemblyLineManager.PolicyViolationException {
+            throws PolicyViolationException {
         if (object.mode() != ExecutionMode.RUN) {
             return;
         }
         var config = configRepository.findByAssemblyLineId(object.alId())
-                .orElseThrow(() -> new NoSuchElementException("Config not found for alId=" + object.alId()));
+                .orElseThrow(() -> new OperationChainNotFoundException("Config not found for alId=" + object.alId()));
         if (!Boolean.TRUE.equals(config.allowRunPublicationWithoutTest())) {
-            throw new AssemblyLineManager.PolicyViolationException(
+            throw new PolicyViolationException(
                     "Direct RUN publication is disabled for alId=" + object.alId());
         }
     }
@@ -119,20 +122,20 @@ final class AssemblyLinePublicationService {
     private OperationChainPublicationStage stage(OperationChainObject object,
                                                  List<String> tags,
                                                  String storeFingerprint)
-            throws AssemblyLineManager.PolicyViolationException {
+            throws PolicyViolationException {
         try {
             return publicationRepository.stage(object, tags, storeFingerprint);
         } catch (OperationChainPublicationConflictException exception) {
-            throw new AssemblyLineManager.PolicyViolationException(exception.getMessage(), exception);
+            throw new PolicyViolationException(exception.getMessage(), exception);
         }
     }
 
-    private void commit(OperationChainPublicationStage stage) throws AssemblyLineManager.PolicyViolationException {
+    private void commit(OperationChainPublicationStage stage) throws PolicyViolationException {
         try {
             publicationRepository.commit(stage.stageId());
         } catch (OperationChainPublicationConflictException exception) {
             abortAfterConflict(stage.stageId(), exception);
-            throw new AssemblyLineManager.PolicyViolationException(exception.getMessage(), exception);
+            throw new PolicyViolationException(exception.getMessage(), exception);
         }
     }
 

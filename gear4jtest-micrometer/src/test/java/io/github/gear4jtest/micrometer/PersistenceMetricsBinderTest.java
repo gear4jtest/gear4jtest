@@ -3,8 +3,8 @@ package io.github.gear4jtest.micrometer;
 import java.time.Duration;
 import java.time.Instant;
 
-import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
-import io.github.gear4jtest.core.execution.PersistenceRuntimeStats;
+import io.github.gear4jtest.core.persistence.PersistenceRuntimeMonitor;
+import io.github.gear4jtest.core.persistence.PersistenceRuntimeStats;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 

@@ -21,7 +21,7 @@ This module provides that integration layer.
 The module typically provides:
 
 - a `ResourceFactory` backed by Spring `ApplicationContext`;
-- a Spring `@Configuration` that creates a `AssemblyLineEngine`;
+- a Spring `@Configuration` that creates an `AssemblyLineExecutor`;
 - automatic collection of Gear4J runtime extensions declared as Spring beans;
 - builder customization hooks.
 
@@ -75,7 +75,7 @@ Runtime extensions can be discovered automatically from the Spring context.
 
 ### Builder customization
 
-Applications can tweak the `AssemblyLineEngine.Builder` without replacing the whole base configuration.
+Applications can customize the stable `AssemblyLineExecutor` options without importing the internal engine builder.
 
 ## Future Boot module
 

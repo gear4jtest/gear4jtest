@@ -10,12 +10,12 @@ pipelines directly.
 
 Current public API packages include:
 
-- `io.github.gear4jtest.core.api.*`
+- `io.github.gear4jtest.core.api.*`, including `AssemblyLineExecutor`, `AssemblyLineExecutors` and read-only trace views
 - `io.github.gear4jtest.core.event` event contracts used by applications that subscribe to runtime events
 - `io.github.gear4jtest.core.sidecompute` side-compute contracts and wait processors
 - `io.github.gear4jtest.core.exception` application-visible exception hierarchy
 - `io.github.gear4jtest.core.model` application-visible runtime status values
-- `io.github.gear4jtest.core.persistence` persistence records and repository contracts independent of a storage provider
+- `io.github.gear4jtest.core.persistence` persistence records, lifecycle and operational-monitoring contracts independent of a storage provider
 - `io.github.gear4jtest.jdbc.execution` optional JDBC execution persistence entry points
 - `io.github.gear4jtest.jdbc.persistence` optional JDBC repository and dialect entry points
 - `io.github.gear4jtest.external.api.AssemblyLineManager`
@@ -97,8 +97,8 @@ the generated Javadocs and class files. `ApiBoundarySourceTest` requires exactly
 across all published Java library modules. Japicmp supplies the separate binary/source enforcement.
 
 The repository intentionally does not introduce JPMS descriptors yet. Instead, source-level architecture tests enforce
-that production packages declare a package marker and that API/SPI dependencies on implementation packages do not grow
-silently. See `docs/decisions/0012-source-level-api-boundaries.md` for the rationale.
+that production packages declare a package marker and that API/SPI contracts have zero dependencies on `core.engine`,
+`core.execution` or `core.internal`. Provider-neutral `external-api` is also forbidden from importing JDBC packages. See `docs/decisions/0012-source-level-api-boundaries.md` for the rationale.
 
 Some public packages contain individual classes or methods marked `@Internal`. Those members are implementation details
 kept public for wiring, tests or historical compatibility; they are not part of the stable consumer contract.
@@ -117,3 +117,10 @@ For externally authored definitions, use GEL conditions with:
 
 GEL is intentionally limited: no Java method calls, no constructors, no class
 literals, no reflection and no arbitrary static access.
+
+
+## Stable facade rule
+
+Application code should depend on `AssemblyLineExecutor`, `RunTrace`, `StationTrace`, `RunPersistenceManager` and
+`PersistenceRuntimeMonitor`. `AssemblyLineEngine`, mutable trace implementations and execution registries remain internal
+wiring types even when a public class is retained temporarily for binary or framework integration.

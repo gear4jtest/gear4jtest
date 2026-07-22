@@ -1,7 +1,6 @@
 package io.github.gear4jtest.core.engine.strategy;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
@@ -10,10 +9,10 @@ import io.github.gear4jtest.core.api.assemblyline.AssemblyLineReference;
 import io.github.gear4jtest.core.api.assemblyline.ReferencedAssemblyLineTarget;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
-import io.github.gear4jtest.core.api.context.ResolvedParameters;
-import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
 import io.github.gear4jtest.core.api.station.StationKind;
+import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
+import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.exception.AssemblyLineCallException;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
@@ -38,7 +37,7 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
                 NestedAssemblyLineExecutor.unsupported());
 
         StationRunner runner = successfulRunner();
-        TestStationExecutionContext context = stationContext("call");
+        DefaultStationExecutionContext context = stationContext("call");
 
         // When / Then
         assertThatThrownBy(() -> strategy.doExecute(station, "input", runner, context))
@@ -52,7 +51,7 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
         // Given
         StationLogTrace childLog = childLog(StationLogStatus.SKIPPED, "child-output", null);
         AssemblyLineCallStation<String, String> station = AssemblyLineCallStation.inline("call", childAssemblyLine());
-        TestStationExecutionContext context = stationContext("call");
+        DefaultStationExecutionContext context = stationContext("call");
         AssemblyLineCallStationStrategy strategy = new AssemblyLineCallStationStrategy(
                 NestedAssemblyLineExecutor.unsupported());
 
@@ -61,9 +60,9 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
 
         // Then
         assertThat(output).isEqualTo("child-output");
-        assertThat(context.stationLogTrace().getStatus()).isEqualTo(StationLogStatus.SKIPPED);
-        assertThat(context.stationLogTrace().<String>getOutput()).isEqualTo("child-output");
-        assertThat(context.stationLogTrace().getContext()).containsEntry("assemblyLine.call.mode", "INLINE")
+        assertThat(context.getRecord().getStatus()).isEqualTo(StationLogStatus.SKIPPED);
+        assertThat(context.getRecord().<String>getOutput()).isEqualTo("child-output");
+        assertThat(context.getRecord().getContext()).containsEntry("assemblyLine.call.mode", "INLINE")
                 .containsEntry("assemblyLine.call.declaredReference", "child:1")
                 .containsEntry("assemblyLine.call.resolvedReference", "child:1")
                 .containsEntry("skip.reason", "Child assembly line root was skipped: child");
@@ -77,12 +76,12 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
                 NestedAssemblyLineExecutor.unsupported());
 
         // When
-        TestStationExecutionContext stoppedContext = stationContext("call-stopped");
+        DefaultStationExecutionContext stoppedContext = stationContext("call-stopped");
         Object stoppedOutput = strategy.doExecute(station, "input",
                                                   runnerReturning(childLog(StationLogStatus.STOPPED, "stopped",
                                                                            new IllegalStateException("stop"))),
                                                   stoppedContext);
-        TestStationExecutionContext cancelledContext = stationContext("call-cancelled");
+        DefaultStationExecutionContext cancelledContext = stationContext("call-cancelled");
         Object cancelledOutput = strategy.doExecute(station, "input",
                                                     runnerReturning(childLog(StationLogStatus.CANCELLED, "cancelled",
                                                                              new IllegalStateException("cancel"))),
@@ -90,11 +89,11 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
 
         // Then
         assertThat(stoppedOutput).isEqualTo("stopped");
-        assertThat(stoppedContext.stationLogTrace().getStatus()).isEqualTo(StationLogStatus.STOPPED);
-        assertThat(stoppedContext.stationLogTrace().getErrorMessage()).isEqualTo("stop");
+        assertThat(stoppedContext.getRecord().getStatus()).isEqualTo(StationLogStatus.STOPPED);
+        assertThat(stoppedContext.getRecord().getErrorMessage()).isEqualTo("stop");
         assertThat(cancelledOutput).isEqualTo("cancelled");
-        assertThat(cancelledContext.stationLogTrace().getStatus()).isEqualTo(StationLogStatus.CANCELLED);
-        assertThat(cancelledContext.stationLogTrace().getErrorMessage()).isEqualTo("cancel");
+        assertThat(cancelledContext.getRecord().getStatus()).isEqualTo(StationLogStatus.CANCELLED);
+        assertThat(cancelledContext.getRecord().getErrorMessage()).isEqualTo("cancel");
     }
 
     @Test
@@ -106,7 +105,7 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
                 NestedAssemblyLineExecutor.unsupported());
 
         StationRunner runner = runnerReturning(childLog(StationLogStatus.FAILED, null, failure));
-        TestStationExecutionContext context = stationContext("call");
+        DefaultStationExecutionContext context = stationContext("call");
 
         // When / Then
         assertThatThrownBy(() -> strategy.doExecute(station, "input", runner, context))
@@ -125,28 +124,28 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
         AssemblyRunTrace cancelled = childRun(ExecutionStatus.CANCELLED, new IllegalStateException("cancel"));
 
         // When
-        TestStationExecutionContext skippedContext = stationContext("nested-skipped");
+        DefaultStationExecutionContext skippedContext = stationContext("nested-skipped");
         Object skippedOutput = strategyReturning(ExecutionResult.skipped("skipped", skipped))
                 .doExecute(station, "input", successfulRunner(), skippedContext);
-        TestStationExecutionContext stoppedContext = stationContext("nested-stopped");
+        DefaultStationExecutionContext stoppedContext = stationContext("nested-stopped");
         Object stoppedOutput = strategyReturning(ExecutionResult.stopped("stopped", stopped))
                 .doExecute(station, "input", successfulRunner(), stoppedContext);
-        TestStationExecutionContext cancelledContext = stationContext("nested-cancelled");
+        DefaultStationExecutionContext cancelledContext = stationContext("nested-cancelled");
         Object cancelledOutput = strategyReturning(ExecutionResult.cancelled("cancelled", cancelled,
                                                                              new IllegalStateException("cancel")))
                 .doExecute(station, "input", successfulRunner(), cancelledContext);
 
         // Then
         assertThat(skippedOutput).isEqualTo("skipped");
-        assertThat(skippedContext.stationLogTrace().getStatus()).isEqualTo(StationLogStatus.SKIPPED);
-        assertThat(skippedContext.stationLogTrace().getContext()).containsEntry("assemblyLine.call.childExecutionId",
-                                                                                skipped.getId());
+        assertThat(skippedContext.getRecord().getStatus()).isEqualTo(StationLogStatus.SKIPPED);
+        assertThat(skippedContext.getRecord().getContext()).containsEntry("assemblyLine.call.childExecutionId",
+                                                                          skipped.getId());
         assertThat(stoppedOutput).isEqualTo("stopped");
-        assertThat(stoppedContext.stationLogTrace().getStatus()).isEqualTo(StationLogStatus.STOPPED);
-        assertThat(stoppedContext.stationLogTrace().getErrorMessage()).isEqualTo("stop");
+        assertThat(stoppedContext.getRecord().getStatus()).isEqualTo(StationLogStatus.STOPPED);
+        assertThat(stoppedContext.getRecord().getErrorMessage()).isEqualTo("stop");
         assertThat(cancelledOutput).isEqualTo("cancelled");
-        assertThat(cancelledContext.stationLogTrace().getStatus()).isEqualTo(StationLogStatus.CANCELLED);
-        assertThat(cancelledContext.stationLogTrace().getErrorMessage()).isEqualTo("cancel");
+        assertThat(cancelledContext.getRecord().getStatus()).isEqualTo(StationLogStatus.CANCELLED);
+        assertThat(cancelledContext.getRecord().getErrorMessage()).isEqualTo("cancel");
     }
 
     @Test
@@ -159,7 +158,7 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
         AssemblyRunTrace failedRun = childRun(ExecutionStatus.FAILED, failure);
         AssemblyLineCallStationStrategy failedStrategy = strategyReturning(ExecutionResult.failure(failure, failedRun));
         StationRunner runner = successfulRunner();
-        TestStationExecutionContext context = stationContext("call");
+        DefaultStationExecutionContext context = stationContext("call");
 
         // When / Then
         assertThatThrownBy(() -> failedStrategy.doExecute(station, "input", runner, context))
@@ -169,7 +168,7 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
         ExecutionResult<Object> failedWithoutRun = new ExecutionResult<>(null,
                 io.github.gear4jtest.core.api.ExecutionOutcome.FAILED, null, null);
         AssemblyLineCallStationStrategy failedWithoutRunStrategy = strategyReturning(failedWithoutRun);
-        TestStationExecutionContext contextWithoutRun = stationContext("call");
+        DefaultStationExecutionContext contextWithoutRun = stationContext("call");
 
         assertThatThrownBy(() -> failedWithoutRunStrategy.doExecute(station, "input", runner, contextWithoutRun))
                 .isInstanceOf(AssemblyLineCallException.class)
@@ -226,7 +225,7 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
         return run;
     }
 
-    private static TestStationExecutionContext stationContext(String operationId) {
+    private static DefaultStationExecutionContext stationContext(String operationId) {
         AssemblyRunTrace run = new AssemblyRunTrace(UUID.randomUUID(), "parent", Map.of());
         ExecutionContext globalContext = ExecutionContext.builder()
                 .executionId(run.getId())
@@ -234,8 +233,9 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
                 .services(new ExecutionServices(null, noResources()))
                 .assemblyRun(run)
                 .build();
-        return new TestStationExecutionContext(operationId, globalContext,
-                StationLogTrace.start(globalContext.getExecutionId(), operationId, null));
+        return new DefaultStationExecutionContext(operationId, StationKind.ASSEMBLY_LINE, globalContext,
+                StationLogTrace.start(globalContext.getExecutionId(), operationId, null),
+                new ExecutionSupport(null, null, null));
     }
 
     private static ResourceFactory noResources() {
@@ -247,38 +247,4 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
         };
     }
 
-    private record TestStationExecutionContext(String operationId,
-                                               ExecutionContext globalContext,
-                                               StationLogTrace stationLogTrace)
-            implements StationExecutionContext {
-        @Override
-        public String getOperationId() {
-            return operationId;
-        }
-
-        @Override
-        public StationKind getKind() {
-            return StationKind.ASSEMBLY_LINE;
-        }
-
-        @Override
-        public ExecutionContext getGlobalContext() {
-            return globalContext;
-        }
-
-        @Override
-        public StationLogTrace getRecord() {
-            return stationLogTrace;
-        }
-
-        @Override
-        public <T> Optional<T> getCapability(Class<T> type) {
-            return Optional.empty();
-        }
-
-        @Override
-        public ResolvedParameters getResolvedParameters() {
-            return new ResolvedParameters();
-        }
-    }
 }

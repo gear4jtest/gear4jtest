@@ -2,6 +2,10 @@ package io.github.gear4jtest.core.engine.support;
 
 import java.time.Duration;
 
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyPolicy;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyRegistryConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerLockAcquisitionPolicy;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

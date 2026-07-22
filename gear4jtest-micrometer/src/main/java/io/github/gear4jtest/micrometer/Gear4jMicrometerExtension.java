@@ -6,7 +6,7 @@ import java.util.Objects;
 
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.extension.LifecycleFailureMode;
 import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
@@ -40,7 +40,7 @@ public final class Gear4jMicrometerExtension implements RunLifecycleExtension, S
     }
 
     @Override
-    public void onRunStarted(ExecutionContext ctx, AssemblyRunTrace run) {
+    public void onRunStarted(ExecutionContext ctx, RunTrace run) {
         Counter.builder("gear4j.runs.started")
                 .description("Number of Gear4J assembly line runs started")
                 .tags(tagPolicy.runStartedTags(run))
@@ -49,7 +49,7 @@ public final class Gear4jMicrometerExtension implements RunLifecycleExtension, S
     }
 
     @Override
-    public void onRunCompleted(ExecutionContext ctx, AssemblyRunTrace run) {
+    public void onRunCompleted(ExecutionContext ctx, RunTrace run) {
         String[] tags = tagPolicy.runCompletedTags(run);
         Counter.builder("gear4j.runs.completed")
                 .description("Number of Gear4J assembly line runs completed")

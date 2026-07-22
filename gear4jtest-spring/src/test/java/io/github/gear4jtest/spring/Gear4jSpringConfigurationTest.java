@@ -1,6 +1,7 @@
 package io.github.gear4jtest.spring;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
+import io.github.gear4jtest.core.api.AssemblyLineExecutor;
 import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
@@ -8,7 +9,6 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
 import io.github.gear4jtest.core.api.util.AssemblyLines;
 import io.github.gear4jtest.core.api.util.Stations;
-import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ class Gear4jSpringConfigurationTest {
             assertThat(context.getBean(ExecutionContextRegistry.class))
                     .as("execution context registry")
                     .isNotNull();
-            assertThat(context.getBean(AssemblyLineEngine.class))
+            assertThat(context.getBean(AssemblyLineExecutor.class))
                     .as("pipeline engine")
                     .isNotNull();
             assertThat(context.getBean(AssemblyLineRegistry.class).getAll())
@@ -59,7 +59,7 @@ class Gear4jSpringConfigurationTest {
                     .build();
 
             // When
-            ExecutionResult<String> result = context.getBean(AssemblyLineEngine.class)
+            ExecutionResult<String> result = context.getBean(AssemblyLineExecutor.class)
                     .execute(parent, RunRequest.builder().input("hello").build());
 
             // Then

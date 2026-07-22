@@ -3,11 +3,11 @@ package io.github.gear4jtest.core.engine;
 import java.time.Duration;
 import java.util.stream.Stream;
 
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyPolicy;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyRegistryConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerLockAcquisitionPolicy;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyManager;
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyPolicy;
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyRegistryConfiguration;
-import io.github.gear4jtest.core.engine.support.WorkerLockAcquisitionPolicy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;

@@ -2,7 +2,7 @@ package io.github.gear4jtest.core.api.util;
 
 import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
-import io.github.gear4jtest.core.execution.AssemblyRunManager;
+import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 
 /**
  * Builders for Gear4J persistence configuration and built-in persistence
@@ -16,7 +16,7 @@ public final class Persistence {
         return new PersistenceConfiguration.Builder();
     }
 
-    public static PersistenceExtension.Builder persistenceExtension(AssemblyRunManager manager) {
+    public static PersistenceExtension.Builder persistenceExtension(RunPersistenceManager manager) {
         return PersistenceExtension.builder(manager);
     }
 }

@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
+import io.github.gear4jtest.core.api.trace.StationTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ class AbstractStationHooksExtensionTest {
         StationRunner runner = extension.wrapStationRunner((input, station, ctx) -> trace, null);
 
         // When
-        StationLogTrace actual = runner.run("input", null, null);
+        StationTrace actual = runner.run("input", null, null);
 
         // Then
         assertThat(actual).isSameAs(trace);
@@ -54,7 +55,7 @@ class AbstractStationHooksExtensionTest {
         @Override
         protected void onResult(AbstractStation<?, ?> station,
                                 StationExecutionContext stationCtx,
-                                StationLogTrace log) {
+                                StationTrace log) {
             events.add("result:" + log.getOperationId());
         }
 

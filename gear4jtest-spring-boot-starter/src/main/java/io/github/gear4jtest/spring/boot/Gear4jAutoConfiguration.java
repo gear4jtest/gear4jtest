@@ -4,8 +4,8 @@ import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
-import io.github.gear4jtest.core.execution.AssemblyRunManager;
-import io.github.gear4jtest.core.execution.PersistenceRuntimeMonitor;
+import io.github.gear4jtest.core.persistence.PersistenceRuntimeMonitor;
+import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfiguration;
@@ -13,7 +13,7 @@ import io.github.gear4jtest.micrometer.EventMetricsBinder;
 import io.github.gear4jtest.micrometer.Gear4jMeterTagPolicy;
 import io.github.gear4jtest.micrometer.Gear4jMicrometerExtension;
 import io.github.gear4jtest.micrometer.PersistenceMetricsBinder;
-import io.github.gear4jtest.spring.Gear4jAssemblyLineEngineBuilderCustomizer;
+import io.github.gear4jtest.spring.Gear4jAssemblyLineExecutorCustomizer;
 import io.github.gear4jtest.spring.Gear4jSpringConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.ObjectProvider;
@@ -33,14 +33,14 @@ import org.springframework.context.annotation.Import;
 public class Gear4jAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(name = "gear4jParallelExecutionCustomizer")
-    Gear4jAssemblyLineEngineBuilderCustomizer gear4jParallelExecutionCustomizer(Gear4jProperties properties) {
+    Gear4jAssemblyLineExecutorCustomizer gear4jParallelExecutionCustomizer(Gear4jProperties properties) {
         return builder -> builder.parallelExecutionConfiguration(ParallelExecutionConfiguration
                 .withDefaultAwaitTimeout(properties.getParallel().getDefaultAwaitTimeout()));
     }
 
     @Bean(destroyMethod = "shutdown")
     @ConditionalOnBean(DataSource.class)
-    @ConditionalOnMissingBean(AssemblyRunManager.class)
+    @ConditionalOnMissingBean(RunPersistenceManager.class)
     @ConditionalOnProperty(prefix = "gear4j.persistence", name = "enabled", havingValue = "true")
     DatabaseExecutionManager gear4jDatabaseExecutionManager(DataSource dataSource,
                                                             Gear4jProperties properties,
@@ -97,9 +97,9 @@ public class Gear4jAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnBean(AssemblyRunManager.class)
+    @ConditionalOnBean(RunPersistenceManager.class)
     @ConditionalOnMissingBean(PersistenceExtension.class)
-    PersistenceExtension gear4jPersistenceExtension(AssemblyRunManager manager) {
+    PersistenceExtension gear4jPersistenceExtension(RunPersistenceManager manager) {
         return new PersistenceExtension(manager);
     }
 

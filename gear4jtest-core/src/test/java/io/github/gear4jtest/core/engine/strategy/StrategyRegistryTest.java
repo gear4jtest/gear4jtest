@@ -4,14 +4,14 @@ import java.util.List;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyConfiguration;
+import io.github.gear4jtest.core.api.config.WorkerConcurrencyPolicy;
+import io.github.gear4jtest.core.api.config.WorkerLockAcquisitionPolicy;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.StationKind;
 import io.github.gear4jtest.core.api.station.WorkStation;
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfiguration;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyManager;
-import io.github.gear4jtest.core.engine.support.WorkerConcurrencyPolicy;
-import io.github.gear4jtest.core.engine.support.WorkerLockAcquisitionPolicy;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

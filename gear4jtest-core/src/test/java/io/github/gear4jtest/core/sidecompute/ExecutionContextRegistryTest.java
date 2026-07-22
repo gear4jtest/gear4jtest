@@ -21,7 +21,7 @@ class ExecutionContextRegistryTest {
 
         registry.register(ctx);
 
-        assertThat(registry.get(id)).isSameAs(ctx);
+        assertThat(registry.find(id)).isSameAs(ctx);
     }
 
     @Test
@@ -34,14 +34,14 @@ class ExecutionContextRegistryTest {
         registry.register(ctx);
         registry.remove(id);
 
-        assertThat(registry.get(id)).isNull();
+        assertThat(registry.find(id)).isNull();
     }
 
     @Test
     void getShouldReturnNullForUnknownId() {
         ExecutionContextRegistry registry = new ExecutionContextRegistry();
 
-        assertThat(registry.get(UUID.randomUUID())).isNull();
+        assertThat(registry.find(UUID.randomUUID())).isNull();
     }
 
     @Test
@@ -59,7 +59,7 @@ class ExecutionContextRegistryTest {
         assertThatThrownBy(() -> registry.register(duplicate))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Duplicate active execution id: " + id);
-        assertThat(registry.get(id)).isSameAs(first);
+        assertThat(registry.find(id)).isSameAs(first);
     }
 
     @Test
@@ -79,7 +79,7 @@ class ExecutionContextRegistryTest {
         registry.remove(id, completed);
 
         // Then
-        assertThat(registry.get(id)).isSameAs(replacement);
+        assertThat(registry.find(id)).isSameAs(replacement);
     }
 
     @Test
@@ -95,6 +95,6 @@ class ExecutionContextRegistryTest {
         registry.remove(id, context);
 
         // Then
-        assertThat(registry.get(id)).isNull();
+        assertThat(registry.find(id)).isNull();
     }
 }

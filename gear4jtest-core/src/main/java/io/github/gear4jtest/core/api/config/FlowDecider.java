@@ -1,11 +1,11 @@
 package io.github.gear4jtest.core.api.config;
 
-import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.api.trace.StationTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 
 /**
- * Converts a child {@link StationLogTrace} into the {@link FlowDecision}
- * dictated by a {@link FlowConfig}.
+ * Converts a child {@link StationTrace} into the {@link FlowDecision} dictated
+ * by a {@link FlowConfig}.
  *
  * <p>
  * This component is stateless, deterministic and easy to test.
@@ -15,7 +15,7 @@ public final class FlowDecider {
     private FlowDecider() {
     }
 
-    public static FlowDecision decide(StationLogTrace childLog, FlowConfig config) {
+    public static FlowDecision decide(StationTrace childLog, FlowConfig config) {
         StationLogStatus status = childLog.getStatus();
 
         // 1) Happy path

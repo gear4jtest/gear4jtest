@@ -3,7 +3,7 @@ package io.github.gear4jtest.core.api.context;
 import java.util.Optional;
 
 import io.github.gear4jtest.core.api.station.StationKind;
-import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.api.trace.StationTrace;
 
 /**
  * Runtime context of a single station execution.
@@ -24,7 +24,7 @@ public interface StationExecutionContext {
         return getGlobalContext().getServices();
     }
 
-    StationLogTrace getRecord();
+    StationTrace getRecord();
 
     /**
      * Returns an optional typed capability attached to this station execution.

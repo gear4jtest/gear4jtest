@@ -6,7 +6,7 @@ Implemented, evolving.
 
 ## Summary
 
-The core runtime executes an `AssemblyLine` through `AssemblyLineEngine`.
+Applications execute an `AssemblyLine` through the public `AssemblyLineExecutor` contract.
 
 The engine is responsible for:
 
@@ -28,7 +28,8 @@ The engine is responsible for:
 | `ExecutionContext`         | Mutable state of one run.                                    |
 | `ExecutionServices`        | Run-scoped services used by strategies and station contexts. |
 | `StationExecutionContext`  | Context exposed to station execution and user code.          |
-| `AssemblyLineEngine`           | Runtime orchestrator.                                        |
+| `AssemblyLineExecutor`       | Stable public execution entry point.                         |
+| `AssemblyLineEngine`           | Internal default runtime implementation.                     |
 | `StationRunner`            | Executes a station through a composable runner chain.        |
 | `StationExecutionStrategy` | Strategy for a specific station kind.                        |
 
@@ -102,7 +103,7 @@ General rules:
 `AssemblyLineCallStation` can execute a child pipeline inline or as a nested run.
 
 A nested run creates its own execution trace and runtime setup. User context propagation is controlled by
-`ContextPropagationPolicy` on `AssemblyLineEngine.Builder`. The default remains the historical shallow map copy: the
+`ContextPropagationPolicy` on `AssemblyLineExecutorBuilder`. The default remains the historical shallow map copy: the
 child receives a distinct context map, but mutable values inside that map are still shared references. Configure
 `ContextPropagationPolicy.none()`, `includeKeys(...)` or `copyValues(...)` when nested-run isolation matters.
 
@@ -115,6 +116,6 @@ A running pipeline graph must not be mutated while a run is in progress.
 Assembly-line default context and `RunRequest` context are merged into a new map
 for every execution. Values remain shallow references by default for compatibility.
 Applications that place mutable lists, maps or DTOs in these contexts should set
-`AssemblyLineEngine.Builder.initialRunContextPolicy(ContextPropagationPolicy.copyValues(...))`
+`AssemblyLineExecutors.builder().initialRunContextPolicy(ContextPropagationPolicy.copyValues(...))`
 to make defensive per-run copies. This policy is independent from
 `nestedRunContextPropagationPolicy`, which controls the parent-to-child boundary.

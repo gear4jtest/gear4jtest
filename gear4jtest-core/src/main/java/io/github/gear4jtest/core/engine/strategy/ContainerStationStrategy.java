@@ -7,6 +7,7 @@ import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
+import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 /**
@@ -47,13 +48,14 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
                 : sequentialExecutor.execute(station, input, runner, context, flowConfig);
 
         if (aggregation.interruptingChild() != null) {
-            FlowStrategySupport.applyInterruptToParentLog(context.getRecord(), aggregation.interruptingChild(),
+            FlowStrategySupport.applyInterruptToParentLog(EngineStationContexts.trace(context),
+                                                          aggregation.interruptingChild(),
                                                           flowConfig);
             return null;
         }
         if (!aggregation.collectedErrors().isEmpty()) {
             Throwable first = aggregation.collectedErrors().get(0);
-            context.getRecord().markFailed(first instanceof Exception exception ? exception
+            EngineStationContexts.trace(context).markFailed(first instanceof Exception exception ? exception
                     : new RuntimeException(first.getMessage(), first));
         }
         return ContainerBranchExecutionSupport.assembleReturnValue(station, aggregation.results());

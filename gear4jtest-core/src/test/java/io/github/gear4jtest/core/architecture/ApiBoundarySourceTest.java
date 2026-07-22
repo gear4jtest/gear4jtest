@@ -30,20 +30,6 @@ final class ApiBoundarySourceTest {
                                                                 "@io.github.gear4jtest.core.api.annotation.Spi",
                                                                 "@io.github.gear4jtest.core.api.annotation.Internal",
                                                                 "@io.github.gear4jtest.core.api.annotation.Experimental");
-    private static final List<String> KNOWN_CORE_API_SPI_INTERNAL_DEPENDENCIES = List.of(
-                                                                                         "io/github/gear4jtest/core/api/ExecutionResult.java -> execution",
-                                                                                         "io/github/gear4jtest/core/api/assemblyline/NestedRunContext.java -> execution",
-                                                                                         "io/github/gear4jtest/core/api/config/FlowDecider.java -> execution",
-                                                                                         "io/github/gear4jtest/core/api/context/ExecutionContext.java -> execution",
-                                                                                         "io/github/gear4jtest/core/api/context/StationExecutionContext.java -> execution",
-                                                                                         "io/github/gear4jtest/core/api/util/Concurrency.java -> engine",
-                                                                                         "io/github/gear4jtest/core/api/util/Persistence.java -> execution",
-                                                                                         "io/github/gear4jtest/core/persistence/AssemblyRunRecord.java -> execution",
-                                                                                         "io/github/gear4jtest/core/persistence/StationLogRecord.java -> execution",
-                                                                                         "io/github/gear4jtest/core/sidecompute/SideComputer.java -> execution",
-                                                                                         "io/github/gear4jtest/core/spi/extension/AbstractStationHooksExtension.java -> execution",
-                                                                                         "io/github/gear4jtest/core/spi/extension/RunLifecycleExtension.java -> execution",
-                                                                                         "io/github/gear4jtest/core/spi/runner/StationRunner.java -> execution");
 
     @Test
     void productionPackages_shouldDeclareExactlyOneStabilityMarker() throws IOException {
@@ -78,7 +64,7 @@ final class ApiBoundarySourceTest {
     }
 
     @Test
-    void corePublicApiAndSpiInternalDependencies_shouldNotGrowSilently() throws IOException {
+    void corePublicApiAndSpi_shouldNotDependOnInternalPackages() throws IOException {
         Path sourceRoot = findRepositoryRoot().resolve("gear4jtest-core/src/main/java");
 
         List<String> currentDependencies = new ArrayList<>();
@@ -104,7 +90,22 @@ final class ApiBoundarySourceTest {
         }
 
         currentDependencies.sort(Comparator.naturalOrder());
-        assertThat(currentDependencies).containsExactlyElementsOf(KNOWN_CORE_API_SPI_INTERNAL_DEPENDENCIES);
+        assertThat(currentDependencies).isEmpty();
+    }
+
+    @Test
+    void providerNeutralExternalApi_shouldNotImportJdbcPackages() throws IOException {
+        Path sourceRoot = findRepositoryRoot().resolve("gear4jtest-external-api/src/main/java");
+        List<String> violations = new ArrayList<>();
+
+        for (Path sourceFile : javaSources(sourceRoot)) {
+            String source = Files.readString(sourceFile);
+            if (source.contains("import java.sql.") || source.contains("import javax.sql.")) {
+                violations.add(sourceRoot.relativize(sourceFile).toString());
+            }
+        }
+
+        assertThat(violations).isEmpty();
     }
 
     private static Path findRepositoryRoot() {

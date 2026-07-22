@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import io.github.gear4jtest.core.persistence.PageRequest;
@@ -15,6 +14,7 @@ import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
+import io.github.gear4jtest.external.api.repository.OperationChainNotFoundException;
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
 import io.github.gear4jtest.external.api.storage.ArtifactStoreProvider;
 
@@ -54,7 +54,7 @@ public final class ArtifactConsistencyChecker {
             throw new IllegalArgumentException("assemblyLineId is required");
         }
         OperationChainConfig config = configRepository.findByAssemblyLineId(assemblyLineId)
-                .orElseThrow(() -> new NoSuchElementException(
+                .orElseThrow(() -> new OperationChainNotFoundException(
                         "Operation-chain configuration not found for " + assemblyLineId));
         ArtifactStore store = Objects.requireNonNull(storeProvider.forConfig(config),
                                                      "storeProvider returned null");

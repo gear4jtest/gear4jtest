@@ -6,9 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import io.github.gear4jtest.core.execution.AssemblyRunManager;
+import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
+import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import org.junit.jupiter.api.Test;
 
@@ -76,13 +77,13 @@ class PersistenceExtensionTest {
                 status == StationLogStatus.RUNNING ? null : now, null, null, Map.of(), null);
     }
 
-    private static final class RecordingRunManager implements AssemblyRunManager {
+    private static final class RecordingRunManager implements RunPersistenceManager {
         private final List<String> events = new ArrayList<>();
         private final List<StationLogRecord> appended = new ArrayList<>();
         private final List<List<StationLogRecord>> appendedBatches = new ArrayList<>();
 
         @Override
-        public void start(AssemblyRunTrace execution) {
+        public void start(RunTrace execution) {
             events.add("start");
         }
 
@@ -99,7 +100,7 @@ class PersistenceExtensionTest {
         }
 
         @Override
-        public void end(AssemblyRunTrace finalExecution) {
+        public void end(RunTrace finalExecution) {
             events.add("end");
         }
     }

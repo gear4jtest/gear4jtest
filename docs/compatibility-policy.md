@@ -8,7 +8,7 @@ marked `@Internal` or `@Experimental` are excluded unless a release note explici
 ## Java source and binary compatibility
 
 Patch and minor 1.x releases must not remove or narrow public/SPI classes, methods, constructors, fields or implemented
-interfaces. Additive overloads and default SPI methods are preferred. A source-compatible change that is binary
+interfaces. The supported execution entry point is `AssemblyLineExecutor`; mutable engine and trace implementation classes are not part of the 1.x contract. Additive overloads and default SPI methods are preferred. A source-compatible change that is binary
 incompatible is still a breaking change. A necessary incompatible change requires a major release, migration guide and
 deprecation path whenever one can be provided safely.
 

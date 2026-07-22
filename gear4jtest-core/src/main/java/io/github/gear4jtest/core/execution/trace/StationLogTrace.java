@@ -2,10 +2,12 @@ package io.github.gear4jtest.core.execution.trace;
 
 import java.util.UUID;
 
+import io.github.gear4jtest.core.api.trace.StationTrace;
 import io.github.gear4jtest.core.internal.AbstractStationLogState;
 import io.github.gear4jtest.core.model.StationLogStatus;
 
-public class StationLogTrace extends AbstractStationLogState<StationLogTrace, StationLogStatus> {
+public class StationLogTrace extends AbstractStationLogState<StationLogTrace, StationLogStatus>
+        implements StationTrace {
     public static StationLogTrace start(UUID assemblyLineExecutionId, String operationId, UUID parentOperationId) {
         StationLogTrace stationLog = new StationLogTrace();
         stationLog.initializeStarted(assemblyLineExecutionId, operationId, parentOperationId);

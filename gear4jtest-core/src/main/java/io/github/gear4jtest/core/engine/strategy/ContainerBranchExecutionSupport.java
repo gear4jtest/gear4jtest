@@ -99,7 +99,7 @@ final class ContainerBranchExecutionSupport {
         StationLogTrace log = newSyntheticChildLog(branch, context);
         log.markSkipped();
         log.setOutput(null);
-        log.getContext().put("synthetic.reason", reason.name());
+        log.mutableContext().put("synthetic.reason", reason.name());
         return EngineStationContexts.support(context).getSyntheticStationLifecycleRecorder()
                 .recordSkipped(context, branch.getStation(), log, input, reason);
     }
@@ -112,7 +112,7 @@ final class ContainerBranchExecutionSupport {
         StationLogTrace log = newSyntheticChildLog(branch, context);
         log.markCancelled(timeout);
         log.setOutput(null);
-        log.getContext().put("synthetic.reason", StationCancellationReason.TIMEOUT.name());
+        log.mutableContext().put("synthetic.reason", StationCancellationReason.TIMEOUT.name());
         return EngineStationContexts.support(context).getSyntheticStationLifecycleRecorder()
                 .recordCancelled(context, branch.getStation(), log, input, StationCancellationReason.TIMEOUT, timeout);
     }
@@ -124,7 +124,7 @@ final class ContainerBranchExecutionSupport {
         StationLogTrace log = newSyntheticChildLog(branch, context);
         log.markCancelled(cause);
         log.setOutput(null);
-        log.getContext().put("synthetic.reason", StationCancellationReason.COOPERATIVE_CANCELLATION.name());
+        log.mutableContext().put("synthetic.reason", StationCancellationReason.COOPERATIVE_CANCELLATION.name());
         return EngineStationContexts.support(context).getSyntheticStationLifecycleRecorder()
                 .recordCancelled(context, branch.getStation(), log, input,
                                  StationCancellationReason.COOPERATIVE_CANCELLATION, cause);
@@ -140,7 +140,7 @@ final class ContainerBranchExecutionSupport {
         StationLogTrace log = newSyntheticChildLog(branch, context);
         log.markCancelled(cause);
         log.setOutput(null);
-        log.getContext().put("synthetic.reason", StationInterruptionReason.SIBLING_FLOW_INTERRUPTED.name());
+        log.mutableContext().put("synthetic.reason", StationInterruptionReason.SIBLING_FLOW_INTERRUPTED.name());
         return EngineStationContexts.support(context).getSyntheticStationLifecycleRecorder()
                 .recordInterrupted(context, branch.getStation(), log, input,
                                    StationInterruptionReason.SIBLING_FLOW_INTERRUPTED,
@@ -155,7 +155,7 @@ final class ContainerBranchExecutionSupport {
         StationLogTrace log = newSyntheticChildLog(branch, context);
         log.markCancelled(cause);
         log.setOutput(null);
-        log.getContext().put("synthetic.reason", StationCancellationReason.UNEXPECTED_WAIT_INTERRUPTION.name());
+        log.mutableContext().put("synthetic.reason", StationCancellationReason.UNEXPECTED_WAIT_INTERRUPTION.name());
         return EngineStationContexts.support(context).getSyntheticStationLifecycleRecorder()
                 .recordCancelled(context, branch.getStation(), log, input,
                                  StationCancellationReason.UNEXPECTED_WAIT_INTERRUPTION, cause);
@@ -170,7 +170,7 @@ final class ContainerBranchExecutionSupport {
                 : new RuntimeException(cause != null ? cause.getMessage() : "Unknown branch failure", cause);
         log.markFailed(representative);
         log.setOutput(null);
-        log.getContext().put("synthetic.reason", "FAILED_BEFORE_START");
+        log.mutableContext().put("synthetic.reason", "FAILED_BEFORE_START");
         return EngineStationContexts.support(context).getSyntheticStationLifecycleRecorder()
                 .recordFailedBeforeStart(context, branch.getStation(), log, input, representative);
     }
@@ -183,7 +183,7 @@ final class ContainerBranchExecutionSupport {
             return unexpectedFailureLog(branch, input, context,
                                         new IllegalStateException("Parallel branch returned null StationLogTrace"));
         }
-        childLog.setParentOperationId(context.getRecord().getId());
+        childLog.setParentOperationId(EngineStationContexts.trace(context).getId());
         if (childLog.getBranchId() == null) {
             childLog.setBranchId(branch.getId());
         }
@@ -229,7 +229,8 @@ final class ContainerBranchExecutionSupport {
     private static StationLogTrace newSyntheticChildLog(ContainerBaseStation.Branch<?> branch,
                                                         StationExecutionContext context) {
         StationLogTrace log = StationLogTrace.start(context.getGlobalContext().getExecutionId(),
-                                                    branch.getStation().getId(), context.getRecord().getId());
+                                                    branch.getStation().getId(),
+                                                    EngineStationContexts.trace(context).getId());
         log.setItemId(context.getGlobalContext().getCurrentItemId());
         log.setBranchId(branch.getId());
         log.setContext(new HashMap<>());

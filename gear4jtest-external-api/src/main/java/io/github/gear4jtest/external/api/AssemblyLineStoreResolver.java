@@ -1,12 +1,12 @@
 package io.github.gear4jtest.external.api;
 
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
+import io.github.gear4jtest.external.api.repository.OperationChainNotFoundException;
 import io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFingerprint;
 import io.github.gear4jtest.external.api.storage.ArtifactStoreProvider;
 
@@ -28,7 +28,7 @@ final class AssemblyLineStoreResolver {
 
     ResolvedStore resolveForPublication(String alId) {
         var config = configRepository.findByAssemblyLineId(alId)
-                .orElseThrow(() -> new NoSuchElementException("Config not found for alId=" + alId));
+                .orElseThrow(() -> new OperationChainNotFoundException("Config not found for alId=" + alId));
         StoreFingerprint fingerprint = StoreFingerprint.from(config);
         StoreCacheEntry cached = storeCacheByAl.get(alId);
         ArtifactStore store;

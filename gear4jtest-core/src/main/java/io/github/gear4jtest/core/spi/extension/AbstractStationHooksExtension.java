@@ -3,7 +3,7 @@ package io.github.gear4jtest.core.spi.extension;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
-import io.github.gear4jtest.core.execution.trace.StationLogTrace;
+import io.github.gear4jtest.core.api.trace.StationTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 /**
@@ -27,7 +27,7 @@ public abstract class AbstractStationHooksExtension implements StationWrapperExt
             onStart(station, parentCtx);
 
             try {
-                StationLogTrace log = delegate.run(input, station, parentCtx);
+                var log = delegate.run(input, station, parentCtx);
                 onResult(station, parentCtx, log);
                 return log;
             } catch (RuntimeException e) {
@@ -48,7 +48,7 @@ public abstract class AbstractStationHooksExtension implements StationWrapperExt
     /**
      * Hook called after delegate station execution returns a station log trace.
      */
-    protected void onResult(AbstractStation<?, ?> station, StationExecutionContext stationCtx, StationLogTrace log) {
+    protected void onResult(AbstractStation<?, ?> station, StationExecutionContext stationCtx, StationTrace log) {
     }
 
     /**

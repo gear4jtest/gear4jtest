@@ -5,7 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
+import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.spi.security.RedactionTarget;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 
@@ -21,12 +21,12 @@ public record AssemblyRunRecord(UUID id,
                                 UUID parentExecutionId,
                                 UUID rootExecutionId,
                                 UUID parentStationLogId) {
-    public static AssemblyRunRecord from(AssemblyRunTrace trace) {
+    public static AssemblyRunRecord from(RunTrace trace) {
         return from(trace, SensitiveDataRedactor.discardSensitiveValues());
     }
 
     @SuppressWarnings("unchecked")
-    public static AssemblyRunRecord from(AssemblyRunTrace trace, SensitiveDataRedactor redactor) {
+    public static AssemblyRunRecord from(RunTrace trace, SensitiveDataRedactor redactor) {
         if (trace == null) {
             throw new IllegalArgumentException("trace must not be null");
         }
@@ -50,20 +50,4 @@ public record AssemblyRunRecord(UUID id,
         return value != null ? value.toString() : null;
     }
 
-    public AssemblyRunTrace toTrace() {
-        AssemblyRunTrace trace = new AssemblyRunTrace();
-        trace.setId(id);
-        trace.setAssemblyLineId(assemblyLineId);
-        trace.setContext(context == null ? Map.of() : new LinkedHashMap<>(context));
-        trace.setInputParams(inputParams);
-        trace.setResult(result);
-        trace.setStatus(status);
-        trace.setStartTime(startTime);
-        trace.setEndTime(endTime);
-        trace.setErrorMessage(errorMessage);
-        trace.setParentExecutionId(parentExecutionId);
-        trace.setRootExecutionId(rootExecutionId);
-        trace.setParentStationLogId(parentStationLogId);
-        return trace;
-    }
 }

@@ -14,11 +14,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
-import io.github.gear4jtest.core.execution.PersistenceOperationalStatus;
-import io.github.gear4jtest.core.execution.PersistenceRuntimeStats;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
+import io.github.gear4jtest.core.persistence.PersistenceOperationalStatus;
+import io.github.gear4jtest.core.persistence.PersistenceRuntimeStats;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
 import org.junit.jupiter.api.Test;
