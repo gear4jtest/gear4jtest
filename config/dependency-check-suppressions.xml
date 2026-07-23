@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!--
+      Add narrowly scoped suppressions only after a documented review.
+      Every <suppress> entry must include an <until> date so accepted risk expires automatically.
+    -->
+</suppressions>

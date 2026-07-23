@@ -42,8 +42,11 @@ parses the JReleaser configuration with the default snapshot version, so no rele
 Then run the complete release candidate validation and a non-publishing JReleaser deployment:
 
 ```bash
-./gradlew clean releaseCheck stageMavenCentral -PprojectVersion=1.0.0
-PROJECT_VERSION=1.0.0 JRELEASER_DRY_RUN=true ./gradlew jreleaserDeploy
+./gradlew clean releaseCheck stageMavenCentral \
+  -PprojectVersion=1.0.0
+PROJECT_VERSION=1.0.0 JRELEASER_DRY_RUN=true \
+  ./gradlew jreleaserDeploy \
+  -PprojectVersion=1.0.0
 ```
 
 From `1.0.1` onward, add the immediately preceding stable release so Japicmp can enforce public API/SPI compatibility:
@@ -107,8 +110,9 @@ A committed `CHANGELOG.md` is not required by the current Maven-Central-only dep
 prepared for each published version outside this repository until a dedicated generated or curated changelog policy is
 adopted.
 
-Dependency locks and Gradle verification metadata remain an optional MVP hardening step. To make their absence fatal,
-run the gate with `-Pgear4j.enforceSupplyChain=true` after generating and reviewing both files.
+Advanced dependency locking and Gradle checksum-verification metadata are intentionally deferred until after 1.0.
+They are not prerequisites for `releaseCheck`. The 1.0 release baseline still requires the checksummed wrapper,
+SHA-pinned actions, vulnerability scanning, restricted repositories and reproducible staged artifacts.
 
 ## Tag-triggered Maven Central release
 
@@ -132,7 +136,24 @@ The release workflow will:
 6. stage Maven libraries, the Gradle plugin and its markers under `build/staging-deploy`;
 7. verify legal entries and Maven Central metadata in the staged artifacts;
 8. compile and execute the autonomous staged-artifact consumer;
-9. compare every stable public library with the configured N-1 release after 1.0.0;
-10. sign, validate and deploy staged artifacts with JReleaser.
+9. rebuild and compare staged JAR, POM and Gradle module metadata hashes;
+10. compare every stable public library with the configured N-1 release after 1.0.0;
+11. sign, validate and deploy staged artifacts with JReleaser.
 
 Manual dispatch is also available. It defaults to dry-run mode.
+
+
+## Dependency-security and reproducibility gates
+
+For 1.0, dependency locking and Gradle verification metadata remain deferred. They must not be introduced as mandatory
+CI or release gates without a separate reviewed phase.
+
+Verify bit-for-bit reproducibility of JAR, POM and Gradle module metadata outputs after staging:
+
+```bash
+scripts/verify-reproducible-staging.sh 1.0.0-rc1
+```
+
+The script hashes an existing staging repository, rebuilds it from a clean workspace and compares the hashes. Maven
+repository metadata containing publication timestamps is intentionally excluded; the published component artifacts are
+compared.

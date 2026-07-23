@@ -100,8 +100,6 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
 
-      - name: Validate release metadata
-        run: ./gradlew --no-daemon --warning-mode=all releaseMetadataCheck
 
       - name: Verify, test and stage artifacts
         env:
@@ -113,8 +111,15 @@ jobs:
           if [[ -n "${API_BASELINE_VERSION}" ]]; then
             BASELINE_ARGS+=("-Pgear4j.apiBaselineVersion=${API_BASELINE_VERSION}")
           fi
-          ./gradlew --no-daemon --warning-mode=all clean releaseCheck stageMavenCentral \
-            -PprojectVersion="${PROJECT_VERSION}" "${BASELINE_ARGS[@]}"
+          ./gradlew --no-daemon --warning-mode=all \
+            clean releaseCheck stageMavenCentral \
+            -PprojectVersion="${PROJECT_VERSION}" \
+            "${BASELINE_ARGS[@]}"
+
+      - name: Verify reproducible staged artifacts
+        env:
+          PROJECT_VERSION: ${{ steps.version.outputs.value }}
+        run: scripts/verify-reproducible-staging.sh "${PROJECT_VERSION}"
 
       - name: Publish release through JReleaser
         env:
@@ -125,7 +130,9 @@ jobs:
           JRELEASER_MAVENCENTRAL_SONATYPE_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           JRELEASER_MAVENCENTRAL_SONATYPE_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           PROJECT_VERSION: ${{ steps.version.outputs.value }}
-        run: ./gradlew --no-daemon jreleaserDeploy -PprojectVersion="${PROJECT_VERSION}"
+        run: |
+          ./gradlew --no-daemon jreleaserDeploy \
+            -PprojectVersion="${PROJECT_VERSION}"
 
       - name: Upload staged Maven artifacts and JReleaser logs
         if: always()

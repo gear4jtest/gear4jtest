@@ -1,108 +1,34 @@
-# Dependency supply-chain controls
+# Dependency security baseline for 1.0
 
-Gear4J keeps the following controls as release hardening options. They are not required for the MVP development loop and should not block ordinary feature work:
+Gear4J deliberately keeps the dependency supply-chain policy minimal for the 1.0 release line.
 
-1. dependency locking, to make resolved versions intentional;
-2. dependency verification, to verify checksums/signatures of resolved artifacts;
-3. SCA, to detect known vulnerable components.
+## Enforced for 1.0
 
-These controls solve different problems. They should be considered together for a future strict Maven Central release gate, but strict enforcement remains an explicit release decision.
+- the Gradle wrapper distribution is checksummed;
+- GitHub Actions are pinned by commit SHA;
+- repositories are limited to the expected Maven Central and staging locations;
+- OWASP Dependency-Check runs with a CVSS 7.0 failure threshold;
+- vulnerability suppressions must be reviewed and time-bounded;
+- staged JAR, POM and Gradle module metadata are rebuilt and compared by SHA-256;
+- legal and release metadata are verified before publication.
 
-## Dependency locking
+## Explicitly deferred
 
-Dependency locking records resolved module versions. Regenerate locks only when a
-dependency update is intentional:
+The following controls are intentionally not required for 1.0:
 
-```bash
-./gradlew dependencies --write-locks
-```
+- Gradle dependency lockfiles;
+- `gradle/verification-metadata.xml`;
+- strict dependency verification;
+- CI or release flags that enforce those files.
 
-The generated lock files must be reviewed and committed.
+They must be introduced only through a later dedicated hardening phase, after validating the maintenance and upgrade
+workflow. Their absence must not make `build`, `check` or `releaseCheck` fail in the 1.0 line.
 
-## Dependency verification
-
-Gradle dependency verification checks that resolved artifacts match trusted
-checksums/signatures. Bootstrap metadata from a trusted developer machine:
-
-```bash
-./gradlew --write-verification-metadata sha256 help
-```
-
-The generated `gradle/verification-metadata.xml` must be committed and reviewed.
-After it exists, CI can run:
+## Current commands
 
 ```bash
-./gradlew --no-daemon --dependency-verification strict help
+./gradlew check
+./gradlew dependencyCheckAggregate
+scripts/verify-reproducible-staging.sh 1.0.0-rc1
+./gradlew releaseCheck -PprojectVersion=1.0.0-rc1
 ```
-
-This is a lightweight smoke test for a future hardened release lane. The `help` task configures the build and
-resolves enough artifacts to validate that dependency verification is active, but
-it is not part of the MVP development loop.
-
-`verifySupplyChainConfiguration` remains available for a future hardened release lane. During the MVP it only reports missing supply-chain files by default and must not block ordinary checks or releases. To resume strict enforcement later without rewriting the task, run it with:
-
-```bash
-./gradlew verifySupplyChainConfiguration -Pgear4j.enforceSupplyChain=true
-```
-
-Only with this property enabled does a missing `gradle.lockfile` or `gradle/verification-metadata.xml` fail the build. If these files are present, they can be used and reviewed; if they are absent during the MVP, the build should continue. This subject is intentionally not a priority until the runtime/API/release process is stable.
-
-## SCA
-
-CI also runs OWASP Dependency-Check:
-
-```bash
-./gradlew --no-daemon dependencyCheckAggregate
-```
-
-SCA identifies dependencies with known vulnerabilities. Dependency verification
-does not do this; it only proves that the artifacts resolved are the artifacts
-that were trusted when metadata was generated.
-
-## Recommended CI behavior
-
-For pull requests during the MVP phase:
-
-```bash
-./gradlew --no-daemon check
-```
-
-For release candidates during the MVP, keep supply-chain checks opportunistic rather than mandatory:
-
-```bash
-./gradlew --no-daemon releaseCheck
-```
-
-If `gradle/verification-metadata.xml` already exists and has been reviewed, an additional strict verification smoke test can be run manually:
-
-```bash
-./gradlew --no-daemon --dependency-verification strict help
-```
-
-For scheduled security scans:
-
-```bash
-./gradlew --no-daemon dependencyCheckAggregate
-```
-
-If `verification-metadata.xml` has not been committed yet, the strict verification
-step should simply be skipped during the MVP. Once the runtime and release process
-are stable, the team can deliberately decide whether to make missing or changed
-metadata fail CI.
-
-
-## Dependency surface hygiene
-
-Production dependencies should be declared by the module that actually uses them
-instead of being injected into every subproject from the root build. This keeps
-optional modules lighter and reduces the transitive surface exposed to consumers.
-
-Current policy:
-
-- `gear4jtest-core` owns SLF4J only; `gear4jtest-jdbc` owns the Jackson API used by JDBC persistence;
-- `gear4jtest-external-api` owns SLF4J and JDT for the default compiler implementation;
-- `gear4jtest-external-jdbc` owns JDBC external repositories and their Jackson JSON mapping;
-- `gear4jtest-xml` owns SLF4J and Eclipse formatter dependencies;
-- optional modules declare their own integration dependencies.
-
-Guava is not part of the current production dependency surface.

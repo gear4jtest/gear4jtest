@@ -18,8 +18,8 @@ JDBC test. Performance and branch coverage had reports but no versioned failure 
   limits, clone-on-write/read and observable statistics. Unknown mutable values are rejected safely by default.
 - Apply JMH only to the core-hosted benchmark harness and version portable latency, throughput, allocation, heap and
   thread guardrails.
-- Enforce branch ratchets for four critical classes from combined unit/integration data, while keeping aggregate report
-  generation explicit.
+- Enforce branch ratchets for four initial critical classes from combined unit/integration data, while keeping aggregate
+  report generation explicit. Phase 12 expands this to nine critical classes and adds six module-level line floors.
 - Run PostgreSQL on every normal verification path and distribute all four JDBC dialects in scheduled/main/release CI.
 
 ## Consequences

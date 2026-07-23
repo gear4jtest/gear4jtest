@@ -41,21 +41,11 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
 
-      - name: Validate release metadata
-        run: ./gradlew --no-daemon --warning-mode=all releaseMetadataCheck
-
-      - name: Verify Gradle dependency metadata
-        shell: bash
-        run: |
-          if [[ -f gradle/verification-metadata.xml ]]; then
-            ./gradlew --no-daemon --dependency-verification strict help
-          else
-            echo "gradle/verification-metadata.xml not committed yet; see docs/security/dependency-supply-chain.md"
-          fi
 
       - name: Validate XML plugin configuration and build caches
         run: |
-          ./gradlew --no-daemon :gear4jtest-gradle-xml2java:test \
+          ./gradlew --no-daemon \
+            :gear4jtest-gradle-xml2java:test \
             --tests '*XmlAssemblyLineGeneratorFunctionalTest' \
             --configuration-cache \
             --configuration-cache-problems=fail \
@@ -63,11 +53,17 @@ jobs:
             --warning-mode=all
 
       - name: Build and coverage
-        run: ./gradlew --no-daemon --warning-mode=all clean build coverageReport verifySupplyChainConfiguration -Pgear4jDatabaseDialect=postgresql
+        run: |
+          ./gradlew --no-daemon --warning-mode=all \
+            clean build coverageReport \
+            -Pgear4jDatabaseDialect=postgresql
 
       - name: SonarQube scan
         if: ${{ env.SONAR_TOKEN != '' }}
-        run: ./gradlew --no-daemon sonar -Dsonar.qualitygate.wait=true -Pgear4jDatabaseDialect=postgresql
+        run: |
+          ./gradlew --no-daemon sonar \
+            -Dsonar.qualitygate.wait=true \
+            -Pgear4jDatabaseDialect=postgresql
 
       - name: Upload test and coverage reports
         if: always()
@@ -121,6 +117,33 @@ jobs:
             gear4jtest-external-jdbc/build/reports/tests/integrationTest/**
           if-no-files-found: ignore
 
+  reproducibility:
+    name: Reproducible staged Maven artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+
+      - name: Verify staged artifact reproducibility
+        run: scripts/verify-reproducible-staging.sh 1.0.0-reproducibility
+
+      - name: Upload reproducibility reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: reproducibility-reports
+          path: build/reports/reproducibility/**
+          if-no-files-found: ignore
+
   performance-budget:
     name: Versioned JMH performance budgets
     if: ${{ github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) }}
@@ -139,7 +162,8 @@ jobs:
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
 
       - name: Verify performance budgets
-        run: ./gradlew --no-daemon verifyPerformanceBudgets
+        run: |
+          ./gradlew --no-daemon verifyPerformanceBudgets
 
       - name: Upload JMH reports
         if: always()

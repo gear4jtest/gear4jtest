@@ -4,11 +4,11 @@
   "classes": [
     {
       "className": "io.github.gear4jtest.core.event.EventManager",
-      "minimumBranchRatio": 0.60
+      "minimumBranchRatio": 0.6
     },
     {
       "className": "io.github.gear4jtest.core.engine.strategy.WorkStationStrategy",
-      "minimumBranchRatio": 0.60
+      "minimumBranchRatio": 0.6
     },
     {
       "className": "io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator",
@@ -16,7 +16,27 @@
     },
     {
       "className": "io.github.gear4jtest.external.api.AssemblyLinePublicationService",
-      "minimumBranchRatio": 0.60
+      "minimumBranchRatio": 0.6
+    },
+    {
+      "className": "io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutor",
+      "minimumBranchRatio": 0.55
+    },
+    {
+      "className": "io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator",
+      "minimumBranchRatio": 0.5
+    },
+    {
+      "className": "io.github.gear4jtest.external.api.storage.DefaultArtifactStoreProvider",
+      "minimumBranchRatio": 0.55
+    },
+    {
+      "className": "io.github.gear4jtest.external.api.compiler.DefaultGeneratedSourceCompiler",
+      "minimumBranchRatio": 0.7
+    },
+    {
+      "className": "io.github.gear4jtest.spring.boot.Gear4jAutoConfiguration",
+      "minimumBranchRatio": 0.5
     }
   ]
 }

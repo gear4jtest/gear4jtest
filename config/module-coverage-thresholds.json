@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "policy": "Initial line-coverage floors. Raise only from a green connected CI report; temporary reductions require a dated audit note.",
+  "modules": [
+    {
+      "projectPath": ":gear4jtest-core",
+      "minimumLineRatio": 0.30
+    },
+    {
+      "projectPath": ":gear4jtest-external-api",
+      "minimumLineRatio": 0.30
+    },
+    {
+      "projectPath": ":gear4jtest-external-jdbc",
+      "minimumLineRatio": 0.30
+    },
+    {
+      "projectPath": ":gear4jtest-jdbc",
+      "minimumLineRatio": 0.30
+    },
+    {
+      "projectPath": ":gear4jtest-spring-boot-starter",
+      "minimumLineRatio": 0.30
+    },
+    {
+      "projectPath": ":gear4jtest-xml",
+      "minimumLineRatio": 0.30
+    }
+  ]
+}

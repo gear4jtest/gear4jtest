@@ -22,8 +22,8 @@ build did not prove that staged artifacts or the Gradle plugin were consumable o
 - `releaseCheck` stages every library, the Gradle plugin and both plugin markers, then compiles and executes the
   autonomous `config/consumer-smoke` project with Gear4J coordinates exclusively resolved from that repository and third-party dependencies from Maven Central.
 - JReleaser applies Maven Central validation and signing to non-snapshot releases. Secrets remain external to source.
-- Dependency locks and verification metadata remain optional during the MVP period; their absence can be made fatal
-  explicitly with `gear4j.enforceSupplyChain=true`.
+- Phase 12 supersedes the earlier MVP exception: CI and release now require dependency locks, SHA-256 verification
+  metadata. This supply-chain portion was later superseded by ADR 0031 and deferred for the 1.0 line.
 
 ## Consequences
 
@@ -32,5 +32,5 @@ retryable. Context isolation cost is paid only by applications that opt into a v
 plugin markers are now exercised as a consumer sees them rather than inferred from project dependencies.
 
 The generation guard is local to one manager and does not claim distributed cache coherence. A consumer-provided value
-copy function must understand the mutable types it accepts. Supply-chain enforcement, performance budgets, API
-compatibility tooling and module extraction remain explicit post-MVP work.
+copy function must understand the mutable types it accepts. Performance budgets, API compatibility tooling and module extraction were completed by later phases. Supply-chain
+trust files remain generated artifacts that must be bootstrapped and reviewed on a connected trusted machine.

@@ -17,7 +17,6 @@ java {
 normalization {
     runtimeClasspath {
         metaInf {
-            ignoreAttribute('Created-By')
             ignoreAttribute('Implementation-Version')
             ignoreAttribute('Specification-Version')
         }
@@ -27,7 +26,6 @@ normalization {
 jar {
     manifest {
         attributes(
-            'Created-By': System.properties['java.version'] + ' (' + System.properties['java.vendor'] + ')',
             'Specification-Title': projectArtifactId,
             'Specification-Version': project.version,
             'Implementation-Title': projectArtifactId,

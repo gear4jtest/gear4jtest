@@ -75,6 +75,7 @@ Common commands:
 ./gradlew sonarqube
 ./gradlew dependencyCheckAggregate
 ./gradlew stageMavenCentral -PprojectVersion=1.0.0
+scripts/verify-reproducible-staging.sh 1.0.0
 ./gradlew consumerSmokeTest -PprojectVersion=1.0.0
 ./gradlew :gear4jtest-core:test
 ./gradlew :gear4jtest-xml:test
@@ -82,7 +83,8 @@ Common commands:
 
 `./gradlew clean build` is the normal project verification command: it compiles the modules, runs unit tests, runs
 integration tests through `integrationCheck`, executes style checks and enforces the critical-class branch-coverage
-ratchets. Aggregate JaCoCo report generation is explicit through `./gradlew coverageReport`; a targeted subproject
+ratchets, including versioned module-level floors. Aggregate JaCoCo report generation is explicit through
+`./gradlew coverageReport`; a targeted subproject
 build no longer triggers every test and report in the repository. `./gradlew sonarqube` depends on that aggregate
 report but is not wired into `build`.
 
@@ -102,6 +104,12 @@ Central staging writes artifacts under `build/staging-deploy`; deployment is han
 `releaseCheck` also builds the standalone project under `config/consumer-smoke` against the staged repository. This
 guards the published POM scopes and the Gradle plugin marker instead of relying only on intra-repository project
 dependencies. See `docs/releasing.md` for the release contract and required credentials.
+
+
+For the 1.0 line, advanced Gradle dependency locking and checksum-verification metadata are intentionally deferred.
+The retained baseline is the checksummed Gradle wrapper, SHA-pinned GitHub Actions, Maven Central-only repositories,
+OWASP vulnerability scanning and reproducible staged artifacts. Staged JAR, POM and Gradle module metadata outputs
+are rebuilt and hash-compared by `scripts/verify-reproducible-staging.sh`.
 
 The Gradle wrapper must be complete in the working copy: `gradlew`, `gradle/wrapper/gradle-wrapper.jar` and
 `gradle/wrapper/gradle-wrapper.properties`.
@@ -151,7 +159,7 @@ deterministic output, but transient generated files should not be edited directl
 - `docs/decisions/`: decision records and future-direction notes, including source-level API boundary policy.
 - `docs/roadmap/future-work.md`: known work items and non-MVP ideas.
 - `docs/releasing.md`: Maven Central release process.
-- `docs/security/dependency-supply-chain.md`: dependency locking, verification and SCA guidance.
+- `docs/security/dependency-supply-chain.md`: current 1.0 dependency-security baseline and deferred hardening backlog.
 - `AGENTS.md`: instructions for coding agents such as Codex, Claude, Gemini or IDE assistants.
 - `CLAUDE.md`: Claude-specific entrypoint that delegates to `AGENTS.md`.
 - `.github/copilot-instructions.md`: GitHub Copilot guidance.

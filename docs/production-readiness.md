@@ -201,3 +201,17 @@ The experimental in-memory assembly-line cache is bounded by entry count and con
 access and write paths. Cache values are cloned on write and read through an explicit `PayloadCloner`; the safe default
 rejects unknown mutable types. Monitor `AssemblyLineCacheStats` for rejected writes, capacity/TTL evictions, hit ratio,
 estimated weight and load-time growth.
+
+## Final build and dependency-security gates
+
+Production and Maven Central candidates require:
+
+- Java 17 toolchains and `--release 17` for all Java compilation tasks;
+- OWASP Dependency-Check with a CVSS 7.0 failure threshold;
+- expiring, reviewed vulnerability suppressions only;
+- reproducible archive ordering and timestamps;
+- a two-build SHA-256 comparison of staged JAR, POM and Gradle module metadata artifacts;
+- the complete PostgreSQL, MySQL, MariaDB and Oracle matrix.
+
+Advanced Gradle dependency locking and checksum-verification metadata are deliberately deferred for the 1.0 line.
+They remain a post-1.0 hardening item and are not required by CI or release at this stage.

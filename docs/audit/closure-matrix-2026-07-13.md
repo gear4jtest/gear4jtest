@@ -35,12 +35,12 @@ run on a host able to resolve the Gradle 9.6.1 distribution and execute Testcont
 | F10 | Large multi-responsibility classes | Closed incrementally in phase 7 | `BaselineSchemaValidator` and `EventSubscriptionResolver` were extracted; XML validation, parsing and rendering were already split into focused collaborators. No rewrite was introduced. |
 | F11 | Missing generic contract tests | Closed | Builder and Jackson generic regressions are characterized. |
 | F12 | Missing reentrancy/predicate tests | Closed | Guard reentrancy/release and isolated slow/failing predicates are tested. |
-| F13 | Coverage without thresholds | Closed in phase 6, pending first CI calibration | `critical-coverage-thresholds.json` and `jacocoCriticalCoverageVerification` enforce branch ratchets on four critical classes from combined unit/integration data. |
+| F13 | Coverage without thresholds | Strengthened in phase 12, pending connected calibration | Nine critical-class branch floors and six module line-coverage floors are versioned and enforced from combined unit/integration data. |
 | F14 | Monolithic multi-dialect suite | Closed and strengthened in phase 7 | The local default is the complete four-dialect matrix; pull-request/main/scheduled/release workflows distribute independently selected Testcontainers dialects in parallel. |
 | F15 | Vulnerable Jackson 2.19.0 | Closed | Version catalog uses Jackson 2.21.5; the dependency scan remains part of `releaseCheck`. |
 | F16 | Arbitrary property methods in GEL | Closed | Explicit `PropertyAccessPolicy`, inert value trees and cached safe accessors are the default boundary. |
 | F17 | Implicit temporary spool | Closed | Private, bounded, observable and cleanable spool policy replaces the implicit temp path. |
-| F18 | Optional supply-chain enforcement | Accepted MVP risk | Locks/checksums stay optional by explicit decision. `gear4j.enforceSupplyChain=true` is the documented opt-in fatal gate. |
+| F18 | Optional supply-chain enforcement | Deferred for 1.0 by explicit decision | Lockfiles and verification metadata are not mandatory for 1.0. Wrapper checksum, pinned actions, SCA and reproducible staging remain enforced. |
 | F19 | Reentrancy guard lost | Closed | Guard ownership is execution-context scoped and reentrant acquisition fails fast. |
 | F20 | Predicates block shared dispatcher | Closed | Predicate plus reaction execute in the bounded reaction executor; exceptions are isolated and counted. |
 | F21 | Unbounded global dispatcher queue | Closed in phase 6 | The shared drain-task queue is bounded, configurable at startup and rejects without blocking; affected run-local events are dropped and counted under the documented best-effort contract. |

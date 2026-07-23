@@ -22,9 +22,11 @@ spotless {
             '.gitignore',
             '.github/**/*.md',
             'config/**/*.xml',
+            'config/**/*.json',
             'config/**/*.md',
             'docs/**/*.md',
-            'release-tools/*.gradle'
+            'release-tools/*.gradle',
+            'scripts/**/*.sh'
 
         trimTrailingWhitespace()
         endWithNewline()
@@ -172,35 +174,8 @@ tasks.named('check') {
     dependsOn tasks.named('verifyDocumentationLinks')
 }
 
-tasks.register('verifySupplyChainConfiguration') {
-    group = 'verification'
-    description = 'Checks dependency locking and optional Gradle dependency verification metadata.'
-    doLast {
-        boolean enforceSupplyChain = providers.gradleProperty('gear4j.enforceSupplyChain')
-            .map { it.toBoolean() }
-            .orElse(false)
-            .get()
-        def missing = []
-        if (!file('gradle.lockfile').exists()) {
-            missing << 'gradle.lockfile (generate with: ./gradlew dependencies --write-locks)'
-        }
-        if (!file('gradle/verification-metadata.xml').exists()) {
-            missing << 'gradle/verification-metadata.xml (bootstrap with: ./gradlew --write-verification-metadata sha256 help)'
-        }
-        if (!missing.isEmpty() && enforceSupplyChain) {
-            throw new GradleException('Supply-chain enforcement is enabled but required files are missing: ' + missing.join(', '))
-        }
-        missing.each { logger.lifecycle('Optional supply-chain hardening file missing: ' + it) }
-    }
-}
-
-
 allprojects {
     apply plugin: 'jacoco'
-
-    dependencyLocking {
-        lockAllConfigurations()
-    }
 
     version = rootProject.defaultProjectVersion
     group = 'io.github.gear4jtest'
@@ -224,6 +199,36 @@ configure(project.coreProjects) {
     apply plugin: 'maven-publish'
     apply plugin: 'checkstyle'
     apply plugin: 'com.diffplug.spotless'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+
+    tasks.withType(org.gradle.api.tasks.bundling.AbstractArchiveTask).configureEach {
+        preserveFileTimestamps = false
+        reproducibleFileOrder = true
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.release.set(17)
+        options.deprecation = true
+        options.encoding = 'UTF-8'
+        options.compilerArgs += ["-Xlint:unchecked", "-parameters"]
+    }
+
+    tasks.withType(Test).configureEach {
+        javaLauncher.set(javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(17)
+        })
+    }
+
+    tasks.withType(JavaExec).configureEach {
+        javaLauncher.set(javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(17)
+        })
+    }
 
     spotless {
         java {
@@ -331,31 +336,9 @@ configure(project.coreProjects.findAll { !it.name.contains("gradle") }) {
     apply from: "${rootDir}/publishing.gradle"
 
     dependencies {
-        testImplementation(libs.junit)
-        testImplementation(libs.assertj)
         testImplementation(libs.logback)
         testImplementation(libs.mockito)
         testImplementation(libs.mockito.junit)
-        testImplementation(libs.postgresql)
-
-        integrationTestImplementation(libs.testcontainers.junit.jupiter)
-        integrationTestImplementation(libs.testcontainers.postgresql)
-        integrationTestImplementation(libs.testcontainers.mysql)
-        integrationTestImplementation(libs.testcontainers.mariadb)
-        integrationTestImplementation(libs.testcontainers.oracle.xe)
-        integrationTestRuntimeOnly(libs.postgresql)
-        integrationTestRuntimeOnly(libs.mysql)
-        integrationTestRuntimeOnly(libs.mariadb)
-        integrationTestRuntimeOnly(libs.ojdbc11)
-        integrationTestRuntimeOnly(libs.h2)
-    }
-
-    tasks.withType(JavaCompile) {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-        options.deprecation = true
-        options.encoding = 'UTF-8'
-        options.compilerArgs += ["-Xlint:unchecked", "-parameters"]
     }
 
     afterEvaluate {
@@ -403,6 +386,58 @@ project(':gear4jtest-core') {
 
 configure(project.coreProjects.findAll { it.name.contains("gradle") }) {
     apply plugin: 'groovy-gradle-plugin'
+}
+
+configure([project(':gear4jtest-jdbc'), project(':gear4jtest-external-jdbc')]) {
+    dependencies {
+        integrationTestImplementation(libs.testcontainers.junit.jupiter)
+        integrationTestImplementation(libs.testcontainers.postgresql)
+        integrationTestImplementation(libs.testcontainers.mysql)
+        integrationTestImplementation(libs.testcontainers.mariadb)
+        integrationTestImplementation(libs.testcontainers.oracle.xe)
+        integrationTestImplementation(libs.postgresql)
+        integrationTestRuntimeOnly(libs.mysql)
+        integrationTestRuntimeOnly(libs.mariadb)
+        integrationTestRuntimeOnly(libs.ojdbc11)
+        integrationTestRuntimeOnly(libs.h2)
+    }
+}
+
+
+tasks.register('verifyDatabaseTestDependencyScope') {
+    group = 'verification'
+    description = 'Prevents database drivers and Testcontainers dependencies from leaking into unrelated modules.'
+
+    doLast {
+        def allowedProjects = [project(':gear4jtest-jdbc'), project(':gear4jtest-external-jdbc')] as Set
+        def databaseGroups = [
+            'org.testcontainers',
+            'org.postgresql',
+            'com.mysql',
+            'org.mariadb.jdbc',
+            'com.oracle.database.jdbc',
+            'com.h2database'
+        ] as Set
+        def violations = []
+        coreProjects.findAll { !allowedProjects.contains(it) }.each { candidate ->
+            candidate.configurations.each { configuration ->
+                configuration.dependencies.findAll { dependency ->
+                    dependency.group != null && databaseGroups.contains(dependency.group)
+                }.each { dependency ->
+                    violations << "${candidate.path}:${configuration.name} -> "
+                        + "${dependency.group}:${dependency.name}:${dependency.version}"
+                }
+            }
+        }
+        if (!violations.isEmpty()) {
+            throw new GradleException('Database test dependencies leaked outside JDBC modules:\n - '
+                    + violations.join('\n - '))
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyDatabaseTestDependencyScope')
 }
 
 def supportedDatabaseDialects = ['postgresql', 'mysql', 'mariadb', 'oracle']
@@ -470,8 +505,27 @@ tasks.register('releaseMetadataCheck') {
         tasks.named('jreleaserConfig')
 }
 
+tasks.register('verifyDependencyCheckSuppressions') {
+    group = 'verification'
+    description = 'Requires every OWASP Dependency-Check suppression to have an explicit expiry date.'
+
+    def suppressionFile = layout.projectDirectory.file('config/dependency-check-suppressions.xml')
+    inputs.file(suppressionFile)
+
+    doLast {
+        def document = new groovy.xml.XmlSlurper(false, false).parse(suppressionFile.asFile)
+        def missingExpiry = document.suppress.findAll { suppression ->
+            suppression.until.text().trim().isEmpty()
+        }
+        if (!missingExpiry.isEmpty()) {
+            throw new GradleException('Every dependency-check suppression must declare an <until> expiry date')
+        }
+    }
+}
+
 dependencyCheck {
-    failBuildOnCVSS = 9.0
+    failBuildOnCVSS = 7.0
+    suppressionFiles = [layout.projectDirectory.file('config/dependency-check-suppressions.xml').asFile.absolutePath]
     formats = ['HTML', 'JSON']
     analyzers {
         assemblyEnabled = false
@@ -481,6 +535,11 @@ dependencyCheck {
             apiKey = System.getenv('NVD_API_KEY')
         }
     }
+}
+
+
+tasks.matching { it.name == 'dependencyCheckAggregate' || it.name == 'dependencyCheckAnalyze' }.configureEach {
+    dependsOn tasks.named('verifyDependencyCheckSuppressions')
 }
 
 tasks.register('stageMavenCentral') {
@@ -617,7 +676,8 @@ def criticalCoverageThresholds = new groovy.json.JsonSlurper().parse(criticalCov
 def criticalCoverageProjects = [
     project(':gear4jtest-core'),
     project(':gear4jtest-external-api'),
-    project(':gear4jtest-jdbc')
+    project(':gear4jtest-jdbc'),
+    project(':gear4jtest-spring-boot-starter')
 ]
 
 tasks.register('jacocoCriticalCoverageVerification', JacocoCoverageVerification) {
@@ -664,10 +724,39 @@ tasks.register('coverageReport') {
     dependsOn tasks.named('jacocoRootAllReport')
 }
 
+def moduleCoverageThresholdsFile = layout.projectDirectory.file('config/module-coverage-thresholds.json')
+def moduleCoverageThresholds = new groovy.json.JsonSlurper().parse(moduleCoverageThresholdsFile.asFile)
+def moduleCoverageTasks = moduleCoverageThresholds.modules.collect { threshold ->
+    def coveredProject = project(threshold.projectPath)
+    def taskSuffix = coveredProject.name.split('-').collect { it.capitalize() }.join('')
+    tasks.register("jacocoModuleCoverage${taskSuffix}", JacocoCoverageVerification) {
+        group = 'verification'
+        description = "Enforces the line-coverage ratchet for ${coveredProject.path}."
+        dependsOn coveredProject.tasks.named('test'), coveredProject.tasks.named('integrationTest')
+        inputs.file(moduleCoverageThresholdsFile)
+        sourceDirectories.from(coveredProject.sourceSets.main.allSource.srcDirs)
+        classDirectories.from(coveredProject.sourceSets.main.output)
+        executionData.from(
+            coveredProject.layout.buildDirectory.file('jacoco/test.exec'),
+            coveredProject.layout.buildDirectory.file('jacoco/integrationTest.exec'))
+        violationRules {
+            rule {
+                element = 'BUNDLE'
+                limit {
+                    counter = 'LINE'
+                    value = 'COVEREDRATIO'
+                    minimum = threshold.minimumLineRatio as BigDecimal
+                }
+            }
+        }
+    }
+}
+
 tasks.register('coverageVerification') {
     group = 'verification'
-    description = 'Runs the versioned critical-class JaCoCo branch-coverage ratchets.'
+    description = 'Runs the versioned critical-class and module-level JaCoCo coverage ratchets.'
     dependsOn tasks.named('jacocoCriticalCoverageVerification')
+    dependsOn moduleCoverageTasks
 }
 
 tasks.named('check') {
@@ -757,12 +846,46 @@ tasks.register('verifyReleaseDatabaseMatrixSelection') {
     }
 }
 
+tasks.register('verifyJava17AndArchiveConfiguration') {
+    group = 'verification'
+    description = 'Verifies Java 17 release compilation and reproducible archive settings for every published module.'
+
+    doLast {
+        def failures = []
+        coreProjects.each { candidate ->
+            candidate.tasks.withType(JavaCompile).each { compileTask ->
+                if (compileTask.options.release.orNull != 17) {
+                    failures << "${compileTask.path} must compile with --release 17"
+                }
+            }
+            candidate.tasks.withType(org.gradle.api.tasks.bundling.AbstractArchiveTask).each { archiveTask ->
+                if (archiveTask.preserveFileTimestamps) {
+                    failures << "${archiveTask.path} must set preserveFileTimestamps=false"
+                }
+                if (!archiveTask.reproducibleFileOrder) {
+                    failures << "${archiveTask.path} must set reproducibleFileOrder=true"
+                }
+                if (archiveTask instanceof Jar && archiveTask.manifest.attributes.containsKey('Created-By')) {
+                    failures << "${archiveTask.path} must not contain a runtime-specific Created-By attribute"
+                }
+            }
+        }
+        if (!failures.isEmpty()) {
+            throw new GradleException('Java/archive hardening violations:\n - ' + failures.join('\n - '))
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyJava17AndArchiveConfiguration')
+}
+
 tasks.register('releaseCheck') {
     group = 'verification'
     description = 'Runs the checks expected before staging a Maven Central release.'
     dependsOn tasks.named('check'), tasks.named('consumerSmokeTest'), tasks.named('dependencyCheckAggregate'),
         tasks.named('verifyReleaseAssets'), tasks.named('verifyStagedReleaseArtifacts'),
-        tasks.named('verifySupplyChainConfiguration'), tasks.named('verifyPerformanceBudgets'),
+        tasks.named('verifyDependencyCheckSuppressions'), tasks.named('verifyPerformanceBudgets'),
         tasks.named('verifyReleaseDatabaseMatrixSelection')
 }
 
