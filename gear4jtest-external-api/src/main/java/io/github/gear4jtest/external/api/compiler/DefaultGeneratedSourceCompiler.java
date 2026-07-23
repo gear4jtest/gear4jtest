@@ -1,48 +1,47 @@
 package io.github.gear4jtest.external.api.compiler;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Supplier;
 
 import io.github.gear4jtest.external.api.exception.CompilationException;
 
 /**
- * Built-in compiler that prefers the standard JDK compiler and falls back to
- * JDT.
+ * Built-in compiler that selects one backend when it is created.
  */
 final class DefaultGeneratedSourceCompiler implements GeneratedSourceCompiler {
-    private final JavaxToolsGeneratedSourceCompiler javac;
-    private final JDTInMemoryCompiler jdt;
+    private final GeneratedSourceCompiler delegate;
+    private final String backendName;
 
     DefaultGeneratedSourceCompiler(ClassLoader parentClassLoader) {
-        this.javac = new JavaxToolsGeneratedSourceCompiler(parentClassLoader);
-        this.jdt = new JDTInMemoryCompiler(parentClassLoader);
+        this(JavaxToolsGeneratedSourceCompiler.isAvailable(),
+                () -> new JavaxToolsGeneratedSourceCompiler(parentClassLoader),
+                () -> new JDTInMemoryCompiler(parentClassLoader));
+    }
+
+    DefaultGeneratedSourceCompiler(boolean javacAvailable,
+                                   Supplier<? extends GeneratedSourceCompiler> javacFactory,
+                                   Supplier<? extends GeneratedSourceCompiler> jdtFactory) {
+        Objects.requireNonNull(javacFactory, "javacFactory must not be null");
+        Objects.requireNonNull(jdtFactory, "jdtFactory must not be null");
+        this.backendName = javacAvailable ? "javac" : "JDT";
+        this.delegate = Objects.requireNonNull(
+                                               javacAvailable ? javacFactory.get() : jdtFactory.get(),
+                                               backendName + " compiler must not be null");
     }
 
     @Override
     public Map<String, byte[]> compile(String className, byte[] sourceCode) {
-        CompilationException javacFailure = null;
-        if (JavaxToolsGeneratedSourceCompiler.isAvailable()) {
-            try {
-                return javac.compile(className, sourceCode);
-            } catch (CompilationException e) {
-                javacFailure = e;
-            }
-        }
-
         try {
-            return jdt.compile(className, sourceCode);
-        } catch (CompilationException jdtFailure) {
-            if (javacFailure == null) {
-                throw jdtFailure;
-            }
-            List<String> diagnostics = new ArrayList<>();
-            diagnostics.add("javac diagnostics:");
-            diagnostics.addAll(javacFailure.diagnostics());
-            diagnostics.add("JDT diagnostics:");
-            diagnostics.addAll(jdtFailure.diagnostics());
-            throw new CompilationException("Default generated-source compilation failed for " + className,
-                    diagnostics, jdtFailure);
+            return delegate.compile(className, sourceCode);
+        } catch (CompilationException failure) {
+            throw new CompilationException(
+                    "Default generated-source compilation failed using " + backendName + " for " + className,
+                    failure.diagnostics(), failure);
         }
+    }
+
+    String backendName() {
+        return backendName;
     }
 }

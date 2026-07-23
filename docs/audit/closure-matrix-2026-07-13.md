@@ -101,7 +101,9 @@ declared qualified.
 ```bash
 ./gradlew spotlessApply
 ./gradlew releaseMetadataCheck
-./gradlew help --configuration-cache --configuration-cache-problems=fail --warning-mode=all
+./gradlew :gear4jtest-gradle-xml2java:test \
+  --tests '*XmlAssemblyLineGeneratorFunctionalTest' \
+  --configuration-cache --configuration-cache-problems=fail --build-cache --warning-mode=all
 ./gradlew clean build
 ./gradlew verifyPerformanceBudgets
 ./gradlew :gear4jtest-jdbc:integrationTest

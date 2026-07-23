@@ -40,6 +40,11 @@ public class JDTInMemoryCompiler implements GeneratedSourceCompiler {
 
     private static CompilerOptions compilerOptions() {
         CompilerOptions options = new CompilerOptions();
+        options.set(compilerOptionValues());
+        return options;
+    }
+
+    static Map<String, String> compilerOptionValues() {
         Map<String, String> optionsMap = new HashMap<>();
         optionsMap.put(CompilerOptions.OPTION_Source, CompilerOptions.VERSION_17);
         optionsMap.put(CompilerOptions.OPTION_TargetPlatform, CompilerOptions.VERSION_17);
@@ -48,11 +53,10 @@ public class JDTInMemoryCompiler implements GeneratedSourceCompiler {
         optionsMap.put(CompilerOptions.OPTION_ReportDeprecation, CompilerOptions.IGNORE);
         optionsMap.put(CompilerOptions.OPTION_ReportUnusedImport, CompilerOptions.IGNORE);
         optionsMap.put(CompilerOptions.OPTION_EnablePreviews, CompilerOptions.DISABLED);
-        optionsMap.put(CompilerOptions.OPTION_Release, CompilerOptions.DISABLED);
+        optionsMap.put(CompilerOptions.OPTION_Release, CompilerOptions.ENABLED);
         optionsMap.put(CompilerOptions.OPTION_ReportUnstableAutoModuleName, CompilerOptions.DISABLED);
         optionsMap.put(CompilerOptions.OPTION_IgnoreUnnamedModuleForSplitPackage, CompilerOptions.DISABLED);
-        options.set(optionsMap);
-        return options;
+        return Map.copyOf(optionsMap);
     }
 
     /**

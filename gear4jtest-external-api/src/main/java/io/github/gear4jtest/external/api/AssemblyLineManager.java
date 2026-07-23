@@ -47,8 +47,9 @@ public class AssemblyLineManager {
 
     private AssemblyLineManager(Builder builder) {
         ClassLoader parent = builder.generatedClassParent != null ? builder.generatedClassParent : contextClassLoader();
-        GeneratedSourceCompiler effectiveCompiler = builder.compiler != null ? builder.compiler
+        GeneratedSourceCompiler selectedCompiler = builder.compiler != null ? builder.compiler
                 : GeneratedSourceCompilers.defaultCompiler(parent);
+        GeneratedSourceCompiler effectiveCompiler = new BoundedGeneratedSourceCompiler(selectedCompiler);
         DependencyInjector effectiveDependencyInjector = builder.dependencyInjector != null ? builder.dependencyInjector
                 : new SimpleDependencyInjector();
         long effectiveMaxArtifactSizeBytes = AssemblyLineIdentifiers

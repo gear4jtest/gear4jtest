@@ -53,11 +53,14 @@ jobs:
             echo "gradle/verification-metadata.xml not committed yet; see docs/security/dependency-supply-chain.md"
           fi
 
-      - name: Store Gradle 9 configuration cache
-        run: ./gradlew --no-daemon help --configuration-cache --configuration-cache-problems=fail --warning-mode=all
-
-      - name: Reuse Gradle 9 configuration cache
-        run: ./gradlew --no-daemon help --configuration-cache --configuration-cache-problems=fail --warning-mode=all
+      - name: Validate XML plugin configuration and build caches
+        run: |
+          ./gradlew --no-daemon :gear4jtest-gradle-xml2java:test \
+            --tests '*XmlAssemblyLineGeneratorFunctionalTest' \
+            --configuration-cache \
+            --configuration-cache-problems=fail \
+            --build-cache \
+            --warning-mode=all
 
       - name: Build and coverage
         run: ./gradlew --no-daemon --warning-mode=all clean build coverageReport verifySupplyChainConfiguration -Pgear4jDatabaseDialect=postgresql

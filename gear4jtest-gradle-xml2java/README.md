@@ -30,7 +30,9 @@ When the plugin is applied to a Java project, it:
   generated sources;
 - rejects inline Java expressions by default unless `trustedXml` is enabled explicitly;
 - adds that directory to the main Java source set;
-- makes `compileJava` depend on `xmlGenerateAssemblyLine`.
+- makes `compileJava` depend on `xmlGenerateAssemblyLine`;
+- is cacheable and compatible with the Gradle configuration cache;
+- restores generated outputs from the build cache when inputs are unchanged.
 
 ## Example usage
 
@@ -89,6 +91,18 @@ Useful focused task:
 
 ```bash
 ./gradlew :gear4jtest-gradle-xml2java:test
+```
+
+The TestKit suite executes the real generation task twice with strict
+configuration-cache validation and the build cache enabled. It also verifies that
+changing an XML input invalidates the task and replaces obsolete generated files.
+A direct consumer-style check is:
+
+```bash
+./gradlew xmlGenerateAssemblyLine \
+  --configuration-cache \
+  --configuration-cache-problems=fail \
+  --build-cache
 ```
 
 ## Code style

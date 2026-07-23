@@ -107,12 +107,18 @@ GeneratedSourceCompilers.fromServiceLoader(classLoader);
 ```
 
 `AssemblyLineManager` uses `GeneratedSourceCompilers.defaultCompiler(...)` when
-no compiler is injected. The default prefers the standard JDK
-`javax.tools.JavaCompiler` and falls back to Eclipse JDT when the runtime image is
-stripped and does not include `jdk.compiler`, or when javac cannot compile with
-the current runtime classpath. Applications that need deterministic
-compiler selection should inject `GeneratedSourceCompilers.javac(...)`,
-`GeneratedSourceCompilers.jdt(...)`, or their own `GeneratedSourceCompiler`.
+no compiler is injected. The backend is selected once when the manager is built:
+the standard JDK `javax.tools.JavaCompiler` is used when `jdk.compiler` is
+available, otherwise Eclipse JDT is used. A javac source error is returned directly
+and is never retried with JDT. The javac implementation resolves file-based URLs
+from the supplied parent classloader in addition to the process classpath.
+
+The manager wraps the selected compiler in a bounded 128-entry/16-MiB, single-flight
+cache shared by publication validation and runtime loading. Identical generated
+source is therefore compiled once while failures remain retryable. Applications
+that need deterministic compiler selection should inject
+`GeneratedSourceCompilers.javac(...)`, `GeneratedSourceCompilers.jdt(...)`, or
+their own `GeneratedSourceCompiler`.
 
 ## Classloader lifecycle
 
