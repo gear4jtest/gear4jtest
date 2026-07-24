@@ -20,8 +20,11 @@ import io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFinge
  * <p>
  * Implementations must be idempotent for the natural key
  * {@code (assemblyLineId, version, mode)} when the existing object references
- * the same content. A conflicting content hash or metadata must be rejected
- * without changing committed or staged state.
+ * the same
+ * {@link io.github.gear4jtest.external.api.model.OperationChainContentIdentity
+ * content identity}, defined by SHA-256 hash, byte size and media type. A
+ * difference in any of those components must be rejected without changing
+ * committed or staged state.
  * </p>
  */
 public interface OperationChainPublicationRepository {

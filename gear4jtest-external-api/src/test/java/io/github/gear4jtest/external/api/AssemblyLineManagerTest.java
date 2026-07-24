@@ -392,7 +392,45 @@ class AssemblyLineManagerTest {
         // When / Then
         assertThatThrownBy(() -> manager.promoteTestToRun("line", "1.0.0", "promoter"))
                 .isInstanceOf(io.github.gear4jtest.external.api.exception.PolicyViolationException.class)
-                .hasMessageContaining("different content_hash");
+                .hasMessageContaining("different content identity");
+        verify(publicationRepository, never()).stage(any(), any(), any());
+        verify(classLoaderRegistry, never()).clearAlias(any());
+    }
+
+    @Test
+    void promoteTestToRun_shouldRejectExistingRunWithDifferentSize() {
+        // Given
+        AssemblyLineManager manager = manager();
+        OperationChainObject testObject = object("line", "1.0.0", ExecutionMode.TEST, "a".repeat(64), 42L);
+        OperationChainObject runObject = object("line", "1.0.0", ExecutionMode.RUN, "a".repeat(64), 43L);
+        when(objectRepository.find("line", "1.0.0", ExecutionMode.TEST)).thenReturn(Optional.of(testObject));
+        when(objectRepository.exists("line", "1.0.0", ExecutionMode.RUN)).thenReturn(true);
+        when(objectRepository.find("line", "1.0.0", ExecutionMode.RUN)).thenReturn(Optional.of(runObject));
+
+        // When / Then
+        assertThatThrownBy(() -> manager.promoteTestToRun("line", "1.0.0", "promoter"))
+                .isInstanceOf(io.github.gear4jtest.external.api.exception.PolicyViolationException.class)
+                .hasMessageContaining("different content identity");
+        verify(publicationRepository, never()).stage(any(), any(), any());
+        verify(classLoaderRegistry, never()).clearAlias(any());
+    }
+
+    @Test
+    void promoteTestToRun_shouldRejectExistingRunWithDifferentMimeType() {
+        // Given
+        AssemblyLineManager manager = manager();
+        OperationChainObject testObject = object("line", "1.0.0", ExecutionMode.TEST, "a".repeat(64), 42L);
+        OperationChainObject runObject = new OperationChainObject(null, "line", "1.0.0", ExecutionMode.RUN,
+                "a".repeat(64), 42L, "application/json", Instant.parse("2026-06-16T00:00:00Z"), "tester",
+                Instant.parse("2026-06-16T00:00:00Z"));
+        when(objectRepository.find("line", "1.0.0", ExecutionMode.TEST)).thenReturn(Optional.of(testObject));
+        when(objectRepository.exists("line", "1.0.0", ExecutionMode.RUN)).thenReturn(true);
+        when(objectRepository.find("line", "1.0.0", ExecutionMode.RUN)).thenReturn(Optional.of(runObject));
+
+        // When / Then
+        assertThatThrownBy(() -> manager.promoteTestToRun("line", "1.0.0", "promoter"))
+                .isInstanceOf(io.github.gear4jtest.external.api.exception.PolicyViolationException.class)
+                .hasMessageContaining("different content identity");
         verify(publicationRepository, never()).stage(any(), any(), any());
         verify(classLoaderRegistry, never()).clearAlias(any());
     }

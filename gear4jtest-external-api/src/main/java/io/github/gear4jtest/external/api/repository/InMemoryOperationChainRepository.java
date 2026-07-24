@@ -76,7 +76,7 @@ public final class InMemoryOperationChainRepository
         PublicationKey key = PublicationKey.from(requiredObject);
 
         OperationChainObject committed = objects.get(key);
-        if (committed != null && !samePublishedContent(committed, requiredObject)) {
+        if (committed != null && !committed.contentIdentity().equals(requiredObject.contentIdentity())) {
             throw conflict(key);
         }
 
@@ -86,7 +86,7 @@ public final class InMemoryOperationChainRepository
             if (existing == null) {
                 stageIdsByPublication.remove(key);
             } else {
-                if (!samePublishedContent(existing.object(), requiredObject)
+                if (!existing.object().contentIdentity().equals(requiredObject.contentIdentity())
                         || !Objects.equals(existing.storeFingerprint(), requiredStoreFingerprint)) {
                     throw conflict(key);
                 }
@@ -115,7 +115,7 @@ public final class InMemoryOperationChainRepository
         }
         PublicationKey key = PublicationKey.from(stage.object());
         OperationChainObject existing = objects.get(key);
-        if (existing != null && !samePublishedContent(existing, stage.object())) {
+        if (existing != null && !existing.contentIdentity().equals(stage.object().contentIdentity())) {
             throw conflict(key);
         }
         if (existing == null) {
@@ -245,12 +245,6 @@ public final class InMemoryOperationChainRepository
         TreeSet<String> merged = new TreeSet<>(existing);
         merged.addAll(additional);
         return List.copyOf(merged);
-    }
-
-    private static boolean samePublishedContent(OperationChainObject existing, OperationChainObject candidate) {
-        return Objects.equals(existing.contentHash(), candidate.contentHash())
-                && existing.sizeBytes() == candidate.sizeBytes()
-                && Objects.equals(existing.mimeType(), candidate.mimeType());
     }
 
     private static OperationChainPublicationConflictException conflict(PublicationKey key) {

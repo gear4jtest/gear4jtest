@@ -331,7 +331,7 @@ public final class OperationChainObjectRepositoryJdbc
             OperationChainPublicationStage existing = findStage(connection, stageId)
                     .orElseThrow(() -> repositoryFailure("resolve concurrent stage " + publicationKey(object),
                                                          exception));
-            if (!samePublishedContent(existing.object(), object)
+            if (!existing.object().contentIdentity().equals(object.contentIdentity())
                     || !Objects.equals(existing.storeFingerprint(), storeFingerprint)) {
                 throw conflict(object, exception);
             }
@@ -385,7 +385,8 @@ public final class OperationChainObjectRepositoryJdbc
             throws SQLException {
         Optional<OperationChainObject> committed = find(connection, candidate.alId(), candidate.version(),
                                                         candidate.mode());
-        if (committed.isPresent() && !samePublishedContent(committed.get(), candidate)) {
+        if (committed.isPresent()
+                && !committed.get().contentIdentity().equals(candidate.contentIdentity())) {
             throw conflict(candidate, null);
         }
     }
@@ -499,7 +500,7 @@ public final class OperationChainObjectRepositoryJdbc
                     .orElseThrow(() -> repositoryFailure(
                                                          "resolve concurrent publication " + publicationKey(object),
                                                          exception));
-            if (!samePublishedContent(existing, object)) {
+            if (!existing.contentIdentity().equals(object.contentIdentity())) {
                 throw conflict(object, exception);
             }
         }
@@ -544,12 +545,6 @@ public final class OperationChainObjectRepositoryJdbc
                 return resultSet.next() ? Optional.of(map(resultSet)) : Optional.empty();
             }
         }
-    }
-
-    private static boolean samePublishedContent(OperationChainObject existing, OperationChainObject candidate) {
-        return Objects.equals(existing.contentHash(), candidate.contentHash())
-                && existing.sizeBytes() == candidate.sizeBytes()
-                && Objects.equals(existing.mimeType(), candidate.mimeType());
     }
 
     private static String publicationKey(OperationChainObject object) {

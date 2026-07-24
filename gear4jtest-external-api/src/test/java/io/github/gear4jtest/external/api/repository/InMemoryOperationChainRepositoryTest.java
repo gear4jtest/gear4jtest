@@ -134,6 +134,48 @@ class InMemoryOperationChainRepositoryTest {
     }
 
     @Test
+    void stagedPublication_shouldRejectMatchingHashWithDifferentSizeOrMimeType() {
+        // Given
+        Instant publishedAt = Instant.parse("2026-07-16T15:00:00Z");
+        OperationChainObject existing = object("line", "6.1.0", ExecutionMode.TEST, "f".repeat(64), publishedAt);
+        OperationChainPublicationStage stage = repository.stage(existing, List.of("stable"));
+        OperationChainObject differentSize = new OperationChainObject(null, "line", "6.1.0", ExecutionMode.TEST,
+                existing.contentHash(), existing.sizeBytes() + 1L, existing.mimeType(), publishedAt, "tester",
+                publishedAt);
+        OperationChainObject differentMimeType = new OperationChainObject(null, "line", "6.1.0",
+                ExecutionMode.TEST, existing.contentHash(), existing.sizeBytes(), "application/json", publishedAt,
+                "tester", publishedAt);
+
+        // When / Then
+        assertThatThrownBy(() -> repository.stage(differentSize, List.of("different-size")))
+                .isInstanceOf(OperationChainPublicationConflictException.class);
+        assertThatThrownBy(() -> repository.stage(differentMimeType, List.of("different-mime")))
+                .isInstanceOf(OperationChainPublicationConflictException.class);
+        assertThat(repository.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10)))
+                .containsExactly(stage);
+    }
+
+    @Test
+    void commit_shouldRejectMatchingHashWithDifferentCommittedMetadata() {
+        // Given
+        Instant publishedAt = Instant.parse("2026-07-16T15:00:00Z");
+        OperationChainObject staged = object("line", "6.2.0", ExecutionMode.TEST, "f".repeat(64), publishedAt);
+        OperationChainPublicationStage stage = repository.stage(staged, List.of("staged"));
+        OperationChainObject conflicting = new OperationChainObject(null, "line", "6.2.0", ExecutionMode.TEST,
+                staged.contentHash(), staged.sizeBytes() + 1L, staged.mimeType(), publishedAt, "tester", publishedAt);
+        repository.insert(conflicting);
+
+        // When / Then
+        assertThatThrownBy(() -> repository.commit(stage.stageId()))
+                .isInstanceOf(OperationChainPublicationConflictException.class);
+        assertThat(repository.find("line", "6.2.0", ExecutionMode.TEST).orElseThrow().sizeBytes())
+                .isEqualTo(conflicting.sizeBytes());
+        assertThat(repository.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10)))
+                .containsExactly(stage);
+        assertThat(repository.listTags("line")).doesNotContain("staged");
+    }
+
+    @Test
     void stagedPublication_shouldRenewGracePeriodAndProtectActiveRetryFromStaleAbort() {
         // Given
         OperationChainObject object = object("line", "7.0.0", ExecutionMode.TEST, "b".repeat(64),

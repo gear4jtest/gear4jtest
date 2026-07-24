@@ -3,7 +3,6 @@ package io.github.gear4jtest.external.api;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 
 import io.github.gear4jtest.external.api.artifact.ArtifactHashes;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
@@ -91,9 +90,9 @@ final class AssemblyLinePublicationService {
             var runObj = objectRepository.find(alId, version, ExecutionMode.RUN)
                     .orElseThrow(() -> new OperationChainNotFoundException(
                             "RUN object disappeared for %s:%s".formatted(alId, version)));
-            if (!Objects.equals(runObj.contentHash(), testObj.contentHash())) {
+            if (!runObj.contentIdentity().equals(testObj.contentIdentity())) {
                 throw new PolicyViolationException(
-                        "RUN object already exists with different content_hash");
+                        "RUN object already exists with different content identity");
             }
             return;
         }

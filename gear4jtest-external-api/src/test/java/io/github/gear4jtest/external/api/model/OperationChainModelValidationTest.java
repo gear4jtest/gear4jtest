@@ -47,6 +47,32 @@ class OperationChainModelValidationTest {
     }
 
     @Test
+    void contentIdentity_shouldNormalizeAndCompareAllPersistedComponents() {
+        // Given
+        OperationChainContentIdentity identity = new OperationChainContentIdentity("A".repeat(64), 42L,
+                "application/xml");
+
+        // When / Then
+        assertThat(identity.contentHash()).isEqualTo("a".repeat(64));
+        assertThat(identity).isEqualTo(new OperationChainContentIdentity("a".repeat(64), 42L, "application/xml"))
+                .isNotEqualTo(new OperationChainContentIdentity("b".repeat(64), 42L, "application/xml"))
+                .isNotEqualTo(new OperationChainContentIdentity("a".repeat(64), 43L, "application/xml"))
+                .isNotEqualTo(new OperationChainContentIdentity("a".repeat(64), 42L, "application/json"));
+    }
+
+    @Test
+    void objectContentIdentity_shouldExposeTheCanonicalPublicationIdentity() {
+        // Given
+        Instant now = Instant.parse("2026-07-16T12:00:00Z");
+        OperationChainObject object = new OperationChainObject(null, "line", "1.0.0", ExecutionMode.TEST,
+                "A".repeat(64), 42L, "application/xml", now, null, now);
+
+        // When / Then
+        assertThat(object.contentIdentity())
+                .isEqualTo(new OperationChainContentIdentity("a".repeat(64), 42L, "application/xml"));
+    }
+
+    @Test
     void config_shouldRejectMissingDatabaseInvariants() {
         assertThatThrownBy(() -> new OperationChainConfig(" ", false, StoreType.MEMORY, Map.of()))
                 .isInstanceOf(IllegalArgumentException.class)
