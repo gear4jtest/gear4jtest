@@ -52,7 +52,8 @@ Japicmp gate.
 - Replace direct `AssemblyLineEngine` dependencies with `AssemblyLineExecutor` and
   `AssemblyLineExecutors.builder()`.
 - Replace `AssemblyRunTrace`/`StationLogTrace` in consumer signatures with `RunTrace`/`StationTrace`.
-- Replace `AssemblyRunManager` with `RunPersistenceManager`.
+- Replace `AssemblyRunManager` with `RunPersistenceManager`. The temporary pre-1.0 alias was removed during follow-up
+  remediation R1.
 - Replace `Gear4jAssemblyLineEngineBuilderCustomizer` with `Gear4jAssemblyLineExecutorCustomizer`.
 - Import persistence runtime monitoring from `io.github.gear4jtest.core.persistence`.
 

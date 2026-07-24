@@ -880,6 +880,55 @@ tasks.named('check') {
     dependsOn tasks.named('verifyJava17AndArchiveConfiguration')
 }
 
+def obsoletePromotedCoreTypes = [
+    'io/github/gear4jtest/core/execution/AssemblyRunManager',
+    'io/github/gear4jtest/core/execution/PersistenceOperationalStatus',
+    'io/github/gear4jtest/core/execution/PersistenceRuntimeMonitor',
+    'io/github/gear4jtest/core/execution/PersistenceRuntimeStats',
+    'io/github/gear4jtest/core/engine/support/WorkerConcurrencyConfiguration',
+    'io/github/gear4jtest/core/engine/support/WorkerConcurrencyPolicy',
+    'io/github/gear4jtest/core/engine/support/WorkerConcurrencyRegistryConfiguration',
+    'io/github/gear4jtest/core/engine/support/WorkerConcurrencyStrategy',
+    'io/github/gear4jtest/core/engine/support/WorkerLockAcquisitionPolicy'
+]
+def coreBinaryJar = project(':gear4jtest-core').tasks.named('jar', Jar).flatMap { it.archiveFile }
+def coreSourcesJar = project(':gear4jtest-core').tasks.named('sourcesJar', Jar).flatMap { it.archiveFile }
+
+tasks.register('verifyCoreArtifactApiSurface') {
+    group = 'verification'
+    description = 'Prevents obsolete pre-promotion API types from returning in the core binary and sources JARs.'
+    dependsOn project(':gear4jtest-core').tasks.named('jar'),
+        project(':gear4jtest-core').tasks.named('sourcesJar')
+    inputs.files(coreBinaryJar, coreSourcesJar)
+
+    doLast {
+        def violations = []
+        [coreBinaryJar.get().asFile, coreSourcesJar.get().asFile].each { jarFile ->
+            new java.util.zip.ZipFile(jarFile).withCloseable { archive ->
+                archive.entries().each { entry ->
+                    def obsoleteType = obsoletePromotedCoreTypes.find { typePath ->
+                        entry.name == typePath + '.class'
+                                || entry.name == typePath + '.java'
+                                || (entry.name.startsWith(typePath + '$') && entry.name.endsWith('.class'))
+                    }
+                    if (obsoleteType != null) {
+                        violations << "${jarFile.name}: ${entry.name}"
+                    }
+                }
+            }
+        }
+
+        if (!violations.isEmpty()) {
+            throw new GradleException('Obsolete promoted API types found in core artifacts:\n - '
+                    + violations.sort().join('\n - '))
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyCoreArtifactApiSurface')
+}
+
 tasks.register('releaseCheck') {
     group = 'verification'
     description = 'Runs the checks expected before staging a Maven Central release.'

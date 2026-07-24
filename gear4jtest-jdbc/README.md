@@ -4,7 +4,7 @@
 
 It depends on `gear4jtest-core` contracts and owns the storage-specific pieces that must not live in core:
 
-- `DatabaseExecutionManager` for JDBC-backed `AssemblyRunManager` execution persistence;
+- `DatabaseExecutionManager` for JDBC-backed `RunPersistenceManager` execution persistence;
 - `DatabaseAssemblyRunRepository` for persisted run and station-log reads;
 - `Gear4jDatabaseDialect` for explicit dialect selection;
 - `JdbcSchemaMigrator` and SQL resources for Gear4J-managed schemas;

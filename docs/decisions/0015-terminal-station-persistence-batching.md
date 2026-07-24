@@ -14,7 +14,7 @@ but it also amplified synchronous persistence calls for long pipelines and
 iterators.
 
 The JDBC manager already buffers station logs internally, but core-level
-extensions and custom `AssemblyRunManager` implementations still benefited from
+extensions and custom `RunPersistenceManager` implementations still benefited from
 an explicit batching contract.
 
 ## Decision
