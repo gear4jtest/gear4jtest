@@ -1,10 +1,12 @@
 package io.github.gear4jtest.jdbc.persistence;
 
+import java.time.Instant;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +31,21 @@ class DatabasePersistenceJsonCodecTest {
         assertThat(codec.toJson(null)).isNull();
         assertThat(codec.fromJson(null, Payload.class)).isNull();
         assertThat(codec.fromJson(null, new TypeReference<Map<String, Object>>() {})).isNull();
+    }
+
+    @Test
+    void jacksonFactory_shouldHonorApplicationModulesForBusinessTypes() {
+        // Given
+        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        PersistenceJsonCodec codec = PersistenceJsonCodec.jackson(objectMapper);
+        BusinessPayload payload = new BusinessPayload("order-42", Instant.parse("2026-07-24T08:15:30Z"));
+
+        // When
+        String json = codec.toJson(payload);
+        BusinessPayload restored = codec.fromJson(json, BusinessPayload.class);
+
+        // Then
+        assertThat(restored).isEqualTo(payload);
     }
 
     @Test
@@ -62,4 +79,6 @@ class DatabasePersistenceJsonCodecTest {
     }
 
     private record Payload(String name) {}
+
+    private record BusinessPayload(String orderId, Instant createdAt) {}
 }

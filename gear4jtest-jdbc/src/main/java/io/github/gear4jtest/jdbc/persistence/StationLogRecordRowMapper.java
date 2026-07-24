@@ -10,9 +10,9 @@ import io.github.gear4jtest.core.persistence.StationLogRecord;
 
 final class StationLogRecordRowMapper {
     private final Gear4jDatabaseDialect dialect;
-    private final DatabasePersistenceJsonCodec jsonCodec;
+    private final PersistenceJsonCodec jsonCodec;
 
-    StationLogRecordRowMapper(Gear4jDatabaseDialect dialect, DatabasePersistenceJsonCodec jsonCodec) {
+    StationLogRecordRowMapper(Gear4jDatabaseDialect dialect, PersistenceJsonCodec jsonCodec) {
         this.dialect = dialect;
         this.jsonCodec = jsonCodec;
     }

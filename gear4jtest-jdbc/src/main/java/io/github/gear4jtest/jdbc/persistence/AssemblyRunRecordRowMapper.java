@@ -10,9 +10,9 @@ import io.github.gear4jtest.core.persistence.ExecutionStatus;
 
 final class AssemblyRunRecordRowMapper {
     private final Gear4jDatabaseDialect dialect;
-    private final DatabasePersistenceJsonCodec jsonCodec;
+    private final PersistenceJsonCodec jsonCodec;
 
-    AssemblyRunRecordRowMapper(Gear4jDatabaseDialect dialect, DatabasePersistenceJsonCodec jsonCodec) {
+    AssemblyRunRecordRowMapper(Gear4jDatabaseDialect dialect, PersistenceJsonCodec jsonCodec) {
         this.dialect = dialect;
         this.jsonCodec = jsonCodec;
     }

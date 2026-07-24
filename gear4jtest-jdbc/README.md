@@ -28,9 +28,21 @@ DatabaseExecutionManager manager = DatabaseExecutionManager.builder()
         .dataSource(dataSource)
         .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
         .configuration(persistenceRuntime)
+        .objectMapper(applicationObjectMapper)
         .autoCreateTables(true)
         .build();
 ```
+
+Supplying the application `ObjectMapper` preserves its Java time modules, custom
+serializers and business-type configuration for persisted JSON values. For a
+different JSON strategy, implement `PersistenceJsonCodec` and provide it with
+`.jsonCodec(...)`; the most recently selected codec or mapper is used.
+
+The legacy `.flushThreshold(...)` convenience only overrides the effective
+batch size. It preserves every other value from
+`PersistenceRuntimeConfiguration`, regardless of whether it is called before or
+after `.configuration(...)`. If necessary, the per-run pending-log limit is
+raised to remain greater than or equal to the batch size.
 
 Auto-migration does not silently adopt a pre-existing Gear4J schema that has no
 `gear4j_schema_history` entry. For a verified compatible schema, adoption must

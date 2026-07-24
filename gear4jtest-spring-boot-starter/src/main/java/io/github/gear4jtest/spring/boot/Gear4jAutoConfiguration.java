@@ -2,6 +2,7 @@ package io.github.gear4jtest.spring.boot;
 
 import javax.sql.DataSource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.persistence.PersistenceRuntimeMonitor;
@@ -9,6 +10,7 @@ import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfiguration;
+import io.github.gear4jtest.jdbc.persistence.PersistenceJsonCodec;
 import io.github.gear4jtest.micrometer.EventMetricsBinder;
 import io.github.gear4jtest.micrometer.Gear4jMeterTagPolicy;
 import io.github.gear4jtest.micrometer.Gear4jMicrometerExtension;
@@ -44,7 +46,9 @@ public class Gear4jAutoConfiguration {
     @ConditionalOnProperty(prefix = "gear4j.persistence", name = "enabled", havingValue = "true")
     DatabaseExecutionManager gear4jDatabaseExecutionManager(DataSource dataSource,
                                                             Gear4jProperties properties,
-                                                            ObjectProvider<SensitiveDataRedactor> redactorProvider) {
+                                                            ObjectProvider<SensitiveDataRedactor> redactorProvider,
+                                                            ObjectProvider<PersistenceJsonCodec> jsonCodecProvider,
+                                                            ObjectProvider<ObjectMapper> objectMapperProvider) {
         Gear4jProperties.PersistenceProperties persistence = properties.getPersistence();
         persistence.validateWhenEnabled();
         SensitiveDataRedactor redactor = resolveRedactor(redactorProvider.getIfAvailable(),
@@ -63,14 +67,20 @@ public class Gear4jAutoConfiguration {
                 .readinessMaxBacklogAge(persistence.getReadinessMaxBacklogAge())
                 .connectivityProbeTimeout(persistence.getConnectivityProbeTimeout())
                 .build();
-        return DatabaseExecutionManager.builder()
+        DatabaseExecutionManager.Builder managerBuilder = DatabaseExecutionManager.builder()
                 .dataSource(dataSource)
                 .databaseDialect(persistence.getDialect())
                 .configuration(runtimeConfiguration)
                 .autoCreateTables(persistence.isAutoCreateTables())
                 .baselineOnMigrate(persistence.isBaselineOnMigrate())
-                .redactor(redactor)
-                .build();
+                .redactor(redactor);
+        PersistenceJsonCodec jsonCodec = jsonCodecProvider.getIfAvailable();
+        if (jsonCodec != null) {
+            managerBuilder.jsonCodec(jsonCodec);
+        } else {
+            objectMapperProvider.ifAvailable(managerBuilder::objectMapper);
+        }
+        return managerBuilder.build();
     }
 
     @SuppressWarnings("removal")

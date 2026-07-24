@@ -65,6 +65,12 @@ gear4j.persistence.auto-create-tables=false
 gear4j.persistence.redaction-mode=REQUIRE
 ```
 
+When an application `ObjectMapper` bean is available, the starter reuses it for
+JDBC persistence so registered Java time modules, custom serializers and
+business types remain consistent with the rest of the application. A
+`PersistenceJsonCodec` bean takes precedence when persistence requires a
+dedicated serialization strategy.
+
 
 ## Redaction migration
 

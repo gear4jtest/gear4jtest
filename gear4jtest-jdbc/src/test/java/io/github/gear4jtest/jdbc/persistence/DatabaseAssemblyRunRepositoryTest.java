@@ -420,6 +420,14 @@ class DatabaseAssemblyRunRepositoryTest {
         assertThatThrownBy(() -> DatabaseAssemblyRunRepository.builder()
                 .dataSource(mock(DataSource.class))
                 .databaseDialect(Gear4jDatabaseDialect.H2)
+                .jsonCodec(null)
+                .build())
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("jsonCodec must not be null");
+
+        assertThatThrownBy(() -> DatabaseAssemblyRunRepository.builder()
+                .dataSource(mock(DataSource.class))
+                .databaseDialect(Gear4jDatabaseDialect.H2)
                 .statementOptions(null)
                 .build())
                 .isInstanceOf(NullPointerException.class)

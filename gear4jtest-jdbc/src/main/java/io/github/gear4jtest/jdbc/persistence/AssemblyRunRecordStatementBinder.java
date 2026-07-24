@@ -7,9 +7,9 @@ import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 
 final class AssemblyRunRecordStatementBinder {
     private final Gear4jDatabaseDialect dialect;
-    private final DatabasePersistenceJsonCodec jsonCodec;
+    private final PersistenceJsonCodec jsonCodec;
 
-    AssemblyRunRecordStatementBinder(Gear4jDatabaseDialect dialect, DatabasePersistenceJsonCodec jsonCodec) {
+    AssemblyRunRecordStatementBinder(Gear4jDatabaseDialect dialect, PersistenceJsonCodec jsonCodec) {
         this.dialect = dialect;
         this.jsonCodec = jsonCodec;
     }

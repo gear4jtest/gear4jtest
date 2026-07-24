@@ -1,17 +1,20 @@
 package io.github.gear4jtest.jdbc.persistence;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
 
-final class DatabasePersistenceJsonCodec {
+final class DatabasePersistenceJsonCodec implements PersistenceJsonCodec {
     private final ObjectMapper objectMapper;
 
     DatabasePersistenceJsonCodec(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+        this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
     }
 
-    String toJson(Object obj) {
+    @Override
+    public String toJson(Object obj) {
         try {
             return obj != null ? objectMapper.writeValueAsString(obj) : null;
         } catch (Exception e) {
@@ -19,7 +22,8 @@ final class DatabasePersistenceJsonCodec {
         }
     }
 
-    <T> T fromJson(String json, Class<T> clazz) {
+    @Override
+    public <T> T fromJson(String json, Class<T> clazz) {
         try {
             return json != null ? objectMapper.readValue(json, clazz) : null;
         } catch (Exception e) {
@@ -28,7 +32,8 @@ final class DatabasePersistenceJsonCodec {
         }
     }
 
-    <T> T fromJson(String json, TypeReference<T> type) {
+    @Override
+    public <T> T fromJson(String json, TypeReference<T> type) {
         try {
             return json != null ? objectMapper.readValue(json, type) : null;
         } catch (Exception e) {

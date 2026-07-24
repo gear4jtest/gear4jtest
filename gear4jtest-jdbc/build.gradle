@@ -3,6 +3,8 @@ dependencies {
 
     api libs.jackson
     implementation libs.slf4j
+
+    testImplementation libs.jackson.datatype.jsr310
 }
 
 ext.moduleName = 'io.github.gear4jtest.jdbc'

@@ -7,9 +7,9 @@ import io.github.gear4jtest.core.persistence.StationLogRecord;
 
 final class StationLogRecordStatementBinder {
     private final Gear4jDatabaseDialect dialect;
-    private final DatabasePersistenceJsonCodec jsonCodec;
+    private final PersistenceJsonCodec jsonCodec;
 
-    StationLogRecordStatementBinder(Gear4jDatabaseDialect dialect, DatabasePersistenceJsonCodec jsonCodec) {
+    StationLogRecordStatementBinder(Gear4jDatabaseDialect dialect, PersistenceJsonCodec jsonCodec) {
         this.dialect = dialect;
         this.jsonCodec = jsonCodec;
     }

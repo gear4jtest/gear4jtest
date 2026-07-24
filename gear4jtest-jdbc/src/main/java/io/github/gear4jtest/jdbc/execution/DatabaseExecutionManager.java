@@ -24,6 +24,7 @@ import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.jdbc.persistence.PersistenceJsonCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,11 +47,11 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
     }
 
     private DatabaseExecutionManager(Builder builder) {
-        this.configuration = Objects.requireNonNull(builder.configuration, "configuration must not be null");
+        this.configuration = builder.effectiveConfiguration();
         this.repository = builder.repository != null
                 ? builder.repository
                 : createRepository(builder.dataSource, builder.databaseDialect, this.configuration,
-                                   builder.baselineOnMigrate);
+                                   builder.baselineOnMigrate, builder.jsonCodec);
         this.buffers = new OperationRecordBufferRegistry(configuration.maxPendingLogsPerRun());
         this.redactor = builder.redactor != null ? builder.redactor : SensitiveDataRedactor.discardSensitiveValues();
         if (SensitiveDataRedactor.isNone(this.redactor)) {
@@ -76,12 +77,13 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
     private static DatabaseAssemblyRunRepository createRepository(DataSource dataSource,
                                                                   Gear4jDatabaseDialect databaseDialect,
                                                                   PersistenceRuntimeConfiguration configuration,
-                                                                  boolean baselineOnMigrate) {
+                                                                  boolean baselineOnMigrate,
+                                                                  PersistenceJsonCodec jsonCodec) {
         Objects.requireNonNull(configuration, "configuration must not be null");
         return DatabaseAssemblyRunRepository.builder()
                 .dataSource(Objects.requireNonNull(dataSource, "dataSource must not be null"))
                 .databaseDialect(Objects.requireNonNull(databaseDialect, "databaseDialect must not be null"))
-                .objectMapper(new ObjectMapper())
+                .jsonCodec(Objects.requireNonNull(jsonCodec, "jsonCodec must not be null"))
                 .jdbcStatementTimeout(configuration.jdbcStatementTimeout())
                 .baselineOnMigrate(baselineOnMigrate)
                 .build();
@@ -92,6 +94,8 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
         private Gear4jDatabaseDialect databaseDialect;
         private DatabaseAssemblyRunRepository repository;
         private PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.defaults();
+        private Integer flushThreshold;
+        private PersistenceJsonCodec jsonCodec = PersistenceJsonCodec.jackson(new ObjectMapper());
         private boolean autoCreateTables;
         private boolean baselineOnMigrate;
         private ExecutorService flushExecutor;
@@ -124,10 +128,17 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
         }
 
         public Builder flushThreshold(int flushThreshold) {
-            this.configuration = PersistenceRuntimeConfiguration.builder()
-                    .batchSize(flushThreshold)
-                    .maxPendingLogsPerRun(Math.max(flushThreshold, 10_000))
-                    .build();
+            this.flushThreshold = flushThreshold;
+            return this;
+        }
+
+        public Builder objectMapper(ObjectMapper objectMapper) {
+            this.jsonCodec = PersistenceJsonCodec.jackson(objectMapper);
+            return this;
+        }
+
+        public Builder jsonCodec(PersistenceJsonCodec jsonCodec) {
+            this.jsonCodec = Objects.requireNonNull(jsonCodec, "jsonCodec must not be null");
             return this;
         }
 
@@ -176,6 +187,18 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
 
         public DatabaseExecutionManager build() {
             return new DatabaseExecutionManager(this);
+        }
+
+        private PersistenceRuntimeConfiguration effectiveConfiguration() {
+            PersistenceRuntimeConfiguration configured = Objects.requireNonNull(configuration,
+                                                                                "configuration must not be null");
+            if (flushThreshold == null) {
+                return configured;
+            }
+            return configured.toBuilder()
+                    .batchSize(flushThreshold)
+                    .maxPendingLogsPerRun(Math.max(configured.maxPendingLogsPerRun(), flushThreshold))
+                    .build();
         }
     }
 

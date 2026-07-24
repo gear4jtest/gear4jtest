@@ -62,6 +62,10 @@ public final class PersistenceRuntimeConfiguration {
         return builder().build();
     }
 
+    public Builder toBuilder() {
+        return new Builder(this);
+    }
+
     public int batchSize() {
         return batchSize;
     }
@@ -146,6 +150,24 @@ public final class PersistenceRuntimeConfiguration {
         private int readinessMaxBufferedStationLogs = DEFAULT_READINESS_MAX_BUFFERED_STATION_LOGS;
         private Duration readinessMaxBacklogAge = DEFAULT_READINESS_MAX_BACKLOG_AGE;
         private Duration connectivityProbeTimeout = DEFAULT_CONNECTIVITY_PROBE_TIMEOUT;
+
+        private Builder() {
+        }
+
+        private Builder(PersistenceRuntimeConfiguration configuration) {
+            this.batchSize = configuration.batchSize;
+            this.maxPendingLogsPerRun = configuration.maxPendingLogsPerRun;
+            this.flushInterval = configuration.flushInterval;
+            this.shutdownTimeout = configuration.shutdownTimeout;
+            this.shutdownRetryInitialBackoff = configuration.shutdownRetryInitialBackoff;
+            this.shutdownRetryMaxBackoff = configuration.shutdownRetryMaxBackoff;
+            this.flushThreadCount = configuration.flushThreadCount;
+            this.maxScheduledFlushTasks = configuration.maxScheduledFlushTasks;
+            this.jdbcStatementTimeout = configuration.jdbcStatementTimeout;
+            this.readinessMaxBufferedStationLogs = configuration.readinessMaxBufferedStationLogs;
+            this.readinessMaxBacklogAge = configuration.readinessMaxBacklogAge;
+            this.connectivityProbeTimeout = configuration.connectivityProbeTimeout;
+        }
 
         public Builder batchSize(int batchSize) {
             this.batchSize = batchSize;

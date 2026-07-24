@@ -33,6 +33,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     private final DataSource dataSource;
     private final Gear4jDatabaseDialect databaseDialect;
+    private final PersistenceJsonCodec jsonCodec;
     private final AssemblyRunRecordRowMapper assemblyRunMapper;
     private final StationLogRecordRowMapper stationLogMapper;
     private final AssemblyRunRecordStatementBinder assemblyRunBinder;
@@ -50,8 +51,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         this.statementOptions = Objects.requireNonNull(builder.statementOptions,
                                                        "statementOptions must not be null");
         this.baselineOnMigrate = builder.baselineOnMigrate;
-        DatabasePersistenceJsonCodec jsonCodec = new DatabasePersistenceJsonCodec(
-                Objects.requireNonNull(builder.objectMapper, "objectMapper must not be null"));
+        this.jsonCodec = Objects.requireNonNull(builder.jsonCodec, "jsonCodec must not be null");
         this.assemblyRunMapper = new AssemblyRunRecordRowMapper(databaseDialect, jsonCodec);
         this.stationLogMapper = new StationLogRecordRowMapper(databaseDialect, jsonCodec);
         this.assemblyRunBinder = new AssemblyRunRecordStatementBinder(databaseDialect, jsonCodec);
@@ -61,7 +61,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     public static final class Builder {
         private DataSource dataSource;
         private Gear4jDatabaseDialect databaseDialect;
-        private ObjectMapper objectMapper = new ObjectMapper();
+        private PersistenceJsonCodec jsonCodec = PersistenceJsonCodec.jackson(new ObjectMapper());
         private JdbcStatementOptions statementOptions = JdbcStatementOptions.defaults();
         private boolean baselineOnMigrate;
 
@@ -79,7 +79,12 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         }
 
         public Builder objectMapper(ObjectMapper objectMapper) {
-            this.objectMapper = objectMapper;
+            this.jsonCodec = PersistenceJsonCodec.jackson(objectMapper);
+            return this;
+        }
+
+        public Builder jsonCodec(PersistenceJsonCodec jsonCodec) {
+            this.jsonCodec = jsonCodec;
             return this;
         }
 

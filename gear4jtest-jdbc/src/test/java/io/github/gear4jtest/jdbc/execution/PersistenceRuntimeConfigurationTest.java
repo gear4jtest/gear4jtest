@@ -41,6 +41,43 @@ class PersistenceRuntimeConfigurationTest {
     }
 
     @Test
+    void toBuilder_shouldPreserveEveryConfigurationProperty() {
+        // Given
+        PersistenceRuntimeConfiguration original = PersistenceRuntimeConfiguration.builder()
+                .batchSize(17)
+                .maxPendingLogsPerRun(101)
+                .flushInterval(Duration.ofMillis(250))
+                .shutdownTimeout(Duration.ofSeconds(11))
+                .shutdownRetryInitialBackoff(Duration.ofMillis(25))
+                .shutdownRetryMaxBackoff(Duration.ofMillis(400))
+                .flushThreadCount(3)
+                .maxScheduledFlushTasks(71)
+                .jdbcStatementTimeout(Duration.ofSeconds(7))
+                .readinessMaxBufferedStationLogs(83)
+                .readinessMaxBacklogAge(Duration.ofSeconds(13))
+                .connectivityProbeTimeout(Duration.ofSeconds(5))
+                .build();
+
+        // When
+        PersistenceRuntimeConfiguration copy = original.toBuilder().batchSize(19).build();
+
+        // Then
+        assertThat(original.batchSize()).isEqualTo(17);
+        assertThat(copy.batchSize()).isEqualTo(19);
+        assertThat(copy.maxPendingLogsPerRun()).isEqualTo(101);
+        assertThat(copy.flushInterval()).isEqualTo(Duration.ofMillis(250));
+        assertThat(copy.shutdownTimeout()).isEqualTo(Duration.ofSeconds(11));
+        assertThat(copy.shutdownRetryInitialBackoff()).isEqualTo(Duration.ofMillis(25));
+        assertThat(copy.shutdownRetryMaxBackoff()).isEqualTo(Duration.ofMillis(400));
+        assertThat(copy.flushThreadCount()).isEqualTo(3);
+        assertThat(copy.maxScheduledFlushTasks()).isEqualTo(71);
+        assertThat(copy.jdbcStatementTimeout()).isEqualTo(Duration.ofSeconds(7));
+        assertThat(copy.readinessMaxBufferedStationLogs()).isEqualTo(83);
+        assertThat(copy.readinessMaxBacklogAge()).isEqualTo(Duration.ofSeconds(13));
+        assertThat(copy.connectivityProbeTimeout()).isEqualTo(Duration.ofSeconds(5));
+    }
+
+    @Test
     void build_shouldRejectNegativeJdbcStatementTimeout() {
         PersistenceRuntimeConfiguration.Builder builder = PersistenceRuntimeConfiguration.builder()
                 .jdbcStatementTimeout(Duration.ofMillis(-1));

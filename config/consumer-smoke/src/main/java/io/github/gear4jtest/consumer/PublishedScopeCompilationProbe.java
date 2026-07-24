@@ -7,6 +7,7 @@ import io.github.gear4jtest.core.persistence.PersistenceRuntimeMonitor;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslator;
 import io.github.gear4jtest.external.jdbc.repository.ExternalJdbcSchemaMigrator;
 import io.github.gear4jtest.jackson.JacksonPayloadCloner;
+import io.github.gear4jtest.jdbc.persistence.PersistenceJsonCodec;
 import io.github.gear4jtest.micrometer.PersistenceMetricsBinder;
 import io.github.gear4jtest.spring.SpringResourceFactory;
 import io.github.gear4jtest.spring.boot.actuate.Gear4jPersistenceHealthIndicator;
@@ -29,6 +30,7 @@ final class PublishedScopeCompilationProbe {
     private MeterRegistry meterRegistry;
     private HealthIndicator healthIndicator;
     private PersistenceRuntimeMonitor persistenceRuntimeMonitor;
+    private PersistenceJsonCodec persistenceJsonCodec;
 
     private JacksonPayloadCloner jacksonPayloadCloner;
     private XmlOperationChainTranslator xmlTranslator;

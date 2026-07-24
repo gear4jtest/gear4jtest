@@ -1,7 +1,12 @@
 package io.github.gear4jtest.jdbc.execution;
 
+import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -12,7 +17,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.sql.DataSource;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
@@ -21,6 +28,8 @@ import io.github.gear4jtest.core.persistence.PersistenceOperationalStatus;
 import io.github.gear4jtest.core.persistence.PersistenceRuntimeStats;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
+import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.jdbc.persistence.PersistenceJsonCodec;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -28,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -114,6 +124,107 @@ class DatabaseExecutionManagerTest {
         try {
             // Then
             verify(repository).initialize();
+        } finally {
+            manager.shutdown(Duration.ofSeconds(1));
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void flushThreshold_shouldPreserveConfigurationRegardlessOfBuilderCallOrder() throws Exception {
+        // Given
+        PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder()
+                .batchSize(11)
+                .maxPendingLogsPerRun(101)
+                .flushInterval(Duration.ofHours(1))
+                .shutdownTimeout(Duration.ofSeconds(12))
+                .shutdownRetryInitialBackoff(Duration.ofMillis(25))
+                .shutdownRetryMaxBackoff(Duration.ofMillis(400))
+                .flushThreadCount(2)
+                .maxScheduledFlushTasks(71)
+                .jdbcStatementTimeout(Duration.ofSeconds(7))
+                .readinessMaxBufferedStationLogs(83)
+                .readinessMaxBacklogAge(Duration.ofSeconds(13))
+                .connectivityProbeTimeout(Duration.ofSeconds(5))
+                .build();
+        ExecutorService flushExecutor = Executors.newFixedThreadPool(2);
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        DatabaseExecutionManager configurationFirst = DatabaseExecutionManager.builder()
+                .repository(mock(DatabaseAssemblyRunRepository.class))
+                .configuration(configuration)
+                .flushThreshold(123)
+                .flushExecutor(flushExecutor)
+                .maintenanceExecutor(scheduler)
+                .build();
+        DatabaseExecutionManager thresholdFirst = DatabaseExecutionManager.builder()
+                .repository(mock(DatabaseAssemblyRunRepository.class))
+                .flushThreshold(123)
+                .configuration(configuration)
+                .flushExecutor(flushExecutor)
+                .maintenanceExecutor(scheduler)
+                .build();
+
+        try {
+            // When
+            PersistenceRuntimeConfiguration first = configurationOf(configurationFirst);
+            PersistenceRuntimeConfiguration second = configurationOf(thresholdFirst);
+
+            // Then
+            assertThat(first).usingRecursiveComparison().isEqualTo(second);
+            assertThat(first.batchSize()).isEqualTo(123);
+            assertThat(first.maxPendingLogsPerRun()).isEqualTo(123);
+            assertThat(first.flushInterval()).isEqualTo(Duration.ofHours(1));
+            assertThat(first.jdbcStatementTimeout()).isEqualTo(Duration.ofSeconds(7));
+            assertThat(first.connectivityProbeTimeout()).isEqualTo(Duration.ofSeconds(5));
+        } finally {
+            configurationFirst.shutdown(Duration.ofSeconds(1));
+            thresholdFirst.shutdown(Duration.ofSeconds(1));
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void customJsonCodec_shouldReceiveValuesAfterCustomRedaction() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.getAutoCommit()).thenReturn(true);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        CapturingJsonCodec jsonCodec = new CapturingJsonCodec();
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        DatabaseExecutionManager manager = DatabaseExecutionManager.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.H2)
+                .jsonCodec(jsonCodec)
+                .configuration(PersistenceRuntimeConfiguration.builder()
+                        .flushInterval(Duration.ofHours(1))
+                        .build())
+                .flushExecutor(flushExecutor)
+                .maintenanceExecutor(scheduler)
+                .redactor((target, value) -> switch (target) {
+                    case RUN_INPUT -> "masked-input";
+                    case RUN_CONTEXT -> Map.of("tenant", "masked");
+                    case RUN_RESULT -> "masked-result";
+                    default -> value;
+                })
+                .build();
+        AssemblyRunTrace trace = new AssemblyRunTrace(UUID.randomUUID(), "line",
+                Map.of("payload", "secret-input"));
+        trace.setContext(Map.of("token", "secret-context"));
+        trace.setResult("secret-result");
+
+        try {
+            // When
+            manager.start(trace);
+
+            // Then
+            assertThat(jsonCodec.serializedValues())
+                    .containsExactly("masked-input", Map.of("tenant", "masked"), "masked-result");
         } finally {
             manager.shutdown(Duration.ofSeconds(1));
             flushExecutor.shutdownNow();
@@ -839,6 +950,13 @@ class DatabaseExecutionManagerTest {
                 .build();
     }
 
+    private static PersistenceRuntimeConfiguration configurationOf(DatabaseExecutionManager manager)
+            throws ReflectiveOperationException {
+        Field field = DatabaseExecutionManager.class.getDeclaredField("configuration");
+        field.setAccessible(true);
+        return (PersistenceRuntimeConfiguration) field.get(manager);
+    }
+
     private static void awaitShutdownAdmissionClosure(DatabaseExecutionManager manager) throws InterruptedException {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
         while (manager.isAlive() && System.nanoTime() < deadline) {
@@ -893,5 +1011,29 @@ class DatabaseExecutionManagerTest {
         assertThat(record.result()).isNull();
         assertThat(record.errorMessage()).isNull();
         assertThat(record.toString()).doesNotContain(secret);
+    }
+
+    private static final class CapturingJsonCodec implements PersistenceJsonCodec {
+        private final List<Object> serializedValues = new ArrayList<>();
+
+        @Override
+        public String toJson(Object value) {
+            serializedValues.add(value);
+            return "{}";
+        }
+
+        @Override
+        public <T> T fromJson(String json, Class<T> type) {
+            return null;
+        }
+
+        @Override
+        public <T> T fromJson(String json, TypeReference<T> type) {
+            return null;
+        }
+
+        List<Object> serializedValues() {
+            return List.copyOf(serializedValues);
+        }
     }
 }

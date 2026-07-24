@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.sql.DataSource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.AssemblyLineExecutor;
 import io.github.gear4jtest.core.api.ExecutionResult;
@@ -19,6 +20,7 @@ import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.security.RedactionTarget;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
+import io.github.gear4jtest.jdbc.persistence.PersistenceJsonCodec;
 import io.github.gear4jtest.micrometer.Gear4jMicrometerExtension;
 import io.github.gear4jtest.spring.boot.actuate.Gear4jActuatorAutoConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -119,6 +121,43 @@ class Gear4jAutoConfigurationTest {
         contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
                 .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
                 .run(context -> assertThat(context).hasSingleBean(DatabaseExecutionManager.class));
+    }
+
+    @Test
+    void should_use_application_object_mapper_for_jdbc_persistence() {
+        // Given
+        ObjectMapper applicationObjectMapper = new ObjectMapper();
+
+        // When / Then
+        contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
+                .withBean(ObjectMapper.class, () -> applicationObjectMapper)
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> {
+                    DatabaseExecutionManager manager = context.getBean(DatabaseExecutionManager.class);
+                    Object repository = ReflectionTestUtils.getField(manager, "repository");
+                    Object jsonCodec = ReflectionTestUtils.getField(repository, "jsonCodec");
+
+                    assertThat(ReflectionTestUtils.getField(jsonCodec, "objectMapper"))
+                            .isSameAs(applicationObjectMapper);
+                });
+    }
+
+    @Test
+    void should_prefer_explicit_persistence_json_codec_over_application_object_mapper() {
+        // Given
+        PersistenceJsonCodec jsonCodec = mock(PersistenceJsonCodec.class);
+
+        // When / Then
+        contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
+                .withBean(ObjectMapper.class, ObjectMapper::new)
+                .withBean(PersistenceJsonCodec.class, () -> jsonCodec)
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> {
+                    DatabaseExecutionManager manager = context.getBean(DatabaseExecutionManager.class);
+                    Object repository = ReflectionTestUtils.getField(manager, "repository");
+
+                    assertThat(ReflectionTestUtils.getField(repository, "jsonCodec")).isSameAs(jsonCodec);
+                });
     }
 
     @Test
