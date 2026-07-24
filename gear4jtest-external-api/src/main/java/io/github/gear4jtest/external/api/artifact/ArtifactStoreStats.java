@@ -10,4 +10,5 @@ public record ArtifactStoreStats(long writesCompleted,
                                  long readStreamsClosedEarly,
                                  long readFailures,
                                  long bytesRead,
-                                 long readDurationNanos) {}
+                                 long readDurationNanos,
+                                 long cleanupFailures) {}

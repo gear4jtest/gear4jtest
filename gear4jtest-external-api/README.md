@@ -140,7 +140,26 @@ External definitions are expected to be small source/configuration artifacts.
 `ArtifactStore.put(InputStream, maxBytes)`, `verificationMaxArtifactSizeBytes` on
 composite artifact-store configuration and the advanced manager constructor with
 `maxArtifactSizeBytes` to set a stricter or larger application-specific limit.
-Passing `ArtifactStore.UNLIMITED_SIZE` is an explicit trusted-deployment opt-in.
+Passing `ArtifactStore.UNLIMITED_SIZE` disables only the caller-specific limit;
+backend limits still apply.
+
+## Filesystem artifact-store security
+
+The filesystem store normalizes its configured root to an absolute path, rejects
+symbolic links anywhere in its existing path, and creates the root plus hash
+directories with owner-only POSIX permissions when supported. Artifact files are
+published without replacing an existing entry; an existing content-addressed
+entry must still match its SHA-256 hash.
+
+Reads reject symbolic links and non-regular files, verify SHA-256, and expose an
+in-memory snapshot only after verification succeeds. Filesystem stores enforce
+`maxArtifactSizeBytes` on both writes and reads, defaulting to 5 MiB. Set a
+larger finite value only when the application heap has been sized accordingly;
+an unbounded filesystem store is rejected. Configure the root as a private,
+application-owned directory whose parent directories are not writable by
+unrelated users. Do not share it with another application or mutate its contents
+outside Gear4J. `ArtifactStoreMonitor#snapshotStats()` exposes failed temporary-file
+cleanups through `cleanupFailures`.
 
 ## Configuration secrecy
 

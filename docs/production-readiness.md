@@ -84,8 +84,18 @@ bundles. `ArtifactStore.put(InputStream)`, composite-store verification and
 `AssemblyLineManager` enforce a 5 MiB default artifact limit. Use
 `ArtifactStore.put(InputStream, maxBytes)` and the manager constructor with
 `maxArtifactSizeBytes` to choose a stricter or larger application limit.
-`ArtifactStore.UNLIMITED_SIZE` should be an explicit trusted-deployment choice,
-not an accidental default.
+`ArtifactStore.UNLIMITED_SIZE` disables only a caller-specific limit and never
+overrides a backend's configured bound.
+
+Configure FILESYSTEM roots as private, application-owned directories. Gear4J
+rejects symbolic links in the root path and artifact tree, applies owner-only
+POSIX permissions when available, publishes immutable entries without
+replacement and verifies SHA-256 before exposing file content. The verified
+content is returned as an in-memory snapshot. FILESYSTEM stores therefore apply
+`maxArtifactSizeBytes` to writes and reads, default to 5 MiB and reject an
+unbounded configuration. A larger finite value must remain consistent with the
+application's memory budget. Alert on
+`ArtifactStoreMonitor#snapshotStats().cleanupFailures()`.
 
 The database store applies the same 5 MiB default to direct byte-array writes,
 streamed writes and reads. Configure `maxArtifactSizeBytes` in DATABASE store

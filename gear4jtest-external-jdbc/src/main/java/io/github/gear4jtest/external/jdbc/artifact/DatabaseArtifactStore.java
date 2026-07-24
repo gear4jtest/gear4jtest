@@ -128,7 +128,7 @@ public final class DatabaseArtifactStore implements ArtifactStore, ArtifactStore
 
     @Override
     public ArtifactStoreStats snapshotStats() {
-        return metrics.snapshot();
+        return metrics.snapshot(spool.snapshotStats().cleanupFailures());
     }
 
     @Override

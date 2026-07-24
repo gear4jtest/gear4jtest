@@ -1,20 +1,19 @@
-package io.github.gear4jtest.external.jdbc.artifact;
+package io.github.gear4jtest.external.api.artifact;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
-import io.github.gear4jtest.external.api.artifact.ArtifactStoreStats;
-
-final class ArtifactStoreMetrics {
+final class FilesystemArtifactStoreMetrics {
     private final LongAdder writesCompleted = new LongAdder();
     private final LongAdder writeFailures = new LongAdder();
     private final LongAdder bytesWritten = new LongAdder();
     private final LongAdder writeDurationNanos = new LongAdder();
     private final LongAdder readStreamsOpened = new LongAdder();
     private final LongAdder readStreamsCompleted = new LongAdder();
-    private final LongAdder readStreamsClosedEarly = new LongAdder();
     private final LongAdder readFailures = new LongAdder();
     private final LongAdder bytesRead = new LongAdder();
     private final LongAdder readDurationNanos = new LongAdder();
+    private final AtomicLong cleanupFailures = new AtomicLong();
 
     void recordWriteCompleted(long size, long durationNanos) {
         writesCompleted.increment();
@@ -31,34 +30,25 @@ final class ArtifactStoreMetrics {
         readStreamsOpened.increment();
     }
 
-    void recordReadOpenFailure(long durationNanos) {
+    void recordReadCompleted(long size, long durationNanos) {
+        readStreamsCompleted.increment();
+        bytesRead.add(size);
+        readDurationNanos.add(durationNanos);
+    }
+
+    void recordReadFailure(long durationNanos) {
         readFailures.increment();
         readDurationNanos.add(durationNanos);
     }
 
-    void recordReadClosed(long size,
-                          long durationNanos,
-                          boolean completed,
-                          boolean closedEarly,
-                          boolean failure) {
-        bytesRead.add(size);
-        readDurationNanos.add(durationNanos);
-        if (completed) {
-            readStreamsCompleted.increment();
-        }
-        if (closedEarly) {
-            readStreamsClosedEarly.increment();
-        }
-        if (failure) {
-            readFailures.increment();
-        }
+    long recordCleanupFailure() {
+        return cleanupFailures.incrementAndGet();
     }
 
-    ArtifactStoreStats snapshot(long cleanupFailures) {
+    ArtifactStoreStats snapshot() {
         return new ArtifactStoreStats(writesCompleted.sum(), writeFailures.sum(), bytesWritten.sum(),
-                writeDurationNanos.sum(), readStreamsOpened.sum(), readStreamsCompleted.sum(),
-                readStreamsClosedEarly.sum(), readFailures.sum(), bytesRead.sum(), readDurationNanos.sum(),
-                cleanupFailures);
+                writeDurationNanos.sum(), readStreamsOpened.sum(), readStreamsCompleted.sum(), 0L,
+                readFailures.sum(), bytesRead.sum(), readDurationNanos.sum(), cleanupFailures.get());
     }
 
     static long elapsedSince(long startedNanos) {
