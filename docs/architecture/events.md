@@ -35,8 +35,9 @@ There is no durable hand-off, replay log or persistent acknowledgement.
 
 `RuntimeConfiguration` defaults to `ShutdownMode.WAIT_FOR_DRAIN`. With this mode, once the pipeline itself has completed,
 `AssemblyLineExecutor.execute(...)` waits for already accepted event reactions to drain until the configured shutdown
-timeout expires. This preserves a simple "result returned after reactions drained or timed out" contract, but it means an
-otherwise asynchronous event subscription can still make the caller wait at the end of the run.
+timeout expires. A single monotonic deadline covers reaction drain, owned-executor termination and forced shutdown; these
+steps do not each restart the timeout. This preserves a simple "result returned after reactions drained or timed out"
+contract, but it means an otherwise asynchronous event subscription can still make the caller wait at the end of the run.
 
 Use `ShutdownMode.DETACH_AND_DRAIN` when the application wants to return the pipeline result before best-effort reactions
 finish. `RuntimeConfiguration.detachAndDrainDefaults()` exists as a readable shortcut for this common best-effort mode.

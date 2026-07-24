@@ -134,4 +134,16 @@ class OperatorConcurrencyGuardTest {
         }
     }
 
+    @Test
+    void beforeUse_shouldAcceptTimeoutLargerThanNanosecondRange() {
+        // Given
+        WorkerConcurrencyGuard guard = new WorkerConcurrencyGuard();
+
+        // When
+        guard.beforeUse(WorkerLockAcquisitionPolicy.BLOCK_CALLER, Duration.ofSeconds(Long.MAX_VALUE));
+
+        // Then
+        guard.afterUse();
+    }
+
 }

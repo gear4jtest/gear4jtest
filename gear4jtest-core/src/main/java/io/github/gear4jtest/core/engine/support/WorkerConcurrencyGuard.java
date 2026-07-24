@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import io.github.gear4jtest.core.api.config.WorkerConcurrencyConfiguration;
 import io.github.gear4jtest.core.api.config.WorkerLockAcquisitionPolicy;
 import io.github.gear4jtest.core.exception.ConcurrentTransformerUseException;
+import io.github.gear4jtest.core.util.MonotonicDeadline;
 
 public final class WorkerConcurrencyGuard {
     private final ReentrantLock monitor = new ReentrantLock();
@@ -84,19 +85,20 @@ public final class WorkerConcurrencyGuard {
     }
 
     private void lockWithTimeout(Duration lockWaitTimeout) {
-        long remainingNanos = lockWaitTimeout.toNanos();
+        MonotonicDeadline deadline = MonotonicDeadline.start(lockWaitTimeout);
         monitor.lock();
         try {
             while (inUse) {
                 if (owner == Thread.currentThread()) {
                     throw new ConcurrentTransformerUseException("Reentrant worker lock acquisition is not supported");
                 }
+                long remainingNanos = deadline.remainingNanos();
                 if (remainingNanos <= 0L) {
                     throw new ConcurrentTransformerUseException("Timed out after " + lockWaitTimeout
                             + " while waiting for worker lock");
                 }
                 try {
-                    remainingNanos = available.awaitNanos(remainingNanos);
+                    available.awaitNanos(remainingNanos);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new ConcurrentTransformerUseException("Interrupted while waiting for worker lock", e);

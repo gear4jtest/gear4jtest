@@ -152,6 +152,31 @@ class ParallelContainerBranchExecutorTest {
         assertThat(aggregation.interruptingChild()).isNull();
     }
 
+    @Test
+    void execute_shouldAcceptAwaitTimeoutLargerThanNanosecondRange() {
+        // Given
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            ContainerBaseStation<String, Void> station = new ContainerBaseStation.Builder<String, Void>(executor)
+                    .id("container")
+                    .withBranch("branch", new TestStation("branch"))
+                    .build();
+            TestStationExecutionContext context = stationContext("container");
+
+            // When
+            ContainerExecutionAggregation aggregation = new ParallelContainerBranchExecutor()
+                    .execute(station, "input", successfulRunner(), context, DEFAULT,
+                             Duration.ofSeconds(Long.MAX_VALUE));
+
+            // Then
+            assertThat(aggregation.results()).singleElement()
+                    .extracting(StationLogTrace::getStatus)
+                    .isEqualTo(StationLogStatus.SUCCEEDED);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
     private static io.github.gear4jtest.core.spi.runner.StationRunner successfulRunner() {
         return (input, station, ctx) -> {
             StationLogTrace log = StationLogTrace.start(ctx.getGlobalContext().getExecutionId(), station.getId(), null);

@@ -235,4 +235,26 @@ class SideComputeWaitProcessorTest {
                 .hasMessage("fallback must not be null");
     }
 
+    @Test
+    void beforeExecution_shouldAcceptTimeoutLargerThanNanosecondRange() {
+        // Given
+        ExecutionContext execCtx = mock(ExecutionContext.class);
+        StationExecutionContext opCtx = mock(StationExecutionContext.class);
+        SideComputeContext sideComputeContext = new SideComputeContext();
+        Map<String, Object> globalMap = new HashMap<>();
+        when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getSideComputeContext()).thenReturn(sideComputeContext);
+        when(execCtx.getContext()).thenReturn(globalMap);
+        sideComputeContext.getOrCreateFuture("extreme-timeout").complete("resolved");
+        SideComputeWaitProcessor processor = SideComputeWaitProcessor.builder("extreme-timeout")
+                .timeout(Duration.ofSeconds(Long.MAX_VALUE))
+                .build();
+
+        // When
+        processor.beforeExecution("input", opCtx);
+
+        // Then
+        assertThat(globalMap).containsEntry(SideComputeKeys.valueKey("extreme-timeout"), "resolved");
+    }
+
 }

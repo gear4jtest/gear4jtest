@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.github.gear4jtest.core.api.annotation.Internal;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
+import io.github.gear4jtest.core.util.MonotonicDeadline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -159,6 +160,7 @@ public final class EventManager {
             return ShutdownHandle.completed();
         }
 
+        MonotonicDeadline deadline = MonotonicDeadline.start(shutdownTimeout);
         synchronized (submissionMonitor) {
             if (accepting) {
                 accepting = false;
@@ -166,7 +168,7 @@ public final class EventManager {
                 if (shutdownMode == EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.CANCEL_PENDING_TASKS) {
                     dropPendingQueuedEvents();
                     cancelPendingReactions();
-                    forceShutdownOwnedExecutor();
+                    forceShutdownOwnedExecutor(deadline);
                 } else {
                     scheduleDispatchIfNeeded();
                 }
@@ -179,7 +181,7 @@ public final class EventManager {
                 terminationFuture);
 
         if (!handle.detached()) {
-            awaitCompletion(handle.completion());
+            awaitCompletion(handle.completion(), deadline);
         }
 
         return handle;
@@ -348,42 +350,42 @@ public final class EventManager {
         }
     }
 
-    private void awaitCompletion(CompletableFuture<Void> completion) {
+    private void awaitCompletion(CompletableFuture<Void> completion, MonotonicDeadline deadline) {
         try {
-            completion.get(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
-            awaitOwnedExecutorTermination();
+            completion.get(deadline.remainingNanos(), TimeUnit.NANOSECONDS);
+            awaitOwnedExecutorTermination(deadline);
         } catch (TimeoutException timeoutException) {
             LOGGER.warn("Timed out while waiting for the asynchronous event runtime to terminate. timeout={}",
                         shutdownTimeout);
             cancelPendingReactions();
-            forceShutdownOwnedExecutor();
+            forceShutdownOwnedExecutor(deadline);
         } catch (InterruptedException interruptedException) {
             Thread.currentThread().interrupt();
             cancelPendingReactions();
-            forceShutdownOwnedExecutor();
+            forceShutdownOwnedExecutor(deadline);
         } catch (ExecutionException executionException) {
             LOGGER.warn("Asynchronous event runtime terminated with an error.", executionException.getCause());
             cancelPendingReactions();
-            forceShutdownOwnedExecutor();
+            forceShutdownOwnedExecutor(deadline);
         }
     }
 
-    private void awaitOwnedExecutorTermination() throws InterruptedException {
+    private void awaitOwnedExecutorTermination(MonotonicDeadline deadline) throws InterruptedException {
         if (!shutdownExecutorOnClose || reactionExecutor == null) {
             return;
         }
 
-        boolean terminated = reactionExecutor.awaitTermination(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
+        boolean terminated = reactionExecutor.awaitTermination(deadline.remainingNanos(), TimeUnit.NANOSECONDS);
         if (!terminated) {
             LOGGER.warn("Timed out while waiting for the per-run event reaction executor to terminate. timeout={}",
                         shutdownTimeout);
             cancelPendingReactions();
             reactionExecutor.shutdownNow();
-            reactionExecutor.awaitTermination(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
+            reactionExecutor.awaitTermination(deadline.remainingNanos(), TimeUnit.NANOSECONDS);
         }
     }
 
-    private void forceShutdownOwnedExecutor() {
+    private void forceShutdownOwnedExecutor(MonotonicDeadline deadline) {
         if (!shutdownExecutorOnClose || reactionExecutor == null) {
             return;
         }
@@ -391,7 +393,7 @@ public final class EventManager {
         ownedExecutorShutdownInitiated.set(true);
         reactionExecutor.shutdownNow();
         try {
-            reactionExecutor.awaitTermination(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
+            reactionExecutor.awaitTermination(deadline.remainingNanos(), TimeUnit.NANOSECONDS);
         } catch (InterruptedException interruptedException) {
             Thread.currentThread().interrupt();
         }

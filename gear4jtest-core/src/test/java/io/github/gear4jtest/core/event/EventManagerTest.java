@@ -13,6 +13,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -297,6 +298,96 @@ class EventManagerTest {
             releaseReaction.countDown();
             manager.shutdown();
             sharedExecutor.shutdownNow();
+        }
+    }
+
+    @Test
+    void shutdown_shouldUseOneDeadlineWhenOwnedReactionIgnoresInterruption() throws Exception {
+        // Given
+        CountDownLatch reactionStarted = new CountDownLatch(1);
+        CountDownLatch interruptionObserved = new CountDownLatch(1);
+        CountDownLatch releaseReaction = new CountDownLatch(1);
+        RecordingThreadPoolExecutor executor = new RecordingThreadPoolExecutor();
+        Duration shutdownTimeout = Duration.ofMillis(200);
+
+        EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
+            reactionStarted.countDown();
+            while (releaseReaction.getCount() > 0L) {
+                try {
+                    releaseReaction.await();
+                } catch (InterruptedException ignored) {
+                    interruptionObserved.countDown();
+                    // Deliberately ignore interruption to reproduce an uncooperative reaction.
+                }
+            }
+        }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                .reactionExecutorFactory(() -> executor)
+                .shutdownTimeout(shutdownTimeout)
+                .build()).build();
+
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+        try {
+            manager.publish(new Event("pipe", UUID.randomUUID(), "BLOCK"));
+            assertThat(reactionStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+            // When
+            long startedNanos = System.nanoTime();
+            manager.shutdown();
+            long elapsedNanos = System.nanoTime() - startedNanos;
+
+            // Then
+            assertThat(interruptionObserved.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(executor.lastAwaitTerminationNanos())
+                    .as("forced executor shutdown must only receive the remaining global budget")
+                    .isLessThan(TimeUnit.MILLISECONDS.toNanos(25L));
+            assertThat(elapsedNanos)
+                    .as("shutdown must not reopen a second complete timeout window")
+                    .isLessThan(TimeUnit.MILLISECONDS.toNanos(350L));
+        } finally {
+            releaseReaction.countDown();
+            executor.shutdownNow();
+            executor.awaitTermination(2, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void shutdown_shouldAcceptTimeoutLargerThanNanosecondRange() {
+        // Given
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
+        }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
+                .reactionExecutorFactory(() -> executor)
+                .shutdownTimeout(Duration.ofSeconds(Long.MAX_VALUE))
+                .build()).build();
+        EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
+
+        try {
+            // When
+            EventManager.ShutdownHandle handle = manager.shutdown();
+
+            // Then
+            assertThat(handle.detached()).isFalse();
+            assertThat(handle.completion()).isCompleted();
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    private static final class RecordingThreadPoolExecutor extends ThreadPoolExecutor {
+        private final AtomicLong lastAwaitTerminationNanos = new AtomicLong(-1L);
+
+        private RecordingThreadPoolExecutor() {
+            super(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+            lastAwaitTerminationNanos.set(unit.toNanos(timeout));
+            return super.awaitTermination(timeout, unit);
+        }
+
+        private long lastAwaitTerminationNanos() {
+            return lastAwaitTerminationNanos.get();
         }
     }
 

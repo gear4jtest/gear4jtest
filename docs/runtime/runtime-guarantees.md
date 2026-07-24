@@ -29,8 +29,10 @@ Not guaranteed today:
 Durable eventing remains a separate subsystem concern and must not be assumed from the in-memory event runtime.
 
 By default, event shutdown uses `WAIT_FOR_DRAIN`: the pipeline result is returned only after already accepted reactions
-have drained or the shutdown timeout expires. Use `DETACH_AND_DRAIN` explicitly when best-effort reactions should outlive
-the caller's `execute(...)` call; `RuntimeConfiguration.detachAndDrainDefaults()` is the shortcut for that explicit mode.
+have drained or one monotonic end-to-end shutdown deadline expires. Draining, owned-executor termination and forced
+shutdown all consume the same configured timeout budget; a reaction that ignores interruption can outlive that wait but
+cannot open a new timeout window. Use `DETACH_AND_DRAIN` explicitly when best-effort reactions should outlive the caller's
+`execute(...)` call; `RuntimeConfiguration.detachAndDrainDefaults()` is the shortcut for that explicit mode.
 
 Side-compute waits are synchronous from the station's perspective. A station waiting for side-compute depends on the
 event reaction executor having enough capacity to complete the corresponding side-compute reaction before the configured

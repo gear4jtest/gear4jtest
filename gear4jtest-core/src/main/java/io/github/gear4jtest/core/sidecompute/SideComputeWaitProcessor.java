@@ -13,6 +13,7 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.exception.SideComputeExecutionException;
 import io.github.gear4jtest.core.exception.SideComputeTimeoutException;
+import io.github.gear4jtest.core.util.MonotonicDeadline;
 
 /**
  * Processor that blocks station execution until a named side-compute value is
@@ -66,7 +67,7 @@ public final class SideComputeWaitProcessor implements Processor {
         Duration effectiveTimeout = timeout != null ? timeout : safetyTimeout;
 
         try {
-            Object result = future.get(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
+            Object result = future.get(MonotonicDeadline.toNanosSaturated(effectiveTimeout), TimeUnit.NANOSECONDS);
             storeResolvedValue(execCtx, result);
 
         } catch (TimeoutException te) {

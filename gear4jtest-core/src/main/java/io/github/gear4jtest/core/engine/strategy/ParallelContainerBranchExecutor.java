@@ -24,6 +24,7 @@ import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.event.StationSkipReason;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
+import io.github.gear4jtest.core.util.MonotonicDeadline;
 
 /**
  * Executes parallel container branches with bounded waiting and deterministic
@@ -95,7 +96,7 @@ final class ParallelContainerBranchExecutor {
                     collectedErrors, null);
         }
 
-        long deadlineNanos = System.nanoTime() + awaitTimeout.toNanos();
+        MonotonicDeadline deadline = MonotonicDeadline.start(awaitTimeout);
         int completedCount = 0;
         try {
             while (completedCount < submittedBranches.size()) {
@@ -108,7 +109,7 @@ final class ParallelContainerBranchExecutor {
                             collectedErrors, cancellation);
                 }
 
-                Future<BranchExecution> completedFuture = waitForNextCompletion(completionService, deadlineNanos);
+                Future<BranchExecution> completedFuture = waitForNextCompletion(completionService, deadline);
                 if (completedFuture == null) {
                     StationLogTrace timeoutChild = timeoutPendingBranches(submittedBranches, orderedResults, input,
                                                                           context,
@@ -159,9 +160,9 @@ final class ParallelContainerBranchExecutor {
     }
 
     private Future<BranchExecution> waitForNextCompletion(CompletionService<BranchExecution> completionService,
-                                                          long deadlineNanos)
+                                                          MonotonicDeadline deadline)
             throws InterruptedException {
-        long remainingNanos = deadlineNanos - System.nanoTime();
+        long remainingNanos = deadline.remainingNanos();
         return remainingNanos <= 0L ? null : completionService.poll(remainingNanos, TimeUnit.NANOSECONDS);
     }
 
