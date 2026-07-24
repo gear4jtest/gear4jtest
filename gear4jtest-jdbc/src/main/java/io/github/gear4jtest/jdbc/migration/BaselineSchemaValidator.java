@@ -96,7 +96,7 @@ final class BaselineSchemaValidator {
         }
     }
 
-    private boolean columnExists(Connection connection, String tableName, String columnName) throws SQLException {
+    boolean columnExists(Connection connection, String tableName, String columnName) throws SQLException {
         DatabaseMetaData metadata = connection.getMetaData();
         return columnExists(metadata, tableName, columnName)
                 || columnExists(metadata, tableName.toLowerCase(Locale.ROOT), columnName.toLowerCase(Locale.ROOT))

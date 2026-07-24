@@ -57,6 +57,11 @@ Auto-migration does not silently adopt a pre-existing Gear4J schema that has no
 `gear4j_schema_history` entry. For a verified compatible schema, adoption must
 be explicitly enabled with `.baselineOnMigrate(true)`; the migrator then checks
 all expected V1 tables, columns and named indexes before writing history.
+Managed migrations persist `STARTED`, `APPLIED` and `FAILED` states. Gear4J
+refuses to retry an incomplete migration automatically because some databases
+can commit DDL statement by statement. Follow the
+[partial-migration recovery runbook](../docs/architecture/jdbc-migrations.md#partial-migration-recovery-runbook)
+before calling `JdbcSchemaMigrator.prepareRetry(...)`.
 
 For an observable shutdown, call `manager.shutdownWithReport(timeout)`. The
 returned `PersistenceShutdownReport` states how many station logs were drained,

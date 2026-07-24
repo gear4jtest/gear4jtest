@@ -117,6 +117,8 @@ class JdbcSchemaMigratorTest {
         when(connection.getAutoCommit()).thenReturn(true);
         when(connection.getMetaData()).thenReturn(metadata);
         when(metadata.getTables(isNull(), isNull(), anyString(), isNull())).thenAnswer(invocation -> resultSet(true));
+        when(metadata.getColumns(isNull(), isNull(), anyString(), anyString()))
+                .thenAnswer(invocation -> resultSet(true));
         when(connection.prepareStatement("INSERT INTO gear4j_schema_lock(lock_name, locked_at) VALUES (?,?) "
                 + "ON CONFLICT (lock_name) DO NOTHING"))
                 .thenReturn(insertLock);
@@ -159,6 +161,8 @@ class JdbcSchemaMigratorTest {
         when(connection.getAutoCommit()).thenReturn(true);
         when(connection.getMetaData()).thenReturn(metadata);
         when(metadata.getTables(isNull(), isNull(), anyString(), isNull())).thenAnswer(invocation -> resultSet(true));
+        when(metadata.getColumns(isNull(), isNull(), anyString(), anyString()))
+                .thenAnswer(invocation -> resultSet(true));
         when(connection.prepareStatement("INSERT INTO gear4j_schema_lock(lock_name, locked_at) VALUES (?,?) "
                 + "ON CONFLICT (lock_name) DO NOTHING"))
                 .thenReturn(insertLock);
@@ -204,8 +208,11 @@ class JdbcSchemaMigratorTest {
         when(connection.getMetaData()).thenReturn(metadata);
         when(metadata.getTables(isNull(), isNull(), anyString(), isNull())).thenAnswer(invocation -> resultSet(true));
         when(metadata.getColumns(isNull(), isNull(), anyString(), anyString())).thenAnswer(invocation -> {
+            String table = invocation.getArgument(2, String.class);
             String column = invocation.getArgument(3, String.class);
-            return resultSet(!"context".equalsIgnoreCase(column));
+            boolean exists = "gear4j_schema_history".equalsIgnoreCase(table)
+                    || !"context".equalsIgnoreCase(column);
+            return resultSet(exists);
         });
         when(connection.prepareStatement("INSERT INTO gear4j_schema_lock(lock_name, locked_at) VALUES (?,?) "
                 + "ON CONFLICT (lock_name) DO NOTHING"))
@@ -258,6 +265,8 @@ class JdbcSchemaMigratorTest {
                     .contains(table.toLowerCase());
             return resultSet(exists);
         });
+        when(metadata.getColumns(isNull(), isNull(), anyString(), anyString()))
+                .thenAnswer(invocation -> resultSet(true));
         when(connection.prepareStatement("INSERT INTO gear4j_schema_lock(lock_name, locked_at) VALUES (?,?) "
                 + "ON CONFLICT (lock_name) DO NOTHING"))
                 .thenReturn(insertLock);
@@ -349,6 +358,8 @@ class JdbcSchemaMigratorTest {
         when(connection.getAutoCommit()).thenReturn(false);
         when(connection.getMetaData()).thenReturn(metadata);
         when(metadata.getTables(isNull(), isNull(), anyString(), isNull())).thenAnswer(invocation -> resultSet(true));
+        when(metadata.getColumns(isNull(), isNull(), anyString(), anyString()))
+                .thenAnswer(invocation -> resultSet(true));
         when(connection.prepareStatement("INSERT INTO gear4j_schema_lock(lock_name, locked_at) VALUES (?,?) "
                 + "ON CONFLICT (lock_name) DO NOTHING"))
                 .thenReturn(insertLock);

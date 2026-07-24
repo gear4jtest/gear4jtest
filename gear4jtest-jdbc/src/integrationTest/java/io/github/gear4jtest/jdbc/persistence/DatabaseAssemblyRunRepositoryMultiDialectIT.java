@@ -1,15 +1,20 @@
 package io.github.gear4jtest.jdbc.persistence;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Statement;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -21,6 +26,8 @@ import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator;
+import io.github.gear4jtest.jdbc.migration.SchemaMigrationException;
+import io.github.gear4jtest.jdbc.migration.SchemaMigrationState;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -33,6 +40,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Tag("integration")
 @Tag("docker")
@@ -40,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DatabaseAssemblyRunRepositoryMultiDialectIT {
     @ParameterizedTest(name = "{0}")
     @MethodSource("databases")
-    void repository_shouldMigratePersistAndReadRunsAndLogsAcrossDialects(DatabaseScenario scenario) {
+    void repositoryAndMigrationRecovery_shouldWorkAcrossDialects(DatabaseScenario scenario) {
         try (JdbcDatabaseContainer<?> database = scenario.containerFactory().get()) {
             database.start();
             exerciseRepository(scenario.dialect(), database);
@@ -52,6 +60,7 @@ class DatabaseAssemblyRunRepositoryMultiDialectIT {
         DataSource dataSource = new DriverManagerBackedDataSource(database.getJdbcUrl(), database.getUsername(),
                 database.getPassword());
         JdbcSchemaMigrator.core(dialect).migrate(dataSource);
+        verifyPartialMigrationRecovery(dialect, dataSource);
         DatabaseAssemblyRunRepository repository = DatabaseAssemblyRunRepository.builder()
                 .dataSource(dataSource)
                 .databaseDialect(dialect)
@@ -84,6 +93,88 @@ class DatabaseAssemblyRunRepositoryMultiDialectIT {
                     assertThat(savedLog.operationId()).isEqualTo("step");
                     assertThat(savedLog.context()).containsEntry("station", "context");
                 });
+    }
+
+    private void verifyPartialMigrationRecovery(Gear4jDatabaseDialect dialect, DataSource dataSource) {
+        // Given
+        Map<String, String> resources = new ConcurrentHashMap<>();
+        resources.put("fault/migrations.list", "V1__fault_probe.sql\n");
+        resources.put("fault/V1__fault_probe.sql",
+                      "CREATE TABLE gear4j_fault_probe(id VARCHAR(36)); THIS IS NOT VALID SQL;");
+        JdbcSchemaMigrator migrator = JdbcSchemaMigrator.builder()
+                .moduleId("gear4j-fault-probe")
+                .dialect(dialect)
+                .migrationListResource("fault/migrations.list")
+                .baselineTableName("gear4j_fault_probe")
+                .classLoader(resources(resources))
+                .build();
+
+        // When / Then: the second statement fails after a valid DDL statement.
+        assertThatThrownBy(() -> migrator.migrate(dataSource))
+                .isInstanceOf(SchemaMigrationException.class)
+                .hasMessageContaining("STARTED or FAILED marker may be durable");
+        assertThat(migrator.migrationStatuses(dataSource))
+                .singleElement()
+                .satisfies(status -> assertThat(status.state()).isEqualTo(SchemaMigrationState.FAILED));
+        assertThat(tableExists(dataSource, "gear4j_fault_probe"))
+                .as("partial DDL visibility for %s", dialect)
+                .isEqualTo(dialect != Gear4jDatabaseDialect.POSTGRESQL);
+        assertThatThrownBy(() -> migrator.migrate(dataSource))
+                .isInstanceOf(SchemaMigrationException.class)
+                .hasMessageContaining("Automatic retry is refused");
+
+        // Given: an operator has inspected and removed any partially committed object.
+        dropTableIfPresent(dataSource, "gear4j_fault_probe");
+
+        // When
+        migrator.prepareRetry(dataSource, "1");
+        resources.put("fault/V1__fault_probe.sql", "CREATE TABLE gear4j_fault_probe(id VARCHAR(36));");
+        migrator.migrate(dataSource);
+
+        // Then
+        assertThat(migrator.migrationStatuses(dataSource))
+                .singleElement()
+                .satisfies(status -> assertThat(status.state()).isEqualTo(SchemaMigrationState.APPLIED));
+    }
+
+    private static void dropTableIfPresent(DataSource dataSource, String tableName) {
+        if (!tableExists(dataSource, tableName)) {
+            return;
+        }
+        try (Connection connection = dataSource.getConnection();
+                Statement statement = connection.createStatement()) {
+            statement.execute("DROP TABLE " + tableName);
+        } catch (SQLException e) {
+            throw new AssertionError("Failed to remove fault-injection table " + tableName, e);
+        }
+    }
+
+    private static boolean tableExists(DataSource dataSource, String tableName) {
+        try (Connection connection = dataSource.getConnection()) {
+            if (tableExists(connection, tableName)) {
+                return true;
+            }
+            return tableExists(connection, tableName.toUpperCase(Locale.ROOT));
+        } catch (SQLException e) {
+            throw new AssertionError("Failed to inspect table " + tableName, e);
+        }
+    }
+
+    private static boolean tableExists(Connection connection, String tableName) throws SQLException {
+        try (var resultSet = connection.getMetaData().getTables(null, null, tableName, null)) {
+            return resultSet.next();
+        }
+    }
+
+    private static ClassLoader resources(Map<String, String> resources) {
+        return new ClassLoader(null) {
+            @Override
+            public InputStream getResourceAsStream(String name) {
+                String content = resources.get(name);
+                return content == null ? null
+                        : new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
+            }
+        };
     }
 
     private static Stream<Arguments> databases() {

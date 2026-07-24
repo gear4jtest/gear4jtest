@@ -31,7 +31,7 @@ io/github/gear4j/external/db/<dialect>/migrations/
 
 ## History table
 
-Applied migrations are tracked in:
+Migration attempts and applied migrations are tracked in:
 
 ```text
 gear4j_schema_history
@@ -168,6 +168,79 @@ DDL transaction semantics still depend on the database. PostgreSQL and H2 can
 usually keep DDL transactional. MySQL/MariaDB and Oracle may auto-commit DDL in
 some cases, so the lock/history mechanism should be considered a robustness
 guardrail rather than a full Flyway/Liquibase replacement.
+
+## Partial-migration recovery runbook
+
+Gear4J records every managed migration with one of three durable states in
+`gear4j_schema_history.migration_state`:
+
+- `STARTED`: execution began but no successful completion was recorded;
+- `APPLIED`: every statement completed and the checksum was accepted;
+- `FAILED`: execution raised an error and Gear4J was able to persist the failure
+  marker.
+
+Existing history rows created by an earlier Gear4J version are upgraded with an
+`APPLIED` default. A new startup never retries `STARTED` or `FAILED`
+automatically. This is deliberate: MySQL, MariaDB and Oracle may have committed
+only part of the DDL even though the surrounding JDBC transaction was rolled
+back.
+
+Use the following procedure after a migration failure or an application
+termination during migration:
+
+1. Stop every application instance that can run Gear4J-managed migrations and
+   keep `auto-create-tables` disabled during diagnosis.
+2. Take the normal database backup or snapshot required by the application's
+   operational policy.
+3. Inspect the durable state through the API:
+
+   ```java
+   List<SchemaMigrationStatus> statuses =
+           JdbcSchemaMigrator.core(dialect).migrationStatuses(dataSource);
+   ```
+
+   The equivalent diagnostic SQL is:
+
+   ```sql
+   SELECT module_id, version, description, checksum, migration_state, installed_at
+   FROM gear4j_schema_history
+   ORDER BY module_id, installed_at, version;
+   ```
+
+4. Compare the actual tables, columns, constraints and indexes with the bundled
+   SQL resource for the exact dialect and version. The relevant resources are
+   under `io/github/gear4j/db/<dialect>/migrations/` and
+   `io/github/gear4j/external/db/<dialect>/migrations/`.
+5. Choose one recovery path:
+   - if the DDL was fully rolled back, no application object should remain;
+   - if the DDL was partially committed, remove or complete only the objects
+     identified by the comparison, using a reviewed database change;
+   - for a fully present V1 schema, `baselineOnMigrate=true` may be used only
+     after the failed marker is cleared; Gear4J then validates its required
+     tables, columns and indexes before recording the baseline.
+6. After the schema is known to be safe for another attempt, prepare the retry:
+
+   ```java
+   JdbcSchemaMigrator.core(dialect).prepareRetry(dataSource, "1");
+   ```
+
+   For the external schema:
+
+   ```java
+   ExternalJdbcSchemaMigrator.forDialect(dialect).prepareRetry(dataSource, "1");
+   ```
+
+   `prepareRetry` acquires the module migration lock, verifies that the stored
+   checksum still matches the bundled migration and deletes only a `STARTED` or
+   `FAILED` marker. It does not create, drop, alter or validate application
+   schema objects.
+7. Re-enable migration on one application instance, verify that the state
+   becomes `APPLIED`, then restore the normal instance count.
+
+Never change a migration checksum or convert a failed row to `APPLIED` directly.
+If the actual schema cannot be reconciled safely, restore the database snapshot
+or move the scripts into the application's Flyway/Liquibase process and keep
+Gear4J auto-creation disabled.
 
 ## Baseline validation
 

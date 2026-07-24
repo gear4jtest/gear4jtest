@@ -52,6 +52,21 @@ public final class ExternalJdbcSchemaMigrator {
         delegate.migrate(connection);
     }
 
+    /**
+     * Clears an incomplete migration marker after operator inspection so a retry
+     * can be attempted.
+     */
+    public void prepareRetry(DataSource dataSource, String version) {
+        delegate.prepareRetry(dataSource, version);
+    }
+
+    /**
+     * Connection-scoped variant of {@link #prepareRetry(DataSource, String)}.
+     */
+    public void prepareRetry(Connection connection, String version) {
+        delegate.prepareRetry(connection, version);
+    }
+
     private static String resourceDirectory(Gear4jDatabaseDialect dialect) {
         return switch (dialect) {
             case POSTGRESQL -> "postgresql";
