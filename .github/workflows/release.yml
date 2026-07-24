@@ -31,6 +31,7 @@ jobs:
   database-matrix:
     name: Release JDBC modules ${{ matrix.dialect }} integration
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -71,6 +72,7 @@ jobs:
     name: Publish to Maven Central
     needs: database-matrix
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

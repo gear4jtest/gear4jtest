@@ -66,6 +66,10 @@ runtime event
 This design targets at-least-once delivery. Consumers must be idempotent because
 an envelope may be retried or replayed after a crash.
 
+`EventEnvelope.toString()` includes header names and their count for diagnostics,
+but never header values or raw payload bytes. Header values and payloads remain
+sensitive data and must only be exposed through their explicit accessors.
+
 ## What is not implemented yet
 
 The current phase deliberately stops at the SPI and generic dispatcher. Missing

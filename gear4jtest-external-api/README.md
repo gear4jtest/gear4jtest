@@ -142,6 +142,12 @@ composite artifact-store configuration and the advanced manager constructor with
 `maxArtifactSizeBytes` to set a stricter or larger application-specific limit.
 Passing `ArtifactStore.UNLIMITED_SIZE` is an explicit trusted-deployment opt-in.
 
+## Configuration secrecy
+
+`OperationChainConfig.storeProps` is intended for non-sensitive routing and storage options. Its `toString()` exposes
+property names for diagnostics but redacts every value. Credentials, tokens and private keys must be resolved by the
+application or by a store plugin from its secure configuration source; they must not be embedded in `storeProps`.
+
 ## Publication modes
 
 External definitions use `ExecutionMode`:

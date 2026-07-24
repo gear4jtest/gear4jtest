@@ -17,4 +17,16 @@ public record OperationChainConfig(String alId,
         storeType = requireNonNull(storeType, "storeType");
         storeProps = Map.copyOf(requireNonNull(storeProps, "storeProps"));
     }
+
+    @Override
+    public String toString() {
+        return "OperationChainConfig["
+                + "alId=" + alId
+                + ", allowRunPublicationWithoutTest=" + allowRunPublicationWithoutTest
+                + ", storeType=" + storeType
+                + ", storePropsKeys=" + storeProps.keySet().stream().sorted().toList()
+                + ", storePropsCount=" + storeProps.size()
+                + ", storePropsValues=<redacted>"
+                + ']';
+    }
 }

@@ -83,17 +83,23 @@ class EventEnvelopeTest {
     }
 
     @Test
-    void toString_shouldDescribePayloadWithoutDumpingRawBytes() {
+    void toString_shouldDescribeEnvelopeWithoutDumpingSensitiveValues() {
         // Given
-        EventEnvelope envelope = envelope(Map.of("trace", "a"), new byte[] { 1, 2, 3 });
+        String secretHeaderValue = "secret-bearer-token";
+        EventEnvelope envelope = envelope(Map.of("authorization", secretHeaderValue, "traceparent", "trace-value"),
+                                          new byte[] { 1, 2, 3 });
 
         // When
         String description = envelope.toString();
 
         // Then
         assertThat(description).contains("eventId=" + EVENT_ID)
+                .contains("headerKeys=[authorization, traceparent]")
+                .contains("headerCount=2")
                 .contains("payloadLength=3")
                 .contains("payload=byte[3], hash=")
+                .doesNotContain(secretHeaderValue)
+                .doesNotContain("trace-value")
                 .doesNotContain("payload=[1, 2, 3]")
                 .doesNotContain("[B@");
     }

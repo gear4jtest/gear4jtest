@@ -92,7 +92,8 @@ public record EventEnvelope(UUID eventId,
                 + ", parentOperationId=" + parentOperationId
                 + ", itemId=" + itemId
                 + ", occurredAt=" + occurredAt
-                + ", headers=" + headers
+                + ", headerKeys=" + headers.keySet().stream().sorted().toList()
+                + ", headerCount=" + headers.size()
                 + ", payloadLength=" + payload.length
                 + ", payload=" + payloadDescription()
                 + ", contentType=" + contentType

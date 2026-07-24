@@ -23,9 +23,7 @@ jobs:
   build:
     name: Build, integration tests, coverage and Sonar
     runs-on: ubuntu-latest
-    env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -59,8 +57,14 @@ jobs:
             -Pgear4jDatabaseDialect=postgresql
 
       - name: SonarQube scan
-        if: ${{ env.SONAR_TOKEN != '' }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          if [[ -z "${SONAR_TOKEN}" ]]; then
+            echo "SONAR_TOKEN is not configured; skipping SonarQube scan."
+            exit 0
+          fi
           ./gradlew --no-daemon sonar \
             -Dsonar.qualitygate.wait=true \
             -Pgear4jDatabaseDialect=postgresql
@@ -81,6 +85,7 @@ jobs:
   database-matrix:
     name: JDBC modules ${{ matrix.dialect }} integration
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -120,6 +125,7 @@ jobs:
   reproducibility:
     name: Reproducible staged Maven artifacts
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -148,6 +154,7 @@ jobs:
     name: Versioned JMH performance budgets
     if: ${{ github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) }}
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

@@ -55,4 +55,24 @@ class OperationChainModelValidationTest {
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("allowRunPublicationWithoutTest");
     }
+
+    @Test
+    void configToString_shouldRedactStorePropertyValues() {
+        // Given
+        String secret = "secret-access-key";
+        OperationChainConfig config = new OperationChainConfig("line", false, StoreType.S3,
+                Map.of("accessKey", secret, "bucket", "gear4j-artifacts"));
+
+        // When
+        String description = config.toString();
+
+        // Then
+        assertThat(description).contains("alId=line")
+                .contains("storeType=S3")
+                .contains("storePropsKeys=[accessKey, bucket]")
+                .contains("storePropsCount=2")
+                .contains("storePropsValues=<redacted>")
+                .doesNotContain(secret)
+                .doesNotContain("gear4j-artifacts");
+    }
 }
