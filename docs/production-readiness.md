@@ -51,6 +51,9 @@ When JDBC persistence is enabled:
   preferred explicit unsafe choices that persist run context, inputs, outputs,
   station context and error messages as-is; deprecated explicit `WARN` retains
   the same raw-capture compatibility behavior with a warning;
+- configure a `PayloadCloner` for retained mutable business values. Persistence
+  recursively snapshots standard containers after redaction and rejects unknown
+  mutable leaf types when no suitable cloner is available;
 - set `gear4j.persistence.redaction-mode=REQUIRE` in Spring Boot deployments
   that must fail fast without an explicit redactor;
 - tune `gear4j.persistence.batch-size`, `max-pending-logs-per-run`,

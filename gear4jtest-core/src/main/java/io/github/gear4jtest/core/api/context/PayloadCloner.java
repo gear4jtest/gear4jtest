@@ -1,8 +1,9 @@
 package io.github.gear4jtest.core.api.context;
 
 /**
- * Strategy interface used by the engine to isolate payload instances before
- * they are dispatched to container branches.
+ * Strategy interface used to isolate payload instances before they cross an
+ * asynchronous or concurrently executed boundary, including container branches
+ * and persistence buffers.
  *
  * <p>
  * Implementations may return the same instance only when the provided payload
@@ -13,7 +14,7 @@ package io.github.gear4jtest.core.api.context;
 public interface PayloadCloner {
     /**
      * Returns a payload instance that is safe to use in an isolated branch
-     * execution.
+     * execution or persistence snapshot.
      *
      * @param payload the payload to isolate
      * @param <T>     the payload type

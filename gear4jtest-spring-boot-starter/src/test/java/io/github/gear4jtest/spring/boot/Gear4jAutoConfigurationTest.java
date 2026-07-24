@@ -11,6 +11,7 @@ import io.github.gear4jtest.core.api.AssemblyLineExecutor;
 import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
+import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
@@ -157,6 +158,22 @@ class Gear4jAutoConfigurationTest {
                     Object repository = ReflectionTestUtils.getField(manager, "repository");
 
                     assertThat(ReflectionTestUtils.getField(repository, "jsonCodec")).isSameAs(jsonCodec);
+                });
+    }
+
+    @Test
+    void should_use_application_payload_cloner_for_persistence_snapshots() {
+        // Given
+        PayloadCloner payloadCloner = mock(PayloadCloner.class);
+
+        // When / Then
+        contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
+                .withBean(PayloadCloner.class, () -> payloadCloner)
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> {
+                    DatabaseExecutionManager manager = context.getBean(DatabaseExecutionManager.class);
+
+                    assertThat(ReflectionTestUtils.getField(manager, "payloadCloner")).isSameAs(payloadCloner);
                 });
     }
 

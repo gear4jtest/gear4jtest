@@ -42,7 +42,7 @@ class AssemblyRunStateTest {
         AssemblyRunRecord summary = new AssemblyRunRecord(UUID.randomUUID(), "pipeline", Map.of(), null, null,
                 ExecutionStatus.RUNNING, null, null, null, null, null, null);
         StationLogRecord log = new StationLogRecord(UUID.randomUUID(), summary.id(), "op", null, null,
-                StationLogStatus.RUNNING, null, null, null, null, Map.of(), null);
+                StationLogStatus.RUNNING, java.time.Instant.now(), null, null, null, Map.of(), null);
         AssemblyRunView view = new AssemblyRunView(summary, List.of(log));
 
         assertThat(view.getSummary()).isSameAs(summary);

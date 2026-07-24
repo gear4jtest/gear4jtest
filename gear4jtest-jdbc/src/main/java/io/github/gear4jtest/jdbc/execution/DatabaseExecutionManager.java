@@ -14,6 +14,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.sql.DataSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.gear4jtest.core.api.context.PayloadCloner;
+import io.github.gear4jtest.core.api.context.PayloadCloners;
 import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 import io.github.gear4jtest.core.persistence.PersistenceOperationalStatus;
@@ -41,6 +43,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
     private final OperationRecordBufferRegistry buffers;
     private final PersistenceFlushCoordinator flushCoordinator;
     private final SensitiveDataRedactor redactor;
+    private final PayloadCloner payloadCloner;
 
     public static Builder builder() {
         return new Builder();
@@ -54,6 +57,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
                                    builder.baselineOnMigrate, builder.jsonCodec);
         this.buffers = new OperationRecordBufferRegistry(configuration.maxPendingLogsPerRun());
         this.redactor = builder.redactor != null ? builder.redactor : SensitiveDataRedactor.discardSensitiveValues();
+        this.payloadCloner = builder.payloadCloner != null ? builder.payloadCloner : PayloadCloners.immutableAware();
         if (SensitiveDataRedactor.isNone(this.redactor)) {
             LOGGER.warn("[Gear4J] JDBC persistence is configured to allow unredacted sensitive data capture. "
                     + "Assembly line payloads, contexts, results and error messages will be persisted as-is.");
@@ -103,6 +107,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
         private boolean ownsFlushExecutor;
         private boolean ownsMaintenanceExecutor;
         private SensitiveDataRedactor redactor;
+        private PayloadCloner payloadCloner;
 
         private Builder() {
         }
@@ -185,6 +190,11 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
             return this;
         }
 
+        public Builder payloadCloner(PayloadCloner payloadCloner) {
+            this.payloadCloner = Objects.requireNonNull(payloadCloner, "payloadCloner must not be null");
+            return this;
+        }
+
         public DatabaseExecutionManager build() {
             return new DatabaseExecutionManager(this);
         }
@@ -206,7 +216,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
     public void start(RunTrace execution) {
         Objects.requireNonNull(execution, "execution must not be null");
         flushCoordinator.executeWhileOpen(execution.getId(), () -> {
-            repository.save(AssemblyRunRecord.from(execution, redactor));
+            repository.save(AssemblyRunRecord.from(execution, redactor, payloadCloner));
             buffers.createFresh(execution.getId());
         });
     }
@@ -217,7 +227,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
             return;
         }
         flushCoordinator.ensureOpen();
-        StationLogRecord redactedRecord = stationLogRecord.redactedWith(redactor);
+        StationLogRecord redactedRecord = stationLogRecord.redactedWith(redactor, payloadCloner);
         flushCoordinator.executeWhileOpen(redactedRecord.assemblyLineExecutionId(),
                                           () -> appendRunBatch(List.of(redactedRecord)));
     }
@@ -233,7 +243,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
             if (record == null) {
                 continue;
             }
-            StationLogRecord redactedRecord = record.redactedWith(redactor);
+            StationLogRecord redactedRecord = record.redactedWith(redactor, payloadCloner);
             recordsByRun.computeIfAbsent(redactedRecord.assemblyLineExecutionId(), ignored -> new ArrayList<>())
                     .add(redactedRecord);
         }
@@ -290,7 +300,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
             flushCoordinator.flushBufferBlocking(buffer, true);
             buffer.assertHealthy();
             try {
-                repository.update(AssemblyRunRecord.from(finalExecution, redactor));
+                repository.update(AssemblyRunRecord.from(finalExecution, redactor, payloadCloner));
                 buffer.clearFinalizationFailure();
             } catch (RuntimeException exception) {
                 buffer.recordFinalizationFailure(exception);

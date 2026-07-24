@@ -4,6 +4,7 @@ import javax.sql.DataSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
+import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.persistence.PersistenceRuntimeMonitor;
 import io.github.gear4jtest.core.persistence.RunPersistenceManager;
@@ -47,6 +48,7 @@ public class Gear4jAutoConfiguration {
     DatabaseExecutionManager gear4jDatabaseExecutionManager(DataSource dataSource,
                                                             Gear4jProperties properties,
                                                             ObjectProvider<SensitiveDataRedactor> redactorProvider,
+                                                            ObjectProvider<PayloadCloner> payloadClonerProvider,
                                                             ObjectProvider<PersistenceJsonCodec> jsonCodecProvider,
                                                             ObjectProvider<ObjectMapper> objectMapperProvider) {
         Gear4jProperties.PersistenceProperties persistence = properties.getPersistence();
@@ -74,6 +76,7 @@ public class Gear4jAutoConfiguration {
                 .autoCreateTables(persistence.isAutoCreateTables())
                 .baselineOnMigrate(persistence.isBaselineOnMigrate())
                 .redactor(redactor);
+        payloadClonerProvider.ifAvailable(managerBuilder::payloadCloner);
         PersistenceJsonCodec jsonCodec = jsonCodecProvider.getIfAvailable();
         if (jsonCodec != null) {
             managerBuilder.jsonCodec(jsonCodec);

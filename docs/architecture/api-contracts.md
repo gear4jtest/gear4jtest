@@ -55,6 +55,9 @@ SPI implementors should assume:
 - methods may be called concurrently unless the type explicitly documents
   otherwise;
 - implementations must not retain mutable caller-owned data without copying;
+- persistence records validate required identifiers and lifecycle fields;
+  persistence managers redact first and clone retained values before asynchronous
+  buffering;
 - implementations should fail fast with `IllegalArgumentException` for invalid
   configuration and with domain-specific runtime exceptions for operational
   failures;

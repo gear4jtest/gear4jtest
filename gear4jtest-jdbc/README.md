@@ -29,6 +29,7 @@ DatabaseExecutionManager manager = DatabaseExecutionManager.builder()
         .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
         .configuration(persistenceRuntime)
         .objectMapper(applicationObjectMapper)
+        .payloadCloner(JacksonPayloadCloners.with(applicationObjectMapper))
         .autoCreateTables(true)
         .build();
 ```
@@ -37,6 +38,14 @@ Supplying the application `ObjectMapper` preserves its Java time modules, custom
 serializers and business-type configuration for persisted JSON values. For a
 different JSON strategy, implement `PersistenceJsonCodec` and provide it with
 `.jsonCodec(...)`; the most recently selected codec or mapper is used.
+
+Persistence captures apply redaction first, then isolate every retained value
+before it can enter the asynchronous station-log buffer. Maps, collections,
+optionals and arrays are recursively copied. Unknown mutable business types
+require an explicit `PayloadCloner`; `JacksonPayloadCloners.with(...)` is the
+recommended choice when the application already uses the optional
+`gear4jtest-jackson` module. The default strict cloner accepts only known
+immutable leaf values and fails instead of retaining an unsafe reference.
 
 The legacy `.flushThreshold(...)` convenience only overrides the effective
 batch size. It preserves every other value from

@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.sql.DataSource;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
@@ -27,6 +28,7 @@ import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 import io.github.gear4jtest.core.persistence.PersistenceOperationalStatus;
 import io.github.gear4jtest.core.persistence.PersistenceRuntimeStats;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
+import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.jdbc.persistence.PersistenceJsonCodec;
@@ -48,6 +50,50 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class DatabaseExecutionManagerTest {
+    @Test
+    void bufferedRecord_shouldNotChangeWhenCallerMutatesNestedPayloadBeforeFlush() {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder()
+                .batchSize(10)
+                .maxPendingLogsPerRun(10)
+                .flushInterval(Duration.ofDays(1))
+                .build();
+        DatabaseExecutionManager manager = DatabaseExecutionManager.builder()
+                .repository(repository)
+                .configuration(configuration)
+                .payloadCloner(new MutablePayloadCloner())
+                .redactor(SensitiveDataRedactor.none())
+                .flushExecutor(flushExecutor)
+                .maintenanceExecutor(scheduler)
+                .build();
+        UUID runId = UUID.randomUUID();
+        MutablePayload callerPayload = new MutablePayload("captured");
+        StationLogRecord record = new StationLogRecord(UUID.randomUUID(), runId, "station", null,
+                StationLogStatus.SUCCEEDED, Instant.now(), Instant.now(), null, null,
+                Map.of("payload", callerPayload), null);
+
+        try {
+            // When
+            manager.append(record);
+            callerPayload.values().add("mutated-before-flush");
+            manager.flush(runId);
+
+            // Then
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<List<StationLogRecord>> records = ArgumentCaptor.forClass(List.class);
+            verify(repository).saveOperationRecordsBatch(records.capture());
+            MutablePayload persisted = (MutablePayload) records.getValue().get(0).context().get("payload");
+            assertThat(persisted.values()).containsExactly("captured");
+        } finally {
+            manager.shutdown(Duration.ofSeconds(1));
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
     @Test
     void defaultRedactionPolicy_shouldPersistMetadataWithoutSensitiveValues() {
         // Given
@@ -1034,6 +1080,33 @@ class DatabaseExecutionManagerTest {
 
         List<Object> serializedValues() {
             return List.copyOf(serializedValues);
+        }
+    }
+
+    private static final class MutablePayload {
+        private final List<String> values;
+
+        private MutablePayload(String value) {
+            this.values = new ArrayList<>(List.of(value));
+        }
+
+        private MutablePayload(List<String> values) {
+            this.values = new ArrayList<>(values);
+        }
+
+        private List<String> values() {
+            return values;
+        }
+    }
+
+    private static final class MutablePayloadCloner implements PayloadCloner {
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T clonePayload(T payload) {
+            if (payload instanceof MutablePayload mutablePayload) {
+                return (T) new MutablePayload(mutablePayload.values());
+            }
+            return payload;
         }
     }
 }

@@ -71,6 +71,11 @@ business types remain consistent with the rest of the application. A
 `PersistenceJsonCodec` bean takes precedence when persistence requires a
 dedicated serialization strategy.
 
+The starter also reuses an application `PayloadCloner` bean for persistence
+snapshots. Provide one whenever a redactor retains mutable business objects;
+redaction runs first and the retained value is cloned before it can enter an
+asynchronous persistence buffer.
+
 
 ## Redaction migration
 
