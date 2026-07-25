@@ -513,6 +513,7 @@ tasks.register('verifyDatabaseTestDependencyScope') {
 
     doLast {
         def allowedProjects = [project(':gear4jtest-jdbc'), project(':gear4jtest-external-jdbc')] as Set
+        def springBootStarter = project(':gear4jtest-spring-boot-starter')
         def databaseGroups = [
             'org.testcontainers',
             'org.postgresql',
@@ -525,10 +526,16 @@ tasks.register('verifyDatabaseTestDependencyScope') {
         coreProjects.findAll { !allowedProjects.contains(it) }.each { candidate ->
             candidate.configurations.each { configuration ->
                 configuration.dependencies.findAll { dependency ->
-                    dependency.group != null && databaseGroups.contains(dependency.group)
+                    def isDatabaseDependency = dependency.group != null
+                            && databaseGroups.contains(dependency.group)
+                    def isSpringTransactionTestDependency = candidate == springBootStarter
+                            && configuration.name == 'testImplementation'
+                            && dependency.group == 'com.h2database'
+                            && dependency.name == 'h2'
+                    isDatabaseDependency && !isSpringTransactionTestDependency
                 }.each { dependency ->
-                    violations << "${candidate.path}:${configuration.name} -> "
-                        + "${dependency.group}:${dependency.name}:${dependency.version}"
+                    def coordinate = [dependency.group, dependency.name, dependency.version].join(':')
+                    violations << "${candidate.path}:${configuration.name} -> ${coordinate}"
                 }
             }
         }

@@ -8,12 +8,14 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Calendar;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.external.api.ExecutionMode;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainRepositoryException;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,7 +25,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class OperationChainObjectRepositoryJdbcBehaviorTest {
@@ -74,6 +78,44 @@ class OperationChainObjectRepositoryJdbcBehaviorTest {
         verify(jdbc.statement()).setTimestamp(eq(7), eq(Timestamp.from(createdAt)), any(Calendar.class));
         verify(jdbc.statement()).setString(8, "tester");
         verify(jdbc.statement()).setTimestamp(eq(9), eq(Timestamp.from(publishedAt)), any(Calendar.class));
+    }
+
+    @Test
+    void insert_shouldDelegateCompleteBoundaryToConfiguredTransactionOperations() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection managedConnection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        ResultSet keys = mock(ResultSet.class);
+        AtomicBoolean boundaryInvoked = new AtomicBoolean();
+        when(managedConnection.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
+                .thenReturn(statement);
+        when(statement.executeUpdate()).thenReturn(1);
+        when(statement.getGeneratedKeys()).thenReturn(keys);
+        when(keys.next()).thenReturn(true);
+        when(keys.getLong(1)).thenReturn(77L);
+        JdbcTransactionOperations managedTransactions = work -> {
+            boundaryInvoked.set(true);
+            work.execute(managedConnection);
+        };
+        OperationChainObjectRepositoryJdbc repository = OperationChainObjectRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.H2)
+                .transactionOperations(managedTransactions)
+                .build();
+
+        // When
+        long id = repository.insert(new OperationChainObject(null, "pipeline", "1.0.0", ExecutionMode.TEST,
+                HASH, 42L, "application/xml", Instant.EPOCH, "tester", Instant.EPOCH));
+
+        // Then
+        assertThat(id).isEqualTo(77L);
+        assertThat(boundaryInvoked).isTrue();
+        verify(managedConnection, never()).setAutoCommit(org.mockito.ArgumentMatchers.anyBoolean());
+        verify(managedConnection, never()).commit();
+        verify(managedConnection, never()).rollback();
+        verify(managedConnection, never()).close();
+        verifyNoInteractions(dataSource);
     }
 
     @Test
@@ -192,6 +234,7 @@ class OperationChainObjectRepositoryJdbcBehaviorTest {
             PreparedStatement statement = mock(PreparedStatement.class);
             ResultSet keys = mock(ResultSet.class);
             when(dataSource.getConnection()).thenReturn(connection);
+            when(connection.getAutoCommit()).thenReturn(true);
             when(connection.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
                     .thenReturn(statement);
             when(statement.executeUpdate()).thenReturn(1);

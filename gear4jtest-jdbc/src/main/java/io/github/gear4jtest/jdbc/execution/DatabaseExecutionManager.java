@@ -26,6 +26,7 @@ import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 import io.github.gear4jtest.jdbc.persistence.PersistenceJsonCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +55,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
         this.repository = builder.repository != null
                 ? builder.repository
                 : createRepository(builder.dataSource, builder.databaseDialect, this.configuration,
-                                   builder.baselineOnMigrate, builder.jsonCodec);
+                                   builder.baselineOnMigrate, builder.jsonCodec, builder.transactionOperations);
         this.buffers = new OperationRecordBufferRegistry(configuration.maxPendingLogsPerRun());
         this.redactor = builder.redactor != null ? builder.redactor : SensitiveDataRedactor.discardSensitiveValues();
         this.payloadCloner = builder.payloadCloner != null ? builder.payloadCloner : PayloadCloners.immutableAware();
@@ -82,15 +83,19 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
                                                                   Gear4jDatabaseDialect databaseDialect,
                                                                   PersistenceRuntimeConfiguration configuration,
                                                                   boolean baselineOnMigrate,
-                                                                  PersistenceJsonCodec jsonCodec) {
+                                                                  PersistenceJsonCodec jsonCodec,
+                                                                  JdbcTransactionOperations transactionOperations) {
         Objects.requireNonNull(configuration, "configuration must not be null");
-        return DatabaseAssemblyRunRepository.builder()
+        DatabaseAssemblyRunRepository.Builder repositoryBuilder = DatabaseAssemblyRunRepository.builder()
                 .dataSource(Objects.requireNonNull(dataSource, "dataSource must not be null"))
                 .databaseDialect(Objects.requireNonNull(databaseDialect, "databaseDialect must not be null"))
                 .jsonCodec(Objects.requireNonNull(jsonCodec, "jsonCodec must not be null"))
                 .jdbcStatementTimeout(configuration.jdbcStatementTimeout())
-                .baselineOnMigrate(baselineOnMigrate)
-                .build();
+                .baselineOnMigrate(baselineOnMigrate);
+        if (transactionOperations != null) {
+            repositoryBuilder.transactionOperations(transactionOperations);
+        }
+        return repositoryBuilder.build();
     }
 
     public static final class Builder {
@@ -108,6 +113,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
         private boolean ownsMaintenanceExecutor;
         private SensitiveDataRedactor redactor;
         private PayloadCloner payloadCloner;
+        private JdbcTransactionOperations transactionOperations;
 
         private Builder() {
         }
@@ -192,6 +198,16 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
 
         public Builder payloadCloner(PayloadCloner payloadCloner) {
             this.payloadCloner = Objects.requireNonNull(payloadCloner, "payloadCloner must not be null");
+            return this;
+        }
+
+        /**
+         * Configures ownership of JDBC write transactions for the repository created by
+         * this builder.
+         */
+        public Builder transactionOperations(JdbcTransactionOperations transactionOperations) {
+            this.transactionOperations = Objects.requireNonNull(transactionOperations,
+                                                                "transactionOperations must not be null");
             return this;
         }
 

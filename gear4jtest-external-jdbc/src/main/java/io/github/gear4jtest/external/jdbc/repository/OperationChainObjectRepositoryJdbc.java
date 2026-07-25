@@ -28,6 +28,7 @@ import io.github.gear4jtest.external.api.repository.OperationChainPublicationSta
 import io.github.gear4jtest.external.api.repository.OperationChainRepositoryException;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.jdbc.persistence.JdbcStatementOptions;
+import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 
 public final class OperationChainObjectRepositoryJdbc
         implements OperationChainObjectRepository, OperationChainPublicationRepository {
@@ -41,6 +42,7 @@ public final class OperationChainObjectRepositoryJdbc
     private final DataSource ds;
     private final Gear4jDatabaseDialect databaseDialect;
     private final JdbcStatementOptions statementOptions;
+    private final JdbcTransactionOperations transactionOperations;
 
     public static Builder builder() {
         return new Builder();
@@ -51,12 +53,16 @@ public final class OperationChainObjectRepositoryJdbc
         this.databaseDialect = Objects.requireNonNull(builder.databaseDialect, "databaseDialect must not be null");
         this.statementOptions = Objects.requireNonNull(builder.statementOptions,
                                                        "statementOptions must not be null");
+        this.transactionOperations = builder.transactionOperations != null
+                ? builder.transactionOperations
+                : JdbcTransactionOperations.autonomous(ds);
     }
 
     public static final class Builder {
         private DataSource dataSource;
         private Gear4jDatabaseDialect databaseDialect;
         private JdbcStatementOptions statementOptions = JdbcStatementOptions.defaults();
+        private JdbcTransactionOperations transactionOperations;
 
         private Builder() {
         }
@@ -78,6 +84,16 @@ public final class OperationChainObjectRepositoryJdbc
 
         public Builder statementOptions(JdbcStatementOptions statementOptions) {
             this.statementOptions = statementOptions;
+            return this;
+        }
+
+        /**
+         * Configures ownership of publication write transactions. When omitted, Gear4J
+         * uses library-owned autonomous transactions.
+         */
+        public Builder transactionOperations(JdbcTransactionOperations transactionOperations) {
+            this.transactionOperations = Objects.requireNonNull(transactionOperations,
+                                                                "transactionOperations must not be null");
             return this;
         }
 
@@ -148,8 +164,8 @@ public final class OperationChainObjectRepositoryJdbc
     @Override
     public long insert(OperationChainObject object) {
         Objects.requireNonNull(object, "object must not be null");
-        try (var connection = ds.getConnection()) {
-            return insert(connection, object);
+        try {
+            return transactionOperations.executeReturning(connection -> insert(connection, object));
         } catch (SQLException exception) {
             throw repositoryFailure("insert operation-chain object " + publicationKey(object), exception);
         }
@@ -178,11 +194,8 @@ public final class OperationChainObjectRepositoryJdbc
         List<String> requiredTags = normalizedTags(tags);
         String requiredStoreFingerprint = requireContentHash(storeFingerprint);
         String stageId = deterministicStageId(object);
-        try (Connection connection = ds.getConnection()) {
-            boolean previousAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            Throwable failure = null;
-            try {
+        try {
+            return transactionOperations.executeReturning(connection -> {
                 verifyCommittedPublicationCompatible(connection, object);
                 StageInsertResult stageResult = insertStageIdempotently(connection, stageId, object,
                                                                         requiredStoreFingerprint);
@@ -190,16 +203,8 @@ public final class OperationChainObjectRepositoryJdbc
                 if (!stageResult.inserted()) {
                     renewStage(connection, stageId, Instant.now());
                 }
-                OperationChainPublicationStage completedStage = findStage(connection, stageId).orElseThrow();
-                connection.commit();
-                return completedStage;
-            } catch (SQLException | RuntimeException exception) {
-                failure = exception;
-                rollback(connection, exception);
-                throw exception;
-            } finally {
-                restoreAutoCommit(connection, previousAutoCommit, failure);
-            }
+                return findStage(connection, stageId).orElseThrow();
+            });
         } catch (OperationChainRepositoryException exception) {
             throw exception;
         } catch (SQLException exception) {
@@ -210,25 +215,15 @@ public final class OperationChainObjectRepositoryJdbc
     @Override
     public void commit(String stageId) {
         String requiredStageId = requireStageId(stageId);
-        try (Connection connection = ds.getConnection()) {
-            boolean previousAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            Throwable failure = null;
-            try {
+        try {
+            transactionOperations.execute(connection -> {
                 OperationChainPublicationStage stage = findStage(connection, requiredStageId).orElse(null);
                 if (stage != null) {
                     insertIdempotently(connection, stage.object());
                     insertTags(connection, stage.object().alId(), stage.tags());
                     deleteStage(connection, requiredStageId);
                 }
-                connection.commit();
-            } catch (SQLException | RuntimeException exception) {
-                failure = exception;
-                rollback(connection, exception);
-                throw exception;
-            } finally {
-                restoreAutoCommit(connection, previousAutoCommit, failure);
-            }
+            });
         } catch (OperationChainRepositoryException exception) {
             throw exception;
         } catch (SQLException exception) {
@@ -239,20 +234,10 @@ public final class OperationChainObjectRepositoryJdbc
     @Override
     public void abort(String stageId) {
         String requiredStageId = requireStageId(stageId);
-        try (Connection connection = ds.getConnection()) {
-            boolean previousAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            Throwable failure = null;
-            try {
+        try {
+            transactionOperations.execute(connection -> {
                 deleteStage(connection, requiredStageId);
-                connection.commit();
-            } catch (SQLException | RuntimeException exception) {
-                failure = exception;
-                rollback(connection, exception);
-                throw exception;
-            } finally {
-                restoreAutoCommit(connection, previousAutoCommit, failure);
-            }
+            });
         } catch (OperationChainRepositoryException exception) {
             throw exception;
         } catch (SQLException exception) {
@@ -264,22 +249,13 @@ public final class OperationChainObjectRepositoryJdbc
     public boolean abortIfUnchanged(OperationChainPublicationStage expectedStage) {
         OperationChainPublicationStage requiredStage = Objects.requireNonNull(expectedStage,
                                                                               "expectedStage must not be null");
-        try (Connection connection = ds.getConnection()) {
-            boolean previousAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            Throwable failure = null;
-            try {
-                boolean aborted = deleteStageIfRevisionMatches(connection, requiredStage.stageId(),
-                                                               requiredStage.revision());
-                connection.commit();
-                return aborted;
-            } catch (SQLException | RuntimeException exception) {
-                failure = exception;
-                rollback(connection, exception);
-                throw exception;
-            } finally {
-                restoreAutoCommit(connection, previousAutoCommit, failure);
-            }
+        try {
+            return transactionOperations.executeReturning(connection -> deleteStageIfRevisionMatches(
+                                                                                                     connection,
+                                                                                                     requiredStage
+                                                                                                             .stageId(),
+                                                                                                     requiredStage
+                                                                                                             .revision()));
         } catch (OperationChainRepositoryException exception) {
             throw exception;
         } catch (SQLException exception) {
@@ -588,26 +564,6 @@ public final class OperationChainObjectRepositoryJdbc
 
     private OperationChainRepositoryException repositoryFailure(String operation, SQLException cause) {
         return new OperationChainRepositoryException("Failed to " + operation + " using " + databaseDialect, cause);
-    }
-
-    private static void rollback(Connection connection, Throwable failure) {
-        try {
-            connection.rollback();
-        } catch (SQLException rollbackFailure) {
-            failure.addSuppressed(rollbackFailure);
-        }
-    }
-
-    private static void restoreAutoCommit(Connection connection, boolean autoCommit, Throwable failure)
-            throws SQLException {
-        try {
-            connection.setAutoCommit(autoCommit);
-        } catch (SQLException restoreFailure) {
-            if (failure == null) {
-                throw restoreFailure;
-            }
-            failure.addSuppressed(restoreFailure);
-        }
     }
 
     private record StageInsertResult(boolean inserted) {}

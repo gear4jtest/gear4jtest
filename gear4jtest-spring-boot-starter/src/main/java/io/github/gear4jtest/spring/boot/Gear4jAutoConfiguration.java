@@ -11,6 +11,7 @@ import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfiguration;
+import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 import io.github.gear4jtest.jdbc.persistence.PersistenceJsonCodec;
 import io.github.gear4jtest.micrometer.EventMetricsBinder;
 import io.github.gear4jtest.micrometer.Gear4jMeterTagPolicy;
@@ -25,9 +26,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandidate;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
 /** Spring Boot auto-configuration for Gear4J. */
 @AutoConfiguration
@@ -50,6 +53,7 @@ public class Gear4jAutoConfiguration {
                                                             ObjectProvider<SensitiveDataRedactor> redactorProvider,
                                                             ObjectProvider<PayloadCloner> payloadClonerProvider,
                                                             ObjectProvider<PersistenceJsonCodec> jsonCodecProvider,
+                                                            ObjectProvider<JdbcTransactionOperations> jdbcTransactions,
                                                             ObjectProvider<ObjectMapper> objectMapperProvider) {
         Gear4jProperties.PersistenceProperties persistence = properties.getPersistence();
         persistence.validateWhenEnabled();
@@ -77,6 +81,7 @@ public class Gear4jAutoConfiguration {
                 .baselineOnMigrate(persistence.isBaselineOnMigrate())
                 .redactor(redactor);
         payloadClonerProvider.ifAvailable(managerBuilder::payloadCloner);
+        jdbcTransactions.ifAvailable(managerBuilder::transactionOperations);
         PersistenceJsonCodec jsonCodec = jsonCodecProvider.getIfAvailable();
         if (jsonCodec != null) {
             managerBuilder.jsonCodec(jsonCodec);
@@ -84,6 +89,15 @@ public class Gear4jAutoConfiguration {
             objectMapperProvider.ifAvailable(managerBuilder::objectMapper);
         }
         return managerBuilder.build();
+    }
+
+    @Bean
+    @ConditionalOnSingleCandidate(DataSourceTransactionManager.class)
+    @ConditionalOnMissingBean(JdbcTransactionOperations.class)
+    @ConditionalOnProperty(prefix = "gear4j.persistence", name = "enabled", havingValue = "true")
+    SpringJdbcTransactionOperations gear4jJdbcTransactionOperations(DataSource dataSource,
+                                                                    DataSourceTransactionManager transactionManager) {
+        return new SpringJdbcTransactionOperations(dataSource, transactionManager);
     }
 
     @SuppressWarnings("removal")

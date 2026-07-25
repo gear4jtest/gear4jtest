@@ -21,6 +21,7 @@ import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.security.RedactionTarget;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
+import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 import io.github.gear4jtest.jdbc.persistence.PersistenceJsonCodec;
 import io.github.gear4jtest.micrometer.Gear4jMicrometerExtension;
 import io.github.gear4jtest.spring.boot.actuate.Gear4jActuatorAutoConfiguration;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -122,6 +124,28 @@ class Gear4jAutoConfigurationTest {
         contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
                 .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
                 .run(context -> assertThat(context).hasSingleBean(DatabaseExecutionManager.class));
+    }
+
+    @Test
+    void shouldUseSpringManagedAutonomousTransactionsWhenJdbcTransactionManagerIsAvailable() {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(dataSource);
+
+        // When / Then
+        contextRunner.withBean(DataSource.class, () -> dataSource)
+                .withBean(DataSourceTransactionManager.class, () -> transactionManager)
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> {
+                    assertThat(context).hasSingleBean(JdbcTransactionOperations.class);
+                    JdbcTransactionOperations transactions = context.getBean(JdbcTransactionOperations.class);
+                    assertThat(transactions).isInstanceOf(SpringJdbcTransactionOperations.class);
+
+                    DatabaseExecutionManager manager = context.getBean(DatabaseExecutionManager.class);
+                    Object repository = ReflectionTestUtils.getField(manager, "repository");
+                    assertThat(ReflectionTestUtils.getField(repository, "transactionOperations"))
+                            .isSameAs(transactions);
+                });
     }
 
     @Test

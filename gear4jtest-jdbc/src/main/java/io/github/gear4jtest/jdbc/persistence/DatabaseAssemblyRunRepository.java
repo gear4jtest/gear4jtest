@@ -39,6 +39,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     private final AssemblyRunRecordStatementBinder assemblyRunBinder;
     private final StationLogRecordStatementBinder stationLogBinder;
     private final JdbcStatementOptions statementOptions;
+    private final JdbcTransactionOperations transactionOperations;
     private final boolean baselineOnMigrate;
 
     public static Builder builder() {
@@ -50,6 +51,9 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         this.databaseDialect = Objects.requireNonNull(builder.databaseDialect, "databaseDialect must not be null");
         this.statementOptions = Objects.requireNonNull(builder.statementOptions,
                                                        "statementOptions must not be null");
+        this.transactionOperations = builder.transactionOperations != null
+                ? builder.transactionOperations
+                : JdbcTransactionOperations.autonomous(dataSource);
         this.baselineOnMigrate = builder.baselineOnMigrate;
         this.jsonCodec = Objects.requireNonNull(builder.jsonCodec, "jsonCodec must not be null");
         this.assemblyRunMapper = new AssemblyRunRecordRowMapper(databaseDialect, jsonCodec);
@@ -63,6 +67,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         private Gear4jDatabaseDialect databaseDialect;
         private PersistenceJsonCodec jsonCodec = PersistenceJsonCodec.jackson(new ObjectMapper());
         private JdbcStatementOptions statementOptions = JdbcStatementOptions.defaults();
+        private JdbcTransactionOperations transactionOperations;
         private boolean baselineOnMigrate;
 
         private Builder() {
@@ -95,6 +100,16 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
         public Builder statementOptions(JdbcStatementOptions statementOptions) {
             this.statementOptions = statementOptions;
+            return this;
+        }
+
+        /**
+         * Configures ownership of repository write transactions. When omitted, Gear4J
+         * uses library-owned autonomous transactions.
+         */
+        public Builder transactionOperations(JdbcTransactionOperations transactionOperations) {
+            this.transactionOperations = Objects.requireNonNull(transactionOperations,
+                                                                "transactionOperations must not be null");
             return this;
         }
 
@@ -151,7 +166,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     @Override
     public void save(AssemblyRunRecord execution) {
         try {
-            JdbcRepositoryTransaction.run(dataSource, conn -> {
+            transactionOperations.execute(conn -> {
                 try (PreparedStatement stmt = prepare(conn,
                                                       DatabaseAssemblyRunSql.insertAssemblyRun(databaseDialect))) {
                     assemblyRunBinder.bindInsert(stmt, execution);
@@ -166,7 +181,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     @Override
     public void update(AssemblyRunRecord execution) {
         try {
-            JdbcRepositoryTransaction.run(dataSource, conn -> {
+            transactionOperations.execute(conn -> {
                 try (PreparedStatement stmt = prepare(conn,
                                                       DatabaseAssemblyRunSql.updateAssemblyRun(databaseDialect))) {
                     assemblyRunBinder.bindUpdate(stmt, execution);
@@ -233,7 +248,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
     @Override
     public void delete(UUID id) {
         try {
-            JdbcRepositoryTransaction.run(dataSource, conn -> {
+            transactionOperations.execute(conn -> {
                 try (PreparedStatement deleteLogs = prepare(conn, DatabaseAssemblyRunSql.deleteStationLogsByRunId());
                         PreparedStatement deleteRun = prepare(conn, DatabaseAssemblyRunSql.deleteAssemblyRunById())) {
                     databaseDialect.setUuid(deleteLogs, 1, id);
@@ -326,7 +341,9 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         }
 
         try {
-            JdbcRepositoryTransaction.run(dataSource, conn -> saveOperationRecordsBatch(conn, records));
+            transactionOperations.execute(conn -> {
+                saveOperationRecordsBatch(conn, records);
+            });
         } catch (SQLException e) {
             throw persistenceFailure("save station log batch " + describeRecords(records), e);
         }

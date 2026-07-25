@@ -57,6 +57,13 @@ Object metadata and tags are published transactionally on the repository's `Data
 must target the same schema. Repeated publication of identical `(al_id, version, mode)` content is idempotent and
 conflicting content is rejected without changing existing metadata.
 
+The object repository's mutating operations use autonomous
+`JdbcTransactionOperations` by default. They refuse a connection already bound
+to an ambient transaction instead of committing or rolling back a caller-owned
+scope. Framework-managed boundaries can be supplied explicitly with
+`.transactionOperations(...)`; this is the same SPI used by core JDBC
+persistence.
+
 ## Database artifact streaming
 
 `DatabaseArtifactStore#get` loads only bounded metadata. `Artifact#openStreamChecked()` then owns a fresh connection,

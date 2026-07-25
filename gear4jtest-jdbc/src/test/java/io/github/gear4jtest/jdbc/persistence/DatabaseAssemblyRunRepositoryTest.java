@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
@@ -26,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -90,6 +92,37 @@ class DatabaseAssemblyRunRepositoryTest {
         order.verify(statement).executeUpdate();
         order.verify(connection).commit();
         order.verify(connection).setAutoCommit(true);
+    }
+
+    @Test
+    void save_shouldDelegateCompleteBoundaryToConfiguredTransactionOperations() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection managedConnection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        AtomicBoolean boundaryInvoked = new AtomicBoolean();
+        when(managedConnection.prepareStatement(anyString())).thenReturn(statement);
+        JdbcTransactionOperations managedTransactions = work -> {
+            boundaryInvoked.set(true);
+            work.execute(managedConnection);
+        };
+        DatabaseAssemblyRunRepository repository = DatabaseAssemblyRunRepository.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+                .transactionOperations(managedTransactions)
+                .build();
+
+        // When
+        repository.save(runRecord());
+
+        // Then
+        assertThat(boundaryInvoked).isTrue();
+        verify(statement).executeUpdate();
+        verify(managedConnection, never()).setAutoCommit(org.mockito.ArgumentMatchers.anyBoolean());
+        verify(managedConnection, never()).commit();
+        verify(managedConnection, never()).rollback();
+        verify(managedConnection, never()).close();
+        verifyNoInteractions(dataSource);
     }
 
     @Test
@@ -180,7 +213,7 @@ class DatabaseAssemblyRunRepositoryTest {
     }
 
     @Test
-    void delete_shouldRestorePreviousAutoCommit() throws Exception {
+    void delete_shouldRejectConnectionAlreadyOwnedByAnAmbientTransaction() throws Exception {
         // Given
         DataSource dataSource = mock(DataSource.class);
         Connection connection = mock(Connection.class);
@@ -194,16 +227,15 @@ class DatabaseAssemblyRunRepositoryTest {
 
         DatabaseAssemblyRunRepository repository = repository(dataSource, Gear4jDatabaseDialect.POSTGRESQL);
 
-        // When
-        repository.delete(UUID.randomUUID());
-
-        // Then
-        InOrder order = inOrder(connection, deleteLogs, deleteRun);
-        order.verify(connection).setAutoCommit(false);
-        order.verify(deleteLogs).executeUpdate();
-        order.verify(deleteRun).executeUpdate();
-        order.verify(connection).commit();
-        order.verify(connection).setAutoCommit(false);
+        // When / Then
+        assertThatThrownBy(() -> repository.delete(UUID.randomUUID()))
+                .isInstanceOf(ExecutionPersistenceException.class)
+                .hasCauseInstanceOf(SQLException.class)
+                .hasStackTraceContaining("already transaction-bound");
+        verifyNoInteractions(deleteLogs, deleteRun);
+        verify(connection, never()).setAutoCommit(false);
+        verify(connection, never()).commit();
+        verify(connection, never()).rollback();
     }
 
     @Test

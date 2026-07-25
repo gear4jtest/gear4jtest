@@ -76,6 +76,29 @@ snapshots. Provide one whenever a redactor retains mutable business objects;
 redaction runs first and the retained value is cloned before it can enter an
 asynchronous persistence buffer.
 
+When a `DataSourceTransactionManager` (including Spring's
+`JdbcTransactionManager`) is available, the starter installs
+`SpringJdbcTransactionOperations`. Every Gear4J repository write runs in
+`PROPAGATION_REQUIRES_NEW`: an ambient application transaction is suspended and
+Gear4J's write commits or rolls back independently. This is required because
+station-log flushes are asynchronous and cannot reliably participate in the
+transaction that initiated a run.
+
+Without a compatible Spring JDBC transaction manager, the generic JDBC
+autonomous boundary remains active. It requires a fresh connection with
+`autoCommit=true` and fails before executing SQL if a
+`TransactionAwareDataSourceProxy` returns an ambient transaction-bound
+connection. Applications with a custom framework boundary can expose a
+`JdbcTransactionOperations` bean, which takes precedence over the automatic
+adapter.
+
+`REQUIRES_NEW` needs a second physical connection when an application thread
+already owns one for its outer transaction. Size the connection pool for that
+case; Spring recommends at least one additional connection beyond the number of
+concurrent threads that can hold outer transactions.
+The starter also verifies that the selected `DataSourceTransactionManager`
+targets the datasource used by Gear4J and fails startup on a mismatch.
+
 
 ## Redaction migration
 

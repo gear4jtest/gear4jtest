@@ -1,6 +1,7 @@
 dependencies {
     api project(':gear4jtest-spring')
     api project(':gear4jtest-jdbc')
+    api libs.spring.jdbc
     implementation project(':gear4jtest-micrometer')
     implementation libs.spring.boot.autoconfigure
     implementation libs.spring.boot.starter.validation
@@ -11,6 +12,7 @@ dependencies {
     testImplementation libs.spring.boot.test
     testImplementation libs.spring.test
     testImplementation libs.spring.boot.actuator
+    testImplementation libs.h2
 }
 
 ext.moduleName = 'io.github.gear4jtest.spring.boot.starter'

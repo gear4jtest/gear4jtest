@@ -56,6 +56,32 @@ Gear4J JDBC persistence statements through `Statement#setQueryTimeout`. Set it t
 `0` only when the datasource, driver or infrastructure already enforces a
 statement/query timeout.
 
+## JDBC transaction ownership
+
+Persistence writes are autonomous from application transactions. If a
+`DataSourceTransactionManager` is available, the starter creates
+`SpringJdbcTransactionOperations` and executes each write through a Spring
+`TransactionTemplate` with `PROPAGATION_REQUIRES_NEW`. Any ambient transaction is
+suspended, and Spring owns connection acquisition, commit and rollback.
+
+If no compatible Spring JDBC transaction manager exists, the generic
+library-owned transaction implementation is used. It accepts only a fresh
+`autoCommit=true` connection. A transaction-bound connection returned by a
+`TransactionAwareDataSourceProxy` is rejected before repository SQL executes.
+
+An application can provide its own `JdbcTransactionOperations` bean to replace
+the automatic adapter. Joining an ambient transaction is intentionally not a
+starter mode: asynchronous flushes can run after that transaction has completed
+or on a different thread.
+
+`REQUIRES_NEW` acquires an independent physical connection while an outer
+connection remains bound. The pool must have enough headroom for at least one
+additional connection beyond the concurrent threads that can hold ambient
+transactions.
+The automatic adapter validates that the selected transaction manager and
+Gear4J repository resolve to the same target datasource, including through a
+`TransactionAwareDataSourceProxy`.
+
 ## Actuator health
 
 If Spring Boot Actuator is on the classpath and JDBC persistence is enabled, the

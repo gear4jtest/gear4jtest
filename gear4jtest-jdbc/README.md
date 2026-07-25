@@ -34,6 +34,19 @@ DatabaseExecutionManager manager = DatabaseExecutionManager.builder()
         .build();
 ```
 
+Repository writes use autonomous transactions by default. Each write obtains a
+fresh connection with `autoCommit=true`, owns its commit/rollback and closes the
+connection. A connection already participating in an ambient transaction is
+rejected before SQL runs, so Gear4J cannot accidentally commit or roll back
+caller-owned work.
+
+Framework integrations can provide `JdbcTransactionOperations` to the
+`DatabaseExecutionManager` or `DatabaseAssemblyRunRepository` builder. The
+transaction implementation then owns the complete boundary; repository code
+does not call `commit`, `rollback` or change auto-commit itself. The Spring Boot
+starter automatically selects its `REQUIRES_NEW` adapter when a
+`DataSourceTransactionManager` is available.
+
 Supplying the application `ObjectMapper` preserves its Java time modules, custom
 serializers and business-type configuration for persisted JSON values. For a
 different JSON strategy, implement `PersistenceJsonCodec` and provide it with
