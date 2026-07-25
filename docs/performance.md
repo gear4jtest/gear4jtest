@@ -44,10 +44,23 @@ Unit and stress tests complement nominal JMH throughput:
 
 ## Coverage ratchet
 
-`config/critical-coverage-thresholds.json` versions branch thresholds for `EventManager`, `WorkStationStrategy`,
-`JdbcSchemaMigrator` and `AssemblyLinePublicationService`. `coverageVerification` combines unit and integration execution
-data and fails on regression. `coverageReport` remains an explicit report-generation task and is not a subproject-build
-finalizer.
+`config/module-coverage-thresholds.json` contains a line-coverage floor for every published module.
+`config/critical-coverage-thresholds.json` versions branch thresholds for the runtime, concurrency, persistence,
+compiler, storage and Spring hot spots. `coverageVerification` combines unit and integration execution data, validates
+that the policy is complete and fails on regression.
+
+`coverageReport` remains an explicit report-generation task and is not a subproject-build finalizer. In addition to the
+aggregate HTML/XML report, it writes:
+
+- one combined XML report per module under `build/reports/jacoco/modules`;
+- `build/reports/jacoco/coverage-calibration.json`, containing the observed ratios, current minimums and suggested
+  minimums with two percentage points of safety margin.
+
+Only a green calibration report produced on the pinned Java 17 CI runner may justify raising a threshold. Pull requests
+cannot lower or remove an existing ratchet: CI compares both policy files with the target branch through
+`scripts/verify-coverage-ratchet.py`. The initial 30% module floors remain conservative until the first connected
+calibration; the priority is then to move P1 branch coverage toward 70–80% in small, test-backed increments rather than
+forcing artificial 100% coverage.
 
 ## Database matrix
 

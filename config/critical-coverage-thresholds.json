@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "policy": "Ratchet these branch ratios upward only after a green CI report on the pinned Java 17 runner.",
+  "policy": "Ratchet these branch ratios upward from a green connected CI calibration report; reductions are rejected against the pull-request base.",
   "classes": [
     {
       "className": "io.github.gear4jtest.core.event.EventManager",

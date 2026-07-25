@@ -1,9 +1,13 @@
 {
   "schemaVersion": 1,
-  "policy": "Initial line-coverage floors. Raise only from a green connected CI report; temporary reductions require a dated audit note.",
+  "policy": "Line-coverage ratchets for every published module. Raise only from a green connected CI calibration report; reductions are rejected against the pull-request base.",
   "modules": [
     {
       "projectPath": ":gear4jtest-core",
+      "minimumLineRatio": 0.30
+    },
+    {
+      "projectPath": ":gear4jtest-experimental-cache",
       "minimumLineRatio": 0.30
     },
     {
@@ -15,7 +19,23 @@
       "minimumLineRatio": 0.30
     },
     {
+      "projectPath": ":gear4jtest-gradle-xml2java",
+      "minimumLineRatio": 0.30
+    },
+    {
+      "projectPath": ":gear4jtest-jackson",
+      "minimumLineRatio": 0.30
+    },
+    {
       "projectPath": ":gear4jtest-jdbc",
+      "minimumLineRatio": 0.30
+    },
+    {
+      "projectPath": ":gear4jtest-micrometer",
+      "minimumLineRatio": 0.30
+    },
+    {
+      "projectPath": ":gear4jtest-spring",
       "minimumLineRatio": 0.30
     },
     {
