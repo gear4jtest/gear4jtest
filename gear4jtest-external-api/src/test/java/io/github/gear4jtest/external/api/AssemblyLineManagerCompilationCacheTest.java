@@ -60,7 +60,7 @@ class AssemblyLineManagerCompilationCacheTest {
             compilations.incrementAndGet();
             return javac.compile(className, sourceCode);
         };
-        AssemblyLineManager manager = AssemblyLineManager.builder()
+        try (AssemblyLineManager manager = AssemblyLineManager.builder()
                 .configRepository(configRepository)
                 .objectRepository(metadata)
                 .tagRepository(metadata)
@@ -70,16 +70,22 @@ class AssemblyLineManagerCompilationCacheTest {
                 .translatorResolver(new OperationChainTranslatorResolver(List.of(translator)))
                 .compiler(countingCompiler)
                 .generatedClassParent(getClass().getClassLoader())
-                .build();
-        byte[] content = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
+                .build()) {
+            byte[] content = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
 
-        // When
-        manager.registerAssemblyLine("line", "1.0.0", ExecutionMode.TEST, content,
-                                     "application/xml", List.of(), "tester");
-        var loaded = manager.getOperationChain("line", "1.0.0", ExecutionMode.TEST);
+            // When
+            manager.registerAssemblyLine("line", "1.0.0", ExecutionMode.TEST, content,
+                                         "application/xml", List.of(), "tester");
+            var loaded = manager.getOperationChain("line", "1.0.0", ExecutionMode.TEST);
 
-        // Then
-        assertThat(loaded).isNotNull();
-        assertThat(compilations).hasValue(1);
+            // Then
+            assertThat(loaded).isNotNull();
+            assertThat(compilations).hasValue(1);
+            assertThat(manager.compilationStats())
+                    .extracting(GeneratedCompilationStats::cacheHits,
+                                GeneratedCompilationStats::cacheMisses,
+                                GeneratedCompilationStats::successfulCompilations)
+                    .containsExactly(1L, 1L, 1L);
+        }
     }
 }

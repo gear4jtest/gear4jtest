@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
  * surface.
  * </p>
  */
-public class AssemblyLineManager {
+public class AssemblyLineManager implements AutoCloseable {
     public static final long DEFAULT_MAX_ARTIFACT_SIZE_BYTES = ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES;
 
     private final OperationChainTagRepository chainTagRepo;
@@ -40,6 +40,7 @@ public class AssemblyLineManager {
     private final AssemblyLineAliasService aliasService;
     private final AssemblyLinePublicationService publicationService;
     private final AssemblyLineLookupService lookupService;
+    private final BoundedGeneratedSourceCompiler compilationRuntime;
 
     public static Builder builder() {
         return new Builder();
@@ -49,7 +50,11 @@ public class AssemblyLineManager {
         ClassLoader parent = builder.generatedClassParent != null ? builder.generatedClassParent : contextClassLoader();
         GeneratedSourceCompiler selectedCompiler = builder.compiler != null ? builder.compiler
                 : GeneratedSourceCompilers.defaultCompiler(parent);
-        GeneratedSourceCompiler effectiveCompiler = new BoundedGeneratedSourceCompiler(selectedCompiler);
+        this.compilationRuntime = new BoundedGeneratedSourceCompiler(selectedCompiler,
+                BoundedGeneratedSourceCompiler.DEFAULT_MAX_ENTRIES,
+                BoundedGeneratedSourceCompiler.DEFAULT_MAX_BYTECODE_BYTES,
+                builder.compilationConfiguration);
+        GeneratedSourceCompiler effectiveCompiler = compilationRuntime;
         DependencyInjector effectiveDependencyInjector = builder.dependencyInjector != null ? builder.dependencyInjector
                 : new SimpleDependencyInjector();
         long effectiveMaxArtifactSizeBytes = AssemblyLineIdentifiers
@@ -79,6 +84,8 @@ public class AssemblyLineManager {
         private ClassLoaderRegistry classLoaderRegistry;
         private OperationChainTranslatorResolver translatorResolver;
         private GeneratedSourceCompiler compiler;
+        private GeneratedCompilationConfiguration compilationConfiguration = GeneratedCompilationConfiguration
+                .defaults();
         private DependencyInjector dependencyInjector;
         private ClassLoader generatedClassParent;
         private long maxArtifactSizeBytes = DEFAULT_MAX_ARTIFACT_SIZE_BYTES;
@@ -136,6 +143,16 @@ public class AssemblyLineManager {
 
         public Builder compiler(GeneratedSourceCompiler compiler) {
             this.compiler = compiler;
+            return this;
+        }
+
+        /**
+         * Configures the deadline and bounded executor used for generated-source
+         * compilation.
+         */
+        public Builder compilationConfiguration(GeneratedCompilationConfiguration compilationConfiguration) {
+            this.compilationConfiguration = requireNonNull(compilationConfiguration,
+                                                           "compilationConfiguration must not be null");
             return this;
         }
 
@@ -251,5 +268,26 @@ public class AssemblyLineManager {
 
     public void invalidateStore(String alId) {
         storeResolver.invalidate(alId);
+    }
+
+    /**
+     * Returns a point-in-time snapshot of compilation cache, deadline and
+     * saturation counters.
+     */
+    public GeneratedCompilationStats compilationStats() {
+        return compilationRuntime.snapshotStats();
+    }
+
+    /**
+     * Stops owned compilation workers and cancels pending compilations.
+     *
+     * <p>
+     * Cancellation is best-effort for compiler implementations that ignore thread
+     * interruption.
+     * </p>
+     */
+    @Override
+    public void close() {
+        compilationRuntime.close();
     }
 }

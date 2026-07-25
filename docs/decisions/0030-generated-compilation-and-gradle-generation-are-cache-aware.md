@@ -26,6 +26,11 @@ was not proven.
 - Configure JDT with Java 17 source, target, compliance and release semantics.
 - Share a bounded 128-entry/16-MiB single-flight compilation cache between publication
   validation and runtime loading. Failed compilations are not cached.
+- Execute compiler delegates in an owned bounded executor with a finite
+  end-to-end deadline. The default policy is one worker, 32 queued distinct
+  compilations and a 30-second timeout.
+- Publish timeout, duration, cache and saturation counters through
+  `AssemblyLineManager.compilationStats()`.
 - Inject `FileSystemOperations` into `XmlAssemblyLineGenerateTask` and avoid
   accessing `Project` from the task action.
 - Validate the real task with Gradle TestKit, strict configuration-cache checks
@@ -39,5 +44,9 @@ was not proven.
 - Validation and first runtime loading normally reuse the same bytecode.
 - Compilation results are bounded and defensively copied; custom compilers must
   remain deterministic for identical input.
+- A timeout wakes every waiter for the same source and permits a later retry.
+  Cancellation remains best-effort for compiler implementations that ignore
+  interruption; late bytecode is discarded.
+- `AssemblyLineManager` owns the compilation workers and is `AutoCloseable`.
 - The XML generation task can be restored from the build cache and its
   configuration can be reused safely.

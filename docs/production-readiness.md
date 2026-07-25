@@ -80,6 +80,20 @@ as a release gate for generated source validity, not as a full execution test: p
 the generated class, inject dependencies or run the pipeline. Keep a separate application-level validation flow for
 semantic tests and dependency availability.
 
+## Generated-source compilation
+
+Runtime generated-source compilation is isolated from caller threads and has a
+30-second end-to-end deadline by default. The default executor has one worker and
+32 queue slots. Tune `GeneratedCompilationConfiguration` only after considering
+compiler thread safety and expected publication/load concurrency.
+
+Close `AssemblyLineManager` during application shutdown. Alert on increasing
+`GeneratedCompilationStats.timedOutCompilations()` or
+`rejectedCompilations()`, and on an `activeCompilations()` value that remains
+non-zero after a timeout. Cancellation is best-effort for custom compilers that
+ignore interruption; their late results are discarded, but the worker remains
+occupied until the delegate returns.
+
 ## Artifacts
 
 Generated pipeline artifacts are generally expected to be small XML/source

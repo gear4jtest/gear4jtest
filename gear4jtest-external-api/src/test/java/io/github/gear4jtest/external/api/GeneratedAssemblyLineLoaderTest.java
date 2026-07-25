@@ -1,6 +1,7 @@
 package io.github.gear4jtest.external.api;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +18,7 @@ import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.artifact.InMemoryArtifactStore;
 import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompiler;
 import io.github.gear4jtest.external.api.compiler.JavaxToolsGeneratedSourceCompiler;
+import io.github.gear4jtest.external.api.exception.CompilationTimeoutException;
 import io.github.gear4jtest.external.api.loader.ClassLoaderRegistry;
 import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
 import io.github.gear4jtest.external.api.loader.InMemoryClassLoaderRegistry;
@@ -111,6 +113,50 @@ class GeneratedAssemblyLineLoaderTest {
         assertThat(compilationCount).hasValue(2);
     }
 
+    @Test
+    void loadOrCompile_shouldWakeAllWaitersAndAllowRetryAfterCompilationTimeout() throws Exception {
+        // Given
+        Map<String, byte[]> compiledClasses = compileGeneratedClass();
+        AtomicInteger compilationCount = new AtomicInteger();
+        CountDownLatch compilerEntered = new CountDownLatch(1);
+        CountDownLatch releaseCompiler = new CountDownLatch(1);
+        GeneratedSourceCompiler delegate = (className, sourceCode) -> {
+            if (compilationCount.incrementAndGet() == 1) {
+                compilerEntered.countDown();
+                awaitIgnoringInterruption(releaseCompiler);
+            }
+            return compiledClasses;
+        };
+        var configuration = new GeneratedCompilationConfiguration(Duration.ofMillis(100), 1, 2);
+        ExecutorService callers = Executors.newFixedThreadPool(2);
+
+        try (var compiler = new BoundedGeneratedSourceCompiler(delegate, 4,
+                BoundedGeneratedSourceCompiler.DEFAULT_MAX_BYTECODE_BYTES, configuration)) {
+            LoaderFixture fixture = fixture(compiler, new CoordinatedRegistry(2));
+            Future<GeneratedAssemblyLine> owner = callers
+                    .submit(() -> fixture.loader().loadOrCompile("line", fixture.object()));
+            Future<GeneratedAssemblyLine> waiter = callers
+                    .submit(() -> fixture.loader().loadOrCompile("line", fixture.object()));
+            assertThat(compilerEntered.await(2, TimeUnit.SECONDS)).isTrue();
+
+            // When / Then
+            assertThatThrownBy(() -> owner.get(2, TimeUnit.SECONDS))
+                    .isInstanceOf(java.util.concurrent.ExecutionException.class)
+                    .hasCauseInstanceOf(CompilationTimeoutException.class);
+            assertThatThrownBy(() -> waiter.get(2, TimeUnit.SECONDS))
+                    .isInstanceOf(java.util.concurrent.ExecutionException.class)
+                    .hasCauseInstanceOf(CompilationTimeoutException.class);
+
+            releaseCompiler.countDown();
+            awaitStats(() -> compiler.snapshotStats().activeCompilations() == 0);
+            assertThat(fixture.loader().loadOrCompile("line", fixture.object())).isNotNull();
+            assertThat(compilationCount).hasValue(2);
+        } finally {
+            releaseCompiler.countDown();
+            callers.shutdownNow();
+        }
+    }
+
     private static LoaderFixture fixture(GeneratedSourceCompiler compiler, ClassLoaderRegistry registry)
             throws Exception {
         InMemoryArtifactStore artifactStore = new InMemoryArtifactStore();
@@ -148,6 +194,30 @@ class GeneratedAssemblyLineLoaderTest {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("test interrupted", exception);
         }
+    }
+
+    private static void awaitIgnoringInterruption(CountDownLatch latch) {
+        boolean released = false;
+        while (!released) {
+            try {
+                released = latch.await(5, TimeUnit.SECONDS);
+            } catch (InterruptedException ignored) {
+                // Deliberately non-cooperative compiler used to prove timeout cleanup.
+            }
+        }
+    }
+
+    private static void awaitStats(Condition condition) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        while (!condition.evaluate() && System.nanoTime() < deadline) {
+            Thread.sleep(5L);
+        }
+        assertThat(condition.evaluate()).isTrue();
+    }
+
+    @FunctionalInterface
+    private interface Condition {
+        boolean evaluate();
     }
 
     private record LoaderFixture(GeneratedAssemblyLineLoader loader, OperationChainObject object) {}

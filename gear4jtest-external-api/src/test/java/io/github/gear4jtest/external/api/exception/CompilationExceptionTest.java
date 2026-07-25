@@ -1,5 +1,6 @@
 package io.github.gear4jtest.external.api.exception;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,5 +48,21 @@ class CompilationExceptionTest {
                 .isInstanceOf(UnsupportedOperationException.class);
         assertThat(nullDiagnostics).hasMessage("failed");
         assertThat(nullDiagnostics.diagnostics()).isEmpty();
+    }
+
+    @Test
+    void timeoutException_shouldExposeClassNameAndDeadline() {
+        // When
+        CompilationTimeoutException exception = new CompilationTimeoutException("io.test.Generated",
+                Duration.ofSeconds(2));
+
+        // Then
+        assertThat(exception)
+                .isInstanceOf(CompilationException.class)
+                .hasMessageContaining("PT2S")
+                .hasMessageContaining("io.test.Generated");
+        assertThat(exception.className()).isEqualTo("io.test.Generated");
+        assertThat(exception.timeout()).isEqualTo(Duration.ofSeconds(2));
+        assertThat(exception.errorCode()).isEqualTo(ExternalErrorCode.COMPILATION);
     }
 }

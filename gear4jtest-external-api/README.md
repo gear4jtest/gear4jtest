@@ -46,9 +46,11 @@ Typical flow:
 | `OperationChainTranslator`         | SPI implemented by external format modules.                                       |
 | `OperationChainTranslatorResolver` | Resolves translators explicitly or with `ServiceLoader`.                          |
 | `GeneratedAssemblyLine`            | Interface implemented by generated pipeline classes.                              |
-| `GeneratedSourceCompiler`           | SPI for generated Java compilers.                                                |
-| `JavaxToolsGeneratedSourceCompiler` | Default compiler when the runtime provides the JDK `javax.tools.JavaCompiler`.   |
-| `JDTInMemoryCompiler`              | Fallback Eclipse JDT compiler for runtimes without `jdk.compiler`.               |
+| `GeneratedSourceCompiler`          | SPI for generated Java compilers.                                                 |
+| `GeneratedCompilationConfiguration` | Compilation deadline, parallelism and bounded queue policy.                       |
+| `GeneratedCompilationStats`        | Cache, duration, timeout and saturation counters.                                 |
+| `JavaxToolsGeneratedSourceCompiler` | Default compiler when the runtime provides the JDK `javax.tools.JavaCompiler`.    |
+| `JDTInMemoryCompiler`              | Fallback Eclipse JDT compiler for runtimes without `jdk.compiler`.                |
 | `ClassLoaderRegistry`              | Tracks generated classloaders and aliases.                                        |
 | `DependencyInjector`               | Injects external dependencies into generated pipeline instances.                  |
 | `ArtifactStore`                    | Stores raw external pipeline artifacts by content hash; supports bounded streaming writes. |
@@ -114,9 +116,41 @@ and is never retried with JDT. The javac implementation resolves file-based URLs
 from the supplied parent classloader in addition to the process classpath.
 
 The manager wraps the selected compiler in a bounded 128-entry/16-MiB, single-flight
-cache shared by publication validation and runtime loading. Identical generated
-source is therefore compiled once while failures remain retryable. Applications
-that need deterministic compiler selection should inject
+cache shared by publication validation and runtime loading. Delegate calls run in
+an isolated bounded executor with a 30-second end-to-end deadline by default. The
+deadline includes queue wait. One worker is used by default because custom compiler
+SPIs are not assumed to be thread-safe; up to 32 distinct compilations may wait.
+Identical generated source is therefore compiled once while failures remain
+retryable.
+
+Configure a different finite policy explicitly:
+
+```java
+GeneratedCompilationConfiguration compilation =
+        GeneratedCompilationConfiguration.defaults()
+                .withTimeout(Duration.ofSeconds(10))
+                .withMaxConcurrentCompilations(2)
+                .withQueueCapacity(16);
+
+AssemblyLineManager manager = AssemblyLineManager.builder()
+        // repositories, stores, registry and translator resolver
+        .compilationConfiguration(compilation)
+        .build();
+```
+
+A deadline breach raises `CompilationTimeoutException`, wakes every caller
+sharing that single-flight and removes the flight so a later request can retry.
+Cancellation is best-effort: a compiler that ignores interruption may keep its
+daemon worker occupied until it returns, but its late result is discarded and is
+never cached. Queue saturation fails immediately with `CompilationException`.
+`AssemblyLineManager.compilationStats()` exposes cache hits/misses, delegate
+duration, timeouts, rejections, active workers and queued work.
+
+`AssemblyLineManager` owns these compilation workers and implements
+`AutoCloseable`. Long-lived applications must close it during shutdown; tests and
+short-lived uses should prefer try-with-resources.
+
+Applications that need deterministic compiler selection should inject
 `GeneratedSourceCompilers.javac(...)`, `GeneratedSourceCompilers.jdt(...)`, or
 their own `GeneratedSourceCompiler`.
 

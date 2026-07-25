@@ -66,6 +66,10 @@ The runtime external loading path is coordinated by `AssemblyLineManager`:
 
 The cache-miss path is single-flight per immutable loader id. Concurrent requests for one artifact therefore share the
 same compilation, classloader and generated instance; an unsuccessful flight is evicted to allow a later retry.
+Generated-source compilation runs in an isolated bounded executor. Its configurable monotonic deadline includes queue
+wait and delegate execution. A timeout completes the shared flight exceptionally, cancels the delegate best-effort and
+prevents any late bytecode from entering the completed cache. `AssemblyLineManager` owns this executor, exposes
+`GeneratedCompilationStats` for saturation diagnostics and must be closed during application shutdown.
 
 ## Translator contract
 

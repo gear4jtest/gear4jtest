@@ -2,42 +2,72 @@ package io.github.gear4jtest.external.api;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompiler;
 import io.github.gear4jtest.external.api.exception.CompilationException;
+import io.github.gear4jtest.external.api.exception.CompilationTimeoutException;
 
 /**
- * Bounded single-flight cache shared by publication validation and runtime
- * loading.
+ * Bounded single-flight cache and isolated runtime shared by publication
+ * validation and runtime loading.
  */
-final class BoundedGeneratedSourceCompiler implements GeneratedSourceCompiler {
+final class BoundedGeneratedSourceCompiler implements GeneratedSourceCompiler, AutoCloseable {
     static final int DEFAULT_MAX_ENTRIES = 128;
     static final long DEFAULT_MAX_BYTECODE_BYTES = 16L * 1024L * 1024L;
+    private static final Runnable NO_OPERATION = () -> {
+    };
+    private static final AtomicInteger THREAD_SEQUENCE = new AtomicInteger();
 
     private final GeneratedSourceCompiler delegate;
     private final int maxEntries;
     private final long maxBytecodeBytes;
+    private final GeneratedCompilationConfiguration configuration;
+    private final long timeoutNanos;
+    private final ThreadPoolExecutor compilationExecutor;
+    private final ScheduledThreadPoolExecutor timeoutExecutor;
     private final Map<CompilationKey, CachedCompilation> completed;
-    private final Map<CompilationKey, CompletableFuture<Map<String, byte[]>>> inFlight = new ConcurrentHashMap<>();
+    private final Map<CompilationKey, CompilationFlight> inFlight = new ConcurrentHashMap<>();
+    private final GeneratedCompilationCounters counters = new GeneratedCompilationCounters();
+    private final AtomicBoolean closed = new AtomicBoolean();
     private long cachedBytecodeBytes;
 
     BoundedGeneratedSourceCompiler(GeneratedSourceCompiler delegate) {
-        this(delegate, DEFAULT_MAX_ENTRIES, DEFAULT_MAX_BYTECODE_BYTES);
+        this(delegate, DEFAULT_MAX_ENTRIES, DEFAULT_MAX_BYTECODE_BYTES,
+                GeneratedCompilationConfiguration.defaults());
     }
 
     BoundedGeneratedSourceCompiler(GeneratedSourceCompiler delegate, int maxEntries) {
-        this(delegate, maxEntries, DEFAULT_MAX_BYTECODE_BYTES);
+        this(delegate, maxEntries, DEFAULT_MAX_BYTECODE_BYTES, GeneratedCompilationConfiguration.defaults());
     }
 
     BoundedGeneratedSourceCompiler(GeneratedSourceCompiler delegate, int maxEntries, long maxBytecodeBytes) {
+        this(delegate, maxEntries, maxBytecodeBytes, GeneratedCompilationConfiguration.defaults());
+    }
+
+    BoundedGeneratedSourceCompiler(GeneratedSourceCompiler delegate,
+                                   int maxEntries,
+                                   long maxBytecodeBytes,
+                                   GeneratedCompilationConfiguration configuration) {
         this.delegate = Objects.requireNonNull(delegate, "delegate must not be null");
         if (maxEntries <= 0) {
             throw new IllegalArgumentException("maxEntries must be > 0");
@@ -47,39 +77,155 @@ final class BoundedGeneratedSourceCompiler implements GeneratedSourceCompiler {
         }
         this.maxEntries = maxEntries;
         this.maxBytecodeBytes = maxBytecodeBytes;
+        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
+        this.timeoutNanos = toNanosSaturated(configuration.timeout());
         this.completed = new LinkedHashMap<>(16, 0.75f, true);
+        this.compilationExecutor = newCompilationExecutor(configuration);
+        this.timeoutExecutor = newTimeoutExecutor();
     }
 
     @Override
     public Map<String, byte[]> compile(String className, byte[] sourceCode) {
+        requireOpen();
         CompilationKey key = CompilationKey.of(className, sourceCode);
         Map<String, byte[]> cached = findCached(key);
         if (cached != null) {
+            counters.recordCacheHit();
             return copyClasses(cached);
         }
+        counters.recordCacheMiss();
 
-        CompletableFuture<Map<String, byte[]>> owned = new CompletableFuture<>();
-        CompletableFuture<Map<String, byte[]>> current = inFlight.putIfAbsent(key, owned);
+        CompilationFlight owned = new CompilationFlight(System.nanoTime());
+        CompilationFlight current = inFlight.putIfAbsent(key, owned);
         if (current != null) {
+            counters.recordSingleFlightJoin();
             return copyClasses(await(key, current));
         }
 
-        try {
-            Map<String, byte[]> cachedAfterOwnership = findCached(key);
-            if (cachedAfterOwnership != null) {
-                owned.complete(cachedAfterOwnership);
-                return copyClasses(cachedAfterOwnership);
-            }
-            Map<String, byte[]> compiled = copyClasses(delegate.compile(className, sourceCode.clone()));
-            cache(key, compiled);
-            owned.complete(compiled);
-            return copyClasses(compiled);
-        } catch (RuntimeException | Error failure) {
-            owned.completeExceptionally(failure);
-            throw failure;
-        } finally {
+        Map<String, byte[]> cachedAfterOwnership = findCached(key);
+        if (cachedAfterOwnership != null) {
+            owned.completeSuccessfully(cachedAfterOwnership, NO_OPERATION);
             inFlight.remove(key, owned);
+            return copyClasses(cachedAfterOwnership);
         }
+
+        submit(key, sourceCode.clone(), owned);
+        return copyClasses(await(key, owned));
+    }
+
+    GeneratedCompilationStats snapshotStats() {
+        int cachedEntries;
+        long cachedBytes;
+        synchronized (completed) {
+            cachedEntries = completed.size();
+            cachedBytes = cachedBytecodeBytes;
+        }
+        return counters.snapshot(cachedEntries, cachedBytes, inFlight.size(), compilationExecutor.getActiveCount(),
+                                 compilationExecutor.getQueue().size(), closed.get());
+    }
+
+    @Override
+    public void close() {
+        if (!closed.compareAndSet(false, true)) {
+            return;
+        }
+        CompilationException shutdown = new CompilationException("Generated-source compilation runtime is closed");
+        inFlight.forEach((key, flight) -> {
+            flight.completeExceptionally(shutdown, NO_OPERATION);
+            flight.cancel(compilationExecutor);
+        });
+        inFlight.clear();
+        timeoutExecutor.shutdownNow();
+        compilationExecutor.shutdownNow();
+    }
+
+    private void submit(CompilationKey key, byte[] sourceCode, CompilationFlight flight) {
+        try {
+            Future<?> task = compilationExecutor.submit(() -> compileOwned(key, sourceCode, flight));
+            flight.setCompilationTask(task);
+            ScheduledFuture<?> timeoutTask = timeoutExecutor.schedule(
+                                                                      () -> timeout(key, flight), timeoutNanos,
+                                                                      TimeUnit.NANOSECONDS);
+            flight.setTimeoutTask(timeoutTask);
+        } catch (RejectedExecutionException rejected) {
+            CompilationException failure = new CompilationException(
+                    "Generated-source compilation executor is saturated or closed for " + key.className(),
+                    List.of(), rejected);
+            flight.completeExceptionally(failure, counters::recordCompilationRejected);
+            flight.cancel(compilationExecutor);
+            inFlight.remove(key, flight);
+        }
+    }
+
+    private void compileOwned(CompilationKey key, byte[] sourceCode, CompilationFlight flight) {
+        long startedNanos = System.nanoTime();
+        counters.recordCompilationStarted();
+        try {
+            Map<String, byte[]> compiled = copyClasses(delegate.compile(key.className(), sourceCode));
+            flight.completeSuccessfully(compiled, () -> {
+                cache(key, compiled);
+                counters.recordCompilationSucceeded();
+            });
+        } catch (RuntimeException | Error failure) {
+            flight.completeExceptionally(failure, counters::recordCompilationFailed);
+        } finally {
+            counters.recordDuration(System.nanoTime() - startedNanos);
+            flight.cancelTimeout();
+            inFlight.remove(key, flight);
+        }
+    }
+
+    private void timeout(CompilationKey key, CompilationFlight flight) {
+        CompilationTimeoutException failure = new CompilationTimeoutException(key.className(),
+                configuration.timeout());
+        if (flight.completeExceptionally(failure, counters::recordCompilationTimedOut)) {
+            flight.cancelCompilation(compilationExecutor);
+            inFlight.remove(key, flight);
+        }
+    }
+
+    private Map<String, byte[]> await(CompilationKey key, CompilationFlight flight) {
+        try {
+            long remainingNanos = remainingNanos(flight.createdNanos());
+            if (remainingNanos == 0L) {
+                timeout(key, flight);
+                return completedResult(key, flight.result());
+            }
+            return flight.result().get(remainingNanos, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new CompilationException("Interrupted while waiting for generated-source compilation "
+                    + key.className(), List.of(), interrupted);
+        } catch (TimeoutException timeout) {
+            timeout(key, flight);
+            return completedResult(key, flight.result());
+        } catch (ExecutionException failure) {
+            return rethrow(key, failure.getCause());
+        }
+    }
+
+    private static Map<String, byte[]> completedResult(CompilationKey key,
+                                                       CompletableFuture<Map<String, byte[]>> result) {
+        try {
+            return result.get();
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new CompilationException("Interrupted while waiting for generated-source compilation "
+                    + key.className(), List.of(), interrupted);
+        } catch (ExecutionException failure) {
+            return rethrow(key, failure.getCause());
+        }
+    }
+
+    private static Map<String, byte[]> rethrow(CompilationKey key, Throwable cause) {
+        if (cause instanceof RuntimeException runtimeException) {
+            throw runtimeException;
+        }
+        if (cause instanceof Error error) {
+            throw error;
+        }
+        throw new CompilationException("Generated-source compilation failed for " + key.className(),
+                List.of(), cause);
     }
 
     private Map<String, byte[]> findCached(CompilationKey key) {
@@ -108,33 +254,59 @@ final class BoundedGeneratedSourceCompiler implements GeneratedSourceCompiler {
         }
     }
 
+    private long remainingNanos(long createdNanos) {
+        long elapsedNanos = System.nanoTime() - createdNanos;
+        if (elapsedNanos <= 0L) {
+            return timeoutNanos;
+        }
+        return elapsedNanos >= timeoutNanos ? 0L : timeoutNanos - elapsedNanos;
+    }
+
+    private void requireOpen() {
+        if (closed.get()) {
+            throw new CompilationException("Generated-source compilation runtime is closed");
+        }
+    }
+
+    private static ThreadPoolExecutor newCompilationExecutor(GeneratedCompilationConfiguration configuration) {
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(configuration.maxConcurrentCompilations(),
+                configuration.maxConcurrentCompilations(), 30L, TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(configuration.queueCapacity()), threadFactory("gear4j-compilation-"),
+                new ThreadPoolExecutor.AbortPolicy());
+        executor.allowCoreThreadTimeOut(true);
+        return executor;
+    }
+
+    private static ScheduledThreadPoolExecutor newTimeoutExecutor() {
+        ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1,
+                threadFactory("gear4j-compilation-timeout-"));
+        executor.setRemoveOnCancelPolicy(true);
+        executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+        return executor;
+    }
+
+    private static ThreadFactory threadFactory(String prefix) {
+        return task -> {
+            Thread thread = new Thread(task, prefix + THREAD_SEQUENCE.incrementAndGet());
+            thread.setDaemon(true);
+            return thread;
+        };
+    }
+
+    private static long toNanosSaturated(Duration duration) {
+        try {
+            return duration.toNanos();
+        } catch (ArithmeticException overflow) {
+            return Long.MAX_VALUE;
+        }
+    }
+
     private static long bytecodeSize(Map<String, byte[]> compiled) {
         long size = 0L;
         for (byte[] bytes : compiled.values()) {
             size = Math.addExact(size, bytes.length);
         }
         return size;
-    }
-
-    private static Map<String, byte[]> await(CompilationKey key,
-                                             CompletableFuture<Map<String, byte[]>> future) {
-        try {
-            return future.get();
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-            throw new CompilationException("Interrupted while waiting for generated-source compilation "
-                    + key.className(), List.of(), interrupted);
-        } catch (ExecutionException failure) {
-            Throwable cause = failure.getCause();
-            if (cause instanceof RuntimeException runtimeException) {
-                throw runtimeException;
-            }
-            if (cause instanceof Error error) {
-                throw error;
-            }
-            throw new CompilationException("Generated-source compilation failed for " + key.className(),
-                    List.of(), cause);
-        }
     }
 
     private static Map<String, byte[]> copyClasses(Map<String, byte[]> classes) {
@@ -150,6 +322,79 @@ final class BoundedGeneratedSourceCompiler implements GeneratedSourceCompiler {
     }
 
     private record CachedCompilation(Map<String, byte[]> classes, long bytecodeBytes) {}
+
+    private static final class CompilationFlight {
+        private final long createdNanos;
+        private final CompletableFuture<Map<String, byte[]>> result = new CompletableFuture<>();
+        private Future<?> compilationTask;
+        private ScheduledFuture<?> timeoutTask;
+        private boolean cancellationRequested;
+
+        private CompilationFlight(long createdNanos) {
+            this.createdNanos = createdNanos;
+        }
+
+        long createdNanos() {
+            return createdNanos;
+        }
+
+        CompletableFuture<Map<String, byte[]>> result() {
+            return result;
+        }
+
+        synchronized void setCompilationTask(Future<?> value) {
+            compilationTask = value;
+            if (cancellationRequested) {
+                value.cancel(true);
+            }
+        }
+
+        synchronized void setTimeoutTask(ScheduledFuture<?> value) {
+            timeoutTask = value;
+            if (result.isDone()) {
+                value.cancel(false);
+            }
+        }
+
+        synchronized boolean completeSuccessfully(Map<String, byte[]> value, Runnable beforeCompletion) {
+            if (result.isDone()) {
+                return false;
+            }
+            beforeCompletion.run();
+            result.complete(value);
+            return true;
+        }
+
+        synchronized boolean completeExceptionally(Throwable failure, Runnable beforeCompletion) {
+            if (result.isDone()) {
+                return false;
+            }
+            beforeCompletion.run();
+            result.completeExceptionally(failure);
+            return true;
+        }
+
+        synchronized void cancelCompilation(ThreadPoolExecutor executor) {
+            cancellationRequested = true;
+            if (compilationTask != null) {
+                compilationTask.cancel(true);
+                if (compilationTask instanceof Runnable queuedTask) {
+                    executor.remove(queuedTask);
+                }
+            }
+        }
+
+        synchronized void cancelTimeout() {
+            if (timeoutTask != null) {
+                timeoutTask.cancel(false);
+            }
+        }
+
+        synchronized void cancel(ThreadPoolExecutor executor) {
+            cancelCompilation(executor);
+            cancelTimeout();
+        }
+    }
 
     private record CompilationKey(String className, byte[] sourceHash) {
         private CompilationKey {

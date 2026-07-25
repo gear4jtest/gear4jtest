@@ -20,7 +20,10 @@ Current public API packages include:
 - `io.github.gear4jtest.jdbc.persistence` optional JDBC repository and dialect entry points
 - `io.github.gear4jtest.external.api.AssemblyLineManager`
 - `io.github.gear4jtest.external.api.ExecutionMode`
+- `io.github.gear4jtest.external.api.GeneratedCompilationConfiguration`
+- `io.github.gear4jtest.external.api.GeneratedCompilationStats`
 - `io.github.gear4jtest.external.api.StoreType`
+- `io.github.gear4jtest.external.api.exception.CompilationTimeoutException`
 - `io.github.gear4jtest.external.jdbc.repository.*`
 - `io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStore`
 - `io.github.gear4jtest.xml.translator.XmlOperationChainTranslator`
@@ -54,6 +57,9 @@ SPI implementors should assume:
 
 - methods may be called concurrently unless the type explicitly documents
   otherwise;
+- generated compiler calls are isolated and serialized by default; applications
+  that configure more than one compilation worker are responsible for supplying a
+  thread-safe compiler implementation;
 - implementations must not retain mutable caller-owned data without copying;
 - persistence records validate required identifiers and lifecycle fields;
   persistence managers redact first and clone retained values before asynchronous
