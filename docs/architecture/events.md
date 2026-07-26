@@ -39,6 +39,10 @@ timeout expires. A single monotonic deadline covers reaction drain, owned-execut
 steps do not each restart the timeout. This preserves a simple "result returned after reactions drained or timed out"
 contract, but it means an otherwise asynchronous event subscription can still make the caller wait at the end of the run.
 
+The run-local `EventManager` owns queueing, dispatch and reaction accounting. The package-private
+`EventRuntimeShutdown` owns shutdown-mode interpretation, the shared deadline and executor ownership. This separation is
+internal: it does not change `EventManager.ShutdownHandle` or the best-effort delivery contract.
+
 Use `ShutdownMode.DETACH_AND_DRAIN` when the application wants to return the pipeline result before best-effort reactions
 finish. `RuntimeConfiguration.detachAndDrainDefaults()` exists as a readable shortcut for this common best-effort mode.
 Detached mode is still not durable delivery: reactions may already have been dropped under saturation, and run-scoped

@@ -158,6 +158,11 @@ application instances from applying the same Gear4J schema migrations at the sam
 time. The lock is scoped to the JDBC transaction and is released when the
 migration transaction commits or rolls back.
 
+Internally, `JdbcSchemaMigrator` remains the transaction and migration orchestrator. `MigrationHistoryStore` owns durable
+state transitions, `MigrationLockStore` owns the portable lock table and row acquisition, and
+`MigrationResourceLoader` owns list parsing, resource loading and checksums. These components are package-private and do
+not expand the public migration API.
+
 When the migrator obtains a connection from a `DataSource`, it owns the migration
 transaction: it disables auto-commit, creates/updates the schema infrastructure,
 applies pending migrations and commits. If a caller passes a connection that is

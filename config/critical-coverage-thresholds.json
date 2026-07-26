@@ -7,12 +7,24 @@
       "minimumBranchRatio": 0.6
     },
     {
+      "className": "io.github.gear4jtest.core.event.EventRuntimeShutdown",
+      "minimumBranchRatio": 0.5
+    },
+    {
       "className": "io.github.gear4jtest.core.engine.strategy.WorkStationStrategy",
       "minimumBranchRatio": 0.6
     },
     {
       "className": "io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator",
       "minimumBranchRatio": 0.55
+    },
+    {
+      "className": "io.github.gear4jtest.jdbc.migration.MigrationLockStore",
+      "minimumBranchRatio": 0.5
+    },
+    {
+      "className": "io.github.gear4jtest.jdbc.migration.MigrationResourceLoader",
+      "minimumBranchRatio": 0.5
     },
     {
       "className": "io.github.gear4jtest.external.api.AssemblyLinePublicationService",
@@ -24,6 +36,14 @@
     },
     {
       "className": "io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator",
+      "minimumBranchRatio": 0.5
+    },
+    {
+      "className": "io.github.gear4jtest.jdbc.execution.PersistenceShutdownRunState",
+      "minimumBranchRatio": 0.5
+    },
+    {
+      "className": "io.github.gear4jtest.jdbc.execution.PersistenceShutdownWriter",
       "minimumBranchRatio": 0.5
     },
     {

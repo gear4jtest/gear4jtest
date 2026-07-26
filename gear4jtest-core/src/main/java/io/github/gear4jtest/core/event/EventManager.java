@@ -1,6 +1,5 @@
 package io.github.gear4jtest.core.event;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -8,12 +7,9 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -59,7 +55,6 @@ public final class EventManager {
     private final BlockingQueue<QueuedEvent> queue;
     private final Object submissionMonitor = new Object();
     private final AtomicBoolean shutdownStarted = new AtomicBoolean(false);
-    private final AtomicBoolean ownedExecutorShutdownInitiated = new AtomicBoolean(false);
     private final AtomicBoolean dispatchTaskScheduled = new AtomicBoolean(false);
     private final AtomicInteger dispatchingEvents = new AtomicInteger();
     private final AtomicInteger acceptedReactions = new AtomicInteger();
@@ -74,9 +69,7 @@ public final class EventManager {
     private final AtomicLong droppedReactions = new AtomicLong();
     private final AtomicLong failedReactions = new AtomicLong();
     private final ExecutorService reactionExecutor;
-    private final boolean shutdownExecutorOnClose;
-    private final Duration shutdownTimeout;
-    private final EventHandlingDefinition.RuntimeConfiguration.ShutdownMode shutdownMode;
+    private final EventRuntimeShutdown runtimeShutdown;
     private final int eventQueueCapacity;
     /** Guarded by {@link #submissionMonitor}. */
     private boolean accepting;
@@ -88,14 +81,12 @@ public final class EventManager {
         EventHandlingDefinition.RuntimeConfiguration runtimeConfiguration = effectiveDefinition
                 .getRuntimeConfiguration();
         this.subscriptions = EventSubscriptionResolver.resolve(effectiveDefinition, registry);
-        this.shutdownTimeout = runtimeConfiguration.getShutdownTimeout();
-        this.shutdownMode = runtimeConfiguration.getShutdownMode();
         this.eventQueueCapacity = runtimeConfiguration.getEventQueueCapacity();
         this.queue = new LinkedBlockingQueue<>(eventQueueCapacity);
 
         if (subscriptions.isEmpty()) {
             this.reactionExecutor = null;
-            this.shutdownExecutorOnClose = false;
+            this.runtimeShutdown = EventRuntimeShutdown.inactive(runtimeConfiguration);
             this.accepting = false;
             this.terminationFuture.complete(null);
             return;
@@ -104,7 +95,8 @@ public final class EventManager {
         EventHandlingDefinition.RuntimeConfiguration.ExecutorHandle executorHandle = runtimeConfiguration
                 .acquireReactionExecutor();
         this.reactionExecutor = executorHandle.executorService();
-        this.shutdownExecutorOnClose = executorHandle.shutdownOnClose();
+        this.runtimeShutdown = EventRuntimeShutdown.active(runtimeConfiguration, reactionExecutor,
+                                                           executorHandle.shutdownOnClose());
         this.accepting = true;
         EventRuntimeMetrics.runtimeOpened();
         this.terminationFuture.whenComplete((ignored, failure) -> EventRuntimeMetrics.runtimeClosed());
@@ -160,15 +152,15 @@ public final class EventManager {
             return ShutdownHandle.completed();
         }
 
-        MonotonicDeadline deadline = MonotonicDeadline.start(shutdownTimeout);
+        MonotonicDeadline deadline = MonotonicDeadline.start(runtimeShutdown.timeout());
         synchronized (submissionMonitor) {
             if (accepting) {
                 accepting = false;
                 shutdownStarted.set(true);
-                if (shutdownMode == EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.CANCEL_PENDING_TASKS) {
+                if (runtimeShutdown.cancelsPendingTasks()) {
                     dropPendingQueuedEvents();
                     cancelPendingReactions();
-                    forceShutdownOwnedExecutor(deadline);
+                    runtimeShutdown.forceOwnedExecutor(deadline);
                 } else {
                     scheduleDispatchIfNeeded();
                 }
@@ -177,11 +169,11 @@ public final class EventManager {
         }
 
         ShutdownHandle handle = new ShutdownHandle(
-                shutdownMode == EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.DETACH_AND_DRAIN,
+                runtimeShutdown.detachesAndDrains(),
                 terminationFuture);
 
         if (!handle.detached()) {
-            awaitCompletion(handle.completion(), deadline);
+            runtimeShutdown.awaitCompletion(handle.completion(), deadline, this::cancelPendingReactions);
         }
 
         return handle;
@@ -331,71 +323,10 @@ public final class EventManager {
             return;
         }
         if (queue.isEmpty() && dispatchingEvents.get() == 0) {
-            initiateOwnedExecutorShutdownAfterDispatchDrain();
+            runtimeShutdown.initiateOwnedExecutorShutdownAfterDispatchDrain();
             if (acceptedReactions.get() == 0) {
                 terminationFuture.complete(null);
             }
-        }
-    }
-
-    private void initiateOwnedExecutorShutdownAfterDispatchDrain() {
-        if (!shutdownExecutorOnClose || reactionExecutor == null) {
-            return;
-        }
-        if (shutdownMode == EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.CANCEL_PENDING_TASKS) {
-            return;
-        }
-        if (ownedExecutorShutdownInitiated.compareAndSet(false, true)) {
-            reactionExecutor.shutdown();
-        }
-    }
-
-    private void awaitCompletion(CompletableFuture<Void> completion, MonotonicDeadline deadline) {
-        try {
-            completion.get(deadline.remainingNanos(), TimeUnit.NANOSECONDS);
-            awaitOwnedExecutorTermination(deadline);
-        } catch (TimeoutException timeoutException) {
-            LOGGER.warn("Timed out while waiting for the asynchronous event runtime to terminate. timeout={}",
-                        shutdownTimeout);
-            cancelPendingReactions();
-            forceShutdownOwnedExecutor(deadline);
-        } catch (InterruptedException interruptedException) {
-            Thread.currentThread().interrupt();
-            cancelPendingReactions();
-            forceShutdownOwnedExecutor(deadline);
-        } catch (ExecutionException executionException) {
-            LOGGER.warn("Asynchronous event runtime terminated with an error.", executionException.getCause());
-            cancelPendingReactions();
-            forceShutdownOwnedExecutor(deadline);
-        }
-    }
-
-    private void awaitOwnedExecutorTermination(MonotonicDeadline deadline) throws InterruptedException {
-        if (!shutdownExecutorOnClose || reactionExecutor == null) {
-            return;
-        }
-
-        boolean terminated = reactionExecutor.awaitTermination(deadline.remainingNanos(), TimeUnit.NANOSECONDS);
-        if (!terminated) {
-            LOGGER.warn("Timed out while waiting for the per-run event reaction executor to terminate. timeout={}",
-                        shutdownTimeout);
-            cancelPendingReactions();
-            reactionExecutor.shutdownNow();
-            reactionExecutor.awaitTermination(deadline.remainingNanos(), TimeUnit.NANOSECONDS);
-        }
-    }
-
-    private void forceShutdownOwnedExecutor(MonotonicDeadline deadline) {
-        if (!shutdownExecutorOnClose || reactionExecutor == null) {
-            return;
-        }
-
-        ownedExecutorShutdownInitiated.set(true);
-        reactionExecutor.shutdownNow();
-        try {
-            reactionExecutor.awaitTermination(deadline.remainingNanos(), TimeUnit.NANOSECONDS);
-        } catch (InterruptedException interruptedException) {
-            Thread.currentThread().interrupt();
         }
     }
 

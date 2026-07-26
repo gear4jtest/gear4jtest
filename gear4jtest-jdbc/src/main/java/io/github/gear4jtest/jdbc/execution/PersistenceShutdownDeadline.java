@@ -43,20 +43,27 @@ final class PersistenceShutdownDeadline {
     }
 
     private static long deadlineAfter(long startedNanos, Duration timeout) {
-        long timeoutNanos = safeToNanos(timeout);
+        long timeoutNanos = saturatedNanos(timeout);
         if (timeoutNanos == Long.MAX_VALUE) {
             return Long.MAX_VALUE;
         }
+        return addSaturated(startedNanos, timeoutNanos);
+    }
+
+    static long saturatedNanos(Duration duration) {
         try {
-            return Math.addExact(startedNanos, timeoutNanos);
+            return duration.toNanos();
         } catch (ArithmeticException exception) {
             return Long.MAX_VALUE;
         }
     }
 
-    private static long safeToNanos(Duration duration) {
+    static long addSaturated(long base, long increment) {
+        if (increment == Long.MAX_VALUE) {
+            return Long.MAX_VALUE;
+        }
         try {
-            return duration.toNanos();
+            return Math.addExact(base, increment);
         } catch (ArithmeticException exception) {
             return Long.MAX_VALUE;
         }

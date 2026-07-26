@@ -1,20 +1,9 @@
 package io.github.gear4jtest.jdbc.migration;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -44,17 +33,15 @@ public final class JdbcSchemaMigrator {
     private static final String ASSEMBLY_RUN_TABLE = "assembly_run";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcSchemaMigrator.class);
-    private static final String LOCK_TABLE = "gear4j_schema_lock";
 
     private final String moduleId;
-    private final Gear4jDatabaseDialect dialect;
-    private final String migrationListResource;
     private final String baselineTableName;
     private final boolean baselineOnMigrate;
     private final BaselineSchemaValidator baselineSchemaValidator;
-    private final ClassLoader classLoader;
     private final JdbcStatementOptions statementOptions;
     private final MigrationHistoryStore migrationHistory;
+    private final MigrationLockStore migrationLock;
+    private final MigrationResourceLoader migrationResources;
 
     public static Builder builder() {
         return new Builder();
@@ -62,19 +49,20 @@ public final class JdbcSchemaMigrator {
 
     private JdbcSchemaMigrator(Builder builder) {
         this.moduleId = requireNonBlank(builder.moduleId, "moduleId");
-        this.dialect = Objects.requireNonNull(builder.dialect, "dialect must not be null");
-        this.migrationListResource = normalizeResource(requireNonBlank(builder.migrationListResource,
-                                                                       "migrationListResource"));
+        Gear4jDatabaseDialect dialect = Objects.requireNonNull(builder.dialect, "dialect must not be null");
+        String migrationListResource = requireNonBlank(builder.migrationListResource, "migrationListResource");
         this.baselineTableName = requireNonBlank(builder.baselineTableName, "baselineTableName");
         this.baselineOnMigrate = builder.baselineOnMigrate;
         this.baselineSchemaValidator = new BaselineSchemaValidator(moduleId, baselineTableName,
                 immutableRequirements(builder.requiredColumns), immutableRequirements(builder.requiredIndexes));
-        this.classLoader = builder.classLoader != null ? builder.classLoader
+        ClassLoader classLoader = builder.classLoader != null ? builder.classLoader
                 : JdbcSchemaMigrator.class.getClassLoader();
         this.statementOptions = Objects.requireNonNull(builder.statementOptions,
                                                        "statementOptions must not be null");
         this.migrationHistory = new MigrationHistoryStore(moduleId, dialect, baselineSchemaValidator,
                 statementOptions);
+        this.migrationLock = new MigrationLockStore(moduleId, dialect, baselineSchemaValidator, statementOptions);
+        this.migrationResources = new MigrationResourceLoader(migrationListResource, classLoader);
     }
 
     public static final class Builder {
@@ -193,7 +181,7 @@ public final class JdbcSchemaMigrator {
             }
             try {
                 ensureInfrastructureTables(connection);
-                acquireSchemaLock(connection);
+                migrationLock.acquire(connection);
                 runMigrations(connection);
                 if (ownsTransaction) {
                     connection.commit();
@@ -282,7 +270,7 @@ public final class JdbcSchemaMigrator {
             }
             try {
                 ensureInfrastructureTables(connection);
-                acquireSchemaLock(connection);
+                migrationLock.acquire(connection);
                 prepareRetryLocked(connection, requiredVersion);
                 if (ownsTransaction) {
                     connection.commit();
@@ -303,10 +291,6 @@ public final class JdbcSchemaMigrator {
         }
     }
 
-    private PreparedStatement prepare(Connection connection, String sql) throws SQLException {
-        return statementOptions.prepare(connection, sql);
-    }
-
     private Statement createStatement(Connection connection) throws SQLException {
         Statement statement = connection.createStatement();
         statementOptions.apply(statement);
@@ -315,12 +299,11 @@ public final class JdbcSchemaMigrator {
 
     private void ensureInfrastructureTables(Connection connection) throws SQLException {
         migrationHistory.ensureTableAndStateColumn(connection);
-        ensureLockTable(connection);
-        ensureLockRow(connection);
+        migrationLock.ensureTableAndRow(connection);
     }
 
     private void runMigrations(Connection connection) throws SQLException, IOException {
-        List<SchemaMigration> migrations = loadMigrations();
+        List<SchemaMigration> migrations = migrationResources.loadMigrations();
         if (migrations.isEmpty()) {
             return;
         }
@@ -339,95 +322,19 @@ public final class JdbcSchemaMigrator {
         }
     }
 
-    private void ensureLockTable(Connection connection) throws SQLException {
-        executeCreateTableIfMissing(connection, LOCK_TABLE, lockTableSql());
-    }
-
-    private void executeCreateTableIfMissing(Connection connection, String tableName, String sql) throws SQLException {
-        if (baselineSchemaValidator.tableExists(connection, tableName)) {
-            return;
-        }
-        try (Statement statement = createStatement(connection)) {
-            statement.execute(sql);
-        } catch (SQLException e) {
-            if (baselineSchemaValidator.tableExists(connection, tableName)) {
-                LOGGER.debug("[Gear4J] Schema infrastructure table {} was created concurrently", tableName);
-                return;
-            }
-            throw e;
-        }
-    }
-
-    private String lockTableSql() {
-        return switch (dialect) {
-            case POSTGRESQL -> "CREATE TABLE IF NOT EXISTS gear4j_schema_lock ("
-                    + "lock_name VARCHAR(100) PRIMARY KEY, "
-                    + "locked_at TIMESTAMPTZ NOT NULL DEFAULT NOW())";
-            case MYSQL, MARIADB -> "CREATE TABLE IF NOT EXISTS gear4j_schema_lock ("
-                    + "lock_name VARCHAR(100) PRIMARY KEY, "
-                    + "locked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)";
-            case ORACLE -> "CREATE TABLE gear4j_schema_lock ("
-                    + "lock_name VARCHAR2(100) PRIMARY KEY, "
-                    + "locked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)";
-            case H2 -> "CREATE TABLE IF NOT EXISTS gear4j_schema_lock ("
-                    + "lock_name VARCHAR(100) PRIMARY KEY, "
-                    + "locked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)";
-        };
-    }
-
-    private void ensureLockRow(Connection connection) throws SQLException {
-        try (PreparedStatement statement = prepare(connection, lockRowInsertSql())) {
-            statement.setString(1, moduleId);
-            dialect.setInstant(statement, 2, Instant.now());
-            statement.executeUpdate();
-        }
-    }
-
-    private String lockRowInsertSql() {
-        return switch (dialect) {
-            case POSTGRESQL -> "INSERT INTO gear4j_schema_lock(lock_name, locked_at) VALUES (?,?) "
-                    + "ON CONFLICT (lock_name) DO NOTHING";
-            case MYSQL, MARIADB -> "INSERT IGNORE INTO gear4j_schema_lock(lock_name, locked_at) VALUES (?,?)";
-            case ORACLE -> "MERGE INTO gear4j_schema_lock target "
-                    + "USING (SELECT ? lock_name, ? locked_at FROM dual) source "
-                    + "ON (target.lock_name = source.lock_name) "
-                    + "WHEN NOT MATCHED THEN INSERT (lock_name, locked_at) "
-                    + "VALUES (source.lock_name, source.locked_at)";
-            case H2 -> "MERGE INTO gear4j_schema_lock(lock_name, locked_at) KEY(lock_name) VALUES (?,?)";
-        };
-    }
-
-    private void acquireSchemaLock(Connection connection) throws SQLException {
-        try (PreparedStatement statement = prepare(connection,
-                                                   "SELECT lock_name FROM gear4j_schema_lock WHERE lock_name = ? FOR UPDATE")) {
-            statement.setString(1, moduleId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) {
-                    throw new SchemaMigrationException("Gear4J schema lock row is missing for module " + moduleId);
-                }
-            }
-        }
-        try (PreparedStatement statement = prepare(connection,
-                                                   "UPDATE gear4j_schema_lock SET locked_at = ? WHERE lock_name = ?")) {
-            dialect.setInstant(statement, 1, Instant.now());
-            statement.setString(2, moduleId);
-            statement.executeUpdate();
-        }
-    }
-
     private void baselineExistingSchema(Connection connection, SchemaMigration baseline)
             throws SQLException, IOException {
-        String content = readResource(baseline.resourcePath());
+        String content = migrationResources.readResource(baseline.resourcePath());
         baselineSchemaValidator.validate(connection, baseline.version(), content);
-        String checksum = sha256(content);
+        String checksum = MigrationResourceLoader.sha256(content);
         LOGGER.info("[Gear4J] Baselining existing schema for module {} at migration {}", moduleId,
                     baseline.version());
         migrationHistory.insert(connection, baseline, checksum, SchemaMigrationState.APPLIED);
     }
 
     private void applyIfNeeded(Connection connection, SchemaMigration migration) throws SQLException, IOException {
-        String content = readResource(migration.resourcePath());
-        String checksum = sha256(content);
+        String content = migrationResources.readResource(migration.resourcePath());
+        String checksum = MigrationResourceLoader.sha256(content);
         MigrationHistoryStore.StoredMigration state = migrationHistory.find(connection, migration.version());
         if (state != null) {
             if (!checksum.equals(state.checksum())) {
@@ -453,7 +360,7 @@ public final class JdbcSchemaMigrator {
     private void persistFailedMigration(Connection connection, MigrationExecutionException failure) {
         try {
             ensureInfrastructureTables(connection);
-            acquireSchemaLock(connection);
+            migrationLock.acquire(connection);
             MigrationHistoryStore.StoredMigration stored = migrationHistory.find(connection,
                                                                                  failure.migration().version());
             if (stored == null) {
@@ -471,12 +378,12 @@ public final class JdbcSchemaMigrator {
     }
 
     private void prepareRetryLocked(Connection connection, String version) throws SQLException, IOException {
-        SchemaMigration migration = loadMigrations().stream()
+        SchemaMigration migration = migrationResources.loadMigrations().stream()
                 .filter(candidate -> candidate.version().equals(version))
                 .findFirst()
                 .orElseThrow(() -> new SchemaMigrationException("Unknown Gear4J migration " + moduleId + ":"
                         + version));
-        String checksum = sha256(readResource(migration.resourcePath()));
+        String checksum = MigrationResourceLoader.sha256(migrationResources.readResource(migration.resourcePath()));
         MigrationHistoryStore.StoredMigration stored = migrationHistory.find(connection, version);
         if (stored == null) {
             throw new SchemaMigrationException("No incomplete Gear4J migration exists for " + moduleId + ":"
@@ -511,48 +418,6 @@ public final class JdbcSchemaMigrator {
                 failure);
     }
 
-    private List<SchemaMigration> loadMigrations() throws IOException {
-        String listContent = readResource(migrationListResource);
-        List<SchemaMigration> migrations = new ArrayList<>();
-        String basePath = migrationListResource.substring(0, migrationListResource.lastIndexOf('/') + 1);
-        for (String raw : listContent.split("\\R")) {
-            String entry = raw.trim();
-            if (entry.isEmpty() || entry.startsWith("#")) {
-                continue;
-            }
-            String fileName = entry.substring(entry.lastIndexOf('/') + 1);
-            int separator = fileName.indexOf("__");
-            int extension = fileName.lastIndexOf('.');
-            if (!fileName.startsWith("V") || separator < 0 || extension <= separator) {
-                throw new IOException("Invalid Gear4J migration file name: " + entry);
-            }
-            String version = fileName.substring(1, separator);
-            String description = fileName.substring(separator + 2, extension).replace('_', ' ');
-            migrations.add(new SchemaMigration(version, description, basePath + entry));
-        }
-        return migrations;
-    }
-
-    private String readResource(String resourcePath) throws IOException {
-        String normalized = normalizeResource(resourcePath);
-        InputStream stream = classLoader.getResourceAsStream(normalized);
-        if (stream == null) {
-            stream = JdbcSchemaMigrator.class.getClassLoader().getResourceAsStream(normalized);
-        }
-        if (stream == null) {
-            throw new IOException("Migration resource not found: " + normalized);
-        }
-        try (InputStream input = stream;
-                BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
-            StringBuilder builder = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                builder.append(line).append('\n');
-            }
-            return builder.toString();
-        }
-    }
-
     private void executeScript(Connection connection, String scriptContent) throws SQLException {
         try (Statement statement = createStatement(connection)) {
             for (String sql : splitSqlStatements(scriptContent)) {
@@ -571,19 +436,6 @@ public final class JdbcSchemaMigrator {
         } catch (SQLException rollbackFailure) {
             failure.addSuppressed(rollbackFailure);
         }
-    }
-
-    private static String sha256(String content) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(content.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available", e);
-        }
-    }
-
-    private static String normalizeResource(String resource) {
-        return resource.startsWith("/") ? resource.substring(1) : resource;
     }
 
     private static String requireNonBlank(String value, String name) {
