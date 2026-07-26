@@ -15,6 +15,8 @@ class GeneratedCompilationConfigurationTest {
         assertThat(configuration.timeout()).isEqualTo(Duration.ofSeconds(30));
         assertThat(configuration.maxConcurrentCompilations()).isEqualTo(1);
         assertThat(configuration.queueCapacity()).isEqualTo(32);
+        assertThat(configuration.maxGeneratedSourceBytes()).isEqualTo(4L * 1024L * 1024L);
+        assertThat(configuration.maxCompilationOutputBytes()).isEqualTo(8L * 1024L * 1024L);
     }
 
     @Test
@@ -28,6 +30,12 @@ class GeneratedCompilationConfigurationTest {
         assertThatThrownBy(() -> new GeneratedCompilationConfiguration(Duration.ofSeconds(1), 1, 0))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("queueCapacity");
+        assertThatThrownBy(() -> new GeneratedCompilationConfiguration(Duration.ofSeconds(1), 1, 1, 0L, 1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxGeneratedSourceBytes");
+        assertThatThrownBy(() -> new GeneratedCompilationConfiguration(Duration.ofSeconds(1), 1, 1, 1L, 0L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxCompilationOutputBytes");
     }
 
     @Test
@@ -41,5 +49,11 @@ class GeneratedCompilationConfigurationTest {
                 .isEqualTo(new GeneratedCompilationConfiguration(Duration.ofSeconds(2), 6, 4));
         assertThat(configuration.withQueueCapacity(7))
                 .isEqualTo(new GeneratedCompilationConfiguration(Duration.ofSeconds(2), 3, 7));
+        assertThat(configuration.withMaxGeneratedSourceBytes(8L))
+                .isEqualTo(new GeneratedCompilationConfiguration(Duration.ofSeconds(2), 3, 4, 8L,
+                        GeneratedCompilationConfiguration.DEFAULT_MAX_COMPILATION_OUTPUT_BYTES));
+        assertThat(configuration.withMaxCompilationOutputBytes(9L))
+                .isEqualTo(new GeneratedCompilationConfiguration(Duration.ofSeconds(2), 3, 4,
+                        GeneratedCompilationConfiguration.DEFAULT_MAX_GENERATED_SOURCE_BYTES, 9L));
     }
 }

@@ -5,6 +5,7 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
+import io.github.gear4jtest.xml.translator.XmlTranslationLimits
 
 /**
  * Configures build-time Java source generation from Gear4J XML pipeline definitions.
@@ -31,6 +32,10 @@ abstract class XmlAssemblyLineGeneratorExtension {
      * Stable operator capability id to Java class name mappings used by restricted XML.
      */
     final MapProperty<String, String> operatorCapabilities
+    final Property<Integer> maxOperations
+    final Property<Integer> maxDependencies
+    final Property<Integer> maxNestingDepth
+    final Property<Long> maxGeneratedSourceBytes
 
     XmlAssemblyLineGeneratorExtension(Project project) {
         this.project = project
@@ -39,12 +44,20 @@ abstract class XmlAssemblyLineGeneratorExtension {
         this.mediaType = project.objects.property(String)
         this.trustedXml = project.objects.property(Boolean)
         this.operatorCapabilities = project.objects.mapProperty(String, String)
+        this.maxOperations = project.objects.property(Integer)
+        this.maxDependencies = project.objects.property(Integer)
+        this.maxNestingDepth = project.objects.property(Integer)
+        this.maxGeneratedSourceBytes = project.objects.property(Long)
 
         this.xmlFiles.from(project.fileTree('src/main/gear4j') { include '**/*.xml' })
         this.outputDir.convention(project.layout.buildDirectory.dir('generated/sources/gear4j/xml2java/main'))
         this.mediaType.convention('application/xml')
         this.trustedXml.convention(false)
         this.operatorCapabilities.convention([:])
+        this.maxOperations.convention(XmlTranslationLimits.DEFAULT_MAX_OPERATIONS)
+        this.maxDependencies.convention(XmlTranslationLimits.DEFAULT_MAX_DEPENDENCIES)
+        this.maxNestingDepth.convention(XmlTranslationLimits.DEFAULT_MAX_NESTING_DEPTH)
+        this.maxGeneratedSourceBytes.convention(XmlTranslationLimits.DEFAULT_MAX_GENERATED_SOURCE_BYTES)
     }
 
     /** Adds XML files or file collections to translate. */

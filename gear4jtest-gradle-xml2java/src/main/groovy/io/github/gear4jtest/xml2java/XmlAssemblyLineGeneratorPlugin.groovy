@@ -29,6 +29,10 @@ class XmlAssemblyLineGeneratorPlugin implements Plugin<Project> {
             task.mediaType.set(extension.mediaType)
             task.trustedXml.set(extension.trustedXml)
             task.operatorCapabilities.set(extension.operatorCapabilities)
+            task.maxOperations.set(extension.maxOperations)
+            task.maxDependencies.set(extension.maxDependencies)
+            task.maxNestingDepth.set(extension.maxNestingDepth)
+            task.maxGeneratedSourceBytes.set(extension.maxGeneratedSourceBytes)
         }
 
         project.plugins.withType(JavaPlugin) {

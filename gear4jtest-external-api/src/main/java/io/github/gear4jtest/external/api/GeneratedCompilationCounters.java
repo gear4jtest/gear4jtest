@@ -13,6 +13,7 @@ final class GeneratedCompilationCounters {
     private final LongAdder failedCompilations = new LongAdder();
     private final LongAdder timedOutCompilations = new LongAdder();
     private final LongAdder rejectedCompilations = new LongAdder();
+    private final LongAdder limitRejectedCompilations = new LongAdder();
     private final AtomicLong totalCompilationDurationNanos = new AtomicLong();
     private final AtomicLong maxCompilationDurationNanos = new AtomicLong();
 
@@ -48,6 +49,10 @@ final class GeneratedCompilationCounters {
         rejectedCompilations.increment();
     }
 
+    void recordCompilationLimitRejected() {
+        limitRejectedCompilations.increment();
+    }
+
     void recordDuration(long durationNanos) {
         long safeDuration = Math.max(0L, durationNanos);
         totalCompilationDurationNanos.getAndAccumulate(safeDuration,
@@ -63,8 +68,8 @@ final class GeneratedCompilationCounters {
                                        boolean shutdown) {
         return new GeneratedCompilationStats(cacheHits.sum(), cacheMisses.sum(), singleFlightJoins.sum(),
                 startedCompilations.sum(), successfulCompilations.sum(), failedCompilations.sum(),
-                timedOutCompilations.sum(), rejectedCompilations.sum(), cachedEntries, cachedBytecodeBytes,
-                inFlightCompilations, activeCompilations, queuedCompilations,
+                timedOutCompilations.sum(), rejectedCompilations.sum(), limitRejectedCompilations.sum(),
+                cachedEntries, cachedBytecodeBytes, inFlightCompilations, activeCompilations, queuedCompilations,
                 totalCompilationDurationNanos.get(), maxCompilationDurationNanos.get(), shutdown);
     }
 

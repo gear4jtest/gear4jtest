@@ -5,7 +5,9 @@ import java.util.Objects;
 import io.github.gear4jtest.external.api.ExecutionMode;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslator;
 import io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy;
+import io.github.gear4jtest.xml.limit.XmlDefinitionBudget;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
+import io.github.gear4jtest.xml.translator.XmlTranslationLimits;
 
 /**
  * Public XML-to-Java generator facade.
@@ -24,6 +26,7 @@ public final class XmlToJavaGenerator {
     private final JavaSourceFormatter formatter;
     private final XmlJavaSourcePolicy sourcePolicy;
     private final XmlOperatorCapabilityPolicy operatorCapabilityPolicy;
+    private final XmlTranslationLimits translationLimits;
 
     public static Builder builder() {
         return new Builder();
@@ -72,6 +75,8 @@ public final class XmlToJavaGenerator {
         this.sourcePolicy = XmlJavaSourcePolicy.require(builder.sourcePolicy);
         this.operatorCapabilityPolicy = Objects.requireNonNull(builder.operatorCapabilityPolicy,
                                                                "operatorCapabilityPolicy must not be null");
+        this.translationLimits = Objects.requireNonNull(builder.translationLimits,
+                                                        "translationLimits must not be null");
         this.sourcePolicy.validatePackageName(builder.packageName);
         this.packageName = Objects.requireNonNull(builder.packageName, "packageName");
         this.classLoader = builder.classLoader != null ? builder.classLoader : contextClassLoader();
@@ -84,6 +89,7 @@ public final class XmlToJavaGenerator {
         private JavaSourceFormatter formatter = JdtFormatter.defaultFormatter();
         private XmlJavaSourcePolicy sourcePolicy = XmlJavaSourcePolicy.forbidInlineJava();
         private XmlOperatorCapabilityPolicy operatorCapabilityPolicy = XmlOperatorCapabilityPolicy.denyAll();
+        private XmlTranslationLimits translationLimits = XmlTranslationLimits.defaults();
 
         private Builder() {
         }
@@ -113,6 +119,11 @@ public final class XmlToJavaGenerator {
             return this;
         }
 
+        public Builder translationLimits(XmlTranslationLimits translationLimits) {
+            this.translationLimits = translationLimits;
+            return this;
+        }
+
         public XmlToJavaGenerator build() {
             return new XmlToJavaGenerator(this);
         }
@@ -129,13 +140,18 @@ public final class XmlToJavaGenerator {
 
     public OperationChainTranslator.GenerationResult generate(XmlAssemblyLineDefinition definition,
                                                               ExecutionMode mode) {
+        XmlDefinitionBudget.validateDefinition(definition, translationLimits);
         XmlAssemblyLineDefinition resolvedDefinition = XmlOperatorCapabilityResolver.resolve(definition,
                                                                                              operatorCapabilityPolicy,
                                                                                              mode);
         GeneratedJavaSource generatedSource = new XmlGeneratedAssemblyLineRenderer(packageName, classLoader,
                 sourcePolicy)
                 .render(resolvedDefinition);
+        XmlDefinitionBudget budget = new XmlDefinitionBudget(translationLimits);
+        budget.requireGeneratedSource(generatedSource.source(), "Generated XML Java source");
+        String formattedSource = formatter.format(generatedSource.source());
+        budget.requireGeneratedSource(formattedSource, "Formatted XML Java source");
         return new OperationChainTranslator.GenerationResult(
-                generatedSource.fullyQualifiedClassName(), formatter.format(generatedSource.source()));
+                generatedSource.fullyQualifiedClassName(), formattedSource);
     }
 }

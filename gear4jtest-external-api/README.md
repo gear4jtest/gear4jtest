@@ -130,13 +130,22 @@ GeneratedCompilationConfiguration compilation =
         GeneratedCompilationConfiguration.defaults()
                 .withTimeout(Duration.ofSeconds(10))
                 .withMaxConcurrentCompilations(2)
-                .withQueueCapacity(16);
+                .withQueueCapacity(16)
+                .withMaxGeneratedSourceBytes(2L * 1024L * 1024L)
+                .withMaxCompilationOutputBytes(4L * 1024L * 1024L);
 
 AssemblyLineManager manager = AssemblyLineManager.builder()
         // repositories, stores, registry and translator resolver
         .compilationConfiguration(compilation)
         .build();
 ```
+
+A generated source larger than 4 MiB or a compiler result larger than 8 MiB is
+rejected by default with `CompilationLimitExceededException`. These are hard
+limits, distinct from the internal 16 MiB completed-compilation cache budget:
+oversized bytecode is never returned uncached or passed to a classloader.
+`GeneratedCompilationStats.limitRejectedCompilations()` exposes these
+rejections.
 
 A deadline breach raises `CompilationTimeoutException`, wakes every caller
 sharing that single-flight and removes the flight so a later request can retry.
@@ -156,15 +165,20 @@ their own `GeneratedSourceCompiler`.
 
 ## Classloader lifecycle
 
-`InMemoryClassLoaderRegistry` is bounded by default (`256` concrete loaders). It
-evicts least-recently-used unaliased loaders and protects aliased loaders so
-mutable aliases such as `al/<id>/RUN/latest` never point to a missing loader.
-Applications with high version churn can use `InMemoryClassLoaderRegistry.builder().maxLoaders(maxLoaders).build()`.
+`InMemoryClassLoaderRegistry` is bounded by default (`256` concrete loaders and
+64 MiB of cumulative generated-bytecode weight). It evicts least-recently-used
+unaliased loaders by count or weight and protects aliased loaders so mutable
+aliases such as `al/<id>/RUN/latest` never point to a missing loader. A
+registration is rejected if protected loaders leave insufficient bytecode
+capacity. Applications with high version churn can use
+`InMemoryClassLoaderRegistry.builder().maxLoaders(maxLoaders).maxBytecodeWeightBytes(maxBytes).build()`.
 If aliases are used for rollback windows or multiple mutable references, use
 `InMemoryClassLoaderRegistry.builder().maxLoaders(maxLoaders).maxProtectedLoaders(maxProtectedLoaders).build()` to cap the
 number of distinct loaders that aliases may protect from eviction. The registry
-also exposes `protectedLoaderCount()` and `isOverCapacityDueToProtectedLoaders()`
-for diagnostics.
+also exposes `protectedLoaderCount()`, `isOverCapacityDueToProtectedLoaders()`
+and bytecode/rejection values through `snapshotStats()`. Defined class bytes are
+removed from the loader's heap map, while their original size remains charged
+conservatively because the class still occupies metaspace.
 
 ## Artifact size policy
 

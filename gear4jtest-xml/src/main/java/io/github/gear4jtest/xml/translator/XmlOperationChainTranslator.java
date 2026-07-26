@@ -2,11 +2,13 @@ package io.github.gear4jtest.xml.translator;
 
 import java.io.ByteArrayInputStream;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 
 import io.github.gear4jtest.external.api.ExecutionMode;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslator;
 import io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy;
+import io.github.gear4jtest.xml.generator.XmlJavaSourcePolicy;
 import io.github.gear4jtest.xml.generator.XmlToJavaGenerator;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
 import io.github.gear4jtest.xml.parser.XmlAssemblyLineParser;
@@ -20,30 +22,44 @@ public final class XmlOperationChainTranslator implements OperationChainTranslat
     private final XmlToJavaGenerator generator;
 
     public XmlOperationChainTranslator() {
-        this(new AssemblyLineValidator(), new XmlAssemblyLineParser(), XmlToJavaGenerator.untrusted());
+        this(XmlOperatorCapabilityPolicy.denyAll(), XmlTranslationLimits.defaults(), false);
     }
 
     public static XmlOperationChainTranslator trusted() {
-        return new XmlOperationChainTranslator(new AssemblyLineValidator(), new XmlAssemblyLineParser(),
-                XmlToJavaGenerator.trusted());
+        return trusted(XmlTranslationLimits.defaults());
+    }
+
+    public static XmlOperationChainTranslator trusted(XmlTranslationLimits limits) {
+        return new XmlOperationChainTranslator(XmlOperatorCapabilityPolicy.trustedClassNames(), limits, true);
     }
 
     public static XmlOperationChainTranslator gelOnly() {
-        return new XmlOperationChainTranslator(new AssemblyLineValidator(), new XmlAssemblyLineParser(),
-                XmlToJavaGenerator.gelOnly());
+        return gelOnly(XmlOperatorCapabilityPolicy.denyAll(), XmlTranslationLimits.defaults());
     }
 
     public static XmlOperationChainTranslator gelOnly(XmlOperatorCapabilityPolicy operatorCapabilityPolicy) {
-        return new XmlOperationChainTranslator(new AssemblyLineValidator(), new XmlAssemblyLineParser(),
-                XmlToJavaGenerator.gelOnly(operatorCapabilityPolicy));
+        return gelOnly(operatorCapabilityPolicy, XmlTranslationLimits.defaults());
     }
 
-    private XmlOperationChainTranslator(AssemblyLineValidator validator,
-                                        XmlAssemblyLineParser parser,
-                                        XmlToJavaGenerator generator) {
-        this.validator = validator;
-        this.parser = parser;
-        this.generator = generator;
+    public static XmlOperationChainTranslator gelOnly(XmlOperatorCapabilityPolicy operatorCapabilityPolicy,
+                                                      XmlTranslationLimits limits) {
+        return new XmlOperationChainTranslator(operatorCapabilityPolicy, limits, false);
+    }
+
+    private XmlOperationChainTranslator(XmlOperatorCapabilityPolicy operatorCapabilityPolicy,
+                                        XmlTranslationLimits limits,
+                                        boolean trusted) {
+        XmlTranslationLimits effectiveLimits = Objects.requireNonNull(limits, "limits must not be null");
+        this.validator = new AssemblyLineValidator();
+        this.parser = new XmlAssemblyLineParser(XmlAssemblyLineParser.DEFAULT_MAX_XML_BYTES, effectiveLimits);
+        XmlToJavaGenerator.Builder generatorBuilder = XmlToJavaGenerator.builder().translationLimits(effectiveLimits);
+        if (trusted) {
+            generatorBuilder.sourcePolicy(XmlJavaSourcePolicy.trusted());
+        }
+        this.generator = generatorBuilder
+                .operatorCapabilityPolicy(Objects.requireNonNull(operatorCapabilityPolicy,
+                                                                 "operatorCapabilityPolicy must not be null"))
+                .build();
     }
 
     @Override

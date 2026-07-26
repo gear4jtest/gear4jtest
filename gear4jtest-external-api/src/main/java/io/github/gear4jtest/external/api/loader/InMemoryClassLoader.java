@@ -2,12 +2,15 @@ package io.github.gear4jtest.external.api.loader;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * ClassLoader used to load generated pipeline classes compiled in memory.
  */
 public class InMemoryClassLoader extends ClassLoader {
     private final Map<String, byte[]> classes = new ConcurrentHashMap<>();
+    private final AtomicLong definedBytecodeBytes = new AtomicLong();
+    private final AtomicLong retainedBytecodeBytes = new AtomicLong();
 
     public InMemoryClassLoader() {
         this(Thread.currentThread().getContextClassLoader());
@@ -18,7 +21,31 @@ public class InMemoryClassLoader extends ClassLoader {
     }
 
     public void addCompiledClasses(Map<String, byte[]> compiledClasses) {
-        classes.putAll(compiledClasses);
+        compiledClasses.forEach((name, bytes) -> {
+            if (name == null) {
+                throw new IllegalArgumentException("compiled class name must not be null");
+            }
+            if (bytes == null) {
+                throw new IllegalArgumentException("compiled class bytes must not be null");
+            }
+            byte[] previous = classes.put(name, bytes);
+            retainedBytecodeBytes.addAndGet(bytes.length - (previous == null ? 0L : previous.length));
+        });
+    }
+
+    /**
+     * Returns the conservative bytecode weight owned by this loader, including
+     * classes already defined into metaspace.
+     */
+    public long bytecodeWeightBytes() {
+        return definedBytecodeBytes.get() + retainedBytecodeBytes.get();
+    }
+
+    /**
+     * Returns bytecode still retained on heap for classes not yet defined.
+     */
+    public long retainedBytecodeBytes() {
+        return retainedBytecodeBytes.get();
     }
 
     @Override
@@ -27,7 +54,12 @@ public class InMemoryClassLoader extends ClassLoader {
         if (bytes == null) {
             throw new ClassNotFoundException("Generated class not found: " + name);
         }
-        return defineClass(name, bytes, 0, bytes.length);
+        Class<?> defined = defineClass(name, bytes, 0, bytes.length);
+        if (classes.remove(name, bytes)) {
+            retainedBytecodeBytes.addAndGet(-bytes.length);
+            definedBytecodeBytes.addAndGet(bytes.length);
+        }
+        return defined;
     }
 
     @Override

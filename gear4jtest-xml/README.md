@@ -72,9 +72,35 @@ Typical path:
 3. `XmlAssemblyLineParser` parses XML into `XmlAssemblyLineDefinition`.
 4. restricted generation resolves every operator capability for the requested
    `ExecutionMode`;
-5. `XmlToJavaGenerator` generates Java source.
-6. `JdtFormatter` formats the generated source.
-7. `AssemblyLineManager` compiles and loads the generated class through the external API module.
+5. structural limits reject excessive operation count, dependency count or
+   nesting depth;
+6. `XmlToJavaGenerator` generates Java source and checks its raw and formatted
+   UTF-8 size.
+7. `JdtFormatter` formats the generated source.
+8. `AssemblyLineManager` compiles and loads the generated class through the external API module.
+
+## Translation budgets
+
+Every translator applies finite defaults: 1,000 total operations, 256
+dependencies, nesting depth 32 and 4 MiB of generated UTF-8 Java source. Nested
+iterator, container and if/else operations all contribute to the same operation
+budget. Limits apply to trusted XML as well as restricted XML.
+
+Applications may lower or deliberately raise finite limits:
+
+```java
+XmlTranslationLimits limits = XmlTranslationLimits.defaults()
+        .withMaxOperations(250)
+        .withMaxDependencies(32)
+        .withMaxNestingDepth(12)
+        .withMaxGeneratedSourceBytes(1024L * 1024L);
+
+XmlOperationChainTranslator translator =
+        XmlOperationChainTranslator.gelOnly(operatorCapabilities, limits);
+```
+
+The runtime compiler independently enforces its source and bytecode limits, so a
+custom translator cannot bypass the external loading boundary.
 
 ## Branch ids
 

@@ -111,4 +111,60 @@ class InMemoryClassLoaderRegistryTest {
         assertThat(registry.isOverCapacityDueToProtectedLoaders()).isTrue();
     }
 
+    @Test
+    void register_shouldEvictByCumulativeBytecodeWeightBeforeCountLimit() {
+        // Given
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder()
+                .maxLoaders(10)
+                .maxBytecodeWeightBytes(10L)
+                .build();
+        ClassLoader loader = getClass().getClassLoader();
+        registry.register("v1", loader, null, 6L);
+
+        // When
+        registry.register("v2", loader, null, 6L);
+
+        // Then
+        assertThat(registry.get("v1")).isNull();
+        assertThat(registry.get("v2")).isSameAs(loader);
+        assertThat(registry.snapshotStats().bytecodeWeightBytes()).isEqualTo(6L);
+        assertThat(registry.snapshotStats().evictedLoaders()).isEqualTo(1L);
+    }
+
+    @Test
+    void register_shouldRejectWhenProtectedLoadersPreventHardWeightLimit() {
+        // Given
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder()
+                .maxLoaders(10)
+                .maxBytecodeWeightBytes(10L)
+                .build();
+        ClassLoader loader = getClass().getClassLoader();
+        registry.register("v1", loader, null, 6L);
+        registry.setAlias("latest", "v1");
+
+        // When / Then
+        assertThatThrownBy(() -> registry.register("v2", loader, null, 6L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("bytecode weight exceeds hard limit")
+                .hasMessageContaining("12 bytes > 10 bytes");
+        assertThat(registry.get("v1")).isSameAs(loader);
+        assertThat(registry.get("v2")).isNull();
+        assertThat(registry.snapshotStats().rejectedLoaders()).isEqualTo(1L);
+        assertThat(registry.snapshotStats().bytecodeWeightBytes()).isEqualTo(6L);
+    }
+
+    @Test
+    void register_shouldRejectSingleLoaderLargerThanHardWeightLimit() {
+        // Given
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder()
+                .maxBytecodeWeightBytes(5L)
+                .build();
+
+        // When / Then
+        assertThatThrownBy(() -> registry.register("oversized", getClass().getClassLoader(), null, 6L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("6 bytes > 5 bytes");
+        assertThat(registry.snapshotStats().cachedLoaders()).isZero();
+    }
+
 }

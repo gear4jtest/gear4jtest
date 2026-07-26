@@ -194,4 +194,40 @@ class XmlAssemblyLineGeneratorPluginTest {
         assertThat(previous).exists().hasContent('keep me')
     }
 
+    @Test
+    void should_enforce_configured_generation_limits_before_replacing_outputs() {
+        // Given
+        def project = ProjectBuilder.builder()
+            .withName('my-library')
+            .build()
+        project.plugins.apply(XmlAssemblyLineGeneratorPlugin)
+        def xmlDir = new File(project.projectDir, 'src/main/gear4j')
+        assertThat(xmlDir.mkdirs()).isTrue()
+        new File(xmlDir, 'bounded.xml').text = '''<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="bounded"
+              inputType="java.lang.String"
+              outputType="java.lang.String">
+  <operations>
+    <signal id="first" type="STOP" inputType="java.lang.String"/>
+    <signal id="second" type="STOP" inputType="java.lang.String"/>
+  </operations>
+</assemblyLine>
+'''
+        def outputDir = new File(project.buildDir, 'generated-test')
+        assertThat(outputDir.mkdirs()).isTrue()
+        def previous = new File(outputDir, 'previous.java')
+        previous.text = 'keep me'
+        def extension = project.extensions.getByType(XmlAssemblyLineGeneratorExtension)
+        extension.outputDir.fileValue(outputDir)
+        extension.trustedXml()
+        extension.maxOperations.set(1)
+
+        // When / Then
+        assertThatThrownBy { project.tasks.getByName(XmlAssemblyLineGeneratorPlugin.TASK_NAME).generate() }
+            .isInstanceOf(IllegalArgumentException)
+            .hasMessageContaining('maxOperations=1')
+        assertThat(previous).exists().hasContent('keep me')
+    }
+
 }

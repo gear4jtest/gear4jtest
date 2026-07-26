@@ -97,7 +97,7 @@ final class GeneratedAssemblyLineLoader {
 
         GeneratedAssemblyLine<?, ?> instance = instantiate(translated.className(), classLoader, obj.mode());
 
-        classLoaderRegistry.register(internalLoaderId, classLoader, instance);
+        classLoaderRegistry.register(internalLoaderId, classLoader, instance, classLoader.bytecodeWeightBytes());
         return instance;
     }
 

@@ -101,6 +101,12 @@ Runtime generated-source compilation is isolated from caller threads and has a
 32 queue slots. Tune `GeneratedCompilationConfiguration` only after considering
 compiler thread safety and expected publication/load concurrency.
 
+The same configuration rejects generated UTF-8 source above 4 MiB and cumulative
+bytecode above 8 MiB per compilation by default. These are hard admission
+limits, not cache settings. Monitor
+`GeneratedCompilationStats.limitRejectedCompilations()` and review each increase
+as either an invalid definition or an explicit capacity decision.
+
 Close `AssemblyLineManager` during application shutdown. Alert on increasing
 `GeneratedCompilationStats.timedOutCompilations()` or
 `rejectedCompilations()`, and on an `activeCompilations()` value that remains
@@ -224,7 +230,18 @@ execution scopes.
 
 ## Generated classloader cache
 
-The default `InMemoryClassLoaderRegistry` is bounded and evicts least-recently-used unaliased loaders. Aliased loaders are protected from automatic eviction. Tune the registry capacity for applications with frequent TEST/RUN version churn or long rollback windows.
+The default `InMemoryClassLoaderRegistry` is bounded to 256 loaders and 64 MiB
+of cumulative generated-bytecode weight. It evicts least-recently-used
+unaliased loaders. Aliased loaders are protected from automatic eviction, but a
+new registration is rejected rather than exceeding the bytecode limit when
+every eviction candidate is protected. Monitor `RegistryStats.bytecodeWeightBytes()`,
+`maxBytecodeWeightBytes()` and `rejectedLoaders()`. Tune both count and weight
+for applications with frequent TEST/RUN version churn or long rollback windows.
+
+The in-process compiler boundary limits Gear4J-owned source, heap bytecode and
+classloader retention. It is not an OS sandbox. If definitions are genuinely
+hostile, compile them in a separate process or container with explicit heap,
+CPU, wall-clock and filesystem/network limits.
 
 ## Shared event dispatcher capacity
 

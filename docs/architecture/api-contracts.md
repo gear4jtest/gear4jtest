@@ -25,11 +25,13 @@ Current public API packages include:
 - `io.github.gear4jtest.external.api.GeneratedCompilationConfiguration`
 - `io.github.gear4jtest.external.api.GeneratedCompilationStats`
 - `io.github.gear4jtest.external.api.StoreType`
+- `io.github.gear4jtest.external.api.exception.CompilationLimitExceededException`
 - `io.github.gear4jtest.external.api.exception.CompilationTimeoutException`
 - `io.github.gear4jtest.external.jdbc.repository.*`
 - `io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStore`
 - `io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy`
 - `io.github.gear4jtest.xml.translator.XmlOperationChainTranslator`
+- `io.github.gear4jtest.xml.translator.XmlTranslationLimits`
 - `io.github.gear4jtest.xml.validator.AssemblyLineValidator`
 
 Compatibility after the first stable release is governed by `docs/compatibility-policy.md` and enforced against the

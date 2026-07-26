@@ -3,6 +3,7 @@ package io.github.gear4jtest.xml2java
 import io.github.gear4jtest.external.api.ExecutionMode
 import io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy
 import io.github.gear4jtest.xml.translator.XmlOperationChainTranslator
+import io.github.gear4jtest.xml.translator.XmlTranslationLimits
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
@@ -30,6 +31,10 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
     private final Property<String> mediaType
     private final Property<Boolean> trustedXml
     private final MapProperty<String, String> operatorCapabilities
+    private final Property<Integer> maxOperations
+    private final Property<Integer> maxDependencies
+    private final Property<Integer> maxNestingDepth
+    private final Property<Long> maxGeneratedSourceBytes
 
     @Inject
     XmlAssemblyLineGenerateTask(ObjectFactory objects) {
@@ -38,6 +43,11 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
         this.mediaType = objects.property(String)
         this.trustedXml = objects.property(Boolean).convention(false)
         this.operatorCapabilities = objects.mapProperty(String, String).convention([:])
+        this.maxOperations = objects.property(Integer).convention(XmlTranslationLimits.DEFAULT_MAX_OPERATIONS)
+        this.maxDependencies = objects.property(Integer).convention(XmlTranslationLimits.DEFAULT_MAX_DEPENDENCIES)
+        this.maxNestingDepth = objects.property(Integer).convention(XmlTranslationLimits.DEFAULT_MAX_NESTING_DEPTH)
+        this.maxGeneratedSourceBytes = objects.property(Long)
+            .convention(XmlTranslationLimits.DEFAULT_MAX_GENERATED_SOURCE_BYTES)
     }
 
     @Inject
@@ -69,12 +79,38 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
         return operatorCapabilities
     }
 
+    @Input
+    Property<Integer> getMaxOperations() {
+        return maxOperations
+    }
+
+    @Input
+    Property<Integer> getMaxDependencies() {
+        return maxDependencies
+    }
+
+    @Input
+    Property<Integer> getMaxNestingDepth() {
+        return maxNestingDepth
+    }
+
+    @Input
+    Property<Long> getMaxGeneratedSourceBytes() {
+        return maxGeneratedSourceBytes
+    }
+
     @TaskAction
     void generate() {
         File destination = outputDir.get().asFile
+        XmlTranslationLimits limits = new XmlTranslationLimits(
+            maxOperations.get(),
+            maxDependencies.get(),
+            maxNestingDepth.get(),
+            maxGeneratedSourceBytes.get()
+        )
         XmlOperationChainTranslator translator = trustedXml.get()
-            ? XmlOperationChainTranslator.trusted()
-            : XmlOperationChainTranslator.gelOnly(restrictedCapabilities())
+            ? XmlOperationChainTranslator.trusted(limits)
+            : XmlOperationChainTranslator.gelOnly(restrictedCapabilities(), limits)
 
         def generatedSources = xmlFiles.files
             .findAll { File file -> file.isFile() && file.name.endsWith('.xml') }

@@ -22,6 +22,8 @@ package io.github.gear4jtest.external.api;
  *                                      deadline
  * @param rejectedCompilations          distinct compilations rejected because
  *                                      the bounded executor was saturated
+ * @param limitRejectedCompilations     requests rejected by a hard source or
+ *                                      bytecode limit
  * @param cachedEntries                 completed cache entries
  * @param cachedBytecodeBytes           bytecode retained by the completed cache
  * @param inFlightCompilations          distinct compilation keys not yet
@@ -42,6 +44,7 @@ public record GeneratedCompilationStats(long cacheHits,
                                         long failedCompilations,
                                         long timedOutCompilations,
                                         long rejectedCompilations,
+                                        long limitRejectedCompilations,
                                         int cachedEntries,
                                         long cachedBytecodeBytes,
                                         int inFlightCompilations,

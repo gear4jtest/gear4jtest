@@ -7,6 +7,7 @@ import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ContainerOperati
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IteratorOperation;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ProcessingOperation;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SignalOperation;
+import io.github.gear4jtest.xml.translator.XmlTranslationLimits;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -200,5 +201,35 @@ class XmlAssemblyLineParserTest {
             assertThat(signal.inputType()).isEqualTo("java.lang.String");
             assertThat(signal.condition().expression()).isEqualTo("input.endsWith(\"a\")");
         });
+    }
+
+    @Test
+    void should_reject_nested_operations_before_exceedingConfiguredDepth() {
+        // Given
+        XmlTranslationLimits limits = XmlTranslationLimits.defaults().withMaxNestingDepth(1);
+        XmlAssemblyLineParser boundedParser = new XmlAssemblyLineParser(
+                XmlAssemblyLineParser.DEFAULT_MAX_XML_BYTES, limits);
+        String xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+                              id="nested"
+                              inputType="java.util.List"
+                              outputType="java.util.List">
+                  <operations>
+                    <iterator id="outer" inputType="java.util.List" outputType="java.util.List">
+                      <iterableFunction expression="input"/>
+                      <operation>
+                        <signal id="stop" type="STOP" inputType="java.lang.Object"/>
+                      </operation>
+                    </iterator>
+                  </operations>
+                </assemblyLine>
+                """;
+
+        // When / Then
+        assertThatThrownBy(() -> boundedParser.parse(
+                                                     new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxNestingDepth=1");
     }
 }

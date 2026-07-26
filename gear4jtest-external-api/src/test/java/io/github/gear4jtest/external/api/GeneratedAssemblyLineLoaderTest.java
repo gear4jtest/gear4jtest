@@ -238,8 +238,11 @@ class GeneratedAssemblyLineLoaderTest {
         }
 
         @Override
-        public void register(String internalLoaderId, ClassLoader loader, GeneratedAssemblyLine bound) {
-            delegate.register(internalLoaderId, loader, bound);
+        public void register(String internalLoaderId,
+                             ClassLoader loader,
+                             GeneratedAssemblyLine bound,
+                             long bytecodeWeightBytes) {
+            delegate.register(internalLoaderId, loader, bound, bytecodeWeightBytes);
         }
 
         @Override

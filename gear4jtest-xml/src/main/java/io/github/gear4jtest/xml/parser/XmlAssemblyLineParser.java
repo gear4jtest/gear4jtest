@@ -8,6 +8,7 @@ import java.util.Locale;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import io.github.gear4jtest.xml.limit.XmlDefinitionBudget;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Action;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Condition;
@@ -30,6 +31,7 @@ import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SubLine;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SupplierParameter;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Transformer;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ValueParameter;
+import io.github.gear4jtest.xml.translator.XmlTranslationLimits;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -45,16 +47,23 @@ public final class XmlAssemblyLineParser {
     public static final long DEFAULT_MAX_XML_BYTES = 2L * 1024L * 1024L;
 
     private final long maxXmlBytes;
+    private final XmlTranslationLimits translationLimits;
 
     public XmlAssemblyLineParser() {
-        this(DEFAULT_MAX_XML_BYTES);
+        this(DEFAULT_MAX_XML_BYTES, XmlTranslationLimits.defaults());
     }
 
     public XmlAssemblyLineParser(long maxXmlBytes) {
+        this(maxXmlBytes, XmlTranslationLimits.defaults());
+    }
+
+    public XmlAssemblyLineParser(long maxXmlBytes, XmlTranslationLimits translationLimits) {
         if (maxXmlBytes <= 0) {
             throw new IllegalArgumentException("maxXmlBytes must be > 0");
         }
         this.maxXmlBytes = maxXmlBytes;
+        this.translationLimits = java.util.Objects.requireNonNull(translationLimits,
+                                                                  "translationLimits must not be null");
     }
 
     private static Element firstOperationChild(Element parent) {
@@ -166,14 +175,17 @@ public final class XmlAssemblyLineParser {
             String outputType = optional(root, OUTPUT_TYPE_ATTRIBUTE);
 
             Element operationsElement = requiredChild(root, "operations");
-            List<Operation> operations = children(operationsElement).stream()
-                    .map(this::parseOperation)
-                    .toList();
+            XmlDefinitionBudget budget = new XmlDefinitionBudget(translationLimits);
+            List<Operation> operations = new ArrayList<>();
+            for (Element operation : children(operationsElement)) {
+                operations.add(parseOperation(operation, budget, 1));
+            }
 
             Configuration configuration = parseConfiguration(child(root, "configuration"));
-            List<Dependency> dependencies = parseDependencies(child(root, "dependencies"));
+            List<Dependency> dependencies = parseDependencies(child(root, "dependencies"), budget);
 
-            return new XmlAssemblyLineDefinition(id, inputType, outputType, operations, configuration, dependencies);
+            return new XmlAssemblyLineDefinition(id, inputType, outputType, List.copyOf(operations), configuration,
+                    dependencies);
         } catch (Exception e) {
             if (e instanceof IllegalArgumentException illegalArgumentException) {
                 throw illegalArgumentException;
@@ -223,23 +235,22 @@ public final class XmlAssemblyLineParser {
         }
     }
 
-    private Operation parseOperation(Element element) {
+    private Operation parseOperation(Element element, XmlDefinitionBudget budget, int depth) {
         String name = localName(element);
         if ("operation".equals(name)) {
             List<Element> nested = children(element);
             if (!nested.isEmpty()) {
-                return parseOperation(nested.get(0));
-            }
-            if (hasAttribute(element, "type")) {
-                return parseProcessing(element);
+                return parseOperation(nested.get(0), budget, depth);
             }
         }
 
+        budget.recordOperation(depth);
         return switch (name) {
             case "processingOperation", "elseOperation" -> parseProcessing(element);
-            case "iterator" -> parseIterator(element);
-            case "container" -> parseContainer(element);
-            case "ifElseContainer" -> parseIfElse(element);
+            case "operation" -> parseProcessing(element);
+            case "iterator" -> parseIterator(element, budget, depth);
+            case "container" -> parseContainer(element, budget, depth);
+            case "ifElseContainer" -> parseIfElse(element, budget, depth);
             case "signal" -> parseSignal(element);
             default -> throw new IllegalArgumentException("Unsupported operation element: <" + name + ">");
         };
@@ -252,26 +263,26 @@ public final class XmlAssemblyLineParser {
                 parseTransformer(child(element, "fallbackTransformer")));
     }
 
-    private IteratorOperation parseIterator(Element element) {
+    private IteratorOperation parseIterator(Element element, XmlDefinitionBudget budget, int depth) {
         Element iterableFunction = requiredChild(element, "iterableFunction");
         Element operationWrapper = requiredChild(element, "operation");
 
         return new IteratorOperation(required(element, "id"), optional(element, INPUT_TYPE_ATTRIBUTE),
                 optional(element, OUTPUT_TYPE_ATTRIBUTE), required(iterableFunction, EXPRESSION_ATTRIBUTE),
-                parseOperation(operationWrapper),
+                parseOperation(operationWrapper, budget, depth + 1),
                 child(element, "accumulator") == null ? null : required(child(element, "accumulator"), "type"),
                 child(element, "collector") == null ? null
                         : required(child(element, "collector"), EXPRESSION_ATTRIBUTE));
     }
 
-    private ContainerOperation parseContainer(Element element) {
+    private ContainerOperation parseContainer(Element element, XmlDefinitionBudget budget, int depth) {
         Element subLinesElement = requiredChild(element, "subLines");
         List<SubLine> subLines = new ArrayList<>();
 
         for (Element subLine : childrenNamed(subLinesElement, "subLine")) {
             Element operationElement = firstOperationChild(subLine);
             subLines.add(new SubLine(required(subLine, "id"), parseCondition(child(subLine, CONDITION_ELEMENT)),
-                    parseOperation(operationElement)));
+                    parseOperation(operationElement, budget, depth + 1)));
         }
 
         Element returnsFunction = child(element, "returnsFunction");
@@ -282,13 +293,13 @@ public final class XmlAssemblyLineParser {
                 returnsFunction == null ? null : required(returnsFunction, EXPRESSION_ATTRIBUTE));
     }
 
-    private IfElseOperation parseIfElse(Element element) {
+    private IfElseOperation parseIfElse(Element element, XmlDefinitionBudget budget, int depth) {
         Element conditionalOperationsElement = requiredChild(element, "conditionalOperations");
         List<ConditionalOperation> conditionalOperations = new ArrayList<>();
 
         for (Element conditionalOperation : childrenNamed(conditionalOperationsElement, "conditionalOperation")) {
             Element op = firstOperationChild(conditionalOperation);
-            Operation parsed = parseOperation(op);
+            Operation parsed = parseOperation(op, budget, depth + 1);
             if (!(parsed instanceof ProcessingOperation processingOperation)) {
                 throw new IllegalArgumentException(
                         "ifElse conditionalOperation currently supports processing operations only");
@@ -300,7 +311,7 @@ public final class XmlAssemblyLineParser {
         ProcessingOperation elseOperation = null;
         Element elseElement = child(element, "elseOperation");
         if (elseElement != null) {
-            elseOperation = parseProcessing(elseElement);
+            elseOperation = (ProcessingOperation) parseOperation(elseElement, budget, depth + 1);
         }
 
         return new IfElseOperation(required(element, "id"), required(element, INPUT_TYPE_ATTRIBUTE),
@@ -414,12 +425,14 @@ public final class XmlAssemblyLineParser {
         return new Configuration(eventHandling, persistence);
     }
 
-    private List<Dependency> parseDependencies(Element element) {
+    private List<Dependency> parseDependencies(Element element, XmlDefinitionBudget budget) {
         if (element == null) {
             return List.of();
         }
+        List<Element> dependencyElements = childrenNamed(element, "dependency");
+        budget.requireDependencies(dependencyElements.size());
         List<Dependency> dependencies = new ArrayList<>();
-        for (Element dependency : childrenNamed(element, "dependency")) {
+        for (Element dependency : dependencyElements) {
             dependencies.add(new Dependency(required(dependency, "name"), required(dependency, "type")));
         }
         return List.copyOf(dependencies);

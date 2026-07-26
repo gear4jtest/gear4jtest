@@ -57,6 +57,33 @@ class XmlOperationChainTranslatorTest {
                 """.formatted(operatorCapability)).getBytes(StandardCharsets.UTF_8);
     }
 
+    private static byte[] signalXml(int operationCount, int dependencyCount) {
+        StringBuilder operations = new StringBuilder();
+        for (int index = 0; index < operationCount; index++) {
+            operations.append("<signal id=\"stop_").append(index)
+                    .append("\" type=\"STOP\" inputType=\"java.lang.String\"/>");
+        }
+        StringBuilder dependencies = new StringBuilder();
+        if (dependencyCount > 0) {
+            dependencies.append("<dependencies>");
+            for (int index = 0; index < dependencyCount; index++) {
+                dependencies.append("<dependency name=\"dependency").append(index)
+                        .append("\" type=\"java.lang.String\"/>");
+            }
+            dependencies.append("</dependencies>");
+        }
+        return ("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+                              id="bounded"
+                              inputType="java.lang.String"
+                              outputType="java.lang.String">
+                  <operations>%s</operations>
+                  %s
+                </assemblyLine>
+                """.formatted(operations, dependencies)).getBytes(StandardCharsets.UTF_8);
+    }
+
     private static byte[] resource(String name) throws IOException {
         try (var input = XmlOperationChainTranslatorTest.class.getResourceAsStream(name)) {
             if (input == null) {
@@ -111,6 +138,42 @@ class XmlOperationChainTranslatorTest {
         // Then
         assertThat(testResult.formattedSource()).contains("TestOperator.class").doesNotContain("RunOperator.class");
         assertThat(runResult.formattedSource()).contains("RunOperator.class").doesNotContain("TestOperator.class");
+    }
+
+    @Test
+    void translate_shouldRejectTotalOperationCountAboveConfiguredLimit() {
+        // Given
+        XmlTranslationLimits limits = XmlTranslationLimits.defaults().withMaxOperations(1);
+        XmlOperationChainTranslator boundedTranslator = XmlOperationChainTranslator.trusted(limits);
+
+        // When / Then
+        assertThatThrownBy(() -> boundedTranslator.translate(signalXml(2, 0), "application/xml"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxOperations=1");
+    }
+
+    @Test
+    void translate_shouldRejectDependencyCountAboveConfiguredLimit() {
+        // Given
+        XmlTranslationLimits limits = XmlTranslationLimits.defaults().withMaxDependencies(1);
+        XmlOperationChainTranslator boundedTranslator = XmlOperationChainTranslator.trusted(limits);
+
+        // When / Then
+        assertThatThrownBy(() -> boundedTranslator.translate(signalXml(1, 2), "application/xml"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxDependencies=1");
+    }
+
+    @Test
+    void translate_shouldRejectGeneratedSourceAboveConfiguredUtf8Limit() {
+        // Given
+        XmlTranslationLimits limits = XmlTranslationLimits.defaults().withMaxGeneratedSourceBytes(64L);
+        XmlOperationChainTranslator boundedTranslator = XmlOperationChainTranslator.trusted(limits);
+
+        // When / Then
+        assertThatThrownBy(() -> boundedTranslator.translate(signalXml(1, 0), "application/xml"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxGeneratedSourceBytes=64");
     }
 
     @Test

@@ -71,6 +71,14 @@ wait and delegate execution. A timeout completes the shared flight exceptionally
 prevents any late bytecode from entering the completed cache. `AssemblyLineManager` owns this executor, exposes
 `GeneratedCompilationStats` for saturation diagnostics and must be closed during application shutdown.
 
+The runtime rejects source above `maxGeneratedSourceBytes` before executor
+dispatch and rejects cumulative compiler output above
+`maxCompilationOutputBytes` before copying, caching or classloading it. These
+hard limits are independent from the completed-cache budget. The default
+classloader registry additionally enforces a 64 MiB cumulative bytecode weight;
+alias protection may block eviction, but can never authorize an over-budget
+registration.
+
 ## Translator contract
 
 An `OperationChainTranslator` should be format-specific and side-effect light.
