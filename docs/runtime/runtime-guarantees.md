@@ -28,6 +28,12 @@ Not guaranteed today:
 
 Durable eventing remains a separate subsystem concern and must not be assumed from the in-memory event runtime.
 
+Built-in station event inputs and outputs are discarded by default. Raw payload
+forwarding requires an explicit `EventPayloadPolicy.passthrough()` configuration.
+Use `keepOnlyTypes(...)`, `keepIf(...)` or `redacting(...)` when asynchronous
+consumers need a narrower data view. Custom events are application-defined and
+are not rewritten by this policy.
+
 By default, event shutdown uses `WAIT_FOR_DRAIN`: the pipeline result is returned only after already accepted reactions
 have drained or one monotonic end-to-end shutdown deadline expires. Draining, owned-executor termination and forced
 shutdown all consume the same configured timeout budget; a reaction that ignores interruption can outlive that wait but

@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.concurrent.Executors;
 
 import io.github.gear4jtest.core.event.Event;
+import io.github.gear4jtest.core.event.EventPayloadPolicy;
 import io.github.gear4jtest.core.event.EventSubscription;
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +31,19 @@ class EventHandlingDefinitionTest {
         assertThat(definition.hasAsyncReactions()).isFalse();
         assertThat(definition.getSubscriptions()).isEmpty();
         assertThat(definition.getSideComputers()).isEmpty();
+        assertThat(definition.getGlobalEventConfiguration().getEventPayloadPolicy()
+                .mapStationInput("sensitive-input", null)).isNull();
+        assertThat(definition.getGlobalEventConfiguration().getEventPayloadPolicy()
+                .mapStationOutput("sensitive-output", null)).isNull();
+    }
+
+    @Test
+    void eventConfiguration_shouldRequireExplicitOptInForRawPayloads() {
+        EventHandlingDefinition.EventConfiguration configuration = EventHandlingDefinition.EventConfiguration
+                .builder().eventPayloadPolicy(EventPayloadPolicy.passthrough()).build();
+
+        assertThat(configuration.getEventPayloadPolicy().mapStationInput("input", null)).isEqualTo("input");
+        assertThat(configuration.getEventPayloadPolicy().mapStationOutput("output", null)).isEqualTo("output");
     }
 
     @Test

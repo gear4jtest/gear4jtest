@@ -135,6 +135,16 @@ class ExecutionContextTest {
     }
 
     @Test
+    void eventRuntimeOptions_shouldDiscardPayloadsWhenEventHandlingIsDisabled() {
+        // Given
+        ExecutionContext.EventRuntimeOptions options = ExecutionContext.EventRuntimeOptions.from(null);
+
+        // When / Then
+        assertThat(options.getEventPayloadPolicy().mapStationInput("sensitive-input", null)).isNull();
+        assertThat(options.getEventPayloadPolicy().mapStationOutput("sensitive-output", null)).isNull();
+    }
+
+    @Test
     void builder_shouldCreateContextWithoutTelescopingConstructor() {
         // Given
         UUID executionId = UUID.randomUUID();

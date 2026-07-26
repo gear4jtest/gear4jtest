@@ -28,15 +28,36 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class StationEventPayloadPolicyIT {
     @Test
-    void stationEvents_shouldRespectConfiguredPayloadPolicy() {
+    void stationEvents_shouldDiscardPayloadsByDefault() {
+        CopyOnWriteArrayList<StationFinishedEvent> seenEvents = executeAndCapture(null);
+
+        assertThat(seenEvents).hasSize(1);
+        assertThat(seenEvents.get(0).getInput()).isNull();
+        assertThat(seenEvents.get(0).getOutput()).isNull();
+    }
+
+    @Test
+    void stationEvents_shouldExposePayloadsOnlyWithExplicitPassthroughPolicy() {
+        CopyOnWriteArrayList<StationFinishedEvent> seenEvents = executeAndCapture(EventPayloadPolicy.passthrough());
+
+        assertThat(seenEvents).hasSize(1);
+        assertThat(seenEvents.get(0).getInput()).isEqualTo("abcd");
+        assertThat(seenEvents.get(0).getOutput()).isEqualTo(4);
+    }
+
+    private static CopyOnWriteArrayList<StationFinishedEvent> executeAndCapture(EventPayloadPolicy payloadPolicy) {
         CopyOnWriteArrayList<StationFinishedEvent> seenEvents = new CopyOnWriteArrayList<>();
+        EventHandlingDefinition.EventConfiguration.Builder eventConfiguration = EventHandlingDefinition.EventConfiguration
+                .builder();
+        if (payloadPolicy != null) {
+            eventConfiguration.eventPayloadPolicy(payloadPolicy);
+        }
 
         AssemblyLine<String, Integer> pipeline = AssemblyLines.<String>createAssemblyLine("payload-policy")
                 .configuration(AssemblyLine.Configuration.builder()
                         .eventHandling(EventHandlingDefinition.builder()
                                 .subscription(EventSubscription.on(StationFinishedEvent.class, seenEvents::add))
-                                .globalEventConfiguration(EventHandlingDefinition.EventConfiguration.builder()
-                                        .eventPayloadPolicy(EventPayloadPolicy.discard()).build())
+                                .globalEventConfiguration(eventConfiguration.build())
                                 .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
                                         .reactionExecutorFactory(Executors::newSingleThreadExecutor)
                                         .shutdownTimeout(Duration.ofSeconds(2)).build())
@@ -55,9 +76,7 @@ class StationEventPayloadPolicyIT {
         ExecutionResult<Integer> result = engine.execute(pipeline, RunRequest.builder().input("abcd").build());
 
         assertThat(result.isSuccess()).isTrue();
-        assertThat(seenEvents).hasSize(1);
-        assertThat(seenEvents.get(0).getInput()).isNull();
-        assertThat(seenEvents.get(0).getOutput()).isNull();
+        return seenEvents;
     }
 
     static final class LengthOperator implements Operator<String, Integer> {

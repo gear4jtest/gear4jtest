@@ -25,6 +25,8 @@ final class PropertyAccessors {
         MethodHandle accessor = requireReadable(target.getClass(), property);
         try {
             return accessor.invoke(target);
+        } catch (Error error) {
+            throw error;
         } catch (Throwable throwable) {
             throw new GearExpressionException(
                     "Unable to read property '" + property + "' from " + target.getClass().getName(), throwable);

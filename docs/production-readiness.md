@@ -19,6 +19,12 @@ reaction drain. It must not be used as a business-critical
 delivery guarantee. If durable delivery is required, use a dedicated outbox or
 external broker design and keep handlers idempotent.
 
+Built-in station events discard input and output payloads by default. Keep that
+default when reactions only need identity, status and timing. Raw payload
+forwarding through `EventPayloadPolicy.passthrough()` is an explicit unsafe
+choice; prefer a selective or redacting policy when business values are needed.
+This policy does not sanitize application-defined custom events.
+
 ## XML and generated Java
 
 XML definitions using inline Java or operator class names must be treated as

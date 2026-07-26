@@ -17,7 +17,8 @@ import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
  * <p>
  * User custom events remain fully user-defined. This policy only affects
  * payloads attached by the core runtime when it publishes built-in station
- * events.
+ * events. The runtime uses {@link #discard()} when no policy is configured; raw
+ * payload forwarding through {@link #passthrough()} is an explicit opt-in.
  * </p>
  */
 @PublicApi

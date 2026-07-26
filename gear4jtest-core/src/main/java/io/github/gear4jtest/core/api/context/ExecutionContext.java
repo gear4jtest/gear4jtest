@@ -277,12 +277,12 @@ public class ExecutionContext {
                                     Duration detachCleanupTimeout) {
             this.parameterResolvedEventsEnabled = parameterResolvedEventsEnabled;
             this.eventPayloadPolicy = eventPayloadPolicy != null ? eventPayloadPolicy
-                    : EventPayloadPolicy.passthrough();
+                    : EventPayloadPolicy.discard();
             this.detachCleanupTimeout = detachCleanupTimeout;
         }
 
         public static EventRuntimeOptions disabled() {
-            return new EventRuntimeOptions(false, EventPayloadPolicy.passthrough(), Duration.ofSeconds(10));
+            return new EventRuntimeOptions(false, EventPayloadPolicy.discard(), Duration.ofSeconds(10));
         }
 
         public static EventRuntimeOptions from(EventHandlingDefinition definition) {

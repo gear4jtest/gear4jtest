@@ -25,6 +25,7 @@ import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
 import io.github.gear4jtest.core.engine.strategy.StrategyRegistry;
+import io.github.gear4jtest.core.event.EventPayloadPolicy;
 import io.github.gear4jtest.core.event.StationFinishedEvent;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.sidecompute.SideComputeHandler;
@@ -101,6 +102,9 @@ class AssemblyLineCacheWithWaitProcessorIT {
                 .configuration(AssemblyLine.Configuration.builder()
                         .eventHandling(EventHandlingDefinition.builder()
                                 .sideComputer(sideComputer)
+                                .globalEventConfiguration(EventHandlingDefinition.EventConfiguration.builder()
+                                        .eventPayloadPolicy(EventPayloadPolicy.keepOnlyTypes(String.class))
+                                        .build())
                                 .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
                                         .reactionExecutorFactory(Executors::newSingleThreadExecutor)
                                         .shutdownTimeout(Duration.ofSeconds(2))

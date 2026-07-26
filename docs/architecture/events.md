@@ -34,6 +34,24 @@ The event path is:
 
 There is no durable hand-off, replay log or persistent acknowledgement.
 
+## Payload confidentiality
+
+Built-in station events discard their input and output payloads by default.
+Identifiers, statuses and timing remain available to reactions. Applications
+that deliberately need raw business values must configure
+`EventPayloadPolicy.passthrough()` explicitly; selective allowlists and
+`EventPayloadPolicy.redacting(...)` are safer choices when only part of a
+payload is required.
+
+The same policy applies to built-in events consumed by side-computes. A
+side-compute that reads `StationFinishedEvent#getInput()` or `getOutput()` must
+therefore opt in to a policy that retains the required value. Side-computes
+that use only identifiers, status or timing do not need raw payload access.
+
+This default is part of the core event definition, so it also applies to
+engines created through the Spring and Spring Boot integrations. User-created
+custom events remain under the application's responsibility.
+
 ## Shutdown behavior
 
 `RuntimeConfiguration` defaults to `ShutdownMode.WAIT_FOR_DRAIN`. With this mode, once the pipeline itself has completed,

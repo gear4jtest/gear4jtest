@@ -36,6 +36,12 @@ import io.github.gear4jtest.core.sidecompute.SideComputer;
  * be rejected and dropped. Those drops are logged and exposed through
  * {@code EventManager.snapshotStats()} for observability.
  * </p>
+ *
+ * <p>
+ * Built-in station events discard input and output payloads by default. Use
+ * {@link EventPayloadPolicy#passthrough()} only as an explicit opt-in when
+ * asynchronous consumers are allowed to observe raw business values.
+ * </p>
  */
 public class EventHandlingDefinition {
     private final List<EventSubscription<?>> subscriptions;
@@ -129,7 +135,7 @@ public class EventHandlingDefinition {
         private EventConfiguration(boolean eventOnParameterChanged, EventPayloadPolicy eventPayloadPolicy) {
             this.eventOnParameterChanged = eventOnParameterChanged;
             this.eventPayloadPolicy = eventPayloadPolicy != null ? eventPayloadPolicy
-                    : EventPayloadPolicy.passthrough();
+                    : EventPayloadPolicy.discard();
         }
 
         public static Builder builder() {
