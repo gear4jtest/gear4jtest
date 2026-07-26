@@ -12,6 +12,8 @@ ext {
 
 apply plugin: 'com.diffplug.spotless'
 
+def rootLibs = libs
+
 
 spotless {
     format 'rootMisc', {
@@ -395,9 +397,9 @@ configure(project.coreProjects) {
     }
 
     dependencies {
-        testImplementation(libs.junit)
-        testRuntimeOnly(libs.junit.platform.launcher)
-        testImplementation(libs.assertj)
+        testImplementation(rootLibs.junit)
+        testRuntimeOnly(rootLibs.junit.platform.launcher)
+        testImplementation(rootLibs.assertj)
     }
 
     sourceSets {
@@ -439,9 +441,9 @@ configure(project.coreProjects.findAll { !it.name.contains("gradle") }) {
     apply from: "${rootDir}/publishing.gradle"
 
     dependencies {
-        testImplementation(libs.logback)
-        testImplementation(libs.mockito)
-        testImplementation(libs.mockito.junit)
+        testImplementation(rootLibs.logback)
+        testImplementation(rootLibs.mockito)
+        testImplementation(rootLibs.mockito.junit)
     }
 
     afterEvaluate {
@@ -493,16 +495,16 @@ configure(project.coreProjects.findAll { it.name.contains("gradle") }) {
 
 configure([project(':gear4jtest-jdbc'), project(':gear4jtest-external-jdbc')]) {
     dependencies {
-        integrationTestImplementation(libs.testcontainers.junit.jupiter)
-        integrationTestImplementation(libs.testcontainers.postgresql)
-        integrationTestImplementation(libs.testcontainers.mysql)
-        integrationTestImplementation(libs.testcontainers.mariadb)
-        integrationTestImplementation(libs.testcontainers.oracle.xe)
-        integrationTestImplementation(libs.postgresql)
-        integrationTestRuntimeOnly(libs.mysql)
-        integrationTestRuntimeOnly(libs.mariadb)
-        integrationTestRuntimeOnly(libs.ojdbc11)
-        integrationTestRuntimeOnly(libs.h2)
+        integrationTestImplementation(rootLibs.testcontainers.junit.jupiter)
+        integrationTestImplementation(rootLibs.testcontainers.postgresql)
+        integrationTestImplementation(rootLibs.testcontainers.mysql)
+        integrationTestImplementation(rootLibs.testcontainers.mariadb)
+        integrationTestImplementation(rootLibs.testcontainers.oracle.xe)
+        integrationTestImplementation(rootLibs.postgresql)
+        integrationTestRuntimeOnly(rootLibs.mysql)
+        integrationTestRuntimeOnly(rootLibs.mariadb)
+        integrationTestRuntimeOnly(rootLibs.ojdbc11)
+        integrationTestRuntimeOnly(rootLibs.h2)
     }
 }
 
@@ -941,8 +943,12 @@ def coverageCalibrationReport = tasks.register('coverageCalibrationReport') {
     dependsOn tasks.named('jacocoRootAllReport')
     dependsOn moduleCoverageReportTasks
     inputs.files(moduleCoverageThresholdsFile, criticalCoverageThresholdsFile)
-    inputs.files(moduleCoverageReportTasks.collect { it.flatMap { reportTask -> reportTask.reports.xml.outputLocation } })
-    inputs.file(tasks.named('jacocoRootAllReport').flatMap { it.reports.xml.outputLocation })
+    inputs.files(moduleCoverageReportTasks.collect {
+        it.map { reportTask -> reportTask.reports.xml.outputLocation.get() }
+    })
+    inputs.file(tasks.named('jacocoRootAllReport').map {
+        it.reports.xml.outputLocation.get()
+    })
     outputs.file(coverageCalibrationFile)
 
     doLast {
