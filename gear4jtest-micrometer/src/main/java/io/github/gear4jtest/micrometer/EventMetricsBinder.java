@@ -3,6 +3,7 @@ package io.github.gear4jtest.micrometer;
 import java.util.Objects;
 import java.util.function.ToDoubleFunction;
 
+import io.github.gear4jtest.core.api.annotation.Internal;
 import io.github.gear4jtest.core.event.EventManager;
 import io.github.gear4jtest.core.event.EventRuntimeMetrics;
 import io.github.gear4jtest.core.event.ProcessEventRuntimeStats;
@@ -14,6 +15,7 @@ public final class EventMetricsBinder {
     private EventMetricsBinder() {
     }
 
+    @Internal
     public static void bind(MeterRegistry meterRegistry, EventManager manager) {
         Objects.requireNonNull(meterRegistry, "meterRegistry must not be null");
         Objects.requireNonNull(manager, "manager must not be null");

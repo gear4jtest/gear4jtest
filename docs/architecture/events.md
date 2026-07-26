@@ -19,6 +19,9 @@ It is suitable for:
 
 The current runtime is deliberately best-effort.
 
+Application code publishes through the run-scoped `EventPublisher` capability exposed by `ExecutionServices`. The
+concrete `EventManager` owns queueing, reaction dispatch and shutdown, and remains an internal runtime type.
+
 The event path is:
 
 1. a station publishes an event;

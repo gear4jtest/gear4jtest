@@ -16,7 +16,7 @@ import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainNotFoundException;
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
-import io.github.gear4jtest.external.api.storage.ArtifactStoreProvider;
+import io.github.gear4jtest.external.api.spi.ArtifactStoreProvider;
 
 /**
  * Checks metadata-to-artifact references without assuming a database-only

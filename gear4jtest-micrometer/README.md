@@ -58,8 +58,8 @@ intentionally conservative.
 
 `PersistenceMetricsBinder` is auto-registered by the Spring Boot starter when a
 `DatabaseExecutionManager` and a `MeterRegistry` are available. The starter also calls
-`EventMetricsBinder.bindProcessWide(...)` once for the tag-free aggregate. Per-run binding remains available explicitly
-through `EventMetricsBinder.bind(...)` for diagnostics that own a specific `EventManager` lifecycle.
+`EventMetricsBinder.bindProcessWide(...)` once for the tag-free aggregate. Run-local binding remains internal because
+the concrete event-runtime lifecycle is not part of the stable consumer API.
 
 ## Why the current surface is conservative
 

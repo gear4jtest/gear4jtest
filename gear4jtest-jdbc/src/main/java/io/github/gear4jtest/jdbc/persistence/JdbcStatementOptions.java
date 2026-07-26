@@ -7,10 +7,10 @@ import java.sql.Statement;
 import java.time.Duration;
 import java.util.Objects;
 
-import io.github.gear4jtest.core.api.annotation.Internal;
-
-/** JDBC statement-level safety options shared by Gear4J JDBC repositories. */
-@Internal
+/**
+ * Immutable statement-level timeout policy shared by Gear4J JDBC repository
+ * builders.
+ */
 public final class JdbcStatementOptions {
     private static final Duration DEFAULT_QUERY_TIMEOUT = Duration.ofSeconds(30);
 

@@ -11,7 +11,9 @@ pipelines directly.
 Current public API packages include:
 
 - `io.github.gear4jtest.core.api.*`, including `AssemblyLineExecutor`, `AssemblyLineExecutors` and read-only trace views
-- `io.github.gear4jtest.core.event` event contracts used by applications that subscribe to runtime events
+- `io.github.gear4jtest.core.builtin.extension.PersistenceExtension`
+- `io.github.gear4jtest.core.event` event contracts and the `EventPublisher` capability used by applications
+- `io.github.gear4jtest.jdbc.persistence.JdbcStatementOptions`
 - `io.github.gear4jtest.core.sidecompute` side-compute contracts and wait processors
 - `io.github.gear4jtest.core.exception` application-visible exception hierarchy
 - `io.github.gear4jtest.core.model` application-visible runtime status values
@@ -78,7 +80,6 @@ compatibility guarantees before the first production release.
 
 Known internal implementation areas:
 
-- `io.github.gear4jtest.core.builtin.extension.*`
 - `io.github.gear4jtest.core.engine.*`
 - `io.github.gear4jtest.core.execution.*`
 - `io.github.gear4jtest.core.event.EventManager` and other members explicitly marked `@Internal`
@@ -107,8 +108,9 @@ the generated Javadocs and class files. `ApiBoundarySourceTest` requires exactly
 across all published Java library modules. Japicmp supplies the separate binary/source enforcement.
 
 The repository intentionally does not introduce JPMS descriptors yet. Instead, source-level architecture tests enforce
-that production packages declare a package marker and that API/SPI contracts have zero dependencies on `core.engine`,
-`core.execution` or `core.internal`. Provider-neutral `external-api` is also forbidden from importing JDBC packages. See `docs/decisions/0012-source-level-api-boundaries.md` for the rationale.
+that production packages declare a package marker and that exported API/SPI signatures in every published module have
+zero dependencies on packages or individual types marked `@Internal`. Provider-neutral `external-api` is also
+forbidden from importing JDBC packages. See `docs/decisions/0012-source-level-api-boundaries.md` for the rationale.
 
 Some public packages contain individual classes or methods marked `@Internal`. Those members are implementation details
 kept public for wiring, tests or historical compatibility; they are not part of the stable consumer contract.

@@ -42,9 +42,10 @@ Gear4J aims to provide:
 - **Operator / Processor**: user code invoked by stations.
 - **RunRequest&lt;IN&gt;**: typed per-run input, context, resource factory override, id generator override and runtime extensions.
 - **ExecutionContext**: mutable state for a single run.
-- **ExecutionServices**: run-scoped services such as event manager, resource factory and station-scoped resources.
+- **ExecutionServices**: run-scoped capabilities such as event publication, resource resolution and station-scoped
+  resources.
 - **RuntimeExtension**: extension SPI used to wrap runs, stations, executors or observe lifecycle events.
-- **EventManager**: in-memory asynchronous event runtime. It is deliberately best-effort, not a durable broker.
+- **EventPublisher**: stable run-scoped publication capability backed by an internal, best-effort in-memory runtime.
 - **PayloadCloner**: SPI used to isolate branch inputs when mutable payloads are executed in containers.
 
 ## Important non-guarantees

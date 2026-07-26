@@ -40,8 +40,8 @@ Keep these concepts separate.
 `ExecutionContext` is stateful and run-specific. It carries identifiers, context values, runtime contract, call stack
 and execution trace.
 
-`ExecutionServices` carries services available during a run: event manager, resource factory and station-scoped resource
-registry.
+`ExecutionServices` carries services available during a run: the stable `EventPublisher` capability, resource factory
+and station-scoped resource registry. The concrete event runtime remains internal.
 
 This separation prevents the context object from becoming a bag of infrastructure and keeps service exposure
 intentional.

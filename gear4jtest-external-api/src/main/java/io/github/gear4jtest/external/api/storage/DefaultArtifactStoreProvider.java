@@ -18,6 +18,7 @@ import io.github.gear4jtest.external.api.artifact.ArtifactStoreExecutors;
 import io.github.gear4jtest.external.api.artifact.CompositeArtifactStore;
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.spi.ArtifactStorePlugin;
+import io.github.gear4jtest.external.api.spi.ArtifactStoreProvider;
 import io.github.gear4jtest.external.api.spi.ArtifactStoreResolver;
 
 /**

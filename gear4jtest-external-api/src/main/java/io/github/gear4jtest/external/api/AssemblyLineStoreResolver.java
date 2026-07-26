@@ -7,8 +7,8 @@ import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainNotFoundException;
+import io.github.gear4jtest.external.api.spi.ArtifactStoreProvider;
 import io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFingerprint;
-import io.github.gear4jtest.external.api.storage.ArtifactStoreProvider;
 
 import static java.util.Objects.requireNonNull;
 

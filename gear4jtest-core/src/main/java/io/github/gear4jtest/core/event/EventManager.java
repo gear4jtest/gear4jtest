@@ -49,7 +49,7 @@ import org.slf4j.MDC;
  * </p>
  */
 @Internal
-public final class EventManager {
+public final class EventManager implements EventPublisher {
     private static final Logger LOGGER = LoggerFactory.getLogger(EventManager.class);
     private final List<EventSubscription<?>> subscriptions;
     private final BlockingQueue<QueuedEvent> queue;
@@ -112,6 +112,7 @@ public final class EventManager {
      * be dropped if the reaction executor rejects them.
      * </p>
      */
+    @Override
     public <T extends Event> void publish(T event) {
         Objects.requireNonNull(event, "event");
         if (subscriptions.isEmpty()) {

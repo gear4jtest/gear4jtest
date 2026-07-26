@@ -80,12 +80,12 @@ Flow decisions must be driven by runtime state and station outcomes, not by pers
 
 `ExecutionServices` owns run-scoped services:
 
-- `EventManager`;
+- `EventPublisher`;
 - `ResourceFactory`;
 - `StationScopedResourceRegistry`.
 
 Keep this separation. User operators should get only the station execution context and the services intentionally
-exposed through it. Internal engine services should not be leaked as general user dependencies.
+exposed through it. The concrete `EventManager` remains internal engine wiring.
 
 ## Station model
 

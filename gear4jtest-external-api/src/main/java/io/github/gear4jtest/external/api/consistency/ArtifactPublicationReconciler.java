@@ -12,8 +12,8 @@ import io.github.gear4jtest.external.api.repository.OperationChainConfigReposito
 import io.github.gear4jtest.external.api.repository.OperationChainNotFoundException;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationStage;
+import io.github.gear4jtest.external.api.spi.ArtifactStoreProvider;
 import io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFingerprint;
-import io.github.gear4jtest.external.api.storage.ArtifactStoreProvider;
 
 /**
  * Reconciles durable publication stages left by process crashes or transient

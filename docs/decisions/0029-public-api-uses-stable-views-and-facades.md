@@ -22,8 +22,8 @@ broken while the compatibility gate remained green. The provider-neutral externa
   `PersistenceRuntimeMonitor`, `PersistenceRuntimeStats` and `PersistenceOperationalStatus`.
 - Spring customization uses `Gear4jAssemblyLineExecutorCustomizer`, which exposes only stable options.
 - External API failures use `Gear4jExternalException` and `ExternalErrorCode`.
-- Architecture tests require zero core API/SPI dependencies on `core.engine`, `core.execution` or `core.internal`, and
-  forbid JDBC imports in `gear4jtest-external-api`.
+- Architecture tests require zero exported API/SPI signature dependencies on packages or types marked `@Internal`
+  across all published modules, and forbid JDBC imports in `gear4jtest-external-api`.
 
 ## Consequences
 

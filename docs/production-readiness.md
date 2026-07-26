@@ -8,7 +8,7 @@ production application, review the following operational boundaries.
 The default event runtime is in-memory and best-effort. It is appropriate for
 local observers, metrics enrichment and non-critical side-compute reactions. Its
 per-run queue accounting is bounded by default; saturated runtimes drop new
-events and expose the drop count through `EventManager.snapshotStats()`. Dispatch
+events and expose process-wide drop counts through `EventRuntimeMetrics.snapshot()`. Dispatch
 is multiplexed by a shared in-process dispatcher instead of one dispatcher thread
 per run, while reaction execution remains controlled by the configured reaction
 executor. The default shutdown mode is `WAIT_FOR_DRAIN`, so `execute(...)` may

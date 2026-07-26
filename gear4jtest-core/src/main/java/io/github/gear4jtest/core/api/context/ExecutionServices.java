@@ -3,7 +3,10 @@ package io.github.gear4jtest.core.api.context;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import io.github.gear4jtest.core.api.annotation.Internal;
+import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventManager;
+import io.github.gear4jtest.core.event.EventPublisher;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 
 /**
@@ -23,14 +26,23 @@ import io.github.gear4jtest.core.spi.factory.ResourceFactory;
  * </p>
  */
 public final class ExecutionServices {
+    private static final EventPublisher NO_OP_EVENT_PUBLISHER = new EventPublisher() {
+        @Override
+        public <T extends Event> void publish(T event) {
+            Objects.requireNonNull(event, "event must not be null");
+        }
+    };
+
     private final EventManager eventManager;
     private final ResourceFactory resourceFactory;
     private final StationScopedResourceRegistry stationScopedResources;
 
+    @Internal
     public ExecutionServices(EventManager eventManager, ResourceFactory resourceFactory) {
         this(eventManager, resourceFactory, new StationScopedResourceRegistry());
     }
 
+    @Internal
     public ExecutionServices(EventManager eventManager,
                              ResourceFactory resourceFactory,
                              StationScopedResourceRegistry stationScopedResources) {
@@ -40,8 +52,21 @@ public final class ExecutionServices {
                 : new StationScopedResourceRegistry();
     }
 
+    @Internal
     public EventManager getEventManager() {
         return eventManager;
+    }
+
+    /**
+     * Returns the public event-publication capability for this run.
+     *
+     * <p>
+     * When event handling is disabled, the returned publisher validates and
+     * discards events.
+     * </p>
+     */
+    public EventPublisher getEventPublisher() {
+        return eventManager != null ? eventManager : NO_OP_EVENT_PUBLISHER;
     }
 
     public ResourceFactory getResourceFactory() {

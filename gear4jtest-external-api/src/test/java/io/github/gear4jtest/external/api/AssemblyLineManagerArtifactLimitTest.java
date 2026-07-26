@@ -7,7 +7,7 @@ import io.github.gear4jtest.external.api.repository.OperationChainConfigReposito
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainTagRepository;
-import io.github.gear4jtest.external.api.storage.ArtifactStoreProvider;
+import io.github.gear4jtest.external.api.spi.ArtifactStoreProvider;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslatorResolver;
 import org.junit.jupiter.api.Test;
 

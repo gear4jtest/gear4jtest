@@ -22,7 +22,7 @@ import io.github.gear4jtest.external.api.repository.OperationChainPublicationRep
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationStage;
 import io.github.gear4jtest.external.api.repository.OperationChainRepositoryException;
 import io.github.gear4jtest.external.api.repository.OperationChainTagRepository;
-import io.github.gear4jtest.external.api.storage.ArtifactStoreProvider;
+import io.github.gear4jtest.external.api.spi.ArtifactStoreProvider;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslator;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslatorResolver;
 import org.junit.jupiter.api.Test;

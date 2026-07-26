@@ -18,12 +18,13 @@ from the provider-neutral module and establish a stable external error taxonomy 
 - Added `ExecutionContextLookup` and kept `ExecutionContextRegistry` as internal wiring.
 - Added `RunPersistenceManager` and promoted persistence runtime monitoring records/interfaces to `core.persistence`.
 - Migrated lifecycle SPIs, persistence records, JDBC, Micrometer and actuator integrations to the stable contracts.
-- Replaced the Spring engine-builder customizer with `Gear4jAssemblyLineExecutorCustomizer` and exposed an
+- Kept `Gear4jAssemblyLineExecutorCustomizer` as the sole Spring customization hook and exposed an
   `AssemblyLineExecutor` bean.
 - Removed the unused JDBC input stream and duplicated metrics type from `external-api`.
 - Added `Gear4jExternalException`, `ExternalErrorCode` and typed validation, not-found, conflict, storage and compilation
   failures; the former nested policy exception was removed before 1.0.
 - Changed `ApiBoundarySourceTest` from a 13-entry baseline to an empty-set assertion and added the JDBC-import rule.
+  The follow-up R3 remediation generalized the boundary check to public/SPI signatures in every published module.
 
 ## Validation performed
 
@@ -37,8 +38,8 @@ from the provider-neutral module and establish a stable external error taxonomy 
   - `phase10-smoke=OK result=value-ok`;
   - `phase10-external-errors=OK`;
   - consumer-smoke source compilation against public contracts only.
-- Source architecture scan: package marker violations = 0; core public/SPI internal dependencies = 0;
-  provider-neutral JDBC imports = 0.
+- Source architecture scan: package marker violations = 0; published public/SPI signature dependencies on internal
+  packages or individually internal types = 0; provider-neutral JDBC imports = 0.
 - Compiled-signature inspection of the new executor, trace, context-lookup and persistence-monitoring contracts found no
   dependency on `core.engine`, `core.execution` or `core.internal`.
 - Documentation validation: 106 Markdown files with no broken local link and four valid YAML files.
@@ -54,7 +55,7 @@ Japicmp gate.
 - Replace `AssemblyRunTrace`/`StationLogTrace` in consumer signatures with `RunTrace`/`StationTrace`.
 - Replace `AssemblyRunManager` with `RunPersistenceManager`. The temporary pre-1.0 alias was removed during follow-up
   remediation R1.
-- Replace `Gear4jAssemblyLineEngineBuilderCustomizer` with `Gear4jAssemblyLineExecutorCustomizer`.
+- Customize the Spring executor only through `Gear4jAssemblyLineExecutorCustomizer`.
 - Import persistence runtime monitoring from `io.github.gear4jtest.core.persistence`.
 
 ## Deferred

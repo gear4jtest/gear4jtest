@@ -29,12 +29,11 @@ the age of the oldest buffered log, scheduled/completed/failed flushes and
 rejected appends. Cumulative failure and rejection counters are alert signals;
 they are not used as permanent health state.
 
-`EventMetricsBinder` can be bound manually to an `EventManager` to expose the
-best-effort in-memory event runtime counters: published/dispatched/dropped/queued
-events, remaining event-queue capacity, and submitted/completed/dropped/failed,
-pending and in-flight reactions. Because `EventManager`
-is currently per-run runtime state rather than a singleton Spring bean, this
-binder is intentionally explicit instead of auto-registered globally.
+Internal runtime wiring can bind `EventMetricsBinder` to the run-local event
+manager to expose best-effort in-memory counters: published/dispatched/dropped/
+queued events, remaining event-queue capacity, and submitted/completed/dropped/
+failed, pending and in-flight reactions. The stable consumer surface exposes
+the process-wide aggregate instead of the concrete per-run runtime lifecycle.
 
 ## Future production metric surface
 

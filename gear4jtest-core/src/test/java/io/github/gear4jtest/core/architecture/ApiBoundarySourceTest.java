@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -64,33 +63,12 @@ final class ApiBoundarySourceTest {
     }
 
     @Test
-    void corePublicApiAndSpi_shouldNotDependOnInternalPackages() throws IOException {
-        Path sourceRoot = findRepositoryRoot().resolve("gear4jtest-core/src/main/java");
+    void publishedPublicApiAndSpiSignatures_shouldNotDependOnInternalTypes() throws IOException {
+        List<String> violations = PublishedApiBoundaryAnalyzer.findViolations(
+                                                                              findRepositoryRoot(),
+                                                                              MODULES_WITH_STABILITY_MARKERS);
 
-        List<String> currentDependencies = new ArrayList<>();
-        for (Path sourceFile : javaSources(sourceRoot)) {
-            if (sourceFile.getFileName().toString().equals("package-info.java")) {
-                continue;
-            }
-            StabilityMarker marker = stabilityMarker(sourceFile.getParent());
-            if (marker != StabilityMarker.PUBLIC_API && marker != StabilityMarker.SPI) {
-                continue;
-            }
-
-            String source = Files.readString(sourceFile);
-            if (isInternalType(source)) {
-                continue;
-            }
-
-            List<String> dependencies = internalDependencyGroups(source);
-            if (!dependencies.isEmpty()) {
-                currentDependencies.add(sourceRoot.relativize(sourceFile) + " -> "
-                        + String.join(", ", dependencies));
-            }
-        }
-
-        currentDependencies.sort(Comparator.naturalOrder());
-        assertThat(currentDependencies).isEmpty();
+        assertThat(violations).isEmpty();
     }
 
     @Test
@@ -141,54 +119,4 @@ final class ApiBoundarySourceTest {
                 && path.getFileName().toString().endsWith(".java"));
     }
 
-    private static StabilityMarker stabilityMarker(Path packageDirectory) throws IOException {
-        Path packageInfo = packageDirectory.resolve("package-info.java");
-        if (!Files.isRegularFile(packageInfo)) {
-            return StabilityMarker.NONE;
-        }
-        List<String> annotationLines = Files.readAllLines(packageInfo).stream()
-                .map(String::trim)
-                .filter(STABILITY_MARKERS::contains)
-                .toList();
-        if (annotationLines.size() != 1) {
-            return StabilityMarker.NONE;
-        }
-        String marker = annotationLines.get(0);
-        if (marker.endsWith(".PublicApi")) {
-            return StabilityMarker.PUBLIC_API;
-        }
-        if (marker.endsWith(".Spi")) {
-            return StabilityMarker.SPI;
-        }
-        if (marker.endsWith(".Internal")) {
-            return StabilityMarker.INTERNAL;
-        }
-        if (marker.endsWith(".Experimental")) {
-            return StabilityMarker.EXPERIMENTAL;
-        }
-        return StabilityMarker.NONE;
-    }
-
-    private static boolean isInternalType(String source) {
-        return source.contains("\n@Internal\n")
-                || source.contains("\n@io.github.gear4jtest.core.api.annotation.Internal\n");
-    }
-
-    private static List<String> internalDependencyGroups(String source) {
-        List<String> dependencies = new ArrayList<>();
-        if (source.contains("io.github.gear4jtest.core.engine.")) {
-            dependencies.add("engine");
-        }
-        if (source.contains("io.github.gear4jtest.core.execution.")) {
-            dependencies.add("execution");
-        }
-        if (source.contains("io.github.gear4jtest.core.internal.")) {
-            dependencies.add("internal");
-        }
-        return dependencies;
-    }
-
-    private enum StabilityMarker {
-        PUBLIC_API, SPI, INTERNAL, EXPERIMENTAL, NONE
-    }
 }

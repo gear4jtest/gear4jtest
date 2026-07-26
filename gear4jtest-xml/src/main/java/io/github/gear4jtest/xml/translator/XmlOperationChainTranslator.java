@@ -38,9 +38,9 @@ public final class XmlOperationChainTranslator implements OperationChainTranslat
                 XmlToJavaGenerator.gelOnly(operatorCapabilityPolicy));
     }
 
-    public XmlOperationChainTranslator(AssemblyLineValidator validator,
-                                       XmlAssemblyLineParser parser,
-                                       XmlToJavaGenerator generator) {
+    private XmlOperationChainTranslator(AssemblyLineValidator validator,
+                                        XmlAssemblyLineParser parser,
+                                        XmlToJavaGenerator generator) {
         this.validator = validator;
         this.parser = parser;
         this.generator = generator;
