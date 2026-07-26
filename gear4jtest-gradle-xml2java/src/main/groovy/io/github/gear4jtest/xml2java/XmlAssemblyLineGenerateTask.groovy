@@ -1,11 +1,14 @@
 package io.github.gear4jtest.xml2java
 
+import io.github.gear4jtest.external.api.ExecutionMode
+import io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy
 import io.github.gear4jtest.xml.translator.XmlOperationChainTranslator
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
@@ -26,6 +29,7 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
     private final DirectoryProperty outputDir
     private final Property<String> mediaType
     private final Property<Boolean> trustedXml
+    private final MapProperty<String, String> operatorCapabilities
 
     @Inject
     XmlAssemblyLineGenerateTask(ObjectFactory objects) {
@@ -33,6 +37,7 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
         this.outputDir = objects.directoryProperty()
         this.mediaType = objects.property(String)
         this.trustedXml = objects.property(Boolean).convention(false)
+        this.operatorCapabilities = objects.mapProperty(String, String).convention([:])
     }
 
     @Inject
@@ -59,18 +64,23 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
         return trustedXml
     }
 
+    @Input
+    MapProperty<String, String> getOperatorCapabilities() {
+        return operatorCapabilities
+    }
+
     @TaskAction
     void generate() {
         File destination = outputDir.get().asFile
         XmlOperationChainTranslator translator = trustedXml.get()
             ? XmlOperationChainTranslator.trusted()
-            : XmlOperationChainTranslator.gelOnly()
+            : XmlOperationChainTranslator.gelOnly(restrictedCapabilities())
 
         def generatedSources = xmlFiles.files
             .findAll { File file -> file.isFile() && file.name.endsWith('.xml') }
             .sort { File file -> file.path }
             .collect { File file ->
-                def result = translator.translate(file.bytes, mediaType.get())
+                def result = translator.translate(file.bytes, mediaType.get(), ExecutionMode.RUN)
                 new GeneratedSource(file, result.className(), result.formattedSource())
             }
 
@@ -80,6 +90,14 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
             XmlAssemblyLineGenerateTask.writeJavaSource(destination, generated.className, generated.formattedSource)
             logger.info('Generated Gear4J Java source {} from XML {}', generated.className, generated.sourceFile)
         }
+    }
+
+    private XmlOperatorCapabilityPolicy restrictedCapabilities() {
+        def builder = XmlOperatorCapabilityPolicy.builder()
+        operatorCapabilities.get().each { String capabilityId, String operatorClassName ->
+            builder.allowClassName(capabilityId, operatorClassName, ExecutionMode.RUN)
+        }
+        return builder.build()
     }
 
     private static final class GeneratedSource {

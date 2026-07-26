@@ -57,7 +57,7 @@ The runtime external loading path is coordinated by `AssemblyLineManager`:
 1. locate metadata for the requested assembly line id, version and mode;
 2. read the raw artifact from the configured store;
 3. resolve a translator by media type;
-4. translate the artifact into Java source;
+4. translate the artifact into Java source for the object's `ExecutionMode`;
 5. compile the Java source in memory;
 6. load the compiled classes through an in-memory classloader;
 7. instantiate the generated class;
@@ -75,7 +75,10 @@ prevents any late bytecode from entering the completed cache. `AssemblyLineManag
 
 An `OperationChainTranslator` should be format-specific and side-effect light.
 
-It receives bytes and a media type. It returns:
+It receives bytes, a media type and, on the publication/runtime path, the
+requested `ExecutionMode`. The mode-aware overload defaults to the legacy
+two-argument translation method for formats without a mode-dependent capability
+surface. It returns:
 
 - a fully-qualified generated class name;
 - formatted Java source.
@@ -121,21 +124,26 @@ This is important for BO display, dependency tracking, invalidation and traceabi
 
 External definitions are not a sandbox boundary.
 
-XML parsing is hardened against XXE, but the XML module can still translate a definition into Java source, compile it,
-load it into the current JVM and execute it with the same permissions as the hosting application. Inline Java snippets,
-generated Java source and dynamically loaded classes must therefore be treated as application code.
+XML parsing is hardened against XXE. Restricted XML additionally rejects inline
+Java and requires every `processingOperation/@type` value to resolve through an
+exact, mode-aware operator capability allowlist. GEL controls data expressions;
+the capability allowlist controls application code invocation. Neither control
+makes registered operator implementations a sandbox: generated Java and allowed
+operators still execute with the permissions of the hosting application.
 
-Only compile and execute external definitions that come from trusted provenance, such as reviewed source control,
-controlled build artifacts or an administration workflow with equivalent review rules. Do not expose runtime compilation
-of arbitrary XML or Java snippets to untrusted users.
+Trusted/class-name XML must come from reviewed source control, controlled build
+artifacts or an administration workflow with equivalent review rules.
+User/BO-authored XML must use GEL plus a restricted
+`XmlOperatorCapabilityPolicy`; never use the trusted translator for that path.
 
 Using Eclipse JDT or the JDK `JavaCompiler` does not change this security model. A compiler API can change build-time
 stability and dependency choices, but it does not sandbox the resulting bytecode.
 
 Operational guidance:
-The XML translator discovered through `ServiceLoader` uses the restrictive no-inline-Java policy by default. Trusted
-runtime loading must inject an explicitly trusted translator, for example `XmlOperationChainTranslator.trusted()`, instead
-of relying on implicit defaults.
+The XML translator discovered through `ServiceLoader` rejects inline Java and
+has an empty operator allowlist. Applications must inject either a configured
+`XmlOperationChainTranslator.gelOnly(policy)` or, for reviewed sources only,
+`XmlOperationChainTranslator.trusted()`.
 
 
 - prefer build-time generation for externally maintained definitions when possible;

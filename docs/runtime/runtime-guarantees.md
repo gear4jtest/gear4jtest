@@ -121,8 +121,15 @@ code and must be reviewed as such.
 Guaranteed today:
 
 - the XML parser is configured against XXE-style external entity loading;
-- the default translator/generator rejects inline Java;
-- the Gradle XML plugin is GEL-only by default and requires an explicit `trustedXml()` opt-in for inline Java;
+- the default translator/generator rejects inline Java and all unregistered
+  operator capabilities;
+- restricted operator capabilities are resolved recursively and independently
+  for TEST and RUN before Java generation;
+- publication, promotion and runtime loading translate with the candidate's
+  actual `ExecutionMode`;
+- the Gradle XML plugin is GEL-only and deny-all by default, supports explicit
+  `operatorCapability(id, className)` mappings, and requires `trustedXml()` for
+  class-name/inline-Java XML;
 - GEL does not support method-call syntax, type lookup, constructors, static access or Java class metadata traversal.
 - GEL contexts use secure property access by default: expression evaluation reads inert map snapshots and rejects
   record/JavaBean access unless the exact runtime type and property were explicitly allowlisted.
@@ -131,6 +138,7 @@ Not guaranteed today:
 
 - inline Java is sandboxed;
 - generated Java is safe when XML comes from an untrusted source and trusted mode is enabled;
+- registered operator implementations are sandboxed or made intrinsically safe;
 - the safety of a caller-provided custom `PropertyAccessPolicy`; it is trusted application code and becomes part of the
   GEL security boundary.
 

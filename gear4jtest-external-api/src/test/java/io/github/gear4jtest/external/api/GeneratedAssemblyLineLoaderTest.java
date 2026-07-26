@@ -171,7 +171,7 @@ class GeneratedAssemblyLineLoaderTest {
         ArtifactStoreProvider storeProvider = mock(ArtifactStoreProvider.class);
         when(storeProvider.forConfig(config)).thenReturn(artifactStore);
         OperationChainTranslator translator = mock(OperationChainTranslator.class);
-        when(translator.translate(any(byte[].class), eq("application/xml")))
+        when(translator.translate(any(byte[].class), eq("application/xml"), eq(ExecutionMode.TEST)))
                 .thenReturn(new OperationChainTranslator.GenerationResult(GENERATED_CLASS, GENERATED_SOURCE));
         OperationChainTranslatorResolver translatorResolver = mock(OperationChainTranslatorResolver.class);
         when(translatorResolver.resolve("application/xml")).thenReturn(translator);

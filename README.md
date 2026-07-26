@@ -54,6 +54,8 @@ Gear4J is a runtime library, so the most important operational limits are explic
 - the in-memory event runtime is best-effort and does not provide durable delivery, replay or exactly-once semantics;
 - cancellation and timeouts are cooperative for user Java code and cannot forcibly stop arbitrary blocking operators;
 - XML trusted mode is equivalent to compiling reviewed Java source in the application JVM, not a sandbox;
+- restricted XML is GEL-only and may invoke only operator capabilities
+  explicitly allowlisted for TEST or RUN;
 - direct persistence managers and the Spring Boot starter discard input/context/result/error payloads by default;
   deployments that capture selected values should provide a `SensitiveDataRedactor`. Raw capture requires an explicit
   `SensitiveDataRedactor.none()`, Spring Boot `redaction-mode=DISABLED`, or the deprecated explicit `WARN` mode;

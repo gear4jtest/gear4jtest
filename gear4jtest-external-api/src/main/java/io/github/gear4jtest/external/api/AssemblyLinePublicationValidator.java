@@ -54,7 +54,7 @@ final class AssemblyLinePublicationValidator {
         try {
             AssemblyLineIdentifiers.requireAllowedArtifactSize(bytes.length, maxArtifactSizeBytes,
                                                                "Assembly line artifact");
-            OperationChainTranslator.GenerationResult translated = translate(bytes, mediaType);
+            OperationChainTranslator.GenerationResult translated = translate(bytes, mediaType, object.mode());
             Map<String, byte[]> compiled = compiler.compile(translated.className(),
                                                             translated.formattedSource()
                                                                     .getBytes(StandardCharsets.UTF_8));
@@ -71,9 +71,12 @@ final class AssemblyLinePublicationValidator {
         }
     }
 
-    private OperationChainTranslator.GenerationResult translate(byte[] bytes, String mediaType) throws Exception {
+    private OperationChainTranslator.GenerationResult translate(byte[] bytes,
+                                                                String mediaType,
+                                                                ExecutionMode mode)
+            throws Exception {
         OperationChainTranslator translator = translatorResolver.resolve(mediaType);
-        return translator.translate(bytes, mediaType);
+        return translator.translate(bytes, mediaType, mode);
     }
 
     private byte[] readArtifact(String alId, OperationChainObject object, ArtifactStore store)

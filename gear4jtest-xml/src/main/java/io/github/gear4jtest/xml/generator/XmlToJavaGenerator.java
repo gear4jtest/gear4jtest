@@ -2,7 +2,9 @@ package io.github.gear4jtest.xml.generator;
 
 import java.util.Objects;
 
+import io.github.gear4jtest.external.api.ExecutionMode;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslator;
+import io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
 
 /**
@@ -21,6 +23,7 @@ public final class XmlToJavaGenerator {
     private final ClassLoader classLoader;
     private final JavaSourceFormatter formatter;
     private final XmlJavaSourcePolicy sourcePolicy;
+    private final XmlOperatorCapabilityPolicy operatorCapabilityPolicy;
 
     public static Builder builder() {
         return new Builder();
@@ -45,6 +48,7 @@ public final class XmlToJavaGenerator {
                 .classLoader(classLoader)
                 .formatter(formatter)
                 .sourcePolicy(XmlJavaSourcePolicy.trusted())
+                .operatorCapabilityPolicy(XmlOperatorCapabilityPolicy.trustedClassNames())
                 .build();
     }
 
@@ -52,12 +56,22 @@ public final class XmlToJavaGenerator {
         return builder().build();
     }
 
+    public static XmlToJavaGenerator untrusted(XmlOperatorCapabilityPolicy operatorCapabilityPolicy) {
+        return builder().operatorCapabilityPolicy(operatorCapabilityPolicy).build();
+    }
+
     public static XmlToJavaGenerator gelOnly() {
         return untrusted();
     }
 
+    public static XmlToJavaGenerator gelOnly(XmlOperatorCapabilityPolicy operatorCapabilityPolicy) {
+        return untrusted(operatorCapabilityPolicy);
+    }
+
     private XmlToJavaGenerator(Builder builder) {
         this.sourcePolicy = XmlJavaSourcePolicy.require(builder.sourcePolicy);
+        this.operatorCapabilityPolicy = Objects.requireNonNull(builder.operatorCapabilityPolicy,
+                                                               "operatorCapabilityPolicy must not be null");
         this.sourcePolicy.validatePackageName(builder.packageName);
         this.packageName = Objects.requireNonNull(builder.packageName, "packageName");
         this.classLoader = builder.classLoader != null ? builder.classLoader : contextClassLoader();
@@ -69,6 +83,7 @@ public final class XmlToJavaGenerator {
         private ClassLoader classLoader = contextClassLoader();
         private JavaSourceFormatter formatter = JdtFormatter.defaultFormatter();
         private XmlJavaSourcePolicy sourcePolicy = XmlJavaSourcePolicy.forbidInlineJava();
+        private XmlOperatorCapabilityPolicy operatorCapabilityPolicy = XmlOperatorCapabilityPolicy.denyAll();
 
         private Builder() {
         }
@@ -93,6 +108,11 @@ public final class XmlToJavaGenerator {
             return this;
         }
 
+        public Builder operatorCapabilityPolicy(XmlOperatorCapabilityPolicy operatorCapabilityPolicy) {
+            this.operatorCapabilityPolicy = operatorCapabilityPolicy;
+            return this;
+        }
+
         public XmlToJavaGenerator build() {
             return new XmlToJavaGenerator(this);
         }
@@ -104,9 +124,17 @@ public final class XmlToJavaGenerator {
     }
 
     public OperationChainTranslator.GenerationResult generate(XmlAssemblyLineDefinition definition) {
+        return generate(definition, ExecutionMode.RUN);
+    }
+
+    public OperationChainTranslator.GenerationResult generate(XmlAssemblyLineDefinition definition,
+                                                              ExecutionMode mode) {
+        XmlAssemblyLineDefinition resolvedDefinition = XmlOperatorCapabilityResolver.resolve(definition,
+                                                                                             operatorCapabilityPolicy,
+                                                                                             mode);
         GeneratedJavaSource generatedSource = new XmlGeneratedAssemblyLineRenderer(packageName, classLoader,
                 sourcePolicy)
-                .render(definition);
+                .render(resolvedDefinition);
         return new OperationChainTranslator.GenerationResult(
                 generatedSource.fullyQualifiedClassName(), formatter.format(generatedSource.source()));
     }

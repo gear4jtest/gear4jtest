@@ -38,6 +38,12 @@ by the previous minor version unless a security fix requires rejection; such rej
 New optional elements/attributes are additive. Renames, required fields and semantic reinterpretation require a major
 version or an explicit versioned schema/media type.
 
+For restricted XML, `processingOperation/@type` is a stable operator capability
+id resolved through `XmlOperatorCapabilityPolicy`; trusted XML retains Java class
+name semantics. Removing or renaming a published capability id is a behavioral
+compatibility change. TEST and RUN mappings may differ, but narrowing RUN access
+must be called out as a security-relevant migration.
+
 ## Database schema and migrations
 
 Committed migrations are immutable: their content and checksums are never rewritten after release. Patch/minor releases

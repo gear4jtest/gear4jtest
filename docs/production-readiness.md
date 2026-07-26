@@ -21,19 +21,27 @@ external broker design and keep handlers idempotent.
 
 ## XML and generated Java
 
-XML definitions that contain inline Java expressions or generated Java logic must
-be treated as trusted source code. Do not accept arbitrary XML from users or a BO
-and compile it into the application JVM.
+XML definitions using inline Java or operator class names must be treated as
+trusted source code. Do not enable `XmlOperationChainTranslator.trusted()` for
+XML received from users or a BO.
 
-For untrusted or semi-trusted configuration, the intended security boundary is the
-Gear4J Expression Language (GEL): a restricted expression language with no
-reflection, class loading, file access, network access or arbitrary method calls.
-A minimal GEL parser/evaluator exists in `gear4jtest-xml`, and XML conditions can now opt into it with `language="gel"`. Keep all other inline Java XML behind trusted provenance and code review.
+Restricted XML needs both Gear4J Expression Language (GEL) and a mode-aware
+`XmlOperatorCapabilityPolicy`. GEL has no reflection, class loading, file access,
+network access or arbitrary method calls. The capability policy prevents the XML
+from bypassing those restrictions by selecting any visible `Operator` class.
+Use stable capability ids in `processingOperation/@type`, register only the
+required TEST/RUN mappings in trusted application configuration, and keep the
+default deny-all policy when no operator execution is intended.
 
 GEL rejects Java object property access by default. Feed untrusted expressions
 inert maps/snapshots, or configure an exact `PropertyAccessPolicy` only for
 trusted types. Do not deploy the deprecated legacy bean policy as a permanent
 compatibility setting; its warnings should be treated as migration inventory.
+
+Promotion translates the stored candidate again with RUN capabilities. A
+TEST-only capability therefore blocks promotion before RUN metadata is staged.
+Review each registered operator and injected dependency as trusted application
+code; Gear4J does not sandbox them.
 
 ## Persistence
 

@@ -4,6 +4,8 @@ import java.util.List;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.external.api.ExecutionMode;
+import io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Condition;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ConditionalOperation;
@@ -31,12 +33,13 @@ class XmlToJavaGeneratorTest {
         // Given
         IfElseOperation ifElse = new IfElseOperation("choice", "java.lang.String", "java.lang.String",
                 List.of(new ConditionalOperation("when-a", new Condition("input.endsWith(\"a\")", null),
-                        processingOperation("then-operation"))),
-                processingOperation("else-operation"));
+                        processingOperation("then-operation", "identity"))),
+                processingOperation("else-operation", "identity"));
         XmlAssemblyLineDefinition definition = definition(ifElse);
         XmlToJavaGenerator safeGenerator = XmlToJavaGenerator.builder("io.test.generated")
                 .classLoader(XmlToJavaGeneratorTest.class.getClassLoader())
                 .formatter(JavaSourceFormatter.none())
+                .operatorCapabilityPolicy(restrictedCapabilities())
                 .build();
 
         // When / Then
@@ -52,12 +55,13 @@ class XmlToJavaGeneratorTest {
         IfElseOperation ifElse = new IfElseOperation("choice", "java.lang.String", "java.lang.String",
                 List.of(new ConditionalOperation("when-a",
                         new Condition("input == \"a\"", Condition.LANGUAGE_GEL, null),
-                        processingOperation("then-operation"))),
-                processingOperation("else-operation"));
+                        processingOperation("then-operation", "identity"))),
+                processingOperation("else-operation", "identity"));
         XmlAssemblyLineDefinition definition = definition(ifElse);
         XmlToJavaGenerator safeGenerator = XmlToJavaGenerator.builder("io.test.generated")
                 .classLoader(XmlToJavaGeneratorTest.class.getClassLoader())
                 .formatter(JavaSourceFormatter.none())
+                .operatorCapabilityPolicy(restrictedCapabilities())
                 .build();
 
         // When
@@ -68,6 +72,66 @@ class XmlToJavaGeneratorTest {
                 .contains("evaluateGel(\"input == \\\"a\\\"\", input, ctx)")
                 .contains("GearExpressionParser::parse")
                 .doesNotContain("input.endsWith");
+    }
+
+    @Test
+    void generate_shouldRejectUnregisteredOperatorClassNameByDefault() {
+        // Given
+        XmlAssemblyLineDefinition definition = definition(processingOperation("operation"));
+        XmlToJavaGenerator safeGenerator = XmlToJavaGenerator.builder("io.test.generated")
+                .classLoader(XmlToJavaGeneratorTest.class.getClassLoader())
+                .formatter(JavaSourceFormatter.none())
+                .build();
+
+        // When / Then
+        assertThatThrownBy(() -> safeGenerator.generate(definition))
+                .isInstanceOf(SecurityException.class)
+                .hasMessageContaining(StringOperator.class.getName())
+                .hasMessageContaining("execution mode RUN");
+    }
+
+    @Test
+    void generate_shouldApplyCapabilityAllowlistForRequestedMode() {
+        // Given
+        XmlAssemblyLineDefinition definition = definition(processingOperation("operation", "identity"));
+        XmlOperatorCapabilityPolicy testOnly = XmlOperatorCapabilityPolicy.builder()
+                .allow("identity", StringOperator.class, ExecutionMode.TEST)
+                .build();
+        XmlToJavaGenerator safeGenerator = XmlToJavaGenerator.builder("io.test.generated")
+                .classLoader(XmlToJavaGeneratorTest.class.getClassLoader())
+                .formatter(JavaSourceFormatter.none())
+                .operatorCapabilityPolicy(testOnly)
+                .build();
+
+        // When
+        String source = safeGenerator.generate(definition, ExecutionMode.TEST).formattedSource();
+
+        // Then
+        assertThat(source).contains("StringOperator.class").doesNotContain("\"identity\"");
+        assertThatThrownBy(() -> safeGenerator.generate(definition, ExecutionMode.RUN))
+                .isInstanceOf(SecurityException.class)
+                .hasMessageContaining("identity")
+                .hasMessageContaining("execution mode RUN");
+    }
+
+    @Test
+    void generate_shouldRejectUnregisteredCapabilityInsideNestedContainer() {
+        // Given
+        ContainerOperation container = new ContainerOperation("container", "java.lang.String",
+                "java.lang.String", false, null,
+                List.of(new SubLine("nested", null, processingOperation("nested-operation", "system.delete"))),
+                null);
+        XmlToJavaGenerator safeGenerator = XmlToJavaGenerator.builder("io.test.generated")
+                .classLoader(XmlToJavaGeneratorTest.class.getClassLoader())
+                .formatter(JavaSourceFormatter.none())
+                .operatorCapabilityPolicy(restrictedCapabilities())
+                .build();
+
+        // When / Then
+        assertThatThrownBy(() -> safeGenerator.generate(definition(container), ExecutionMode.RUN))
+                .isInstanceOf(SecurityException.class)
+                .hasMessageContaining("system.delete")
+                .hasMessageContaining("execution mode RUN");
     }
 
     @Test
@@ -225,9 +289,19 @@ class XmlToJavaGeneratorTest {
     }
 
     private static ProcessingOperation processingOperation(String id) {
-        return new ProcessingOperation(id, StringOperator.class.getName(), "java.lang.String",
+        return processingOperation(id, StringOperator.class.getName());
+    }
+
+    private static ProcessingOperation processingOperation(String id, String type) {
+        return new ProcessingOperation(id, type, "java.lang.String",
                 new Parameters(List.of()),
                 List.of(), List.of(), null);
+    }
+
+    private static XmlOperatorCapabilityPolicy restrictedCapabilities() {
+        return XmlOperatorCapabilityPolicy.builder()
+                .allow("identity", StringOperator.class, ExecutionMode.RUN)
+                .build();
     }
 
     public static final class StringOperator implements Operator<String, String> {

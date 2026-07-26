@@ -140,7 +140,7 @@ class AssemblyLineManagerTest {
         when(storeProvider.forConfig(any())).thenReturn(artifactStore);
         OperationChainTranslator translator = mock(OperationChainTranslator.class);
         when(translatorResolver.resolve("application/xml")).thenReturn(translator);
-        when(translator.translate(any(byte[].class), eq("application/xml")))
+        when(translator.translate(any(byte[].class), eq("application/xml"), eq(ExecutionMode.TEST)))
                 .thenReturn(new OperationChainTranslator.GenerationResult("io.test.Generated", "broken source"));
         when(compiler.compile(eq("io.test.Generated"), any(byte[].class))).thenThrow(new IllegalStateException("boom"));
         byte[] content = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
@@ -154,6 +154,7 @@ class AssemblyLineManagerTest {
         assertThat(artifactStore.exists(io.github.gear4jtest.external.api.artifact.ArtifactHashes.sha256Hex(content)))
                 .as("invalid content is rejected before artifact storage")
                 .isFalse();
+        verify(translator).translate(any(byte[].class), eq("application/xml"), eq(ExecutionMode.TEST));
         verify(objectRepository, never()).insert(any());
         verify(tagRepository, never()).addTag(any(), any());
         verify(publicationRepository, never()).stage(any(), any(), any());
@@ -447,7 +448,7 @@ class AssemblyLineManagerTest {
         when(storeProvider.forConfig(any())).thenReturn(artifactStore);
         OperationChainTranslator translator = mock(OperationChainTranslator.class);
         when(translatorResolver.resolve("application/xml")).thenReturn(translator);
-        when(translator.translate(any(byte[].class), eq("application/xml")))
+        when(translator.translate(any(byte[].class), eq("application/xml"), eq(ExecutionMode.RUN)))
                 .thenReturn(new OperationChainTranslator.GenerationResult("io.test.Generated", "broken source"));
         when(compiler.compile(eq("io.test.Generated"), any(byte[].class))).thenThrow(new IllegalStateException("boom"));
         when(objectRepository.find("line", "1.0.0", ExecutionMode.TEST)).thenReturn(Optional.of(testObject));
@@ -458,6 +459,7 @@ class AssemblyLineManagerTest {
                 .isInstanceOf(io.github.gear4jtest.external.api.exception.PolicyViolationException.class)
                 .hasMessageContaining("RUN candidate validation failed")
                 .hasCauseInstanceOf(IllegalStateException.class);
+        verify(translator).translate(any(byte[].class), eq("application/xml"), eq(ExecutionMode.RUN));
         verify(objectRepository, never()).insert(any());
         verify(publicationRepository, never()).stage(any(), any(), any());
     }
@@ -572,7 +574,7 @@ class AssemblyLineManagerTest {
     private void stubSuccessfulRunValidation() throws Exception {
         OperationChainTranslator translator = mock(OperationChainTranslator.class);
         when(translatorResolver.resolve("application/xml")).thenReturn(translator);
-        when(translator.translate(any(byte[].class), eq("application/xml")))
+        when(translator.translate(any(byte[].class), eq("application/xml"), any(ExecutionMode.class)))
                 .thenReturn(new OperationChainTranslator.GenerationResult("io.test.Generated",
                         "package io.test; public final class Generated {}"));
         when(compiler.compile(eq("io.test.Generated"), any(byte[].class)))

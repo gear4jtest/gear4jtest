@@ -10,6 +10,8 @@ import com.myorg.services.ModelsService;
 import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
+import io.github.gear4jtest.core.api.behavior.Operator;
+import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.engine.runner.RunnerChainFactory;
@@ -21,6 +23,7 @@ import io.github.gear4jtest.external.api.compiler.JDTInMemoryCompiler;
 import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
 import io.github.gear4jtest.external.api.loader.InMemoryClassLoader;
 import io.github.gear4jtest.external.api.loader.SimpleDependencyInjector;
+import io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +43,20 @@ class XmlOperationChainTranslatorTest {
         return new ReflectiveResourceFactory();
     }
 
+    private static byte[] restrictedXml(String operatorCapability) {
+        return ("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+                              id="restricted_line"
+                              inputType="java.lang.String"
+                              outputType="java.lang.String">
+                  <operations>
+                    <processingOperation id="append" type="%s"/>
+                  </operations>
+                </assemblyLine>
+                """.formatted(operatorCapability)).getBytes(StandardCharsets.UTF_8);
+    }
+
     private static byte[] resource(String name) throws IOException {
         try (var input = XmlOperationChainTranslatorTest.class.getResourceAsStream(name)) {
             if (input == null) {
@@ -53,12 +70,47 @@ class XmlOperationChainTranslatorTest {
     void defaultTranslator_shouldRejectInlineJavaExpressions() throws IOException {
         // Given
         byte[] xml = resource("/samples/assembly-line-signal.xml");
-        XmlOperationChainTranslator safeTranslator = new XmlOperationChainTranslator();
+        XmlOperatorCapabilityPolicy capabilities = XmlOperatorCapabilityPolicy.builder()
+                .allowClassName("com.myorg.operation.Step11", "com.myorg.operation.Step11", ExecutionMode.RUN)
+                .build();
+        XmlOperationChainTranslator safeTranslator = XmlOperationChainTranslator.gelOnly(capabilities);
 
         // When / Then
         assertThatThrownBy(() -> safeTranslator.translate(xml, "application/xml"))
                 .isInstanceOf(SecurityException.class)
                 .hasMessageContaining("Inline Java expressions are not allowed");
+    }
+
+    @Test
+    void defaultTranslator_shouldRejectArbitraryOperatorClassNames() {
+        // Given
+        byte[] xml = restrictedXml(RunOperator.class.getName());
+        XmlOperationChainTranslator safeTranslator = new XmlOperationChainTranslator();
+
+        // When / Then
+        assertThatThrownBy(() -> safeTranslator.translate(xml, "application/xml"))
+                .isInstanceOf(SecurityException.class)
+                .hasMessageContaining(RunOperator.class.getName())
+                .hasMessageContaining("execution mode RUN");
+    }
+
+    @Test
+    void restrictedTranslator_shouldResolveCapabilitiesByExecutionMode() {
+        // Given
+        XmlOperatorCapabilityPolicy capabilities = XmlOperatorCapabilityPolicy.builder()
+                .allow("append", TestOperator.class, ExecutionMode.TEST)
+                .allow("append", RunOperator.class, ExecutionMode.RUN)
+                .build();
+        XmlOperationChainTranslator safeTranslator = XmlOperationChainTranslator.gelOnly(capabilities);
+        byte[] xml = restrictedXml("append");
+
+        // When
+        var testResult = safeTranslator.translate(xml, "application/xml", ExecutionMode.TEST);
+        var runResult = safeTranslator.translate(xml, "application/xml", ExecutionMode.RUN);
+
+        // Then
+        assertThat(testResult.formattedSource()).contains("TestOperator.class").doesNotContain("RunOperator.class");
+        assertThat(runResult.formattedSource()).contains("RunOperator.class").doesNotContain("TestOperator.class");
     }
 
     @Test
@@ -156,6 +208,20 @@ class XmlOperationChainTranslatorTest {
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
+        }
+    }
+
+    public static final class TestOperator implements Operator<String, String> {
+        @Override
+        public String transform(String input, StationExecutionContext context) {
+            return input + "-test";
+        }
+    }
+
+    public static final class RunOperator implements Operator<String, String> {
+        @Override
+        public String transform(String input, StationExecutionContext context) {
+            return input + "-run";
         }
     }
 }

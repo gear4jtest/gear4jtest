@@ -135,7 +135,7 @@ final class GeneratedAssemblyLineLoader {
             throws IOException {
         OperationChainTranslator translator = translatorResolver.resolve(mediaType);
         try {
-            return translator.translate(bytes, mediaType);
+            return translator.translate(bytes, mediaType, obj.mode());
         } catch (Exception e) {
             throw new IOException("Translation failed for alId=%s, version=%s, mediaType=%s"
                     .formatted(alId, obj.version(), mediaType), e);

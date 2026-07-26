@@ -19,7 +19,11 @@ It should not own artifact storage, publication workflow, classloader caching or
 belong to `gear4jtest-external-api` and `gear4jtest-core`.
 
 The module also contains the first minimal Gear Expression Language (GEL) parser/evaluator under
-`io.github.gear4jtest.xml.expression`. GEL is the safe alternative to inline Java for untrusted or BO-authored conditions. Trusted Java snippets remain available only through explicit trusted generator/translator factories.
+`io.github.gear4jtest.xml.expression`. GEL is the restricted alternative to
+inline Java for untrusted or BO-authored conditions. A separate
+`XmlOperatorCapabilityPolicy` allowlists the executable operators available to
+each definition in TEST and RUN. Trusted Java snippets and operator class names
+remain available only through explicit trusted generator/translator factories.
 
 GEL property access is deny-by-default for Java objects. Maps are copied to an
 inert context representation. Direct evaluator users can approve exact runtime
@@ -66,9 +70,11 @@ Typical path:
 1. `XmlOperationChainTranslator` receives XML bytes and media type.
 2. `AssemblyLineValidator` validates the XML.
 3. `XmlAssemblyLineParser` parses XML into `XmlAssemblyLineDefinition`.
-4. `XmlToJavaGenerator` generates Java source.
-5. `JdtFormatter` formats the generated source.
-6. `AssemblyLineManager` compiles and loads the generated class through the external API module.
+4. restricted generation resolves every operator capability for the requested
+   `ExecutionMode`;
+5. `XmlToJavaGenerator` generates Java source.
+6. `JdtFormatter` formats the generated source.
+7. `AssemblyLineManager` compiles and loads the generated class through the external API module.
 
 ## Branch ids
 
@@ -127,11 +133,12 @@ var generator = XmlToJavaGenerator.trusted(
         JdtFormatter.fromEclipseProfile(Path.of("config/formatter/eclipse-java-formatter.xml"), "MyProject"));
 ```
 
-The default `XmlToJavaGenerator.builder(...).build()` / `XmlToJavaGenerator.untrusted()` policy rejects inline Java snippets.
-Use `language="gel"` on `<condition>` elements for untrusted XML conditions, and use `XmlToJavaGenerator.trusted(...)` only for reviewed XML definitions that are
-allowed to generate Java source. This keeps user-generated classes aligned with
-the consuming project when desired, without coupling them to Gear4J's own
-repository formatter.
+The default `XmlToJavaGenerator.builder(...).build()` /
+`XmlToJavaGenerator.untrusted()` policy rejects inline Java and all operator
+references. Use `language="gel"` plus a configured
+`XmlOperatorCapabilityPolicy` for restricted XML. Use
+`XmlToJavaGenerator.trusted(...)` only for reviewed XML definitions that may
+name classes and generate Java source.
 
 ## ServiceLoader registration
 
@@ -141,9 +148,11 @@ The module registers:
 META-INF/services/io.github.gear4jtest.external.api.translator.OperationChainTranslator
 ```
 
-This allows `OperationChainTranslatorResolver.fromServiceLoader(...)` to discover the XML translator. The discovered
-translator uses the restrictive GEL-only/no-inline-Java policy by default. For reviewed build-time or trusted runtime generation,
-inject `XmlOperationChainTranslator.trusted()` explicitly.
+This allows `OperationChainTranslatorResolver.fromServiceLoader(...)` to
+discover the XML translator. The discovered translator is GEL-only with an
+empty operator capability allowlist. Inject
+`XmlOperationChainTranslator.gelOnly(policy)` for restricted definitions or
+`XmlOperationChainTranslator.trusted()` for reviewed source.
 
 ## Samples
 

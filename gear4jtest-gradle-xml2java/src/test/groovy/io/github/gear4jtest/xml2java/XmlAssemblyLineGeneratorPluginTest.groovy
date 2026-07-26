@@ -93,6 +93,8 @@ class XmlAssemblyLineGeneratorPluginTest {
             .withName('my-library')
             .build()
         project.plugins.apply(XmlAssemblyLineGeneratorPlugin)
+        def extension = project.extensions.getByType(XmlAssemblyLineGeneratorExtension)
+        extension.operatorCapability('com.myorg.operation.Step11', 'com.myorg.operation.Step11')
 
         def xmlDir = new File(project.projectDir, 'src/main/gear4j')
         assertThat(xmlDir.mkdirs()).isTrue()
@@ -117,6 +119,41 @@ class XmlAssemblyLineGeneratorPluginTest {
             .hasMessageContaining('Inline Java expressions are not allowed')
     }
 
+    @Test
+    void should_generate_gel_only_xml_with_registered_operator_capability() {
+        // Given
+        def project = ProjectBuilder.builder()
+            .withName('my-library')
+            .build()
+        project.plugins.apply(XmlAssemblyLineGeneratorPlugin)
+
+        def xmlDir = new File(project.projectDir, 'src/main/gear4j')
+        assertThat(xmlDir.mkdirs()).isTrue()
+        new File(xmlDir, 'restricted-line.xml').text = '''<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="restricted_line"
+              inputType="java.lang.String"
+              outputType="java.lang.String">
+  <operations>
+    <processingOperation id="append" type="text.append"/>
+  </operations>
+</assemblyLine>
+'''
+        def outputDir = new File(project.buildDir, 'generated-test')
+        def extension = project.extensions.getByType(XmlAssemblyLineGeneratorExtension)
+        extension.outputDir.fileValue(outputDir)
+        extension.operatorCapability('text.append', 'com.myorg.operation.Step11')
+
+        // When
+        project.tasks.getByName(XmlAssemblyLineGeneratorPlugin.TASK_NAME).generate()
+
+        // Then
+        def generated = new File(outputDir, 'io/github/gear4jtest/xml/generated/Restricted_lineLine.java')
+        assertThat(generated).exists()
+        assertThat(generated.text)
+            .contains('Step11.class')
+            .doesNotContain('text.append')
+    }
 
     @Test
     void should_keep_previous_generated_sources_when_translation_fails() {
@@ -148,6 +185,7 @@ class XmlAssemblyLineGeneratorPluginTest {
         previous.text = 'keep me'
         def extension = project.extensions.getByType(XmlAssemblyLineGeneratorExtension)
         extension.outputDir.fileValue(outputDir)
+        extension.operatorCapability('com.myorg.operation.Step11', 'com.myorg.operation.Step11')
 
         // When / Then
         assertThatThrownBy { project.tasks.getByName(XmlAssemblyLineGeneratorPlugin.TASK_NAME).generate() }

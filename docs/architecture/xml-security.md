@@ -3,40 +3,79 @@
 Gear4J XML generation can embed Java expressions into generated source code.
 This is powerful, but it means trusted XML is effectively code.
 
-## Default policy: untrusted / no inline Java
+Restricted XML has two independent security boundaries:
 
-The default generator policy is restrictive:
+- GEL controls which expressions can inspect data;
+- the operator capability policy controls which application code the definition
+  can invoke.
+
+Both must be restrictive. GEL alone is insufficient because an arbitrary
+`Operator` class can expose file, network, database or process capabilities
+without using an XML expression.
+
+## Default policy: deny inline Java and all operators
+
+The default translator discovered through `ServiceLoader` rejects inline Java
+and starts with an empty operator capability allowlist. A restricted translator
+must be configured by trusted application code:
 
 ```java
-XmlToJavaGenerator.untrusted();
+var capabilities = XmlOperatorCapabilityPolicy.builder()
+        .allow("customer.normalize", NormalizeTestCustomer.class, ExecutionMode.TEST)
+        .allow("customer.normalize", NormalizeCustomer.class, ExecutionMode.RUN)
+        .allowInAllModes("address.validate", ValidateAddress.class)
+        .build();
+
+var translator = XmlOperationChainTranslator.gelOnly(capabilities);
 ```
 
-This rejects inline Java expressions and is the right default for untrusted XML,
-user-edited XML or BO-authored XML. Conditions can still be expressed with the
-restricted Gear4J Expression Language by setting `language="gel"` on
-`<condition>` elements.
+Restricted XML uses the stable capability id, not a Java class name:
+
+```xml
+<processingOperation id="normalize" type="customer.normalize"/>
+```
+
+The generator resolves every nested processing operation before rendering Java.
+Unknown identifiers and identifiers not allowed in the requested
+`ExecutionMode` fail with `SecurityException`. Direct TEST publication,
+promotion to RUN and runtime loading all pass their actual mode into the
+translator, so a TEST-only capability cannot be promoted or loaded as RUN.
+
+The same capability id may intentionally map to different operator classes in
+TEST and RUN. This keeps environment-specific implementation choices in trusted
+configuration instead of in user-authored XML.
 
 ## Trusted XML
 
 Trusted XML must now opt in explicitly:
 
 ```java
-XmlToJavaGenerator.trusted();
+XmlOperationChainTranslator.trusted();
 ```
 
-or, for custom package/formatter settings:
+Trusted mode preserves XML class-name resolution and inline Java:
 
-```java
-XmlToJavaGenerator.builder("io.example.generated")
-        .classLoader(Thread.currentThread().getContextClassLoader())
-        .formatter(JdtFormatter.defaultFormatter())
-        .sourcePolicy(XmlJavaSourcePolicy.trusted())
-        .build();
+```xml
+<processingOperation id="normalize" type="com.example.NormalizeCustomer"/>
 ```
 
 This mode is intended only for XML authored and reviewed by trusted developers or
-by a trusted build process. The restrictive policy is also available explicitly
-through `XmlJavaSourcePolicy.forbidInlineJava()`.
+by a trusted build process. It is equivalent to accepting Java source into the
+application JVM and is not a sandbox.
+
+## Threat model
+
+| Definition-controlled input | Restricted-mode control | Residual trust |
+| --- | --- | --- |
+| Inline Java expressions | Rejected by `XmlJavaSourcePolicy` | Trusted mode executes reviewed Java |
+| GEL expressions | Restricted AST and property policy | Custom property policies are trusted code |
+| Operator reference | Exact capability allowlist per TEST/RUN | Registered operator implementation is trusted code |
+| Java class-name bypass | Not present in the allowlist, therefore rejected | Trusted mode accepts class names deliberately |
+| Nested iterator/container/if-else operators | Recursively resolved before generation | None beyond registered capabilities |
+| Promotion TEST to RUN | Candidate is translated again with RUN capabilities | Publication repository and application policy |
+| Dependencies injected into generated code | Existing mode-aware dependency injector | Registered dependency instances are trusted |
+| XML entities and external schemas | Hardened parser/validator configuration | JDK XML implementation |
+| Oversized XML | Pre-XSD byte limit | Configured size budget |
 
 ## Why Gear4J does not provide "safe Java inline" today
 
@@ -47,8 +86,8 @@ static imports and arbitrary method calls.
 
 For that reason, Gear4J currently exposes two honest modes:
 
-- trusted Java source generation;
-- GEL-only/no-inline-Java for untrusted definitions.
+- trusted Java/class-name source generation;
+- GEL-only plus operator capability allowlists for restricted definitions.
 
 It does not claim to sandbox arbitrary Java snippets inside the same JVM.
 

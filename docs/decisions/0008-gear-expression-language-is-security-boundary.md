@@ -4,7 +4,9 @@
 
 Accepted. A restricted parser/evaluator and GEL XML conditions are implemented.
 ADR 0018 defines the deny-by-default property-access policy added after this
-initial language decision.
+initial language decision. ADR 0033 complements GEL with a mode-aware operator
+capability boundary; GEL alone does not control which application code a
+definition may invoke.
 
 ## Context
 
@@ -20,8 +22,9 @@ the same JVM.
 ## Decision
 
 Gear4J keeps inline Java as a trusted developer feature, but untrusted or
-semi-trusted pipeline definitions must use the restricted Gear4J Expression
-Language (GEL).
+semi-trusted pipeline expressions must use the restricted Gear4J Expression
+Language (GEL). Executable operator selection is governed separately by ADR
+0033.
 
 GEL must be designed around an allowlisted AST and evaluator rather than around
 string filtering. It must not expose arbitrary Java objects, reflection, class
@@ -36,5 +39,7 @@ loading, I/O, networking, process execution or unchecked method invocation.
   method invocation, type lookup, object creation and static access.
 - The default XML translator/generator rejects inline Java unless generation is
   explicitly trusted.
+- Restricted definitions also require an exact operator capability allowlist;
+  see ADR 0033.
 - The expression language roadmap remains tracked in
   `docs/roadmap/gear-expression-language.md`.

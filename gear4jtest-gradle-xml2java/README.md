@@ -28,7 +28,8 @@ When the plugin is applied to a Java project, it:
 - writes generated Java sources to `build/generated/sources/gear4j/xml2java/main`;
 - translates all XML inputs before replacing the output directory, so a failed translation does not wipe previously
   generated sources;
-- rejects inline Java expressions by default unless `trustedXml` is enabled explicitly;
+- rejects inline Java and unregistered operator capabilities by default unless
+  `trustedXml` is enabled explicitly;
 - adds that directory to the main Java source set;
 - makes `compileJava` depend on `xmlGenerateAssemblyLine`;
 - is cacheable and compatible with the Gradle configuration cache;
@@ -49,8 +50,25 @@ xmlAssemblyLineGenerator {
 ```
 
 XML definitions are treated as untrusted by default. This allows XML using GEL-only expressions, but rejects inline Java
-expressions such as method references, Java lambdas or fallback snippets. If the XML files are reviewed and versioned as
-source code, opt in explicitly:
+expressions such as method references, Java lambdas or fallback snippets.
+Restricted processing operations use stable capability ids:
+
+```xml
+<processingOperation id="normalize" type="customer.normalize"/>
+```
+
+Register the corresponding build-time operator classes in trusted Gradle
+configuration:
+
+```groovy
+xmlAssemblyLineGenerator {
+    operatorCapability 'customer.normalize', 'com.example.NormalizeCustomer'
+    operatorCapability 'address.validate', 'com.example.ValidateAddress'
+}
+```
+
+The capability mapping is an input of the cacheable generation task. If the XML
+files are reviewed and versioned as source code, opt in explicitly:
 
 ```groovy
 xmlAssemblyLineGenerator {

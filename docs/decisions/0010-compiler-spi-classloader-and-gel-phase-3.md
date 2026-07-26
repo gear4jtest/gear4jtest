@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted.
+Accepted. The XML decision is complemented by ADR 0033, which closes the
+operator-selection capability boundary.
 
 ## Context
 
@@ -33,7 +34,8 @@ provide an alternative through constructor injection or
 The default XML translator/generator remains untrusted. It rejects inline Java
 snippets and allows only GEL conditions when expressions are needed in untrusted
 XML. Trusted build-time generation must opt in explicitly with
-`XmlOperationChainTranslator.trusted()`.
+`XmlOperationChainTranslator.trusted()`. ADR 0033 additionally makes the
+restricted operator allowlist deny-by-default and mode-aware.
 
 ### Classloader lifecycle
 

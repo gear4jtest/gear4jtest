@@ -3,6 +3,7 @@ package io.github.gear4jtest.xml2java
 import org.gradle.api.Project
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 
 /**
@@ -26,17 +27,24 @@ abstract class XmlAssemblyLineGeneratorExtension {
      */
     final Property<Boolean> trustedXml
 
+    /**
+     * Stable operator capability id to Java class name mappings used by restricted XML.
+     */
+    final MapProperty<String, String> operatorCapabilities
+
     XmlAssemblyLineGeneratorExtension(Project project) {
         this.project = project
         this.xmlFiles = project.objects.fileCollection()
         this.outputDir = project.objects.directoryProperty()
         this.mediaType = project.objects.property(String)
         this.trustedXml = project.objects.property(Boolean)
+        this.operatorCapabilities = project.objects.mapProperty(String, String)
 
         this.xmlFiles.from(project.fileTree('src/main/gear4j') { include '**/*.xml' })
         this.outputDir.convention(project.layout.buildDirectory.dir('generated/sources/gear4j/xml2java/main'))
         this.mediaType.convention('application/xml')
         this.trustedXml.convention(false)
+        this.operatorCapabilities.convention([:])
     }
 
     /** Adds XML files or file collections to translate. */
@@ -72,5 +80,10 @@ abstract class XmlAssemblyLineGeneratorExtension {
     /** Convenience DSL method for trusted, reviewed XML definitions. */
     void trustedXml() {
         trustedXml.set(true)
+    }
+
+    /** Allows one stable operator capability in restricted build-time XML. */
+    void operatorCapability(String capabilityId, String operatorClassName) {
+        operatorCapabilities.put(capabilityId, operatorClassName)
     }
 }

@@ -4,7 +4,9 @@ import java.io.ByteArrayInputStream;
 import java.util.Locale;
 import java.util.Set;
 
+import io.github.gear4jtest.external.api.ExecutionMode;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslator;
+import io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy;
 import io.github.gear4jtest.xml.generator.XmlToJavaGenerator;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
 import io.github.gear4jtest.xml.parser.XmlAssemblyLineParser;
@@ -31,6 +33,11 @@ public final class XmlOperationChainTranslator implements OperationChainTranslat
                 XmlToJavaGenerator.gelOnly());
     }
 
+    public static XmlOperationChainTranslator gelOnly(XmlOperatorCapabilityPolicy operatorCapabilityPolicy) {
+        return new XmlOperationChainTranslator(new AssemblyLineValidator(), new XmlAssemblyLineParser(),
+                XmlToJavaGenerator.gelOnly(operatorCapabilityPolicy));
+    }
+
     public XmlOperationChainTranslator(AssemblyLineValidator validator,
                                        XmlAssemblyLineParser parser,
                                        XmlToJavaGenerator generator) {
@@ -54,11 +61,16 @@ public final class XmlOperationChainTranslator implements OperationChainTranslat
 
     @Override
     public GenerationResult translate(byte[] content, String mediaType) {
+        return translate(content, mediaType, ExecutionMode.RUN);
+    }
+
+    @Override
+    public GenerationResult translate(byte[] content, String mediaType, ExecutionMode mode) {
         if (!supports(mediaType)) {
             throw new IllegalArgumentException("Unsupported XML assembly-line media type: " + mediaType);
         }
         validator.validate(content);
         XmlAssemblyLineDefinition definition = parser.parse(new ByteArrayInputStream(content));
-        return generator.generate(definition);
+        return generator.generate(definition, mode);
     }
 }

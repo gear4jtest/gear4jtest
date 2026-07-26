@@ -12,14 +12,15 @@ The generated source should be both executable and readable enough to debug when
 
 ## Main components
 
-| Component                     | Role                                                  |
-|-------------------------------|-------------------------------------------------------|
-| `AssemblyLineValidator`       | Validates XML against the schema.                     |
-| `XmlAssemblyLineParser`           | Parses XML into an internal model.                    |
-| `XmlAssemblyLineDefinition`       | Internal model used by the generator.                 |
-| `XmlToJavaGenerator`          | Generates Java source.                                |
-| `JdtFormatter`                | Formats generated Java.                               |
-| `XmlOperationChainTranslator` | Exposes XML translation through the external-api SPI. |
+| Component                     | Role                                                        |
+|-------------------------------|-------------------------------------------------------------|
+| `AssemblyLineValidator`       | Validates XML against the schema.                           |
+| `XmlAssemblyLineParser`       | Parses XML into an internal model.                          |
+| `XmlAssemblyLineDefinition`   | Internal model used by the generator.                       |
+| `XmlOperatorCapabilityPolicy` | Resolves restricted operator ids independently per mode.    |
+| `XmlToJavaGenerator`          | Generates Java source.                                      |
+| `JdtFormatter`                | Formats generated Java.                                     |
+| `XmlOperationChainTranslator` | Exposes XML translation through the external-api SPI.       |
 
 ## Generation rules
 
@@ -68,14 +69,19 @@ Flow signal stations and error policies are separate in XML and generated Java:
 Validation should happen before Java generation.
 
 Generator code should not rely on malformed XML being impossible unless the validator or parser enforces it.
+Restricted generation must recursively resolve every processing operation
+through `XmlOperatorCapabilityPolicy` before the first Java source fragment is
+rendered. A nested iterator, container or if/else operation cannot bypass the
+same policy applied to top-level operations.
 
 ## Testing strategy
 
 Simple generator unit tests are useful, but the most important tests are end-to-end:
 
 1. parse sample XML;
-2. generate Java;
-3. compile the generated source;
-4. instantiate the generated class;
-5. inject dependencies;
-6. execute the resulting pipeline.
+2. resolve operator capabilities for TEST and RUN;
+3. generate Java;
+4. compile the generated source;
+5. instantiate the generated class;
+6. inject dependencies;
+7. execute the resulting pipeline.

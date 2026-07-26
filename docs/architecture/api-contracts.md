@@ -26,6 +26,7 @@ Current public API packages include:
 - `io.github.gear4jtest.external.api.exception.CompilationTimeoutException`
 - `io.github.gear4jtest.external.jdbc.repository.*`
 - `io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStore`
+- `io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy`
 - `io.github.gear4jtest.xml.translator.XmlOperationChainTranslator`
 - `io.github.gear4jtest.xml.validator.AssemblyLineValidator`
 
@@ -114,9 +115,12 @@ kept public for wiring, tests or historical compatibility; they are not part of 
 
 ## Generated XML definitions
 
-XML with inline Java remains a trusted-source feature. The default XML translator
-is GEL-only/untrusted: Java snippets are rejected unless callers explicitly use
-`XmlOperationChainTranslator.trusted()` or `XmlToJavaGenerator.trusted()`.
+XML with inline Java or operator class names remains a trusted-source feature.
+The default XML translator is GEL-only and deny-all: Java snippets and
+unregistered operator capabilities are rejected. Restricted callers configure
+stable operator identifiers through `XmlOperatorCapabilityPolicy` and pass the
+policy to `XmlOperationChainTranslator.gelOnly(policy)`. TEST and RUN mappings
+are independent.
 
 For externally authored definitions, use GEL conditions with:
 
