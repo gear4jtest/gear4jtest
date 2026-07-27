@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
+import javax.lang.model.SourceVersion;
 
 final class JavaTypeName {
     private static final String JAVA_LANG_OBJECT = "java.lang.Object";
@@ -45,7 +46,7 @@ final class JavaTypeName {
         if (value == null || value.isBlank()) {
             return OBJECT;
         }
-        return new Parser(value.trim()).parseType();
+        return new Parser(value.trim()).parse();
     }
 
     static JavaTypeName from(Type type) {
@@ -200,9 +201,19 @@ final class JavaTypeName {
             };
         }
 
+        JavaTypeName parse() {
+            JavaTypeName type = parseType();
+            skipWhitespace();
+            if (index != value.length()) {
+                throw invalidType();
+            }
+            return type;
+        }
+
         JavaTypeName parseType() {
             skipWhitespace();
             String raw = readRawType();
+            requireValidRawType(raw);
             skipWhitespace();
             if (!peek('<')) {
                 return JavaTypeName.raw(normalize(raw));
@@ -223,6 +234,22 @@ final class JavaTypeName {
             return new JavaTypeName(normalize(raw), args, false, false, false);
         }
 
+        private void requireValidRawType(String raw) {
+            String componentType = raw;
+            while (componentType.endsWith("[]")) {
+                componentType = componentType.substring(0, componentType.length() - 2);
+            }
+            if (componentType.isEmpty() || componentType.indexOf('[') >= 0 || componentType.indexOf(']') >= 0) {
+                throw invalidType();
+            }
+            for (String segment : componentType.split("\\.", -1)) {
+                if (!SourceVersion.isIdentifier(segment)
+                        || SourceVersion.isKeyword(segment, SourceVersion.RELEASE_17)) {
+                    throw invalidType();
+                }
+            }
+        }
+
         private String readRawType() {
             int start = index;
             while (index < value.length()) {
@@ -234,9 +261,13 @@ final class JavaTypeName {
                 }
             }
             if (start == index) {
-                throw new IllegalArgumentException("Invalid Java type: " + value);
+                throw invalidType();
             }
             return value.substring(start, index);
+        }
+
+        private IllegalArgumentException invalidType() {
+            return new IllegalArgumentException("Invalid Java type: " + value);
         }
 
         private boolean peek(char expected) {

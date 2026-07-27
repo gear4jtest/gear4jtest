@@ -84,6 +84,21 @@ class XmlOperationChainTranslatorTest {
                 """.formatted(operations, dependencies)).getBytes(StandardCharsets.UTF_8);
     }
 
+    private static byte[] semanticValidationXml(String inputType, String dependencies) {
+        return ("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+                              id="semantic_validation"
+                              inputType="%s"
+                              outputType="java.lang.String">
+                  <operations>
+                    <signal id="stop" type="STOP" inputType="java.lang.String"/>
+                  </operations>
+                  <dependencies>%s</dependencies>
+                </assemblyLine>
+                """.formatted(inputType, dependencies)).getBytes(StandardCharsets.UTF_8);
+    }
+
     private static byte[] resource(String name) throws IOException {
         try (var input = XmlOperationChainTranslatorTest.class.getResourceAsStream(name)) {
             if (input == null) {
@@ -174,6 +189,35 @@ class XmlOperationChainTranslatorTest {
         assertThatThrownBy(() -> boundedTranslator.translate(signalXml(1, 0), "application/xml"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("maxGeneratedSourceBytes=64");
+    }
+
+    @Test
+    void translate_shouldRejectSchemaValidButSemanticallyCollidingDependencies() {
+        // Given
+        byte[] xml = semanticValidationXml("java.lang.String",
+                                           """
+                                                   <dependency name="foo-bar" type="java.lang.String"/>
+                                                   <dependency name="foo_bar" type="java.lang.String"/>
+                                                   """);
+
+        // When / Then
+        assertThatThrownBy(() -> translator.translate(xml, "application/xml"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("/assemblyLine/dependencies/dependency[2]/@name")
+                .hasMessageContaining("Generated field name collision 'foo_bar'");
+    }
+
+    @Test
+    void translate_shouldRejectSchemaValidTypeWithTrailingText() {
+        // Given
+        byte[] xml = semanticValidationXml("java.lang.String trailing",
+                                           "<dependency name=\"service\" type=\"java.lang.String\"/>");
+
+        // When / Then
+        assertThatThrownBy(() -> translator.translate(xml, "application/xml"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("/assemblyLine/@inputType")
+                .hasMessageContaining("java.lang.String trailing");
     }
 
     @Test

@@ -11,6 +11,7 @@ This module owns:
 - XML media type support;
 - validation against `assembly-line.xsd`;
 - parsing XML into an internal model;
+- semantic validation of generated identifiers, collisions and Java type names;
 - generating readable Java source;
 - formatting generated Java source;
 - registering the XML translator as an `OperationChainTranslator`.
@@ -72,12 +73,33 @@ Typical path:
 3. `XmlAssemblyLineParser` parses XML into `XmlAssemblyLineDefinition`.
 4. restricted generation resolves every operator capability for the requested
    `ExecutionMode`;
-5. structural limits reject excessive operation count, dependency count or
+5. semantic validation rejects invalid generated Java identifiers, normalized
+   name collisions, duplicate branch ids and malformed type names with the
+   affected XML path;
+6. structural limits reject excessive operation count, dependency count or
    nesting depth;
-6. `XmlToJavaGenerator` generates Java source and checks its raw and formatted
+7. `XmlToJavaGenerator` generates Java source and checks its raw and formatted
    UTF-8 size.
-7. `JdtFormatter` formats the generated source.
-8. `AssemblyLineManager` compiles and loads the generated class through the external API module.
+8. `JdtFormatter` formats the generated source.
+9. `AssemblyLineManager` compiles and loads the generated class through the external API module.
+
+## Semantic validation
+
+The XSD validates document structure, but Java names and type expressions need
+additional checks after parsing. Before rendering starts, the generator:
+
+- validates every generated class, method, dependency and parallel-executor
+  field as a Java 17 identifier;
+- rejects Java keywords such as a dependency named `class`;
+- rejects collisions after deterministic normalization, such as `foo-bar` and
+  `foo_bar`;
+- rejects duplicate branch ids among siblings;
+- parses every declared Java type completely instead of accepting a valid
+  prefix followed by trailing text.
+
+Failures use `XmlDefinitionValidationException`. Its `path()` and
+`rejectedValue()` accessors let a BO or API return the offending definition
+location without waiting for a Java compiler diagnostic.
 
 ## Translation budgets
 

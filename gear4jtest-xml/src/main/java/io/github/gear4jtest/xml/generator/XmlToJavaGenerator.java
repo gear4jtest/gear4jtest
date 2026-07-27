@@ -144,6 +144,7 @@ public final class XmlToJavaGenerator {
         XmlAssemblyLineDefinition resolvedDefinition = XmlOperatorCapabilityResolver.resolve(definition,
                                                                                              operatorCapabilityPolicy,
                                                                                              mode);
+        XmlDefinitionSemanticValidator.validate(resolvedDefinition);
         GeneratedJavaSource generatedSource = new XmlGeneratedAssemblyLineRenderer(packageName, classLoader,
                 sourcePolicy)
                 .render(resolvedDefinition);

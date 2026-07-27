@@ -18,6 +18,7 @@ The generated source should be both executable and readable enough to debug when
 | `XmlAssemblyLineParser`       | Parses XML into an internal model.                          |
 | `XmlAssemblyLineDefinition`   | Internal model used by the generator.                       |
 | `XmlOperatorCapabilityPolicy` | Resolves restricted operator ids independently per mode.    |
+| `XmlDefinitionSemanticValidator` | Rejects invalid names, collisions and malformed types.   |
 | `XmlToJavaGenerator`          | Generates Java source.                                      |
 | `JdtFormatter`                | Formats generated Java.                                     |
 | `XmlOperationChainTranslator` | Exposes XML translation through the external-api SPI.       |
@@ -74,14 +75,23 @@ through `XmlOperatorCapabilityPolicy` before the first Java source fragment is
 rendered. A nested iterator, container or if/else operation cannot bypass the
 same policy applied to top-level operations.
 
+After capability resolution and before rendering, semantic validation applies
+to both trusted and restricted definitions. It validates Java 17 identifiers
+after the same deterministic normalization used by the renderer, keeps one
+namespace for generated dependency and executor fields, rejects sibling branch
+id duplicates, and requires complete parsing of every declared Java type.
+`XmlDefinitionValidationException` reports the XML path and rejected value so
+definition authors do not receive a late compiler-only diagnostic.
+
 ## Testing strategy
 
 Simple generator unit tests are useful, but the most important tests are end-to-end:
 
 1. parse sample XML;
 2. resolve operator capabilities for TEST and RUN;
-3. generate Java;
-4. compile the generated source;
-5. instantiate the generated class;
-6. inject dependencies;
-7. execute the resulting pipeline.
+3. validate semantic names, collisions and types;
+4. generate Java;
+5. compile the generated source;
+6. instantiate the generated class;
+7. inject dependencies;
+8. execute the resulting pipeline.

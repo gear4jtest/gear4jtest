@@ -35,6 +35,19 @@ class JavaTypeNameDeepCoverageTest {
     }
 
     @Test
+    void parse_shouldRejectTrailingTextAndMalformedQualifiedNames() {
+        assertThatThrownBy(() -> JavaTypeName.parse("java.lang.String trailing"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid Java type: java.lang.String trailing");
+        assertThatThrownBy(() -> JavaTypeName.parse("java..lang.String"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid Java type: java..lang.String");
+        assertThatThrownBy(() -> JavaTypeName.parse("9invalid.Type"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid Java type: 9invalid.Type");
+    }
+
+    @Test
     void render_shouldRenderParameterizedArraysAndClassLiteralsWithImports() {
         // Given
         JavaImportManager imports = new JavaImportManager("io.test.generated");
