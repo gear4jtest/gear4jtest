@@ -57,6 +57,9 @@ Object metadata and tags are published transactionally on the repository's `Data
 must target the same schema. Repeated publication of identical `(al_id, version, mode)` content is idempotent and
 conflicting content is rejected without changing existing metadata.
 
+Version listing is always bounded. `OperationChainObjectRepositoryJdbc#findAll` requires a `PageRequest` and applies it
+in SQL for every supported dialect; it never loads all versions before slicing the result.
+
 The object repository's mutating operations use autonomous
 `JdbcTransactionOperations` by default. They refuse a connection already bound
 to an ambient transaction instead of committing or rolling back a caller-owned

@@ -622,21 +622,14 @@ public final class OperationChainObjectRepositoryJdbc
     }
 
     @Override
-    public List<OperationChainObject> findAll(String alId) {
-        return findAll(alId, null);
-    }
-
-    @Override
     public List<OperationChainObject> findAll(String alId, PageRequest pageRequest) {
+        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
         String orderedSql = "SELECT " + OBJECT_COLUMNS
                 + " FROM operation_chain_object WHERE al_id=? ORDER BY published_at DESC, id DESC";
-        String sql = pageRequest == null ? orderedSql
-                : ExternalRepositorySqlDialect.pagedSql(databaseDialect, orderedSql);
+        String sql = ExternalRepositorySqlDialect.pagedSql(databaseDialect, orderedSql);
         try (var connection = ds.getConnection(); var statement = prepare(connection, sql)) {
             statement.setString(1, alId);
-            if (pageRequest != null) {
-                ExternalRepositorySqlDialect.bindPage(databaseDialect, statement, 2, pageRequest);
-            }
+            ExternalRepositorySqlDialect.bindPage(databaseDialect, statement, 2, pageRequest);
             try (var resultSet = statement.executeQuery()) {
                 List<OperationChainObject> list = new ArrayList<>();
                 while (resultSet.next()) {

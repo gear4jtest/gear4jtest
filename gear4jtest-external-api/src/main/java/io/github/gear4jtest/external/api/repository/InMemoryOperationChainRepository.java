@@ -181,10 +181,13 @@ public final class InMemoryOperationChainRepository
     }
 
     @Override
-    public synchronized List<OperationChainObject> findAll(String assemblyLineId) {
+    public synchronized List<OperationChainObject> findAll(String assemblyLineId, PageRequest pageRequest) {
+        Objects.requireNonNull(pageRequest, "pageRequest must not be null");
         return objects.values().stream()
                 .filter(object -> Objects.equals(assemblyLineId, object.alId()))
                 .sorted(PUBLICATION_ORDER.reversed())
+                .skip(pageRequest.offset())
+                .limit(pageRequest.limit())
                 .toList();
     }
 

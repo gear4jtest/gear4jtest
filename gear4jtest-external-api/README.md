@@ -95,6 +95,8 @@ AssemblyLineManager manager = AssemblyLineManager.builder()
 
 The in-memory implementation is thread-safe and atomic within one JVM, but it is not durable or distributed. JDBC
 applications should use `OperationChainObjectRepositoryJdbc`, which implements the publication capability transactionally.
+Version listing through `OperationChainObjectRepository` always requires a bounded `PageRequest`; there is no unbounded
+fallback. Custom repository implementations must apply the page before materializing results.
 
 ## Compiler SPI
 

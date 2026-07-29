@@ -9,6 +9,7 @@ import io.github.gear4jtest.external.api.model.OperationChainObject;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class InMemoryOperationChainRepositoryTest {
@@ -66,9 +67,31 @@ class InMemoryOperationChainRepositoryTest {
         // When / Then
         OperationChainObject latestRun = repository.findLatestRun("line").orElseThrow();
         assertThat(latestRun.version()).isEqualTo("2.0.0");
-        assertThat(repository.findAll("line"))
+    }
+
+    @Test
+    void findAll_shouldApplyRequiredBoundedPage() {
+        // Given
+        repository.publish(object("line", "1.0.0", ExecutionMode.RUN, "a".repeat(64),
+                                  Instant.parse("2026-07-16T10:00:00Z")),
+                           List.of());
+        repository.publish(object("line", "2.0.0", ExecutionMode.RUN, "b".repeat(64),
+                                  Instant.parse("2026-07-16T11:00:00Z")),
+                           List.of());
+        repository.publish(object("line", "3.0.0", ExecutionMode.TEST, "c".repeat(64),
+                                  Instant.parse("2026-07-16T12:00:00Z")),
+                           List.of());
+
+        // When / Then
+        assertThat(repository.findAll("line", PageRequest.first(2)))
                 .extracting(OperationChainObject::version)
-                .containsExactly("3.0.0", "2.0.0", "1.0.0");
+                .containsExactly("3.0.0", "2.0.0");
+        assertThat(repository.findAll("line", new PageRequest(1, 1)))
+                .extracting(OperationChainObject::version)
+                .containsExactly("2.0.0");
+        assertThatNullPointerException()
+                .isThrownBy(() -> repository.findAll("line", null))
+                .withMessage("pageRequest must not be null");
     }
 
     @Test

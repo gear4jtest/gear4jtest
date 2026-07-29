@@ -15,12 +15,14 @@ import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class OperationChainObjectRepositoryJdbcTest {
@@ -28,7 +30,7 @@ class OperationChainObjectRepositoryJdbcTest {
     private static final String HASH_B = "b".repeat(64);
 
     @Test
-    void findAll_shouldApplySqlLevelPaginationWhenPageRequestIsProvided() throws Exception {
+    void findAll_shouldAlwaysApplySqlLevelPagination() throws Exception {
         // Given
         DataSource dataSource = mock(DataSource.class);
         Connection connection = mock(Connection.class);
@@ -57,6 +59,22 @@ class OperationChainObjectRepositoryJdbcTest {
         verify(statement).setString(1, "pipeline");
         verify(statement).setInt(2, 10);
         verify(statement).setInt(3, 5);
+    }
+
+    @Test
+    void findAll_shouldRejectMissingPageRequestBeforeOpeningConnection() {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        OperationChainObjectRepositoryJdbc repository = OperationChainObjectRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.H2)
+                .build();
+
+        // When / Then
+        assertThatNullPointerException()
+                .isThrownBy(() -> repository.findAll("pipeline", null))
+                .withMessage("pageRequest must not be null");
+        verifyNoInteractions(dataSource);
     }
 
     @Test
