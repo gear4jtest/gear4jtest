@@ -172,6 +172,13 @@ self-healing require at least one complete `fallback.N.type` group. Treat a
 startup rejection as a configuration defect rather than silently disabling the
 requested durability behavior.
 
+`mode.write=ASYNC_FALLBACKS` guarantees only that a successful return represents
+an accepted primary write. Fallback scheduling and writes are best effort:
+rejections and failures are logged after primary success without failing the
+caller. Alert on these warnings and select `SYNC_ALL` when completion of every
+fallback must be awaited. No composite mode makes independent stores
+transactionally atomic.
+
 ## Metrics and health
 
 `gear4jtest-micrometer` exposes counters and duration timers. Keep metric tags

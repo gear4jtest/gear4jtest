@@ -4,16 +4,22 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CompositeArtifactStoreTest {
+    @TempDir
+    Path spoolDirectory;
 
     @Test
     void putInputStream_shouldWritePrimaryAndSynchronousFallbacksWithoutUsingByteArrayPut() throws IOException {
@@ -67,6 +73,51 @@ class CompositeArtifactStoreTest {
         assertThatThrownBy(() -> store.get(hash))
                 .isInstanceOf(IOException.class)
                 .hasMessageContaining("maxBytes=" + (content.length - 1L));
+    }
+
+    @Test
+    void putByteArray_shouldKeepPrimarySuccessWhenAsyncFallbackSchedulingIsRejected() throws IOException {
+        // Given
+        InMemoryArtifactStore primary = new InMemoryArtifactStore();
+        InMemoryArtifactStore fallback = new InMemoryArtifactStore();
+        CompositeArtifactStore store = new CompositeArtifactStore(primary, List.of(fallback),
+                CompositeArtifactStore.WriteMode.ASYNC_FALLBACKS,
+                CompositeArtifactStore.ReadMode.PREFER_PRIMARY, false, false, rejectingExecutor());
+        byte[] content = "payload".getBytes(StandardCharsets.UTF_8);
+
+        // When
+        String hash = store.put(content);
+
+        // Then
+        assertThat(primary.exists(hash)).isTrue();
+        assertThat(fallback.exists(hash)).isFalse();
+    }
+
+    @Test
+    void putInputStream_shouldKeepPrimarySuccessAndCleanSpoolWhenAsyncFallbackSchedulingIsRejected()
+            throws IOException {
+        // Given
+        InMemoryArtifactStore primary = new InMemoryArtifactStore();
+        InMemoryArtifactStore fallback = new InMemoryArtifactStore();
+        CompositeArtifactStore store = new CompositeArtifactStore(primary, List.of(fallback),
+                CompositeArtifactStore.WriteMode.ASYNC_FALLBACKS,
+                CompositeArtifactStore.ReadMode.PREFER_PRIMARY, false, false,
+                ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES, spoolDirectory, rejectingExecutor());
+
+        // When
+        String hash = store.put(new ByteArrayInputStream("payload".getBytes(StandardCharsets.UTF_8)), 16L);
+
+        // Then
+        assertThat(primary.exists(hash)).isTrue();
+        assertThat(fallback.exists(hash)).isFalse();
+        assertThat(store.snapshotSpoolStats().currentFiles()).isZero();
+        assertThat(store.snapshotSpoolStats().currentBytes()).isZero();
+    }
+
+    private static Executor rejectingExecutor() {
+        return command -> {
+            throw new RejectedExecutionException("executor saturated");
+        };
     }
 
     private static final class StreamOnlyArtifactStore implements ArtifactStore {

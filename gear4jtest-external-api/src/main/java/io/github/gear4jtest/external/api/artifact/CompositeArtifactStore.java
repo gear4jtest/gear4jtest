@@ -107,14 +107,7 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
             }
             case ASYNC_FALLBACKS -> {
                 for (var fb : fallbacks) {
-                    byte[] fallbackContent = Arrays.copyOf(stored, stored.length);
-                    asyncExec.execute(() -> {
-                        try {
-                            fb.put(fallbackContent);
-                        } catch (IOException e) {
-                            LOGGER.warn("Asynchronous fallback artifact write failed.", e);
-                        }
-                    });
+                    scheduleAsyncWrite(fb, stored);
                 }
             }
         }
@@ -221,22 +214,30 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
             LOGGER.warn("Unable to prepare artifact self-healing copy.", e);
             return;
         }
-        try {
-            asyncExec.execute(() -> {
-                try (InputStream content = Files.newInputStream(asyncCopy)) {
-                    if (!primary.exists(hash)) {
-                        primary.put(content, ArtifactStore.UNLIMITED_SIZE);
-                    }
-                } catch (IOException e) {
-                    LOGGER.warn("Asynchronous artifact self-healing write failed.", e);
-                } finally {
-                    spool.delete(asyncCopy);
+        executeBestEffort(() -> {
+            try (InputStream content = Files.newInputStream(asyncCopy)) {
+                if (!primary.exists(hash)) {
+                    primary.put(content, ArtifactStore.UNLIMITED_SIZE);
                 }
-            });
-        } catch (RuntimeException e) {
-            spool.delete(asyncCopy);
-            LOGGER.warn("Asynchronous artifact self-healing write was rejected.", e);
-        }
+            } catch (IOException | RuntimeException e) {
+                LOGGER.warn("Asynchronous artifact self-healing write failed.", e);
+            } finally {
+                spool.delete(asyncCopy);
+            }
+        }, () -> spool.delete(asyncCopy), "Asynchronous artifact self-healing write was rejected.");
+    }
+
+    private void scheduleAsyncWrite(ArtifactStore store, byte[] source) {
+        byte[] asyncContent = Arrays.copyOf(source, source.length);
+        executeBestEffort(() -> {
+            try {
+                store.put(asyncContent);
+            } catch (IOException | RuntimeException e) {
+                LOGGER.warn("Asynchronous fallback artifact write failed.", e);
+            }
+        }, () -> {
+            // No external resource is held when the byte-array task is rejected.
+        }, "Asynchronous fallback artifact write was rejected after primary success.");
     }
 
     private void scheduleAsyncWrite(ArtifactStore store, Path sourceFile, String failureMessage) {
@@ -247,19 +248,27 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
             LOGGER.warn("Unable to prepare asynchronous artifact copy.", e);
             return;
         }
+        executeBestEffort(() -> {
+            try (InputStream content = Files.newInputStream(asyncCopy)) {
+                store.put(content, ArtifactStore.UNLIMITED_SIZE);
+            } catch (IOException | RuntimeException e) {
+                LOGGER.warn(failureMessage, e);
+            } finally {
+                spool.delete(asyncCopy);
+            }
+        }, () -> spool.delete(asyncCopy),
+                          "Asynchronous fallback artifact write was rejected after primary success.");
+    }
+
+    private void executeBestEffort(Runnable task, Runnable rejectionCleanup, String rejectionMessage) {
         try {
-            asyncExec.execute(() -> {
-                try (InputStream content = Files.newInputStream(asyncCopy)) {
-                    store.put(content, ArtifactStore.UNLIMITED_SIZE);
-                } catch (IOException e) {
-                    LOGGER.warn(failureMessage, e);
-                } finally {
-                    spool.delete(asyncCopy);
-                }
-            });
-        } catch (RuntimeException e) {
-            spool.delete(asyncCopy);
-            LOGGER.warn("Asynchronous artifact write was rejected.", e);
+            asyncExec.execute(task);
+        } catch (RuntimeException rejected) {
+            rejectionCleanup.run();
+            LOGGER.warn(rejectionMessage, rejected);
+        } catch (Error error) {
+            rejectionCleanup.run();
+            throw error;
         }
     }
 

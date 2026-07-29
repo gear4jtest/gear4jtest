@@ -177,3 +177,11 @@ definitions must pass an explicit limit to the advanced manager constructor or
 call `ArtifactStore.put(InputStream, maxBytes)` directly.
 `ArtifactStore.UNLIMITED_SIZE` remains available only as an explicit opt-in for
 trusted deployments.
+
+`CompositeArtifactStore.WriteMode.ASYNC_FALLBACKS` is best-effort replication.
+Once the primary store has accepted an artifact, executor rejection or a
+fallback write failure is logged and does not turn the completed primary write
+into an apparent caller failure. Use `SYNC_ALL` when the caller must wait for
+every configured fallback. Stores are independent, so even synchronous mode
+cannot provide a cross-store atomic transaction: a later fallback failure may
+still occur after an earlier store accepted the content.
