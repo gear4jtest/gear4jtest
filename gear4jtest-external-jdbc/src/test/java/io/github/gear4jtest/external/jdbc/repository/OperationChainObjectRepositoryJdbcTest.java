@@ -10,6 +10,7 @@ import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.ExecutionMode;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationStage;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import org.junit.jupiter.api.Test;
 
@@ -18,10 +19,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class OperationChainObjectRepositoryJdbcTest {
+    private static final String HASH_A = "a".repeat(64);
+    private static final String HASH_B = "b".repeat(64);
+
     @Test
     void findAll_shouldApplySqlLevelPaginationWhenPageRequestIsProvided() throws Exception {
         // Given
@@ -90,5 +95,65 @@ class OperationChainObjectRepositoryJdbcTest {
         // Then
         assertThat(result.createdAt()).isEqualTo(createdAt);
         assertThat(result.publishedAt()).isEqualTo(publishedAt);
+    }
+
+    @Test
+    void findStagedBefore_shouldLoadThePagedStagesAndTheirTagsWithOneQuery() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        ResultSet resultSet = mock(ResultSet.class);
+        String[] preparedSql = new String[1];
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenAnswer(invocation -> {
+            preparedSql[0] = invocation.getArgument(0);
+            return statement;
+        });
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(true, true, true, false);
+        when(resultSet.getString("stage_id")).thenReturn("stage-a", "stage-a", "stage-b");
+        when(resultSet.getString("al_id")).thenReturn("line-a", "line-a", "line-b");
+        when(resultSet.getString("version")).thenReturn("1", "1", "2");
+        when(resultSet.getString("publication_mode")).thenReturn("TEST", "TEST", "RUN");
+        when(resultSet.getString("content_hash")).thenReturn(HASH_A, HASH_A, HASH_B);
+        when(resultSet.getLong("size_bytes")).thenReturn(10L, 10L, 20L);
+        when(resultSet.getString("mime_type")).thenReturn("application/xml");
+        Instant createdAt = Instant.parse("2026-01-01T00:00:00Z");
+        Instant publishedAt = Instant.parse("2026-01-02T00:00:00Z");
+        Instant stagedAt = Instant.parse("2026-01-03T00:00:00Z");
+        when(resultSet.getTimestamp(eq("created_at"), any(Calendar.class)))
+                .thenReturn(Timestamp.from(createdAt));
+        when(resultSet.getString("created_by")).thenReturn("tester");
+        when(resultSet.getTimestamp(eq("published_at"), any(Calendar.class)))
+                .thenReturn(Timestamp.from(publishedAt));
+        when(resultSet.getString("store_fingerprint")).thenReturn(HASH_A, HASH_A, HASH_B);
+        when(resultSet.getTimestamp(eq("staged_at"), any(Calendar.class)))
+                .thenReturn(Timestamp.from(stagedAt));
+        when(resultSet.getLong("stage_revision")).thenReturn(1L, 1L, 2L);
+        when(resultSet.getString("stage_tag")).thenReturn("alpha", "omega", null);
+        OperationChainObjectRepositoryJdbc repository = OperationChainObjectRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.H2)
+                .build();
+
+        // When
+        var result = repository.findStagedBefore(stagedAt.plusSeconds(1), new PageRequest(5, 10));
+
+        // Then
+        assertThat(result)
+                .extracting(OperationChainPublicationStage::stageId)
+                .containsExactly("stage-a", "stage-b");
+        assertThat(result.get(0).tags()).containsExactly("alpha", "omega");
+        assertThat(result.get(1).tags()).isEmpty();
+        assertThat(preparedSql[0])
+                .contains("FROM (SELECT")
+                .contains("LIMIT ? OFFSET ?")
+                .contains("LEFT JOIN operation_chain_publication_stage_tag")
+                .contains("ORDER BY staged_page.staged_at, staged_page.stage_id, tag_row.tag");
+        verify(connection, times(1)).prepareStatement(anyString());
+        verify(statement, times(1)).executeQuery();
+        verify(statement).setInt(2, 10);
+        verify(statement).setInt(3, 5);
     }
 }

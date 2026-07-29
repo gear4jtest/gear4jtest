@@ -191,8 +191,7 @@ class ExternalJdbcMultiDialectIT {
                 .hasMessageContaining("commit operation-chain stage");
         assertThat(objects.exists(rollbackAssemblyLineId, "rollback", ExecutionMode.TEST)).isFalse();
         assertThat(objects.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(100)))
-                .extracting(io.github.gear4jtest.external.api.repository.OperationChainPublicationStage::stageId)
-                .contains(rollbackStage.stageId());
+                .containsExactly(rollbackStage);
         objects.abort(rollbackStage.stageId());
 
         // When / Then: a conflicting retry must preserve the committed metadata.

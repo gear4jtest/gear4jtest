@@ -100,8 +100,7 @@ class OperationChainPublicationRepositoryJdbcIT {
         assertThat(count(dataSource, "SELECT COUNT(*) FROM operation_chain_publication_stage")).isEqualTo(1);
         assertThat(count(dataSource, "SELECT COUNT(*) FROM operation_chain_publication_stage_tag")).isEqualTo(2);
         assertThat(repository.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10)))
-                .extracting(io.github.gear4jtest.external.api.repository.OperationChainPublicationStage::stageId)
-                .containsExactly(stage.stageId());
+                .containsExactly(stage);
 
         // When
         repository.commit(stage.stageId());

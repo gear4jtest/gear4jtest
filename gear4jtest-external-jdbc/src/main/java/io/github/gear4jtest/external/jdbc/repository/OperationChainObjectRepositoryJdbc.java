@@ -38,6 +38,8 @@ public final class OperationChainObjectRepositoryJdbc
     private static final String STAGE_COLUMNS = "stage_id, al_id, version, publication_mode, content_hash, "
             + "size_bytes, mime_type, created_at, created_by, published_at, store_fingerprint, staged_at, "
             + "stage_revision";
+    private static final String PAGED_STAGE_COLUMNS = "staged_page."
+            + STAGE_COLUMNS.replace(", ", ", staged_page.");
 
     private final DataSource ds;
     private final Gear4jDatabaseDialect databaseDialect;
@@ -149,9 +151,13 @@ public final class OperationChainObjectRepositoryJdbc
     private OperationChainPublicationStage withStageTags(Connection connection,
                                                          OperationChainPublicationStage stage)
             throws SQLException {
-        return new OperationChainPublicationStage(stage.stageId(), stage.object(),
-                findStageTags(connection, stage.stageId()), stage.storeFingerprint(), stage.stagedAt(),
-                stage.revision());
+        return copyStageWithTags(stage, findStageTags(connection, stage.stageId()));
+    }
+
+    private static OperationChainPublicationStage copyStageWithTags(OperationChainPublicationStage stage,
+                                                                    List<String> tags) {
+        return new OperationChainPublicationStage(stage.stageId(), stage.object(), tags,
+                stage.storeFingerprint(), stage.stagedAt(), stage.revision());
     }
 
     private static String requireContentHash(String contentHash) {
@@ -268,23 +274,38 @@ public final class OperationChainObjectRepositoryJdbc
     public List<OperationChainPublicationStage> findStagedBefore(Instant cutoff, PageRequest pageRequest) {
         Objects.requireNonNull(cutoff, "cutoff must not be null");
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
-        String orderedSql = "SELECT " + STAGE_COLUMNS
+        String orderedStagesSql = "SELECT " + STAGE_COLUMNS
                 + " FROM operation_chain_publication_stage WHERE staged_at <= ? ORDER BY staged_at, stage_id";
-        String sql = ExternalRepositorySqlDialect.pagedSql(databaseDialect, orderedSql);
+        String pagedStagesSql = ExternalRepositorySqlDialect.pagedSql(databaseDialect, orderedStagesSql);
+        String sql = "SELECT " + PAGED_STAGE_COLUMNS + ", tag_row.tag AS stage_tag FROM ("
+                + pagedStagesSql + ") staged_page "
+                + "LEFT JOIN operation_chain_publication_stage_tag tag_row "
+                + "ON tag_row.stage_id=staged_page.stage_id "
+                + "ORDER BY staged_page.staged_at, staged_page.stage_id, tag_row.tag";
         try (Connection connection = ds.getConnection(); PreparedStatement statement = prepare(connection, sql)) {
             setTimestamp(statement, 1, cutoff);
             ExternalRepositorySqlDialect.bindPage(databaseDialect, statement, 2, pageRequest);
             List<OperationChainPublicationStage> stages = new ArrayList<>();
+            OperationChainPublicationStage currentStage = null;
+            List<String> currentTags = new ArrayList<>();
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    stages.add(mapStageRow(resultSet));
+                    OperationChainPublicationStage rowStage = mapStageRow(resultSet);
+                    if (currentStage != null && !currentStage.stageId().equals(rowStage.stageId())) {
+                        stages.add(copyStageWithTags(currentStage, List.copyOf(currentTags)));
+                        currentTags.clear();
+                    }
+                    currentStage = rowStage;
+                    String tag = resultSet.getString("stage_tag");
+                    if (tag != null) {
+                        currentTags.add(tag);
+                    }
                 }
             }
-            List<OperationChainPublicationStage> withTags = new ArrayList<>(stages.size());
-            for (OperationChainPublicationStage stage : stages) {
-                withTags.add(withStageTags(connection, stage));
+            if (currentStage != null) {
+                stages.add(copyStageWithTags(currentStage, List.copyOf(currentTags)));
             }
-            return List.copyOf(withTags);
+            return List.copyOf(stages);
         } catch (SQLException exception) {
             throw repositoryFailure("find staged operation-chain publications", exception);
         }
