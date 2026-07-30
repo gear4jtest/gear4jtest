@@ -111,6 +111,10 @@ Nested runs intentionally share the parent cancellation token and call stack so 
 propagate through the call tree. Independent top-level runs should not reuse those objects accidentally; use
 `RunRequest.toIndependentBuilder()` when a request is used as a reusable template.
 
+`RunRequest.Builder.input(...)` returns an independently copied builder when it narrows the input type. This preserves
+the fluent inferred-type form while preventing a broader mutable builder alias from corrupting an already narrowed
+request.
+
 A running pipeline graph must not be mutated while a run is in progress.
 
 Assembly-line default context and `RunRequest` context are merged into a new map

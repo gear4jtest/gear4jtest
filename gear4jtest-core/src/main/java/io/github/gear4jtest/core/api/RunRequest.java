@@ -150,13 +150,26 @@ public class RunRequest<IN> {
          * The bounded type parameter preserves the convenient
          * {@code RunRequest.builder().input(value).build()} form while preventing a
          * builder whose input type is already specific from being widened to an
-         * unrelated type.
+         * unrelated type. The returned typed builder is an independent copy: a broader
+         * alias can therefore no longer replace its input with another subtype.
          * </p>
          */
-        @SuppressWarnings("unchecked")
         public <NEW_IN extends IN> Builder<NEW_IN> input(NEW_IN input) {
             this.input = input;
-            return (Builder<NEW_IN>) this;
+            Builder<NEW_IN> narrowedBuilder = new Builder<>();
+            narrowedBuilder.input = input;
+            copyConfigurationInto(narrowedBuilder);
+            return narrowedBuilder;
+        }
+
+        private void copyConfigurationInto(Builder<?> target) {
+            target.context = context == null ? null : new LinkedHashMap<>(context);
+            target.resourceFactory = resourceFactory;
+            target.extensions.addAll(extensions);
+            target.idGenerator = idGenerator;
+            target.nestedRunContext = nestedRunContext;
+            target.assemblyLineCallStack = assemblyLineCallStack;
+            target.cancellationToken = cancellationToken;
         }
 
         public Builder<IN> context(Map<String, Object> context) {

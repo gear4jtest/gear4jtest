@@ -27,6 +27,26 @@ class RunRequestBuilderTest {
     }
 
     @Test
+    void input_shouldIsolateNarrowedBuilderFromBroaderAliases() {
+        // Given
+        RuntimeExtension extension = new RuntimeExtension() {};
+        RunRequest.Builder<Number> broadBuilder = RunRequest.builder();
+        broadBuilder.context(Map.of("scope", "narrowed")).with(extension);
+
+        // When
+        RunRequest.Builder<Integer> integerBuilder = broadBuilder.input(41);
+        broadBuilder.input(42.5D);
+        broadBuilder.context(Map.of("scope", "broad"));
+        RunRequest<Integer> integerRequest = integerBuilder.build();
+
+        // Then
+        Integer input = integerRequest.getInput();
+        assertThat(input).isEqualTo(41);
+        assertThat(integerRequest.getContext()).containsOnly(Map.entry("scope", "narrowed"));
+        assertThat(integerRequest.getExtensions()).containsExactly(extension);
+    }
+
+    @Test
     void builder_shouldExposeDefaultsAndCopyNullContextToEmptyMap() {
         // When
         RunRequest request = RunRequest.builder().context(null).build();

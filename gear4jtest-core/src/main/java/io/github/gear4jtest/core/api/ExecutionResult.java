@@ -13,13 +13,13 @@ import io.github.gear4jtest.core.api.trace.RunTrace;
  * expected to be converted into this type.
  * </p>
  */
-public class ExecutionResult<T> {
+public final class ExecutionResult<T> {
     private final T result;
     private final ExecutionOutcome outcome;
     private final RunTrace execution;
     private final Exception error;
 
-    public ExecutionResult(T result, ExecutionOutcome outcome, RunTrace execution, Exception error) {
+    private ExecutionResult(T result, ExecutionOutcome outcome, RunTrace execution, Exception error) {
         this.result = result;
         this.outcome = Objects.requireNonNull(outcome, "outcome must not be null");
         this.execution = execution;
@@ -48,7 +48,8 @@ public class ExecutionResult<T> {
 
     /** Creates a failed execution result from a normalized exception. */
     public static <OUT> ExecutionResult<OUT> failure(Exception error, RunTrace exec) {
-        return new ExecutionResult<>(null, ExecutionOutcome.FAILED, exec, error);
+        return new ExecutionResult<>(null, ExecutionOutcome.FAILED, exec,
+                Objects.requireNonNull(error, "error must not be null"));
     }
 
     public T getResult() {

@@ -165,8 +165,10 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
                 .isInstanceOf(AssemblyLineCallException.class)
                 .satisfies(throwable -> assertThat(throwable.getCause()).isSameAs(failure))
                 .hasMessageContaining("Nested child assembly line 'child:1' failed in station 'call'");
-        ExecutionResult<Object> failedWithoutRun = new ExecutionResult<>(null,
-                io.github.gear4jtest.core.api.ExecutionOutcome.FAILED, null, null);
+        ExecutionResult<Object> failedWithoutRun = ExecutionResult.failure(
+                                                                           new RuntimeException(
+                                                                                   "nested failed without run"),
+                                                                           null);
         AssemblyLineCallStationStrategy failedWithoutRunStrategy = strategyReturning(failedWithoutRun);
         DefaultStationExecutionContext contextWithoutRun = stationContext("call");
 

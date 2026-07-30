@@ -1,10 +1,19 @@
 package io.github.gear4jtest.core.api;
 
+import java.lang.reflect.Modifier;
+
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ExecutionResultTest {
+    @Test
+    void constructors_shouldRemainPrivateSoOnlyValidatedFactoriesCanCreateResults() {
+        assertThat(ExecutionResult.class.getDeclaredConstructors())
+                .allMatch(constructor -> Modifier.isPrivate(constructor.getModifiers()));
+    }
+
     @Test
     void success_shouldExposeCompletedOutcome() {
         // Given / When
@@ -71,5 +80,12 @@ class ExecutionResultTest {
         assertThat(executionResult.isFailed()).isTrue();
         assertThat(executionResult.isSuccess()).isFalse();
         assertThat(executionResult.getError()).isSameAs(error);
+    }
+
+    @Test
+    void failure_shouldRejectMissingError() {
+        assertThatThrownBy(() -> ExecutionResult.failure(null, null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("error must not be null");
     }
 }
