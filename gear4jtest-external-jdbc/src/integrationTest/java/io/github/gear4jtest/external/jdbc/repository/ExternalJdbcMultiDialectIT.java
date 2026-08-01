@@ -28,6 +28,7 @@ import io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStore;
 import io.github.gear4jtest.jdbc.migration.SchemaMigrationException;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestReporter;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -57,20 +58,29 @@ class ExternalJdbcMultiDialectIT {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("databases")
-    void externalJdbc_shouldSupportMigrationsPublicationPaginationAndBlobStreaming(DatabaseScenario scenario)
+    void externalJdbc_shouldSupportMigrationsPublicationPaginationAndBlobStreaming(DatabaseScenario scenario,
+                                                                                   TestReporter testReporter)
             throws Exception {
         try (JdbcDatabaseContainer<?> database = scenario.containerFactory().get()) {
             database.start();
-            exerciseExternalJdbc(scenario, database);
+            exerciseExternalJdbc(scenario, database, testReporter);
         }
     }
 
-    private void exerciseExternalJdbc(DatabaseScenario scenario, JdbcDatabaseContainer<?> database) throws Exception {
+    private void exerciseExternalJdbc(DatabaseScenario scenario,
+                                      JdbcDatabaseContainer<?> database,
+                                      TestReporter testReporter)
+            throws Exception {
         DataSource dataSource = new DriverManagerBackedDataSource(database.getJdbcUrl(), database.getUsername(),
                 database.getPassword());
         ExternalJdbcSchemaMigrator migrator = ExternalJdbcSchemaMigrator.forDialect(scenario.dialect());
 
         verifyMigrationsAndChecksum(dataSource, migrator);
+        var latestRunIndexEvidence = LatestRunIndexPlanVerifier.verify(
+                                                                       dataSource,
+                                                                       scenario.dialect(),
+                                                                       scenario.id());
+        testReporter.publishEntry("findLatestRun." + scenario.id(), latestRunIndexEvidence.report());
         String assemblyLineId = "line-" + scenario.id();
         verifyConfigurationRoundTrip(dataSource, scenario.dialect(), assemblyLineId);
         verifyAtomicPublicationTagsAndPagination(dataSource, scenario.dialect(), assemblyLineId);

@@ -73,6 +73,8 @@ CREATE TABLE operation_chain_tag
     FOREIGN KEY (al_id) REFERENCES operation_chain_config (al_id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_op_chain_latest_run ON operation_chain_object (al_id, published_at DESC) WHERE publication_mode = 'RUN';
+CREATE INDEX idx_op_chain_latest_run
+    ON operation_chain_object (al_id, published_at DESC, id DESC)
+    WHERE publication_mode = 'RUN';
 CREATE INDEX idx_op_chain_by_hash ON operation_chain_object (content_hash);
 CREATE INDEX idx_tag_value ON operation_chain_tag (tag);

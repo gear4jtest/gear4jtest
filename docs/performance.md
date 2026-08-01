@@ -80,3 +80,20 @@ Select one dialect only when a faster diagnostic loop is explicitly required:
 GitHub Actions distributes PostgreSQL, MySQL, MariaDB and Oracle across independent mandatory jobs on pull requests,
 main-branch pushes, the weekly schedule and before Maven Central publication. The general build/coverage job selects
 PostgreSQL explicitly to avoid repeating the complete matrix that those four jobs already enforce.
+
+### Latest RUN index evidence
+
+The external JDBC matrix also loads 20,000 operation-chain versions per dialect,
+with TEST rows intentionally newer and more numerous than RUN rows. It then:
+
+- verifies the migrated `idx_op_chain_latest_run` column order;
+- records an `EXPLAIN ANALYZE` plan where supported and an Oracle
+  `DBMS_XPLAN` plan otherwise;
+- requires the selected plan to name `idx_op_chain_latest_run`;
+- records the average duration of 50 prepared top-one lookups after 10 warmups.
+
+The plan and timing are published as JUnit report entries under
+`findLatestRun.<dialect>`. The timing is evidence, not a portable performance
+budget: database startup, host capacity and JDBC driver behavior differ across
+runners. A missing index in the plan is a regression and fails the integration
+test.

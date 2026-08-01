@@ -40,6 +40,7 @@ public final class OperationChainObjectRepositoryJdbc
             + "stage_revision";
     private static final String PAGED_STAGE_COLUMNS = "staged_page."
             + STAGE_COLUMNS.replace(", ", ", staged_page.");
+    private static final PageRequest FIRST_ROW = PageRequest.first(1);
 
     private final DataSource ds;
     private final Gear4jDatabaseDialect databaseDialect;
@@ -591,12 +592,13 @@ public final class OperationChainObjectRepositoryJdbc
 
     @Override
     public Optional<OperationChainObject> findLatestRun(String alId) {
-        String sql = "SELECT " + OBJECT_COLUMNS
+        String orderedSql = "SELECT " + OBJECT_COLUMNS
                 + " FROM operation_chain_object WHERE al_id=? AND publication_mode='RUN' "
                 + "ORDER BY published_at DESC, id DESC";
+        String sql = ExternalRepositorySqlDialect.pagedSql(databaseDialect, orderedSql);
         try (var connection = ds.getConnection(); var statement = prepare(connection, sql)) {
             statement.setString(1, alId);
-            statement.setMaxRows(1);
+            ExternalRepositorySqlDialect.bindPage(databaseDialect, statement, 2, FIRST_ROW);
             try (var resultSet = statement.executeQuery()) {
                 return resultSet.next() ? Optional.of(map(resultSet)) : Optional.empty();
             }

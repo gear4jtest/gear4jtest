@@ -43,7 +43,10 @@ class ExternalRepositorySqlDialectContractTest {
         // When / Then
         assertThat(migrationList).as("migration list for %s", dialect).isNotNull();
         String list = new String(migrationList.openStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-        for (String script : list.lines().map(String::trim).filter(line -> !line.isEmpty()).toList()) {
+        var scripts = list.lines().map(String::trim).filter(line -> !line.isEmpty()).toList();
+        assertThat(scripts).containsExactly("V1__create_external_schema.sql");
+        assertThat(classLoader.getResource(base + "V2__align_latest_run_index.sql")).isNull();
+        for (String script : scripts) {
             var scriptResource = classLoader.getResource(base + script);
             assertThat(scriptResource).as("listed external migration %s for %s exists", script, dialect).isNotNull();
             String sql = new String(scriptResource.openStream().readAllBytes(),
@@ -59,6 +62,20 @@ class ExternalRepositorySqlDialectContractTest {
                     .contains("store_fingerprint")
                     .contains("operation_chain_tag")
                     .contains("artifact_store");
+            if (dialect == Gear4jDatabaseDialect.POSTGRESQL) {
+                assertThat(sql)
+                        .contains("ON operation_chain_object (al_id, published_at DESC, id DESC)")
+                        .contains("WHERE publication_mode = 'RUN'");
+            } else if (dialect == Gear4jDatabaseDialect.MYSQL
+                    || dialect == Gear4jDatabaseDialect.MARIADB) {
+                assertThat(sql)
+                        .contains("idx_op_chain_latest_run "
+                                + "(al_id, publication_mode, published_at DESC, id DESC)");
+            } else {
+                assertThat(sql)
+                        .contains("ON operation_chain_object "
+                                + "(al_id, publication_mode, published_at DESC, id DESC)");
+            }
             if (dialect == Gear4jDatabaseDialect.ORACLE) {
                 assertThat(sql)
                         .as("Oracle migration %s must not use reserved MODE as a column", script)

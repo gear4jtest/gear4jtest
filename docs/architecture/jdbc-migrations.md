@@ -111,6 +111,11 @@ This approach avoids version collisions between Gear4J's internal migration
 numbers and the host application's migration numbers. It also keeps DB review,
 approval, rollback planning and release ownership in the application.
 
+External migration V1 creates the final `idx_op_chain_latest_run` definition.
+PostgreSQL uses a partial RUN-only index ordered by `al_id`, `published_at DESC`
+and `id DESC`. H2, MySQL, MariaDB and Oracle use `al_id`, `publication_mode`,
+`published_at DESC` and `id DESC`.
+
 ## Dedicated Flyway instance for Gear4J
 
 A future Spring Boot starter enhancement may expose a dedicated Gear4J Flyway

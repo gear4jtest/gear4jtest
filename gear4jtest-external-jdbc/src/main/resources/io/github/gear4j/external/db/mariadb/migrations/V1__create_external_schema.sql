@@ -32,7 +32,7 @@ CREATE TABLE operation_chain_object
     published_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uq_op_chain (al_id, version, publication_mode),
     KEY          idx_op_chain_by_hash (content_hash),
-    KEY          idx_op_chain_latest_run (al_id, published_at)
+    KEY          idx_op_chain_latest_run (al_id, publication_mode, published_at DESC, id DESC)
 );
 
 

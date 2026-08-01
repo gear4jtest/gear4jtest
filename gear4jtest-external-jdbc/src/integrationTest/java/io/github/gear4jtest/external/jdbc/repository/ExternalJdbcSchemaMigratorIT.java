@@ -5,6 +5,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 
@@ -27,6 +30,10 @@ class ExternalJdbcSchemaMigratorIT {
             assertThat(tableExists(connection, "OPERATION_CHAIN_OBJECT")).isTrue();
             assertThat(tableExists(connection, "OPERATION_CHAIN_TAG")).isTrue();
             assertThat(tableExists(connection, "GEAR4J_SCHEMA_HISTORY")).isTrue();
+            assertThat(indexColumns(connection, "OPERATION_CHAIN_OBJECT", "IDX_OP_CHAIN_LATEST_RUN"))
+                    .containsExactly("AL_ID", "PUBLICATION_MODE", "PUBLISHED_AT", "ID");
+            assertThat(appliedMigrationVersions(connection))
+                    .containsExactly("1");
         }
     }
 
@@ -48,6 +55,35 @@ class ExternalJdbcSchemaMigratorIT {
     private static boolean tableExists(Connection connection, String tableName) throws Exception {
         try (ResultSet rs = connection.getMetaData().getTables(null, null, tableName, null)) {
             return rs.next();
+        }
+    }
+
+    private static List<String> indexColumns(Connection connection, String tableName, String indexName)
+            throws Exception {
+        Map<Short, String> columnsByPosition = new TreeMap<>();
+        try (ResultSet rs = connection.getMetaData().getIndexInfo(null, null, tableName, false, false)) {
+            while (rs.next()) {
+                if (indexName.equalsIgnoreCase(rs.getString("INDEX_NAME"))
+                        && rs.getString("COLUMN_NAME") != null) {
+                    columnsByPosition.put(rs.getShort("ORDINAL_POSITION"), rs.getString("COLUMN_NAME"));
+                }
+            }
+        }
+        return List.copyOf(columnsByPosition.values());
+    }
+
+    private static List<String> appliedMigrationVersions(Connection connection) throws Exception {
+        try (var statement = connection.prepareStatement(
+                                                         "SELECT version FROM gear4j_schema_history "
+                                                                 + "WHERE module_id=? ORDER BY installed_at, version")) {
+            statement.setString(1, "gear4j-external-api");
+            try (ResultSet rs = statement.executeQuery()) {
+                var versions = new java.util.ArrayList<String>();
+                while (rs.next()) {
+                    versions.add(rs.getString(1));
+                }
+                return List.copyOf(versions);
+            }
         }
     }
 

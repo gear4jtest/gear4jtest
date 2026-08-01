@@ -17,6 +17,7 @@ import io.github.gear4jtest.external.api.repository.OperationChainRepositoryExce
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -153,7 +154,7 @@ class OperationChainObjectRepositoryJdbcBehaviorTest {
     }
 
     @Test
-    void findLatestRun_shouldLimitRowsAndReturnLatestRun() throws Exception {
+    void findLatestRun_shouldApplySqlLevelLimitAndReturnLatestRun() throws Exception {
         // Given
         JdbcMocks jdbc = JdbcMocks.query(true);
         Instant createdAt = Instant.parse("2026-02-01T00:00:00Z");
@@ -168,8 +169,15 @@ class OperationChainObjectRepositoryJdbcBehaviorTest {
         assertThat(result.id()).isEqualTo(7L);
         assertThat(result.createdAt()).isEqualTo(createdAt);
         assertThat(result.publishedAt()).isEqualTo(publishedAt);
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        verify(jdbc.connection()).prepareStatement(sql.capture());
+        assertThat(sql.getValue())
+                .contains("publication_mode='RUN'")
+                .contains("ORDER BY published_at DESC, id DESC")
+                .contains("LIMIT ? OFFSET ?");
         verify(jdbc.statement()).setString(1, "pipeline");
-        verify(jdbc.statement()).setMaxRows(1);
+        verify(jdbc.statement()).setInt(2, 1);
+        verify(jdbc.statement()).setInt(3, 0);
     }
 
     @Test
