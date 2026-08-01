@@ -753,6 +753,13 @@ tasks.register('consumerSmokeTest', Exec) {
         "-Pgear4jRepository=${stagingRepository.get().asFile.absolutePath}"
 }
 
+def allCoverageExecutionData = coreProjects.collect { testedProject ->
+    [
+        testedProject.layout.buildDirectory.file('jacoco/test.exec'),
+        testedProject.layout.buildDirectory.file('jacoco/integrationTest.exec')
+    ]
+}.flatten()
+
 tasks.register('jacocoRootAllReport', JacocoReport) {
     group = 'verification'
     description = 'Generates the root JaCoCo HTML and XML reports for unit and integration tests.'
@@ -763,12 +770,7 @@ tasks.register('jacocoRootAllReport', JacocoReport) {
     additionalSourceDirs.from(coreProjects.collect { it.sourceSets.main.allSource.srcDirs }.flatten())
     sourceDirectories.from(coreProjects.collect { it.sourceSets.main.allSource.srcDirs }.flatten())
     classDirectories.from(coreProjects.collect { it.sourceSets.main.output })
-    executionData.from(coreProjects.collect { testedProject ->
-        [
-            testedProject.layout.buildDirectory.file('jacoco/test.exec'),
-            testedProject.layout.buildDirectory.file('jacoco/integrationTest.exec')
-        ]
-    }.flatten())
+    executionData.from(allCoverageExecutionData)
 
     onlyIf {
         executionData.files.any { it.exists() }
@@ -785,7 +787,7 @@ tasks.register('jacocoRootAllReport', JacocoReport) {
 
 def criticalCoverageThresholdsFile = layout.projectDirectory.file('config/critical-coverage-thresholds.json')
 def criticalCoverageThresholds = new groovy.json.JsonSlurper().parse(criticalCoverageThresholdsFile.asFile)
-def criticalCoverageProjects = [
+def criticalCoverageClassProjects = [
     project(':gear4jtest-core'),
     project(':gear4jtest-external-api'),
     project(':gear4jtest-jdbc'),
@@ -796,18 +798,16 @@ tasks.register('jacocoCriticalCoverageVerification', JacocoCoverageVerification)
     group = 'verification'
     description = 'Enforces branch-coverage ratchets on the runtime, concurrency, migration and publication hot spots.'
 
-    dependsOn criticalCoverageProjects.collect { it.tasks.named('test') }
-    dependsOn criticalCoverageProjects.collect { it.tasks.named('integrationTest') }
+    dependsOn coreProjects.collect { it.tasks.named('test') }
+    dependsOn coreProjects.collect { it.tasks.named('integrationTest') }
     inputs.file(criticalCoverageThresholdsFile)
 
-    sourceDirectories.from(criticalCoverageProjects.collect { it.sourceSets.main.allSource.srcDirs }.flatten())
-    classDirectories.from(criticalCoverageProjects.collect { it.sourceSets.main.output })
-    executionData.from(criticalCoverageProjects.collect { testedProject ->
-        [
-            testedProject.layout.buildDirectory.file('jacoco/test.exec'),
-            testedProject.layout.buildDirectory.file('jacoco/integrationTest.exec')
-        ]
-    }.flatten())
+    sourceDirectories.from(criticalCoverageClassProjects.collect { it.sourceSets.main.allSource.srcDirs }.flatten())
+    classDirectories.from(criticalCoverageClassProjects.collect { it.sourceSets.main.output })
+    // Keep verification on the same aggregate execution-data set used to calibrate
+    // these thresholds. Cross-module integration tests legitimately exercise the
+    // critical classes declared above.
+    executionData.from(allCoverageExecutionData)
 
     violationRules {
         criticalCoverageThresholds.classes.each { threshold ->

@@ -4,47 +4,47 @@
   "modules": [
     {
       "projectPath": ":gear4jtest-core",
-      "minimumLineRatio": 0.30
+      "minimumLineRatio": 0.84
     },
     {
       "projectPath": ":gear4jtest-experimental-cache",
-      "minimumLineRatio": 0.30
+      "minimumLineRatio": 0.57
     },
     {
       "projectPath": ":gear4jtest-external-api",
-      "minimumLineRatio": 0.30
+      "minimumLineRatio": 0.80
     },
     {
       "projectPath": ":gear4jtest-external-jdbc",
-      "minimumLineRatio": 0.30
+      "minimumLineRatio": 0.80
     },
     {
       "projectPath": ":gear4jtest-gradle-xml2java",
-      "minimumLineRatio": 0.30
+      "minimumLineRatio": 0.86
     },
     {
       "projectPath": ":gear4jtest-jackson",
-      "minimumLineRatio": 0.30
+      "minimumLineRatio": 0.88
     },
     {
       "projectPath": ":gear4jtest-jdbc",
-      "minimumLineRatio": 0.30
+      "minimumLineRatio": 0.84
     },
     {
       "projectPath": ":gear4jtest-micrometer",
-      "minimumLineRatio": 0.30
+      "minimumLineRatio": 0.84
     },
     {
       "projectPath": ":gear4jtest-spring",
-      "minimumLineRatio": 0.30
+      "minimumLineRatio": 0.64
     },
     {
       "projectPath": ":gear4jtest-spring-boot-starter",
-      "minimumLineRatio": 0.30
+      "minimumLineRatio": 0.95
     },
     {
       "projectPath": ":gear4jtest-xml",
-      "minimumLineRatio": 0.30
+      "minimumLineRatio": 0.85
     }
   ]
 }

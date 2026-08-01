@@ -4,19 +4,19 @@
   "classes": [
     {
       "className": "io.github.gear4jtest.core.event.EventManager",
-      "minimumBranchRatio": 0.6
+      "minimumBranchRatio": 0.91
     },
     {
       "className": "io.github.gear4jtest.core.event.EventRuntimeShutdown",
-      "minimumBranchRatio": 0.5
+      "minimumBranchRatio": 0.83
     },
     {
       "className": "io.github.gear4jtest.core.engine.strategy.WorkStationStrategy",
-      "minimumBranchRatio": 0.6
+      "minimumBranchRatio": 0.76
     },
     {
       "className": "io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator",
-      "minimumBranchRatio": 0.55
+      "minimumBranchRatio": 0.78
     },
     {
       "className": "io.github.gear4jtest.jdbc.migration.MigrationLockStore",
@@ -24,39 +24,39 @@
     },
     {
       "className": "io.github.gear4jtest.jdbc.migration.MigrationResourceLoader",
-      "minimumBranchRatio": 0.5
+      "minimumBranchRatio": 0.78
     },
     {
       "className": "io.github.gear4jtest.external.api.AssemblyLinePublicationService",
-      "minimumBranchRatio": 0.6
+      "minimumBranchRatio": 0.88
     },
     {
       "className": "io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutor",
-      "minimumBranchRatio": 0.55
+      "minimumBranchRatio": 0.67
     },
     {
       "className": "io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator",
-      "minimumBranchRatio": 0.5
+      "minimumBranchRatio": 0.74
     },
     {
       "className": "io.github.gear4jtest.jdbc.execution.PersistenceShutdownRunState",
-      "minimumBranchRatio": 0.5
+      "minimumBranchRatio": 0.64
     },
     {
       "className": "io.github.gear4jtest.jdbc.execution.PersistenceShutdownWriter",
-      "minimumBranchRatio": 0.5
+      "minimumBranchRatio": 0.64
     },
     {
       "className": "io.github.gear4jtest.external.api.storage.DefaultArtifactStoreProvider",
-      "minimumBranchRatio": 0.55
+      "minimumBranchRatio": 0.67
     },
     {
       "className": "io.github.gear4jtest.external.api.compiler.DefaultGeneratedSourceCompiler",
-      "minimumBranchRatio": 0.7
+      "minimumBranchRatio": 0.98
     },
     {
       "className": "io.github.gear4jtest.spring.boot.Gear4jAutoConfiguration",
-      "minimumBranchRatio": 0.5
+      "minimumBranchRatio": 0.98
     }
   ]
 }
