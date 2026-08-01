@@ -41,6 +41,7 @@ DatabaseArtifactStore artifacts = DatabaseArtifactStore.builder()
                 .directory(Path.of("/var/lib/my-app/gear4j-spool"))
                 .maxBytes(100L * 1024L * 1024L)
                 .staleFileAge(Duration.ofHours(24))
+                .requirePrivatePermissions(true)
                 .build())
         .build();
 ```
@@ -85,6 +86,11 @@ The `DATABASE` plugin accepts:
 | `spoolDirectory` | private temporary directory | Staging directory for hash-then-insert writes. |
 | `spoolMaxBytes` | `104857600` | Aggregate temporary-byte quota. |
 | `spoolStaleFileAge` | `PT24H` | Age after which stale `.tmp` files are removed on initialization. |
+| `requirePrivatePermissions` | `true` | Fail initialization unless owner-only POSIX permissions or ACLs are applied and verified. |
+
+Set `requirePrivatePermissions=false` only when the configured spool directory is protected and verified by an external
+filesystem, container or operating-system policy. It is an explicit operator responsibility, not a permissive fallback
+for a shared temporary directory.
 
 ## Verification
 

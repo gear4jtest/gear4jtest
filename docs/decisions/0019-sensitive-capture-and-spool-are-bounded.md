@@ -34,9 +34,11 @@ limits, but no aggregate quota, startup cleanup or residual occupancy signal.
 - Existing non-stale residues count toward the quota. Their file count and bytes,
   stale cleanup, quota rejections and cleanup failures are exposed through
   `ArtifactSpoolMonitor`.
-- The spool directory and every managed file retain owner-only POSIX permissions
-  when the platform supports them. Symbolic-link directories and files outside
-  the configured directory are rejected.
+- The spool directory and every managed file retain verified owner-only POSIX
+  permissions or an owner-only ACL. `requirePrivatePermissions` defaults to
+  `true`, so initialization fails when the platform cannot prove either invariant.
+  An explicit `false` delegates equivalent isolation to the operator. Symbolic-link
+  directories and files outside the configured directory are rejected.
 
 ## Consequences
 
@@ -49,5 +51,9 @@ The spool quota is local to each managed store instance. Operators should still
 set filesystem/container limits and avoid sharing the configured directory with
 unrelated applications. Cleanup is age-based; the default 24-hour threshold is
 chosen to avoid treating ordinary in-flight writes as residues.
+
+The private-permission opt-out is intended for filesystems whose access control
+is enforced outside the Java attribute views. It must not be used to accept a
+shared or world-readable temporary directory.
 
 No database schema or migration change is required.

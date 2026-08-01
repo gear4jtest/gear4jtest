@@ -7,15 +7,18 @@ import java.time.Duration;
 public final class ArtifactSpoolPolicy {
     public static final long DEFAULT_MAX_BYTES = 100L * 1024L * 1024L;
     public static final Duration DEFAULT_STALE_FILE_AGE = Duration.ofHours(24);
+    public static final boolean DEFAULT_REQUIRE_PRIVATE_PERMISSIONS = true;
 
     private final Path directory;
     private final long maxBytes;
     private final Duration staleFileAge;
+    private final boolean requirePrivatePermissions;
 
     private ArtifactSpoolPolicy(Builder builder) {
         this.directory = builder.directory;
         this.maxBytes = validateMaxBytes(builder.maxBytes);
         this.staleFileAge = validateStaleFileAge(builder.staleFileAge);
+        this.requirePrivatePermissions = builder.requirePrivatePermissions;
     }
 
     public static ArtifactSpoolPolicy defaults() {
@@ -27,7 +30,10 @@ public final class ArtifactSpoolPolicy {
     }
 
     public Builder toBuilder() {
-        return builder().directory(directory).maxBytes(maxBytes).staleFileAge(staleFileAge);
+        return builder().directory(directory)
+                .maxBytes(maxBytes)
+                .staleFileAge(staleFileAge)
+                .requirePrivatePermissions(requirePrivatePermissions);
     }
 
     public Path directory() {
@@ -40,6 +46,16 @@ public final class ArtifactSpoolPolicy {
 
     public Duration staleFileAge() {
         return staleFileAge;
+    }
+
+    /**
+     * Whether spool initialization must fail when owner-only permissions cannot be
+     * applied and verified.
+     *
+     * @return {@code true} by default
+     */
+    public boolean requirePrivatePermissions() {
+        return requirePrivatePermissions;
     }
 
     private static long validateMaxBytes(long maxBytes) {
@@ -60,6 +76,7 @@ public final class ArtifactSpoolPolicy {
         private Path directory;
         private long maxBytes = DEFAULT_MAX_BYTES;
         private Duration staleFileAge = DEFAULT_STALE_FILE_AGE;
+        private boolean requirePrivatePermissions = DEFAULT_REQUIRE_PRIVATE_PERMISSIONS;
 
         private Builder() {
         }
@@ -76,6 +93,20 @@ public final class ArtifactSpoolPolicy {
 
         public Builder staleFileAge(Duration staleFileAge) {
             this.staleFileAge = staleFileAge;
+            return this;
+        }
+
+        /**
+         * Requires verifiable owner-only POSIX permissions or an owner-only ACL for the
+         * spool directory and files. Disable this only when the configured directory is
+         * protected outside Gear4J.
+         *
+         * @param requirePrivatePermissions whether startup must fail closed when
+         *                                  privacy cannot be verified
+         * @return this builder
+         */
+        public Builder requirePrivatePermissions(boolean requirePrivatePermissions) {
+            this.requirePrivatePermissions = requirePrivatePermissions;
             return this;
         }
 

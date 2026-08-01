@@ -151,10 +151,14 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         Duration spoolStaleFileAge = parseDuration(props.get("spoolStaleFileAge"),
                                                    ArtifactSpoolPolicy.DEFAULT_STALE_FILE_AGE,
                                                    "spoolStaleFileAge");
+        boolean requirePrivatePermissions = parseBoolean(props.get("requirePrivatePermissions"),
+                                                         ArtifactSpoolPolicy.DEFAULT_REQUIRE_PRIVATE_PERMISSIONS,
+                                                         "requirePrivatePermissions");
         ArtifactSpoolPolicy spoolPolicy = ArtifactSpoolPolicy.builder()
                 .directory(spoolDirectory)
                 .maxBytes(spoolMaxBytes)
                 .staleFileAge(spoolStaleFileAge)
+                .requirePrivatePermissions(requirePrivatePermissions)
                 .build();
 
         // Primary store type declared by the pipeline configuration.

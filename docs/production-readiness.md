@@ -137,10 +137,13 @@ application's memory budget. Alert on
 The database store applies the same 5 MiB default to direct byte-array writes,
 streamed writes and reads. Configure `maxArtifactSizeBytes` in DATABASE store
 properties when a different bound is required. Configure `spoolDirectory` to a
-private application-owned path; Gear4J applies owner-only POSIX permissions
-when the filesystem supports them. The managed spool defaults to a 100 MiB
-quota and deletes `.tmp` residues older than 24 hours when a store is
-initialized. Recent residues count toward the quota.
+private application-owned path. Gear4J applies and verifies owner-only POSIX
+permissions or an owner-only ACL and fails store initialization when neither
+mechanism can prove confidentiality. `requirePrivatePermissions` defaults to
+`true`; set it to `false` only for a directory whose equivalent isolation is
+provisioned and verified outside Gear4J. The managed spool defaults to a 100 MiB
+quota and deletes `.tmp` residues older than 24 hours when a store is initialized.
+Recent residues count toward the quota.
 
 Database artifact reads are lazy and keep a JDBC connection open until the
 returned stream is closed. Use `Artifact#openStreamChecked()` in

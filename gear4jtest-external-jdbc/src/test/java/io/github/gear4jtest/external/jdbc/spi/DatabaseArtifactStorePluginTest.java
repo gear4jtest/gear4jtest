@@ -101,4 +101,17 @@ class DatabaseArtifactStorePluginTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("spoolStaleFileAge");
     }
+
+    @Test
+    void build_shouldRejectInvalidPrivatePermissionRequirement() {
+        // Given
+        DatabaseArtifactStorePlugin plugin = new DatabaseArtifactStorePlugin();
+
+        // When / Then
+        assertThatThrownBy(() -> plugin.build(Map.of("dialect", "h2", "requirePrivatePermissions", "sometimes"),
+                                              context))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("requirePrivatePermissions")
+                .hasMessageContaining("true or false");
+    }
 }

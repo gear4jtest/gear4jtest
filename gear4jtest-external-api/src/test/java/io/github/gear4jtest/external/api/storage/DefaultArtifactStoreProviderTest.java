@@ -89,6 +89,11 @@ class DefaultArtifactStoreProviderTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("selfHealing")
                 .hasMessageContaining("true or false");
+        assertThatThrownBy(() -> provider.forConfig(new OperationChainConfig("pipeline", false, StoreType.MEMORY,
+                Map.of("requirePrivatePermissions", "sometimes"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("requirePrivatePermissions")
+                .hasMessageContaining("true or false");
     }
 
     @Test

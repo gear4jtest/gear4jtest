@@ -29,12 +29,14 @@ public final class ManagedArtifactSpool {
 
     public ManagedArtifactSpool(ArtifactSpoolPolicy policy) throws IOException {
         this.policy = policy != null ? policy : ArtifactSpoolPolicy.defaults();
-        this.directory = ArtifactSpoolFiles.prepareDirectory(this.policy.directory());
+        this.directory = ArtifactSpoolFiles.prepareDirectory(this.policy.directory(),
+                                                             this.policy.requirePrivatePermissions());
         initializeOccupancyAndCleanup();
     }
 
     public Path createTempFile(String prefix) throws IOException {
-        Path file = ArtifactSpoolFiles.createTempFileInPreparedDirectory(directory, prefix);
+        Path file = ArtifactSpoolFiles.createTempFileInPreparedDirectory(directory, prefix,
+                                                                         policy.requirePrivatePermissions());
         synchronized (this) {
             currentFiles++;
         }
@@ -89,7 +91,7 @@ public final class ManagedArtifactSpool {
             files = entries.filter(ManagedArtifactSpool::isSpoolFile).toList();
         }
         for (Path file : files) {
-            ArtifactSpoolFiles.secureFilePermissions(file);
+            ArtifactSpoolFiles.secureFilePermissions(file, policy.requirePrivatePermissions());
             long size = safeSize(file);
             try {
                 FileTime lastModified = Files.getLastModifiedTime(file, LinkOption.NOFOLLOW_LINKS);

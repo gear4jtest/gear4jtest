@@ -35,6 +35,8 @@ public final class DatabaseArtifactStorePlugin implements ArtifactStorePlugin {
                 .maxBytes(requireLong(props, "spoolMaxBytes", ArtifactSpoolPolicy.DEFAULT_MAX_BYTES))
                 .staleFileAge(requireDuration(props, "spoolStaleFileAge",
                                               ArtifactSpoolPolicy.DEFAULT_STALE_FILE_AGE))
+                .requirePrivatePermissions(requireBoolean(props, "requirePrivatePermissions",
+                                                          ArtifactSpoolPolicy.DEFAULT_REQUIRE_PRIVATE_PERMISSIONS))
                 .build();
         return DatabaseArtifactStore.builder()
                 .dataSource(dataSource)
@@ -69,6 +71,21 @@ public final class DatabaseArtifactStorePlugin implements ArtifactStorePlugin {
             throw new IllegalArgumentException("Invalid DATABASE artifact store " + property + ": " + value
                     + ". Expected an ISO-8601 duration such as PT24H.", exception);
         }
+    }
+
+    private static boolean requireBoolean(Map<String, String> props, String property, boolean defaultValue) {
+        String value = props == null ? null : props.get(property);
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        if ("true".equalsIgnoreCase(value.trim())) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(value.trim())) {
+            return false;
+        }
+        throw new IllegalArgumentException("Invalid DATABASE artifact store " + property + ": " + value
+                + ". Expected true or false.");
     }
 
     private static long requireMaxArtifactSize(Map<String, String> props) {

@@ -121,6 +121,13 @@ public final class DatabaseArtifactStore implements ArtifactStore, ArtifactStore
             return this;
         }
 
+        public Builder spoolRequirePrivatePermissions(boolean requirePrivatePermissions) {
+            this.spoolPolicy = spoolPolicy.toBuilder()
+                    .requirePrivatePermissions(requirePrivatePermissions)
+                    .build();
+            return this;
+        }
+
         public DatabaseArtifactStore build() {
             return new DatabaseArtifactStore(this);
         }

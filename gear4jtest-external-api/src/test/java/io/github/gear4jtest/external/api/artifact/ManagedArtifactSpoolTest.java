@@ -19,6 +19,21 @@ class ManagedArtifactSpoolTest {
     Path tempDirectory;
 
     @Test
+    void policy_shouldRequirePrivatePermissionsByDefaultAndPreserveExplicitOptOut() {
+        // Given
+        ArtifactSpoolPolicy defaults = ArtifactSpoolPolicy.defaults();
+
+        // When
+        ArtifactSpoolPolicy explicitlyManaged = defaults.toBuilder()
+                .requirePrivatePermissions(false)
+                .build();
+
+        // Then
+        assertThat(defaults.requirePrivatePermissions()).isTrue();
+        assertThat(explicitlyManaged.requirePrivatePermissions()).isFalse();
+    }
+
+    @Test
     void initialize_shouldDeleteStaleFilesAndExposeCleanupStats() throws Exception {
         // Given
         byte[] secret = "fixture-secret-must-not-leak".getBytes(StandardCharsets.UTF_8);

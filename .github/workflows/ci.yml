@@ -127,6 +127,32 @@ jobs:
             gear4jtest-external-jdbc/build/reports/tests/integrationTest/**
           if-no-files-found: ignore
 
+  spool-confidentiality-windows:
+    name: Spool confidentiality on Windows ACLs
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+
+      - name: Verify private artifact spool ACLs
+        shell: bash
+        run: |
+          ./gradlew --no-daemon \
+            :gear4jtest-external-api:test \
+            --tests '*ArtifactSpoolFilesTest' \
+            --tests '*ManagedArtifactSpoolTest' \
+            --warning-mode=all
+
   reproducibility:
     name: Reproducible staged Maven artifacts
     runs-on: ubuntu-latest

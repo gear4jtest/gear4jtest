@@ -193,6 +193,17 @@ composite artifact-store configuration and the advanced manager constructor with
 Passing `ArtifactStore.UNLIMITED_SIZE` disables only the caller-specific limit;
 backend limits still apply.
 
+## Artifact spool confidentiality
+
+Composite and database stores stage streaming writes in a managed temporary spool. `ArtifactSpoolPolicy` requires
+verifiable private permissions by default: Gear4J applies and reads back owner-only POSIX permissions, or an owner-only
+ACL when the filesystem exposes an ACL view. Store initialization fails closed when neither mechanism can establish the
+invariant.
+
+Configure `spoolDirectory` as a private, application-owned path. On a filesystem whose isolation is enforced outside
+the JVM, the explicit `requirePrivatePermissions=false` policy may be used only after the operator has provisioned and
+verified equivalent access controls. This opt-out does not make a shared temporary directory safe.
+
 ## Filesystem artifact-store security
 
 The filesystem store normalizes its configured root to an absolute path, rejects
