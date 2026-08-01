@@ -3,6 +3,8 @@ package io.github.gear4jtest.xml.expression;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -30,6 +32,54 @@ class GearExpressionParserTest {
         assertThatThrownBy(() -> GearExpressionParser.parse("T(java.lang.System).exit(0)"))
                 .as("GEL is not SpEL/Java and must reject type lookup or method invocation syntax")
                 .isInstanceOf(GearExpressionException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "1.2.3", "1.", ".1" })
+    void parse_shouldRejectMalformedNumericLiteralWithPosition(String literal) {
+        // When / Then
+        assertThatThrownBy(() -> GearExpressionParser.parse(literal))
+                .isInstanceOf(GearExpressionException.class)
+                .hasMessage("Malformed GEL numeric literal at position 0: " + literal);
+    }
+
+    @Test
+    void parse_shouldReportMalformedNumericLiteralPositionWithinExpression() {
+        // When / Then
+        assertThatThrownBy(() -> GearExpressionParser.parse("true || 1.2.3"))
+                .isInstanceOf(GearExpressionException.class)
+                .hasMessage("Malformed GEL numeric literal at position 8: 1.2.3");
+    }
+
+    @Test
+    void parse_shouldRejectIntegerLiteralOutsideSupportedRange() {
+        // Given
+        String literal = "9223372036854775808";
+
+        // When / Then
+        assertThatThrownBy(() -> GearExpressionParser.parse(literal))
+                .isInstanceOf(GearExpressionException.class)
+                .hasMessage("GEL numeric literal is outside the supported range at position 0: " + literal);
+    }
+
+    @Test
+    void parse_shouldRejectDecimalLiteralOutsideSupportedRange() {
+        // Given
+        String literal = "9".repeat(400) + ".0";
+
+        // When / Then
+        assertThatThrownBy(() -> GearExpressionParser.parse(literal))
+                .isInstanceOf(GearExpressionException.class)
+                .hasMessage("GEL numeric literal is outside the supported range at position 0: " + literal);
+    }
+
+    @Test
+    void evaluate_shouldKeepSupportedIntegerAndDecimalLiteralSemantics() {
+        // When / Then
+        assertThat(GearExpressionParser.parse("9223372036854775807 == 9223372036854775807")
+                .evaluateBoolean(GearExpressionContext.ofInput(null))).isTrue();
+        assertThat(GearExpressionParser.parse("1.25 == 1.25")
+                .evaluateBoolean(GearExpressionContext.ofInput(null))).isTrue();
     }
 
     @Test

@@ -60,19 +60,22 @@ public final class GearExpressionParser {
                 while (i < expression.length() && Character.isJavaIdentifierPart(expression.charAt(i))) {
                     i++;
                 }
-                tokens.add(new Token(TokenType.IDENTIFIER, expression.substring(start, i)));
+                tokens.add(new Token(TokenType.IDENTIFIER, expression.substring(start, i), start));
                 continue;
             }
-            if (Character.isDigit(c)) {
-                int start = i++;
+            if (Character.isDigit(c) || isMalformedLeadingDecimalStart(expression, i)) {
+                int start = i;
                 while (i < expression.length()
                         && (Character.isDigit(expression.charAt(i)) || expression.charAt(i) == '.')) {
                     i++;
                 }
-                tokens.add(new Token(TokenType.NUMBER, expression.substring(start, i)));
+                String value = expression.substring(start, i);
+                validateNumberLiteral(value, start);
+                tokens.add(new Token(TokenType.NUMBER, value, start));
                 continue;
             }
             if (c == '\'' || c == '"') {
+                int tokenPosition = i;
                 char quote = c;
                 int start = ++i;
                 StringBuilder value = new StringBuilder();
@@ -88,26 +91,39 @@ public final class GearExpressionParser {
                     throw new GearExpressionException("Unclosed string literal starting at " + start);
                 }
                 i++;
-                tokens.add(new Token(TokenType.STRING, value.toString()));
+                tokens.add(new Token(TokenType.STRING, value.toString(), tokenPosition));
                 continue;
             }
             if (i + 1 < expression.length()) {
                 String two = expression.substring(i, i + 2);
                 if (two.equals("==") || two.equals("!=") || two.equals("&&") || two.equals("||")) {
-                    tokens.add(new Token(TokenType.SYMBOL, two));
+                    tokens.add(new Token(TokenType.SYMBOL, two, i));
                     i += 2;
                     continue;
                 }
             }
             if ("().!".indexOf(c) >= 0) {
-                tokens.add(new Token(TokenType.SYMBOL, Character.toString(c)));
+                tokens.add(new Token(TokenType.SYMBOL, Character.toString(c), i));
                 i++;
                 continue;
             }
             throw new GearExpressionException("Unsupported token at position " + i + ": " + c);
         }
-        tokens.add(new Token(TokenType.EOF, "<eof>"));
+        tokens.add(new Token(TokenType.EOF, "<eof>", expression.length()));
         return tokens;
+    }
+
+    private static boolean isMalformedLeadingDecimalStart(String expression, int position) {
+        return expression.charAt(position) == '.' && position + 1 < expression.length()
+                && Character.isDigit(expression.charAt(position + 1));
+    }
+
+    private static void validateNumberLiteral(String value, int position) {
+        int decimalPoint = value.indexOf('.');
+        if (decimalPoint == 0 || decimalPoint == value.length() - 1
+                || (decimalPoint >= 0 && value.indexOf('.', decimalPoint + 1) >= 0)) {
+            throw new GearExpressionException("Malformed GEL numeric literal at position " + position + ": " + value);
+        }
     }
 
     private interface Node {
@@ -239,8 +255,7 @@ public final class GearExpressionParser {
                 return new LiteralNode(token.value());
             }
             if (token.type() == TokenType.NUMBER) {
-                return token.value().contains(".") ? new LiteralNode(Double.valueOf(token.value()))
-                        : new LiteralNode(Long.valueOf(token.value()));
+                return new LiteralNode(parseNumberLiteral(token));
             }
             if (token.type() == TokenType.IDENTIFIER) {
                 return identifier(token.value());
@@ -249,6 +264,27 @@ public final class GearExpressionParser {
                 return nestedExpression();
             }
             throw new GearExpressionException("Unexpected token: " + token.value());
+        }
+
+        private Object parseNumberLiteral(Token token) {
+            try {
+                if (!token.value().contains(".")) {
+                    return Long.valueOf(token.value());
+                }
+                Double value = Double.valueOf(token.value());
+                if (!Double.isFinite(value)) {
+                    throw numberLiteralOutOfRange(token, null);
+                }
+                return value;
+            } catch (NumberFormatException exception) {
+                throw numberLiteralOutOfRange(token, exception);
+            }
+        }
+
+        private GearExpressionException numberLiteralOutOfRange(Token token, NumberFormatException cause) {
+            String message = "GEL numeric literal is outside the supported range at position " + token.position()
+                    + ": " + token.value();
+            return cause == null ? new GearExpressionException(message) : new GearExpressionException(message, cause);
         }
 
         private Node identifier(String first) {
@@ -320,7 +356,7 @@ public final class GearExpressionParser {
         }
     }
 
-    private record Token(TokenType type, String value) {}
+    private record Token(TokenType type, String value, int position) {}
 
     private enum TokenType {
         IDENTIFIER, NUMBER, STRING, SYMBOL, EOF

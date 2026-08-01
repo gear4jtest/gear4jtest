@@ -46,6 +46,10 @@ for untrusted object graphs. Generated XML always uses secure defaults, so rich
 objects must be converted upstream to inert maps before a GEL condition reads
 their properties.
 
+GEL numeric literals use either integer (`42`) or decimal (`42.5`) notation. A
+decimal point must have digits on both sides; leading-dot, trailing-dot and
+multiple-dot forms are rejected as malformed expressions.
+
 ## Supported media types
 
 - `application/xml`
