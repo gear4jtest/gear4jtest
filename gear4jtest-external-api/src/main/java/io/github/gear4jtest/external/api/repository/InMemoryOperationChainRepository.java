@@ -1,6 +1,5 @@
 package io.github.gear4jtest.external.api.repository;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,10 +12,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.UUID;
 
 import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.ExecutionMode;
+import io.github.gear4jtest.external.api.identity.OperationChainIdentityCodec;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 
 /**
@@ -99,7 +98,7 @@ public final class InMemoryOperationChainRepository
             }
         }
 
-        String stageId = deterministicStageId(key);
+        String stageId = OperationChainIdentityCodec.publicationStageId(requiredObject);
         OperationChainPublicationStage created = new OperationChainPublicationStage(stageId, requiredObject,
                 requiredTags, requiredStoreFingerprint, Instant.now());
         stagesById.put(stageId, created);
@@ -252,11 +251,7 @@ public final class InMemoryOperationChainRepository
 
     private static OperationChainPublicationConflictException conflict(PublicationKey key) {
         return new OperationChainPublicationConflictException(
-                "Publication " + key + " already exists with different content or metadata");
-    }
-
-    private static String deterministicStageId(PublicationKey key) {
-        return UUID.nameUUIDFromBytes(key.toString().getBytes(StandardCharsets.UTF_8)).toString();
+                "Publication " + key.description() + " already exists with different content or metadata");
     }
 
     private static String requireStoreFingerprint(String storeFingerprint) {
@@ -284,8 +279,7 @@ public final class InMemoryOperationChainRepository
             return new PublicationKey(object.alId(), object.version(), object.mode());
         }
 
-        @Override
-        public String toString() {
+        private String description() {
             return assemblyLineId + ":" + version + ":" + mode;
         }
     }

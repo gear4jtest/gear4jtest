@@ -3,6 +3,7 @@ package io.github.gear4jtest.external.api;
 import java.io.IOException;
 
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
+import io.github.gear4jtest.external.api.identity.OperationChainIdentityCodec;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 
 import static java.util.Objects.requireNonNull;
@@ -31,7 +32,7 @@ final class AssemblyLineIdentifiers {
     }
 
     static String toInternalLoaderId(OperationChainObject obj) {
-        return obj.alId() + ":" + obj.version() + ":" + obj.mode() + ":" + obj.contentHash();
+        return OperationChainIdentityCodec.loaderId(obj);
     }
 
     static String latestAlias(String alId) {

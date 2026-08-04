@@ -141,6 +141,22 @@ class InMemoryOperationChainRepositoryTest {
     }
 
     @Test
+    void stagedPublication_shouldKeepLegacyDelimiterCollisionCandidatesSeparate() {
+        // Given
+        OperationChainObject first = object("a:b", "c", ExecutionMode.TEST, "1".repeat(64), Instant.EPOCH);
+        OperationChainObject second = object("a", "b:c", ExecutionMode.TEST, "2".repeat(64), Instant.EPOCH);
+
+        // When
+        OperationChainPublicationStage firstStage = repository.stage(first, List.of("first"));
+        OperationChainPublicationStage secondStage = repository.stage(second, List.of("second"));
+
+        // Then
+        assertThat(firstStage.stageId()).isNotEqualTo(secondStage.stageId());
+        assertThat(repository.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10)))
+                .containsExactlyInAnyOrder(firstStage, secondStage);
+    }
+
+    @Test
     void stagedPublication_shouldRejectConflictingCandidateWithoutChangingStage() {
         // Given
         OperationChainObject existing = object("line", "6.0.0", ExecutionMode.TEST, "f".repeat(64),

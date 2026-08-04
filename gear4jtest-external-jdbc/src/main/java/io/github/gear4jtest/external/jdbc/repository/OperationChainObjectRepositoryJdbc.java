@@ -1,6 +1,5 @@
 package io.github.gear4jtest.external.jdbc.repository;
 
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -14,12 +13,12 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeSet;
-import java.util.UUID;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.ExecutionMode;
+import io.github.gear4jtest.external.api.identity.OperationChainIdentityCodec;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
@@ -174,7 +173,7 @@ public final class OperationChainObjectRepositoryJdbc
         try {
             return transactionOperations.executeReturning(connection -> insert(connection, object));
         } catch (SQLException exception) {
-            throw repositoryFailure("insert operation-chain object " + publicationKey(object), exception);
+            throw repositoryFailure("insert operation-chain object " + publicationDescription(object), exception);
         }
     }
 
@@ -187,7 +186,7 @@ public final class OperationChainObjectRepositoryJdbc
             throw exception;
         } catch (OperationChainRepositoryException exception) {
             throw new OperationChainRepositoryException(
-                    "Failed to publish operation-chain object " + publicationKey(object)
+                    "Failed to publish operation-chain object " + publicationDescription(object)
                             + " using " + databaseDialect,
                     exception);
         }
@@ -200,7 +199,7 @@ public final class OperationChainObjectRepositoryJdbc
         Objects.requireNonNull(object, "object must not be null");
         List<String> requiredTags = normalizedTags(tags);
         String requiredStoreFingerprint = requireContentHash(storeFingerprint);
-        String stageId = deterministicStageId(object);
+        String stageId = OperationChainIdentityCodec.publicationStageId(object);
         try {
             return transactionOperations.executeReturning(connection -> {
                 verifyCommittedPublicationCompatible(connection, object);
@@ -215,7 +214,7 @@ public final class OperationChainObjectRepositoryJdbc
         } catch (OperationChainRepositoryException exception) {
             throw exception;
         } catch (SQLException exception) {
-            throw repositoryFailure("stage operation-chain object " + publicationKey(object), exception);
+            throw repositoryFailure("stage operation-chain object " + publicationDescription(object), exception);
         }
     }
 
@@ -327,7 +326,7 @@ public final class OperationChainObjectRepositoryJdbc
             }
             connection.rollback(savepoint);
             OperationChainPublicationStage existing = findStage(connection, stageId)
-                    .orElseThrow(() -> repositoryFailure("resolve concurrent stage " + publicationKey(object),
+                    .orElseThrow(() -> repositoryFailure("resolve concurrent stage " + publicationDescription(object),
                                                          exception));
             if (!existing.object().contentIdentity().equals(object.contentIdentity())
                     || !Objects.equals(existing.storeFingerprint(), storeFingerprint)) {
@@ -496,7 +495,8 @@ public final class OperationChainObjectRepositoryJdbc
             connection.rollback(savepoint);
             OperationChainObject existing = find(connection, object.alId(), object.version(), object.mode())
                     .orElseThrow(() -> repositoryFailure(
-                                                         "resolve concurrent publication " + publicationKey(object),
+                                                         "resolve concurrent publication "
+                                                                 + publicationDescription(object),
                                                          exception));
             if (!existing.contentIdentity().equals(object.contentIdentity())) {
                 throw conflict(object, exception);
@@ -545,12 +545,8 @@ public final class OperationChainObjectRepositoryJdbc
         }
     }
 
-    private static String publicationKey(OperationChainObject object) {
+    private static String publicationDescription(OperationChainObject object) {
         return object.alId() + ":" + object.version() + ":" + object.mode();
-    }
-
-    private static String deterministicStageId(OperationChainObject object) {
-        return UUID.nameUUIDFromBytes(publicationKey(object).getBytes(StandardCharsets.UTF_8)).toString();
     }
 
     private static List<String> normalizedTags(List<String> tags) {
@@ -578,7 +574,7 @@ public final class OperationChainObjectRepositoryJdbc
     }
 
     private static OperationChainPublicationConflictException conflict(OperationChainObject object, Throwable cause) {
-        String message = "Publication " + publicationKey(object)
+        String message = "Publication " + publicationDescription(object)
                 + " already exists with different content or metadata";
         return cause == null ? new OperationChainPublicationConflictException(message)
                 : new OperationChainPublicationConflictException(message, cause);

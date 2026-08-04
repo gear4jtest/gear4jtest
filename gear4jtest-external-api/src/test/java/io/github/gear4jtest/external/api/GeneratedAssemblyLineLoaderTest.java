@@ -114,6 +114,49 @@ class GeneratedAssemblyLineLoaderTest {
     }
 
     @Test
+    void loadOrCompile_shouldKeepLegacyDelimiterCollisionCandidatesInSeparateCacheEntries() throws Exception {
+        // Given
+        Map<String, byte[]> compiledClasses = compileGeneratedClass();
+        AtomicInteger compilationCount = new AtomicInteger();
+        GeneratedSourceCompiler compiler = (className, sourceCode) -> {
+            compilationCount.incrementAndGet();
+            return compiledClasses;
+        };
+        InMemoryArtifactStore artifactStore = new InMemoryArtifactStore();
+        byte[] artifactBytes = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
+        String hash = artifactStore.put(artifactBytes);
+        OperationChainObject first = object("a:b", "c", hash, artifactBytes.length);
+        OperationChainObject second = object("a", "b:c", hash, artifactBytes.length);
+        OperationChainConfig firstConfig = new OperationChainConfig(first.alId(), false, StoreType.MEMORY, Map.of());
+        OperationChainConfig secondConfig = new OperationChainConfig(second.alId(), false, StoreType.MEMORY, Map.of());
+        OperationChainConfigRepository configRepository = mock(OperationChainConfigRepository.class);
+        when(configRepository.findByAssemblyLineId(first.alId())).thenReturn(Optional.of(firstConfig));
+        when(configRepository.findByAssemblyLineId(second.alId())).thenReturn(Optional.of(secondConfig));
+        ArtifactStoreProvider storeProvider = mock(ArtifactStoreProvider.class);
+        when(storeProvider.forConfig(firstConfig)).thenReturn(artifactStore);
+        when(storeProvider.forConfig(secondConfig)).thenReturn(artifactStore);
+        OperationChainTranslator translator = mock(OperationChainTranslator.class);
+        when(translator.translate(any(byte[].class), eq("application/xml"), eq(ExecutionMode.TEST)))
+                .thenReturn(new OperationChainTranslator.GenerationResult(GENERATED_CLASS, GENERATED_SOURCE));
+        OperationChainTranslatorResolver translatorResolver = mock(OperationChainTranslatorResolver.class);
+        when(translatorResolver.resolve("application/xml")).thenReturn(translator);
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder().build();
+        GeneratedAssemblyLineLoader loader = new GeneratedAssemblyLineLoader(
+                new AssemblyLineStoreResolver(configRepository, storeProvider), registry, translatorResolver, compiler,
+                new SimpleDependencyInjector(), getClass().getClassLoader(),
+                ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
+
+        // When
+        GeneratedAssemblyLine<?, ?> firstLoaded = loader.loadOrCompile(first.alId(), first);
+        GeneratedAssemblyLine<?, ?> secondLoaded = loader.loadOrCompile(second.alId(), second);
+
+        // Then
+        assertThat(firstLoaded).isNotSameAs(secondLoaded);
+        assertThat(compilationCount).hasValue(2);
+        assertThat(registry.snapshotStats().cachedLoaders()).isEqualTo(2);
+    }
+
+    @Test
     void loadOrCompile_shouldWakeAllWaitersAndAllowRetryAfterCompilationTimeout() throws Exception {
         // Given
         Map<String, byte[]> compiledClasses = compileGeneratedClass();
@@ -180,6 +223,15 @@ class GeneratedAssemblyLineLoaderTest {
                 translatorResolver, compiler, new SimpleDependencyInjector(),
                 GeneratedAssemblyLineLoaderTest.class.getClassLoader(), ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
         return new LoaderFixture(loader, object);
+    }
+
+    private static OperationChainObject object(String assemblyLineId,
+                                               String version,
+                                               String hash,
+                                               long sizeBytes) {
+        return new OperationChainObject(null, assemblyLineId, version, ExecutionMode.TEST, hash, sizeBytes,
+                "application/xml", Instant.parse("2026-07-13T08:00:00Z"), "tester",
+                Instant.parse("2026-07-13T08:00:00Z"));
     }
 
     private static Map<String, byte[]> compileGeneratedClass() {

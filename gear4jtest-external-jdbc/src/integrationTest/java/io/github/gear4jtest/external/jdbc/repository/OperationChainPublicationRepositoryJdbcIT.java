@@ -141,6 +141,28 @@ class OperationChainPublicationRepositoryJdbcIT {
         assertThat(repository.abortIfUnchanged(renewed)).isTrue();
     }
 
+    @Test
+    void stage_shouldKeepLegacyDelimiterCollisionCandidatesSeparate() throws Exception {
+        // Given
+        DataSource dataSource = h2DataSource();
+        ExternalJdbcSchemaMigrator.forDialect(Gear4jDatabaseDialect.H2).migrate(dataSource);
+        insertConfig(dataSource, "a:b");
+        insertConfig(dataSource, "a");
+        OperationChainObjectRepositoryJdbc repository = repository(dataSource);
+        OperationChainObject first = publication("a:b", "c", "1".repeat(64));
+        OperationChainObject second = publication("a", "b:c", "2".repeat(64));
+
+        // When
+        var firstStage = repository.stage(first, List.of("first"));
+        var secondStage = repository.stage(second, List.of("second"));
+
+        // Then
+        assertThat(firstStage.stageId()).isNotEqualTo(secondStage.stageId());
+        assertThat(count(dataSource, "SELECT COUNT(*) FROM operation_chain_publication_stage")).isEqualTo(2);
+        assertThat(repository.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10)))
+                .containsExactlyInAnyOrder(firstStage, secondStage);
+    }
+
     private static OperationChainObjectRepositoryJdbc repository(DataSource dataSource) {
         return OperationChainObjectRepositoryJdbc.builder()
                 .dataSource(dataSource)
@@ -149,8 +171,12 @@ class OperationChainPublicationRepositoryJdbcIT {
     }
 
     private static OperationChainObject publication(String version, String hash) {
+        return publication("line", version, hash);
+    }
+
+    private static OperationChainObject publication(String assemblyLineId, String version, String hash) {
         Instant now = Instant.parse("2026-07-10T10:15:30Z");
-        return new OperationChainObject(null, "line", version, ExecutionMode.TEST, hash, 42L,
+        return new OperationChainObject(null, assemblyLineId, version, ExecutionMode.TEST, hash, 42L,
                 "application/xml", now, "tester", now);
     }
 

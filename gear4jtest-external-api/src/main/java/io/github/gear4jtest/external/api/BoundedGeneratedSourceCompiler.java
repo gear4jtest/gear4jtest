@@ -106,8 +106,7 @@ final class BoundedGeneratedSourceCompiler implements GeneratedSourceCompiler, A
 
         Map<String, byte[]> cachedAfterOwnership = findCached(key);
         if (cachedAfterOwnership != null) {
-            owned.completeSuccessfully(cachedAfterOwnership, NO_OPERATION);
-            inFlight.remove(key, owned);
+            completeSuccessfully(key, owned, cachedAfterOwnership, NO_OPERATION);
             return copyClasses(cachedAfterOwnership);
         }
 
@@ -133,8 +132,7 @@ final class BoundedGeneratedSourceCompiler implements GeneratedSourceCompiler, A
         }
         CompilationException shutdown = new CompilationException("Generated-source compilation runtime is closed");
         inFlight.forEach((key, flight) -> {
-            flight.completeExceptionally(shutdown, NO_OPERATION);
-            flight.cancel(compilationExecutor);
+            completeExceptionally(key, flight, shutdown, () -> flight.cancel(compilationExecutor));
         });
         inFlight.clear();
         timeoutExecutor.shutdownNow();
@@ -153,9 +151,10 @@ final class BoundedGeneratedSourceCompiler implements GeneratedSourceCompiler, A
             CompilationException failure = new CompilationException(
                     "Generated-source compilation executor is saturated or closed for " + key.className(),
                     List.of(), rejected);
-            flight.completeExceptionally(failure, counters::recordCompilationRejected);
-            flight.cancel(compilationExecutor);
-            inFlight.remove(key, flight);
+            completeExceptionally(key, flight, failure, () -> {
+                counters.recordCompilationRejected();
+                flight.cancel(compilationExecutor);
+            });
         }
     }
 
@@ -165,28 +164,47 @@ final class BoundedGeneratedSourceCompiler implements GeneratedSourceCompiler, A
         try {
             Map<String, byte[]> compiled = copyClasses(delegate.compile(key.className(), sourceCode),
                                                        configuration.maxCompilationOutputBytes());
-            flight.completeSuccessfully(compiled, () -> {
+            completeSuccessfully(key, flight, compiled, () -> {
                 cache(key, compiled);
                 counters.recordCompilationSucceeded();
             });
         } catch (CompilationLimitExceededException failure) {
-            flight.completeExceptionally(failure, counters::recordCompilationLimitRejected);
+            completeExceptionally(key, flight, failure, counters::recordCompilationLimitRejected);
         } catch (RuntimeException | Error failure) {
-            flight.completeExceptionally(failure, counters::recordCompilationFailed);
+            completeExceptionally(key, flight, failure, counters::recordCompilationFailed);
         } finally {
             counters.recordDuration(System.nanoTime() - startedNanos);
             flight.cancelTimeout();
-            inFlight.remove(key, flight);
         }
     }
 
     private void timeout(CompilationKey key, CompilationFlight flight) {
         CompilationTimeoutException failure = new CompilationTimeoutException(key.className(),
                 configuration.timeout());
-        if (flight.completeExceptionally(failure, counters::recordCompilationTimedOut)) {
+        completeExceptionally(key, flight, failure, () -> {
+            counters.recordCompilationTimedOut();
             flight.cancelCompilation(compilationExecutor);
+        });
+    }
+
+    private boolean completeSuccessfully(CompilationKey key,
+                                         CompilationFlight flight,
+                                         Map<String, byte[]> value,
+                                         Runnable beforeCompletion) {
+        return flight.completeSuccessfully(value, () -> {
+            beforeCompletion.run();
             inFlight.remove(key, flight);
-        }
+        });
+    }
+
+    private boolean completeExceptionally(CompilationKey key,
+                                          CompilationFlight flight,
+                                          Throwable failure,
+                                          Runnable beforeCompletion) {
+        return flight.completeExceptionally(failure, () -> {
+            beforeCompletion.run();
+            inFlight.remove(key, flight);
+        });
     }
 
     private Map<String, byte[]> await(CompilationKey key, CompilationFlight flight) {
