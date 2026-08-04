@@ -78,6 +78,21 @@ class CompositeArtifactStoreAdditionalTest {
     }
 
     @Test
+    void get_shouldRejectCorruptSinglePrimaryWhenVerificationIsEnabled() throws IOException {
+        InMemoryArtifactStore delegate = new InMemoryArtifactStore();
+        String expectedHash = ArtifactHashes.sha256Hex("expected".getBytes(StandardCharsets.UTF_8));
+        String actualHash = delegate.put("corrupt!".getBytes(StandardCharsets.UTF_8));
+        CompositeArtifactStore store = new CompositeArtifactStore(
+                new AliasArtifactStore(delegate, expectedHash, actualHash), List.of(),
+                CompositeArtifactStore.WriteMode.PRIMARY_ONLY, CompositeArtifactStore.ReadMode.PREFER_PRIMARY,
+                true, false, Runnable::run);
+
+        assertThatThrownBy(() -> store.get(expectedHash))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("Corrupt artifact");
+    }
+
+    @Test
     void exists_shouldCheckFallbacksWhenPrimaryMisses() throws IOException {
         InMemoryArtifactStore primary = new InMemoryArtifactStore();
         InMemoryArtifactStore fallback = new InMemoryArtifactStore();

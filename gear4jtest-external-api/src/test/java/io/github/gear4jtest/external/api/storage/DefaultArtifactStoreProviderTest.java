@@ -75,6 +75,17 @@ class DefaultArtifactStoreProviderTest {
     }
 
     @Test
+    void forConfig_shouldKeepVerifyOnReadEffectiveWithoutFallback() {
+        DefaultArtifactStoreProvider provider = new DefaultArtifactStoreProvider(
+                new ArtifactStoreResolver(getClass().getClassLoader()), null, Runnable::run);
+
+        ArtifactStore store = provider.forConfig(new OperationChainConfig("pipeline", false, StoreType.MEMORY,
+                Map.of("verifyOnRead", "true")));
+
+        assertThat(store).isInstanceOf(CompositeArtifactStore.class);
+    }
+
+    @Test
     void forConfig_shouldRejectNonBooleanFlags() {
         DefaultArtifactStoreProvider provider = new DefaultArtifactStoreProvider(
                 new ArtifactStoreResolver(getClass().getClassLoader()), null, Runnable::run);

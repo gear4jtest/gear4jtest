@@ -207,7 +207,7 @@ public final class DatabaseArtifactStore implements ArtifactStore, ArtifactStore
                     if (!ExternalRepositorySqlDialect.isUniqueViolation(databaseDialect, exception)) {
                         throw exception;
                     }
-                    verifyExistingArtifactSize(connection, hash, size);
+                    verifyExistingArtifact(connection, hash, size);
                 }
             }
         } catch (SQLException exception) {
@@ -216,9 +216,9 @@ public final class DatabaseArtifactStore implements ArtifactStore, ArtifactStore
         }
     }
 
-    private void verifyExistingArtifactSize(Connection connection, String hash, long expectedSize) throws SQLException {
+    private void verifyExistingArtifact(Connection connection, String hash, long expectedSize) throws SQLException {
         try (PreparedStatement statement = prepare(connection,
-                                                   "SELECT size_bytes FROM " + table + " WHERE hash_hex=?")) {
+                                                   "SELECT size_bytes,content FROM " + table + " WHERE hash_hex=?")) {
             statement.setString(1, hash);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next()) {
@@ -228,6 +228,27 @@ public final class DatabaseArtifactStore implements ArtifactStore, ArtifactStore
                 if (actualSize != expectedSize) {
                     throw new SQLException("Existing artifact size mismatch for " + hash + ": expected "
                             + expectedSize + " but found " + actualSize);
+                }
+                try (InputStream content = resultSet.getBinaryStream(2)) {
+                    if (content == null) {
+                        throw new SQLException("Existing artifact content is null for " + hash);
+                    }
+                    ArtifactHashes.HashedStreamResult existingContent;
+                    try {
+                        existingContent = ArtifactHashes.sha256Hex(content, expectedSize);
+                    } catch (IOException exception) {
+                        throw new SQLException("Failed to verify existing artifact content for " + hash, exception);
+                    }
+                    if (existingContent.sizeBytes() != expectedSize) {
+                        throw new SQLException("Existing artifact content size mismatch for " + hash + ": expected "
+                                + expectedSize + " but found " + existingContent.sizeBytes());
+                    }
+                    if (!hash.equals(existingContent.hashHex())) {
+                        throw new SQLException("Existing artifact content hash mismatch for " + hash + ": expected "
+                                + hash + " but found " + existingContent.hashHex());
+                    }
+                } catch (IOException exception) {
+                    throw new SQLException("Failed to close existing artifact content for " + hash, exception);
                 }
             }
         }

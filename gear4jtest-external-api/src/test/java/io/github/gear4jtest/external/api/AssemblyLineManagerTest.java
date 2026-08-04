@@ -1,5 +1,6 @@
 package io.github.gear4jtest.external.api;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -7,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.github.gear4jtest.external.api.artifact.Artifact;
+import io.github.gear4jtest.external.api.artifact.ArtifactHashes;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.artifact.InMemoryArtifactStore;
 import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompiler;
@@ -461,6 +464,33 @@ class AssemblyLineManagerTest {
                 .hasCauseInstanceOf(IllegalStateException.class);
         verify(translator).translate(any(byte[].class), eq("application/xml"), eq(ExecutionMode.RUN));
         verify(objectRepository, never()).insert(any());
+        verify(publicationRepository, never()).stage(any(), any(), any());
+    }
+
+    @Test
+    void promoteTestToRun_shouldRejectSameSizeCorruptionBeforeTranslation() throws Exception {
+        // Given
+        AssemblyLineManager manager = manager();
+        byte[] expected = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
+        byte[] corrupt = expected.clone();
+        corrupt[corrupt.length - 2] ^= 1;
+        String expectedHash = ArtifactHashes.sha256Hex(expected);
+        ArtifactStore artifactStore = mock(ArtifactStore.class);
+        when(artifactStore.get(expectedHash)).thenReturn(Optional.of(new Artifact(expectedHash, corrupt.length,
+                Map.of(), () -> new ByteArrayInputStream(corrupt))));
+        OperationChainObject testObject = object("line", "1.0.0", ExecutionMode.TEST, expectedHash,
+                                                 expected.length);
+        when(configRepository.findByAssemblyLineId("line")).thenReturn(Optional.of(memoryConfig("line")));
+        when(storeProvider.forConfig(any())).thenReturn(artifactStore);
+        when(objectRepository.find("line", "1.0.0", ExecutionMode.TEST)).thenReturn(Optional.of(testObject));
+        when(objectRepository.exists("line", "1.0.0", ExecutionMode.RUN)).thenReturn(false);
+
+        // When / Then
+        assertThatThrownBy(() -> manager.promoteTestToRun("line", "1.0.0", "promoter"))
+                .isInstanceOf(io.github.gear4jtest.external.api.exception.PolicyViolationException.class)
+                .hasMessageContaining("RUN candidate content does not match contentHash")
+                .hasMessageContaining(expectedHash);
+        verifyNoInteractions(translatorResolver, compiler);
         verify(publicationRepository, never()).stage(any(), any(), any());
     }
 

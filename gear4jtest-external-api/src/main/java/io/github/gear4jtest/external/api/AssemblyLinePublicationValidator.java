@@ -33,16 +33,27 @@ final class AssemblyLinePublicationValidator {
     void validatePublicationCandidate(String alId, OperationChainObject object, byte[] content)
             throws PolicyViolationException {
         Objects.requireNonNull(content, "content must not be null");
-        if (!ArtifactHashes.sha256Hex(content).equals(object.contentHash())) {
-            throw new PolicyViolationException(
-                    "Publication candidate content does not match contentHash=" + object.contentHash());
-        }
+        validateContentIdentity(content, object, object.mode() + " publication candidate");
         validateBytes(alId, object, content, object.mode() + " publication candidate");
     }
 
     void validateRunCandidate(String alId, OperationChainObject object, ArtifactStore store)
             throws PolicyViolationException {
-        validateBytes(alId, object, readArtifact(alId, object, store), "RUN candidate");
+        byte[] content = readArtifact(alId, object, store);
+        validateContentIdentity(content, object, "RUN candidate");
+        validateBytes(alId, object, content, "RUN candidate");
+    }
+
+    private static void validateContentIdentity(byte[] content,
+                                                OperationChainObject object,
+                                                String candidateLabel)
+            throws PolicyViolationException {
+        try {
+            ArtifactHashes.requireContentIdentity(content, object.contentHash(), object.sizeBytes(), candidateLabel);
+        } catch (IOException exception) {
+            throw new PolicyViolationException(candidateLabel + " content does not match contentHash="
+                    + object.contentHash(), exception);
+        }
     }
 
     private void validateBytes(String alId,
@@ -84,6 +95,12 @@ final class AssemblyLinePublicationValidator {
         try {
             Artifact artifact = requireNonNull(store, "store must not be null").get(object.contentHash())
                     .orElseThrow(() -> new IOException("Artifact not found for hash=" + object.contentHash()));
+            ArtifactHashes.requireSha256Match(object.contentHash(), artifact.hashHex(),
+                                              "RUN candidate artifact metadata");
+            if (artifact.size() != object.sizeBytes()) {
+                throw new IOException("RUN candidate artifact metadata size mismatch: expected "
+                        + object.sizeBytes() + " but found " + artifact.size());
+            }
             AssemblyLineIdentifiers.requireAllowedArtifactSize(artifact.size(), maxArtifactSizeBytes,
                                                                "Assembly line artifact " + object.contentHash());
             try (InputStream in = artifact.openStreamChecked()) {

@@ -3,9 +3,12 @@ package io.github.gear4jtest.external.jdbc.artifact;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.HexFormat;
 import java.util.Objects;
 
 final class JdbcArtifactInputStream extends FilterInputStream {
@@ -15,11 +18,13 @@ final class JdbcArtifactInputStream extends FilterInputStream {
     private final String hash;
     private final long expectedSize;
     private final long maxSize;
+    private final MessageDigest digest = newSha256Digest();
     private final ArtifactStoreMetrics metrics;
     private final long startedNanos;
     private long bytesRead;
     private boolean closed;
     private boolean failed;
+    private boolean endOfStream;
 
     JdbcArtifactInputStream(InputStream content,
                             ResultSet resultSet,
@@ -51,6 +56,7 @@ final class JdbcArtifactInputStream extends FilterInputStream {
                 return -1;
             }
             recordRead(1L);
+            digest.update((byte) value);
             return value;
         } catch (IOException | RuntimeException exception) {
             fail(exception);
@@ -72,6 +78,7 @@ final class JdbcArtifactInputStream extends FilterInputStream {
                 return -1;
             }
             recordRead(read);
+            digest.update(buffer, offset, read);
             return read;
         } catch (IOException | RuntimeException exception) {
             fail(exception);
@@ -111,10 +118,19 @@ final class JdbcArtifactInputStream extends FilterInputStream {
     }
 
     private void handleEndOfStream() throws IOException {
+        if (endOfStream) {
+            return;
+        }
         if (bytesRead != expectedSize) {
             throw new IOException("Database artifact content is shorter than its declared size. hash=" + hash
                     + ", declaredSize=" + expectedSize + ", actualSize=" + bytesRead);
         }
+        String actualHash = HexFormat.of().formatHex(digest.digest());
+        if (!hash.equals(actualHash)) {
+            throw new IOException("Database artifact content hash mismatch. hash=" + hash + ", actualHash="
+                    + actualHash);
+        }
+        endOfStream = true;
     }
 
     private void ensureOpen() throws IOException {
@@ -147,9 +163,9 @@ final class JdbcArtifactInputStream extends FilterInputStream {
         closeFailure = closeResource(resultSet, closeFailure, primaryFailure);
         closeFailure = closeResource(statement, closeFailure, primaryFailure);
         closeFailure = closeResource(connection, closeFailure, primaryFailure);
-        boolean completed = bytesRead == expectedSize && !failed && closeFailure == null;
+        boolean completed = endOfStream && !failed && closeFailure == null;
         metrics.recordReadClosed(bytesRead, ArtifactStoreMetrics.elapsedSince(startedNanos), completed,
-                                 bytesRead < expectedSize && primaryFailure == null && closeFailure == null,
+                                 !endOfStream && primaryFailure == null && closeFailure == null,
                                  failed || closeFailure != null);
         if (primaryFailure == null && closeFailure != null) {
             throw closeFailure;
@@ -175,5 +191,13 @@ final class JdbcArtifactInputStream extends FilterInputStream {
             }
         }
         return currentFailure;
+    }
+
+    private static MessageDigest newSha256Digest() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is unavailable", exception);
+        }
     }
 }

@@ -20,6 +20,7 @@ import javax.sql.DataSource;
 import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.ExecutionMode;
 import io.github.gear4jtest.external.api.StoreType;
+import io.github.gear4jtest.external.api.artifact.ArtifactHashes;
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
@@ -247,6 +248,28 @@ class ExternalJdbcMultiDialectIT {
             System.arraycopy(remainder, 0, reassembled, prefix.length, remainder.length);
             assertThat(reassembled).isEqualTo(content);
         }
+
+        // When / Then: same-size corruption is rejected both on read and on an
+        // idempotent retry, independently of the database dialect.
+        byte[] corrupt = content.clone();
+        corrupt[corrupt.length / 2] ^= 1;
+        updateArtifactContent(dataSource, hash, corrupt);
+        assertThatThrownBy(() -> {
+            try (var input = store.get(hash).orElseThrow().openStreamChecked()) {
+                input.readAllBytes();
+            }
+        }).isInstanceOf(java.io.IOException.class)
+                .hasMessageContaining("content hash mismatch")
+                .hasMessageContaining(hash);
+        assertThatThrownBy(() -> store.put(new ByteArrayInputStream(content), content.length))
+                .isInstanceOf(java.io.IOException.class)
+                .hasMessageContaining("Failed to persist database artifact")
+                .hasRootCauseMessage("Existing artifact content hash mismatch for " + hash + ": expected "
+                        + hash + " but found "
+                        + ArtifactHashes.sha256Hex(corrupt));
+
+        updateArtifactContent(dataSource, hash, content);
+        assertThat(store.put(new ByteArrayInputStream(content), content.length)).isEqualTo(hash);
     }
 
     private static OperationChainObject publication(String assemblyLineId,
@@ -264,6 +287,19 @@ class ExternalJdbcMultiDialectIT {
                                                             "DELETE FROM operation_chain_config WHERE al_id=?")) {
             statement.setString(1, assemblyLineId);
             statement.executeUpdate();
+        }
+    }
+
+    private static void updateArtifactContent(DataSource dataSource, String hash, byte[] content)
+            throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+                var statement = connection.prepareStatement(
+                                                            "UPDATE artifact_store SET content=? WHERE hash_hex=?")) {
+            statement.setBinaryStream(1, new ByteArrayInputStream(content), content.length);
+            statement.setString(2, hash);
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("Expected to update exactly one artifact fixture");
+            }
         }
     }
 

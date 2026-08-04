@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 import io.github.gear4jtest.external.api.artifact.Artifact;
+import io.github.gear4jtest.external.api.artifact.ArtifactHashes;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompiler;
 import io.github.gear4jtest.external.api.loader.ClassLoaderRegistry;
@@ -146,10 +147,18 @@ final class GeneratedAssemblyLineLoader {
         ArtifactStore store = storeResolver.resolve(alId);
         Artifact artifact = store.get(obj.contentHash())
                 .orElseThrow(() -> new IOException("Artifact not found for hash=" + obj.contentHash()));
+        String description = "Assembly line artifact " + obj.contentHash();
+        ArtifactHashes.requireSha256Match(obj.contentHash(), artifact.hashHex(), description + " metadata");
+        if (artifact.size() != obj.sizeBytes()) {
+            throw new IOException(description + " metadata size mismatch: expected " + obj.sizeBytes()
+                    + " but found " + artifact.size());
+        }
         AssemblyLineIdentifiers.requireAllowedArtifactSize(artifact.size(), maxArtifactSizeBytes,
-                                                           "Assembly line artifact " + obj.contentHash());
+                                                           description);
         try (InputStream in = artifact.openStreamChecked()) {
-            return ArtifactStore.readAllBytes(in, maxArtifactSizeBytes);
+            byte[] bytes = ArtifactStore.readAllBytes(in, maxArtifactSizeBytes);
+            ArtifactHashes.requireContentIdentity(bytes, obj.contentHash(), obj.sizeBytes(), description);
+            return bytes;
         }
     }
 

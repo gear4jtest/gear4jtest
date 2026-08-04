@@ -28,6 +28,37 @@ public final class ArtifactHashes {
         }
     }
 
+    public static void requireContentIdentity(byte[] data,
+                                              String expectedHash,
+                                              long expectedSize,
+                                              String description)
+            throws IOException {
+        Objects.requireNonNull(data, "data must not be null");
+        Objects.requireNonNull(description, "description must not be null");
+        if (data.length != expectedSize) {
+            throw new IOException(description + " size mismatch: expected " + expectedSize + " but found "
+                    + data.length);
+        }
+        requireSha256Match(expectedHash, sha256Hex(data), description);
+    }
+
+    public static void requireSha256Match(String expectedHash, String actualHash, String description)
+            throws IOException {
+        Objects.requireNonNull(description, "description must not be null");
+        String expected;
+        String actual;
+        try {
+            expected = requireSha256Hex(expectedHash);
+            actual = requireSha256Hex(actualHash);
+        } catch (IllegalArgumentException exception) {
+            throw new IOException(description + " contains an invalid SHA-256 value", exception);
+        }
+        if (!expected.equals(actual)) {
+            throw new IOException(description + " content hash mismatch: expected " + expected + " but found "
+                    + actual);
+        }
+    }
+
     public static HashedStreamResult sha256Hex(InputStream in, long maxBytes) throws IOException {
         Objects.requireNonNull(in, "input stream must not be null");
         try {

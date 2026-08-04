@@ -176,7 +176,9 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
                 throw new IllegalArgumentException("Artifact store property 'selfHealing=true' requires at least "
                         + "one complete fallback store");
             }
-            return primary;
+            if (!verifyOnRead) {
+                return primary;
+            }
         }
 
         return new CompositeArtifactStore(primary, fallbacks, writeMode, readMode, verifyOnRead, selfHealing,

@@ -1,5 +1,7 @@
 package io.github.gear4jtest.external.api;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -14,6 +16,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.github.gear4jtest.external.api.artifact.Artifact;
+import io.github.gear4jtest.external.api.artifact.ArtifactHashes;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.artifact.InMemoryArtifactStore;
 import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompiler;
@@ -36,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class GeneratedAssemblyLineLoaderTest {
@@ -111,6 +116,38 @@ class GeneratedAssemblyLineLoaderTest {
                 .hasMessage("temporary compiler failure");
         assertThat(fixture.loader().loadOrCompile("line", fixture.object())).isNotNull();
         assertThat(compilationCount).hasValue(2);
+    }
+
+    @Test
+    void loadOrCompile_shouldRejectSameSizeCorruptionBeforeTranslation() throws Exception {
+        // Given
+        byte[] expected = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
+        byte[] corrupt = expected.clone();
+        corrupt[corrupt.length - 2] ^= 1;
+        String expectedHash = ArtifactHashes.sha256Hex(expected);
+        ArtifactStore artifactStore = mock(ArtifactStore.class);
+        when(artifactStore.get(expectedHash)).thenReturn(Optional.of(new Artifact(expectedHash, corrupt.length,
+                Map.of(), () -> new ByteArrayInputStream(corrupt))));
+        OperationChainConfig config = new OperationChainConfig("line", false, StoreType.MEMORY, Map.of());
+        OperationChainConfigRepository configRepository = mock(OperationChainConfigRepository.class);
+        when(configRepository.findByAssemblyLineId("line")).thenReturn(Optional.of(config));
+        ArtifactStoreProvider storeProvider = mock(ArtifactStoreProvider.class);
+        when(storeProvider.forConfig(config)).thenReturn(artifactStore);
+        OperationChainTranslatorResolver translatorResolver = mock(OperationChainTranslatorResolver.class);
+        GeneratedSourceCompiler compiler = mock(GeneratedSourceCompiler.class);
+        GeneratedAssemblyLineLoader loader = new GeneratedAssemblyLineLoader(
+                new AssemblyLineStoreResolver(configRepository, storeProvider),
+                InMemoryClassLoaderRegistry.builder().build(), translatorResolver, compiler,
+                new SimpleDependencyInjector(), getClass().getClassLoader(),
+                ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
+        OperationChainObject object = object("line", "1.0.0", expectedHash, expected.length);
+
+        // When / Then
+        assertThatThrownBy(() -> loader.loadOrCompile("line", object))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("content hash mismatch")
+                .hasMessageContaining(expectedHash);
+        verifyNoInteractions(translatorResolver, compiler);
     }
 
     @Test

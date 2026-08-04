@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.external.api.artifact.Artifact;
+import io.github.gear4jtest.external.api.artifact.ArtifactHashes;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.artifact.ArtifactStoreStats;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
@@ -29,7 +30,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class DatabaseArtifactStoreStreamingTest {
-    private static final String HASH = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    private static final String HASH = ArtifactHashes.sha256Hex("abc".getBytes(StandardCharsets.UTF_8));
 
     @TempDir
     Path tempDirectory;
@@ -68,6 +69,22 @@ class DatabaseArtifactStoreStreamingTest {
         assertThat(stats.readStreamsOpened()).isEqualTo(1);
         assertThat(stats.readStreamsCompleted()).isEqualTo(1);
         assertThat(stats.bytesRead()).isEqualTo(bytes.length);
+    }
+
+    @Test
+    void stream_shouldAllowRepeatedEndOfStreamReadsAfterDigestVerification() throws Exception {
+        // Given
+        byte[] bytes = "abc".getBytes(StandardCharsets.UTF_8);
+        ReadJdbc jdbc = readJdbc(bytes.length, new ByteArrayInputStream(bytes));
+        DatabaseArtifactStore store = store(jdbc.dataSource(), 10);
+
+        // When / Then
+        try (InputStream input = store.get(HASH).orElseThrow().openStreamChecked()) {
+            assertThat(input.readAllBytes()).isEqualTo(bytes);
+            assertThat(input.read()).isEqualTo(-1);
+            assertThat(input.read()).isEqualTo(-1);
+        }
+        assertThat(store.snapshotStats().readStreamsCompleted()).isEqualTo(1);
     }
 
     @Test
@@ -119,6 +136,28 @@ class DatabaseArtifactStoreStreamingTest {
             }
         }).isInstanceOf(IOException.class)
                 .hasMessageContaining("exceeds declared or configured size");
+        verify(jdbc.contentResultSet()).close();
+        verify(jdbc.contentStatement()).close();
+        verify(jdbc.contentConnection()).close();
+        assertThat(store.snapshotStats().readFailures()).isEqualTo(1);
+    }
+
+    @Test
+    void stream_shouldRejectSameSizeContentWhoseDigestDoesNotMatchItsKey() throws Exception {
+        // Given
+        byte[] corrupt = "abd".getBytes(StandardCharsets.UTF_8);
+        ReadJdbc jdbc = readJdbc(corrupt.length, new ByteArrayInputStream(corrupt));
+        DatabaseArtifactStore store = store(jdbc.dataSource(), 10);
+        Artifact artifact = store.get(HASH).orElseThrow();
+
+        // When / Then
+        assertThatThrownBy(() -> {
+            try (InputStream input = artifact.openStreamChecked()) {
+                input.readAllBytes();
+            }
+        }).isInstanceOf(IOException.class)
+                .hasMessageContaining("content hash mismatch")
+                .hasMessageContaining(HASH);
         verify(jdbc.contentResultSet()).close();
         verify(jdbc.contentStatement()).close();
         verify(jdbc.contentConnection()).close();
