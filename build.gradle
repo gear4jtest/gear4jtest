@@ -504,7 +504,18 @@ configure([project(':gear4jtest-jdbc'), project(':gear4jtest-external-jdbc')]) {
         integrationTestRuntimeOnly(rootLibs.mysql)
         integrationTestRuntimeOnly(rootLibs.mariadb)
         integrationTestRuntimeOnly(rootLibs.ojdbc11)
+    }
+}
+
+project(':gear4jtest-jdbc') {
+    dependencies {
         integrationTestRuntimeOnly(rootLibs.h2)
+    }
+}
+
+project(':gear4jtest-external-jdbc') {
+    dependencies {
+        integrationTestImplementation(rootLibs.h2)
     }
 }
 

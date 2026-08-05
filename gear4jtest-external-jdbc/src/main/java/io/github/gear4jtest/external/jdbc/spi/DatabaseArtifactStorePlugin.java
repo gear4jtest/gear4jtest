@@ -12,6 +12,7 @@ import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.spi.ArtifactStorePlugin;
 import io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStore;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 
 public final class DatabaseArtifactStorePlugin implements ArtifactStorePlugin {
     @Override
@@ -38,13 +39,34 @@ public final class DatabaseArtifactStorePlugin implements ArtifactStorePlugin {
                 .requirePrivatePermissions(requireBoolean(props, "requirePrivatePermissions",
                                                           ArtifactSpoolPolicy.DEFAULT_REQUIRE_PRIVATE_PERMISSIONS))
                 .build();
-        return DatabaseArtifactStore.builder()
+        DatabaseArtifactStore.Builder builder = DatabaseArtifactStore.builder()
                 .dataSource(dataSource)
                 .table(table)
                 .databaseDialect(requireDialect(props))
                 .maxArtifactSizeBytes(requireMaxArtifactSize(props))
-                .spoolPolicy(spoolPolicy)
-                .build();
+                .spoolPolicy(spoolPolicy);
+        JdbcTransactionOperations transactionOperations = resolveTransactionOperations(props, ctx);
+        if (transactionOperations != null) {
+            builder.transactionOperations(transactionOperations);
+        }
+        return builder.build();
+    }
+
+    private static JdbcTransactionOperations resolveTransactionOperations(Map<String, String> props, Context ctx) {
+        String key = props == null ? null : props.get("transactionOperations");
+        if (key == null) {
+            return null;
+        }
+        if (key.isBlank()) {
+            throw new IllegalArgumentException(
+                    "DATABASE artifact store transactionOperations lookup key must not be blank");
+        }
+        Object candidate = ctx.lookup(key);
+        if (!(candidate instanceof JdbcTransactionOperations transactionOperations)) {
+            throw new IllegalArgumentException("DATABASE artifact store requires JdbcTransactionOperations in "
+                    + "context key: " + key);
+        }
+        return transactionOperations;
     }
 
     private static long requireLong(Map<String, String> props, String property, long defaultValue) {

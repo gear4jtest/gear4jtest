@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Savepoint;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
@@ -29,6 +30,7 @@ import io.github.gear4jtest.external.api.artifact.ManagedArtifactSpool;
 import io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialect;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.jdbc.persistence.JdbcStatementOptions;
+import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 
 public final class DatabaseArtifactStore implements ArtifactStore, ArtifactStoreMonitor, ArtifactSpoolMonitor {
     private static final Pattern SQL_IDENTIFIER = Pattern.compile("[A-Za-z_]\\w{0,63}");
@@ -38,6 +40,7 @@ public final class DatabaseArtifactStore implements ArtifactStore, ArtifactStore
     private final String table;
     private final Gear4jDatabaseDialect databaseDialect;
     private final JdbcStatementOptions statementOptions;
+    private final JdbcTransactionOperations transactionOperations;
     private final long maxArtifactSizeBytes;
     private final ManagedArtifactSpool spool;
     private final ArtifactStoreMetrics metrics = new ArtifactStoreMetrics();
@@ -52,6 +55,9 @@ public final class DatabaseArtifactStore implements ArtifactStore, ArtifactStore
         this.databaseDialect = Objects.requireNonNull(builder.databaseDialect, "databaseDialect must not be null");
         this.statementOptions = Objects.requireNonNull(builder.statementOptions,
                                                        "statementOptions must not be null");
+        this.transactionOperations = builder.transactionOperations != null
+                ? builder.transactionOperations
+                : JdbcTransactionOperations.autonomous(ds);
         this.maxArtifactSizeBytes = validateMaxArtifactSize(builder.maxArtifactSizeBytes);
         try {
             this.spool = new ManagedArtifactSpool(builder.spoolPolicy);
@@ -65,6 +71,7 @@ public final class DatabaseArtifactStore implements ArtifactStore, ArtifactStore
         private String table = DEFAULT_TABLE;
         private Gear4jDatabaseDialect databaseDialect;
         private JdbcStatementOptions statementOptions = JdbcStatementOptions.defaults();
+        private JdbcTransactionOperations transactionOperations;
         private long maxArtifactSizeBytes = ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES;
         private ArtifactSpoolPolicy spoolPolicy = ArtifactSpoolPolicy.defaults();
 
@@ -93,6 +100,16 @@ public final class DatabaseArtifactStore implements ArtifactStore, ArtifactStore
 
         public Builder statementOptions(JdbcStatementOptions statementOptions) {
             this.statementOptions = statementOptions;
+            return this;
+        }
+
+        /**
+         * Configures ownership of artifact write transactions. When omitted, Gear4J
+         * uses library-owned autonomous transactions.
+         */
+        public Builder transactionOperations(JdbcTransactionOperations transactionOperations) {
+            this.transactionOperations = Objects.requireNonNull(transactionOperations,
+                                                                "transactionOperations must not be null");
             return this;
         }
 
@@ -191,28 +208,50 @@ public final class DatabaseArtifactStore implements ArtifactStore, ArtifactStore
     }
 
     private void writeArtifact(Path tempFile, String hash, long size) throws IOException {
-        try (Connection connection = ds.getConnection();
-                PreparedStatement statement = prepare(connection, "INSERT INTO " + table
-                        + "(hash_hex,size_bytes,content) VALUES (?,?,?)")) {
-            statement.setString(1, hash);
-            statement.setLong(2, size);
-            try (InputStream content = Files.newInputStream(tempFile)) {
-                statement.setBinaryStream(3, content, size);
-                try {
-                    int insertedRows = statement.executeUpdate();
-                    if (insertedRows != 1) {
-                        throw new SQLException("Expected to insert one artifact but inserted " + insertedRows);
-                    }
-                } catch (SQLException exception) {
-                    if (!ExternalRepositorySqlDialect.isUniqueViolation(databaseDialect, exception)) {
-                        throw exception;
-                    }
-                    verifyExistingArtifact(connection, hash, size);
-                }
-            }
+        try {
+            transactionOperations.execute(connection -> persistArtifact(connection, tempFile, hash, size));
         } catch (SQLException exception) {
             throw new IOException("Failed to persist database artifact " + hash + " using " + databaseDialect,
                     exception);
+        }
+    }
+
+    private void persistArtifact(Connection connection, Path tempFile, String hash, long size) throws SQLException {
+        try (InputStream content = Files.newInputStream(tempFile)) {
+            insertArtifact(connection, content, hash, size);
+        } catch (IOException exception) {
+            throw new SQLException("Failed to stream database artifact " + hash, exception);
+        }
+    }
+
+    private void insertArtifact(Connection connection, InputStream content, String hash, long size)
+            throws SQLException {
+        Savepoint savepoint = connection.setSavepoint();
+        try (PreparedStatement statement = prepare(connection, "INSERT INTO " + table
+                + "(hash_hex,size_bytes,content) VALUES (?,?,?)")) {
+            statement.setString(1, hash);
+            statement.setLong(2, size);
+            statement.setBinaryStream(3, content, size);
+            int insertedRows = statement.executeUpdate();
+            if (insertedRows != 1) {
+                throw new SQLException("Expected to insert one artifact but inserted " + insertedRows);
+            }
+        } catch (SQLException exception) {
+            if (!ExternalRepositorySqlDialect.isUniqueViolation(databaseDialect, exception)) {
+                throw exception;
+            }
+            rollbackToSavepoint(connection, savepoint, exception);
+            verifyExistingArtifact(connection, hash, size);
+        }
+    }
+
+    private static void rollbackToSavepoint(Connection connection, Savepoint savepoint, SQLException original)
+            throws SQLException {
+        try {
+            connection.rollback(savepoint);
+        } catch (SQLException rollbackFailure) {
+            original.addSuppressed(rollbackFailure);
+            throw original;
         }
     }
 

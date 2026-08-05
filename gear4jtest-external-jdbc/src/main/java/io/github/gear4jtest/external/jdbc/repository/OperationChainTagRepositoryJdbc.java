@@ -14,11 +14,13 @@ import io.github.gear4jtest.external.api.repository.OperationChainRepositoryExce
 import io.github.gear4jtest.external.api.repository.OperationChainTagRepository;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.jdbc.persistence.JdbcStatementOptions;
+import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 
 public final class OperationChainTagRepositoryJdbc implements OperationChainTagRepository {
     private final DataSource ds;
     private final Gear4jDatabaseDialect databaseDialect;
     private final JdbcStatementOptions statementOptions;
+    private final JdbcTransactionOperations transactionOperations;
 
     public static Builder builder() {
         return new Builder();
@@ -29,12 +31,16 @@ public final class OperationChainTagRepositoryJdbc implements OperationChainTagR
         this.databaseDialect = Objects.requireNonNull(builder.databaseDialect, "databaseDialect must not be null");
         this.statementOptions = Objects.requireNonNull(builder.statementOptions,
                                                        "statementOptions must not be null");
+        this.transactionOperations = builder.transactionOperations != null
+                ? builder.transactionOperations
+                : JdbcTransactionOperations.autonomous(ds);
     }
 
     public static final class Builder {
         private DataSource dataSource;
         private Gear4jDatabaseDialect databaseDialect;
         private JdbcStatementOptions statementOptions = JdbcStatementOptions.defaults();
+        private JdbcTransactionOperations transactionOperations;
 
         private Builder() {
         }
@@ -59,6 +65,16 @@ public final class OperationChainTagRepositoryJdbc implements OperationChainTagR
             return this;
         }
 
+        /**
+         * Configures ownership of tag write transactions. When omitted, Gear4J uses
+         * library-owned autonomous transactions.
+         */
+        public Builder transactionOperations(JdbcTransactionOperations transactionOperations) {
+            this.transactionOperations = Objects.requireNonNull(transactionOperations,
+                                                                "transactionOperations must not be null");
+            return this;
+        }
+
         public OperationChainTagRepositoryJdbc build() {
             return new OperationChainTagRepositoryJdbc(this);
         }
@@ -75,11 +91,15 @@ public final class OperationChainTagRepositoryJdbc implements OperationChainTagR
     @Override
     public void addTag(String alId, String tag) {
         String sql = ExternalRepositorySqlDialect.insertTagIfAbsentSql(databaseDialect);
-        try (var c = ds.getConnection(); var ps = prepare(c, sql)) {
-            ps.setString(1, alId);
-            ps.setString(2, tag);
-            ps.executeUpdate();
-        } catch (java.sql.SQLException e) {
+        try {
+            transactionOperations.execute(connection -> {
+                try (PreparedStatement statement = prepare(connection, sql)) {
+                    statement.setString(1, alId);
+                    statement.setString(2, tag);
+                    statement.executeUpdate();
+                }
+            });
+        } catch (SQLException e) {
             throw repositoryFailure("add tag " + tag + " to " + alId, e);
         }
     }
@@ -87,11 +107,15 @@ public final class OperationChainTagRepositoryJdbc implements OperationChainTagR
     @Override
     public void removeTag(String alId, String tag) {
         String sql = "DELETE FROM operation_chain_tag WHERE al_id=? AND tag=?";
-        try (var c = ds.getConnection(); var ps = prepare(c, sql)) {
-            ps.setString(1, alId);
-            ps.setString(2, tag);
-            ps.executeUpdate();
-        } catch (java.sql.SQLException e) {
+        try {
+            transactionOperations.execute(connection -> {
+                try (PreparedStatement statement = prepare(connection, sql)) {
+                    statement.setString(1, alId);
+                    statement.setString(2, tag);
+                    statement.executeUpdate();
+                }
+            });
+        } catch (SQLException e) {
             throw repositoryFailure("remove tag " + tag + " from " + alId, e);
         }
     }

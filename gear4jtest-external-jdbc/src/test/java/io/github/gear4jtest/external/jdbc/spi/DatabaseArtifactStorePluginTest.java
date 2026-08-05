@@ -1,12 +1,17 @@
 package io.github.gear4jtest.external.jdbc.spi;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.external.api.spi.ArtifactStorePlugin;
 import io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStore;
+import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -14,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 class DatabaseArtifactStorePluginTest {
     @TempDir
@@ -113,5 +119,54 @@ class DatabaseArtifactStorePluginTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("requirePrivatePermissions")
                 .hasMessageContaining("true or false");
+    }
+
+    @Test
+    void build_shouldResolveExplicitTransactionOperations() throws Exception {
+        // Given
+        DatabaseArtifactStorePlugin plugin = new DatabaseArtifactStorePlugin();
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        when(connection.prepareStatement(org.mockito.ArgumentMatchers.anyString())).thenReturn(statement);
+        when(statement.executeUpdate()).thenReturn(1);
+        AtomicBoolean transactionInvoked = new AtomicBoolean();
+        JdbcTransactionOperations transactions = work -> {
+            transactionInvoked.set(true);
+            work.execute(connection);
+        };
+        ArtifactStorePlugin.Context explicitContext = key -> switch (key) {
+            case "datasource.default" -> dataSource;
+            case "transactions.external" -> transactions;
+            default -> null;
+        };
+        DatabaseArtifactStore store = (DatabaseArtifactStore) plugin.build(
+                                                                           Map.of("dialect", "h2",
+                                                                                  "transactionOperations",
+                                                                                  "transactions.external",
+                                                                                  "spoolDirectory",
+                                                                                  tempDirectory.toString()),
+                                                                           explicitContext);
+
+        // When
+        store.put("artifact".getBytes(StandardCharsets.UTF_8));
+
+        // Then
+        assertThat(transactionInvoked).isTrue();
+        verifyNoInteractions(dataSource);
+    }
+
+    @Test
+    void build_shouldRejectInvalidTransactionOperationsLookup() {
+        DatabaseArtifactStorePlugin plugin = new DatabaseArtifactStorePlugin();
+
+        assertThatThrownBy(() -> plugin.build(Map.of("dialect", "h2", "transactionOperations", " "), context))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("lookup key must not be blank");
+        assertThatThrownBy(() -> plugin.build(
+                                              Map.of("dialect", "h2", "transactionOperations", "missing"),
+                                              context))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("requires JdbcTransactionOperations")
+                .hasMessageContaining("missing");
     }
 }

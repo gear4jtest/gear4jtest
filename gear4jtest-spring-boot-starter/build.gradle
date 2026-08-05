@@ -13,6 +13,7 @@ dependencies {
     testImplementation libs.spring.test
     testImplementation libs.spring.boot.actuator
     testImplementation libs.h2
+    testImplementation project(':gear4jtest-external-jdbc')
 }
 
 ext.moduleName = 'io.github.gear4jtest.spring.boot.starter'

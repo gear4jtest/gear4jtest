@@ -61,12 +61,21 @@ conflicting content is rejected without changing existing metadata.
 Version listing is always bounded. `OperationChainObjectRepositoryJdbc#findAll` requires a `PageRequest` and applies it
 in SQL for every supported dialect; it never loads all versions before slicing the result.
 
-The object repository's mutating operations use autonomous
-`JdbcTransactionOperations` by default. They refuse a connection already bound
-to an ambient transaction instead of committing or rolling back a caller-owned
-scope. Framework-managed boundaries can be supplied explicitly with
+All mutating operations of `OperationChainObjectRepositoryJdbc`,
+`OperationChainConfigRepositoryJdbc`, `OperationChainTagRepositoryJdbc` and
+`DatabaseArtifactStore` use autonomous `JdbcTransactionOperations` by default.
+They require a fresh `autoCommit=true` connection, then commit or roll back and
+restore the connection state before closing it. A connection already bound to
+an ambient transaction is rejected before SQL work starts, so Gear4J never
+commits or rolls back a caller-owned scope accidentally.
+
+Framework-managed transaction ownership can be supplied explicitly with
 `.transactionOperations(...)`; this is the same SPI used by core JDBC
-persistence.
+persistence. With Spring Boot, pass the auto-configured
+`SpringJdbcTransactionOperations`. It uses `REQUIRES_NEW`, so an ambient
+application transaction is suspended while the Gear4J write completes. A custom
+implementation may instead join an application/JTA boundary, in which case that
+implementation owns connection acquisition and transaction completion.
 
 ## Database artifact streaming
 
@@ -81,6 +90,7 @@ The `DATABASE` plugin accepts:
 | --- | --- | --- |
 | `dialect` | required | Explicit `Gear4jDatabaseDialect`. |
 | `datasource` | `datasource.default` | Lookup key containing the `DataSource`. |
+| `transactionOperations` | autonomous | Optional lookup key containing explicit `JdbcTransactionOperations`. |
 | `table` | `artifact_store` | Validated simple SQL table identifier. |
 | `maxArtifactSizeBytes` | `5242880` | Maximum stored/read size; `-1` explicitly disables the bound. |
 | `spoolDirectory` | private temporary directory | Staging directory for hash-then-insert writes. |

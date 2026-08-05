@@ -18,6 +18,7 @@ import io.github.gear4jtest.external.api.repository.OperationChainNotFoundExcept
 import io.github.gear4jtest.external.api.repository.OperationChainRepositoryException;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.jdbc.persistence.JdbcStatementOptions;
+import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 
 public final class OperationChainConfigRepositoryJdbc implements OperationChainConfigRepository {
     private static final TypeReference<Map<String, String>> STRING_MAP_TYPE = new TypeReference<>() {};
@@ -26,6 +27,7 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
     private final Gear4jDatabaseDialect databaseDialect;
     private final ObjectMapper objectMapper;
     private final JdbcStatementOptions statementOptions;
+    private final JdbcTransactionOperations transactionOperations;
 
     public static Builder builder() {
         return new Builder();
@@ -37,6 +39,9 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
         this.objectMapper = Objects.requireNonNull(builder.objectMapper, "objectMapper must not be null");
         this.statementOptions = Objects.requireNonNull(builder.statementOptions,
                                                        "statementOptions must not be null");
+        this.transactionOperations = builder.transactionOperations != null
+                ? builder.transactionOperations
+                : JdbcTransactionOperations.autonomous(ds);
     }
 
     public static final class Builder {
@@ -44,6 +49,7 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
         private Gear4jDatabaseDialect databaseDialect;
         private ObjectMapper objectMapper = new ObjectMapper();
         private JdbcStatementOptions statementOptions = JdbcStatementOptions.defaults();
+        private JdbcTransactionOperations transactionOperations;
 
         private Builder() {
         }
@@ -70,6 +76,16 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
 
         public Builder statementOptions(JdbcStatementOptions statementOptions) {
             this.statementOptions = statementOptions;
+            return this;
+        }
+
+        /**
+         * Configures ownership of configuration write transactions. When omitted,
+         * Gear4J uses library-owned autonomous transactions.
+         */
+        public Builder transactionOperations(JdbcTransactionOperations transactionOperations) {
+            this.transactionOperations = Objects.requireNonNull(transactionOperations,
+                                                                "transactionOperations must not be null");
             return this;
         }
 
@@ -127,13 +143,18 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
     public void upsert(OperationChainConfig cfg) {
         Objects.requireNonNull(cfg, "cfg must not be null");
         String sql = ExternalRepositorySqlDialect.upsertOperationChainConfigSql(databaseDialect);
-        try (var c = ds.getConnection(); var ps = prepare(c, sql)) {
-            ps.setString(1, cfg.alId());
-            ExternalRepositorySqlDialect.setBoolean(databaseDialect, ps, 2,
-                                                    Boolean.TRUE.equals(cfg.allowRunPublicationWithoutTest()));
-            ps.setString(3, cfg.storeType().name());
-            ExternalRepositorySqlDialect.setJsonText(databaseDialect, ps, 4, toJson(cfg.storeProps()));
-            ps.executeUpdate();
+        String storeProperties = toJson(cfg.storeProps());
+        boolean allowRunWithoutTest = Boolean.TRUE.equals(cfg.allowRunPublicationWithoutTest());
+        try {
+            transactionOperations.execute(connection -> {
+                try (PreparedStatement statement = prepare(connection, sql)) {
+                    statement.setString(1, cfg.alId());
+                    ExternalRepositorySqlDialect.setBoolean(databaseDialect, statement, 2, allowRunWithoutTest);
+                    statement.setString(3, cfg.storeType().name());
+                    ExternalRepositorySqlDialect.setJsonText(databaseDialect, statement, 4, storeProperties);
+                    statement.executeUpdate();
+                }
+            });
         } catch (SQLException e) {
             throw repositoryFailure("upsert operation-chain configuration " + cfg.alId(), e);
         }
@@ -142,10 +163,14 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
     @Override
     public void setAllowRunPublicationWithoutTest(String alId, boolean allowed) {
         String sql = "UPDATE operation_chain_config SET allow_run_publication_without_test=? WHERE al_id=?";
-        try (var c = ds.getConnection(); var ps = prepare(c, sql)) {
-            ExternalRepositorySqlDialect.setBoolean(databaseDialect, ps, 1, allowed);
-            ps.setString(2, alId);
-            requireSingleUpdatedRow(ps.executeUpdate(), "publication policy", alId);
+        try {
+            transactionOperations.execute(connection -> {
+                try (PreparedStatement statement = prepare(connection, sql)) {
+                    ExternalRepositorySqlDialect.setBoolean(databaseDialect, statement, 1, allowed);
+                    statement.setString(2, alId);
+                    requireSingleUpdatedRow(statement.executeUpdate(), "publication policy", alId);
+                }
+            });
         } catch (SQLException e) {
             throw repositoryFailure("update publication policy for " + alId, e);
         }
@@ -155,11 +180,16 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
     public void updateStore(String alId, StoreType storeType, Map<String, String> storeProps) {
         Objects.requireNonNull(storeType, "storeType must not be null");
         String sql = ExternalRepositorySqlDialect.updateOperationChainStoreSql(databaseDialect);
-        try (var c = ds.getConnection(); var ps = prepare(c, sql)) {
-            ps.setString(1, storeType.name());
-            ExternalRepositorySqlDialect.setJsonText(databaseDialect, ps, 2, toJson(storeProps));
-            ps.setString(3, alId);
-            requireSingleUpdatedRow(ps.executeUpdate(), "artifact store", alId);
+        String storeProperties = toJson(storeProps);
+        try {
+            transactionOperations.execute(connection -> {
+                try (PreparedStatement statement = prepare(connection, sql)) {
+                    statement.setString(1, storeType.name());
+                    ExternalRepositorySqlDialect.setJsonText(databaseDialect, statement, 2, storeProperties);
+                    statement.setString(3, alId);
+                    requireSingleUpdatedRow(statement.executeUpdate(), "artifact store", alId);
+                }
+            });
         } catch (SQLException e) {
             throw repositoryFailure("update artifact store for " + alId, e);
         }

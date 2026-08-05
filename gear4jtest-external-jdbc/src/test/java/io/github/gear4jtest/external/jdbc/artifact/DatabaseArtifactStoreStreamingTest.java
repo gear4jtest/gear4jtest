@@ -237,6 +237,7 @@ class DatabaseArtifactStoreStreamingTest {
         Connection connection = mock(Connection.class);
         PreparedStatement statement = mock(PreparedStatement.class);
         when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.getAutoCommit()).thenReturn(true);
         when(connection.prepareStatement(anyString())).thenReturn(statement);
         when(statement.executeUpdate()).thenReturn(1);
         DatabaseArtifactStore store = DatabaseArtifactStore.builder()
@@ -258,6 +259,7 @@ class DatabaseArtifactStoreStreamingTest {
         assertThat(stats.writesCompleted()).isEqualTo(1);
         assertThat(stats.bytesWritten()).isEqualTo(3);
         assertThat(stats.writeFailures()).isZero();
+        verify(connection).commit();
         try (var files = Files.list(tempDirectory)) {
             assertThat(files.toList()).isEmpty();
         }

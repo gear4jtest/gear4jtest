@@ -45,6 +45,13 @@ class DatabaseArtifactStoreTest {
                 .hasMessageContaining("databaseDialect must not be null");
     }
 
+    @Test
+    void shouldRejectNullTransactionOperations() {
+        assertThatThrownBy(() -> DatabaseArtifactStore.builder().transactionOperations(null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("transactionOperations must not be null");
+    }
+
     private static DatabaseArtifactStore store(DataSource dataSource,
                                                String table,
                                                Gear4jDatabaseDialect databaseDialect) {

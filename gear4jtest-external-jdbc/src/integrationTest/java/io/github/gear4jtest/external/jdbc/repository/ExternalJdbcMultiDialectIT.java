@@ -2,6 +2,7 @@ package io.github.gear4jtest.external.jdbc.repository;
 
 import java.io.ByteArrayInputStream;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -28,6 +29,7 @@ import io.github.gear4jtest.external.api.repository.OperationChainRepositoryExce
 import io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStore;
 import io.github.gear4jtest.jdbc.migration.SchemaMigrationException;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestReporter;
 import org.junit.jupiter.api.io.TempDir;
@@ -83,6 +85,7 @@ class ExternalJdbcMultiDialectIT {
                                                                        scenario.id());
         testReporter.publishEntry("findLatestRun." + scenario.id(), latestRunIndexEvidence.report());
         String assemblyLineId = "line-" + scenario.id();
+        verifyManagedTransactionRollback(dataSource, scenario, assemblyLineId + "-managed-rollback");
         verifyConfigurationRoundTrip(dataSource, scenario.dialect(), assemblyLineId);
         verifyAtomicPublicationTagsAndPagination(dataSource, scenario.dialect(), assemblyLineId);
         verifyArtifactBlobStreaming(dataSource, scenario, assemblyLineId);
@@ -138,6 +141,57 @@ class ExternalJdbcMultiDialectIT {
         assertThat(saved.allowRunPublicationWithoutTest()).isTrue();
         assertThat(saved.storeType()).isEqualTo(StoreType.DATABASE);
         assertThat(saved.storeProps()).isEqualTo(Map.of("updated", "true"));
+    }
+
+    private void verifyManagedTransactionRollback(DataSource dataSource,
+                                                  DatabaseScenario scenario,
+                                                  String assemblyLineId)
+            throws Exception {
+        byte[] content = ("managed-rollback-" + scenario.id()).getBytes(StandardCharsets.UTF_8);
+        String hash;
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setAutoCommit(false);
+            JdbcTransactionOperations transactions = work -> work.execute(connection);
+            OperationChainConfigRepositoryJdbc configurations = OperationChainConfigRepositoryJdbc.builder()
+                    .dataSource(dataSource)
+                    .databaseDialect(scenario.dialect())
+                    .transactionOperations(transactions)
+                    .build();
+            OperationChainTagRepositoryJdbc tags = OperationChainTagRepositoryJdbc.builder()
+                    .dataSource(dataSource)
+                    .databaseDialect(scenario.dialect())
+                    .transactionOperations(transactions)
+                    .build();
+            DatabaseArtifactStore artifacts = DatabaseArtifactStore.builder()
+                    .dataSource(dataSource)
+                    .databaseDialect(scenario.dialect())
+                    .transactionOperations(transactions)
+                    .spoolDirectory(tempDirectory.resolve(scenario.id()).resolve("managed-rollback"))
+                    .build();
+
+            configurations.upsert(new OperationChainConfig(assemblyLineId, false, StoreType.DATABASE,
+                    Map.of("dialect", scenario.id())));
+            tags.addTag(assemblyLineId, "rolled-back");
+            hash = artifacts.put(content);
+            connection.rollback();
+        }
+
+        OperationChainConfigRepositoryJdbc configurations = OperationChainConfigRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(scenario.dialect())
+                .build();
+        OperationChainTagRepositoryJdbc tags = OperationChainTagRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(scenario.dialect())
+                .build();
+        DatabaseArtifactStore artifacts = DatabaseArtifactStore.builder()
+                .dataSource(dataSource)
+                .databaseDialect(scenario.dialect())
+                .spoolDirectory(tempDirectory.resolve(scenario.id()).resolve("managed-rollback-verification"))
+                .build();
+        assertThat(configurations.findByAssemblyLineId(assemblyLineId)).isEmpty();
+        assertThat(tags.listTags(assemblyLineId)).isEmpty();
+        assertThat(artifacts.exists(hash)).isFalse();
     }
 
     private static void verifyAtomicPublicationTagsAndPagination(DataSource dataSource,

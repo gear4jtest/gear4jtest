@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,6 +50,11 @@ class OperationChainConfigRepositoryJdbcBehaviorTest {
                         .statementOptions(null)
                         .build())
                 .withMessage("statementOptions must not be null");
+
+        assertThatNullPointerException()
+                .isThrownBy(() -> OperationChainConfigRepositoryJdbc.builder()
+                        .transactionOperations(null))
+                .withMessage("transactionOperations must not be null");
     }
 
     @Test
@@ -117,6 +123,8 @@ class OperationChainConfigRepositoryJdbcBehaviorTest {
                                                                                                              true)))
                 .isInstanceOf(OperationChainNotFoundException.class)
                 .hasMessageContaining("no operation-chain configuration exists for missing");
+        verify(jdbc.connection()).rollback();
+        verify(jdbc.connection(), never()).commit();
     }
 
     @Test
@@ -177,6 +185,7 @@ class OperationChainConfigRepositoryJdbcBehaviorTest {
             Connection connection = mock(Connection.class);
             PreparedStatement statement = mock(PreparedStatement.class);
             when(dataSource.getConnection()).thenReturn(connection);
+            when(connection.getAutoCommit()).thenReturn(true);
             when(connection.prepareStatement(anyString())).thenReturn(statement);
             when(statement.executeUpdate()).thenReturn(1);
             return new JdbcMocks(dataSource, connection, statement, null);

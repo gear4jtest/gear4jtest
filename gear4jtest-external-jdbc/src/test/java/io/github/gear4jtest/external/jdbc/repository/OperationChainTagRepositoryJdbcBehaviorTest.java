@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -38,6 +39,11 @@ class OperationChainTagRepositoryJdbcBehaviorTest {
                         .statementOptions(null)
                         .build())
                 .withMessage("statementOptions must not be null");
+
+        assertThatNullPointerException()
+                .isThrownBy(() -> OperationChainTagRepositoryJdbc.builder()
+                        .transactionOperations(null))
+                .withMessage("transactionOperations must not be null");
     }
 
     @Test
@@ -102,6 +108,22 @@ class OperationChainTagRepositoryJdbcBehaviorTest {
                 .hasCauseInstanceOf(java.sql.SQLException.class);
     }
 
+    @Test
+    void addTag_shouldRollbackWhenTheStatementFails() throws Exception {
+        // Given
+        JdbcMocks jdbc = JdbcMocks.write();
+        java.sql.SQLException failure = new java.sql.SQLException("insert failed");
+        when(jdbc.statement().executeUpdate()).thenThrow(failure);
+        OperationChainTagRepositoryJdbc repository = repository(jdbc.dataSource());
+
+        // When / Then
+        assertThat(org.assertj.core.api.Assertions.catchThrowable(() -> repository.addTag("pipeline", "stable")))
+                .isInstanceOf(OperationChainRepositoryException.class)
+                .hasCause(failure);
+        verify(jdbc.connection()).rollback();
+        verify(jdbc.connection(), never()).commit();
+    }
+
     private static OperationChainTagRepositoryJdbc repository(DataSource dataSource) {
         return OperationChainTagRepositoryJdbc.builder()
                 .dataSource(dataSource)
@@ -115,6 +137,7 @@ class OperationChainTagRepositoryJdbcBehaviorTest {
             Connection connection = mock(Connection.class);
             PreparedStatement statement = mock(PreparedStatement.class);
             when(dataSource.getConnection()).thenReturn(connection);
+            when(connection.getAutoCommit()).thenReturn(true);
             when(connection.prepareStatement(anyString())).thenReturn(statement);
             return new JdbcMocks(dataSource, connection, statement);
         }
