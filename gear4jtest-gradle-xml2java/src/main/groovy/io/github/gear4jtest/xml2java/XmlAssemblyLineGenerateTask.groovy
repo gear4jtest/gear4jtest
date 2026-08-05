@@ -5,6 +5,7 @@ import io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy
 import io.github.gear4jtest.xml.translator.XmlOperationChainTranslator
 import io.github.gear4jtest.xml.translator.XmlTranslationLimits
 import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
@@ -120,6 +121,8 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
                 new GeneratedSource(file, result.className(), result.formattedSource())
             }
 
+        rejectDuplicateClassNames(generatedSources)
+
         getFileSystemOperations().delete { spec -> spec.delete(destination) }
         destination.mkdirs()
         generatedSources.each { GeneratedSource generated ->
@@ -134,6 +137,29 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
             builder.allowClassName(capabilityId, operatorClassName, ExecutionMode.RUN)
         }
         return builder.build()
+    }
+
+    private static void rejectDuplicateClassNames(List<GeneratedSource> generatedSources) {
+        def collisions = generatedSources
+            .groupBy { GeneratedSource generated -> generated.className }
+            .findAll { String ignored, List<GeneratedSource> sources -> sources.size() > 1 }
+        if (collisions.isEmpty()) {
+            return
+        }
+
+        String separator = System.lineSeparator()
+        String details = collisions.entrySet()
+            .sort { left, right -> left.key <=> right.key }
+            .collect { entry ->
+                String sourceFiles = entry.value
+                    .collect { GeneratedSource generated -> generated.sourceFile.path }
+                    .sort()
+                    .collect { String path -> "  - ${path}" }
+                    .join(separator)
+                "Generated Java class '${entry.key}' is produced by multiple XML files:${separator}${sourceFiles}"
+            }
+            .join(separator)
+        throw new GradleException("Duplicate generated Java classes detected:${separator}${details}")
     }
 
     private static final class GeneratedSource {

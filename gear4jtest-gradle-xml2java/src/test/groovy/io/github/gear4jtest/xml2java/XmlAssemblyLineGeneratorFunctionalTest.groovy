@@ -65,6 +65,48 @@ class XmlAssemblyLineGeneratorFunctionalTest {
             .resolve('io/github/gear4jtest/xml/generated/Changed_lineLine.java')).exists()
     }
 
+    @Test
+    void generation_shouldRejectIdenticalGeneratedClassNamesWithoutWritingPartialOutputs() {
+        // Given
+        writeBuild()
+        writePipeline('first.xml', 'duplicate')
+        writePipeline('nested/second.xml', 'duplicate')
+
+        // When
+        BuildResult result = runner(generationArguments()).buildAndFail()
+
+        // Then
+        assertThat(result.task(':xmlGenerateAssemblyLine').outcome).isEqualTo(TaskOutcome.FAILED)
+        assertThat(result.output)
+            .contains('Duplicate generated Java classes detected:')
+            .contains("Generated Java class 'io.github.gear4jtest.xml.generated.DuplicateLine'")
+            .contains('first.xml')
+            .contains('nested' + File.separator + 'second.xml')
+        assertThat(generatedSourceRoot()
+            .resolve('io/github/gear4jtest/xml/generated/DuplicateLine.java')).doesNotExist()
+    }
+
+    @Test
+    void generation_shouldRejectClassNamesThatCollideAfterNormalization() {
+        // Given
+        writeBuild()
+        writePipeline('hyphen.xml', 'foo-bar')
+        writePipeline('underscore.xml', 'foo_bar')
+
+        // When
+        BuildResult result = runner(generationArguments()).buildAndFail()
+
+        // Then
+        assertThat(result.task(':xmlGenerateAssemblyLine').outcome).isEqualTo(TaskOutcome.FAILED)
+        assertThat(result.output)
+            .contains('Duplicate generated Java classes detected:')
+            .contains("Generated Java class 'io.github.gear4jtest.xml.generated.Foo_barLine'")
+            .contains('hyphen.xml')
+            .contains('underscore.xml')
+        assertThat(generatedSourceRoot()
+            .resolve('io/github/gear4jtest/xml/generated/Foo_barLine.java')).doesNotExist()
+    }
+
     private void writeBuild() {
         Files.writeString(projectDirectory.resolve('settings.gradle'), "rootProject.name = 'functional-test'\n")
         Files.writeString(projectDirectory.resolve('build.gradle'), '''
@@ -77,7 +119,11 @@ plugins {
     }
 
     private Path writePipeline(String id) {
-        Path pipeline = projectDirectory.resolve('src/main/gear4j/pipeline.xml')
+        return writePipeline('pipeline.xml', id)
+    }
+
+    private Path writePipeline(String relativePath, String id) {
+        Path pipeline = projectDirectory.resolve('src/main/gear4j').resolve(relativePath)
         Files.createDirectories(pipeline.parent)
         Files.writeString(pipeline, pipelineXml(id))
         return pipeline

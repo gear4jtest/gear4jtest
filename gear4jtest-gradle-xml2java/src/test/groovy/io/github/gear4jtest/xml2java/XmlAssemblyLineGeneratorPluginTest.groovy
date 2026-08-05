@@ -1,5 +1,6 @@
 package io.github.gear4jtest.xml2java
 
+import org.gradle.api.GradleException
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.Test
@@ -84,6 +85,50 @@ class XmlAssemblyLineGeneratorPluginTest {
         assertThat(generated.text)
             .contains('public final class Simple_lineLine')
             .contains('implements GeneratedAssemblyLine')
+    }
+
+    @Test
+    void should_reject_duplicate_generated_classes_before_replacing_outputs() {
+        // Given
+        def project = ProjectBuilder.builder()
+            .withName('my-library')
+            .build()
+        project.plugins.apply(XmlAssemblyLineGeneratorPlugin)
+
+        def xmlDir = new File(project.projectDir, 'src/main/gear4j')
+        def nestedXmlDir = new File(xmlDir, 'nested')
+        assertThat(nestedXmlDir.mkdirs()).isTrue()
+        def duplicatePipeline = '''<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="@ID@"
+              inputType="java.lang.String"
+              outputType="java.lang.String">
+  <operations>
+    <signal id="stop" type="STOP" inputType="java.lang.String"/>
+  </operations>
+</assemblyLine>
+'''
+        new File(xmlDir, 'first-a.xml').text = duplicatePipeline.replace('@ID@', 'duplicate_a')
+        new File(nestedXmlDir, 'second-a.xml').text = duplicatePipeline.replace('@ID@', 'duplicate_a')
+        new File(xmlDir, 'first-b.xml').text = duplicatePipeline.replace('@ID@', 'duplicate_b')
+        new File(nestedXmlDir, 'second-b.xml').text = duplicatePipeline.replace('@ID@', 'duplicate_b')
+
+        def outputDir = new File(project.buildDir, 'generated-test')
+        assertThat(outputDir.mkdirs()).isTrue()
+        def previous = new File(outputDir, 'previous.java')
+        previous.text = 'keep me'
+        def extension = project.extensions.getByType(XmlAssemblyLineGeneratorExtension)
+        extension.outputDir.fileValue(outputDir)
+
+        // When / Then
+        assertThatThrownBy { project.tasks.getByName(XmlAssemblyLineGeneratorPlugin.TASK_NAME).generate() }
+            .isInstanceOf(GradleException)
+            .hasMessageContaining('Duplicate generated Java classes detected:')
+            .hasMessageContaining("Generated Java class 'io.github.gear4jtest.xml.generated.Duplicate_aLine'")
+            .hasMessageContaining("Generated Java class 'io.github.gear4jtest.xml.generated.Duplicate_bLine'")
+            .hasMessageContaining('first-a.xml')
+            .hasMessageContaining('nested' + File.separator + 'second-b.xml')
+        assertThat(previous).exists().hasContent('keep me')
     }
 
     @Test
