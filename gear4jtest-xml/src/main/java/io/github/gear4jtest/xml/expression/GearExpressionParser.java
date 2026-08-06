@@ -1,5 +1,7 @@
 package io.github.gear4jtest.xml.expression;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -196,7 +198,61 @@ public final class GearExpressionParser {
         if (right != null && !GearExpressionValues.isSafeScalar(right)) {
             throw unsafeEqualityOperand(right);
         }
+        if (left instanceof Number leftNumber && right instanceof Number rightNumber) {
+            return numericEquals(leftNumber, rightNumber);
+        }
         return Objects.equals(left, right);
+    }
+
+    private static boolean numericEquals(Number left, Number right) {
+        NumericKind leftKind = numericKind(left);
+        NumericKind rightKind = numericKind(right);
+        if (leftKind == NumericKind.NAN || rightKind == NumericKind.NAN) {
+            return false;
+        }
+        if (leftKind != NumericKind.FINITE || rightKind != NumericKind.FINITE) {
+            return leftKind == rightKind;
+        }
+        return decimalValue(left).compareTo(decimalValue(right)) == 0;
+    }
+
+    private static BigDecimal decimalValue(Number value) {
+        if (value instanceof BigDecimal decimalValue) {
+            return decimalValue;
+        }
+        if (value instanceof BigInteger integerValue) {
+            return new BigDecimal(integerValue);
+        }
+        if (value instanceof Double doubleValue) {
+            return BigDecimal.valueOf(doubleValue);
+        }
+        if (value instanceof Float floatValue) {
+            return new BigDecimal(Float.toString(floatValue));
+        }
+        return BigDecimal.valueOf(value.longValue());
+    }
+
+    private static NumericKind numericKind(Number value) {
+        if (value instanceof Double doubleValue) {
+            return floatingPointKind(doubleValue);
+        }
+        if (value instanceof Float floatValue) {
+            return floatingPointKind(floatValue.doubleValue());
+        }
+        return NumericKind.FINITE;
+    }
+
+    private static NumericKind floatingPointKind(double value) {
+        if (Double.isNaN(value)) {
+            return NumericKind.NAN;
+        }
+        if (value == Double.POSITIVE_INFINITY) {
+            return NumericKind.POSITIVE_INFINITY;
+        }
+        if (value == Double.NEGATIVE_INFINITY) {
+            return NumericKind.NEGATIVE_INFINITY;
+        }
+        return NumericKind.FINITE;
     }
 
     private static GearExpressionException unsafeEqualityOperand(Object value) {
@@ -360,5 +416,9 @@ public final class GearExpressionParser {
 
     private enum TokenType {
         IDENTIFIER, NUMBER, STRING, SYMBOL, EOF
+    }
+
+    private enum NumericKind {
+        FINITE, POSITIVE_INFINITY, NEGATIVE_INFINITY, NAN
     }
 }

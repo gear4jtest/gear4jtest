@@ -49,8 +49,8 @@ public final class GearExpressionValues {
                 || value instanceof Long
                 || value instanceof Float
                 || value instanceof Double
-                || value instanceof BigInteger
-                || value instanceof BigDecimal
+                || value.getClass() == BigInteger.class
+                || value.getClass() == BigDecimal.class
                 || value.getClass().getPackageName().equals("java.time")
                 || value.getClass().getPackageName().startsWith("java.time.");
     }

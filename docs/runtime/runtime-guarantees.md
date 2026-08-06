@@ -139,6 +139,9 @@ Guaranteed today:
 - GEL does not support method-call syntax, type lookup, constructors, static access or Java class metadata traversal.
 - GEL contexts use secure property access by default: expression evaluation reads inert map snapshots and rejects
   record/JavaBean access unless the exact runtime type and property were explicitly allowlisted.
+- GEL numeric equality is value-based across all supported Java number wrappers and ignores `BigDecimal` scale. Signed
+  zeros compare equal, `NaN` never compares equal and infinities compare equal only when their signs match. Custom
+  `Number` subclasses are rejected as non-inert values.
 
 Not guaranteed today:
 

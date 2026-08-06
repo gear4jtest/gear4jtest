@@ -59,6 +59,14 @@ Implemented MVP nodes currently include:
 - boolean operators: `&&`, `||`, `!`;
 - parentheses.
 
+Numeric equality is based on the represented decimal value rather than the Java
+wrapper type. `Byte`, `Short`, `Integer`, `Long`, `BigInteger`, `Float`,
+`Double` and `BigDecimal` therefore compare consistently; `BigDecimal` scale is
+ignored and signed zeros are equal. `NaN` is unequal to every value, including
+itself. Positive and negative infinity are equal only to an infinity with the
+same sign. Custom `Number` subclasses are not inert GEL scalars and are
+rejected. Non-numeric scalars retain their normal Java equality semantics.
+
 Future nodes can include:
 
 - ordered comparisons: `<`, `<=`, `>`, `>=`;
