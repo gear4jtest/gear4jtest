@@ -86,6 +86,15 @@ class AssemblyLineManagerCompilationCacheTest {
                                 GeneratedCompilationStats::cacheMisses,
                                 GeneratedCompilationStats::successfulCompilations)
                     .containsExactly(1L, 1L, 1L);
+            assertThat(manager.loadingStats())
+                    .extracting(GeneratedLoadingStats::successfulLoads,
+                                GeneratedLoadingStats::timedOutLoads,
+                                GeneratedLoadingStats::rejectedLoads)
+                    .containsExactly(1L, 0L, 0L);
+            assertThat(manager.loadingStats().artifactReadDurationNanos()).isPositive();
+            assertThat(manager.loadingStats().translationDurationNanos()).isPositive();
+            assertThat(manager.loadingStats().compilationDurationNanos()).isPositive();
+            assertThat(manager.loadingStats().instantiationDurationNanos()).isPositive();
         }
     }
 }

@@ -23,6 +23,7 @@ import io.github.gear4jtest.external.api.artifact.InMemoryArtifactStore;
 import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompiler;
 import io.github.gear4jtest.external.api.compiler.JavaxToolsGeneratedSourceCompiler;
 import io.github.gear4jtest.external.api.exception.CompilationTimeoutException;
+import io.github.gear4jtest.external.api.exception.GeneratedAssemblyLineLoadTimeoutException;
 import io.github.gear4jtest.external.api.loader.ClassLoaderRegistry;
 import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
 import io.github.gear4jtest.external.api.loader.InMemoryClassLoaderRegistry;
@@ -50,6 +51,22 @@ class GeneratedAssemblyLineLoaderTest {
 
             public final class ConcurrentGenerated
                     implements io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine {
+                @Override
+                public io.github.gear4jtest.core.api.AssemblyLine getAssemblyLineDefinition() {
+                    return null;
+                }
+            }
+            """;
+    private static final String BLOCKING_CONSTRUCTOR_CLASS = "io.github.gear4jtest.generated.BlockingConstructorGenerated";
+    private static final String BLOCKING_CONSTRUCTOR_SOURCE = """
+            package io.github.gear4jtest.generated;
+
+            public final class BlockingConstructorGenerated
+                    implements io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine {
+                public BlockingConstructorGenerated() {
+                    io.github.gear4jtest.external.api.GeneratedLoadingTestHooks.awaitInConstructor();
+                }
+
                 @Override
                 public io.github.gear4jtest.core.api.AssemblyLine getAssemblyLineDefinition() {
                     return null;
@@ -94,6 +111,7 @@ class GeneratedAssemblyLineLoaderTest {
         } finally {
             releaseCompiler.countDown();
             callers.shutdownNow();
+            fixture.loader().close();
         }
     }
 
@@ -110,12 +128,16 @@ class GeneratedAssemblyLineLoaderTest {
         };
         LoaderFixture fixture = fixture(compiler, InMemoryClassLoaderRegistry.builder().build());
 
-        // When / Then
-        assertThatThrownBy(() -> fixture.loader().loadOrCompile("line", fixture.object()))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("temporary compiler failure");
-        assertThat(fixture.loader().loadOrCompile("line", fixture.object())).isNotNull();
-        assertThat(compilationCount).hasValue(2);
+        try {
+            // When / Then
+            assertThatThrownBy(() -> fixture.loader().loadOrCompile("line", fixture.object()))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("temporary compiler failure");
+            assertThat(fixture.loader().loadOrCompile("line", fixture.object())).isNotNull();
+            assertThat(compilationCount).hasValue(2);
+        } finally {
+            fixture.loader().close();
+        }
     }
 
     @Test
@@ -142,12 +164,16 @@ class GeneratedAssemblyLineLoaderTest {
                 ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
         OperationChainObject object = object("line", "1.0.0", expectedHash, expected.length);
 
-        // When / Then
-        assertThatThrownBy(() -> loader.loadOrCompile("line", object))
-                .isInstanceOf(IOException.class)
-                .hasMessageContaining("content hash mismatch")
-                .hasMessageContaining(expectedHash);
-        verifyNoInteractions(translatorResolver, compiler);
+        try {
+            // When / Then
+            assertThatThrownBy(() -> loader.loadOrCompile("line", object))
+                    .isInstanceOf(IOException.class)
+                    .hasMessageContaining("content hash mismatch")
+                    .hasMessageContaining(expectedHash);
+            verifyNoInteractions(translatorResolver, compiler);
+        } finally {
+            loader.close();
+        }
     }
 
     @Test
@@ -183,14 +209,18 @@ class GeneratedAssemblyLineLoaderTest {
                 new SimpleDependencyInjector(), getClass().getClassLoader(),
                 ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
 
-        // When
-        GeneratedAssemblyLine<?, ?> firstLoaded = loader.loadOrCompile(first.alId(), first);
-        GeneratedAssemblyLine<?, ?> secondLoaded = loader.loadOrCompile(second.alId(), second);
+        try {
+            // When
+            GeneratedAssemblyLine<?, ?> firstLoaded = loader.loadOrCompile(first.alId(), first);
+            GeneratedAssemblyLine<?, ?> secondLoaded = loader.loadOrCompile(second.alId(), second);
 
-        // Then
-        assertThat(firstLoaded).isNotSameAs(secondLoaded);
-        assertThat(compilationCount).hasValue(2);
-        assertThat(registry.snapshotStats().cachedLoaders()).isEqualTo(2);
+            // Then
+            assertThat(firstLoaded).isNotSameAs(secondLoaded);
+            assertThat(compilationCount).hasValue(2);
+            assertThat(registry.snapshotStats().cachedLoaders()).isEqualTo(2);
+        } finally {
+            loader.close();
+        }
     }
 
     @Test
@@ -231,9 +261,238 @@ class GeneratedAssemblyLineLoaderTest {
             awaitStats(() -> compiler.snapshotStats().activeCompilations() == 0);
             assertThat(fixture.loader().loadOrCompile("line", fixture.object())).isNotNull();
             assertThat(compilationCount).hasValue(2);
+            fixture.loader().close();
         } finally {
             releaseCompiler.countDown();
             callers.shutdownNow();
+        }
+    }
+
+    @Test
+    void loadOrCompile_shouldBoundBlockingTranslationForOwnerAndJoinerAndRejectLateResult() throws Exception {
+        // Given
+        Map<String, byte[]> compiledClasses = compileGeneratedClass();
+        CountDownLatch translatorEntered = new CountDownLatch(1);
+        CountDownLatch releaseTranslator = new CountDownLatch(1);
+        AtomicInteger compilationCount = new AtomicInteger();
+        InMemoryArtifactStore artifactStore = new InMemoryArtifactStore();
+        byte[] artifactBytes = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
+        String hash = artifactStore.put(artifactBytes);
+        OperationChainObject object = object("line", "1.0.0", hash, artifactBytes.length);
+        OperationChainConfig config = new OperationChainConfig("line", false, StoreType.MEMORY, Map.of());
+        OperationChainConfigRepository configRepository = mock(OperationChainConfigRepository.class);
+        when(configRepository.findByAssemblyLineId("line")).thenReturn(Optional.of(config));
+        ArtifactStoreProvider storeProvider = mock(ArtifactStoreProvider.class);
+        when(storeProvider.forConfig(config)).thenReturn(artifactStore);
+        OperationChainTranslator translator = new OperationChainTranslator() {
+            @Override
+            public boolean supports(String mediaType) {
+                return "application/xml".equals(mediaType);
+            }
+
+            @Override
+            public GenerationResult translate(byte[] content, String mediaType) {
+                translatorEntered.countDown();
+                awaitIgnoringInterruption(releaseTranslator);
+                return new GenerationResult(GENERATED_CLASS, GENERATED_SOURCE);
+            }
+        };
+        GeneratedSourceCompiler compiler = (className, sourceCode) -> {
+            compilationCount.incrementAndGet();
+            return compiledClasses;
+        };
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder().build();
+        var loadingConfiguration = new GeneratedLoadingConfiguration(Duration.ofMillis(250), 1, 2);
+        var loader = new GeneratedAssemblyLineLoader(
+                new AssemblyLineStoreResolver(configRepository, storeProvider), registry,
+                new OperationChainTranslatorResolver(List.of(translator)), compiler,
+                new SimpleDependencyInjector(), getClass().getClassLoader(),
+                ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES, loadingConfiguration);
+        ExecutorService callers = Executors.newFixedThreadPool(2);
+
+        try {
+            Future<GeneratedAssemblyLine<?, ?>> owner = callers.submit(() -> loader.loadOrCompile("line", object));
+            assertThat(translatorEntered.await(2, TimeUnit.SECONDS)).isTrue();
+            Future<GeneratedAssemblyLine<?, ?>> joiner = callers.submit(() -> loader.loadOrCompile("line", object));
+            awaitStats(() -> loader.snapshotStats().singleFlightJoins() == 1L);
+
+            // When / Then
+            assertThatThrownBy(() -> owner.get(2, TimeUnit.SECONDS))
+                    .isInstanceOf(java.util.concurrent.ExecutionException.class)
+                    .hasCauseInstanceOf(GeneratedAssemblyLineLoadTimeoutException.class);
+            assertThatThrownBy(() -> joiner.get(2, TimeUnit.SECONDS))
+                    .isInstanceOf(java.util.concurrent.ExecutionException.class)
+                    .hasCauseInstanceOf(GeneratedAssemblyLineLoadTimeoutException.class);
+            assertThat(compilationCount).hasValue(0);
+            assertThat(loader.snapshotStats().timedOutLoads()).isEqualTo(1L);
+
+            releaseTranslator.countDown();
+            awaitStats(() -> loader.snapshotStats().activeLoads() == 0);
+            assertThat(compilationCount).hasValue(0);
+            assertThat(registry.snapshotStats().cachedLoaders()).isZero();
+
+            assertThat(loader.loadOrCompile("line", object)).isNotNull();
+            assertThat(compilationCount).hasValue(1);
+            assertThat(loader.snapshotStats().successfulLoads()).isEqualTo(1L);
+        } finally {
+            releaseTranslator.countDown();
+            callers.shutdownNow();
+            loader.close();
+        }
+    }
+
+    @Test
+    void loadOrCompile_shouldNotRegisterInstanceReturnedAfterDependencyInjectionTimeout() throws Exception {
+        // Given
+        Map<String, byte[]> compiledClasses = compileGeneratedClass();
+        CountDownLatch injectorEntered = new CountDownLatch(1);
+        CountDownLatch releaseInjector = new CountDownLatch(1);
+        SimpleDependencyInjector injector = new SimpleDependencyInjector() {
+            @Override
+            public void injectDependencies(Object instance, ExecutionMode mode) {
+                injectorEntered.countDown();
+                awaitIgnoringInterruption(releaseInjector);
+            }
+        };
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder().build();
+        LoaderFixture base = fixture((className, sourceCode) -> compiledClasses, registry);
+        var loadingConfiguration = new GeneratedLoadingConfiguration(Duration.ofMillis(150), 1, 1);
+        var loader = new GeneratedAssemblyLineLoader(base.storeResolver(), registry,
+                base.translatorResolver(), (className, sourceCode) -> compiledClasses, injector,
+                getClass().getClassLoader(), ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES,
+                loadingConfiguration);
+        ExecutorService caller = Executors.newSingleThreadExecutor();
+
+        try {
+            Future<GeneratedAssemblyLine<?, ?>> result = caller
+                    .submit(() -> loader.loadOrCompile("line", base.object()));
+            assertThat(injectorEntered.await(2, TimeUnit.SECONDS)).isTrue();
+
+            // When / Then
+            assertThatThrownBy(() -> result.get(2, TimeUnit.SECONDS))
+                    .isInstanceOf(java.util.concurrent.ExecutionException.class)
+                    .hasCauseInstanceOf(GeneratedAssemblyLineLoadTimeoutException.class);
+            releaseInjector.countDown();
+            awaitStats(() -> loader.snapshotStats().activeLoads() == 0);
+            assertThat(registry.snapshotStats().cachedLoaders()).isZero();
+        } finally {
+            releaseInjector.countDown();
+            caller.shutdownNow();
+            loader.close();
+            base.loader().close();
+        }
+    }
+
+    @Test
+    void loadOrCompile_shouldNotRegisterInstanceConstructedAfterDeadline() throws Exception {
+        // Given
+        CountDownLatch constructorEntered = new CountDownLatch(1);
+        CountDownLatch releaseConstructor = new CountDownLatch(1);
+        GeneratedLoadingTestHooks.installConstructorBlock(constructorEntered, releaseConstructor);
+        Map<String, byte[]> compiledClasses = new JavaxToolsGeneratedSourceCompiler(getClass().getClassLoader())
+                .compile(BLOCKING_CONSTRUCTOR_CLASS,
+                         BLOCKING_CONSTRUCTOR_SOURCE.getBytes(StandardCharsets.UTF_8));
+        InMemoryArtifactStore artifactStore = new InMemoryArtifactStore();
+        byte[] artifactBytes = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
+        String hash = artifactStore.put(artifactBytes);
+        OperationChainObject object = object("line", "1.0.0", hash, artifactBytes.length);
+        OperationChainConfig config = new OperationChainConfig("line", false, StoreType.MEMORY, Map.of());
+        OperationChainConfigRepository configRepository = mock(OperationChainConfigRepository.class);
+        when(configRepository.findByAssemblyLineId("line")).thenReturn(Optional.of(config));
+        OperationChainTranslator translator = mock(OperationChainTranslator.class);
+        when(translator.translate(any(byte[].class), eq("application/xml"), eq(ExecutionMode.TEST)))
+                .thenReturn(new OperationChainTranslator.GenerationResult(BLOCKING_CONSTRUCTOR_CLASS,
+                        BLOCKING_CONSTRUCTOR_SOURCE));
+        OperationChainTranslatorResolver translatorResolver = mock(OperationChainTranslatorResolver.class);
+        when(translatorResolver.resolve("application/xml")).thenReturn(translator);
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder().build();
+        var loader = new GeneratedAssemblyLineLoader(
+                new AssemblyLineStoreResolver(configRepository, ignored -> artifactStore), registry,
+                translatorResolver, (className, sourceCode) -> compiledClasses,
+                new SimpleDependencyInjector(), getClass().getClassLoader(),
+                ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES,
+                new GeneratedLoadingConfiguration(Duration.ofMillis(150), 1, 1));
+        ExecutorService caller = Executors.newSingleThreadExecutor();
+
+        try {
+            Future<GeneratedAssemblyLine<?, ?>> result = caller.submit(() -> loader.loadOrCompile("line", object));
+            assertThat(constructorEntered.await(2, TimeUnit.SECONDS)).isTrue();
+
+            // When / Then
+            assertThatThrownBy(() -> result.get(2, TimeUnit.SECONDS))
+                    .isInstanceOf(java.util.concurrent.ExecutionException.class)
+                    .hasCauseInstanceOf(GeneratedAssemblyLineLoadTimeoutException.class);
+            releaseConstructor.countDown();
+            awaitStats(() -> loader.snapshotStats().activeLoads() == 0);
+            assertThat(registry.snapshotStats().cachedLoaders()).isZero();
+        } finally {
+            releaseConstructor.countDown();
+            caller.shutdownNow();
+            loader.close();
+            GeneratedLoadingTestHooks.clearConstructorBlock();
+        }
+    }
+
+    @Test
+    void loadOrCompile_shouldRejectDistinctLoadWhenBoundedQueueIsFull() throws Exception {
+        // Given
+        Map<String, byte[]> compiledClasses = compileGeneratedClass();
+        CountDownLatch translatorEntered = new CountDownLatch(1);
+        CountDownLatch releaseTranslator = new CountDownLatch(1);
+        InMemoryArtifactStore artifactStore = new InMemoryArtifactStore();
+        byte[] artifactBytes = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
+        String hash = artifactStore.put(artifactBytes);
+        OperationChainConfig config = new OperationChainConfig("line", false, StoreType.MEMORY, Map.of());
+        OperationChainConfigRepository configRepository = mock(OperationChainConfigRepository.class);
+        when(configRepository.findByAssemblyLineId(any(String.class))).thenReturn(Optional.of(config));
+        ArtifactStoreProvider storeProvider = ignored -> artifactStore;
+        OperationChainTranslator translator = new OperationChainTranslator() {
+            @Override
+            public boolean supports(String mediaType) {
+                return true;
+            }
+
+            @Override
+            public GenerationResult translate(byte[] content, String mediaType) {
+                translatorEntered.countDown();
+                awaitIgnoringInterruption(releaseTranslator);
+                return new GenerationResult(GENERATED_CLASS, GENERATED_SOURCE);
+            }
+        };
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder().build();
+        var loader = new GeneratedAssemblyLineLoader(
+                new AssemblyLineStoreResolver(configRepository, storeProvider), registry,
+                new OperationChainTranslatorResolver(List.of(translator)),
+                (className, sourceCode) -> compiledClasses, new SimpleDependencyInjector(),
+                getClass().getClassLoader(), ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES,
+                new GeneratedLoadingConfiguration(Duration.ofSeconds(5), 1, 1));
+        ExecutorService callers = Executors.newFixedThreadPool(2);
+        OperationChainObject first = object("line-1", "1.0.0", hash, artifactBytes.length);
+        OperationChainObject second = object("line-2", "1.0.0", hash, artifactBytes.length);
+        OperationChainObject rejected = object("line-3", "1.0.0", hash, artifactBytes.length);
+
+        try {
+            Future<GeneratedAssemblyLine<?, ?>> firstResult = callers
+                    .submit(() -> loader.loadOrCompile(first.alId(), first));
+            assertThat(translatorEntered.await(2, TimeUnit.SECONDS)).isTrue();
+            Future<GeneratedAssemblyLine<?, ?>> secondResult = callers
+                    .submit(() -> loader.loadOrCompile(second.alId(), second));
+            awaitStats(() -> loader.snapshotStats().queuedLoads() == 1);
+
+            // When / Then
+            assertThatThrownBy(() -> loader.loadOrCompile(rejected.alId(), rejected))
+                    .isInstanceOf(IOException.class)
+                    .hasMessageContaining("saturated or closed");
+            assertThat(loader.snapshotStats().rejectedLoads()).isEqualTo(1L);
+
+            releaseTranslator.countDown();
+            assertThat(firstResult.get(2, TimeUnit.SECONDS)).isNotNull();
+            assertThat(secondResult.get(2, TimeUnit.SECONDS)).isNotNull();
+            assertThat(registry.snapshotStats().cachedLoaders()).isEqualTo(2);
+        } finally {
+            releaseTranslator.countDown();
+            callers.shutdownNow();
+            loader.close();
         }
     }
 
@@ -259,7 +518,7 @@ class GeneratedAssemblyLineLoaderTest {
         GeneratedAssemblyLineLoader loader = new GeneratedAssemblyLineLoader(storeResolver, registry,
                 translatorResolver, compiler, new SimpleDependencyInjector(),
                 GeneratedAssemblyLineLoaderTest.class.getClassLoader(), ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
-        return new LoaderFixture(loader, object);
+        return new LoaderFixture(loader, object, storeResolver, translatorResolver);
     }
 
     private static OperationChainObject object(String assemblyLineId,
@@ -291,7 +550,7 @@ class GeneratedAssemblyLineLoaderTest {
             try {
                 released = latch.await(5, TimeUnit.SECONDS);
             } catch (InterruptedException ignored) {
-                // Deliberately non-cooperative compiler used to prove timeout cleanup.
+                // Deliberately non-cooperative component used to prove timeout cleanup.
             }
         }
     }
@@ -309,7 +568,10 @@ class GeneratedAssemblyLineLoaderTest {
         boolean evaluate();
     }
 
-    private record LoaderFixture(GeneratedAssemblyLineLoader loader, OperationChainObject object) {}
+    private record LoaderFixture(GeneratedAssemblyLineLoader loader,
+                                 OperationChainObject object,
+                                 AssemblyLineStoreResolver storeResolver,
+                                 OperationChainTranslatorResolver translatorResolver) {}
 
     private static final class CoordinatedRegistry implements ClassLoaderRegistry {
         private final ClassLoaderRegistry delegate = InMemoryClassLoaderRegistry.builder().build();

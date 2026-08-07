@@ -40,6 +40,7 @@ public class AssemblyLineManager implements AutoCloseable {
     private final AssemblyLineAliasService aliasService;
     private final AssemblyLinePublicationService publicationService;
     private final AssemblyLineLookupService lookupService;
+    private final GeneratedAssemblyLineLoader loader;
     private final BoundedGeneratedSourceCompiler compilationRuntime;
 
     public static Builder builder() {
@@ -64,9 +65,9 @@ public class AssemblyLineManager implements AutoCloseable {
         this.chainTagRepo = requireNonNull(builder.chainTagRepo);
         this.storeResolver = new AssemblyLineStoreResolver(builder.configRepo, builder.storeProvider);
         this.aliasService = new AssemblyLineAliasService(builder.classLoaderRegistry);
-        var loader = new GeneratedAssemblyLineLoader(storeResolver, builder.classLoaderRegistry,
+        this.loader = new GeneratedAssemblyLineLoader(storeResolver, builder.classLoaderRegistry,
                 builder.translatorResolver, effectiveCompiler, effectiveDependencyInjector, parent,
-                effectiveMaxArtifactSizeBytes);
+                effectiveMaxArtifactSizeBytes, builder.loadingConfiguration);
         var publicationValidator = new AssemblyLinePublicationValidator(builder.translatorResolver,
                 effectiveCompiler, effectiveMaxArtifactSizeBytes);
         this.publicationService = new AssemblyLinePublicationService(builder.configRepo, builder.objectRepo,
@@ -86,6 +87,7 @@ public class AssemblyLineManager implements AutoCloseable {
         private GeneratedSourceCompiler compiler;
         private GeneratedCompilationConfiguration compilationConfiguration = GeneratedCompilationConfiguration
                 .defaults();
+        private GeneratedLoadingConfiguration loadingConfiguration = GeneratedLoadingConfiguration.defaults();
         private DependencyInjector dependencyInjector;
         private ClassLoader generatedClassParent;
         private long maxArtifactSizeBytes = DEFAULT_MAX_ARTIFACT_SIZE_BYTES;
@@ -153,6 +155,16 @@ public class AssemblyLineManager implements AutoCloseable {
         public Builder compilationConfiguration(GeneratedCompilationConfiguration compilationConfiguration) {
             this.compilationConfiguration = requireNonNull(compilationConfiguration,
                                                            "compilationConfiguration must not be null");
+            return this;
+        }
+
+        /**
+         * Configures the end-to-end deadline and bounded executor used to load a
+         * generated assembly line.
+         */
+        public Builder loadingConfiguration(GeneratedLoadingConfiguration loadingConfiguration) {
+            this.loadingConfiguration = requireNonNull(loadingConfiguration,
+                                                       "loadingConfiguration must not be null");
             return this;
         }
 
@@ -279,6 +291,14 @@ public class AssemblyLineManager implements AutoCloseable {
     }
 
     /**
+     * Returns a point-in-time snapshot of generated loading, phase-duration,
+     * deadline and saturation counters.
+     */
+    public GeneratedLoadingStats loadingStats() {
+        return loader.snapshotStats();
+    }
+
+    /**
      * Stops owned compilation workers and cancels pending compilations.
      *
      * <p>
@@ -288,6 +308,7 @@ public class AssemblyLineManager implements AutoCloseable {
      */
     @Override
     public void close() {
+        loader.close();
         compilationRuntime.close();
     }
 }

@@ -49,6 +49,8 @@ Typical flow:
 | `GeneratedSourceCompiler`          | SPI for generated Java compilers.                                                 |
 | `GeneratedCompilationConfiguration` | Compilation deadline, parallelism and bounded queue policy.                       |
 | `GeneratedCompilationStats`        | Cache, duration, timeout and saturation counters.                                 |
+| `GeneratedLoadingConfiguration`    | Complete-load deadline, parallelism and bounded queue policy.                      |
+| `GeneratedLoadingStats`            | Complete-load outcomes, phase durations, timeout and saturation counters.          |
 | `JavaxToolsGeneratedSourceCompiler` | Default compiler when the runtime provides the JDK `javax.tools.JavaCompiler`.    |
 | `JDTInMemoryCompiler`              | Fallback Eclipse JDT compiler for runtimes without `jdk.compiler`.                |
 | `ClassLoaderRegistry`              | Tracks generated classloaders and aliases.                                        |
@@ -125,6 +127,13 @@ SPIs are not assumed to be thread-safe; up to 32 distinct compilations may wait.
 Identical generated source is therefore compiled once while failures remain
 retryable.
 
+Runtime loading has a separate 60-second end-to-end deadline and a bounded
+executor with four workers and 32 queue slots by default. This budget starts
+before queueing and covers artifact lookup/read, translator resolution and
+translation, compilation, class loading, construction and dependency injection.
+Every caller joining the same concrete loader ID observes the same remaining
+monotonic deadline.
+
 Configure a different finite policy explicitly:
 
 ```java
@@ -136,9 +145,16 @@ GeneratedCompilationConfiguration compilation =
                 .withMaxGeneratedSourceBytes(2L * 1024L * 1024L)
                 .withMaxCompilationOutputBytes(4L * 1024L * 1024L);
 
+GeneratedLoadingConfiguration loading =
+        GeneratedLoadingConfiguration.defaults()
+                .withTimeout(Duration.ofSeconds(20))
+                .withMaxConcurrentLoads(4)
+                .withQueueCapacity(16);
+
 AssemblyLineManager manager = AssemblyLineManager.builder()
         // repositories, stores, registry and translator resolver
         .compilationConfiguration(compilation)
+        .loadingConfiguration(loading)
         .build();
 ```
 
@@ -157,7 +173,17 @@ never cached. Queue saturation fails immediately with `CompilationException`.
 `AssemblyLineManager.compilationStats()` exposes cache hits/misses, delegate
 duration, timeouts, rejections, active workers and queued work.
 
-`AssemblyLineManager` owns these compilation workers and implements
+A complete-load deadline breach raises
+`GeneratedAssemblyLineLoadTimeoutException`. The late worker is interrupted and
+its instance is never registered or returned. Java cannot safely terminate
+arbitrary code: an artifact store, translator, constructor or injector that
+ignores interruption may keep one daemon worker occupied until it returns.
+Definitions that are genuinely hostile must be isolated in another process or
+container. `AssemblyLineManager.loadingStats()` exposes complete-load outcomes,
+single-flight joins, saturation and cumulative duration for the artifact,
+translation, compilation and instantiation/injection phases.
+
+`AssemblyLineManager` owns both loading and compilation workers and implements
 `AutoCloseable`. Long-lived applications must close it during shutdown; tests and
 short-lived uses should prefer try-with-resources.
 

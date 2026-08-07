@@ -35,6 +35,11 @@ queued events, remaining event-queue capacity, and submitted/completed/dropped/
 failed, pending and in-flight reactions. The stable consumer surface exposes
 the process-wide aggregate instead of the concrete per-run runtime lifecycle.
 
+`AssemblyLineManager.loadingStats()` now supplies bounded internal counters and
+phase durations for generated loading. They are intentionally not auto-bound by
+the current Micrometer module yet; applications may poll the finite snapshot,
+while a future binder must preserve the low-cardinality policy below.
+
 ## Future production metric surface
 
 A richer module should expose counters and timers for:

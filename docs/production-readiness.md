@@ -117,6 +117,24 @@ non-zero after a timeout. Cancellation is best-effort for custom compilers that
 ignore interruption; their late results are discarded, but the worker remains
 occupied until the delegate returns.
 
+## Generated assembly-line loading
+
+Runtime loading has a separate 60-second end-to-end deadline by default. It
+includes the bounded executor queue, artifact lookup/read, translation,
+compilation, class loading, construction and dependency injection. Configure
+`GeneratedLoadingConfiguration` independently when the compiler budget or
+artifact backend latency changes. Keep the loading deadline greater than the
+normal compilation budget so valid work retains time for instantiation and
+injection.
+
+Alert on increasing `GeneratedLoadingStats.timedOutLoads()` or
+`rejectedLoads()`, a persistently full queue, and active work that remains after
+a timeout. Phase-duration counters identify whether artifact access,
+translation, compilation or instantiation/injection consumed the budget. A
+timeout wakes all callers sharing the same concrete loader ID and permits a
+later retry; a late result is not registered. Interruption remains cooperative,
+so untrusted or hostile custom code requires process/container isolation.
+
 ## Artifacts
 
 Generated pipeline artifacts are generally expected to be small XML/source

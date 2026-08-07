@@ -24,9 +24,12 @@ Current public API packages include:
 - `io.github.gear4jtest.external.api.ExecutionMode`
 - `io.github.gear4jtest.external.api.GeneratedCompilationConfiguration`
 - `io.github.gear4jtest.external.api.GeneratedCompilationStats`
+- `io.github.gear4jtest.external.api.GeneratedLoadingConfiguration`
+- `io.github.gear4jtest.external.api.GeneratedLoadingStats`
 - `io.github.gear4jtest.external.api.StoreType`
 - `io.github.gear4jtest.external.api.exception.CompilationLimitExceededException`
 - `io.github.gear4jtest.external.api.exception.CompilationTimeoutException`
+- `io.github.gear4jtest.external.api.exception.GeneratedAssemblyLineLoadTimeoutException`
 - `io.github.gear4jtest.external.jdbc.repository.*`
 - `io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStore`
 - `io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy`
