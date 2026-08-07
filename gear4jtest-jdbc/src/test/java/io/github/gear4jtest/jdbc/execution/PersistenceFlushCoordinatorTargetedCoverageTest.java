@@ -49,14 +49,14 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         PersistenceFlushCoordinator coordinator = coordinator(mock(ScheduledFuture.class), flushExecutor, false,
                                                               false);
         coordinator.shutdown(Duration.ofMillis(10));
-        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 10);
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 10, 2);
 
         // When
         coordinator.scheduleAsyncFlush(buffer, false);
         assertThat(buffer.markFlushScheduled()).isTrue();
         buffer.appendAll(List.of(mock(StationLogRecord.class), mock(StationLogRecord.class),
                                  mock(StationLogRecord.class), mock(StationLogRecord.class)),
-                         2, coordinator.counters());
+                         coordinator.counters());
         coordinator.flushBufferBlocking(buffer, false);
 
         // Then
@@ -100,7 +100,7 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         ExecutorService flushExecutor = mock(ExecutorService.class);
         doThrow(new RejectedExecutionException("full")).when(flushExecutor).execute(any(Runnable.class));
         PersistenceFlushCoordinator coordinator = coordinator(mock(ScheduledFuture.class), flushExecutor, false, false);
-        OperationRecordBuffer buffer = new OperationRecordBuffer(java.util.UUID.randomUUID(), 2);
+        OperationRecordBuffer buffer = new OperationRecordBuffer(java.util.UUID.randomUUID(), 2, 2);
 
         assertThatThrownBy(() -> coordinator.scheduleAsyncFlush(buffer, false))
                 .isInstanceOf(ExecutionPersistenceException.class)
@@ -116,7 +116,7 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         ExecutorService flushExecutor = mock(ExecutorService.class);
         PersistenceFlushCoordinator coordinator = coordinator(mock(ScheduledFuture.class), flushExecutor, false,
                                                               false);
-        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 2);
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 2, 2);
         assertThat(buffer.markFlushScheduled()).isTrue();
 
         // When
@@ -134,7 +134,7 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         doThrow(new IllegalStateException("temporary failure")).when(repository).saveOperationRecordsBatch(anyList());
         ExecutorService flushExecutor = inlineExecutor();
         PersistenceFlushCoordinator coordinator = coordinator(repository, mock(ScheduledFuture.class), flushExecutor,
-                                                              new OperationRecordBufferRegistry(10), false, false);
+                                                              new OperationRecordBufferRegistry(10, 2), false, false);
         OperationRecordBuffer buffer = bufferedRecord(coordinator, false);
 
         // When
@@ -152,7 +152,8 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
         doThrow(new IllegalStateException("temporary failure")).when(repository).saveOperationRecordsBatch(anyList());
         PersistenceFlushCoordinator coordinator = coordinator(repository, mock(ScheduledFuture.class),
-                                                              inlineExecutor(), new OperationRecordBufferRegistry(10),
+                                                              inlineExecutor(),
+                                                              new OperationRecordBufferRegistry(10, 2),
                                                               false, false);
         OperationRecordBuffer buffer = bufferedRecord(coordinator, true);
 
@@ -170,7 +171,8 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
         doThrow(new IllegalStateException("terminal failure")).when(repository).saveOperationRecordsBatch(anyList());
         PersistenceFlushCoordinator coordinator = coordinator(repository, mock(ScheduledFuture.class),
-                                                              inlineExecutor(), new OperationRecordBufferRegistry(10),
+                                                              inlineExecutor(),
+                                                              new OperationRecordBufferRegistry(10, 2),
                                                               false, false);
         OperationRecordBuffer buffer = bufferedRecord(coordinator, false);
 
@@ -188,11 +190,11 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
         ExecutorService flushExecutor = mock(ExecutorService.class);
         PersistenceFlushCoordinator coordinator = coordinator(repository, mock(ScheduledFuture.class), flushExecutor,
-                                                              new OperationRecordBufferRegistry(10), false, false);
-        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 10);
+                                                              new OperationRecordBufferRegistry(10, 2), false, false);
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 10, 2);
         buffer.appendAll(List.of(mock(StationLogRecord.class), mock(StationLogRecord.class),
                                  mock(StationLogRecord.class), mock(StationLogRecord.class)),
-                         2, coordinator.counters());
+                         coordinator.counters());
 
         // When
         coordinator.flushBufferBlocking(buffer, false);
@@ -217,16 +219,16 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         }).when(maintenanceExecutor)
                 .scheduleWithFixedDelay(any(Runnable.class), anyLong(), anyLong(), eq(TimeUnit.NANOSECONDS));
         ExecutorService flushExecutor = mock(ExecutorService.class);
-        OperationRecordBufferRegistry buffers = new OperationRecordBufferRegistry(10);
+        OperationRecordBufferRegistry buffers = new OperationRecordBufferRegistry(10, 2);
         PersistenceFlushCoordinator coordinator = new PersistenceFlushCoordinator(
                 mock(DatabaseAssemblyRunRepository.class), configuration(), buffers, flushExecutor,
                 maintenanceExecutor, false, false);
-        buffers.createFresh(UUID.randomUUID());
-        OperationRecordBuffer closedBuffer = buffers.createFresh(UUID.randomUUID());
-        closedBuffer.append(mock(StationLogRecord.class), 2, coordinator.counters());
+        buffers.createFresh(UUID.randomUUID(), 2);
+        OperationRecordBuffer closedBuffer = buffers.createFresh(UUID.randomUUID(), 2);
+        closedBuffer.append(mock(StationLogRecord.class), coordinator.counters());
         closedBuffer.close();
-        OperationRecordBuffer openBuffer = buffers.createFresh(UUID.randomUUID());
-        openBuffer.append(mock(StationLogRecord.class), 2, coordinator.counters());
+        OperationRecordBuffer openBuffer = buffers.createFresh(UUID.randomUUID(), 2);
+        openBuffer.append(mock(StationLogRecord.class), coordinator.counters());
 
         // When
         periodicFlush.get().run();
@@ -246,8 +248,8 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
     }
 
     private static OperationRecordBuffer bufferedRecord(PersistenceFlushCoordinator coordinator, boolean closed) {
-        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 10);
-        buffer.append(mock(StationLogRecord.class), 2, coordinator.counters());
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 10, 2);
+        buffer.append(mock(StationLogRecord.class), coordinator.counters());
         if (closed) {
             buffer.close();
         }
@@ -259,7 +261,7 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
                                                            boolean ownsFlushExecutor,
                                                            boolean ownsMaintenanceExecutor) {
         return coordinator(mock(DatabaseAssemblyRunRepository.class), periodicTask, flushExecutor,
-                           new OperationRecordBufferRegistry(10), ownsFlushExecutor, ownsMaintenanceExecutor);
+                           new OperationRecordBufferRegistry(10, 2), ownsFlushExecutor, ownsMaintenanceExecutor);
     }
 
     private static PersistenceFlushCoordinator coordinator(DatabaseAssemblyRunRepository repository,

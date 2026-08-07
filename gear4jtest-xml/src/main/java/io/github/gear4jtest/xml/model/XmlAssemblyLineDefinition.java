@@ -98,7 +98,7 @@ public record XmlAssemblyLineDefinition(String id,
 
     public record EventHandling(Boolean eventOnParameterChanged) {}
 
-    public record Persistence(Boolean storeResultObject) {}
+    public record Persistence(Boolean storeResultObject, Integer stationLogFlushThreshold) {}
 
     public record Dependency(String name, String type) {}
 }

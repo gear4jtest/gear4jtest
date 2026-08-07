@@ -9,11 +9,13 @@ import io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Condition;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ConditionalOperation;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Configuration;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ContainerOperation;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ErrorHandler;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.IfElseOperation;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Operation;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Parameters;
+import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Persistence;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ProcessingOperation;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SignalOperation;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SubLine;
@@ -280,6 +282,18 @@ class XmlToJavaGeneratorTest {
                 .hasMessageContaining("Generated method name collision")
                 .hasMessageContaining("same-id")
                 .hasMessageContaining("same_id");
+    }
+
+    @Test
+    void generate_shouldRenderStationLogFlushThreshold() {
+        XmlAssemblyLineDefinition definition = new XmlAssemblyLineDefinition("pipeline", "java.lang.String",
+                "java.lang.String", List.of(processingOperation("operation")),
+                new Configuration(null, new Persistence(false, 23)), List.of());
+
+        String source = generator.generate(definition).formattedSource();
+
+        assertThat(source).contains(".storeResultObject(false)")
+                .contains(".stationLogFlushThreshold(23)");
     }
 
     private static XmlAssemblyLineDefinition definition(Operation... operations) {

@@ -11,19 +11,23 @@ import java.util.concurrent.ConcurrentMap;
 final class OperationRecordBufferRegistry {
     private final ConcurrentMap<UUID, OperationRecordBuffer> buffers = new ConcurrentHashMap<>();
     private final int capacityPerRun;
+    private final int defaultFlushThreshold;
 
-    OperationRecordBufferRegistry(int capacityPerRun) {
+    OperationRecordBufferRegistry(int capacityPerRun, int defaultFlushThreshold) {
         this.capacityPerRun = capacityPerRun;
+        this.defaultFlushThreshold = defaultFlushThreshold;
     }
 
-    OperationRecordBuffer createFresh(UUID runId) {
-        OperationRecordBuffer buffer = new OperationRecordBuffer(runId, capacityPerRun);
+    OperationRecordBuffer createFresh(UUID runId, int flushThreshold) {
+        OperationRecordBuffer buffer = new OperationRecordBuffer(runId, capacityPerRun, flushThreshold);
         buffers.put(runId, buffer);
         return buffer;
     }
 
     OperationRecordBuffer getOrCreate(UUID runId) {
-        return buffers.computeIfAbsent(runId, id -> new OperationRecordBuffer(id, capacityPerRun));
+        return buffers.computeIfAbsent(runId,
+                                       id -> new OperationRecordBuffer(id, capacityPerRun,
+                                               defaultFlushThreshold));
     }
 
     OperationRecordBuffer get(UUID runId) {

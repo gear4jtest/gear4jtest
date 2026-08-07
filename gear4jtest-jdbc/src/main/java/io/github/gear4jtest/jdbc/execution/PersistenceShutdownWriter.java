@@ -47,7 +47,7 @@ final class PersistenceShutdownWriter {
                 if (deadline.reached()) {
                     return FlushOutcome.deadline(deadlineFailure(buffer, "starting the next JDBC batch"));
                 }
-                List<StationLogRecord> batch = buffer.drainBatch(configuration.batchSize());
+                List<StationLogRecord> batch = buffer.drainBatch();
                 if (batch.isEmpty()) {
                     return FlushOutcome.success();
                 }

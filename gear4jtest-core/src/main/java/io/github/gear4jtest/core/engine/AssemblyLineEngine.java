@@ -176,7 +176,7 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
         ExecutionResult<OUT> finalizedResult = result;
         AssemblyLineExecutionResultMapper.finalizeRunFromResult(runContext.context(), runContext.execution(),
                                                                 finalizedResult, null,
-                                                                shouldStoreResultObject(pipeline));
+                                                                shouldStoreResultObject(runContext.context()));
         if (finalizedResult == null) {
             Exception failure = runContext.execution().getError() != null ? runContext.execution().getError()
                     : new IllegalStateException("AssemblyLine execution returned no result");
@@ -195,8 +195,8 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
         return finalizedResult;
     }
 
-    private static boolean shouldStoreResultObject(AssemblyLine<?, ?> pipeline) {
-        var persistence = pipeline.getConfiguration().getPersistence();
+    private static boolean shouldStoreResultObject(ExecutionContext context) {
+        var persistence = context.getPersistenceConfiguration();
         return persistence == null || persistence.isStoreResultObject();
     }
 

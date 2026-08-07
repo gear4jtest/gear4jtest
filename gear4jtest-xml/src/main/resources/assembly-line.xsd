@@ -248,6 +248,7 @@
 
   <xs:complexType name="PersistenceConfigurationType">
     <xs:attribute name="storeResultObject" type="xs:boolean" default="true"/>
+    <xs:attribute name="stationLogFlushThreshold" type="xs:positiveInteger"/>
   </xs:complexType>
 
   <xs:simpleType name="FlowSignalTypeEnum">

@@ -15,8 +15,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class OperationRecordBufferTargetedCoverageTest {
     @Test
+    void constructor_shouldRejectInvalidFlushThresholds() {
+        UUID runId = UUID.randomUUID();
+
+        assertThatThrownBy(() -> new OperationRecordBuffer(runId, 2, 0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("flushThreshold must be > 0");
+        assertThatThrownBy(() -> new OperationRecordBuffer(runId, 2, 3))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("flushThreshold must be <= capacity");
+    }
+
+    @Test
     void flushScheduling_shouldBeExclusiveUntilCleared() {
-        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 2);
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 2, 2);
 
         assertThat(buffer.markFlushScheduled()).isTrue();
         assertThat(buffer.markFlushScheduled()).isFalse();
@@ -28,64 +40,64 @@ class OperationRecordBufferTargetedCoverageTest {
 
     @Test
     void append_shouldRejectClosedBuffers() {
-        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 2);
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 2, 2);
         buffer.close();
 
         assertThat(buffer.isClosed()).isTrue();
-        assertThatThrownBy(() -> buffer.append(record(), 10, new PersistenceRuntimeCounters()))
+        assertThatThrownBy(() -> buffer.append(record(), new PersistenceRuntimeCounters()))
                 .isInstanceOf(ExecutionPersistenceException.class)
                 .hasMessageContaining("closed run buffer");
     }
 
     @Test
     void append_shouldRejectWhenCapacityIsFullAndCountRejectedAppend() {
-        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 1);
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 1, 1);
         PersistenceRuntimeCounters counters = new PersistenceRuntimeCounters();
 
-        assertThat(buffer.append(record(), 10, counters)).isFalse();
+        assertThat(buffer.append(record(), counters)).isTrue();
 
-        assertThatThrownBy(() -> buffer.append(record(), 10, counters))
+        assertThatThrownBy(() -> buffer.append(record(), counters))
                 .isInstanceOf(ExecutionPersistenceException.class)
                 .hasMessageContaining("buffer is full");
-        assertThat(counters.snapshot(new OperationRecordBufferRegistry(1)).rejectedAppends()).isEqualTo(1L);
+        assertThat(counters.snapshot(new OperationRecordBufferRegistry(1, 1)).rejectedAppends()).isEqualTo(1L);
     }
 
     @Test
     void appendAll_shouldAppendBatchUnderOneCapacityCheck() {
-        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 3);
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 3, 2);
         PersistenceRuntimeCounters counters = new PersistenceRuntimeCounters();
         StationLogRecord first = record();
         StationLogRecord second = record();
 
-        assertThat(buffer.appendAll(List.of(first, second), 2, counters)).isTrue();
+        assertThat(buffer.appendAll(List.of(first, second), counters)).isTrue();
 
         assertThat(buffer.pendingCount()).isEqualTo(2);
-        assertThat(buffer.drainBatch(10)).containsExactly(first, second);
+        assertThat(buffer.drainBatch()).containsExactly(first, second);
     }
 
     @Test
     void appendAll_shouldRejectWholeBatchWhenCapacityIsInsufficient() {
-        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 1);
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 1, 1);
         PersistenceRuntimeCounters counters = new PersistenceRuntimeCounters();
 
-        assertThatThrownBy(() -> buffer.appendAll(List.of(record(), record()), 10, counters))
+        assertThatThrownBy(() -> buffer.appendAll(List.of(record(), record()), counters))
                 .isInstanceOf(ExecutionPersistenceException.class)
                 .hasMessageContaining("buffer is full");
 
         assertThat(buffer.pendingCount()).isZero();
-        assertThat(counters.snapshot(new OperationRecordBufferRegistry(1)).rejectedAppends()).isEqualTo(1L);
+        assertThat(counters.snapshot(new OperationRecordBufferRegistry(1, 1)).rejectedAppends()).isEqualTo(1L);
     }
 
     @Test
     void drainBatch_shouldReducePendingCountAndRestoreShouldRequeueRecords() {
-        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 3);
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 3, 1);
         PersistenceRuntimeCounters counters = new PersistenceRuntimeCounters();
         StationLogRecord first = record();
         StationLogRecord second = record();
-        buffer.append(first, 10, counters);
-        buffer.append(second, 10, counters);
+        buffer.append(first, counters);
+        buffer.append(second, counters);
 
-        List<StationLogRecord> drained = buffer.drainBatch(1);
+        List<StationLogRecord> drained = buffer.drainBatch();
 
         assertThat(drained).containsExactly(first);
         assertThat(buffer.pendingCount()).isEqualTo(1);
@@ -99,7 +111,7 @@ class OperationRecordBufferTargetedCoverageTest {
 
     @Test
     void restoreDrainedBatch_shouldIgnoreNullOrEmptyBatches() {
-        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 1);
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 1, 1);
 
         buffer.restoreDrainedBatch(null);
         buffer.restoreDrainedBatch(List.of());
@@ -109,7 +121,7 @@ class OperationRecordBufferTargetedCoverageTest {
 
     @Test
     void restoreDrainedBatch_shouldRecordFailureWhenRequeueCannotRestoreEveryRecord() {
-        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 1);
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 1, 1);
         StationLogRecord first = record();
         StationLogRecord second = record();
 

@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStack;
 import io.github.gear4jtest.core.api.assemblyline.NestedRunContext;
+import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
 import io.github.gear4jtest.core.api.context.CancellationToken;
 import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
 import io.github.gear4jtest.core.spi.factory.IdGenerator;
@@ -57,6 +58,7 @@ class RunRequestBuilderTest {
         assertThat(request.getExtensions()).isEmpty();
         assertThat(request.getResourceFactory()).isNull();
         assertThat(request.getIdGenerator()).isNull();
+        assertThat(request.getPersistenceConfiguration()).isNull();
         assertThat(request.getNestedRunContext()).isNull();
         assertThat(request.getAssemblyLineCallStack()).isNull();
         assertThat(request.getCancellationToken()).isNull();
@@ -79,11 +81,15 @@ class RunRequestBuilderTest {
                 "parent", "station");
         AssemblyLineCallStack callStack = AssemblyLineCallStack.withMaxDepth(5);
         CancellationToken token = new CancellationToken();
+        PersistenceConfiguration persistence = PersistenceConfiguration.builder()
+                .stationLogFlushThreshold(7)
+                .build();
         RunRequest request = RunRequest.builder()
                 .input("input")
                 .context(sourceContext)
                 .resourceFactory(resourceFactory)
                 .withIdGenerator(idGenerator)
+                .persistence(persistence)
                 .nestedRunContext(nested)
                 .assemblyLineCallStack(callStack)
                 .cancellationToken(token)
@@ -99,6 +105,7 @@ class RunRequestBuilderTest {
         assertThat(copy.getContext()).containsOnly(Map.entry("copied", true));
         assertThat(copy.getResourceFactory()).isSameAs(resourceFactory);
         assertThat(copy.getIdGenerator()).isSameAs(idGenerator);
+        assertThat(copy.getPersistenceConfiguration()).isSameAs(persistence);
         assertThat(copy.getNestedRunContext()).isSameAs(nested);
         assertThat(copy.getAssemblyLineCallStack()).isSameAs(callStack);
         assertThat(copy.getCancellationToken()).isSameAs(token);
@@ -116,10 +123,14 @@ class RunRequestBuilderTest {
                 "parent", "station");
         AssemblyLineCallStack callStack = AssemblyLineCallStack.withMaxDepth(5);
         CancellationToken token = new CancellationToken();
+        PersistenceConfiguration persistence = PersistenceConfiguration.builder()
+                .stationLogFlushThreshold(11)
+                .build();
         RunRequest request = RunRequest.builder()
                 .input("input")
                 .context(Map.of("tenant", "acme"))
                 .withIdGenerator(idGenerator)
+                .persistence(persistence)
                 .nestedRunContext(nested)
                 .assemblyLineCallStack(callStack)
                 .cancellationToken(token)
@@ -133,6 +144,7 @@ class RunRequestBuilderTest {
         assertThat(independent.getInput()).isEqualTo("copy-input");
         assertThat(independent.getContext()).containsEntry("tenant", "acme");
         assertThat(independent.getIdGenerator()).isSameAs(idGenerator);
+        assertThat(independent.getPersistenceConfiguration()).isSameAs(persistence);
         assertThat(independent.getNestedRunContext()).isNull();
         assertThat(independent.getExtensions()).containsExactly(extension);
         assertThat(independent.getAssemblyLineCallStack()).isNull();

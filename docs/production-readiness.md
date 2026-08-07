@@ -77,10 +77,13 @@ When JDBC persistence is enabled:
   Independent runs may call the repository concurrently, while each run buffer
   serializes its own drains. Any custom repository or datasource supplied to the
   manager must therefore be thread-safe;
-- the built-in core `PersistenceExtension` persists station start snapshots
-  immediately and batches terminal station snapshots with `appendAll(...)` before
-  ending the run; use `terminalRecordBatchSize(1)` for the most immediate
-  terminal snapshot persistence behavior;
+- the built-in core `PersistenceExtension` emits each station lifecycle snapshot
+  once; the persistence manager alone owns batching and is flushed before the run
+  ends;
+- tune the manager default with `gear4j.persistence.batch-size`, an assembly-line
+  default with `PersistenceConfiguration.stationLogFlushThreshold(...)`, or a
+  single execution with `RunRequest.persistence(...)`; per-run values must not
+  exceed `max-pending-logs-per-run`;
 - monitor failed flushes, rejected appends and active buffers;
 - keep persistence history queries paginated. `PageRequest` is intentionally
   capped at 1,000 rows per call to avoid accidental large reads. The external

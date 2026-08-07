@@ -29,13 +29,13 @@ public class JdbcBatchBufferBenchmark {
 
     @Setup(Level.Invocation)
     public void resetBuffer() {
-        buffer = new OperationRecordBuffer(UUID.randomUUID(), BATCH_SIZE);
+        buffer = new OperationRecordBuffer(UUID.randomUUID(), BATCH_SIZE, BATCH_SIZE);
     }
 
     @Benchmark
     public int appendDrainBatch() {
-        buffer.appendAll(records, BATCH_SIZE, counters);
-        List<StationLogRecord> drained = buffer.drainBatch(BATCH_SIZE);
+        buffer.appendAll(records, counters);
+        List<StationLogRecord> drained = buffer.drainBatch();
         buffer.acknowledgeDrainedBatch(drained);
         return drained.size();
     }

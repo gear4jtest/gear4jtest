@@ -11,7 +11,7 @@ class PersistenceShutdownRunStateTest {
     @Test
     void retryState_shouldRetainFirstFailureWhenDeadlineIsReached() {
         // Given
-        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 1);
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 1, 1);
         PersistenceShutdownRunState state = new PersistenceShutdownRunState(buffer, Duration.ofMillis(1), false);
         Exception jdbcFailure = new IllegalStateException("jdbc");
         Exception deadlineFailure = new IllegalStateException("deadline");

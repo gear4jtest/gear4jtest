@@ -16,7 +16,7 @@ public final class Persistence {
         return new PersistenceConfiguration.Builder();
     }
 
-    public static PersistenceExtension.Builder persistenceExtension(RunPersistenceManager manager) {
-        return PersistenceExtension.builder(manager);
+    public static PersistenceExtension persistenceExtension(RunPersistenceManager manager) {
+        return new PersistenceExtension(manager);
     }
 }

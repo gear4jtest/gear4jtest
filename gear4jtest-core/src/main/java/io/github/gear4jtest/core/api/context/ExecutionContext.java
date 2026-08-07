@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStack;
 import io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContract;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
 import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.event.EventPayloadPolicy;
 import io.github.gear4jtest.core.sidecompute.SideComputeContext;
@@ -29,6 +30,7 @@ public class ExecutionContext {
     private final ExecutionServices services;
     private final EventRuntimeOptions eventRuntimeOptions;
     private final AssemblyLineRuntimeContract runtimeContract;
+    private final PersistenceConfiguration persistenceConfiguration;
     private final AssemblyLineCallStack assemblyLineCallStack;
     private final IdGenerator idGenerator;
     private final CancellationToken cancellationToken;
@@ -46,6 +48,7 @@ public class ExecutionContext {
                 ? builder.eventRuntimeOptions : EventRuntimeOptions.disabled();
         this.runtimeContract = builder.runtimeContract != null
                 ? builder.runtimeContract : AssemblyLineRuntimeContract.inlineConfigless();
+        this.persistenceConfiguration = builder.persistenceConfiguration;
         this.assemblyLineCallStack = builder.assemblyLineCallStack != null ? builder.assemblyLineCallStack
                 : AssemblyLineCallStack.create();
         this.idGenerator = builder.idGenerator;
@@ -60,6 +63,7 @@ public class ExecutionContext {
         private RunTrace assemblyRun;
         private EventRuntimeOptions eventRuntimeOptions;
         private AssemblyLineRuntimeContract runtimeContract;
+        private PersistenceConfiguration persistenceConfiguration;
         private AssemblyLineCallStack assemblyLineCallStack;
         private IdGenerator idGenerator;
         private CancellationToken cancellationToken;
@@ -94,6 +98,11 @@ public class ExecutionContext {
 
         public Builder runtimeContract(AssemblyLineRuntimeContract runtimeContract) {
             this.runtimeContract = runtimeContract;
+            return this;
+        }
+
+        public Builder persistenceConfiguration(PersistenceConfiguration persistenceConfiguration) {
+            this.persistenceConfiguration = persistenceConfiguration;
             return this;
         }
 
@@ -176,6 +185,11 @@ public class ExecutionContext {
 
     public AssemblyLineRuntimeContract getRuntimeContract() {
         return runtimeContract;
+    }
+
+    /** Returns the effective assembly-line or per-run persistence configuration. */
+    public PersistenceConfiguration getPersistenceConfiguration() {
+        return persistenceConfiguration;
     }
 
     public AssemblyLineCallStack getAssemblyLineCallStack() {

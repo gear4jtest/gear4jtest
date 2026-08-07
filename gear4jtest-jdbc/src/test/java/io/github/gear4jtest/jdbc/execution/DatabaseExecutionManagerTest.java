@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.sql.DataSource;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
 import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
@@ -226,6 +227,76 @@ class DatabaseExecutionManagerTest {
         } finally {
             configurationFirst.shutdown(Duration.ofSeconds(1));
             thresholdFirst.shutdown(Duration.ofSeconds(1));
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void runFlushThreshold_shouldOverrideManagerBatchSizeForOnlyThatRun() throws Exception {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder()
+                .batchSize(10)
+                .maxPendingLogsPerRun(20)
+                .flushInterval(Duration.ofDays(1))
+                .build();
+        DatabaseExecutionManager manager = manager(repository, configuration, flushExecutor, scheduler);
+        AssemblyRunTrace fastRun = new AssemblyRunTrace(UUID.randomUUID(), "fast", Map.of());
+        AssemblyRunTrace defaultRun = new AssemblyRunTrace(UUID.randomUUID(), "default", Map.of());
+
+        try {
+            manager.start(fastRun, PersistenceConfiguration.builder().stationLogFlushThreshold(2).build());
+            manager.start(defaultRun);
+
+            // When
+            manager.append(stationRecord(fastRun.getId()));
+            manager.append(stationRecord(defaultRun.getId()));
+            manager.append(stationRecord(fastRun.getId()));
+            manager.append(stationRecord(defaultRun.getId()));
+            awaitCompletedFlushes(manager, 1);
+
+            // Then
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<List<StationLogRecord>> batch = ArgumentCaptor.forClass(List.class);
+            verify(repository).saveOperationRecordsBatch(batch.capture());
+            assertThat(batch.getValue()).hasSize(2)
+                    .allMatch(record -> record.assemblyLineExecutionId().equals(fastRun.getId()));
+            assertThat(manager.snapshotStats().bufferedStationLogs()).isEqualTo(2);
+        } finally {
+            manager.shutdown(Duration.ofSeconds(1));
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void start_shouldRejectRunFlushThresholdAboveBoundedBufferBeforeRepositoryWrite() {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder()
+                .batchSize(2)
+                .maxPendingLogsPerRun(3)
+                .flushInterval(Duration.ofDays(1))
+                .build();
+        DatabaseExecutionManager manager = manager(repository, configuration, flushExecutor, scheduler);
+        AssemblyRunTrace run = new AssemblyRunTrace(UUID.randomUUID(), "run", Map.of());
+        PersistenceConfiguration runConfiguration = PersistenceConfiguration.builder()
+                .stationLogFlushThreshold(4)
+                .build();
+
+        try {
+            // When / Then
+            assertThatThrownBy(() -> manager.start(run, runConfiguration))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("stationLogFlushThreshold must be <= maxPendingLogsPerRun (3)");
+            verify(repository, never()).save(any(AssemblyRunRecord.class));
+        } finally {
+            manager.shutdown(Duration.ofSeconds(1));
             flushExecutor.shutdownNow();
             scheduler.shutdownNow();
         }

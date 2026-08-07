@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStack;
 import io.github.gear4jtest.core.api.assemblyline.NestedRunContext;
+import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
 import io.github.gear4jtest.core.api.context.CancellationToken;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.SequenceStation;
@@ -52,11 +53,15 @@ class ImmutableRequestAndAssemblyLineTest {
                 UUID.randomUUID(), "parent", "station");
         AssemblyLineCallStack assemblyLineCallStack = AssemblyLineCallStack.withMaxDepth(4);
         CancellationToken cancellationToken = new CancellationToken();
+        PersistenceConfiguration persistence = PersistenceConfiguration.builder()
+                .stationLogFlushThreshold(13)
+                .build();
         RunRequest request = RunRequest.builder()
                 .input("input")
                 .context(Map.of("key", "value"))
                 .resourceFactory(resourceFactory)
                 .withIdGenerator(idGenerator)
+                .persistence(persistence)
                 .nestedRunContext(nestedRunContext)
                 .assemblyLineCallStack(assemblyLineCallStack)
                 .cancellationToken(cancellationToken)
@@ -71,6 +76,7 @@ class ImmutableRequestAndAssemblyLineTest {
         assertThat(copy.getContext()).containsEntry("key", "value");
         assertThat(copy.getResourceFactory()).isSameAs(resourceFactory);
         assertThat(copy.getIdGenerator()).isSameAs(idGenerator);
+        assertThat(copy.getPersistenceConfiguration()).isSameAs(persistence);
         assertThat(copy.getNestedRunContext()).isSameAs(nestedRunContext);
         assertThat(copy.getAssemblyLineCallStack()).isSameAs(assemblyLineCallStack);
         assertThat(copy.getCancellationToken()).isSameAs(cancellationToken);

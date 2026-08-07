@@ -419,7 +419,8 @@ public final class XmlAssemblyLineParser {
         Element persistenceElement = child(element, "persistence");
         if (persistenceElement != null) {
             persistence = new Persistence(
-                    Boolean.parseBoolean(optionalOrDefault(persistenceElement, "storeResultObject", "true")));
+                    Boolean.parseBoolean(optionalOrDefault(persistenceElement, "storeResultObject", "true")),
+                    optionalInteger(persistenceElement, "stationLogFlushThreshold"));
         }
 
         return new Configuration(eventHandling, persistence);

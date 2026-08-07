@@ -12,6 +12,7 @@ import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStack;
 import io.github.gear4jtest.core.api.assemblyline.NestedRunContext;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
 import io.github.gear4jtest.core.api.context.ContextPropagationPolicy;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
@@ -68,6 +69,7 @@ final class AssemblyLineExecutionContextFactory {
                 .assemblyRun(execution)
                 .eventRuntimeOptions(eventRuntimeOptions)
                 .runtimeContract(pipeline.getConfiguration().getRuntimeContract())
+                .persistenceConfiguration(effectivePersistenceConfiguration(pipeline, request))
                 .assemblyLineCallStack(callStack)
                 .idGenerator(effectiveGenerator)
                 .cancellationToken(request.getCancellationToken())
@@ -76,6 +78,14 @@ final class AssemblyLineExecutionContextFactory {
 
         executionContextRegistry.register(context);
         return new AssemblyLineRunContext(context, execution, effectiveContext, effectiveGenerator);
+    }
+
+    private static PersistenceConfiguration effectivePersistenceConfiguration(AssemblyLine<?, ?> pipeline,
+                                                                              RunRequest<?> request) {
+        if (request.getPersistenceConfiguration() != null) {
+            return request.getPersistenceConfiguration();
+        }
+        return pipeline.getConfiguration().getPersistence();
     }
 
     private static Map<String, Object> isolateInitialContext(Map<String, Object> mergedContext,

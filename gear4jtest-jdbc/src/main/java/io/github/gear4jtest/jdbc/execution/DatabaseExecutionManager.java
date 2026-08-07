@@ -14,6 +14,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.sql.DataSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
 import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.api.context.PayloadCloners;
 import io.github.gear4jtest.core.api.trace.RunTrace;
@@ -56,7 +57,8 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
                 ? builder.repository
                 : createRepository(builder.dataSource, builder.databaseDialect, this.configuration,
                                    builder.baselineOnMigrate, builder.jsonCodec, builder.transactionOperations);
-        this.buffers = new OperationRecordBufferRegistry(configuration.maxPendingLogsPerRun());
+        this.buffers = new OperationRecordBufferRegistry(configuration.maxPendingLogsPerRun(),
+                configuration.batchSize());
         this.redactor = builder.redactor != null ? builder.redactor : SensitiveDataRedactor.discardSensitiveValues();
         this.payloadCloner = builder.payloadCloner != null ? builder.payloadCloner : PayloadCloners.immutableAware();
         if (SensitiveDataRedactor.isNone(this.redactor)) {
@@ -230,11 +232,28 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
 
     @Override
     public void start(RunTrace execution) {
+        start(execution, null);
+    }
+
+    @Override
+    public void start(RunTrace execution, PersistenceConfiguration runConfiguration) {
         Objects.requireNonNull(execution, "execution must not be null");
+        int flushThreshold = effectiveFlushThreshold(runConfiguration);
         flushCoordinator.executeWhileOpen(execution.getId(), () -> {
             repository.save(AssemblyRunRecord.from(execution, redactor, payloadCloner));
-            buffers.createFresh(execution.getId());
+            buffers.createFresh(execution.getId(), flushThreshold);
         });
+    }
+
+    private int effectiveFlushThreshold(PersistenceConfiguration runConfiguration) {
+        int flushThreshold = runConfiguration == null
+                ? configuration.batchSize()
+                : runConfiguration.getStationLogFlushThreshold().orElse(configuration.batchSize());
+        if (flushThreshold > configuration.maxPendingLogsPerRun()) {
+            throw new IllegalArgumentException("stationLogFlushThreshold must be <= maxPendingLogsPerRun ("
+                    + configuration.maxPendingLogsPerRun() + ")");
+        }
+        return flushThreshold;
     }
 
     @Override
@@ -276,8 +295,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
         }
         UUID runId = records.get(0).assemblyLineExecutionId();
         OperationRecordBuffer buffer = buffers.getOrCreate(runId);
-        boolean shouldScheduleFlush = buffer.appendAll(records, configuration.batchSize(),
-                                                       flushCoordinator.counters());
+        boolean shouldScheduleFlush = buffer.appendAll(records, flushCoordinator.counters());
         if (shouldScheduleFlush) {
             flushCoordinator.scheduleAsyncFlush(buffer, false);
         }

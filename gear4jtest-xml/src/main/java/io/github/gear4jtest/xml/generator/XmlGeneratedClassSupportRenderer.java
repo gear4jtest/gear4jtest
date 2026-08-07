@@ -117,6 +117,10 @@ final class XmlGeneratedClassSupportRenderer {
                     .append(imports.use("io.github.gear4jtest.core.api.config.PersistenceConfiguration"))
                     .append(".builder()\n");
             code.append("                .storeResultObject(").append(storeResultObject).append(")\n");
+            if (definition.configuration().persistence().stationLogFlushThreshold() != null) {
+                code.append("                .stationLogFlushThreshold(")
+                        .append(definition.configuration().persistence().stationLogFlushThreshold()).append(")\n");
+            }
             code.append("                .build());\n");
         }
 

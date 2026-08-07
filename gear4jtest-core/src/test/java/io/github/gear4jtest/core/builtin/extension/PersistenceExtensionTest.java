@@ -5,7 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
+import io.github.gear4jtest.core.api.context.ExecutionContext;
+import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
@@ -18,51 +22,71 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PersistenceExtensionTest {
     @Test
-    void stationStarted_shouldPersistImmediatelyWhileTerminalSnapshotsAreBatched() {
+    void lifecycleSnapshots_shouldBeEmittedOnceAndFlushedBeforeRunEnd() {
         RecordingRunManager manager = new RecordingRunManager();
-        PersistenceExtension extension = PersistenceExtension.builder(manager)
-                .terminalRecordBatchSize(2)
+        PersistenceExtension extension = new PersistenceExtension(manager);
+        PersistenceConfiguration configuration = PersistenceConfiguration.builder()
+                .stationLogFlushThreshold(2)
+                .build();
+        ExecutionContext context = ExecutionContext.builder()
+                .services(org.mockito.Mockito.mock(ExecutionServices.class))
+                .persistenceConfiguration(configuration)
                 .build();
         AssemblyRunTrace run = run();
+        StationLogRecord started = record(run.getId(), "station", StationLogStatus.RUNNING);
+        StationLogRecord completed = record(run.getId(), "station", StationLogStatus.SUCCEEDED);
 
-        extension.onRunStarted(null, run);
-        extension.onStationStarted(null, null, record(run.getId(), "first", StationLogStatus.RUNNING));
-        extension.onStationCompleted(null, null, record(run.getId(), "first", StationLogStatus.SUCCEEDED));
+        extension.onRunStarted(context, run);
+        extension.onStationStarted(context, null, started);
+        extension.onStationCompleted(context, null, completed);
+        extension.onRunCompleted(context, run);
 
-        assertThat(manager.appended).extracting(StationLogRecord::operationId).containsExactly("first");
-        assertThat(manager.appendedBatches).isEmpty();
-
-        extension.onStationCompleted(null, null, record(run.getId(), "second", StationLogStatus.SUCCEEDED));
-
-        assertThat(manager.appendedBatches).hasSize(1);
-        assertThat(manager.appendedBatches.get(0)).extracting(StationLogRecord::operationId)
-                .containsExactly("first", "second");
+        assertThat(manager.configuration).isSameAs(configuration);
+        assertThat(manager.appended).containsExactly(started, completed);
+        assertThat(manager.events).containsExactly("start:2", "append:RUNNING", "append:SUCCEEDED", "flush", "end");
     }
 
     @Test
-    void onRunCompleted_shouldFlushRemainingTerminalSnapshotsBeforeEndingRun() {
+    void everyTerminalCallback_shouldDelegateOneSnapshotWithoutExtensionBuffering() {
         RecordingRunManager manager = new RecordingRunManager();
-        PersistenceExtension extension = PersistenceExtension.builder(manager)
-                .terminalRecordBatchSize(10)
-                .build();
+        PersistenceExtension extension = new PersistenceExtension(manager);
         AssemblyRunTrace run = run();
+        StationLogRecord record = record(run.getId(), "station", StationLogStatus.SUCCEEDED);
 
-        extension.onRunStarted(null, run);
-        extension.onStationCompleted(null, null, record(run.getId(), "only", StationLogStatus.SUCCEEDED));
-        extension.onRunCompleted(null, run);
+        extension.onStationCompleted(null, null, record);
+        extension.onStationSkipped(null, null, record, null);
+        extension.onStationCancelled(null, null, record, null, null);
+        extension.onStationInterrupted(null, null, record, null, null, null);
+        extension.onStationFailedBeforeStart(null, null, record, null);
 
-        assertThat(manager.events).containsExactly("start", "appendAll:1", "end");
-        assertThat(manager.appendedBatches.get(0)).extracting(StationLogRecord::operationId)
-                .containsExactly("only");
+        assertThat(manager.appended).containsExactly(record, record, record, record, record);
     }
 
     @Test
-    void terminalRecordBatchSize_shouldRejectNonPositiveValues() {
-        RecordingRunManager manager = new RecordingRunManager();
+    void constructor_shouldRejectNullManager() {
+        assertThatThrownBy(() -> new PersistenceExtension(null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("manager must not be null");
+    }
 
-        assertThatThrownBy(() -> PersistenceExtension.builder(manager).terminalRecordBatchSize(0).build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("terminalRecordBatchSize must be > 0");
+    @Test
+    void missingContext_shouldRemainCompatibleWithManagersImplementingLegacyStartOnly() {
+        AtomicInteger starts = new AtomicInteger();
+        RunPersistenceManager manager = new RunPersistenceManager() {
+            @Override
+            public void start(RunTrace execution) {
+                starts.incrementAndGet();
+            }
+
+            @Override
+            public void end(RunTrace finalExecution) {
+                // no-op
+            }
+        };
+
+        new PersistenceExtension(manager).onRunStarted(null, run());
+
+        assertThat(starts).hasValue(1);
     }
 
     private static AssemblyRunTrace run() {
@@ -80,23 +104,28 @@ class PersistenceExtensionTest {
     private static final class RecordingRunManager implements RunPersistenceManager {
         private final List<String> events = new ArrayList<>();
         private final List<StationLogRecord> appended = new ArrayList<>();
-        private final List<List<StationLogRecord>> appendedBatches = new ArrayList<>();
+        private PersistenceConfiguration configuration;
 
         @Override
         public void start(RunTrace execution) {
-            events.add("start");
+            events.add("start:default");
+        }
+
+        @Override
+        public void start(RunTrace execution, PersistenceConfiguration configuration) {
+            this.configuration = configuration;
+            events.add("start:" + configuration.getStationLogFlushThreshold().orElse(-1));
         }
 
         @Override
         public void append(StationLogRecord stationLogRecord) {
             appended.add(stationLogRecord);
-            events.add("append");
+            events.add("append:" + stationLogRecord.status());
         }
 
         @Override
-        public void appendAll(List<StationLogRecord> records) {
-            appendedBatches.add(List.copyOf(records));
-            events.add("appendAll:" + records.size());
+        public void flush(UUID runId) {
+            events.add("flush");
         }
 
         @Override

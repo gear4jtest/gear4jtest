@@ -24,6 +24,7 @@ final class NestedRunRequestFactory {
         return RunRequest.<IN>builder().input(input)
                 .context(propagatedContext)
                 .resourceFactory(parentContext.getServices().getResourceFactory())
+                .persistence(parentContext.getGlobalContext().getPersistenceConfiguration())
                 .withIdGenerator(Optional.ofNullable(parentContext.getGlobalContext().getIdGenerator())
                         .orElse(defaultIdGenerator))
                 .nestedRunContext(nestedRunContext)

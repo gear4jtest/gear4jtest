@@ -145,7 +145,7 @@ final class PersistenceFlushCoordinator {
                 buffer.assertHealthy();
             }
             do {
-                List<StationLogRecord> batch = buffer.drainBatch(configuration.batchSize());
+                List<StationLogRecord> batch = buffer.drainBatch();
                 if (batch.isEmpty()) {
                     return;
                 }
@@ -165,7 +165,7 @@ final class PersistenceFlushCoordinator {
             buffer.clearFlushScheduled();
             buffer.unlockFlush();
         }
-        if (operationGate.isOpen() && buffer.pendingCount() >= configuration.batchSize()) {
+        if (operationGate.isOpen() && buffer.pendingCount() >= buffer.flushThreshold()) {
             scheduleAsyncFlush(buffer, false);
         }
     }

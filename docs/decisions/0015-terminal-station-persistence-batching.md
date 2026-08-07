@@ -1,4 +1,4 @@
-# 0015 — Terminal station persistence batching
+# 0015 — Manager-owned station persistence batching
 
 ## Status
 
@@ -6,41 +6,49 @@ Accepted.
 
 ## Context
 
-The core persistence SPI exposes both `append(...)` and `appendAll(...)`, but the
-built-in `PersistenceExtension` historically called `append(...)` for every
-station start and every station completion. That kept the lifecycle path simple
-and made persistence failures local to the station callback that observed them,
-but it also amplified synchronous persistence calls for long pipelines and
-iterators.
+The core `PersistenceExtension` and the JDBC `DatabaseExecutionManager` both
+historically buffered terminal station snapshots. The extension grouped records
+for `appendAll(...)`, then the JDBC manager copied the same records into its own
+per-run queue before scheduling database batches. This duplicated ownership,
+made the effective flush point depend on two unrelated thresholds and delayed
+failure attribution.
 
-The JDBC manager already buffers station logs internally, but core-level
-extensions and custom `RunPersistenceManager` implementations still benefited from
-an explicit batching contract.
+Iterators and assembly-line calls produce ordinary station lifecycle snapshots.
+They must not implement their own persistence batching or append paths.
 
 ## Decision
 
-`PersistenceExtension` now distinguishes start snapshots from terminal snapshots:
+The persistence manager is the only component allowed to buffer and batch
+station snapshots:
 
-- station start snapshots are still persisted immediately through `append(...)`;
-- terminal station snapshots are buffered per run and flushed through
-  `appendAll(...)`;
-- pending terminal snapshots are flushed before `manager.end(run)`;
-- the default terminal batch size is `128`;
-- `PersistenceExtension.builder(manager).terminalRecordBatchSize(1)` preserves
-  one terminal flush per station when an application wants the most immediate
-  completion-persistence behavior.
+- `PersistenceExtension` emits every start and terminal snapshot exactly once
+  through `RunPersistenceManager.append(...)`;
+- before `end(run)`, the extension invokes `flush(runId)`;
+- `appendAll(...)` remains available for explicit bulk producers, but the
+  lifecycle orchestrator does not use it;
+- `PersistenceConfiguration.stationLogFlushThreshold(...)` configures an
+  assembly-line default;
+- `RunRequest.persistence(...)` can replace that configuration for one run;
+- request configuration takes precedence over assembly-line configuration,
+  which takes precedence over the persistence manager default;
+- inline children and iterator items share the current run configuration;
+- nested runs inherit the parent's effective persistence configuration;
+- the JDBC manager stores the effective threshold in each run buffer and uses it
+  for normal, periodic, final and shutdown drains;
+- a per-run threshold cannot exceed the manager's bounded
+  `maxPendingLogsPerRun` capacity.
 
-The JDBC `DatabaseExecutionManager#appendAll(...)` now appends batches to the
-per-run buffer under one capacity check instead of delegating record by record to
-`append(...)`.
+JDBC persistence continues to write drained records through
+`DatabaseAssemblyRunRepository.saveOperationRecordsBatch(...)`.
 
 ## Consequences
 
-- A long-running station is still visible as `RUNNING` if the process exits
-  before completion.
-- Terminal station records can be persisted in fewer SPI calls.
-- A persistence failure while flushing buffered terminal records may be observed
-  by a later station completion or by run completion rather than by the exact
-  station that originally produced the terminal snapshot.
-- Run completion remains blocked on all pending terminal station records being
-  flushed before the run record is ended.
+- There is one owner for buffering, scheduling, retry and failure state.
+- Each `StationLogRecord` snapshot crosses the lifecycle-to-persistence boundary
+  once, including records created inside iterators and nested assembly lines.
+- A `RUNNING` snapshot can wait for the manager threshold or periodic flush; run
+  completion still blocks until pending snapshots have been flushed.
+- Provider-neutral managers may ignore per-run tuning by relying on the default
+  `RunPersistenceManager.start(run, configuration)` implementation.
+- Checkpoint/resume semantics and special policies for extremely large assembly
+  lines remain future work.

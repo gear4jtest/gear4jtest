@@ -222,12 +222,13 @@ context values.
 JDBC execution persistence is intentionally outside core. Use the optional `gear4jtest-jdbc` module for
 `DatabaseExecutionManager`, `DatabaseAssemblyRunRepository`, `Gear4jDatabaseDialect` and schema migrations.
 
-The built-in `PersistenceExtension` persists station start snapshots immediately
-and batches terminal station snapshots per run with `appendAll(...)` before
-calling `end(run)`. Build it with
-`PersistenceExtension.builder(manager).terminalRecordBatchSize(1)` when an
-application prefers one terminal flush per station over batched completion
-persistence.
+The built-in `PersistenceExtension` emits every station start and terminal
+snapshot exactly once to the configured `RunPersistenceManager`. The manager
+alone owns buffering and batching; the extension calls `flush(runId)` before
+`end(run)`. Configure an assembly-line default with
+`PersistenceConfiguration.stationLogFlushThreshold(...)`, or replace the
+effective configuration for one execution with `RunRequest.persistence(...)`.
+Nested runs inherit the parent's effective configuration.
 
 Direct persistence managers are metadata-only by default. They keep execution
 identity, status and timing, but discard contexts, inputs, results and error

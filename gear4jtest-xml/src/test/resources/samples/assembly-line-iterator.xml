@@ -39,7 +39,7 @@
     <eventHandling>
       <globalEventConfiguration eventOnParameterChanged="true"/>
     </eventHandling>
-    <persistence storeResultObject="true"/>
+    <persistence storeResultObject="true" stationLogFlushThreshold="17"/>
   </configuration>
 
   <dependencies>

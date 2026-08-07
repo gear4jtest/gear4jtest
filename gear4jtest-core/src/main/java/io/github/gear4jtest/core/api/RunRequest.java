@@ -9,6 +9,7 @@ import java.util.Objects;
 
 import io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStack;
 import io.github.gear4jtest.core.api.assemblyline.NestedRunContext;
+import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
 import io.github.gear4jtest.core.api.context.CancellationToken;
 import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
 import io.github.gear4jtest.core.spi.factory.IdGenerator;
@@ -30,6 +31,7 @@ public class RunRequest<IN> {
     private final ResourceFactory resourceFactory;
     private final List<RuntimeExtension> extensions;
     private final IdGenerator idGenerator;
+    private final PersistenceConfiguration persistenceConfiguration;
     private final NestedRunContext nestedRunContext;
     private final AssemblyLineCallStack assemblyLineCallStack;
     private final CancellationToken cancellationToken;
@@ -41,6 +43,7 @@ public class RunRequest<IN> {
         this.resourceFactory = builder.resourceFactory;
         this.extensions = List.copyOf(builder.extensions);
         this.idGenerator = builder.idGenerator;
+        this.persistenceConfiguration = builder.persistenceConfiguration;
         this.nestedRunContext = builder.nestedRunContext;
         this.assemblyLineCallStack = builder.assemblyLineCallStack;
         this.cancellationToken = builder.cancellationToken;
@@ -68,6 +71,10 @@ public class RunRequest<IN> {
 
     public IdGenerator getIdGenerator() {
         return idGenerator;
+    }
+
+    public PersistenceConfiguration getPersistenceConfiguration() {
+        return persistenceConfiguration;
     }
 
     public NestedRunContext getNestedRunContext() {
@@ -109,10 +116,11 @@ public class RunRequest<IN> {
      *
      * <p>
      * Use this helper when a request acts as a template for multiple independent
-     * top-level runs. The new request keeps input, context, resource factory, id
-     * generator and extensions, but drops nested-run metadata and lets the engine
-     * allocate a fresh {@link CancellationToken} and {@link AssemblyLineCallStack}
-     * unless the caller explicitly supplies them again on the returned builder.
+     * top-level runs. The new request keeps input, context, resource factory,
+     * persistence configuration, id generator and extensions, but drops nested-run
+     * metadata and lets the engine allocate a fresh {@link CancellationToken} and
+     * {@link AssemblyLineCallStack} unless the caller explicitly supplies them
+     * again on the returned builder.
      * </p>
      */
     public Builder<IN> toIndependentBuilder() {
@@ -126,6 +134,7 @@ public class RunRequest<IN> {
                 .input(input)
                 .context(context)
                 .resourceFactory(resourceFactory)
+                .persistence(persistenceConfiguration)
                 .withIdGenerator(idGenerator);
     }
 
@@ -138,6 +147,7 @@ public class RunRequest<IN> {
         private Map<String, Object> context;
         private ResourceFactory resourceFactory;
         private IdGenerator idGenerator;
+        private PersistenceConfiguration persistenceConfiguration;
         private NestedRunContext nestedRunContext;
         private AssemblyLineCallStack assemblyLineCallStack;
         private CancellationToken cancellationToken;
@@ -167,6 +177,7 @@ public class RunRequest<IN> {
             target.resourceFactory = resourceFactory;
             target.extensions.addAll(extensions);
             target.idGenerator = idGenerator;
+            target.persistenceConfiguration = persistenceConfiguration;
             target.nestedRunContext = nestedRunContext;
             target.assemblyLineCallStack = assemblyLineCallStack;
             target.cancellationToken = cancellationToken;
@@ -184,6 +195,14 @@ public class RunRequest<IN> {
 
         public Builder<IN> withIdGenerator(IdGenerator idGenerator) {
             this.idGenerator = idGenerator;
+            return this;
+        }
+
+        /**
+         * Overrides the assembly-line persistence configuration for this run.
+         */
+        public Builder<IN> persistence(PersistenceConfiguration persistenceConfiguration) {
+            this.persistenceConfiguration = persistenceConfiguration;
             return this;
         }
 

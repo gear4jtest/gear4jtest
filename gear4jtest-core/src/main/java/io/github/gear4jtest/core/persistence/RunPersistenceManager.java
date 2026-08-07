@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.persistence;
 import java.util.List;
 import java.util.UUID;
 
+import io.github.gear4jtest.core.api.config.PersistenceConfiguration;
 import io.github.gear4jtest.core.api.trace.RunTrace;
 
 /**
@@ -11,6 +12,19 @@ import io.github.gear4jtest.core.api.trace.RunTrace;
  */
 public interface RunPersistenceManager {
     void start(RunTrace execution);
+
+    /**
+     * Starts a run with its effective persistence configuration.
+     *
+     * <p>
+     * Implementations that do not expose per-run tuning can keep implementing the
+     * original {@link #start(RunTrace)} method. Buffering managers should override
+     * this method and retain the supplied flush threshold in run-local state.
+     * </p>
+     */
+    default void start(RunTrace execution, PersistenceConfiguration configuration) {
+        start(execution);
+    }
 
     default void append(StationLogRecord stationLogRecord) {
         // no-op by default

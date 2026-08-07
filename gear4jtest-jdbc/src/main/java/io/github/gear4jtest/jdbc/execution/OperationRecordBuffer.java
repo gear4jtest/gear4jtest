@@ -18,6 +18,7 @@ import io.github.gear4jtest.core.persistence.StationLogRecord;
 final class OperationRecordBuffer {
     private final UUID runId;
     private final int capacity;
+    private final int flushThreshold;
     private final ArrayBlockingQueue<StationLogRecord> queue;
     private final AtomicInteger pendingCount = new AtomicInteger();
     private final AtomicInteger retainedCount = new AtomicInteger();
@@ -28,9 +29,16 @@ final class OperationRecordBuffer {
     private final AtomicReference<Exception> finalizationFailure = new AtomicReference<>();
     private volatile Instant oldestRetainedAt;
 
-    OperationRecordBuffer(UUID runId, int capacity) {
+    OperationRecordBuffer(UUID runId, int capacity, int flushThreshold) {
         this.runId = runId;
         this.capacity = capacity;
+        if (flushThreshold <= 0) {
+            throw new IllegalArgumentException("flushThreshold must be > 0");
+        }
+        if (flushThreshold > capacity) {
+            throw new IllegalArgumentException("flushThreshold must be <= capacity");
+        }
+        this.flushThreshold = flushThreshold;
         this.queue = new ArrayBlockingQueue<>(capacity);
     }
 
@@ -44,6 +52,10 @@ final class OperationRecordBuffer {
 
     int retainedCount() {
         return retainedCount.get();
+    }
+
+    int flushThreshold() {
+        return flushThreshold;
     }
 
     boolean isClosed() {
@@ -62,9 +74,7 @@ final class OperationRecordBuffer {
         flushScheduled.set(false);
     }
 
-    boolean append(StationLogRecord stationLogRecord,
-                   int batchSize,
-                   PersistenceRuntimeCounters counters) {
+    boolean append(StationLogRecord stationLogRecord, PersistenceRuntimeCounters counters) {
         assertHealthy();
         flushLock.lock();
         try {
@@ -81,15 +91,13 @@ final class OperationRecordBuffer {
             }
             retainedCount.incrementAndGet();
             markRetained();
-            return pendingCount.incrementAndGet() >= batchSize;
+            return pendingCount.incrementAndGet() >= flushThreshold;
         } finally {
             flushLock.unlock();
         }
     }
 
-    boolean appendAll(List<StationLogRecord> stationLogRecords,
-                      int batchSize,
-                      PersistenceRuntimeCounters counters) {
+    boolean appendAll(List<StationLogRecord> stationLogRecords, PersistenceRuntimeCounters counters) {
         if (stationLogRecords == null || stationLogRecords.isEmpty()) {
             return false;
         }
@@ -113,7 +121,7 @@ final class OperationRecordBuffer {
             }
             retainedCount.addAndGet(stationLogRecords.size());
             markRetained();
-            return pendingCount.addAndGet(stationLogRecords.size()) >= batchSize;
+            return pendingCount.addAndGet(stationLogRecords.size()) >= flushThreshold;
         } finally {
             flushLock.unlock();
         }
@@ -131,9 +139,9 @@ final class OperationRecordBuffer {
         flushLock.unlock();
     }
 
-    List<StationLogRecord> drainBatch(int batchSize) {
-        List<StationLogRecord> batch = new ArrayList<>(batchSize);
-        queue.drainTo(batch, batchSize);
+    List<StationLogRecord> drainBatch() {
+        List<StationLogRecord> batch = new ArrayList<>(flushThreshold);
+        queue.drainTo(batch, flushThreshold);
         if (!batch.isEmpty()) {
             pendingCount.addAndGet(-batch.size());
         }

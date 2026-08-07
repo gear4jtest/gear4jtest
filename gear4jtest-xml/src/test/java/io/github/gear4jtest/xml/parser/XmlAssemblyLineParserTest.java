@@ -40,6 +40,8 @@ class XmlAssemblyLineParserTest {
             assertThat(dependency.type()).isEqualTo("com.myorg.services.ModelsService");
         });
         assertThat(definition.configuration().eventHandling().eventOnParameterChanged()).isTrue();
+        assertThat(definition.configuration().persistence().storeResultObject()).isTrue();
+        assertThat(definition.configuration().persistence().stationLogFlushThreshold()).isEqualTo(17);
     }
 
     @Test

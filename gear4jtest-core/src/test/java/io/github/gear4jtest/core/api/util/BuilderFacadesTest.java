@@ -98,7 +98,7 @@ class BuilderFacadesTest {
                 .isStoreResultObject()).isFalse();
         assertThat(Persistence.persistenceConfiguration().storeResultObject(false).build()
                 .isStoreResultObject()).isFalse();
-        assertThat(Persistence.persistenceExtension(new NoOpRunManager()).terminalRecordBatchSize(1).build())
+        assertThat(Persistence.persistenceExtension(new NoOpRunManager()))
                 .isNotNull();
         assertThat(Events.eventConfiguration().build()).isNotNull();
         assertThat(Events.eventHandling().build()).isNotNull();

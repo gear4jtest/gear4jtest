@@ -66,6 +66,14 @@ batch size. It preserves every other value from
 after `.configuration(...)`. If necessary, the per-run pending-log limit is
 raised to remain greater than or equal to the batch size.
 
+Each run can use a smaller threshold through
+`PersistenceConfiguration.stationLogFlushThreshold(...)`. A `RunRequest`
+persistence override takes precedence over the assembly-line configuration.
+The threshold is retained in the run-local buffer and therefore applies
+consistently to asynchronous, periodic, final and shutdown drains. Values above
+the manager's bounded `maxPendingLogsPerRun` capacity are rejected before the run
+record is written.
+
 Auto-migration does not silently adopt a pre-existing Gear4J schema that has no
 `gear4j_schema_history` entry. For a verified compatible schema, adoption must
 be explicitly enabled with `.baselineOnMigrate(true)`; the migrator then checks
