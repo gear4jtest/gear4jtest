@@ -1,5 +1,6 @@
 dependencies {
     api project(':gear4jtest-core')
+    api project(':gear4jtest-external-api')
     api libs.micrometer
 
     testImplementation libs.mockito

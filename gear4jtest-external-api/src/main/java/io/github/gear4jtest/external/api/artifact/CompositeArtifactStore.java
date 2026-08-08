@@ -190,7 +190,7 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
                 TempArtifact temp = spoolToTempFile(in, verificationMaxArtifactSizeBytes);
                 try {
                     if (!temp.hashHex().equals(hash)) {
-                        throw new IOException("Corrupt artifact: " + hash);
+                        throw new ArtifactIntegrityException("Corrupt artifact: " + hash);
                     }
                     scheduleAsyncPrimaryHealing(hash, temp.path());
                 } finally {
@@ -199,7 +199,7 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
             } else {
                 String rehash = ArtifactHashes.sha256Hex(in, verificationMaxArtifactSizeBytes).hashHex();
                 if (!rehash.equals(hash)) {
-                    throw new IOException("Corrupt artifact: " + hash);
+                    throw new ArtifactIntegrityException("Corrupt artifact: " + hash);
                 }
             }
         }

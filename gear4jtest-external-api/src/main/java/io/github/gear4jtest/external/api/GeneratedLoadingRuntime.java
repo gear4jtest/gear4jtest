@@ -323,6 +323,14 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
         void recordInstantiationDuration(long durationNanos) {
             counters.recordInstantiationDuration(durationNanos);
         }
+
+        void recordPhaseStarted(GeneratedLoadingPhase phase) {
+            counters.recordPhaseStarted(phase);
+        }
+
+        void recordPhaseFinished(GeneratedLoadingPhase phase, long durationNanos, Throwable failure) {
+            counters.recordPhaseFinished(phase, durationNanos, failure);
+        }
     }
 
     private enum CompletionAttempt {

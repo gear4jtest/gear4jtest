@@ -9,13 +9,21 @@ import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.persistence.PersistenceRuntimeMonitor;
 import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
+import io.github.gear4jtest.external.api.AssemblyLineManager;
+import io.github.gear4jtest.external.api.artifact.ArtifactSpoolMonitor;
+import io.github.gear4jtest.external.api.artifact.ArtifactStoreMonitor;
+import io.github.gear4jtest.external.api.loader.InMemoryClassLoaderRegistry;
 import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfiguration;
 import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 import io.github.gear4jtest.jdbc.persistence.PersistenceJsonCodec;
+import io.github.gear4jtest.micrometer.ArtifactSpoolMetricsBinder;
+import io.github.gear4jtest.micrometer.ArtifactStoreMetricsBinder;
+import io.github.gear4jtest.micrometer.ClassLoaderMetricsBinder;
 import io.github.gear4jtest.micrometer.EventMetricsBinder;
 import io.github.gear4jtest.micrometer.Gear4jMeterTagPolicy;
 import io.github.gear4jtest.micrometer.Gear4jMicrometerExtension;
+import io.github.gear4jtest.micrometer.GeneratedLoadingMetricsBinder;
 import io.github.gear4jtest.micrometer.PersistenceMetricsBinder;
 import io.github.gear4jtest.spring.Gear4jAssemblyLineExecutorCustomizer;
 import io.github.gear4jtest.spring.Gear4jSpringConfiguration;
@@ -160,9 +168,65 @@ public class Gear4jAutoConfiguration {
         return new Gear4jPersistenceMetricsRegistrar();
     }
 
+    @Bean
+    @ConditionalOnClass(MeterRegistry.class)
+    @ConditionalOnBean(MeterRegistry.class)
+    @ConditionalOnSingleCandidate(AssemblyLineManager.class)
+    @ConditionalOnProperty(prefix = "gear4j.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
+    Gear4jGeneratedLoadingMetricsRegistrar gear4jGeneratedLoadingMetricsRegistrar(MeterRegistry meterRegistry,
+                                                                                  AssemblyLineManager manager) {
+        GeneratedLoadingMetricsBinder.bind(meterRegistry, manager);
+        return new Gear4jGeneratedLoadingMetricsRegistrar();
+    }
+
+    @Bean
+    @ConditionalOnClass(MeterRegistry.class)
+    @ConditionalOnBean(MeterRegistry.class)
+    @ConditionalOnSingleCandidate(InMemoryClassLoaderRegistry.class)
+    @ConditionalOnProperty(prefix = "gear4j.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
+    Gear4jClassLoaderMetricsRegistrar gear4jClassLoaderMetricsRegistrar(MeterRegistry meterRegistry,
+                                                                        InMemoryClassLoaderRegistry registry) {
+        ClassLoaderMetricsBinder.bind(meterRegistry, registry);
+        return new Gear4jClassLoaderMetricsRegistrar();
+    }
+
+    @Bean
+    @ConditionalOnClass(MeterRegistry.class)
+    @ConditionalOnBean(MeterRegistry.class)
+    @ConditionalOnSingleCandidate(ArtifactStoreMonitor.class)
+    @ConditionalOnProperty(prefix = "gear4j.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
+    Gear4jArtifactStoreMetricsRegistrar gear4jArtifactStoreMetricsRegistrar(MeterRegistry meterRegistry,
+                                                                            ArtifactStoreMonitor monitor) {
+        ArtifactStoreMetricsBinder.bind(meterRegistry, monitor);
+        return new Gear4jArtifactStoreMetricsRegistrar();
+    }
+
+    @Bean
+    @ConditionalOnClass(MeterRegistry.class)
+    @ConditionalOnBean(MeterRegistry.class)
+    @ConditionalOnSingleCandidate(ArtifactSpoolMonitor.class)
+    @ConditionalOnProperty(prefix = "gear4j.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
+    Gear4jArtifactSpoolMetricsRegistrar gear4jArtifactSpoolMetricsRegistrar(MeterRegistry meterRegistry,
+                                                                            ArtifactSpoolMonitor monitor) {
+        ArtifactSpoolMetricsBinder.bind(meterRegistry, monitor);
+        return new Gear4jArtifactSpoolMetricsRegistrar();
+    }
+
     static final class Gear4jPersistenceMetricsRegistrar {
     }
 
     static final class Gear4jEventMetricsRegistrar {
+    }
+
+    static final class Gear4jGeneratedLoadingMetricsRegistrar {
+    }
+
+    static final class Gear4jClassLoaderMetricsRegistrar {
+    }
+
+    static final class Gear4jArtifactStoreMetricsRegistrar {
+    }
+
+    static final class Gear4jArtifactSpoolMetricsRegistrar {
     }
 }

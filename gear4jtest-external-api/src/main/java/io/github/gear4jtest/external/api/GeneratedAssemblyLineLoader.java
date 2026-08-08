@@ -8,6 +8,7 @@ import java.util.Map;
 
 import io.github.gear4jtest.external.api.artifact.Artifact;
 import io.github.gear4jtest.external.api.artifact.ArtifactHashes;
+import io.github.gear4jtest.external.api.artifact.ArtifactIntegrityException;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompiler;
 import io.github.gear4jtest.external.api.loader.ClassLoaderRegistry;
@@ -89,53 +90,57 @@ final class GeneratedAssemblyLineLoader implements AutoCloseable {
                                                                 String internalLoaderId,
                                                                 GeneratedLoadingRuntime.LoadAttempt attempt)
             throws IOException {
-        long phaseStartedNanos = System.nanoTime();
-        byte[] bytes;
-        try {
-            bytes = readArtifact(alId, obj);
-        } finally {
-            attempt.recordArtifactReadDuration(System.nanoTime() - phaseStartedNanos);
-        }
+        byte[] bytes = observePhase(attempt, GeneratedLoadingPhase.ARTIFACT_READ,
+                                    () -> readArtifact(alId, obj));
         if (!attempt.continueLoading()) {
             return null;
         }
 
         String mediaType = AssemblyLineIdentifiers.normalizeMediaType(obj.mimeType());
-        OperationChainTranslator.GenerationResult translated;
-        phaseStartedNanos = System.nanoTime();
-        try {
-            translated = translate(alId, obj, bytes, mediaType);
-        } finally {
-            attempt.recordTranslationDuration(System.nanoTime() - phaseStartedNanos);
-        }
+        OperationChainTranslator.GenerationResult translated = observePhase(attempt,
+                                                                            GeneratedLoadingPhase.TRANSLATION,
+                                                                            () -> translate(alId, obj, bytes,
+                                                                                            mediaType));
         if (!attempt.continueLoading()) {
             return null;
         }
 
-        Map<String, byte[]> compilationResult;
-        phaseStartedNanos = System.nanoTime();
-        try {
-            compilationResult = compiler
-                    .compile(translated.className(), translated.formattedSource().getBytes(StandardCharsets.UTF_8));
-        } finally {
-            attempt.recordCompilationDuration(System.nanoTime() - phaseStartedNanos);
-        }
+        Map<String, byte[]> compilationResult = observePhase(attempt, GeneratedLoadingPhase.COMPILATION,
+                                                             () -> compiler.compile(translated.className(),
+                                                                                    translated.formattedSource()
+                                                                                            .getBytes(StandardCharsets.UTF_8)));
         if (!attempt.continueLoading()) {
             return null;
         }
 
-        phaseStartedNanos = System.nanoTime();
-        try {
+        LoadedGeneratedClass loadedClass = observePhase(attempt, GeneratedLoadingPhase.CLASS_LOADING, () -> {
             InMemoryClassLoader classLoader = new InMemoryClassLoader(generatedClassParent);
             classLoader.addCompiledClasses(compilationResult);
-            GeneratedAssemblyLine<?, ?> instance = instantiate(translated.className(), classLoader, obj.mode());
-            long bytecodeWeightBytes = classLoader.bytecodeWeightBytes();
-            return new GeneratedLoadingRuntime.LoadResult(instance,
-                    () -> classLoaderRegistry.register(internalLoaderId, classLoader, instance,
-                                                       bytecodeWeightBytes));
-        } finally {
-            attempt.recordInstantiationDuration(System.nanoTime() - phaseStartedNanos);
+            Class<?> generatedType = loadGeneratedType(translated.className(), classLoader);
+            return new LoadedGeneratedClass(classLoader, generatedType, classLoader.bytecodeWeightBytes());
+        });
+        if (!attempt.continueLoading()) {
+            return null;
         }
+
+        GeneratedAssemblyLine<?, ?> instance = observePhase(attempt, GeneratedLoadingPhase.CONSTRUCTION,
+                                                            () -> construct(translated.className(),
+                                                                            loadedClass.generatedType()));
+        if (!attempt.continueLoading()) {
+            return null;
+        }
+
+        observePhase(attempt, GeneratedLoadingPhase.INJECTION, () -> {
+            inject(translated.className(), instance, obj.mode());
+            return null;
+        });
+        if (!attempt.continueLoading()) {
+            return null;
+        }
+
+        return new GeneratedLoadingRuntime.LoadResult(instance,
+                () -> classLoaderRegistry.register(internalLoaderId, loadedClass.classLoader(), instance,
+                                                   loadedClass.bytecodeWeightBytes()));
     }
 
     private GeneratedAssemblyLine<?, ?> findCached(String internalLoaderId) {
@@ -167,8 +172,8 @@ final class GeneratedAssemblyLineLoader implements AutoCloseable {
         String description = "Assembly line artifact " + obj.contentHash();
         ArtifactHashes.requireSha256Match(obj.contentHash(), artifact.hashHex(), description + " metadata");
         if (artifact.size() != obj.sizeBytes()) {
-            throw new IOException(description + " metadata size mismatch: expected " + obj.sizeBytes()
-                    + " but found " + artifact.size());
+            throw new ArtifactIntegrityException(description + " metadata size mismatch: expected "
+                    + obj.sizeBytes() + " but found " + artifact.size());
         }
         AssemblyLineIdentifiers.requireAllowedArtifactSize(artifact.size(), maxArtifactSizeBytes,
                                                            description);
@@ -179,21 +184,60 @@ final class GeneratedAssemblyLineLoader implements AutoCloseable {
         }
     }
 
-    private GeneratedAssemblyLine<?, ?> instantiate(String className, ClassLoader classLoader, ExecutionMode mode)
-            throws IOException {
+    private static Class<?> loadGeneratedType(String className, ClassLoader classLoader) throws IOException {
         try {
-            Class<?> operationChainClass = classLoader.loadClass(className);
-            Object rawInstance = operationChainClass.getDeclaredConstructor().newInstance();
-            if (!(rawInstance instanceof GeneratedAssemblyLine<?, ?> generated)) {
+            Class<?> generatedType = classLoader.loadClass(className);
+            if (!GeneratedAssemblyLine.class.isAssignableFrom(generatedType)) {
                 throw new IOException("Generated class does not implement GeneratedAssemblyLine: " + className);
             }
-            dependencyInjector.injectDependencies(generated, mode);
-            return generated;
-        } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException
+            return generatedType;
+        } catch (ClassNotFoundException e) {
+            throw new IOException("Unable to load generated class: " + className, e);
+        }
+    }
+
+    private static GeneratedAssemblyLine<?, ?> construct(String className, Class<?> generatedType)
+            throws IOException {
+        try {
+            return (GeneratedAssemblyLine<?, ?>) generatedType.getDeclaredConstructor().newInstance();
+        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException
                 | InvocationTargetException e) {
             throw new IOException("Unable to instantiate generated class: " + className, e);
+        }
+    }
+
+    private void inject(String className, GeneratedAssemblyLine<?, ?> instance, ExecutionMode mode)
+            throws IOException {
+        try {
+            dependencyInjector.injectDependencies(instance, mode);
         } catch (DependencyInjector.InjectionException e) {
             throw new IOException("Unable to inject dependencies into generated class: " + className, e);
         }
     }
+
+    private static <T> T observePhase(GeneratedLoadingRuntime.LoadAttempt attempt,
+                                      GeneratedLoadingPhase phase,
+                                      LoadingPhaseOperation<T> operation)
+            throws IOException {
+        attempt.recordPhaseStarted(phase);
+        long startedNanos = System.nanoTime();
+        Throwable failure = null;
+        try {
+            return operation.execute();
+        } catch (IOException | RuntimeException | Error exception) {
+            failure = exception;
+            throw exception;
+        } finally {
+            attempt.recordPhaseFinished(phase, System.nanoTime() - startedNanos, failure);
+        }
+    }
+
+    @FunctionalInterface
+    private interface LoadingPhaseOperation<T> {
+        T execute() throws IOException;
+    }
+
+    private record LoadedGeneratedClass(InMemoryClassLoader classLoader,
+                                        Class<?> generatedType,
+                                        long bytecodeWeightBytes) {}
 }

@@ -2,11 +2,11 @@
 
 ## Status
 
-Partially implemented.
+Implemented for the critical operational surface.
 
 The `gear4jtest-micrometer` module is an optional integration. It provides
-lifecycle counters/timers plus low-level gauges for persistence and event runtime
-backlogs. It is still not a complete production observability module.
+lifecycle counters/timers plus low-level signals for persistence, event runtime,
+generated loading/compilation, classloader retention and artifact stores/spools.
 
 ## Current scope
 
@@ -35,12 +35,24 @@ queued events, remaining event-queue capacity, and submitted/completed/dropped/
 failed, pending and in-flight reactions. The stable consumer surface exposes
 the process-wide aggregate instead of the concrete per-run runtime lifecycle.
 
-`AssemblyLineManager.loadingStats()` now supplies bounded internal counters and
-phase durations for generated loading. They are intentionally not auto-bound by
-the current Micrometer module yet; applications may poll the finite snapshot,
-while a future binder must preserve the low-cardinality policy below.
+`GeneratedLoadingMetricsBinder` exposes the end-to-end deadline, executor
+saturation, compilation limits, cache results and every finite loading phase:
+`artifact_read`, `translation`, `compilation`, `class_loading`, `construction`
+and `injection`. Each phase has a functional timer, maximum-duration gauge and
+failure counter. SHA-256 or size/metadata mismatches increment the tag-free
+`gear4j.generated.loading.artifact.integrity.failures` counter.
 
-## Future production metric surface
+`ClassLoaderMetricsBinder` exposes occupancy, aliases, bytecode weight,
+evictions, rejections and protected-loader over-capacity state.
+`ArtifactStoreMetricsBinder` exposes operation outcomes, bytes and cumulative
+latency; `ArtifactSpoolMetricsBinder` exposes occupancy, quota rejections,
+stale cleanup and cleanup failures.
+
+Spring Boot auto-registers these binders only for a single candidate of each
+supported type. It never chooses an arbitrary manager or store when several are
+present.
+
+## Remaining optional metric surface
 
 A richer module should expose counters and timers for:
 
@@ -48,15 +60,14 @@ A richer module should expose counters and timers for:
 - station outcomes: succeeded, failed, skipped, stopped, cancelled;
 - timeout and cancellation counts;
 - persistence flush duration and latency distribution;
-- generated-source translation and compilation duration;
-- classloader cache hit/miss and alias invalidation counts;
-- artifact read/write size and failures;
 - parallel branch rejections and branch durations.
+- persistence flush latency distributions;
+- experimental-cache outcomes.
 
 ## Error categorization
 
-Metrics should not expose raw exception messages. A future error categorizer
-should normalize failures into stable low-cardinality values such as:
+Metrics do not expose raw exception messages or classes. Applications may
+normalize domain/runtime failures into stable low-cardinality values such as:
 
 ```text
 VALIDATION
@@ -87,6 +98,9 @@ for application-specific bounded dimensions.
 behavior for migration only. It is deprecated for removal because dynamically
 generated identifiers can exhaust a metrics backend.
 
+Infrastructure metrics do not consult that policy: their only tags are finite
+framework-owned values named `phase`, `outcome`, `result` and `operation`.
+
 ## Recommended MVP dashboards
 
 A first production dashboard should stay operational rather than business-level. Keep it low-cardinality and focus on
@@ -102,6 +116,12 @@ saturation, latency and drops:
 | Persistence backpressure | `gear4j.persistence.appends.rejected` | any sustained non-zero value |
 | Event queue pressure | `gear4j.events.queued`, `gear4j.events.queue.remaining.capacity`, `gear4j.events.dropped` | remaining capacity near zero or dropped events increasing |
 | Reaction pressure | `gear4j.reactions.pending`, `gear4j.reactions.in.flight`, `gear4j.reactions.dropped`, `gear4j.reactions.failed` | pending grows, dropped/failed increases |
+| Generated load saturation | `gear4j.generated.loading.executor.active`, `gear4j.generated.loading.executor.queued`, `gear4j.generated.loading.loads{outcome="rejected"}` | queue remains non-empty or rejections increase |
+| Generated load deadlines | `gear4j.generated.loading.loads{outcome="timeout"}`, `gear4j.generated.loading.phase.duration{phase}` | timeouts increase or one phase dominates average duration |
+| Artifact integrity | `gear4j.generated.loading.artifact.integrity.failures` | any increase requires investigation |
+| Compilation pressure | `gear4j.generated.compilation.executor.active`, `gear4j.generated.compilation.executor.queued`, `gear4j.generated.compilations{outcome}` | queue/rejections/timeouts increase |
+| Classloader pressure | `gear4j.generated.classloaders.cached`, `gear4j.generated.classloaders.bytecode.bytes`, `gear4j.generated.classloaders.evictions`, `gear4j.generated.classloaders.rejections` | capacity approached, churn or rejections increase |
+| Artifact spool | `gear4j.artifacts.spool.bytes`, `gear4j.artifacts.spool.capacity.bytes`, `gear4j.artifacts.spool.quota.rejections`, `gear4j.artifacts.spool.cleanup.failures` | sustained high occupancy or any rejection/failure increase |
 
 Do not add raw `pipeline.id`, `operation.id` or exception-message tags to a default dashboard. If an application needs
 those dimensions, expose them through an explicit `Gear4jMeterTagPolicy` and review the expected cardinality first.

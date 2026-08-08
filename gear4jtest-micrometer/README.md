@@ -7,15 +7,16 @@ metrics and when your application already exposes a Micrometer `MeterRegistry`.
 
 ## Status
 
-Initial observability module.
+Critical operational surface implemented.
 
-The module currently proves the integration point and exposes basic lifecycle and
-persistence gauges/counters. It should not yet be considered a complete
-production observability story.
+The module covers lifecycle, event/persistence pressure and the generated-code
+infrastructure involved in artifact reads, translation, compilation,
+classloading and injection. Advanced business metrics and application-specific
+SLOs remain the application's responsibility.
 
 ## Current metrics
 
-The initial metric surface focuses on low-cardinality runtime signals:
+The metric surface focuses on low-cardinality runtime signals:
 
 ```text
 gear4j.runs.started
@@ -49,6 +50,53 @@ gear4j.reactions.process.dropped
 gear4j.events.process.dispatcher.rejected
 gear4j.events.process.dispatch.latency.average.nanos
 gear4j.events.process.dispatch.latency.max.nanos
+
+gear4j.generated.loading.cache.requests{result}
+gear4j.generated.loading.loads{outcome}
+gear4j.generated.loading.duration
+gear4j.generated.loading.duration.max.nanos
+gear4j.generated.loading.phase.duration{phase}
+gear4j.generated.loading.phase.duration.max.nanos{phase}
+gear4j.generated.loading.phase.failures{phase}
+gear4j.generated.loading.artifact.integrity.failures
+gear4j.generated.loading.in.flight
+gear4j.generated.loading.executor.active
+gear4j.generated.loading.executor.queued
+gear4j.generated.loading.shutdown
+
+gear4j.generated.compilation.cache.requests{result}
+gear4j.generated.compilations{outcome}
+gear4j.generated.compilation.duration
+gear4j.generated.compilation.duration.max.nanos
+gear4j.generated.compilation.cache.entries
+gear4j.generated.compilation.cache.bytes
+gear4j.generated.compilation.in.flight
+gear4j.generated.compilation.executor.active
+gear4j.generated.compilation.executor.queued
+gear4j.generated.compilation.shutdown
+
+gear4j.generated.classloaders.cached
+gear4j.generated.classloaders.capacity
+gear4j.generated.classloaders.protected
+gear4j.generated.classloaders.protected.capacity
+gear4j.generated.classloaders.aliases
+gear4j.generated.classloaders.bytecode.bytes
+gear4j.generated.classloaders.bytecode.capacity.bytes
+gear4j.generated.classloaders.protected.over.capacity
+gear4j.generated.classloaders.evictions
+gear4j.generated.classloaders.rejections
+
+gear4j.artifacts.store.operations{operation,outcome}
+gear4j.artifacts.store.bytes{operation}
+gear4j.artifacts.store.operation.duration{operation}
+gear4j.artifacts.store.cleanup.failures
+gear4j.artifacts.spool.files
+gear4j.artifacts.spool.bytes
+gear4j.artifacts.spool.capacity.bytes
+gear4j.artifacts.spool.stale.files.deleted
+gear4j.artifacts.spool.stale.bytes.deleted
+gear4j.artifacts.spool.quota.rejections
+gear4j.artifacts.spool.cleanup.failures
 ```
 
 These metrics are useful to confirm that Gear4J is active, track completed run
@@ -61,19 +109,32 @@ intentionally conservative.
 `EventMetricsBinder.bindProcessWide(...)` once for the tag-free aggregate. Run-local binding remains internal because
 the concrete event-runtime lifecycle is not part of the stable consumer API.
 
+The starter also auto-binds `AssemblyLineManager`,
+`InMemoryClassLoaderRegistry`, `ArtifactStoreMonitor` and
+`ArtifactSpoolMonitor` when exactly one bean of the corresponding type exists.
+Multiple stores or managers are intentionally not guessed: bind them manually
+to separate registries or application-defined bounded dimensions.
+
+```java
+GeneratedLoadingMetricsBinder.bind(registry, assemblyLineManager);
+ClassLoaderMetricsBinder.bind(registry, classLoaderRegistry);
+ArtifactStoreMetricsBinder.bind(registry, artifactStoreMonitor);
+ArtifactSpoolMetricsBinder.bind(registry, artifactSpoolMonitor);
+```
+
 ## Why the current surface is conservative
 
 Metrics with tags such as `assemblyLineId`, `operationId`, `exceptionClass` or
 `stationId` can quickly create high-cardinality time series, especially if
 pipelines are generated dynamically by a BO.
 
-The first module therefore avoids exposing detailed tags by default. Richer
-metrics should be added with an explicit tag policy so applications can choose the
-right trade-off between diagnostic value and backend cost.
+Infrastructure binders never expose application identifiers. Their only tags
+are the closed sets `phase`, `outcome`, `result` and `operation`; no exception
+class, exception message, hash, pipeline ID or business content is emitted.
 
-## Future richer observability
+## Remaining application-specific observability
 
-A more complete Micrometer module should add:
+Possible later extensions include:
 
 ```text
 gear4j.pipeline.runs
@@ -86,13 +147,12 @@ gear4j.event.reactions
   tags: status=completed|failed|dropped
 
 gear4j.persistence.flush.duration
-gear4j.persistence.flush.failures
-gear4j.persistence.buffer.size
 gear4j.parallel.rejected.tasks
 gear4j.parallel.branch.duration
+gear4j.experimental.cache.operations
 ```
 
-The future design should also introduce an error categorization layer, for
+An application-level error categorizer may normalize runtime failures into
 example:
 
 ```text
@@ -105,9 +165,8 @@ LIFECYCLE_EXTENSION_FAILURE
 UNKNOWN
 ```
 
-Avoid exposing raw exception messages as metric tags. Exception class names may
-also be too high-cardinality depending on the application and should be
-configurable.
+These categories are not inferred by the infrastructure binders. Raw exception
+messages and class names remain forbidden as default tags.
 
 ## Tag policy
 

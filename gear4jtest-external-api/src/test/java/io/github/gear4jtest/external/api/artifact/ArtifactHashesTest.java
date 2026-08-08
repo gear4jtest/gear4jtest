@@ -1,6 +1,5 @@
 package io.github.gear4jtest.external.api.artifact;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
@@ -18,11 +17,11 @@ class ArtifactHashesTest {
                 .doesNotThrowAnyException();
         assertThatThrownBy(() -> ArtifactHashes.requireContentIdentity(content, hash, content.length + 1L,
                                                                        "artifact"))
-                .isInstanceOf(IOException.class)
+                .isInstanceOf(ArtifactIntegrityException.class)
                 .hasMessageContaining("size mismatch");
         assertThatThrownBy(() -> ArtifactHashes.requireContentIdentity(content, "0".repeat(64), content.length,
                                                                        "artifact"))
-                .isInstanceOf(IOException.class)
+                .isInstanceOf(ArtifactIntegrityException.class)
                 .hasMessageContaining("content hash mismatch");
     }
 
@@ -34,7 +33,7 @@ class ArtifactHashesTest {
                                                                "artifact metadata"))
                 .doesNotThrowAnyException();
         assertThatThrownBy(() -> ArtifactHashes.requireSha256Match(hash, "invalid", "artifact metadata"))
-                .isInstanceOf(IOException.class)
+                .isInstanceOf(ArtifactIntegrityException.class)
                 .hasMessageContaining("invalid SHA-256");
     }
 }

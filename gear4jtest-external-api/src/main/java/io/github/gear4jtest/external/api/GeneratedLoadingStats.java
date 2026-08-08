@@ -1,5 +1,9 @@
 package io.github.gear4jtest.external.api;
 
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Objects;
+
 /**
  * Point-in-time counters for generated assembly-line loading.
  *
@@ -23,6 +27,10 @@ package io.github.gear4jtest.external.api;
  * @param compilationDurationNanos   cumulative compiler-call duration
  * @param instantiationDurationNanos cumulative class loading, construction and
  *                                   injection duration
+ * @param artifactIntegrityFailures  artifact metadata, size or digest
+ *                                   mismatches observed while loading
+ * @param phaseStats                 finite per-phase attempts, failures and
+ *                                   durations
  * @param shutdown                   whether the loading runtime is closed
  */
 public record GeneratedLoadingStats(long cacheHits,
@@ -42,4 +50,50 @@ public record GeneratedLoadingStats(long cacheHits,
                                     long translationDurationNanos,
                                     long compilationDurationNanos,
                                     long instantiationDurationNanos,
-                                    boolean shutdown) {}
+                                    long artifactIntegrityFailures,
+                                    Map<GeneratedLoadingPhase, GeneratedLoadingPhaseStats> phaseStats,
+                                    boolean shutdown) {
+    /**
+     * Compatibility constructor for snapshots created before per-phase counters
+     * were exposed.
+     */
+    public GeneratedLoadingStats(long cacheHits,
+                                 long cacheMisses,
+                                 long singleFlightJoins,
+                                 long startedLoads,
+                                 long successfulLoads,
+                                 long failedLoads,
+                                 long timedOutLoads,
+                                 long rejectedLoads,
+                                 int inFlightLoads,
+                                 int activeLoads,
+                                 int queuedLoads,
+                                 long totalLoadDurationNanos,
+                                 long maxLoadDurationNanos,
+                                 long artifactReadDurationNanos,
+                                 long translationDurationNanos,
+                                 long compilationDurationNanos,
+                                 long instantiationDurationNanos,
+                                 boolean shutdown) {
+        this(cacheHits, cacheMisses, singleFlightJoins, startedLoads, successfulLoads, failedLoads,
+                timedOutLoads, rejectedLoads, inFlightLoads, activeLoads, queuedLoads,
+                totalLoadDurationNanos, maxLoadDurationNanos, artifactReadDurationNanos,
+                translationDurationNanos, compilationDurationNanos, instantiationDurationNanos,
+                0L, Map.of(), shutdown);
+    }
+
+    public GeneratedLoadingStats {
+        Objects.requireNonNull(phaseStats, "phaseStats must not be null");
+        EnumMap<GeneratedLoadingPhase, GeneratedLoadingPhaseStats> snapshot = new EnumMap<>(
+                GeneratedLoadingPhase.class);
+        for (GeneratedLoadingPhase phase : GeneratedLoadingPhase.values()) {
+            snapshot.put(phase, phaseStats.getOrDefault(phase, GeneratedLoadingPhaseStats.EMPTY));
+        }
+        phaseStats = Map.copyOf(snapshot);
+    }
+
+    /** Returns counters for one of the finite generated-loading phases. */
+    public GeneratedLoadingPhaseStats phase(GeneratedLoadingPhase phase) {
+        return phaseStats.get(Objects.requireNonNull(phase, "phase must not be null"));
+    }
+}

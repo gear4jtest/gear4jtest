@@ -36,8 +36,8 @@ public final class ArtifactHashes {
         Objects.requireNonNull(data, "data must not be null");
         Objects.requireNonNull(description, "description must not be null");
         if (data.length != expectedSize) {
-            throw new IOException(description + " size mismatch: expected " + expectedSize + " but found "
-                    + data.length);
+            throw new ArtifactIntegrityException(description + " size mismatch: expected " + expectedSize
+                    + " but found " + data.length);
         }
         requireSha256Match(expectedHash, sha256Hex(data), description);
     }
@@ -51,11 +51,11 @@ public final class ArtifactHashes {
             expected = requireSha256Hex(expectedHash);
             actual = requireSha256Hex(actualHash);
         } catch (IllegalArgumentException exception) {
-            throw new IOException(description + " contains an invalid SHA-256 value", exception);
+            throw new ArtifactIntegrityException(description + " contains an invalid SHA-256 value", exception);
         }
         if (!expected.equals(actual)) {
-            throw new IOException(description + " content hash mismatch: expected " + expected + " but found "
-                    + actual);
+            throw new ArtifactIntegrityException(description + " content hash mismatch: expected " + expected
+                    + " but found " + actual);
         }
     }
 

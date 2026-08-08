@@ -50,7 +50,9 @@ Typical flow:
 | `GeneratedCompilationConfiguration` | Compilation deadline, parallelism and bounded queue policy.                       |
 | `GeneratedCompilationStats`        | Cache, duration, timeout and saturation counters.                                 |
 | `GeneratedLoadingConfiguration`    | Complete-load deadline, parallelism and bounded queue policy.                      |
-| `GeneratedLoadingStats`            | Complete-load outcomes, phase durations, timeout and saturation counters.          |
+| `GeneratedLoadingStats`            | Complete-load outcomes, integrity, phase duration/failure, timeout and saturation counters. |
+| `GeneratedLoadingPhase`            | Finite artifact/translation/compilation/classloading/construction/injection phases. |
+| `GeneratedLoadingPhaseStats`       | Attempts, failures and cumulative/maximum duration for one loading phase.           |
 | `JavaxToolsGeneratedSourceCompiler` | Default compiler when the runtime provides the JDK `javax.tools.JavaCompiler`.    |
 | `JDTInMemoryCompiler`              | Fallback Eclipse JDT compiler for runtimes without `jdk.compiler`.                |
 | `ClassLoaderRegistry`              | Tracks generated classloaders and aliases.                                        |
@@ -180,8 +182,9 @@ arbitrary code: an artifact store, translator, constructor or injector that
 ignores interruption may keep one daemon worker occupied until it returns.
 Definitions that are genuinely hostile must be isolated in another process or
 container. `AssemblyLineManager.loadingStats()` exposes complete-load outcomes,
-single-flight joins, saturation and cumulative duration for the artifact,
-translation, compilation and instantiation/injection phases.
+single-flight joins, saturation, artifact-integrity failures and finite
+per-phase attempts/failures/durations for artifact reads, translation,
+compilation, class loading, construction and injection.
 
 `AssemblyLineManager` owns both loading and compilation workers and implements
 `AutoCloseable`. Long-lived applications must close it during shutdown; tests and

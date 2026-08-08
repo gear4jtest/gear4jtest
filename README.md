@@ -31,7 +31,7 @@ Gear4J aims to provide:
 | `gear4jtest-jackson`         | Optional Jackson-backed `PayloadCloner` implementation.                                                                                                        |
 | `gear4jtest-jdbc`            | Optional JDBC execution persistence, database dialects and schema migrations.                                                                                   |
 | `gear4jtest-spring`          | Lightweight Spring integration for resource lookup, engine creation and extension discovery.                                                                   |
-| `gear4jtest-micrometer`      | Optional Micrometer lifecycle metrics for runs, stations and JDBC persistence.                                                                                 |
+| `gear4jtest-micrometer`      | Optional bounded-cardinality metrics for lifecycle, generated loading, classloaders, artifacts, events and JDBC persistence.                                   |
 | `gear4jtest-spring-boot-starter` | Spring Boot auto-configuration with validated `gear4j.*` properties, optional JDBC persistence and Micrometer wiring.                                    |
 
 ## Core concepts

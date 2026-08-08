@@ -200,8 +200,8 @@ public final class FilesystemArtifactStore implements ArtifactStore, ArtifactSto
             while (total < content.length) {
                 int read = input.read(content, total, content.length - total);
                 if (read == -1) {
-                    throw new IOException("Filesystem artifact size changed during verification. hash=" + expectedHash
-                            + ", expectedSizeBytes=" + content.length + ", actualSizeBytes=" + total);
+                    throw new ArtifactIntegrityException("Filesystem artifact size changed during verification. hash="
+                            + expectedHash + ", expectedSizeBytes=" + content.length + ", actualSizeBytes=" + total);
                 }
                 if (read > 0) {
                     digest.update(content, total, read);
@@ -209,13 +209,14 @@ public final class FilesystemArtifactStore implements ArtifactStore, ArtifactSto
                 }
             }
             if (input.read() != -1) {
-                throw new IOException("Filesystem artifact grew beyond the configured read limit during verification. "
-                        + "hash=" + expectedHash + ", maxArtifactSizeBytes=" + maxArtifactSizeBytes);
+                throw new ArtifactIntegrityException("Filesystem artifact grew during verification. hash="
+                        + expectedHash + ", maxArtifactSizeBytes=" + maxArtifactSizeBytes);
             }
         }
         String actualHash = HexFormat.of().formatHex(digest.digest());
         if (!expectedHash.equals(actualHash)) {
-            throw new IOException("Filesystem artifact integrity check failed for hash " + expectedHash);
+            throw new ArtifactIntegrityException("Filesystem artifact integrity check failed for hash "
+                    + expectedHash);
         }
         return content;
     }
@@ -273,7 +274,8 @@ public final class FilesystemArtifactStore implements ArtifactStore, ArtifactSto
         }
         String actualHash = HexFormat.of().formatHex(digest.digest());
         if (!expectedHash.equals(actualHash)) {
-            throw new IOException("Filesystem artifact integrity check failed for hash " + expectedHash);
+            throw new ArtifactIntegrityException("Filesystem artifact integrity check failed for hash "
+                    + expectedHash);
         }
     }
 

@@ -30,7 +30,7 @@ Potential future work:
 - Review side-compute execution isolation if side-compute becomes high-volume or latency-critical. The current model waits synchronously from the station thread for work completed by the async event/reaction infrastructure.
 - Avoid a single bottleneck thread for all pipelines if that becomes a real limit.
 - Consider local durable append before remote DB flush for stronger crash behavior.
-- Enrich the Micrometer module with durations, failures, cancellations, event stats and an explicit tag policy. See [Micrometer observability](../architecture/micrometer-observability.md).
+- Add parallel-branch and persistence-flush latency distributions only after defining stable lifecycle hooks that do not couple Micrometer to core. See [Micrometer observability](../architecture/micrometer-observability.md).
 - Consider a dedicated Gear4J `DataSource` / connection pool for persistence isolation. See [dedicated persistence datasource](dedicated-persistence-datasource.md).
 
 ## Eventing

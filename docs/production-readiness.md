@@ -128,12 +128,13 @@ normal compilation budget so valid work retains time for instantiation and
 injection.
 
 Alert on increasing `GeneratedLoadingStats.timedOutLoads()` or
-`rejectedLoads()`, a persistently full queue, and active work that remains after
-a timeout. Phase-duration counters identify whether artifact access,
-translation, compilation or instantiation/injection consumed the budget. A
-timeout wakes all callers sharing the same concrete loader ID and permits a
-later retry; a late result is not registered. Interruption remains cooperative,
-so untrusted or hostile custom code requires process/container isolation.
+`rejectedLoads()`, any `artifactIntegrityFailures()`, a persistently full queue,
+and active work that remains after a timeout. Per-phase counters identify
+whether artifact access, translation, compilation, class loading, construction
+or injection consumed the budget or failed. A timeout wakes all callers sharing
+the same concrete loader ID and permits a later retry; a late result is not
+registered. Interruption remains cooperative, so untrusted or hostile custom
+code requires process/container isolation.
 
 ## Artifacts
 
@@ -209,6 +210,12 @@ transactionally atomic.
 low-cardinality in production; avoid unbounded operation or branch identifiers as
 metric labels for dynamically generated pipelines.
 
+Alert on any artifact-integrity failure, sustained generated-loading or
+compilation queues, executor rejections/timeouts, classloader registration
+rejections and artifact-spool quota/cleanup failures. A single transient queue
+sample is not necessarily an incident; cumulative rejection, timeout and
+integrity counters should never be silently increasing.
+
 When Spring Boot Actuator is present and JDBC persistence is enabled, put
 `gear4jPersistenceLiveness` in the liveness group and
 `gear4jPersistenceReadiness` in the readiness group. Liveness is process-local;
@@ -223,6 +230,12 @@ The default lifecycle metrics omit pipeline, operation and branch identifiers.
 If those dimensions are needed, use a reviewed finite allowlist; unknown values
 are aggregated under `other`. Event and reaction drop metrics remain aggregate
 and tagless.
+
+Generated infrastructure metrics use only finite framework-owned `phase`,
+`outcome`, `result` and `operation` values. They never include hashes, pipeline
+IDs, exception messages or business data. The Spring Boot starter auto-binds
+only a unique candidate; bind multiple managers or stores explicitly instead of
+adding a raw bean name as a tag.
 
 For the in-memory event runtime, monitor queued events, remaining queue capacity,
 dropped events, dropped reactions, pending reactions and in-flight reactions.

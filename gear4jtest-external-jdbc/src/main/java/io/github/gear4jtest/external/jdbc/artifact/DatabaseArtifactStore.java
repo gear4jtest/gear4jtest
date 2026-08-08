@@ -20,6 +20,7 @@ import javax.sql.DataSource;
 
 import io.github.gear4jtest.external.api.artifact.Artifact;
 import io.github.gear4jtest.external.api.artifact.ArtifactHashes;
+import io.github.gear4jtest.external.api.artifact.ArtifactIntegrityException;
 import io.github.gear4jtest.external.api.artifact.ArtifactSpoolMonitor;
 import io.github.gear4jtest.external.api.artifact.ArtifactSpoolPolicy;
 import io.github.gear4jtest.external.api.artifact.ArtifactSpoolStats;
@@ -351,12 +352,12 @@ public final class DatabaseArtifactStore implements ArtifactStore, ArtifactStore
             long actualSize = resultSet.getLong(1);
             requireStoredSize(hash, actualSize);
             if (actualSize != expectedSize) {
-                throw new IOException("Database artifact size changed before stream open for " + hash + ": expected "
-                        + expectedSize + " but found " + actualSize);
+                throw new ArtifactIntegrityException("Database artifact size changed before stream open for " + hash
+                        + ": expected " + expectedSize + " but found " + actualSize);
             }
             content = resultSet.getBinaryStream(2);
             if (content == null) {
-                throw new IOException("Database artifact content is null for " + hash);
+                throw new ArtifactIntegrityException("Database artifact content is null for " + hash);
             }
             metrics.recordReadOpened();
             return new JdbcArtifactInputStream(content, resultSet, statement, connection, hash, expectedSize,
@@ -392,7 +393,8 @@ public final class DatabaseArtifactStore implements ArtifactStore, ArtifactStore
 
     private void requireStoredSize(String hash, long size) throws IOException {
         if (size < 0) {
-            throw new IOException("Database artifact has a negative declared size. hash=" + hash + ", size=" + size);
+            throw new ArtifactIntegrityException("Database artifact has a negative declared size. hash=" + hash
+                    + ", size=" + size);
         }
         try {
             requireAllowedSize(size, maxArtifactSizeBytes);

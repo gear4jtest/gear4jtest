@@ -11,6 +11,8 @@ import java.sql.ResultSet;
 import java.util.HexFormat;
 import java.util.Objects;
 
+import io.github.gear4jtest.external.api.artifact.ArtifactIntegrityException;
+
 final class JdbcArtifactInputStream extends FilterInputStream {
     private final ResultSet resultSet;
     private final PreparedStatement statement;
@@ -111,8 +113,8 @@ final class JdbcArtifactInputStream extends FilterInputStream {
             throw new IOException("Database artifact stream size overflow for " + hash, exception);
         }
         if (nextCount > expectedSize || maxSize >= 0 && nextCount > maxSize) {
-            throw new IOException("Database artifact content exceeds declared or configured size. hash=" + hash
-                    + ", declaredSize=" + expectedSize + ", maxBytes=" + maxSize);
+            throw new ArtifactIntegrityException("Database artifact content exceeds declared or configured size. hash="
+                    + hash + ", declaredSize=" + expectedSize + ", maxBytes=" + maxSize);
         }
         bytesRead = nextCount;
     }
@@ -122,13 +124,13 @@ final class JdbcArtifactInputStream extends FilterInputStream {
             return;
         }
         if (bytesRead != expectedSize) {
-            throw new IOException("Database artifact content is shorter than its declared size. hash=" + hash
-                    + ", declaredSize=" + expectedSize + ", actualSize=" + bytesRead);
+            throw new ArtifactIntegrityException("Database artifact content is shorter than its declared size. hash="
+                    + hash + ", declaredSize=" + expectedSize + ", actualSize=" + bytesRead);
         }
         String actualHash = HexFormat.of().formatHex(digest.digest());
         if (!hash.equals(actualHash)) {
-            throw new IOException("Database artifact content hash mismatch. hash=" + hash + ", actualHash="
-                    + actualHash);
+            throw new ArtifactIntegrityException("Database artifact content hash mismatch. hash=" + hash
+                    + ", actualHash=" + actualHash);
         }
         endOfStream = true;
     }

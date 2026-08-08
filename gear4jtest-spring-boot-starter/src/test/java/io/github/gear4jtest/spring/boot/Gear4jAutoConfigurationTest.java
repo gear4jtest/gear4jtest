@@ -20,6 +20,10 @@ import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.security.RedactionTarget;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
+import io.github.gear4jtest.external.api.AssemblyLineManager;
+import io.github.gear4jtest.external.api.artifact.ArtifactSpoolMonitor;
+import io.github.gear4jtest.external.api.artifact.ArtifactStoreMonitor;
+import io.github.gear4jtest.external.api.loader.InMemoryClassLoaderRegistry;
 import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 import io.github.gear4jtest.jdbc.persistence.PersistenceJsonCodec;
@@ -115,6 +119,34 @@ class Gear4jAutoConfigurationTest {
                     assertThat(context).hasSingleBean(Gear4jAutoConfiguration.Gear4jEventMetricsRegistrar.class);
                     assertThat(context.getBean(SimpleMeterRegistry.class)
                             .find("gear4j.events.process.active.runtimes").gauge()).isNotNull();
+                });
+    }
+
+    @Test
+    void should_autoBindCriticalInfrastructureMetricsWhenSingleCandidatesAreAvailable() {
+        // Given
+        AssemblyLineManager manager = mock(AssemblyLineManager.class);
+        InMemoryClassLoaderRegistry classLoaders = InMemoryClassLoaderRegistry.builder().build();
+        ArtifactStoreMonitor artifactStore = mock(ArtifactStoreMonitor.class);
+        ArtifactSpoolMonitor artifactSpool = mock(ArtifactSpoolMonitor.class);
+
+        // When / Then
+        contextRunner.withBean(SimpleMeterRegistry.class)
+                .withBean(AssemblyLineManager.class, () -> manager)
+                .withBean(InMemoryClassLoaderRegistry.class, () -> classLoaders)
+                .withBean(ArtifactStoreMonitor.class, () -> artifactStore)
+                .withBean(ArtifactSpoolMonitor.class, () -> artifactSpool)
+                .run(context -> {
+                    assertThat(context)
+                            .hasSingleBean(Gear4jAutoConfiguration.Gear4jGeneratedLoadingMetricsRegistrar.class)
+                            .hasSingleBean(Gear4jAutoConfiguration.Gear4jClassLoaderMetricsRegistrar.class)
+                            .hasSingleBean(Gear4jAutoConfiguration.Gear4jArtifactStoreMetricsRegistrar.class)
+                            .hasSingleBean(Gear4jAutoConfiguration.Gear4jArtifactSpoolMetricsRegistrar.class);
+                    SimpleMeterRegistry registry = context.getBean(SimpleMeterRegistry.class);
+                    assertThat(registry.find("gear4j.generated.loading.loads").meter()).isNotNull();
+                    assertThat(registry.find("gear4j.generated.classloaders.cached").gauge()).isNotNull();
+                    assertThat(registry.find("gear4j.artifacts.store.operations").meter()).isNotNull();
+                    assertThat(registry.find("gear4j.artifacts.spool.bytes").gauge()).isNotNull();
                 });
     }
 

@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.gear4jtest.external.api.artifact.Artifact;
 import io.github.gear4jtest.external.api.artifact.ArtifactHashes;
+import io.github.gear4jtest.external.api.artifact.ArtifactIntegrityException;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.artifact.InMemoryArtifactStore;
 import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompiler;
@@ -108,6 +109,12 @@ class GeneratedAssemblyLineLoaderTest {
                 assertThat(result.get(5, TimeUnit.SECONDS)).isSameAs(expected);
             }
             assertThat(compilationCount).hasValue(1);
+            assertThat(fixture.loader().snapshotStats().phaseStats())
+                    .allSatisfy((phase, stats) -> {
+                        assertThat(stats.attempts()).as(phase.name()).isEqualTo(1L);
+                        assertThat(stats.failures()).as(phase.name()).isZero();
+                        assertThat(stats.totalDurationNanos()).as(phase.name()).isNotNegative();
+                    });
         } finally {
             releaseCompiler.countDown();
             callers.shutdownNow();
@@ -167,10 +174,13 @@ class GeneratedAssemblyLineLoaderTest {
         try {
             // When / Then
             assertThatThrownBy(() -> loader.loadOrCompile("line", object))
-                    .isInstanceOf(IOException.class)
+                    .isInstanceOf(ArtifactIntegrityException.class)
                     .hasMessageContaining("content hash mismatch")
                     .hasMessageContaining(expectedHash);
             verifyNoInteractions(translatorResolver, compiler);
+            assertThat(loader.snapshotStats().artifactIntegrityFailures()).isEqualTo(1L);
+            assertThat(loader.snapshotStats().phase(GeneratedLoadingPhase.ARTIFACT_READ).failures()).isEqualTo(1L);
+            assertThat(loader.snapshotStats().phase(GeneratedLoadingPhase.TRANSLATION).attempts()).isZero();
         } finally {
             loader.close();
         }

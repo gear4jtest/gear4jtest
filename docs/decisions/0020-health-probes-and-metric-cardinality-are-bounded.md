@@ -32,6 +32,12 @@ historic raw-ID policy is deprecated for removal.
 
 Event and reaction drops remain aggregate tagless metrics.
 
+Generated loading, compilation, classloader and artifact binders use only
+framework-owned finite dimensions: `phase`, `outcome`, `result` and `operation`.
+They do not emit manager/store bean names, hashes, pipeline IDs, exception
+classes/messages or business content. Spring auto-binding requires a unique
+candidate instead of guessing among several infrastructure instances.
+
 ## Consequences
 
 Database outages remove an instance from readiness without causing a liveness
