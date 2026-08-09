@@ -1,4 +1,4 @@
-# ADR 0031: The 1.0 release build is reproducible while advanced dependency verification is deferred
+# ADR 0035: The 1.0 release build is reproducible while advanced dependency verification is deferred
 
 ## Status
 

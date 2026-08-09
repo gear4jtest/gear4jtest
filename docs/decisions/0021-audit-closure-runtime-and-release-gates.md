@@ -23,7 +23,7 @@ build did not prove that staged artifacts or the Gradle plugin were consumable o
   autonomous `config/consumer-smoke` project with Gear4J coordinates exclusively resolved from that repository and third-party dependencies from Maven Central.
 - JReleaser applies Maven Central validation and signing to non-snapshot releases. Secrets remain external to source.
 - Phase 12 supersedes the earlier MVP exception: CI and release now require dependency locks, SHA-256 verification
-  metadata. This supply-chain portion was later superseded by ADR 0031 and deferred for the 1.0 line.
+  metadata. This supply-chain portion was later superseded by ADR 0035 and deferred for the 1.0 line.
 
 ## Consequences
 

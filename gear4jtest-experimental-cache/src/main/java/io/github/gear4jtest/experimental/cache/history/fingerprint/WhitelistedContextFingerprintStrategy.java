@@ -3,6 +3,7 @@ package io.github.gear4jtest.experimental.cache.history.fingerprint;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 
@@ -11,8 +12,8 @@ public final class WhitelistedContextFingerprintStrategy implements ContextFinge
     private final FingerprintStrategy<Object> delegate;
 
     public WhitelistedContextFingerprintStrategy(List<String> keys, FingerprintStrategy<Object> delegate) {
-        this.keys = keys;
-        this.delegate = delegate;
+        this.keys = List.copyOf(Objects.requireNonNull(keys, "keys"));
+        this.delegate = Objects.requireNonNull(delegate, "delegate");
     }
 
     @Override

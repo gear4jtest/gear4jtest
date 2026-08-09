@@ -1,6 +1,9 @@
 package io.github.gear4jtest.core.api.assemblyline;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
@@ -78,6 +81,48 @@ class AssemblyLineCallStackTest {
                 assertThat(stack.snapshot()).containsExactly(branch, root);
             }
         }
+    }
+
+    @Test
+    void restoreSnapshot_shouldNotRetainThreadLocalStateOnReusedWorker() throws Exception {
+        // Given
+        AssemblyLineCallStack stack = AssemblyLineCallStack.create();
+        List<AssemblyLineReference> snapshot = List.of(reference("root"));
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        assertThat(stack.hasCurrentThreadState()).isFalse();
+
+        try {
+            // When / Then
+            executor.submit(() -> {
+                for (int run = 0; run < 10_000; run++) {
+                    assertThat(stack.hasCurrentThreadState()).isFalse();
+                    try (AssemblyLineCallStack.Scope ignored = stack.restoreSnapshot(snapshot)) {
+                        assertThat(stack.hasCurrentThreadState()).isTrue();
+                        assertThat(stack.snapshot()).containsExactlyElementsOf(snapshot);
+                    }
+                    assertThat(stack.hasCurrentThreadState()).isFalse();
+                }
+            }).get(10, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+        }
+    }
+
+    @Test
+    void restoreSnapshot_shouldPreserveExplicitEmptyStateAcrossNestedScopes() {
+        // Given
+        AssemblyLineCallStack stack = AssemblyLineCallStack.create();
+
+        // When / Then
+        try (AssemblyLineCallStack.Scope ignoredOuter = stack.restoreSnapshot(List.of())) {
+            assertThat(stack.hasCurrentThreadState()).isTrue();
+            try (AssemblyLineCallStack.Scope ignoredInner = stack.restoreSnapshot(List.of())) {
+                assertThat(stack.hasCurrentThreadState()).isTrue();
+            }
+            assertThat(stack.hasCurrentThreadState()).isTrue();
+        }
+        assertThat(stack.hasCurrentThreadState()).isFalse();
     }
 
     @Test

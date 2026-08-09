@@ -17,7 +17,7 @@ import java.util.Objects;
  */
 public final class AssemblyLineCallStack {
     public static final int DEFAULT_MAX_DEPTH = 32;
-    private final ThreadLocal<Deque<AssemblyLineReference>> stack = ThreadLocal.withInitial(ArrayDeque::new);
+    private final ThreadLocal<Deque<AssemblyLineReference>> stack = new ThreadLocal<>();
     private final int maxDepth;
 
     public static AssemblyLineCallStack create() {
@@ -32,13 +32,15 @@ public final class AssemblyLineCallStack {
     }
 
     private AssemblyLineCallStack(Deque<AssemblyLineReference> initialStack, int maxDepth) {
-        this.stack.set(new ArrayDeque<>(initialStack));
+        if (!initialStack.isEmpty()) {
+            this.stack.set(new ArrayDeque<>(initialStack));
+        }
         this.maxDepth = maxDepth;
     }
 
     public Scope enter(AssemblyLineReference reference) {
         Objects.requireNonNull(reference, "reference must not be null");
-        Deque<AssemblyLineReference> currentStack = stack.get();
+        Deque<AssemblyLineReference> currentStack = currentStack();
         if (currentStack.contains(reference)) {
             throw new IllegalStateException(
                     "AssemblyLine call cycle detected: " + describeCycle(currentStack, reference));
@@ -54,15 +56,17 @@ public final class AssemblyLineCallStack {
         Objects.requireNonNull(snapshot, "snapshot must not be null");
         Deque<AssemblyLineReference> previous = stack.get();
         stack.set(new ArrayDeque<>(snapshot));
-        return new Scope(this, previous);
+        return new Scope(this, previous, true);
     }
 
     public List<AssemblyLineReference> snapshot() {
-        return List.copyOf(stack.get());
+        Deque<AssemblyLineReference> currentStack = stack.get();
+        return currentStack == null ? List.of() : List.copyOf(currentStack);
     }
 
     public AssemblyLineCallStack copy() {
-        return new AssemblyLineCallStack(stack.get(), maxDepth);
+        Deque<AssemblyLineReference> currentStack = stack.get();
+        return new AssemblyLineCallStack(currentStack == null ? new ArrayDeque<>() : currentStack, maxDepth);
     }
 
     public int maxDepth() {
@@ -83,7 +87,24 @@ public final class AssemblyLineCallStack {
     }
 
     private void restore(Deque<AssemblyLineReference> previous) {
-        stack.set(previous);
+        if (previous == null) {
+            stack.remove();
+        } else {
+            stack.set(previous);
+        }
+    }
+
+    boolean hasCurrentThreadState() {
+        return stack.get() != null;
+    }
+
+    private Deque<AssemblyLineReference> currentStack() {
+        Deque<AssemblyLineReference> currentStack = stack.get();
+        if (currentStack == null) {
+            currentStack = new ArrayDeque<>();
+            stack.set(currentStack);
+        }
+        return currentStack;
     }
 
     private static String describeCycle(Deque<AssemblyLineReference> stack, AssemblyLineReference reference) {
@@ -97,24 +118,27 @@ public final class AssemblyLineCallStack {
         private final AssemblyLineCallStack owner;
         private final AssemblyLineReference reference;
         private final Deque<AssemblyLineReference> previous;
+        private final boolean restoreSnapshot;
         private boolean closed;
 
         private Scope(AssemblyLineCallStack owner, AssemblyLineReference reference) {
             this.owner = owner;
             this.reference = reference;
             this.previous = null;
+            this.restoreSnapshot = false;
         }
 
-        private Scope(AssemblyLineCallStack owner, Deque<AssemblyLineReference> previous) {
+        private Scope(AssemblyLineCallStack owner, Deque<AssemblyLineReference> previous, boolean restoreSnapshot) {
             this.owner = owner;
             this.reference = null;
             this.previous = previous;
+            this.restoreSnapshot = restoreSnapshot;
         }
 
         @Override
         public void close() {
             if (!closed) {
-                if (previous != null) {
+                if (restoreSnapshot) {
                     owner.restore(previous);
                 } else {
                     owner.leave(reference);

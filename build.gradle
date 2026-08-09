@@ -176,6 +176,42 @@ tasks.named('check') {
     dependsOn tasks.named('verifyDocumentationLinks')
 }
 
+def decisionFiles = fileTree(layout.projectDirectory.dir('docs/decisions')) {
+    include '*.md'
+}
+
+tasks.register('verifyDecisionIdentifiers') {
+    group = 'verification'
+    description = 'Checks that ADR filenames use unique four-digit identifiers.'
+    inputs.files(decisionFiles)
+
+    doLast {
+        def invalidNames = []
+        def filesByIdentifier = [:].withDefault { [] }
+        decisionFiles.files.findAll { it.isFile() }.sort().each { decisionFile ->
+            def matcher = decisionFile.name =~ /^(\d{4})-.+\.md$/
+            if (!matcher.matches()) {
+                invalidNames << decisionFile.name
+            } else {
+                filesByIdentifier[matcher.group(1)] << decisionFile.name
+            }
+        }
+
+        def duplicateIdentifiers = filesByIdentifier.findAll { identifier, files -> files.size() > 1 }
+        def failures = invalidNames.sort().collect { "invalid filename: ${it}" }
+        duplicateIdentifiers.keySet().sort().each { identifier ->
+            failures << "duplicate ADR ${identifier}: ${filesByIdentifier[identifier].sort().join(', ')}"
+        }
+        if (!failures.isEmpty()) {
+            throw new GradleException('Invalid ADR identifiers:\n - ' + failures.join('\n - '))
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyDecisionIdentifiers')
+}
+
 def workflowFiles = fileTree(layout.projectDirectory.dir('.github/workflows')) {
     include '*.yml', '*.yaml'
 }
@@ -625,7 +661,7 @@ tasks.register('releaseMetadataCheck') {
     group = 'verification'
     description = 'Validates release assets, documentation links and the JReleaser configuration.'
     dependsOn tasks.named('verifyReleaseAssets'), tasks.named('verifyDocumentationLinks'),
-        tasks.named('jreleaserConfig')
+        tasks.named('verifyDecisionIdentifiers'), tasks.named('jreleaserConfig')
 }
 
 tasks.register('verifyDependencyCheckSuppressions') {
