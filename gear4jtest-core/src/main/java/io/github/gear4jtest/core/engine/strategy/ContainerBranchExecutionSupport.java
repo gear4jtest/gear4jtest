@@ -130,6 +130,19 @@ final class ContainerBranchExecutionSupport {
                                  StationCancellationReason.COOPERATIVE_CANCELLATION, cause);
     }
 
+    static StationLogTrace cancelledBeforeSubmissionLog(ContainerBaseStation.Branch<?> branch,
+                                                        Object input,
+                                                        StationExecutionContext context) {
+        Exception cause = context.getGlobalContext().getCancellationToken().cancellationCause().orElseThrow();
+        StationLogTrace log = newSyntheticChildLog(branch, context);
+        log.markCancelled(cause);
+        log.setOutput(null);
+        log.mutableContext().put("synthetic.reason", StationCancellationReason.CANCELLED_BEFORE_SUBMISSION.name());
+        return EngineStationContexts.support(context).getSyntheticStationLifecycleRecorder()
+                .recordCancelled(context, branch.getStation(), log, input,
+                                 StationCancellationReason.CANCELLED_BEFORE_SUBMISSION, cause);
+    }
+
     static StationLogTrace siblingInterruptedCancellationLog(ContainerBaseStation.Branch<?> branch,
                                                              Object input,
                                                              StationExecutionContext context,
@@ -188,23 +201,6 @@ final class ContainerBranchExecutionSupport {
             childLog.setBranchId(branch.getId());
         }
         return childLog;
-    }
-
-    static List<StationLogTrace> asOrderedList(List<? extends ContainerBaseStation.Branch<?>> branches,
-                                               StationLogTrace[] orderedResults,
-                                               Object input,
-                                               StationExecutionContext context) {
-        List<StationLogTrace> results = new ArrayList<>(orderedResults.length);
-        for (int index = 0; index < orderedResults.length; index++) {
-            StationLogTrace log = orderedResults[index];
-            if (log == null) {
-                log = unexpectedFailureLog(branches.get(index), input, context,
-                                           new IllegalStateException(
-                                                   "Missing container branch result at index " + index));
-            }
-            results.add(log);
-        }
-        return results;
     }
 
     static Object assembleReturnValue(ContainerBaseStation<?, ?> station, List<StationLogTrace> executions) {

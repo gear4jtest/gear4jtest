@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.gear4jtest.core.api.context.CancellationToken;
@@ -56,6 +57,32 @@ class ParallelContainerBranchExecutorTest {
         assertThat(branchLog.getBranchId()).isEqualTo("rejected");
         assertThat(branchLog.getParentOperationId()).isEqualTo(context.stationLogTrace().getId());
         assertThat(aggregation.interruptingChild()).isSameAs(branchLog);
+    }
+
+    @Test
+    void execute_shouldInterruptBranchesNotSubmittedAfterRejectedSubmission() {
+        // Given
+        ExecutorService rejectedExecutor = Executors.newSingleThreadExecutor();
+        rejectedExecutor.shutdown();
+        ContainerBaseStation<String, Void> station = new ContainerBaseStation.Builder<String, Void>(rejectedExecutor)
+                .id("container")
+                .withBranch("rejected", new TestStation("rejected"))
+                .withBranch("never-submitted-a", new TestStation("never-submitted-a"))
+                .withBranch("never-submitted-b", new TestStation("never-submitted-b"))
+                .build();
+        TestStationExecutionContext context = stationContext("container");
+
+        // When
+        ContainerExecutionAggregation aggregation = new ParallelContainerBranchExecutor()
+                .execute(station, "input", successfulRunner(), context, DEFAULT, Duration.ofMillis(100));
+
+        // Then
+        assertThat(aggregation.results())
+                .extracting(StationLogTrace::getStatus)
+                .containsExactly(StationLogStatus.FAILED, StationLogStatus.CANCELLED, StationLogStatus.CANCELLED);
+        assertThat(aggregation.results().subList(1, 3))
+                .allMatch(log -> "SIBLING_FLOW_INTERRUPTED".equals(log.getContext().get("synthetic.reason")));
+        assertThat(aggregation.interruptingChild()).isSameAs(aggregation.results().get(0));
     }
 
     @Test
@@ -150,6 +177,43 @@ class ParallelContainerBranchExecutorTest {
         assertThat(branchLog.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
         assertThat(branchLog.<String>getOutput()).isEqualTo("input");
         assertThat(aggregation.interruptingChild()).isNull();
+    }
+
+    @Test
+    void execute_shouldCancelUnvisitedBranchesWithoutEvaluatingTheirConditions() {
+        // Given
+        CancellationToken cancellationToken = new CancellationToken();
+        ExecutorService executor = new CompletesDuringCancellationExecutor(cancellationToken);
+        AtomicInteger unvisitedConditionCalls = new AtomicInteger();
+        ContainerBaseStation<String, Void> station = new ContainerBaseStation.Builder<String, Void>(executor)
+                .id("container")
+                .withBranch("completed", new TestStation("completed"))
+                .withBranch("cancellation-observed", new TestStation("cancellation-observed"))
+                .withBranch("never-submitted", new TestStation("never-submitted"), (input, context) -> {
+                    unvisitedConditionCalls.incrementAndGet();
+                    return true;
+                })
+                .build();
+        TestStationExecutionContext context = stationContext("container", cancellationToken);
+
+        // When
+        ContainerExecutionAggregation aggregation = new ParallelContainerBranchExecutor()
+                .execute(station, "input", successfulRunner(), context, DEFAULT, Duration.ofSeconds(1));
+
+        // Then
+        assertThat(aggregation.results())
+                .extracting(StationLogTrace::getStatus)
+                .containsExactly(StationLogStatus.SUCCEEDED, StationLogStatus.CANCELLED,
+                                 StationLogStatus.CANCELLED);
+        assertThat(aggregation.results().get(1).getContext())
+                .containsEntry("synthetic.reason", "COOPERATIVE_CANCELLATION");
+        assertThat(aggregation.results().get(2).getContext())
+                .containsEntry("synthetic.reason", "CANCELLED_BEFORE_SUBMISSION");
+        assertThat(aggregation.results())
+                .noneMatch(log -> "FAILED_BEFORE_START".equals(log.getContext().get("synthetic.reason")));
+        assertThat(unvisitedConditionCalls).hasValue(0);
+        assertThat(aggregation.collectedErrors()).isEmpty();
+        assertThat(aggregation.interruptingChild()).isSameAs(aggregation.results().get(1));
     }
 
     @Test

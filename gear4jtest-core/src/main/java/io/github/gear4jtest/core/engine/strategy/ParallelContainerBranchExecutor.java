@@ -38,7 +38,7 @@ final class ParallelContainerBranchExecutor {
                                           FlowConfig flowConfig,
                                           Duration awaitTimeout) {
         List<? extends ContainerBaseStation.Branch<?>> branches = station.getAssemblyLines();
-        StationLogTrace[] orderedResults = new StationLogTrace[branches.size()];
+        BranchOutcome[] outcomes = initializeOutcomes(branches.size());
         List<Throwable> collectedErrors = new ArrayList<>();
         String currentItemId = context.getGlobalContext().getCurrentItemId();
         ExecutorService executor = EngineStationContexts.support(context).executorFor(station.getExecutorService(),
@@ -50,17 +50,20 @@ final class ParallelContainerBranchExecutor {
         for (int index = 0; index < branches.size(); index++) {
             ContainerBaseStation.Branch<?> branch = branches.get(index);
             if (!ContainerBranchExecutionSupport.isBranchConditionSatisfied(branch, input, context)) {
-                orderedResults[index] = ContainerBranchExecutionSupport.conditionSkippedLog(branch, input, context,
-                                                                                            StationSkipReason.CONDITION_NOT_SATISFIED);
+                recordOutcome(outcomes, index, BranchState.SKIPPED,
+                              ContainerBranchExecutionSupport.conditionSkippedLog(branch, input, context,
+                                                                                  StationSkipReason.CONDITION_NOT_SATISFIED));
                 continue;
             }
             if (context.getGlobalContext().getCancellationToken().isCancellationRequested()) {
-                orderedResults[index] = ContainerBranchExecutionSupport.cooperativeCancellationLog(branch, input,
-                                                                                                   context);
-                cancelPendingForCancellation(submittedBranches, orderedResults, input, context);
+                StationLogTrace cancellation = ContainerBranchExecutionSupport.cooperativeCancellationLog(branch,
+                                                                                                          input,
+                                                                                                          context);
+                recordOutcome(outcomes, index, BranchState.CANCELLED, cancellation);
+                cancelPendingForCancellation(submittedBranches, outcomes, input, context);
+                cancelRemainingBeforeSubmission(branches, index + 1, outcomes, input, context);
                 return new ContainerExecutionAggregation(
-                        ContainerBranchExecutionSupport.asOrderedList(branches, orderedResults, input, context),
-                        collectedErrors, orderedResults[index]);
+                        asOrderedList(branches, outcomes, input, context), collectedErrors, cancellation);
             }
 
             Callable<StationLogTrace> task = EngineStationContexts.support(context).getTaskFactory()
@@ -73,26 +76,26 @@ final class ParallelContainerBranchExecutor {
                 SubmittedBranch submitted = new SubmittedBranch(index, branch, future);
                 submittedBranches.add(submitted);
                 submittedByFuture.put(future, submitted);
+                outcomes[index] = BranchOutcome.submitted();
             } catch (RejectedExecutionException rejected) {
                 StationLogTrace rejectedLog = ContainerBranchExecutionSupport.unexpectedFailureLog(branch, input,
                                                                                                    context,
                                                                                                    rejected);
-                orderedResults[index] = rejectedLog;
+                recordOutcome(outcomes, index, BranchState.REJECTED, rejectedLog);
                 FlowDecision decision = FlowDecider.decide(rejectedLog, flowConfig);
                 if (decision == FlowDecision.MARK_AND_PROCEED) {
                     collectedErrors.add(rejected);
                 } else if (decision == FlowDecision.INTERRUPT) {
-                    cancelPendingAfterInterrupt(submittedBranches, orderedResults, input, context, rejectedLog);
+                    cancelPendingAfterInterrupt(submittedBranches, outcomes, input, context, rejectedLog);
+                    interruptRemainingBeforeSubmission(branches, index + 1, outcomes, input, context, rejectedLog);
                     return new ContainerExecutionAggregation(
-                            ContainerBranchExecutionSupport.asOrderedList(branches, orderedResults, input, context),
-                            collectedErrors, rejectedLog);
+                            asOrderedList(branches, outcomes, input, context), collectedErrors, rejectedLog);
                 }
             }
         }
 
         if (submittedBranches.isEmpty()) {
-            return new ContainerExecutionAggregation(
-                    ContainerBranchExecutionSupport.asOrderedList(branches, orderedResults, input, context),
+            return new ContainerExecutionAggregation(asOrderedList(branches, outcomes, input, context),
                     collectedErrors, null);
         }
 
@@ -101,27 +104,24 @@ final class ParallelContainerBranchExecutor {
         try {
             while (completedCount < submittedBranches.size()) {
                 if (context.getGlobalContext().getCancellationToken().isCancellationRequested()) {
-                    StationLogTrace cancellation = cancelPendingForCancellation(submittedBranches, orderedResults,
+                    StationLogTrace cancellation = cancelPendingForCancellation(submittedBranches, outcomes,
                                                                                 input,
                                                                                 context);
                     return new ContainerExecutionAggregation(
-                            ContainerBranchExecutionSupport.asOrderedList(branches, orderedResults, input, context),
-                            collectedErrors, cancellation);
+                            asOrderedList(branches, outcomes, input, context), collectedErrors, cancellation);
                 }
 
                 Future<BranchExecution> completedFuture = waitForNextCompletion(completionService, deadline);
                 if (completedFuture == null) {
-                    StationLogTrace timeoutChild = timeoutPendingBranches(submittedBranches, orderedResults, input,
+                    StationLogTrace timeoutChild = timeoutPendingBranches(submittedBranches, outcomes, input,
                                                                           context,
                                                                           awaitTimeout);
                     if (timeoutChild != null
                             && FlowDecider.decide(timeoutChild, flowConfig) == FlowDecision.INTERRUPT) {
                         return new ContainerExecutionAggregation(
-                                ContainerBranchExecutionSupport.asOrderedList(branches, orderedResults, input, context),
-                                collectedErrors, timeoutChild);
+                                asOrderedList(branches, outcomes, input, context), collectedErrors, timeoutChild);
                     }
-                    return new ContainerExecutionAggregation(
-                            ContainerBranchExecutionSupport.asOrderedList(branches, orderedResults, input, context),
+                    return new ContainerExecutionAggregation(asOrderedList(branches, outcomes, input, context),
                             collectedErrors, null);
                 }
 
@@ -131,7 +131,7 @@ final class ParallelContainerBranchExecutor {
                 StationLogTrace childLog = ContainerBranchExecutionSupport.normalizeCompletedLog(execution.branch,
                                                                                                  execution.log, input,
                                                                                                  context);
-                orderedResults[execution.index] = childLog;
+                recordOutcome(outcomes, execution.index, BranchState.COMPLETED, childLog);
                 FlowDecision decision = FlowDecider.decide(childLog, flowConfig);
                 switch (decision) {
                     case PROCEED -> {
@@ -142,19 +142,17 @@ final class ParallelContainerBranchExecutor {
                                                                                                                      + childLog
                                                                                                                              .getOperationId()));
                     case INTERRUPT -> {
-                        cancelPendingAfterInterrupt(submittedBranches, orderedResults, input, context, childLog);
+                        cancelPendingAfterInterrupt(submittedBranches, outcomes, input, context, childLog);
                         return new ContainerExecutionAggregation(
-                                ContainerBranchExecutionSupport.asOrderedList(branches, orderedResults, input, context),
-                                collectedErrors, childLog);
+                                asOrderedList(branches, outcomes, input, context), collectedErrors, childLog);
                     }
                 }
             }
-            return new ContainerExecutionAggregation(
-                    ContainerBranchExecutionSupport.asOrderedList(branches, orderedResults, input, context),
+            return new ContainerExecutionAggregation(asOrderedList(branches, outcomes, input, context),
                     collectedErrors, null);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            cancelPendingAfterUnexpectedInterruption(submittedBranches, orderedResults, input, context);
+            cancelPendingAfterUnexpectedInterruption(submittedBranches, outcomes, input, context);
             throw new RuntimeException("Interrupted while waiting for container branches", e);
         }
     }
@@ -192,24 +190,24 @@ final class ParallelContainerBranchExecutor {
     }
 
     private StationLogTrace timeoutPendingBranches(List<SubmittedBranch> submissions,
-                                                   StationLogTrace[] orderedResults,
+                                                   BranchOutcome[] outcomes,
                                                    Object input,
                                                    StationExecutionContext context,
                                                    Duration awaitTimeout) {
         StationLogTrace firstTimeoutLog = null;
         for (SubmittedBranch submitted : submissions) {
-            if (orderedResults[submitted.index] != null) {
+            if (outcomes[submitted.index].isTerminal()) {
                 continue;
             }
             StationLogTrace completed = tryResolveCompletedAroundCancellation(submitted, input, context);
             if (completed != null) {
-                orderedResults[submitted.index] = completed;
+                recordOutcome(outcomes, submitted.index, BranchState.COMPLETED, completed);
                 continue;
             }
             StationLogTrace timeout = ContainerBranchExecutionSupport.timeoutCancelledLog(submitted.branch, input,
                                                                                           context,
                                                                                           awaitTimeout);
-            orderedResults[submitted.index] = timeout;
+            recordOutcome(outcomes, submitted.index, BranchState.CANCELLED, timeout);
             if (firstTimeoutLog == null) {
                 firstTimeoutLog = timeout;
             }
@@ -218,41 +216,43 @@ final class ParallelContainerBranchExecutor {
     }
 
     private void cancelPendingAfterInterrupt(List<SubmittedBranch> submissions,
-                                             StationLogTrace[] orderedResults,
+                                             BranchOutcome[] outcomes,
                                              Object input,
                                              StationExecutionContext context,
                                              StationLogTrace interruptingChild) {
         for (SubmittedBranch submitted : submissions) {
-            if (orderedResults[submitted.index] != null) {
+            if (outcomes[submitted.index].isTerminal()) {
                 continue;
             }
             StationLogTrace completed = tryResolveCompletedAroundCancellation(submitted, input, context);
             if (completed != null) {
-                orderedResults[submitted.index] = completed;
+                recordOutcome(outcomes, submitted.index, BranchState.COMPLETED, completed);
                 continue;
             }
-            orderedResults[submitted.index] = ContainerBranchExecutionSupport
-                    .siblingInterruptedCancellationLog(submitted.branch, input, context, interruptingChild);
+            recordOutcome(outcomes, submitted.index, BranchState.INTERRUPTED,
+                          ContainerBranchExecutionSupport.siblingInterruptedCancellationLog(submitted.branch, input,
+                                                                                            context,
+                                                                                            interruptingChild));
         }
     }
 
     private StationLogTrace cancelPendingForCancellation(List<SubmittedBranch> submissions,
-                                                         StationLogTrace[] orderedResults,
+                                                         BranchOutcome[] outcomes,
                                                          Object input,
                                                          StationExecutionContext context) {
         StationLogTrace firstCancellation = null;
         for (SubmittedBranch submitted : submissions) {
-            if (orderedResults[submitted.index] != null) {
+            if (outcomes[submitted.index].isTerminal()) {
                 continue;
             }
             StationLogTrace completed = tryResolveCompletedAroundCancellation(submitted, input, context);
             if (completed != null) {
-                orderedResults[submitted.index] = completed;
+                recordOutcome(outcomes, submitted.index, BranchState.COMPLETED, completed);
                 continue;
             }
             StationLogTrace cancellation = ContainerBranchExecutionSupport.cooperativeCancellationLog(submitted.branch,
                                                                                                       input, context);
-            orderedResults[submitted.index] = cancellation;
+            recordOutcome(outcomes, submitted.index, BranchState.CANCELLED, cancellation);
             if (firstCancellation == null) {
                 firstCancellation = cancellation;
             }
@@ -261,22 +261,47 @@ final class ParallelContainerBranchExecutor {
     }
 
     private void cancelPendingAfterUnexpectedInterruption(List<SubmittedBranch> submissions,
-                                                          StationLogTrace[] orderedResults,
+                                                          BranchOutcome[] outcomes,
                                                           Object input,
                                                           StationExecutionContext context) {
         for (SubmittedBranch submitted : submissions) {
-            if (orderedResults[submitted.index] != null) {
+            if (outcomes[submitted.index].isTerminal()) {
                 continue;
             }
             StationLogTrace completed = tryResolveCompletedAroundCancellation(submitted, input, context);
             if (completed != null) {
-                orderedResults[submitted.index] = completed;
+                recordOutcome(outcomes, submitted.index, BranchState.COMPLETED, completed);
                 continue;
             }
-            orderedResults[submitted.index] = ContainerBranchExecutionSupport.waitInterruptedCancellationLog(
-                                                                                                             submitted.branch,
-                                                                                                             input,
-                                                                                                             context);
+            recordOutcome(outcomes, submitted.index, BranchState.CANCELLED,
+                          ContainerBranchExecutionSupport.waitInterruptedCancellationLog(submitted.branch, input,
+                                                                                         context));
+        }
+    }
+
+    private void cancelRemainingBeforeSubmission(List<? extends ContainerBaseStation.Branch<?>> branches,
+                                                 int firstRemainingIndex,
+                                                 BranchOutcome[] outcomes,
+                                                 Object input,
+                                                 StationExecutionContext context) {
+        for (int index = firstRemainingIndex; index < branches.size(); index++) {
+            ContainerBaseStation.Branch<?> branch = branches.get(index);
+            recordOutcome(outcomes, index, BranchState.CANCELLED,
+                          ContainerBranchExecutionSupport.cancelledBeforeSubmissionLog(branch, input, context));
+        }
+    }
+
+    private void interruptRemainingBeforeSubmission(List<? extends ContainerBaseStation.Branch<?>> branches,
+                                                    int firstRemainingIndex,
+                                                    BranchOutcome[] outcomes,
+                                                    Object input,
+                                                    StationExecutionContext context,
+                                                    StationLogTrace interruptingChild) {
+        for (int index = firstRemainingIndex; index < branches.size(); index++) {
+            ContainerBaseStation.Branch<?> branch = branches.get(index);
+            recordOutcome(outcomes, index, BranchState.INTERRUPTED,
+                          ContainerBranchExecutionSupport.siblingInterruptedCancellationLog(branch, input, context,
+                                                                                            interruptingChild));
         }
     }
 
@@ -317,7 +342,81 @@ final class ParallelContainerBranchExecutor {
         }
     }
 
+    private static BranchOutcome[] initializeOutcomes(int branchCount) {
+        BranchOutcome[] outcomes = new BranchOutcome[branchCount];
+        for (int index = 0; index < branchCount; index++) {
+            outcomes[index] = BranchOutcome.notVisited();
+        }
+        return outcomes;
+    }
+
+    private static void recordOutcome(BranchOutcome[] outcomes,
+                                      int index,
+                                      BranchState state,
+                                      StationLogTrace log) {
+        outcomes[index] = BranchOutcome.terminal(state, log);
+    }
+
+    private static List<StationLogTrace> asOrderedList(List<? extends ContainerBaseStation.Branch<?>> branches,
+                                                       BranchOutcome[] outcomes,
+                                                       Object input,
+                                                       StationExecutionContext context) {
+        List<StationLogTrace> results = new ArrayList<>(outcomes.length);
+        for (int index = 0; index < outcomes.length; index++) {
+            BranchOutcome outcome = outcomes[index];
+            if (!outcome.isTerminal()) {
+                StationLogTrace invariantFailure = ContainerBranchExecutionSupport.unexpectedFailureLog(
+                                                                                                        branches.get(index),
+                                                                                                        input, context,
+                                                                                                        new IllegalStateException(
+                                                                                                                "Missing container branch result at index "
+                                                                                                                        + index
+                                                                                                                        + " with state "
+                                                                                                                        + outcome.state));
+                outcome = BranchOutcome.terminal(BranchState.INVARIANT_FAILURE, invariantFailure);
+                outcomes[index] = outcome;
+            }
+            results.add(outcome.log);
+        }
+        return results;
+    }
+
     private record SubmittedBranch(int index, ContainerBaseStation.Branch<?> branch, Future<BranchExecution> future) {}
 
     private record BranchExecution(int index, ContainerBaseStation.Branch<?> branch, StationLogTrace log) {}
+
+    private record BranchOutcome(BranchState state, StationLogTrace log) {
+        private static BranchOutcome notVisited() {
+            return new BranchOutcome(BranchState.NOT_VISITED, null);
+        }
+
+        private static BranchOutcome submitted() {
+            return new BranchOutcome(BranchState.SUBMITTED, null);
+        }
+
+        private static BranchOutcome terminal(BranchState state, StationLogTrace log) {
+            return new BranchOutcome(state, log);
+        }
+
+        private boolean isTerminal() {
+            return state.terminal;
+        }
+    }
+
+    private enum BranchState {
+        NOT_VISITED(false),
+        SUBMITTED(false),
+        COMPLETED(true),
+        SKIPPED(true),
+        CANCELLED(true),
+        REJECTED(true),
+        INTERRUPTED(true),
+        INVARIANT_FAILURE(true);
+
+        private final boolean terminal;
+
+        BranchState(boolean terminal) {
+            this.terminal = terminal;
+        }
+    }
 }

@@ -18,11 +18,13 @@ import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
+import io.github.gear4jtest.core.api.context.CancellationToken;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.util.AssemblyLines;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.event.StationCancellationReason;
 import io.github.gear4jtest.core.event.StationCancelledEvent;
+import io.github.gear4jtest.core.event.StationFailedBeforeStartEvent;
 import io.github.gear4jtest.core.event.StationInterruptedEvent;
 import io.github.gear4jtest.core.event.StationInterruptionReason;
 import io.github.gear4jtest.core.event.StationStartedEvent;
@@ -156,6 +158,78 @@ class ParallelContainerSyntheticObservabilityTest {
         }
     }
 
+    @Test
+    void cancellationDuringSubmission_shouldCancelUnsubmittedBranchesWithoutFailureSignals() {
+        // Given
+        CancellationToken cancellationToken = new CancellationToken();
+        NeverRunningExecutorService executor = new NeverRunningExecutorService(
+                () -> cancellationToken.cancel("cancel during submission"));
+        CopyOnWriteArrayList<StationCancelledEvent> cancelledEvents = new CopyOnWriteArrayList<>();
+        CopyOnWriteArrayList<StationFailedBeforeStartEvent> failedBeforeStartEvents = new CopyOnWriteArrayList<>();
+        CopyOnWriteArrayList<StationStartedEvent> startedEvents = new CopyOnWriteArrayList<>();
+        var assemblyLine = AssemblyLines.<String>createAssemblyLine("parallel-submission-cancellation-observability")
+                .then(container("cancellation-container", String.class, executor)
+                        .withBranch(branch("submitted",
+                                           processingOperation("submitted", PendingStep.class).build()))
+                        .withBranch(branch("cancellation-observed",
+                                           processingOperation("cancellation-observed", PendingStep.class).build()))
+                        .withBranch(branch("never-submitted",
+                                           processingOperation("never-submitted", PendingStep.class).build()))
+                        .returns(results -> Arrays.asList(results.get("submitted", String.class),
+                                                          results.get("cancellation-observed", String.class),
+                                                          results.get("never-submitted", String.class))))
+                .configuration(configuration().eventHandling(eventHandling()
+                        .on(StationCancelledEvent.class, cancelledEvents::add)
+                        .on(StationFailedBeforeStartEvent.class, failedBeforeStartEvents::add)
+                        .on(StationStartedEvent.class, startedEvents::add)
+                        .build()).build())
+                .build();
+        ResourceFactory resourceFactory = resourceFactory(new PendingStep());
+        InMemoryAssemblyRunRepository repository = new InMemoryAssemblyRunRepository();
+        var engine = CoreRuntimeTestSupport.newEngine(resourceFactory);
+        var request = RunRequest.builder().input("input").resourceFactory(resourceFactory)
+                .cancellationToken(cancellationToken)
+                .with(new PersistenceExtension(InMemoryExecutionManager.builder()
+                        .repository(repository)
+                        .build()))
+                .build();
+
+        try {
+            // When
+            ExecutionResult<List<String>> result = engine.execute(assemblyLine, request);
+
+            // Then
+            assertThat(result.isCancelled()).isTrue();
+            List<StationLogRecord> allLogs = repository.findAllLogsByRunId(result.getExecution().getId(),
+                                                                           PageRequest.first(50));
+            assertThat(allLogs.stream()
+                    .filter(log -> List.of("submitted", "cancellation-observed", "never-submitted")
+                            .contains(log.operationId()))
+                    .map(log -> tuple(log.operationId(), log.status()))
+                    .toList())
+                    .containsExactlyInAnyOrder(tuple("submitted", StationLogStatus.CANCELLED),
+                                               tuple("cancellation-observed", StationLogStatus.CANCELLED),
+                                               tuple("never-submitted", StationLogStatus.CANCELLED));
+
+            assertThat(cancelledEvents.stream()
+                    .map(event -> tuple(event.getOperationId(), event.getBranchId(), event.getReason()))
+                    .toList())
+                    .containsExactlyInAnyOrder(
+                                               tuple("submitted", "submitted",
+                                                     StationCancellationReason.COOPERATIVE_CANCELLATION),
+                                               tuple("cancellation-observed", "cancellation-observed",
+                                                     StationCancellationReason.COOPERATIVE_CANCELLATION),
+                                               tuple("never-submitted", "never-submitted",
+                                                     StationCancellationReason.CANCELLED_BEFORE_SUBMISSION));
+            assertThat(failedBeforeStartEvents).isEmpty();
+            assertThat(startedEvents.stream()
+                    .map(StationStartedEvent::getOperationId)
+                    .toList()).doesNotContain("submitted", "cancellation-observed", "never-submitted");
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
     private static ResourceFactory resourceFactory(Object... operators) {
         Map<Class<?>, Object> resources = new HashMap<>();
         for (Object operator : operators) {
@@ -246,7 +320,19 @@ class ParallelContainerSyntheticObservabilityTest {
 
     private static final class NeverRunningExecutorService extends AbstractExecutorService {
         private final AtomicBoolean shutdown = new AtomicBoolean();
+        private final AtomicBoolean firstSubmission = new AtomicBoolean();
         private final BlockingQueue<Runnable> queuedTasks = new LinkedBlockingQueue<>();
+        private final Runnable onFirstSubmission;
+
+        private NeverRunningExecutorService() {
+            this(() -> {
+                // no-op
+            });
+        }
+
+        private NeverRunningExecutorService(Runnable onFirstSubmission) {
+            this.onFirstSubmission = onFirstSubmission;
+        }
 
         @Override
         public void execute(Runnable command) {
@@ -254,6 +340,9 @@ class ParallelContainerSyntheticObservabilityTest {
                 throw new RejectedExecutionException("executor is shut down");
             }
             queuedTasks.add(command);
+            if (firstSubmission.compareAndSet(false, true)) {
+                onFirstSubmission.run();
+            }
         }
 
         @Override
