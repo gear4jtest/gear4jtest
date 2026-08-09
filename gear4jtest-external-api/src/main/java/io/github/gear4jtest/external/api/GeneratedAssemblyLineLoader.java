@@ -139,8 +139,10 @@ final class GeneratedAssemblyLineLoader implements AutoCloseable {
         }
 
         return new GeneratedLoadingRuntime.LoadResult(instance,
-                () -> classLoaderRegistry.register(internalLoaderId, loadedClass.classLoader(), instance,
-                                                   loadedClass.bytecodeWeightBytes()));
+                registrationLease -> classLoaderRegistry.register(internalLoaderId, loadedClass.classLoader(),
+                                                                  instance, loadedClass.bytecodeWeightBytes(),
+                                                                  registrationLease),
+                () -> classLoaderRegistry.evictIfOwned(internalLoaderId, loadedClass.classLoader()));
     }
 
     private GeneratedAssemblyLine<?, ?> findCached(String internalLoaderId) {

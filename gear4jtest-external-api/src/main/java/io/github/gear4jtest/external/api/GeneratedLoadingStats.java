@@ -17,7 +17,8 @@ import java.util.Objects;
  * @param timedOutLoads              loads terminated by the end-to-end deadline
  * @param rejectedLoads              loads rejected by a saturated or closed
  *                                   executor
- * @param inFlightLoads              distinct loads not yet completed
+ * @param inFlightLoads              distinct load slots not yet released,
+ *                                   including late-registration cleanup
  * @param activeLoads                worker tasks currently executing
  * @param queuedLoads                worker tasks waiting for execution
  * @param totalLoadDurationNanos     cumulative worker duration

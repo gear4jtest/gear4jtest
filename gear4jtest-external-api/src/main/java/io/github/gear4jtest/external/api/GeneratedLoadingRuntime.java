@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.gear4jtest.external.api.exception.GeneratedAssemblyLineLoadTimeoutException;
+import io.github.gear4jtest.external.api.loader.ClassLoaderRegistry;
 import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
 
 import static java.util.Objects.requireNonNull;
@@ -46,6 +47,13 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
 
     GeneratedAssemblyLine<?, ?> load(String internalLoaderId, LoadingOperation operation) throws IOException {
         requireOpen();
+        LoadFlight current = inFlight.get(internalLoaderId);
+        if (current != null) {
+            counters.recordCacheMiss();
+            counters.recordSingleFlightJoin();
+            return awaitLoad(internalLoaderId, current);
+        }
+
         GeneratedAssemblyLine<?, ?> cached = operation.findCached();
         if (cached != null) {
             counters.recordCacheHit();
@@ -54,7 +62,7 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
         counters.recordCacheMiss();
 
         LoadFlight owned = new LoadFlight(System.nanoTime());
-        LoadFlight current = inFlight.putIfAbsent(internalLoaderId, owned);
+        current = inFlight.putIfAbsent(internalLoaderId, owned);
         if (current != null) {
             counters.recordSingleFlightJoin();
             return awaitLoad(internalLoaderId, current);
@@ -78,7 +86,6 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
         inFlight.forEach((internalLoaderId, flight) -> completeExceptionally(internalLoaderId, flight,
                                                                              shutdown,
                                                                              () -> flight.cancel(loadingExecutor)));
-        inFlight.clear();
         timeoutExecutor.shutdownNow();
         loadingExecutor.shutdownNow();
     }
@@ -133,30 +140,45 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
     private void completeCached(String internalLoaderId,
                                 LoadFlight flight,
                                 GeneratedAssemblyLine<?, ?> cached) {
-        CompletionAttempt attempt = flight.completeBeforeDeadline(timeoutNanos, cached, () -> {
+        CompletionAttempt attempt = flight.claimSuccessBeforeDeadline(timeoutNanos);
+        if (attempt == CompletionAttempt.COMPLETED) {
             counters.recordCacheHit();
             inFlight.remove(internalLoaderId, flight);
-        });
-        if (attempt == CompletionAttempt.EXPIRED) {
+            flight.complete(cached);
+        } else if (attempt == CompletionAttempt.EXPIRED) {
             timeout(internalLoaderId, flight);
         }
     }
 
     private void completeSuccessfully(String internalLoaderId, LoadFlight flight, LoadResult loaded) {
-        CompletionAttempt attempt;
+        RegistrationAttempt registration = flight.reserveRegistrationBeforeDeadline(timeoutNanos);
+        if (registration == RegistrationAttempt.EXPIRED) {
+            timeout(internalLoaderId, flight);
+            return;
+        }
+        if (registration == RegistrationAttempt.ALREADY_COMPLETED) {
+            return;
+        }
+
         try {
-            attempt = flight.completeBeforeDeadline(timeoutNanos, loaded.instance(), () -> {
-                loaded.register().run();
-                counters.recordLoadSucceeded();
-                inFlight.remove(internalLoaderId, flight);
-            });
+            loaded.register().run(flight);
         } catch (RuntimeException | Error failure) {
             completeExceptionally(internalLoaderId, flight, failure, counters::recordLoadFailed);
+            discardRegistration(internalLoaderId, flight, loaded, failure);
+            return;
+        }
+
+        CompletionAttempt attempt = flight.claimRegistrationSuccessBeforeDeadline(timeoutNanos);
+        if (attempt == CompletionAttempt.COMPLETED) {
+            counters.recordLoadSucceeded();
+            inFlight.remove(internalLoaderId, flight);
+            flight.complete(loaded.instance());
             return;
         }
         if (attempt == CompletionAttempt.EXPIRED) {
             timeout(internalLoaderId, flight);
         }
+        discardRegistration(internalLoaderId, flight, loaded, null);
     }
 
     private void timeout(String internalLoaderId, LoadFlight flight) {
@@ -171,10 +193,31 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
                                           LoadFlight flight,
                                           Throwable failure,
                                           Runnable beforeCompletion) {
-        return flight.completeExceptionally(failure, () -> {
-            beforeCompletion.run();
+        FailureClaim claim = flight.claimFailure();
+        if (!claim.claimed()) {
+            return false;
+        }
+        beforeCompletion.run();
+        if (!claim.registrationCleanupRequired()) {
             inFlight.remove(internalLoaderId, flight);
-        });
+        }
+        flight.completeExceptionally(failure);
+        return true;
+    }
+
+    private void discardRegistration(String internalLoaderId,
+                                     LoadFlight flight,
+                                     LoadResult loaded,
+                                     Throwable primaryFailure) {
+        try {
+            loaded.discard().run();
+            flight.registrationCleanupFinished();
+            inFlight.remove(internalLoaderId, flight);
+        } catch (RuntimeException | Error cleanupFailure) {
+            if (primaryFailure != null) {
+                primaryFailure.addSuppressed(cleanupFailure);
+            }
+        }
     }
 
     private GeneratedAssemblyLine<?, ?> awaitLoad(String internalLoaderId, LoadFlight flight) throws IOException {
@@ -281,10 +324,32 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
         }
     }
 
-    record LoadResult(GeneratedAssemblyLine<?, ?> instance, Runnable register) {
+    @FunctionalInterface
+    interface RegistrationOperation {
+        void run(ClassLoaderRegistry.RegistrationLease registrationLease);
+    }
+
+    record LoadResult(GeneratedAssemblyLine<?, ?> instance,
+                      RegistrationOperation register,
+                      Runnable discard) {
+        LoadResult(GeneratedAssemblyLine<?, ?> instance, Runnable register) {
+            this(instance, ignored -> register.run(), () -> {
+            });
+        }
+
+        LoadResult(GeneratedAssemblyLine<?, ?> instance, Runnable register, Runnable discard) {
+            this(instance, ignored -> register.run(), discard);
+        }
+
+        LoadResult(GeneratedAssemblyLine<?, ?> instance, RegistrationOperation register) {
+            this(instance, register, () -> {
+            });
+        }
+
         LoadResult {
             requireNonNull(instance, "instance must not be null");
             requireNonNull(register, "register must not be null");
+            requireNonNull(discard, "discard must not be null");
         }
     }
 
@@ -298,7 +363,7 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
         }
 
         boolean continueLoading() {
-            if (flight.result().isDone()) {
+            if (flight.isTerminal()) {
                 return false;
             }
             if (remainingNanos(flight.createdNanos()) == 0L) {
@@ -339,12 +404,29 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
         ALREADY_COMPLETED
     }
 
-    private static final class LoadFlight {
+    private enum RegistrationAttempt {
+        ACQUIRED,
+        EXPIRED,
+        ALREADY_COMPLETED
+    }
+
+    private enum FlightState {
+        ACTIVE,
+        REGISTERING,
+        SUCCEEDED,
+        FAILED
+    }
+
+    private record FailureClaim(boolean claimed, boolean registrationCleanupRequired) {}
+
+    private static final class LoadFlight implements ClassLoaderRegistry.RegistrationLease {
         private final long createdNanos;
         private final CompletableFuture<GeneratedAssemblyLine<?, ?>> result = new CompletableFuture<>();
         private Future<?> loadingTask;
         private ScheduledFuture<?> timeoutTask;
         private boolean cancellationRequested;
+        private FlightState state = FlightState.ACTIVE;
+        private boolean registrationCleanupRequired;
 
         private LoadFlight(long createdNanos) {
             this.createdNanos = createdNanos;
@@ -358,6 +440,15 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
             return result;
         }
 
+        synchronized boolean isTerminal() {
+            return state == FlightState.SUCCEEDED || state == FlightState.FAILED;
+        }
+
+        @Override
+        public synchronized boolean isPublished() {
+            return state == FlightState.SUCCEEDED;
+        }
+
         synchronized void setLoadingTask(Future<?> value) {
             loadingTask = value;
             if (cancellationRequested) {
@@ -367,33 +458,69 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
 
         synchronized void setTimeoutTask(ScheduledFuture<?> value) {
             timeoutTask = value;
-            if (result.isDone()) {
+            if (isTerminal()) {
                 value.cancel(false);
             }
         }
 
-        synchronized CompletionAttempt completeBeforeDeadline(long timeoutNanos,
-                                                              GeneratedAssemblyLine<?, ?> value,
-                                                              Runnable beforeCompletion) {
-            if (result.isDone()) {
+        synchronized CompletionAttempt claimSuccessBeforeDeadline(long timeoutNanos) {
+            if (state != FlightState.ACTIVE) {
                 return CompletionAttempt.ALREADY_COMPLETED;
             }
-            long elapsedNanos = System.nanoTime() - createdNanos;
-            if (elapsedNanos > 0L && elapsedNanos >= timeoutNanos) {
+            if (deadlineExpired(timeoutNanos)) {
                 return CompletionAttempt.EXPIRED;
             }
-            beforeCompletion.run();
-            result.complete(value);
+            state = FlightState.SUCCEEDED;
             return CompletionAttempt.COMPLETED;
         }
 
-        synchronized boolean completeExceptionally(Throwable failure, Runnable beforeCompletion) {
-            if (result.isDone()) {
-                return false;
+        synchronized RegistrationAttempt reserveRegistrationBeforeDeadline(long timeoutNanos) {
+            if (state != FlightState.ACTIVE) {
+                return RegistrationAttempt.ALREADY_COMPLETED;
             }
-            beforeCompletion.run();
+            if (deadlineExpired(timeoutNanos)) {
+                return RegistrationAttempt.EXPIRED;
+            }
+            state = FlightState.REGISTERING;
+            registrationCleanupRequired = true;
+            return RegistrationAttempt.ACQUIRED;
+        }
+
+        synchronized CompletionAttempt claimRegistrationSuccessBeforeDeadline(long timeoutNanos) {
+            if (state != FlightState.REGISTERING) {
+                return CompletionAttempt.ALREADY_COMPLETED;
+            }
+            if (deadlineExpired(timeoutNanos)) {
+                return CompletionAttempt.EXPIRED;
+            }
+            state = FlightState.SUCCEEDED;
+            registrationCleanupRequired = false;
+            return CompletionAttempt.COMPLETED;
+        }
+
+        synchronized FailureClaim claimFailure() {
+            if (isTerminal()) {
+                return new FailureClaim(false, registrationCleanupRequired);
+            }
+            state = FlightState.FAILED;
+            return new FailureClaim(true, registrationCleanupRequired);
+        }
+
+        synchronized void registrationCleanupFinished() {
+            registrationCleanupRequired = false;
+        }
+
+        void complete(GeneratedAssemblyLine<?, ?> value) {
+            result.complete(value);
+        }
+
+        void completeExceptionally(Throwable failure) {
             result.completeExceptionally(failure);
-            return true;
+        }
+
+        private boolean deadlineExpired(long timeoutNanos) {
+            long elapsedNanos = System.nanoTime() - createdNanos;
+            return elapsedNanos > 0L && elapsedNanos >= timeoutNanos;
         }
 
         synchronized void cancelLoading(ThreadPoolExecutor executor) {

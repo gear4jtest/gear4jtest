@@ -444,6 +444,56 @@ class GeneratedAssemblyLineLoaderTest {
     }
 
     @Test
+    void loadOrCompile_shouldBoundBlockingRegistryAndDiscardLateRegistration() throws Exception {
+        // Given
+        Map<String, byte[]> compiledClasses = compileGeneratedClass();
+        BlockingFirstRegistrationRegistry registry = new BlockingFirstRegistrationRegistry();
+        LoaderFixture base = fixture((className, sourceCode) -> compiledClasses, registry);
+        String internalLoaderId = AssemblyLineIdentifiers.toInternalLoaderId(base.object());
+        var loader = new GeneratedAssemblyLineLoader(base.storeResolver(), registry,
+                base.translatorResolver(), (className, sourceCode) -> compiledClasses,
+                new SimpleDependencyInjector(), getClass().getClassLoader(),
+                ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES,
+                new GeneratedLoadingConfiguration(Duration.ofMillis(150), 1, 2));
+        ExecutorService callers = Executors.newFixedThreadPool(2);
+
+        try {
+            Future<GeneratedAssemblyLine<?, ?>> owner = callers
+                    .submit(() -> loader.loadOrCompile("line", base.object()));
+            assertThat(registry.registrationEntered.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(registry.snapshotStats().cachedLoaders()).isEqualTo(1);
+            assertThat(registry.get(internalLoaderId)).isNull();
+            Future<GeneratedAssemblyLine<?, ?>> joiner = callers
+                    .submit(() -> loader.loadOrCompile("line", base.object()));
+            awaitStats(() -> loader.snapshotStats().singleFlightJoins() == 1L);
+
+            // When / Then
+            assertThatThrownBy(() -> owner.get(2, TimeUnit.SECONDS))
+                    .isInstanceOf(java.util.concurrent.ExecutionException.class)
+                    .hasCauseInstanceOf(GeneratedAssemblyLineLoadTimeoutException.class);
+            assertThatThrownBy(() -> joiner.get(2, TimeUnit.SECONDS))
+                    .isInstanceOf(java.util.concurrent.ExecutionException.class)
+                    .hasCauseInstanceOf(GeneratedAssemblyLineLoadTimeoutException.class);
+            assertThat(loader.snapshotStats().timedOutLoads()).isEqualTo(1L);
+            assertThat(loader.snapshotStats().inFlightLoads()).isEqualTo(1);
+
+            registry.releaseRegistration.countDown();
+            awaitStats(() -> loader.snapshotStats().activeLoads() == 0
+                    && loader.snapshotStats().inFlightLoads() == 0);
+            assertThat(registry.snapshotStats().cachedLoaders()).isZero();
+
+            assertThat(loader.loadOrCompile("line", base.object())).isNotNull();
+            assertThat(registry.registrations).hasValue(2);
+            assertThat(registry.snapshotStats().cachedLoaders()).isEqualTo(1);
+        } finally {
+            registry.releaseRegistration.countDown();
+            callers.shutdownNow();
+            loader.close();
+            base.loader().close();
+        }
+    }
+
+    @Test
     void loadOrCompile_shouldRejectDistinctLoadWhenBoundedQueueIsFull() throws Exception {
         // Given
         Map<String, byte[]> compiledClasses = compileGeneratedClass();
@@ -602,13 +652,19 @@ class GeneratedAssemblyLineLoaderTest {
         public void register(String internalLoaderId,
                              ClassLoader loader,
                              GeneratedAssemblyLine bound,
-                             long bytecodeWeightBytes) {
-            delegate.register(internalLoaderId, loader, bound, bytecodeWeightBytes);
+                             long bytecodeWeightBytes,
+                             ClassLoaderRegistry.RegistrationLease registrationLease) {
+            delegate.register(internalLoaderId, loader, bound, bytecodeWeightBytes, registrationLease);
         }
 
         @Override
         public void evict(String internalLoaderId) {
             delegate.evict(internalLoaderId);
+        }
+
+        @Override
+        public boolean evictIfOwned(String internalLoaderId, ClassLoader expectedLoader) {
+            return delegate.evictIfOwned(internalLoaderId, expectedLoader);
         }
 
         @Override
@@ -624,6 +680,61 @@ class GeneratedAssemblyLineLoaderTest {
         @Override
         public GeneratedAssemblyLine getBoundAssemblyLine(String internalLoaderId) {
             return delegate.getBoundAssemblyLine(internalLoaderId);
+        }
+    }
+
+    private static final class BlockingFirstRegistrationRegistry implements ClassLoaderRegistry {
+        private final InMemoryClassLoaderRegistry delegate = InMemoryClassLoaderRegistry.builder().build();
+        private final CountDownLatch registrationEntered = new CountDownLatch(1);
+        private final CountDownLatch releaseRegistration = new CountDownLatch(1);
+        private final AtomicInteger registrations = new AtomicInteger();
+
+        @Override
+        public ClassLoader get(String internalLoaderId) {
+            return delegate.get(internalLoaderId);
+        }
+
+        @Override
+        public void register(String internalLoaderId,
+                             ClassLoader loader,
+                             GeneratedAssemblyLine bound,
+                             long bytecodeWeightBytes,
+                             ClassLoaderRegistry.RegistrationLease registrationLease) {
+            int registration = registrations.incrementAndGet();
+            delegate.register(internalLoaderId, loader, bound, bytecodeWeightBytes, registrationLease);
+            if (registration == 1) {
+                registrationEntered.countDown();
+                awaitIgnoringInterruption(releaseRegistration);
+            }
+        }
+
+        @Override
+        public void evict(String internalLoaderId) {
+            delegate.evict(internalLoaderId);
+        }
+
+        @Override
+        public boolean evictIfOwned(String internalLoaderId, ClassLoader expectedLoader) {
+            return delegate.evictIfOwned(internalLoaderId, expectedLoader);
+        }
+
+        @Override
+        public void setAlias(String alias, String internalLoaderId) {
+            delegate.setAlias(alias, internalLoaderId);
+        }
+
+        @Override
+        public String resolveAlias(String alias) {
+            return delegate.resolveAlias(alias);
+        }
+
+        @Override
+        public GeneratedAssemblyLine getBoundAssemblyLine(String internalLoaderId) {
+            return delegate.getBoundAssemblyLine(internalLoaderId);
+        }
+
+        InMemoryClassLoaderRegistry.RegistryStats snapshotStats() {
+            return delegate.snapshotStats();
         }
     }
 }

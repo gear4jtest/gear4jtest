@@ -177,8 +177,11 @@ duration, timeouts, rejections, active workers and queued work.
 
 A complete-load deadline breach raises
 `GeneratedAssemblyLineLoadTimeoutException`. The late worker is interrupted and
-its instance is never registered or returned. Java cannot safely terminate
-arbitrary code: an artifact store, translator, constructor or injector that
+its instance is never returned. Registry calls run outside the loading-flight
+monitor, so a blocking custom registry cannot postpone the caller deadline. The
+single-flight remains reserved until any late registration has been discarded,
+which prevents a retry from observing it. Java cannot safely terminate arbitrary
+code: an artifact store, translator, constructor, injector or registry that
 ignores interruption may keep one daemon worker occupied until it returns.
 Definitions that are genuinely hostile must be isolated in another process or
 container. `AssemblyLineManager.loadingStats()` exposes complete-load outcomes,
@@ -210,6 +213,14 @@ also exposes `protectedLoaderCount()`, `isOverCapacityDueToProtectedLoaders()`
 and bytecode/rejection values through `snapshotStats()`. Defined class bytes are
 removed from the loader's heap map, while their original size remains charged
 conservatively because the class still occupies metaspace.
+
+Custom `ClassLoaderRegistry` implementations must retain the supplied
+`RegistrationLease` with each staged entry and keep it invisible until
+`isPublished()` becomes true. They must also make
+`evictIfOwned(id, expectedLoader)` atomic and idempotent. Generated loading uses
+these two guarantees to clean up a registration that returns after its deadline
+without exposing it or allowing an old flight to evict a newer loader for the
+same identifier.
 
 ## Artifact size policy
 

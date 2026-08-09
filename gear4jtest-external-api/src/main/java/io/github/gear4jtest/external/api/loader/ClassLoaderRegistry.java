@@ -32,12 +32,48 @@ public interface ClassLoaderRegistry {
      * metaspace.
      * </p>
      */
+    default void register(String internalLoaderId,
+                          ClassLoader loader,
+                          GeneratedAssemblyLine<?, ?> bound,
+                          long bytecodeWeightBytes) {
+        register(internalLoaderId, loader, bound, bytecodeWeightBytes, RegistrationLease.published());
+    }
+
+    /**
+     * Stages a generated classloader under a lease controlled by the loading
+     * runtime.
+     *
+     * <p>
+     * Implementations must retain the lease with the entry and must not expose the
+     * classloader, bound assembly line or aliases until
+     * {@link RegistrationLease#isPublished()} returns {@code true}. This makes a
+     * registration that returns after its deadline invisible while it is being
+     * discarded.
+     * </p>
+     */
     void register(String internalLoaderId,
                   ClassLoader loader,
                   GeneratedAssemblyLine<?, ?> bound,
-                  long bytecodeWeightBytes);
+                  long bytecodeWeightBytes,
+                  RegistrationLease registrationLease);
 
     void evict(String internalLoaderId);
+
+    /**
+     * Evicts a loader only when the current entry is still owned by the expected
+     * classloader instance.
+     *
+     * <p>
+     * The ownership check and eviction must be atomic. Generated loading uses this
+     * operation to discard a registration that completed after its end-to-end
+     * deadline without deleting a newer successful retry for the same identifier.
+     * Implementations should make the operation idempotent and return {@code false}
+     * when the identifier is absent or has already been replaced.
+     * </p>
+     *
+     * @return {@code true} when the expected entry was evicted
+     */
+    boolean evictIfOwned(String internalLoaderId, ClassLoader expectedLoader);
 
     void setAlias(String alias, String internalLoaderId);
 
@@ -48,4 +84,16 @@ public interface ClassLoaderRegistry {
     String resolveAlias(String alias);
 
     GeneratedAssemblyLine<?, ?> getBoundAssemblyLine(String internalLoaderId);
+
+    /**
+     * Runtime-owned visibility lease for one generated classloader registration.
+     */
+    @FunctionalInterface
+    interface RegistrationLease {
+        boolean isPublished();
+
+        static RegistrationLease published() {
+            return () -> true;
+        }
+    }
 }

@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Bounded in-memory registry for generated classloaders.
  *
@@ -83,14 +85,16 @@ public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
     @Override
     public synchronized ClassLoader get(String id) {
         var h = byId.get(id);
-        return h == null ? null : h.loader;
+        return isPublished(h) ? h.loader : null;
     }
 
     @Override
     public synchronized void register(String id,
                                       ClassLoader loader,
                                       GeneratedAssemblyLine<?, ?> bound,
-                                      long loaderBytecodeWeightBytes) {
+                                      long loaderBytecodeWeightBytes,
+                                      RegistrationLease registrationLease) {
+        requireNonNull(registrationLease, "registrationLease must not be null");
         if (loaderBytecodeWeightBytes < 0L) {
             throw new IllegalArgumentException("bytecodeWeightBytes must be >= 0");
         }
@@ -121,7 +125,9 @@ public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
         }
 
         evictions.forEach(this::removeLoader);
-        Holder replaced = byId.put(id, new Holder(loader, bound, Instant.now(), loaderBytecodeWeightBytes));
+        Holder replaced = byId.put(id,
+                                   new Holder(loader, bound, Instant.now(), loaderBytecodeWeightBytes,
+                                           registrationLease));
         if (replaced != null) {
             bytecodeWeightBytes -= replaced.bytecodeWeightBytes;
         }
@@ -135,14 +141,24 @@ public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
     }
 
     @Override
+    public synchronized boolean evictIfOwned(String id, ClassLoader expectedLoader) {
+        Holder current = byId.get(id);
+        if (current == null || current.loader != expectedLoader) {
+            return false;
+        }
+        evict(id);
+        return true;
+    }
+
+    @Override
     public synchronized void setAlias(String alias, String id) {
         if (id == null) {
             aliasToId.remove(alias);
-        } else if (byId.containsKey(id)) {
+        } else if (isPublished(byId.get(id))) {
             requireProtectedLoaderCapacity(alias, id);
             aliasToId.put(alias, id);
         } else {
-            throw new IllegalArgumentException("Cannot alias missing classloader id: " + id);
+            throw new IllegalArgumentException("Cannot alias missing or unpublished classloader id: " + id);
         }
     }
 
@@ -159,7 +175,7 @@ public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
     @Override
     public synchronized GeneratedAssemblyLine<?, ?> getBoundAssemblyLine(String id) {
         var h = byId.get(id);
-        return h == null ? null : h.chain;
+        return isPublished(h) ? h.chain : null;
     }
 
     public synchronized RegistryStats snapshotStats() {
@@ -220,6 +236,10 @@ public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
         return new HashSet<>(aliasToId.values());
     }
 
+    private static boolean isPublished(Holder holder) {
+        return holder != null && holder.registrationLease.isPublished();
+    }
+
     public record RegistryStats(int cachedLoaders,
                                 int aliases,
                                 int maxLoaders,
@@ -231,5 +251,6 @@ public final class InMemoryClassLoaderRegistry implements ClassLoaderRegistry {
     private record Holder(ClassLoader loader,
                           GeneratedAssemblyLine<?, ?> chain,
                           Instant registeredAt,
-                          long bytecodeWeightBytes) {}
+                          long bytecodeWeightBytes,
+                          RegistrationLease registrationLease) {}
 }

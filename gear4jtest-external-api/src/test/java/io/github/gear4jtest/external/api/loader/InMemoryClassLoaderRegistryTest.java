@@ -1,5 +1,7 @@
 package io.github.gear4jtest.external.api.loader;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -165,6 +167,63 @@ class InMemoryClassLoaderRegistryTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("6 bytes > 5 bytes");
         assertThat(registry.snapshotStats().cachedLoaders()).isZero();
+    }
+
+    @Test
+    void evictIfOwned_shouldNotRemoveReplacementLoader() {
+        // Given
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder().build();
+        ClassLoader replaced = new ClassLoader() {};
+        ClassLoader replacement = new ClassLoader() {};
+        registry.register("loader", replaced, null);
+        registry.register("loader", replacement, null);
+
+        // When
+        boolean evicted = registry.evictIfOwned("loader", replaced);
+
+        // Then
+        assertThat(evicted).isFalse();
+        assertThat(registry.get("loader")).isSameAs(replacement);
+    }
+
+    @Test
+    void register_shouldKeepLeasedEntryInvisibleUntilPublication() {
+        // Given
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder().build();
+        AtomicBoolean published = new AtomicBoolean();
+        ClassLoader loader = new ClassLoader() {};
+
+        // When
+        registry.register("loader", loader, null, 0L, published::get);
+
+        // Then
+        assertThat(registry.get("loader")).isNull();
+        assertThat(registry.getBoundAssemblyLine("loader")).isNull();
+        assertThatThrownBy(() -> registry.setAlias("latest", "loader"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("missing or unpublished classloader id");
+
+        published.set(true);
+        assertThat(registry.get("loader")).isSameAs(loader);
+        registry.setAlias("latest", "loader");
+        assertThat(registry.resolveAlias("latest")).isEqualTo("loader");
+    }
+
+    @Test
+    void evictIfOwned_shouldAtomicallyRemoveExpectedLoaderAndAliases() {
+        // Given
+        InMemoryClassLoaderRegistry registry = InMemoryClassLoaderRegistry.builder().build();
+        ClassLoader loader = new ClassLoader() {};
+        registry.register("loader", loader, null);
+        registry.setAlias("latest", "loader");
+
+        // When
+        boolean evicted = registry.evictIfOwned("loader", loader);
+
+        // Then
+        assertThat(evicted).isTrue();
+        assertThat(registry.get("loader")).isNull();
+        assertThat(registry.resolveAlias("latest")).isNull();
     }
 
 }

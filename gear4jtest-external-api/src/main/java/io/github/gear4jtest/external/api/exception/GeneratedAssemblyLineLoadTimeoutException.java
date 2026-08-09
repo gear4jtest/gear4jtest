@@ -9,8 +9,10 @@ import java.util.Objects;
  *
  * <p>
  * Cancellation is best-effort because artifact stores, translators, compilers,
- * constructors or dependency injectors may ignore thread interruption. A late
- * generated instance is never registered or returned.
+ * constructors, dependency injectors or registries may ignore thread
+ * interruption. A late generated instance is never returned, and any completed
+ * late registry publication is conditionally discarded before the single-flight
+ * slot is released.
  * </p>
  */
 public final class GeneratedAssemblyLineLoadTimeoutException extends IOException {

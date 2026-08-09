@@ -72,7 +72,7 @@ public final class GeneratedLoadingMetricsBinder {
                         "Artifact metadata, size or SHA-256 mismatches observed while loading",
                         value -> value.loadingStats().artifactIntegrityFailures());
         registerGauge(meterRegistry, manager, "gear4j.generated.loading.in.flight",
-                      "Distinct generated loads that have not reached a terminal state",
+                      "Distinct generated-load slots not yet released, including late cleanup",
                       value -> value.loadingStats().inFlightLoads());
         registerGauge(meterRegistry, manager, "gear4j.generated.loading.executor.active",
                       "Generated-loading worker tasks currently executing",
