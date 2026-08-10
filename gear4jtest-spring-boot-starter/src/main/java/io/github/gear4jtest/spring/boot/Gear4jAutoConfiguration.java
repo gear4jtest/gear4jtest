@@ -52,17 +52,13 @@ public class Gear4jAutoConfiguration {
                 .withDefaultAwaitTimeout(properties.getParallel().getDefaultAwaitTimeout()));
     }
 
-    @Bean(destroyMethod = "shutdown")
-    @ConditionalOnBean(DataSource.class)
-    @ConditionalOnMissingBean(RunPersistenceManager.class)
-    @ConditionalOnProperty(prefix = "gear4j.persistence", name = "enabled", havingValue = "true")
-    DatabaseExecutionManager gear4jDatabaseExecutionManager(DataSource dataSource,
-                                                            Gear4jProperties properties,
-                                                            ObjectProvider<SensitiveDataRedactor> redactorProvider,
-                                                            ObjectProvider<PayloadCloner> payloadClonerProvider,
-                                                            ObjectProvider<PersistenceJsonCodec> jsonCodecProvider,
-                                                            ObjectProvider<JdbcTransactionOperations> jdbcTransactions,
-                                                            ObjectProvider<ObjectMapper> objectMapperProvider) {
+    static DatabaseExecutionManager createPersistenceManager(DataSource dataSource,
+                                                             Gear4jProperties properties,
+                                                             ObjectProvider<SensitiveDataRedactor> redactorProvider,
+                                                             ObjectProvider<PayloadCloner> payloadClonerProvider,
+                                                             ObjectProvider<PersistenceJsonCodec> jsonCodecProvider,
+                                                             ObjectProvider<JdbcTransactionOperations> jdbcTransactions,
+                                                             ObjectProvider<ObjectMapper> objectMapperProvider) {
         Gear4jProperties.PersistenceProperties persistence = properties.getPersistence();
         persistence.validateWhenEnabled();
         SensitiveDataRedactor redactor = resolveRedactor(redactorProvider.getIfAvailable(),
@@ -99,12 +95,56 @@ public class Gear4jAutoConfiguration {
         return managerBuilder.build();
     }
 
-    @Bean
+    @Bean(name = "gear4jDatabaseExecutionManager", destroyMethod = "shutdown")
+    @ConditionalOnSingleCandidate(DataSource.class)
+    @ConditionalOnMissingBean(value = RunPersistenceManager.class, annotation = Gear4jDataSource.class)
+    @ConditionalOnProperty(prefix = "gear4j.persistence", name = "enabled", havingValue = "true")
+    DatabaseExecutionManager defaultPersistenceManager(DataSource dataSource,
+                                                       Gear4jProperties properties,
+                                                       ObjectProvider<SensitiveDataRedactor> redactorProvider,
+                                                       ObjectProvider<PayloadCloner> payloadClonerProvider,
+                                                       ObjectProvider<PersistenceJsonCodec> jsonCodecProvider,
+                                                       ObjectProvider<JdbcTransactionOperations> jdbcTransactions,
+                                                       ObjectProvider<ObjectMapper> objectMapperProvider) {
+        return createPersistenceManager(dataSource, properties, redactorProvider, payloadClonerProvider,
+                                        jsonCodecProvider, jdbcTransactions, objectMapperProvider);
+    }
+
+    @Bean(name = "gear4jDatabaseExecutionManager", destroyMethod = "shutdown")
+    @ConditionalOnBean(annotation = Gear4jDataSource.class)
+    @ConditionalOnMissingBean(RunPersistenceManager.class)
+    @ConditionalOnProperty(prefix = "gear4j.persistence", name = "enabled", havingValue = "true")
+    DatabaseExecutionManager qualifiedPersistenceManager(@Gear4jDataSource DataSource dataSource,
+                                                         Gear4jProperties properties,
+                                                         ObjectProvider<SensitiveDataRedactor> redactorProvider,
+                                                         ObjectProvider<PayloadCloner> payloadClonerProvider,
+                                                         ObjectProvider<PersistenceJsonCodec> jsonCodecProvider,
+                                                         ObjectProvider<JdbcTransactionOperations> jdbcTransactions,
+                                                         ObjectProvider<ObjectMapper> objectMapperProvider) {
+        return createPersistenceManager(dataSource, properties, redactorProvider, payloadClonerProvider,
+                                        jsonCodecProvider, jdbcTransactions, objectMapperProvider);
+    }
+
+    @Bean(name = "gear4jJdbcTransactionOperations")
+    @ConditionalOnBean(DataSource.class)
+    @ConditionalOnSingleCandidate(DataSourceTransactionManager.class)
+    @ConditionalOnMissingBean(value = JdbcTransactionOperations.class, annotation = Gear4jDataSource.class)
+    @ConditionalOnProperty(prefix = "gear4j.persistence", name = "enabled", havingValue = "true")
+    SpringJdbcTransactionOperations defaultJdbcTransactions(ObjectProvider<DataSource> dataSourceProvider,
+                                                            DataSourceTransactionManager transactionManager) {
+        DataSource dataSource = dataSourceProvider.getIfUnique();
+        return dataSource == null
+                ? new SpringJdbcTransactionOperations(transactionManager)
+                : new SpringJdbcTransactionOperations(dataSource, transactionManager);
+    }
+
+    @Bean(name = "gear4jJdbcTransactionOperations")
+    @ConditionalOnBean(annotation = Gear4jDataSource.class)
     @ConditionalOnSingleCandidate(DataSourceTransactionManager.class)
     @ConditionalOnMissingBean(JdbcTransactionOperations.class)
     @ConditionalOnProperty(prefix = "gear4j.persistence", name = "enabled", havingValue = "true")
-    SpringJdbcTransactionOperations gear4jJdbcTransactionOperations(DataSource dataSource,
-                                                                    DataSourceTransactionManager transactionManager) {
+    SpringJdbcTransactionOperations qualifiedJdbcTransactions(@Gear4jDataSource DataSource dataSource,
+                                                              DataSourceTransactionManager transactionManager) {
         return new SpringJdbcTransactionOperations(dataSource, transactionManager);
     }
 

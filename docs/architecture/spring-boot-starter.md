@@ -31,6 +31,30 @@ gear4j:
 Persistence is opt-in. When enabled, `gear4j.persistence.dialect` is mandatory.
 Gear4J never auto-detects the database dialect.
 
+## Datasource selection
+
+With one `DataSource`, the starter uses it automatically. With several
+datasources, it uses Spring's single default candidate, normally the bean marked
+`@Primary`. If there is no default candidate, Gear4J persistence backs off
+instead of making application startup fail with an ambiguous dependency.
+
+To select a dedicated datasource explicitly, annotate its bean with
+`@Gear4jDataSource`. This qualifier takes precedence over an application
+`@Primary` datasource:
+
+```java
+@Bean
+@Gear4jDataSource
+DataSource gear4jPersistenceDataSource() {
+    return createGear4jDataSource();
+}
+```
+
+Exactly one Gear4J-qualified datasource must be available. If the starter also
+finds a single `DataSourceTransactionManager`, it verifies that the transaction
+manager targets this selected datasource before creating the Spring transaction
+adapter.
+
 `gear4j.persistence.redaction-mode` defaults to `DISCARD`. Without a
 `SensitiveDataRedactor` bean, Gear4J stores empty context maps and discards
 inputs, results and error messages. Set it to `REQUIRE` when the application must

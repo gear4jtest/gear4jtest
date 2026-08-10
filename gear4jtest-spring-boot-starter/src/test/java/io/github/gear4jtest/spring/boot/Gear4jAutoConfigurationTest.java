@@ -31,9 +31,12 @@ import io.github.gear4jtest.micrometer.Gear4jMicrometerExtension;
 import io.github.gear4jtest.spring.boot.actuate.Gear4jActuatorAutoConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -156,6 +159,114 @@ class Gear4jAutoConfigurationTest {
         contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
                 .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
                 .run(context -> assertThat(context).hasSingleBean(DatabaseExecutionManager.class));
+    }
+
+    @Test
+    void should_back_off_cleanly_when_persistence_is_enabled_without_data_source() {
+        // Given / When / Then
+        contextRunner.withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> assertThat(context)
+                        .hasNotFailed()
+                        .doesNotHaveBean(DatabaseExecutionManager.class)
+                        .doesNotHaveBean(JdbcTransactionOperations.class));
+    }
+
+    @Test
+    void should_back_off_cleanly_when_multiple_data_sources_have_no_default_candidate() {
+        // Given
+        DataSource firstDataSource = mock(DataSource.class);
+        DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(firstDataSource);
+
+        // When / Then
+        contextRunner.withBean("firstDataSource", DataSource.class, () -> firstDataSource)
+                .withBean("secondDataSource", DataSource.class, () -> mock(DataSource.class))
+                .withBean(DataSourceTransactionManager.class, () -> transactionManager)
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> assertThat(context)
+                        .hasNotFailed()
+                        .doesNotHaveBean(DatabaseExecutionManager.class)
+                        .hasSingleBean(JdbcTransactionOperations.class));
+    }
+
+    @Test
+    void should_use_primary_data_source_when_multiple_candidates_are_available() {
+        // Given
+        DataSource primaryDataSource = mock(DataSource.class);
+
+        // When / Then
+        contextRunner.withBean("applicationDataSource", DataSource.class, () -> mock(DataSource.class))
+                .withBean("primaryDataSource", DataSource.class, () -> primaryDataSource,
+                          beanDefinition -> beanDefinition.setPrimary(true))
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> assertThat(repositoryDataSource(context.getBean(DatabaseExecutionManager.class)))
+                        .isSameAs(primaryDataSource));
+    }
+
+    @Test
+    void should_prefer_explicit_gear4j_data_source_over_primary_candidate() {
+        // Given / When / Then
+        contextRunner.withUserConfiguration(DedicatedDataSourceConfiguration.class)
+                .withBean("primaryDataSource", DataSource.class, () -> mock(DataSource.class),
+                          beanDefinition -> beanDefinition.setPrimary(true))
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> {
+                    DataSource dedicatedDataSource = context.getBean("dedicatedDataSource", DataSource.class);
+
+                    assertThat(repositoryDataSource(context.getBean(DatabaseExecutionManager.class)))
+                            .isSameAs(dedicatedDataSource);
+                });
+    }
+
+    @Test
+    void should_use_transaction_manager_for_explicit_gear4j_data_source() {
+        // Given / When / Then
+        contextRunner.withUserConfiguration(DedicatedTransactionalDataSourceConfiguration.class)
+                .withBean("applicationDataSource", DataSource.class, () -> mock(DataSource.class))
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> {
+                    assertThat(context).hasSingleBean(JdbcTransactionOperations.class);
+                    JdbcTransactionOperations transactions = context.getBean(JdbcTransactionOperations.class);
+                    assertThat(transactions).isInstanceOf(SpringJdbcTransactionOperations.class);
+
+                    DatabaseExecutionManager manager = context.getBean(DatabaseExecutionManager.class);
+                    Object repository = ReflectionTestUtils.getField(manager, "repository");
+                    assertThat(ReflectionTestUtils.getField(repository, "transactionOperations"))
+                            .isSameAs(transactions);
+                    assertThat(ReflectionTestUtils.getField(transactions, "dataSource"))
+                            .isSameAs(context.getBean("dedicatedDataSource", DataSource.class));
+                });
+    }
+
+    @Test
+    void should_fail_fast_when_transaction_manager_targets_another_data_source() {
+        // Given / When / Then
+        contextRunner.withUserConfiguration(MismatchedTransactionManagerConfiguration.class)
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> {
+                    assertThat(context).hasFailed();
+                    assertThat(context.getStartupFailure())
+                            .hasRootCauseMessage("repositoryDataSource must match the DataSourceTransactionManager "
+                                    + "target dataSource");
+                });
+    }
+
+    @Test
+    void should_fail_fast_when_default_transaction_manager_targets_another_data_source() {
+        // Given
+        DataSource persistenceDataSource = mock(DataSource.class);
+        DataSource transactionDataSource = mock(DataSource.class);
+        DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(transactionDataSource);
+
+        // When / Then
+        contextRunner.withBean(DataSource.class, () -> persistenceDataSource)
+                .withBean(DataSourceTransactionManager.class, () -> transactionManager)
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> {
+                    assertThat(context).hasFailed();
+                    assertThat(context.getStartupFailure())
+                            .hasRootCauseMessage("repositoryDataSource must match the DataSourceTransactionManager "
+                                    + "target dataSource");
+                });
     }
 
     @Test
@@ -363,6 +474,53 @@ class Gear4jAutoConfigurationTest {
                     assertThat(context.getStartupFailure())
                             .hasRootCauseMessage("gear4j.persistence.dialect is required when persistence is enabled");
                 });
+    }
+
+    private static DataSource repositoryDataSource(DatabaseExecutionManager manager) {
+        Object repository = ReflectionTestUtils.getField(manager, "repository");
+        return (DataSource) ReflectionTestUtils.getField(repository, "dataSource");
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class DedicatedDataSourceConfiguration {
+        @Bean
+        @Gear4jDataSource
+        DataSource dedicatedDataSource() {
+            return mock(DataSource.class);
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class DedicatedTransactionalDataSourceConfiguration {
+        @Bean
+        @Gear4jDataSource
+        DataSource dedicatedDataSource() {
+            return mock(DataSource.class);
+        }
+
+        @Bean
+        DataSourceTransactionManager gear4jTransactionManager(@Gear4jDataSource DataSource dataSource) {
+            return new DataSourceTransactionManager(dataSource);
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class MismatchedTransactionManagerConfiguration {
+        @Bean
+        @Gear4jDataSource
+        DataSource dedicatedDataSource() {
+            return mock(DataSource.class);
+        }
+
+        @Bean
+        DataSource otherDataSource() {
+            return mock(DataSource.class);
+        }
+
+        @Bean
+        DataSourceTransactionManager mismatchedManager(@Qualifier("otherDataSource") DataSource otherDataSource) {
+            return new DataSourceTransactionManager(otherDataSource);
+        }
     }
 
     public static final class AppendBangOperator implements Operator<String, String> {
