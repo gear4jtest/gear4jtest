@@ -192,6 +192,18 @@ class XmlOperationChainTranslatorTest {
     }
 
     @Test
+    void translate_shouldApplyConfiguredXmlInputLimitToValidationAndParsing() {
+        // Given
+        XmlOperationChainTranslator boundedTranslator = XmlOperationChainTranslator
+                .trusted(XmlTranslationLimits.defaults(), 64L);
+
+        // When / Then
+        assertThatThrownBy(() -> boundedTranslator.translate(signalXml(1, 0), "application/xml"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxXmlBytes=64");
+    }
+
+    @Test
     void translate_shouldRejectSchemaValidButSemanticallyCollidingDependencies() {
         // Given
         byte[] xml = semanticValidationXml("java.lang.String",

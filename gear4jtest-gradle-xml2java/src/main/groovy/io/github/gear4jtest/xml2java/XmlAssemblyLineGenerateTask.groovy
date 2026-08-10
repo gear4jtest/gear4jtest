@@ -4,6 +4,7 @@ import io.github.gear4jtest.external.api.ExecutionMode
 import io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy
 import io.github.gear4jtest.xml.translator.XmlOperationChainTranslator
 import io.github.gear4jtest.xml.translator.XmlTranslationLimits
+import io.github.gear4jtest.xml.validator.AssemblyLineValidator
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
@@ -35,6 +36,7 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
     private final Property<Integer> maxOperations
     private final Property<Integer> maxDependencies
     private final Property<Integer> maxNestingDepth
+    private final Property<Long> maxXmlBytes
     private final Property<Long> maxGeneratedSourceBytes
 
     @Inject
@@ -47,6 +49,7 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
         this.maxOperations = objects.property(Integer).convention(XmlTranslationLimits.DEFAULT_MAX_OPERATIONS)
         this.maxDependencies = objects.property(Integer).convention(XmlTranslationLimits.DEFAULT_MAX_DEPENDENCIES)
         this.maxNestingDepth = objects.property(Integer).convention(XmlTranslationLimits.DEFAULT_MAX_NESTING_DEPTH)
+        this.maxXmlBytes = objects.property(Long).convention(AssemblyLineValidator.DEFAULT_MAX_XML_BYTES)
         this.maxGeneratedSourceBytes = objects.property(Long)
             .convention(XmlTranslationLimits.DEFAULT_MAX_GENERATED_SOURCE_BYTES)
     }
@@ -96,6 +99,11 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
     }
 
     @Input
+    Property<Long> getMaxXmlBytes() {
+        return maxXmlBytes
+    }
+
+    @Input
     Property<Long> getMaxGeneratedSourceBytes() {
         return maxGeneratedSourceBytes
     }
@@ -109,15 +117,17 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
             maxNestingDepth.get(),
             maxGeneratedSourceBytes.get()
         )
+        long inputLimit = maxXmlBytes.get()
         XmlOperationChainTranslator translator = trustedXml.get()
-            ? XmlOperationChainTranslator.trusted(limits)
-            : XmlOperationChainTranslator.gelOnly(restrictedCapabilities(), limits)
+            ? XmlOperationChainTranslator.trusted(limits, inputLimit)
+            : XmlOperationChainTranslator.gelOnly(restrictedCapabilities(), limits, inputLimit)
 
         def generatedSources = xmlFiles.files
             .findAll { File file -> file.isFile() && file.name.endsWith('.xml') }
             .sort { File file -> file.path }
             .collect { File file ->
-                def result = translator.translate(file.bytes, mediaType.get(), ExecutionMode.RUN)
+                byte[] xml = BoundedXmlInput.read(file, inputLimit)
+                def result = translator.translate(xml, mediaType.get(), ExecutionMode.RUN)
                 new GeneratedSource(file, result.className(), result.formattedSource())
             }
 

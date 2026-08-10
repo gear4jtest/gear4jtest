@@ -32,6 +32,7 @@ import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.SupplierParamete
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.Transformer;
 import io.github.gear4jtest.xml.model.XmlAssemblyLineDefinition.ValueParameter;
 import io.github.gear4jtest.xml.translator.XmlTranslationLimits;
+import io.github.gear4jtest.xml.validator.AssemblyLineValidator;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -44,7 +45,7 @@ public final class XmlAssemblyLineParser {
     private static final String OUTPUT_TYPE_ATTRIBUTE = "outputType";
     private static final String RETRIEVER_ATTRIBUTE = "retriever";
 
-    public static final long DEFAULT_MAX_XML_BYTES = 2L * 1024L * 1024L;
+    public static final long DEFAULT_MAX_XML_BYTES = AssemblyLineValidator.DEFAULT_MAX_XML_BYTES;
 
     private final long maxXmlBytes;
     private final XmlTranslationLimits translationLimits;

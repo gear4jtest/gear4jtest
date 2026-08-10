@@ -22,7 +22,8 @@ public final class XmlOperationChainTranslator implements OperationChainTranslat
     private final XmlToJavaGenerator generator;
 
     public XmlOperationChainTranslator() {
-        this(XmlOperatorCapabilityPolicy.denyAll(), XmlTranslationLimits.defaults(), false);
+        this(XmlOperatorCapabilityPolicy.denyAll(), XmlTranslationLimits.defaults(),
+                AssemblyLineValidator.DEFAULT_MAX_XML_BYTES, false);
     }
 
     public static XmlOperationChainTranslator trusted() {
@@ -30,7 +31,12 @@ public final class XmlOperationChainTranslator implements OperationChainTranslat
     }
 
     public static XmlOperationChainTranslator trusted(XmlTranslationLimits limits) {
-        return new XmlOperationChainTranslator(XmlOperatorCapabilityPolicy.trustedClassNames(), limits, true);
+        return trusted(limits, AssemblyLineValidator.DEFAULT_MAX_XML_BYTES);
+    }
+
+    public static XmlOperationChainTranslator trusted(XmlTranslationLimits limits, long maxXmlBytes) {
+        return new XmlOperationChainTranslator(XmlOperatorCapabilityPolicy.trustedClassNames(), limits, maxXmlBytes,
+                true);
     }
 
     public static XmlOperationChainTranslator gelOnly() {
@@ -43,15 +49,22 @@ public final class XmlOperationChainTranslator implements OperationChainTranslat
 
     public static XmlOperationChainTranslator gelOnly(XmlOperatorCapabilityPolicy operatorCapabilityPolicy,
                                                       XmlTranslationLimits limits) {
-        return new XmlOperationChainTranslator(operatorCapabilityPolicy, limits, false);
+        return gelOnly(operatorCapabilityPolicy, limits, AssemblyLineValidator.DEFAULT_MAX_XML_BYTES);
+    }
+
+    public static XmlOperationChainTranslator gelOnly(XmlOperatorCapabilityPolicy operatorCapabilityPolicy,
+                                                      XmlTranslationLimits limits,
+                                                      long maxXmlBytes) {
+        return new XmlOperationChainTranslator(operatorCapabilityPolicy, limits, maxXmlBytes, false);
     }
 
     private XmlOperationChainTranslator(XmlOperatorCapabilityPolicy operatorCapabilityPolicy,
                                         XmlTranslationLimits limits,
+                                        long maxXmlBytes,
                                         boolean trusted) {
         XmlTranslationLimits effectiveLimits = Objects.requireNonNull(limits, "limits must not be null");
-        this.validator = new AssemblyLineValidator();
-        this.parser = new XmlAssemblyLineParser(XmlAssemblyLineParser.DEFAULT_MAX_XML_BYTES, effectiveLimits);
+        this.validator = new AssemblyLineValidator(maxXmlBytes);
+        this.parser = new XmlAssemblyLineParser(maxXmlBytes, effectiveLimits);
         XmlToJavaGenerator.Builder generatorBuilder = XmlToJavaGenerator.builder().translationLimits(effectiveLimits);
         if (trusted) {
             generatorBuilder.sourcePolicy(XmlJavaSourcePolicy.trusted());

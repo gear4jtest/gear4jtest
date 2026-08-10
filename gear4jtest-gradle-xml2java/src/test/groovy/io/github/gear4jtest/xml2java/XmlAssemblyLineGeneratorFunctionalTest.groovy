@@ -107,15 +107,47 @@ class XmlAssemblyLineGeneratorFunctionalTest {
             .resolve('io/github/gear4jtest/xml/generated/Foo_barLine.java')).doesNotExist()
     }
 
-    private void writeBuild() {
+    @Test
+    void generation_shouldRejectOversizedXmlBeforeReplacingOutputs() {
+        // Given
+        writeBuild('maxXmlBytes.set(1024L)')
+        Path pipeline = writePipeline('oversized')
+        def arguments = generationArguments()
+        BuildResult first = runner(arguments).build()
+        assertThat(first.task(':xmlGenerateAssemblyLine').outcome).isEqualTo(TaskOutcome.SUCCESS)
+        Path previous = generatedSourceRoot()
+            .resolve('io/github/gear4jtest/xml/generated/OversizedLine.java')
+        assertThat(previous).exists()
+        String previousContent = Files.readString(previous)
+
+        new RandomAccessFile(pipeline.toFile(), 'rw').withCloseable { file ->
+            file.setLength(64L * 1024L * 1024L)
+        }
+
+        // When
+        BuildResult result = runner(arguments).buildAndFail()
+
+        // Then
+        assertThat(result.task(':xmlGenerateAssemblyLine').outcome).isEqualTo(TaskOutcome.FAILED)
+        assertThat(result.output)
+            .contains('Gear4J XML definition exceeds maxXmlBytes=1024')
+            .contains('pipeline.xml')
+        assertThat(previous).exists().hasContent(previousContent)
+    }
+
+    private void writeBuild(String configuration = '') {
         Files.writeString(projectDirectory.resolve('settings.gradle'), "rootProject.name = 'functional-test'\n")
-        Files.writeString(projectDirectory.resolve('build.gradle'), '''
+        Files.writeString(projectDirectory.resolve('build.gradle'), """
 plugins {
     id 'java'
     id 'io.github.gear4jtest.xml2java'
 }
 
-'''.stripIndent())
+xmlAssemblyLineGenerator {
+    ${configuration}
+}
+
+""".stripIndent())
     }
 
     private Path writePipeline(String id) {

@@ -32,6 +32,7 @@ class XmlAssemblyLineGeneratorPlugin implements Plugin<Project> {
             task.maxOperations.set(extension.maxOperations)
             task.maxDependencies.set(extension.maxDependencies)
             task.maxNestingDepth.set(extension.maxNestingDepth)
+            task.maxXmlBytes.set(extension.maxXmlBytes)
             task.maxGeneratedSourceBytes.set(extension.maxGeneratedSourceBytes)
         }
 

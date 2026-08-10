@@ -49,14 +49,19 @@ xmlAssemblyLineGenerator {
     maxOperations.set(500)
     maxDependencies.set(64)
     maxNestingDepth.set(16)
+    maxXmlBytes.set(2L * 1024L * 1024L)
     maxGeneratedSourceBytes.set(2L * 1024L * 1024L)
 }
 ```
 
 If not configured, the task uses the runtime XML defaults: 1,000 total
-operations, 256 dependencies, nesting depth 32 and 4 MiB of generated UTF-8
-source. All four values are declared task inputs, so changing a budget
+operations, 256 dependencies, nesting depth 32, 2 MiB per XML input and 4 MiB
+of generated UTF-8 source. All five values are declared task inputs, so changing a budget
 invalidates the build-cache entry.
+
+Each XML file is read through the configured `maxXmlBytes` budget. The task reads
+at most one byte beyond that limit before rejecting an oversized input, and it
+does so before replacing previously generated sources.
 
 XML definitions are treated as untrusted by default. This allows XML using GEL-only expressions, but rejects inline Java
 expressions such as method references, Java lambdas or fallback snippets.

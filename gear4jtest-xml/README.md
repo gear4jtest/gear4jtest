@@ -107,10 +107,11 @@ location without waiting for a Java compiler diagnostic.
 
 ## Translation budgets
 
-Every translator applies finite defaults: 1,000 total operations, 256
-dependencies, nesting depth 32 and 4 MiB of generated UTF-8 Java source. Nested
-iterator, container and if/else operations all contribute to the same operation
-budget. Limits apply to trusted XML as well as restricted XML.
+Every translator applies finite defaults: 2 MiB of XML input, 1,000 total
+operations, 256 dependencies, nesting depth 32 and 4 MiB of generated UTF-8
+Java source. Nested iterator, container and if/else operations all contribute
+to the same operation budget. Limits apply to trusted XML as well as restricted
+XML.
 
 Applications may lower or deliberately raise finite limits:
 
@@ -122,8 +123,12 @@ XmlTranslationLimits limits = XmlTranslationLimits.defaults()
         .withMaxGeneratedSourceBytes(1024L * 1024L);
 
 XmlOperationChainTranslator translator =
-        XmlOperationChainTranslator.gelOnly(operatorCapabilities, limits);
+        XmlOperationChainTranslator.gelOnly(
+                operatorCapabilities, limits, 512L * 1024L);
 ```
+
+The final argument is the XML input-size budget. The validator and parser both
+receive that same value. Overloads without it retain the 2 MiB default.
 
 The runtime compiler independently enforces its source and bytecode limits, so a
 custom translator cannot bypass the external loading boundary.

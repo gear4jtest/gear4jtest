@@ -123,4 +123,6 @@ See [Gear4J expression language](../roadmap/gear-expression-language.md).
 
 `AssemblyLineValidator` applies a configurable byte limit before XSD processing. Both byte-array and stream entry points
 use the same default of 2 MiB; stream validation reads at most `maxXmlBytes + 1` bytes before rejecting oversized input.
+`XmlOperationChainTranslator` passes one configured limit to both the validator and parser. The Gradle plugin also uses
+that same value while reading each source file, so it rejects an oversized build input before allocating the entire file.
 Applications accepting untrusted XML should keep this limit finite and align it with the external artifact-size policy.

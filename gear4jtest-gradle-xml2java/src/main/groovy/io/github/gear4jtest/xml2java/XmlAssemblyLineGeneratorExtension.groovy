@@ -6,6 +6,7 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import io.github.gear4jtest.xml.translator.XmlTranslationLimits
+import io.github.gear4jtest.xml.validator.AssemblyLineValidator
 
 /**
  * Configures build-time Java source generation from Gear4J XML pipeline definitions.
@@ -35,6 +36,7 @@ abstract class XmlAssemblyLineGeneratorExtension {
     final Property<Integer> maxOperations
     final Property<Integer> maxDependencies
     final Property<Integer> maxNestingDepth
+    final Property<Long> maxXmlBytes
     final Property<Long> maxGeneratedSourceBytes
 
     XmlAssemblyLineGeneratorExtension(Project project) {
@@ -47,6 +49,7 @@ abstract class XmlAssemblyLineGeneratorExtension {
         this.maxOperations = project.objects.property(Integer)
         this.maxDependencies = project.objects.property(Integer)
         this.maxNestingDepth = project.objects.property(Integer)
+        this.maxXmlBytes = project.objects.property(Long)
         this.maxGeneratedSourceBytes = project.objects.property(Long)
 
         this.xmlFiles.from(project.fileTree('src/main/gear4j') { include '**/*.xml' })
@@ -57,6 +60,7 @@ abstract class XmlAssemblyLineGeneratorExtension {
         this.maxOperations.convention(XmlTranslationLimits.DEFAULT_MAX_OPERATIONS)
         this.maxDependencies.convention(XmlTranslationLimits.DEFAULT_MAX_DEPENDENCIES)
         this.maxNestingDepth.convention(XmlTranslationLimits.DEFAULT_MAX_NESTING_DEPTH)
+        this.maxXmlBytes.convention(AssemblyLineValidator.DEFAULT_MAX_XML_BYTES)
         this.maxGeneratedSourceBytes.convention(XmlTranslationLimits.DEFAULT_MAX_GENERATED_SOURCE_BYTES)
     }
 

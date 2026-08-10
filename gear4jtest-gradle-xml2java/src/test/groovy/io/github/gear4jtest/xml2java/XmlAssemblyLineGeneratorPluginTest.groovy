@@ -4,6 +4,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.Test
+import io.github.gear4jtest.xml.validator.AssemblyLineValidator
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.assertThatThrownBy
@@ -43,6 +44,43 @@ class XmlAssemblyLineGeneratorPluginTest {
         assertThat(compileJava.taskDependencies.getDependencies(compileJava))
             .extracting('name')
             .contains(XmlAssemblyLineGeneratorPlugin.TASK_NAME)
+    }
+
+    @Test
+    void should_share_xml_input_limit_between_extension_and_task() {
+        // Given
+        def project = ProjectBuilder.builder()
+            .withName('my-library')
+            .build()
+
+        // When
+        project.plugins.apply(XmlAssemblyLineGeneratorPlugin)
+        def extension = project.extensions.getByType(XmlAssemblyLineGeneratorExtension)
+        def task = project.tasks.getByName(XmlAssemblyLineGeneratorPlugin.TASK_NAME)
+
+        // Then
+        assertThat(extension.maxXmlBytes.get()).isEqualTo(AssemblyLineValidator.DEFAULT_MAX_XML_BYTES)
+        assertThat(task.maxXmlBytes.get()).isEqualTo(AssemblyLineValidator.DEFAULT_MAX_XML_BYTES)
+
+        // When
+        extension.maxXmlBytes.set(512L)
+
+        // Then
+        assertThat(task.maxXmlBytes.get()).isEqualTo(512L)
+    }
+
+    @Test
+    void should_read_only_one_byte_beyond_xml_input_limit() {
+        // Given
+        def input = new CountingInputStream(new ByteArrayInputStream(new byte[1_024]))
+
+        // When / Then
+        assertThatThrownBy {
+            BoundedXmlInput.read(input, 'oversized.xml', 32L)
+        }
+            .isInstanceOf(GradleException)
+            .hasMessage('Gear4J XML definition exceeds maxXmlBytes=32: oversized.xml')
+        assertThat(input.bytesRead()).isEqualTo(33)
     }
 
     @Test
@@ -273,6 +311,37 @@ class XmlAssemblyLineGeneratorPluginTest {
             .isInstanceOf(IllegalArgumentException)
             .hasMessageContaining('maxOperations=1')
         assertThat(previous).exists().hasContent('keep me')
+    }
+
+    private static final class CountingInputStream extends InputStream {
+        private final InputStream delegate
+        private int bytesRead
+
+        private CountingInputStream(InputStream delegate) {
+            this.delegate = delegate
+        }
+
+        @Override
+        int read() throws IOException {
+            int value = delegate.read()
+            if (value != -1) {
+                bytesRead++
+            }
+            return value
+        }
+
+        @Override
+        int read(byte[] buffer, int offset, int length) throws IOException {
+            int read = delegate.read(buffer, offset, length)
+            if (read > 0) {
+                bytesRead += read
+            }
+            return read
+        }
+
+        private int bytesRead() {
+            return bytesRead
+        }
     }
 
 }
