@@ -42,6 +42,7 @@ public final class XmlAssemblyLineParser {
     private static final String CONDITION_ELEMENT = "condition";
     private static final String EXPRESSION_ATTRIBUTE = "expression";
     private static final String INPUT_TYPE_ATTRIBUTE = "inputType";
+    private static final String OPERATION_DEFAULT_CONFIGURATION_ELEMENT = "operationDefaultConfiguration";
     private static final String OUTPUT_TYPE_ATTRIBUTE = "outputType";
     private static final String RETRIEVER_ATTRIBUTE = "retriever";
 
@@ -407,6 +408,10 @@ public final class XmlAssemblyLineParser {
     private Configuration parseConfiguration(Element element) {
         if (element == null) {
             return null;
+        }
+        if (child(element, OPERATION_DEFAULT_CONFIGURATION_ELEMENT) != null) {
+            throw new IllegalArgumentException("Unsupported XML configuration element <"
+                    + OPERATION_DEFAULT_CONFIGURATION_ELEMENT + ">: operation defaults are not implemented");
         }
         EventHandling eventHandling = null;
         Element eventHandlingElement = child(element, "eventHandling");

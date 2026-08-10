@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="unsupported_operation_defaults"
+              inputType="java.lang.String"
+              outputType="java.lang.String">
+  <operations>
+    <signal id="stop" type="STOP" inputType="java.lang.String"/>
+  </operations>
+  <configuration>
+    <operationDefaultConfiguration>
+      <defaults retries="3"/>
+    </operationDefaultConfiguration>
+  </configuration>
+</assemblyLine>

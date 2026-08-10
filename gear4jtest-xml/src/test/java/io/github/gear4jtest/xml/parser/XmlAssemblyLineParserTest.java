@@ -169,6 +169,18 @@ class XmlAssemblyLineParserTest {
     }
 
     @Test
+    void should_reject_unsupported_operation_default_configuration() {
+        // Given
+        var xml = resource("/samples/unsupported-operation-default-configuration.xml");
+
+        // When / Then
+        assertThatThrownBy(() -> parser.parse(xml))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Unsupported XML configuration element <operationDefaultConfiguration>: "
+                        + "operation defaults are not implemented");
+    }
+
+    @Test
     void should_reject_xml_that_exceeds_configured_size_limit() {
         // Given
         XmlAssemblyLineParser boundedParser = new XmlAssemblyLineParser(120);

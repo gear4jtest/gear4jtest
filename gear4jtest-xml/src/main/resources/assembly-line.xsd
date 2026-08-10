@@ -225,6 +225,11 @@
   <xs:complexType name="ConfigurationType">
     <xs:sequence>
       <xs:element name="operationDefaultConfiguration" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Reserved for a versioned schema evolution. Current Gear4J consumers reject this unsupported element.
+          </xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:sequence minOccurs="0" maxOccurs="unbounded">
             <xs:any processContents="lax"/>

@@ -24,9 +24,11 @@ import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
 import io.github.gear4jtest.external.api.loader.InMemoryClassLoader;
 import io.github.gear4jtest.external.api.loader.SimpleDependencyInjector;
 import io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy;
+import io.github.gear4jtest.xml.validator.AssemblyLineValidator;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class XmlOperationChainTranslatorTest {
@@ -201,6 +203,19 @@ class XmlOperationChainTranslatorTest {
         assertThatThrownBy(() -> boundedTranslator.translate(signalXml(1, 0), "application/xml"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("maxXmlBytes=64");
+    }
+
+    @Test
+    void translate_shouldRejectSchemaValidUnsupportedOperationDefaultConfiguration() throws IOException {
+        // Given
+        byte[] xml = resource("/samples/unsupported-operation-default-configuration.xml");
+        assertThatCode(() -> new AssemblyLineValidator().validate(xml)).doesNotThrowAnyException();
+
+        // When / Then
+        assertThatThrownBy(() -> translator.translate(xml, "application/xml"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Unsupported XML configuration element <operationDefaultConfiguration>: "
+                        + "operation defaults are not implemented");
     }
 
     @Test
