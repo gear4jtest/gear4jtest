@@ -1,16 +1,18 @@
 package io.github.gear4jtest.xml2java
 
+import io.github.gear4jtest.core.api.annotation.PublicApi
+import io.github.gear4jtest.xml.translator.XmlTranslationLimits
+import io.github.gear4jtest.xml.validator.AssemblyLineValidator
 import org.gradle.api.Project
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
-import io.github.gear4jtest.xml.translator.XmlTranslationLimits
-import io.github.gear4jtest.xml.validator.AssemblyLineValidator
 
 /**
  * Configures build-time Java source generation from Gear4J XML pipeline definitions.
  */
+@PublicApi
 abstract class XmlAssemblyLineGeneratorExtension {
     private final Project project
 

@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+    id '@PLUGIN_ID@'
+}
+
+xmlAssemblyLineGenerator {
+    filePaths = 'src/main/gear4j'
+    xmlFiles filePaths
+    inputDir 'src/main/gear4j'
+    outputDir 'build/generated-compatibility'
+    mediaType.set('application/xml')
+    trustedXml = false
+    trustedXml()
+    operatorCapability 'compatibility.unused', 'java.lang.String'
+    maxOperations.set(100)
+    maxDependencies.set(32)
+    maxNestingDepth.set(16)
+    maxXmlBytes.set(64L * 1024L)
+    maxGeneratedSourceBytes.set(256L * 1024L)
+}
+
+tasks.named('xmlGenerateAssemblyLine') {
+    xmlFiles.from(file('src/main/gear4j/compatibility-line.xml'))
+    outputDir.set(layout.buildDirectory.dir('generated-compatibility'))
+    mediaType.set('application/xml')
+    trustedXml.set(true)
+    operatorCapabilities.put('compatibility.unused', 'java.lang.String')
+    maxOperations.set(100)
+    maxDependencies.set(32)
+    maxNestingDepth.set(16)
+    maxXmlBytes.set(64L * 1024L)
+    maxGeneratedSourceBytes.set(256L * 1024L)
+}

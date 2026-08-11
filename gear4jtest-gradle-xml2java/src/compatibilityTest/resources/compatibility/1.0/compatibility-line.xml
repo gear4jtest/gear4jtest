@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="compatibility_line"
+              inputType="java.lang.String"
+              outputType="java.lang.String">
+  <operations>
+    <signal id="stop" type="STOP" inputType="java.lang.String"/>
+  </operations>
+</assemblyLine>

@@ -105,6 +105,23 @@ xmlAssemblyLineGenerator {
 
 Older local builds that used `filePaths = '...'` are still supported as an alias for `inputDir`.
 
+## Compatibility contract
+
+For Gear4J 1.x, both plugin ids, the `xmlAssemblyLineGenerator` extension name,
+its documented properties and methods, and the `xmlGenerateAssemblyLine` task
+inputs/output are stable build-script contracts. The plugin implementation and
+task classes themselves are internal Gradle wiring and must not be constructed
+or subclassed by consumers.
+
+The versioned `compatibility/1.0` TestKit fixture exercises the complete DSL
+through both the canonical and legacy plugin ids. Japicmp also compares the
+published plugin implementation artifact whenever
+`gear4j.apiBaselineVersion` is configured.
+
+The tested Gradle runtime for Gear4J 1.0 is Gradle 9.6.1 on Java 17. Other
+Gradle versions are not part of the supported matrix until they are exercised
+by TestKit and CI.
+
 ## Responsibilities
 
 This module owns:
@@ -123,11 +140,17 @@ Useful focused task:
 
 ```bash
 ./gradlew :gear4jtest-gradle-xml2java:test
+./gradlew :gear4jtest-gradle-xml2java:gradlePluginCompatibilityTest
+./gradlew :gear4jtest-gradle-xml2java:javadocJar
 ```
 
 The TestKit suite executes the real generation task twice with strict
 configuration-cache validation and the build cache enabled. It also verifies that
 changing an XML input invalidates the task and replaces obsolete generated files.
+The published Javadoc-classified artifact is generated with Groovydoc because the
+stable Gradle DSL type is implemented in Groovy; the task fails if that public type
+is absent from the archive. The module applies the Groovy plugin directly so the
+documentation task is available independently of root-project convention wiring.
 A direct consumer-style check is:
 
 ```bash

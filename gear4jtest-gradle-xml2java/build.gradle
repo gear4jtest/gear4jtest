@@ -1,3 +1,5 @@
+apply plugin: 'groovy'
+
 dependencies {
     implementation project(':gear4jtest-core')
     implementation project(':gear4jtest-external-api')
@@ -7,6 +9,68 @@ dependencies {
     testImplementation(libs.junit)
     testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.assertj)
+}
+
+sourceSets {
+    compatibilityTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
+configurations {
+    compatibilityTestImplementation.extendsFrom testImplementation
+    compatibilityTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+tasks.register('gradlePluginCompatibilityTest', Test) {
+    group = 'verification'
+    description = 'Runs the versioned Gradle plugin DSL compatibility fixtures against the current plugin.'
+    dependsOn tasks.named('pluginUnderTestMetadata')
+    testClassesDirs = sourceSets.compatibilityTest.output.classesDirs
+    classpath = sourceSets.compatibilityTest.runtimeClasspath
+    useJUnitPlatform()
+    shouldRunAfter tasks.named('test')
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('gradlePluginCompatibilityTest')
+}
+
+def publicDslDocumentationEntry =
+    'io/github/gear4jtest/xml2java/XmlAssemblyLineGeneratorExtension.html'
+def publicDslGroovydoc = tasks.named(
+    'groovydoc', org.gradle.api.tasks.javadoc.Groovydoc) {
+    source = sourceSets.main.groovy.matching {
+        include '**/XmlAssemblyLineGeneratorExtension.groovy'
+    }
+    noTimestamp = true
+    noVersionStamp = true
+}
+
+tasks.named('javadoc') {
+    onlyIf {
+        source.files.any { sourceFile ->
+            sourceFile.name != 'package-info.java' && sourceFile.name != 'module-info.java'
+        }
+    }
+}
+
+tasks.register('javadocJar', Jar) {
+    dependsOn publicDslGroovydoc
+    archiveClassifier = 'javadoc'
+    from(publicDslGroovydoc.flatMap { it.destinationDirectory })
+    inputs.property('publicDslDocumentationEntry', publicDslDocumentationEntry)
+
+    doLast {
+        def expectedEntry = inputs.properties['publicDslDocumentationEntry']
+        new java.util.zip.ZipFile(archiveFile.get().asFile).withCloseable { archive ->
+            if (archive.getEntry(expectedEntry) == null) {
+                throw new GradleException(
+                    "Gradle plugin documentation is missing ${expectedEntry}")
+            }
+        }
+    }
 }
 
 java {
@@ -56,6 +120,8 @@ publishing {
 }
 
 gradlePlugin {
+    testSourceSets.add(sourceSets.compatibilityTest)
+
     plugins {
         create("gear4jXmlAssemblyLineGenerator") {
             id = "io.github.gear4jtest.xml2java"

@@ -1276,7 +1276,7 @@ dependencies {
 }
 
 def apiBaselineVersion = providers.gradleProperty('gear4j.apiBaselineVersion')
-def publishedLibraryProjects = coreProjects.findAll { !it.name.contains('gradle') }
+def publishedLibraryProjects = coreProjects.findAll { it.plugins.hasPlugin('maven-publish') }
 def apiCompatibilityTasks = []
 
 if (apiBaselineVersion.isPresent()) {
@@ -1344,11 +1344,16 @@ tasks.register('apiCompatibilityCheck') {
     description = 'Checks public source and binary compatibility against the configured N-1 release.'
     dependsOn tasks.named('verifyApiCompatibilityConfiguration')
     dependsOn apiCompatibilityTasks
+    dependsOn ':gear4jtest-gradle-xml2java:gradlePluginCompatibilityTest'
     if (!apiBaselineVersion.isPresent()) {
         doLast {
             logger.lifecycle('No API baseline configured; this is allowed only for snapshots, prereleases and 1.0.0.')
         }
     }
+}
+
+tasks.named('check') {
+    dependsOn ':gear4jtest-gradle-xml2java:gradlePluginCompatibilityTest'
 }
 
 tasks.named('releaseCheck') {

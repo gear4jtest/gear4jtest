@@ -24,6 +24,40 @@ The initial `1.0.0`, snapshots and prereleases have no earlier stable baseline. 
 Generics added before the baseline (`RunRequest<IN>` and `GeneratedAssemblyLine<IN, OUT>`) preserve erased JVM method
 descriptors while improving new source code. Raw use remains a Java migration aid but should not be used in new code.
 
+## Gradle plugin DSL
+
+The canonical plugin id is `io.github.gear4jtest.xml2java`. The legacy
+`io.github.gear4jtest.gradle.xml2java` id remains supported throughout 1.x and
+resolves to the same implementation.
+
+The following build-script surface is compatibility-sensitive:
+
+- the `xmlAssemblyLineGenerator` extension and its
+  `XmlAssemblyLineGeneratorExtension` type;
+- `xmlFiles`, `inputDir`, `filePaths`, `outputDir`, `mediaType`, `trustedXml`,
+  `operatorCapabilities`, `operatorCapability`, `maxOperations`,
+  `maxDependencies`, `maxNestingDepth`, `maxXmlBytes` and
+  `maxGeneratedSourceBytes`;
+- the `xmlGenerateAssemblyLine` task name and the names and Gradle property
+  types of its annotated inputs and output.
+
+`XmlAssemblyLineGeneratorPlugin` and `XmlAssemblyLineGenerateTask` are public
+only because Gradle instantiates and decorates them. They are marked
+`@Internal`; consumers must configure the extension or the named task rather
+than construct, subclass or depend on those implementation classes.
+
+Japicmp compares the published `gear4jtest-gradle-xml2java` implementation
+artifact with the configured N-1 release. The separate
+`gradlePluginCompatibilityTest` runs the versioned 1.0 consumer fixture against
+the current plugin through both plugin ids. Future stable releases update or
+add an immediately preceding fixture instead of rewriting the historical 1.0
+contract.
+
+The tested Gradle runtime for the 1.0 line is the checksummed wrapper version,
+Gradle 9.6.1 on Java 17. Compatibility with other Gradle versions is not claimed
+until that version is added to the TestKit/CI matrix. Changing the minimum or
+tested Gradle runtime is a documented build-tool compatibility change.
+
 ## SPI compatibility
 
 SPI changes receive the same binary/source checks as public API. New abstract methods are forbidden in a minor or patch

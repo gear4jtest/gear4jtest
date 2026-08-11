@@ -1,5 +1,6 @@
 package io.github.gear4jtest.xml2java
 
+import io.github.gear4jtest.core.api.annotation.Internal
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
@@ -9,6 +10,7 @@ import org.gradle.api.tasks.SourceSet
 /**
  * Gradle plugin that generates Java Gear4J assembly line classes from XML files before Java compilation.
  */
+@Internal
 class XmlAssemblyLineGeneratorPlugin implements Plugin<Project> {
     static final String EXTENSION_NAME = 'xmlAssemblyLineGenerator'
     static final String TASK_NAME = 'xmlGenerateAssemblyLine'

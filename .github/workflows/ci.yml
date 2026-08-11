@@ -45,11 +45,17 @@ jobs:
           COVERAGE_BASE_REF: ${{ github.base_ref }}
         run: scripts/verify-coverage-ratchet.py "origin/${COVERAGE_BASE_REF}"
 
-      - name: Validate XML plugin configuration and build caches
+      - name: Validate XML plugin configuration, compatibility and build caches
         run: |
           ./gradlew --no-daemon \
             :gear4jtest-gradle-xml2java:test \
             --tests '*XmlAssemblyLineGeneratorFunctionalTest' \
+            --configuration-cache \
+            --configuration-cache-problems=fail \
+            --build-cache \
+            --warning-mode=all
+          ./gradlew --no-daemon \
+            :gear4jtest-gradle-xml2java:gradlePluginCompatibilityTest \
             --configuration-cache \
             --configuration-cache-problems=fail \
             --build-cache \
@@ -82,6 +88,8 @@ jobs:
           path: |
             **/build/test-results/test/*.xml
             **/build/reports/tests/test/**
+            **/build/test-results/gradlePluginCompatibilityTest/*.xml
+            **/build/reports/tests/gradlePluginCompatibilityTest/**
             **/build/test-results/integrationTest/*.xml
             **/build/reports/tests/integrationTest/**
             build/reports/jacoco/**

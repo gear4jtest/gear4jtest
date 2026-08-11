@@ -23,6 +23,8 @@ existed. Documentation also retained duplicate ADRs and an obsolete vendor media
 - Enforce Java source/binary N-1 checks with Japicmp after 1.0.0 and define compatibility for XML, DB migrations,
   properties, metrics and health semantics.
 - Require exactly one stability marker on every production package in every published Java library module.
+- Treat the Gradle extension DSL, task property names and both published plugin ids as 1.x contracts. Check the
+  implementation artifact with Japicmp and execute versioned consumer fixtures with TestKit.
 
 ## Consequences
 
@@ -30,3 +32,5 @@ Pre-1.0 consumers of JDBC classes must add the new artifact and update package i
 completed before the stable baseline so later 1.x releases can enforce compatibility. The external API no longer pulls a
 database stack for memory/filesystem users. Internal and experimental packages remain outside the stable promise. JPMS
 descriptors remain a separate final roadmap item; automatic module names are preserved in the meantime.
+The Gradle plugin implementation and task types remain internal wiring; only the extension DSL and named task
+properties are frozen for 1.x consumers.

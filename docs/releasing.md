@@ -60,6 +60,12 @@ From `1.0.1` onward, add the immediately preceding stable release so Japicmp can
 Manual workflow dispatch exposes the same baseline input. Tag-driven releases read the repository variable
 `GEAR4J_API_BASELINE_VERSION`. See `docs/compatibility-policy.md`.
 
+The N-1 comparison includes the `gear4jtest-gradle-xml2java` implementation
+artifact. Independently of whether a Maven baseline is configured,
+`gradlePluginCompatibilityTest` applies both published plugin ids to the
+versioned 1.0 DSL fixture and executes it with the current plugin. This protects
+the build-script contract before and after the first stable release.
+
 `releaseCheck` stages the complete multi-module publication and then compiles and runs
 `config/consumer-smoke` as an autonomous Gradle build. Gear4J groups and plugin markers resolve exclusively from the
 staged Maven repository, while their third-party transitive dependencies resolve from Maven Central. The fixture
@@ -137,7 +143,8 @@ The release workflow will:
 7. verify legal entries and Maven Central metadata in the staged artifacts;
 8. compile and execute the autonomous staged-artifact consumer;
 9. rebuild and compare staged JAR, POM and Gradle module metadata hashes;
-10. compare every stable public library with the configured N-1 release after 1.0.0;
+10. compare every stable public library and the Gradle plugin implementation
+    artifact with the configured N-1 release after 1.0.0;
 11. sign, validate and deploy staged artifacts with JReleaser.
 
 Manual dispatch is also available. It defaults to dry-run mode.

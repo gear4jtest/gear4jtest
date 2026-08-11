@@ -1,5 +1,6 @@
 package io.github.gear4jtest.xml2java
 
+import io.github.gear4jtest.core.api.annotation.Internal
 import io.github.gear4jtest.external.api.ExecutionMode
 import io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy
 import io.github.gear4jtest.xml.translator.XmlOperationChainTranslator
@@ -26,6 +27,7 @@ import javax.inject.Inject
 /**
  * Translates XML pipeline definitions into generated Java source files.
  */
+@Internal
 @CacheableTask
 abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
     private final ConfigurableFileCollection xmlFiles

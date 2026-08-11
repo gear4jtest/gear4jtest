@@ -38,6 +38,7 @@ Current public API packages include:
 - `io.github.gear4jtest.xml.translator.XmlOperationChainTranslator`
 - `io.github.gear4jtest.xml.translator.XmlTranslationLimits`
 - `io.github.gear4jtest.xml.validator.AssemblyLineValidator`
+- `io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorExtension`
 
 Compatibility after the first stable release is governed by `docs/compatibility-policy.md` and enforced against the
 configured N-1 release with Japicmp. In particular:
@@ -97,6 +98,8 @@ Known internal implementation areas:
 - `io.github.gear4jtest.xml.generator.*`
 - `io.github.gear4jtest.xml.model.*`
 - `io.github.gear4jtest.xml.parser.*`
+- `io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPlugin`
+- `io.github.gear4jtest.xml2java.XmlAssemblyLineGenerateTask`
 
 ## Source-level markers and guardrails
 
@@ -112,7 +115,8 @@ Gear4J also provides lightweight source markers in
 These annotations are documentation markers retained in class files. Public/SPI/internal markers are applied
 at the main package boundaries so consumers can distinguish stable contracts from implementation packages directly in
 the generated Javadocs and class files. `ApiBoundarySourceTest` requires exactly one marker on every production package
-across all published Java library modules. Japicmp supplies the separate binary/source enforcement.
+across all published Java and Groovy library modules. Java signatures receive the source-level internal-dependency
+analysis; the compiled Groovy DSL receives the separate Japicmp and TestKit compatibility gates.
 
 The repository intentionally does not introduce JPMS descriptors yet. Instead, source-level architecture tests enforce
 that production packages declare a package marker and that exported API/SPI signatures in every published module have

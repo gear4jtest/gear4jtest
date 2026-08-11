@@ -18,6 +18,7 @@ final class ApiBoundarySourceTest {
                                                                                "gear4jtest-experimental-cache",
                                                                                "gear4jtest-external-api",
                                                                                "gear4jtest-external-jdbc",
+                                                                               "gear4jtest-gradle-xml2java",
                                                                                "gear4jtest-jackson",
                                                                                "gear4jtest-jdbc",
                                                                                "gear4jtest-micrometer",
@@ -36,24 +37,31 @@ final class ApiBoundarySourceTest {
         List<String> violations = new ArrayList<>();
 
         for (String module : MODULES_WITH_STABILITY_MARKERS) {
-            Path sourceRoot = repositoryRoot.resolve(module).resolve("src/main/java");
-            if (!Files.isDirectory(sourceRoot)) {
+            Path moduleRoot = repositoryRoot.resolve(module);
+            List<Path> sourceRoots = productionSourceRoots(moduleRoot);
+            if (sourceRoots.isEmpty()) {
                 continue;
             }
 
-            for (Path packageDirectory : productionPackageDirectories(sourceRoot)) {
-                Path packageInfo = packageDirectory.resolve("package-info.java");
-                if (!Files.isRegularFile(packageInfo)) {
-                    violations.add(sourceRoot.relativize(packageDirectory) + " has no package-info.java");
+            for (Path packageDirectory : productionPackageDirectories(sourceRoots)) {
+                List<Path> packageInfos = sourceRoots.stream()
+                        .map(sourceRoot -> sourceRoot.resolve(packageDirectory).resolve("package-info.java"))
+                        .filter(Files::isRegularFile)
+                        .toList();
+                if (packageInfos.isEmpty()) {
+                    violations.add(module + "/" + packageDirectory + " has no package-info.java");
                     continue;
                 }
 
-                long markerCount = Files.readAllLines(packageInfo).stream()
-                        .map(String::trim)
-                        .filter(STABILITY_MARKERS::contains)
-                        .count();
+                long markerCount = 0L;
+                for (Path packageInfo : packageInfos) {
+                    markerCount += Files.readAllLines(packageInfo).stream()
+                            .map(String::trim)
+                            .filter(STABILITY_MARKERS::contains)
+                            .count();
+                }
                 if (markerCount != 1L) {
-                    violations.add(sourceRoot.relativize(packageInfo)
+                    violations.add(module + "/" + packageDirectory + "/package-info.java"
                             + " must declare exactly one API stability marker but declares " + markerCount);
                 }
             }
@@ -98,14 +106,23 @@ final class ApiBoundarySourceTest {
         throw new IllegalStateException("Unable to locate Gear4J repository root from " + current);
     }
 
-    private static List<Path> productionPackageDirectories(Path sourceRoot) throws IOException {
-        try (Stream<Path> sourceFiles = javaSourcesStream(sourceRoot)) {
-            return sourceFiles.filter(source -> !source.getFileName().toString().equals("package-info.java"))
-                    .map(Path::getParent)
-                    .distinct()
-                    .sorted()
-                    .toList();
+    private static List<Path> productionSourceRoots(Path moduleRoot) {
+        return List.of(moduleRoot.resolve("src/main/java"), moduleRoot.resolve("src/main/groovy")).stream()
+                .filter(Files::isDirectory)
+                .toList();
+    }
+
+    private static List<Path> productionPackageDirectories(List<Path> sourceRoots) throws IOException {
+        List<Path> packageDirectories = new ArrayList<>();
+        for (Path sourceRoot : sourceRoots) {
+            try (Stream<Path> sourceFiles = productionSourcesStream(sourceRoot)) {
+                sourceFiles.filter(source -> !source.getFileName().toString().equals("package-info.java"))
+                        .map(Path::getParent)
+                        .map(sourceRoot::relativize)
+                        .forEach(packageDirectories::add);
+            }
         }
+        return packageDirectories.stream().distinct().sorted().toList();
     }
 
     private static List<Path> javaSources(Path sourceRoot) throws IOException {
@@ -117,6 +134,12 @@ final class ApiBoundarySourceTest {
     private static Stream<Path> javaSourcesStream(Path sourceRoot) throws IOException {
         return Files.walk(sourceRoot).filter(path -> Files.isRegularFile(path)
                 && path.getFileName().toString().endsWith(".java"));
+    }
+
+    private static Stream<Path> productionSourcesStream(Path sourceRoot) throws IOException {
+        return Files.walk(sourceRoot).filter(path -> Files.isRegularFile(path)
+                && (path.getFileName().toString().endsWith(".java")
+                        || path.getFileName().toString().endsWith(".groovy")));
     }
 
 }
