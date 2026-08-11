@@ -1,12 +1,15 @@
 plugins {
     id 'gear4j.root-quality'
+    id 'gear4j.root-coverage'
+    id 'gear4j.root-performance'
     id 'gear4j.java-base' apply false
     id 'gear4j.java-library' apply false
     id 'gear4j.quality' apply false
     id 'gear4j.integration-test' apply false
+    id 'gear4j.test-suite' apply false
+    id 'gear4j.benchmark' apply false
     id "org.sonarqube" version "7.3.1.8318"
     id "org.owasp.dependencycheck" version "12.2.2"
-    id "me.champeau.jmh" version "0.7.3"
     id 'idea'
 }
 
@@ -15,11 +18,6 @@ ext {
 }
 
 def rootLibs = libs
-
-tasks.named('check') {
-    dependsOn 'integrationCheck'
-}
-
 
 def licenseAsset = layout.projectDirectory.file('LICENSE')
 def noticeAsset = layout.projectDirectory.file('NOTICE')
@@ -296,18 +294,12 @@ tasks.named('check') {
 }
 
 allprojects {
-    apply plugin: 'jacoco'
-
     version = rootProject.defaultProjectVersion
     group = 'io.github.gear4jtest'
     description = 'Gear4J Java pipeline orchestration library.'
 
     repositories {
         mavenCentral()
-    }
-
-    jacoco {
-        toolVersion = "0.8.14"
     }
 }
 
@@ -318,18 +310,12 @@ ext {
 configure(project.coreProjects) {
     apply plugin: 'gear4j.java-base'
     apply plugin: 'gear4j.quality'
-    apply plugin: 'gear4j.integration-test'
+    apply plugin: 'gear4j.test-suite'
 
     dependencies {
         testImplementation(rootLibs.junit)
         testRuntimeOnly(rootLibs.junit.platform.launcher)
         testImplementation(rootLibs.assertj)
-    }
-
-    jacocoTestReport {
-        reports {
-            xml.required = true
-        }
     }
 }
 
@@ -357,7 +343,7 @@ tasks.named('check') {
 }
 
 project(':gear4jtest-core') {
-    apply plugin: 'me.champeau.jmh'
+    apply plugin: 'gear4j.benchmark'
 
     dependencies {
         jmh project(':gear4jtest-experimental-cache')
@@ -365,21 +351,6 @@ project(':gear4jtest-core') {
         jmh project(':gear4jtest-jackson')
         jmh project(':gear4jtest-jdbc')
         jmh project(':gear4jtest-xml')
-    }
-
-    jmh {
-        jmhVersion = '1.37'
-        warmupIterations = 2
-        iterations = 3
-        fork = 1
-        threads = 1
-        timeOnIteration = '1s'
-        failOnError = true
-        jvmArgs = ['-Xms256m', '-Xmx1024m']
-        resultFormat = 'JSON'
-        resultsFile = file("${buildDir}/reports/jmh/results.json")
-        humanOutputFile = file("${buildDir}/reports/jmh/human.txt")
-        profilers = ['gc', 'io.github.gear4jtest.benchmark.LiveThreadProfiler']
     }
 }
 
@@ -656,362 +627,6 @@ tasks.register('consumerSmokeTest', Exec) {
         'clean', 'consumerSmoke',
         "-Pgear4jVersion=${project.version}",
         "-Pgear4jRepository=${stagingRepository.get().asFile.absolutePath}"
-}
-
-def allCoverageExecutionData = coreProjects.collect { testedProject ->
-    [
-        testedProject.layout.buildDirectory.file('jacoco/test.exec'),
-        testedProject.layout.buildDirectory.file('jacoco/integrationTest.exec')
-    ]
-}.flatten()
-
-tasks.register('jacocoRootAllReport', JacocoReport) {
-    group = 'verification'
-    description = 'Generates the root JaCoCo HTML and XML reports for unit and integration tests.'
-
-    dependsOn coreProjects.collect { it.tasks.named('test') }
-    dependsOn coreProjects.collect { it.tasks.named('integrationTest') }
-
-    additionalSourceDirs.from(coreProjects.collect { it.sourceSets.main.allSource.srcDirs }.flatten())
-    sourceDirectories.from(coreProjects.collect { it.sourceSets.main.allSource.srcDirs }.flatten())
-    classDirectories.from(coreProjects.collect { it.sourceSets.main.output })
-    executionData.from(allCoverageExecutionData)
-
-    onlyIf {
-        executionData.files.any { it.exists() }
-    }
-
-    reports {
-        xml.required.set(true)
-        xml.outputLocation.set(layout.buildDirectory.file('reports/jacoco/report.xml'))
-        html.required.set(true)
-        html.outputLocation.set(layout.buildDirectory.dir('reports/jacoco/html'))
-        csv.required.set(false)
-    }
-}
-
-def criticalCoverageThresholdsFile = layout.projectDirectory.file('config/critical-coverage-thresholds.json')
-def criticalCoverageThresholds = new groovy.json.JsonSlurper().parse(criticalCoverageThresholdsFile.asFile)
-def criticalCoverageClassProjects = [
-    project(':gear4jtest-core'),
-    project(':gear4jtest-external-api'),
-    project(':gear4jtest-jdbc'),
-    project(':gear4jtest-spring-boot-starter')
-]
-
-tasks.register('jacocoCriticalCoverageVerification', JacocoCoverageVerification) {
-    group = 'verification'
-    description = 'Enforces branch-coverage ratchets on the runtime, concurrency, migration and publication hot spots.'
-
-    dependsOn coreProjects.collect { it.tasks.named('test') }
-    dependsOn coreProjects.collect { it.tasks.named('integrationTest') }
-    inputs.file(criticalCoverageThresholdsFile)
-
-    sourceDirectories.from(criticalCoverageClassProjects.collect { it.sourceSets.main.allSource.srcDirs }.flatten())
-    classDirectories.from(criticalCoverageClassProjects.collect { it.sourceSets.main.output })
-    // Keep verification on the same aggregate execution-data set used to calibrate
-    // these thresholds. Cross-module integration tests legitimately exercise the
-    // critical classes declared above.
-    executionData.from(allCoverageExecutionData)
-
-    violationRules {
-        criticalCoverageThresholds.classes.each { threshold ->
-            rule {
-                element = 'CLASS'
-                includes = [threshold.className]
-                limit {
-                    counter = 'BRANCH'
-                    value = 'COVEREDRATIO'
-                    minimum = threshold.minimumBranchRatio as BigDecimal
-                }
-            }
-        }
-    }
-}
-
-tasks.register('integrationCheck') {
-    group = 'verification'
-    description = 'Runs integration tests for every module. Database-dependent tests use Testcontainers.'
-    dependsOn coreProjects.collect { it.tasks.named('integrationTest') }
-}
-
-tasks.register('coverageReport') {
-    group = 'verification'
-    description = 'Runs tests and generates aggregate, per-module and calibration JaCoCo reports.'
-}
-
-def moduleCoverageThresholdsFile = layout.projectDirectory.file('config/module-coverage-thresholds.json')
-def moduleCoverageThresholds = new groovy.json.JsonSlurper().parse(moduleCoverageThresholdsFile.asFile)
-def publishedCoverageProjects = coreProjects.findAll { it.plugins.hasPlugin('maven-publish') }
-
-tasks.register('verifyCoveragePolicy') {
-    group = 'verification'
-    description = 'Validates completeness and consistency of the versioned coverage policy.'
-    inputs.files(moduleCoverageThresholdsFile, criticalCoverageThresholdsFile)
-
-    doLast {
-        def failures = []
-        def configuredModuleGroups = moduleCoverageThresholds.modules.groupBy { it.projectPath }
-        def configuredModulePaths = configuredModuleGroups.keySet()
-        def publishedModulePaths = publishedCoverageProjects.collect { it.path } as Set
-
-        configuredModuleGroups.findAll { ignored, entries -> entries.size() != 1 }.each { projectPath, entries ->
-            failures << "${projectPath} has ${entries.size()} module coverage thresholds; expected exactly one"
-        }
-        (publishedModulePaths - configuredModulePaths).sort().each { projectPath ->
-            failures << "Missing module coverage threshold for published project ${projectPath}"
-        }
-        (configuredModulePaths - publishedModulePaths).sort().each { projectPath ->
-            failures << "Coverage threshold references non-published project ${projectPath}"
-        }
-        moduleCoverageThresholds.modules.each { threshold ->
-            def ratio = threshold.minimumLineRatio as BigDecimal
-            if (ratio < 0.30G || ratio > 1.00G) {
-                failures << "${threshold.projectPath} line ratio ${ratio} must be between 0.30 and 1.00"
-            }
-        }
-
-        def configuredClassGroups = criticalCoverageThresholds.classes.groupBy { it.className }
-        configuredClassGroups.findAll { ignored, entries -> entries.size() != 1 }.each { className, entries ->
-            failures << "${className} has ${entries.size()} critical coverage thresholds; expected exactly one"
-        }
-        criticalCoverageThresholds.classes.each { threshold ->
-            def ratio = threshold.minimumBranchRatio as BigDecimal
-            if (ratio < 0.50G || ratio > 1.00G) {
-                failures << "${threshold.className} branch ratio ${ratio} must be between 0.50 and 1.00"
-            }
-            def relativeJavaPath = "src/main/java/${threshold.className.replace('.', '/')}.java"
-            def relativeGroovyPath = "src/main/groovy/${threshold.className.replace('.', '/')}.groovy"
-            if (!publishedCoverageProjects.any {
-                it.file(relativeJavaPath).isFile() || it.file(relativeGroovyPath).isFile()
-            }) {
-                failures << "Critical coverage class does not exist in a published module: ${threshold.className}"
-            }
-        }
-
-        if (!failures.isEmpty()) {
-            throw new GradleException('Coverage policy violations:\n - ' + failures.join('\n - '))
-        }
-    }
-}
-
-def moduleCoverageReportTasks = []
-def moduleCoverageTasks = moduleCoverageThresholds.modules.collect { threshold ->
-    def coveredProject = project(threshold.projectPath)
-    def taskSuffix = coveredProject.name.split('-').collect { it.capitalize() }.join('')
-    def reportTask = tasks.register("jacocoModuleReport${taskSuffix}", JacocoReport) {
-        group = 'verification'
-        description = "Generates combined unit/integration coverage for ${coveredProject.path}."
-        dependsOn coveredProject.tasks.named('test'), coveredProject.tasks.named('integrationTest')
-        sourceDirectories.from(coveredProject.sourceSets.main.allSource.srcDirs)
-        classDirectories.from(coveredProject.sourceSets.main.output)
-        executionData.from(
-            coveredProject.layout.buildDirectory.file('jacoco/test.exec'),
-            coveredProject.layout.buildDirectory.file('jacoco/integrationTest.exec'))
-        reports {
-            xml.required.set(true)
-            xml.outputLocation.set(
-                layout.buildDirectory.file("reports/jacoco/modules/${coveredProject.name}.xml"))
-            html.required.set(false)
-            csv.required.set(false)
-        }
-    }
-    moduleCoverageReportTasks << reportTask
-
-    tasks.register("jacocoModuleCoverage${taskSuffix}", JacocoCoverageVerification) {
-        group = 'verification'
-        description = "Enforces the line-coverage ratchet for ${coveredProject.path}."
-        dependsOn coveredProject.tasks.named('test'), coveredProject.tasks.named('integrationTest')
-        inputs.file(moduleCoverageThresholdsFile)
-        sourceDirectories.from(coveredProject.sourceSets.main.allSource.srcDirs)
-        classDirectories.from(coveredProject.sourceSets.main.output)
-        executionData.from(
-            coveredProject.layout.buildDirectory.file('jacoco/test.exec'),
-            coveredProject.layout.buildDirectory.file('jacoco/integrationTest.exec'))
-        violationRules {
-            rule {
-                element = 'BUNDLE'
-                limit {
-                    counter = 'LINE'
-                    value = 'COVEREDRATIO'
-                    minimum = threshold.minimumLineRatio as BigDecimal
-                }
-            }
-        }
-    }
-}
-
-def coverageCalibrationFile = layout.buildDirectory.file('reports/jacoco/coverage-calibration.json')
-def coverageCalibrationReport = tasks.register('coverageCalibrationReport') {
-    group = 'verification'
-    description = 'Records observed module and critical-class ratios for evidence-based ratchet updates.'
-    dependsOn tasks.named('jacocoRootAllReport')
-    dependsOn moduleCoverageReportTasks
-    inputs.files(moduleCoverageThresholdsFile, criticalCoverageThresholdsFile)
-    inputs.files(moduleCoverageReportTasks.collect {
-        it.map { reportTask -> reportTask.reports.xml.outputLocation.get() }
-    })
-    inputs.file(tasks.named('jacocoRootAllReport').map {
-        it.reports.xml.outputLocation.get()
-    })
-    outputs.file(coverageCalibrationFile)
-
-    doLast {
-        def parseCoverageReport = { reportFile ->
-            def parser = new groovy.xml.XmlSlurper(false, false, true)
-            parser.setFeature('http://xml.org/sax/features/external-general-entities', false)
-            parser.setFeature('http://xml.org/sax/features/external-parameter-entities', false)
-            parser.setFeature('http://apache.org/xml/features/nonvalidating/load-external-dtd', false)
-            parser.parse(reportFile)
-        }
-        def ratioFor = { node, counterType, subject ->
-            def counter = node.counter.find { it.@type.text() == counterType }
-            if (counter.isEmpty()) {
-                throw new GradleException("Missing ${counterType} coverage counter for ${subject}")
-            }
-            def covered = counter.@covered.text() as BigDecimal
-            def missed = counter.@missed.text() as BigDecimal
-            def total = covered + missed
-            if (total == 0G) {
-                throw new GradleException("Coverage counter ${counterType} is empty for ${subject}")
-            }
-            (covered / total).setScale(4, java.math.RoundingMode.HALF_UP)
-        }
-        def suggestedMinimum = { observed, current ->
-            def candidate = (observed - 0.02G).max(current as BigDecimal)
-            candidate.setScale(2, java.math.RoundingMode.FLOOR)
-        }
-
-        def modules = moduleCoverageThresholds.modules.collect { threshold ->
-            def coveredProject = project(threshold.projectPath)
-            def reportFile = layout.buildDirectory
-                    .file("reports/jacoco/modules/${coveredProject.name}.xml").get().asFile
-            def report = parseCoverageReport(reportFile)
-            def observed = ratioFor(report, 'LINE', threshold.projectPath)
-            [
-                projectPath: threshold.projectPath,
-                observedLineRatio: observed,
-                currentMinimumLineRatio: threshold.minimumLineRatio,
-                suggestedMinimumLineRatio: suggestedMinimum(observed, threshold.minimumLineRatio)
-            ]
-        }
-
-        def aggregateReportFile = tasks.named('jacocoRootAllReport')
-                .get().reports.xml.outputLocation.get().asFile
-        def aggregateReport = parseCoverageReport(aggregateReportFile)
-        def classesByName = aggregateReport.'package'.'class'.collectEntries { classNode ->
-            [(classNode.@name.text().replace('/', '.')): classNode]
-        }
-        def criticalClasses = criticalCoverageThresholds.classes.collect { threshold ->
-            def classNode = classesByName[threshold.className]
-            if (classNode == null) {
-                throw new GradleException("Missing critical class in aggregate coverage report: "
-                    + threshold.className)
-            }
-            def observed = ratioFor(classNode, 'BRANCH', threshold.className)
-            [
-                className: threshold.className,
-                observedBranchRatio: observed,
-                currentMinimumBranchRatio: threshold.minimumBranchRatio,
-                suggestedMinimumBranchRatio: suggestedMinimum(observed, threshold.minimumBranchRatio)
-            ]
-        }
-
-        def calibration = [
-            schemaVersion: 1,
-            generatedAt: java.time.Instant.now().toString(),
-            javaVersion: System.getProperty('java.version'),
-            policy: 'Suggested thresholds never decrease the current ratchet and retain two percentage points of margin.',
-            modules: modules,
-            classes: criticalClasses
-        ]
-        def outputFile = coverageCalibrationFile.get().asFile
-        outputFile.parentFile.mkdirs()
-        outputFile.setText(groovy.json.JsonOutput.prettyPrint(
-            groovy.json.JsonOutput.toJson(calibration)) + '\n', 'UTF-8')
-    }
-}
-
-tasks.named('coverageReport') {
-    dependsOn coverageCalibrationReport
-}
-
-tasks.register('coverageVerification') {
-    group = 'verification'
-    description = 'Runs the versioned critical-class and module-level JaCoCo coverage ratchets.'
-    dependsOn tasks.named('verifyCoveragePolicy')
-    dependsOn tasks.named('jacocoCriticalCoverageVerification')
-    dependsOn moduleCoverageTasks
-}
-
-tasks.named('check') {
-    dependsOn tasks.named('coverageVerification')
-}
-
-tasks.register('verifyPerformanceBudgets') {
-    group = 'verification'
-    description = 'Runs the versioned JMH scenarios and verifies latency, throughput, allocation and thread budgets.'
-    dependsOn project(':gear4jtest-core').tasks.named('jmh')
-
-    def budgetsFile = layout.projectDirectory.file('config/performance-budgets.json')
-    def resultsFile = project(':gear4jtest-core').layout.buildDirectory.file('reports/jmh/results.json')
-    inputs.file(budgetsFile)
-    inputs.file(resultsFile)
-
-    doLast {
-        def budgets = new groovy.json.JsonSlurper().parse(budgetsFile.asFile)
-        def results = new groovy.json.JsonSlurper().parse(resultsFile.get().asFile)
-        def indexedResults = results.collectEntries { result ->
-            [(result.benchmark + '|' + result.mode): result]
-        }
-        def failures = []
-
-        budgets.benchmarks.each { budget ->
-            def key = budget.benchmark + '|' + budget.mode
-            def result = indexedResults[key]
-            if (result == null) {
-                failures << "Missing JMH result for ${key}"
-                return
-            }
-            def expectedScoreUnit = budgets.scoreUnits.get(budget.mode)
-            if (result.primaryMetric.scoreUnit != expectedScoreUnit) {
-                failures << "${key} uses ${result.primaryMetric.scoreUnit}; expected ${expectedScoreUnit}"
-            }
-            def score = result.primaryMetric.score as BigDecimal
-            if (budget.maximumScore != null && score > (budget.maximumScore as BigDecimal)) {
-                failures << "${key} score ${score} exceeds maximum ${budget.maximumScore} ${result.primaryMetric.scoreUnit}"
-            }
-            if (budget.minimumScore != null && score < (budget.minimumScore as BigDecimal)) {
-                failures << "${key} score ${score} is below minimum ${budget.minimumScore} ${result.primaryMetric.scoreUnit}"
-            }
-
-            def allocation = result.secondaryMetrics?.get('gc.alloc.rate.norm')?.score
-            if (allocation == null) {
-                failures << "Missing gc.alloc.rate.norm for ${key}"
-            } else if ((allocation as BigDecimal) > (budget.maximumAllocationBytesPerOperation as BigDecimal)) {
-                failures << "${key} allocation ${allocation} B/op exceeds maximum ${budget.maximumAllocationBytesPerOperation} B/op"
-            }
-
-            def liveThreads = result.secondaryMetrics?.get('threads.live')?.score
-            if (liveThreads == null) {
-                failures << "Missing threads.live for ${key}"
-            } else if ((liveThreads as BigDecimal) > (budget.maximumLiveThreads as BigDecimal)) {
-                failures << "${key} live threads ${liveThreads} exceeds maximum ${budget.maximumLiveThreads}"
-            }
-
-            def heapUsed = result.secondaryMetrics?.get('heap.used.bytes')?.score
-            def maximumHeapUsedBytes = budget.maximumHeapUsedBytes ?: budgets.defaults.maximumHeapUsedBytes
-            if (heapUsed == null) {
-                failures << "Missing heap.used.bytes for ${key}"
-            } else if ((heapUsed as BigDecimal) > (maximumHeapUsedBytes as BigDecimal)) {
-                failures << "${key} heap usage ${heapUsed} bytes exceeds maximum ${maximumHeapUsedBytes} bytes"
-            }
-        }
-
-        if (!failures.isEmpty()) {
-            throw new GradleException('Performance budget violations:\n - ' + failures.join('\n - '))
-        }
-    }
 }
 
 tasks.matching { it.name == 'sonarqube' || it.name == 'sonar' }.configureEach {

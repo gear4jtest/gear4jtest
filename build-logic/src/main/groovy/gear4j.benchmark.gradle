@@ -1,0 +1,19 @@
+plugins {
+    id 'gear4j.java-base'
+    id 'me.champeau.jmh'
+}
+
+jmh {
+    jmhVersion = '1.37'
+    warmupIterations = 2
+    iterations = 3
+    fork = 1
+    threads = 1
+    timeOnIteration = '1s'
+    failOnError = true
+    jvmArgs = ['-Xms256m', '-Xmx1024m']
+    resultFormat = 'JSON'
+    resultsFile = file("${buildDir}/reports/jmh/results.json")
+    humanOutputFile = file("${buildDir}/reports/jmh/human.txt")
+    profilers = ['gc', 'io.github.gear4jtest.benchmark.LiveThreadProfiler']
+}

@@ -1,0 +1,14 @@
+plugins {
+    id 'gear4j.integration-test'
+    id 'jacoco'
+}
+
+jacoco {
+    toolVersion = '0.8.14'
+}
+
+tasks.named('jacocoTestReport', org.gradle.testing.jacoco.tasks.JacocoReport) {
+    reports {
+        xml.required = true
+    }
+}

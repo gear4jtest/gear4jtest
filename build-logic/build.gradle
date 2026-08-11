@@ -11,6 +11,7 @@ def libs = extensions.getByType(VersionCatalogsExtension).named('libs')
 
 dependencies {
     implementation libs.findLibrary('spotless-gradle-plugin').get()
+    implementation libs.findLibrary('jmh-gradle-plugin').get()
 
     testImplementation gradleTestKit()
     testImplementation libs.findLibrary('junit').get()

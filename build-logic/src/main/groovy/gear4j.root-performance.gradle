@@ -1,0 +1,73 @@
+plugins {
+    id 'base'
+}
+
+tasks.register('verifyPerformanceBudgets') {
+    group = 'verification'
+    description = 'Runs the versioned JMH scenarios and verifies latency, throughput, allocation and thread budgets.'
+    dependsOn ':gear4jtest-core:jmh'
+
+    def budgetsFile = layout.projectDirectory.file('config/performance-budgets.json')
+    def resultsFile = project(':gear4jtest-core').layout.buildDirectory.file('reports/jmh/results.json')
+    inputs.file(budgetsFile)
+    inputs.file(resultsFile)
+
+    doLast {
+        def budgets = new groovy.json.JsonSlurper().parse(budgetsFile.asFile)
+        def results = new groovy.json.JsonSlurper().parse(resultsFile.get().asFile)
+        def indexedResults = results.collectEntries { result ->
+            [(result.benchmark + '|' + result.mode): result]
+        }
+        def failures = []
+
+        budgets.benchmarks.each { budget ->
+            def key = budget.benchmark + '|' + budget.mode
+            def result = indexedResults[key]
+            if (result == null) {
+                failures << "Missing JMH result for ${key}"
+                return
+            }
+            def expectedScoreUnit = budgets.scoreUnits.get(budget.mode)
+            if (result.primaryMetric.scoreUnit != expectedScoreUnit) {
+                failures << "${key} uses ${result.primaryMetric.scoreUnit}; expected ${expectedScoreUnit}"
+            }
+            def score = result.primaryMetric.score as BigDecimal
+            if (budget.maximumScore != null && score > (budget.maximumScore as BigDecimal)) {
+                failures << "${key} score ${score} exceeds maximum ${budget.maximumScore} "
+                    + result.primaryMetric.scoreUnit
+            }
+            if (budget.minimumScore != null && score < (budget.minimumScore as BigDecimal)) {
+                failures << "${key} score ${score} is below minimum ${budget.minimumScore} "
+                    + result.primaryMetric.scoreUnit
+            }
+
+            def allocation = result.secondaryMetrics?.get('gc.alloc.rate.norm')?.score
+            if (allocation == null) {
+                failures << "Missing gc.alloc.rate.norm for ${key}"
+            } else if ((allocation as BigDecimal)
+                    > (budget.maximumAllocationBytesPerOperation as BigDecimal)) {
+                failures << "${key} allocation ${allocation} B/op exceeds maximum "
+                    + "${budget.maximumAllocationBytesPerOperation} B/op"
+            }
+
+            def liveThreads = result.secondaryMetrics?.get('threads.live')?.score
+            if (liveThreads == null) {
+                failures << "Missing threads.live for ${key}"
+            } else if ((liveThreads as BigDecimal) > (budget.maximumLiveThreads as BigDecimal)) {
+                failures << "${key} live threads ${liveThreads} exceeds maximum ${budget.maximumLiveThreads}"
+            }
+
+            def heapUsed = result.secondaryMetrics?.get('heap.used.bytes')?.score
+            def maximumHeapUsedBytes = budget.maximumHeapUsedBytes ?: budgets.defaults.maximumHeapUsedBytes
+            if (heapUsed == null) {
+                failures << "Missing heap.used.bytes for ${key}"
+            } else if ((heapUsed as BigDecimal) > (maximumHeapUsedBytes as BigDecimal)) {
+                failures << "${key} heap usage ${heapUsed} bytes exceeds maximum ${maximumHeapUsedBytes} bytes"
+            }
+        }
+
+        if (!failures.isEmpty()) {
+            throw new GradleException('Performance budget violations:\n - ' + failures.join('\n - '))
+        }
+    }
+}
