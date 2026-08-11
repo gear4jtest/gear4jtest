@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+}
+
+def sourceSets = extensions.getByType(SourceSetContainer)
+def integrationTest = sourceSets.create('integrationTest')
+
+integrationTest.compileClasspath += (
+    sourceSets.named('main').get().output + configurations.named('testRuntimeClasspath').get()
+)
+integrationTest.runtimeClasspath += integrationTest.output + integrationTest.compileClasspath
+
+configurations.named(integrationTest.implementationConfigurationName) {
+    extendsFrom configurations.named('testImplementation').get()
+}
+configurations.named(integrationTest.runtimeOnlyConfigurationName) {
+    extendsFrom configurations.named('testRuntimeOnly').get()
+}
+
+tasks.register('integrationTest', Test) {
+    description = 'Runs integration tests. Database-dependent tests use Testcontainers.'
+    group = 'verification'
+    testClassesDirs = integrationTest.output.classesDirs
+    classpath = integrationTest.runtimeClasspath
+    useJUnitPlatform()
+    shouldRunAfter tasks.named('test')
+}

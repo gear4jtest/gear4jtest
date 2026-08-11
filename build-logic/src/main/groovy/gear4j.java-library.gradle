@@ -1,0 +1,20 @@
+plugins {
+    id 'gear4j.java-base'
+    id 'java-library'
+}
+
+afterEvaluate {
+    def automaticModuleName = project.property('moduleName')
+    tasks.named('jar', Jar) {
+        inputs.property('moduleName', automaticModuleName)
+        manifest.attributes(
+            'Automatic-Module-Name': automaticModuleName
+        )
+    }
+}
+
+tasks.named('test') {
+    if (project.hasProperty('dumpLambdaProxies')) {
+        systemProperty 'jdk.internal.lambda.dumpProxyClasses', "${buildDir}/lambda-proxies"
+    }
+}

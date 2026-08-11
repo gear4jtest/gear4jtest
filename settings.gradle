@@ -1,3 +1,4 @@
+includeBuild 'build-logic'
 includeBuild 'release-tools'
 
 rootProject.name = 'gear4jtest'

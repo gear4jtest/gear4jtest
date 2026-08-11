@@ -1,0 +1,30 @@
+plugins {
+    id 'com.diffplug.spotless'
+}
+
+spotless {
+    format 'rootMisc', {
+        target '*.gradle',
+            '*.md',
+            '.editorconfig',
+            '.gitattributes',
+            '.gitignore',
+            '.github/**/*.md',
+            'config/**/*.xml',
+            'config/**/*.json',
+            'config/**/*.md',
+            'build-logic/*.gradle',
+            'build-logic/src/**/*.gradle',
+            'build-logic/src/**/*.groovy',
+            'docs/**/*.md',
+            'release-tools/*.gradle',
+            'scripts/**/*.sh'
+
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+tasks.named('check') {
+    dependsOn 'spotlessCheck'
+}

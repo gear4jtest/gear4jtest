@@ -1,0 +1,23 @@
+plugins {
+    id 'groovy-gradle-plugin'
+}
+
+repositories {
+    gradlePluginPortal()
+    mavenCentral()
+}
+
+def libs = extensions.getByType(VersionCatalogsExtension).named('libs')
+
+dependencies {
+    implementation libs.findLibrary('spotless-gradle-plugin').get()
+
+    testImplementation gradleTestKit()
+    testImplementation libs.findLibrary('junit').get()
+    testRuntimeOnly libs.findLibrary('junit-platform-launcher').get()
+    testImplementation libs.findLibrary('assertj').get()
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

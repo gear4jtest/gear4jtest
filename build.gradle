@@ -1,5 +1,9 @@
 plugins {
-    id "com.diffplug.spotless" version "8.4.0" apply false
+    id 'gear4j.root-quality'
+    id 'gear4j.java-base' apply false
+    id 'gear4j.java-library' apply false
+    id 'gear4j.quality' apply false
+    id 'gear4j.integration-test' apply false
     id "org.sonarqube" version "7.3.1.8318"
     id "org.owasp.dependencycheck" version "12.2.2"
     id "me.champeau.jmh" version "0.7.3"
@@ -10,33 +14,9 @@ ext {
     defaultProjectVersion = findProperty('projectVersion') ?: '1.0.0-SNAPSHOT'
 }
 
-apply plugin: 'com.diffplug.spotless'
-
 def rootLibs = libs
 
-
-spotless {
-    format 'rootMisc', {
-        target '*.gradle',
-            '*.md',
-            '.editorconfig',
-            '.gitattributes',
-            '.gitignore',
-            '.github/**/*.md',
-            'config/**/*.xml',
-            'config/**/*.json',
-            'config/**/*.md',
-            'docs/**/*.md',
-            'release-tools/*.gradle',
-            'scripts/**/*.sh'
-
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
-}
-
 tasks.named('check') {
-    dependsOn 'spotlessCheck'
     dependsOn 'integrationCheck'
 }
 
@@ -336,133 +316,14 @@ ext {
 }
 
 configure(project.coreProjects) {
-    apply plugin: 'java'
-    apply plugin: 'maven-publish'
-    apply plugin: 'checkstyle'
-    apply plugin: 'com.diffplug.spotless'
-
-    java {
-        toolchain {
-            languageVersion = JavaLanguageVersion.of(17)
-        }
-    }
-
-    tasks.withType(org.gradle.api.tasks.bundling.AbstractArchiveTask).configureEach {
-        preserveFileTimestamps = false
-        reproducibleFileOrder = true
-    }
-
-    tasks.withType(JavaCompile).configureEach {
-        options.release.set(17)
-        options.deprecation = true
-        options.encoding = 'UTF-8'
-        options.compilerArgs += ["-Xlint:unchecked", "-parameters"]
-    }
-
-    tasks.withType(Test).configureEach {
-        javaLauncher.set(javaToolchains.launcherFor {
-            languageVersion = JavaLanguageVersion.of(17)
-        })
-    }
-
-    tasks.withType(JavaExec).configureEach {
-        javaLauncher.set(javaToolchains.launcherFor {
-            languageVersion = JavaLanguageVersion.of(17)
-        })
-    }
-
-    spotless {
-        java {
-            target 'src/*/java/**/*.java'
-            targetExclude 'build/**', '**/generated/**'
-
-            importOrder('java|javax', '', '\\#')
-            removeUnusedImports()
-            eclipse()
-                .configFile(rootProject.file('config/formatter/eclipse-java-formatter.xml'))
-
-            formatAnnotations()
-        }
-
-        format 'moduleMisc', {
-            target '*.gradle',
-                '*.md',
-                'src/**/*.xml',
-                'src/**/*.xsd',
-                'src/**/*.sql',
-                'src/**/*.properties',
-                'src/**/*.kt',
-                'src/**/*.groovy'
-
-            trimTrailingWhitespace()
-            endWithNewline()
-        }
-    }
-
-    checkstyle {
-        toolVersion = '10.26.1'
-        configFile = rootProject.file('config/checkstyle/checkstyle.xml')
-        configDirectory.set(rootProject.layout.projectDirectory.dir('config/checkstyle'))
-    }
-
-    tasks.withType(Checkstyle).configureEach {
-        exclude '**/generated/**'
-        reports {
-            xml.required = true
-            html.required = true
-        }
-    }
-
-    tasks.withType(Javadoc).configureEach {
-        options.encoding = 'UTF-8'
-        options.addBooleanOption('Xdoclint:all,-missing', true)
-        options.addBooleanOption('quiet', true)
-    }
-
-    tasks.withType(Jar).configureEach {
-        from(rootProject.file('LICENSE')) {
-            into 'META-INF'
-        }
-        from(rootProject.file('NOTICE')) {
-            into 'META-INF'
-        }
-    }
-
-    tasks.named('check') {
-        dependsOn 'spotlessCheck'
-    }
+    apply plugin: 'gear4j.java-base'
+    apply plugin: 'gear4j.quality'
+    apply plugin: 'gear4j.integration-test'
 
     dependencies {
         testImplementation(rootLibs.junit)
         testRuntimeOnly(rootLibs.junit.platform.launcher)
         testImplementation(rootLibs.assertj)
-    }
-
-    sourceSets {
-        integrationTest {
-            java.srcDir file('src/integrationTest/java')
-            resources.srcDir file('src/integrationTest/resources')
-            compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
-            runtimeClasspath += output + compileClasspath
-        }
-    }
-
-    configurations {
-        integrationTestImplementation.extendsFrom testImplementation
-        integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
-    }
-
-    test {
-        useJUnitPlatform()
-    }
-
-    tasks.register('integrationTest', Test) {
-        description = 'Runs integration tests. Database-dependent tests use Testcontainers.'
-        group = 'verification'
-        testClassesDirs = sourceSets.integrationTest.output.classesDirs
-        classpath = sourceSets.integrationTest.runtimeClasspath
-        useJUnitPlatform()
-        shouldRunAfter tasks.named('test')
     }
 
     jacocoTestReport {
@@ -473,7 +334,7 @@ configure(project.coreProjects) {
 }
 
 configure(project.coreProjects.findAll { !it.name.contains("gradle") }) {
-    apply plugin: 'java-library'
+    apply plugin: 'gear4j.java-library'
     apply from: "${rootDir}/publishing.gradle"
 
     dependencies {
@@ -481,21 +342,18 @@ configure(project.coreProjects.findAll { !it.name.contains("gradle") }) {
         testImplementation(rootLibs.mockito)
         testImplementation(rootLibs.mockito.junit)
     }
+}
 
-    afterEvaluate {
-        jar {
-            inputs.property('moduleName', moduleName)
-            manifest.attributes(
-                'Automatic-Module-Name': moduleName
-            )
-        }
-    }
+def buildLogicBuild = gradle.includedBuild('build-logic')
 
-    test {
-        if (project.hasProperty('dumpLambdaProxies')) {
-            systemProperty "jdk.internal.lambda.dumpProxyClasses", "${buildDir}/lambda-proxies"
-        }
-    }
+tasks.register('buildLogicCheck') {
+    group = 'verification'
+    description = 'Runs the functional tests for the shared Gradle convention plugins.'
+    dependsOn buildLogicBuild.task(':test')
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('buildLogicCheck')
 }
 
 project(':gear4jtest-core') {

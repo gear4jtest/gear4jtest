@@ -17,6 +17,7 @@ testcontainers = "1.21.4"
 spring-framework = "6.2.19"
 eclipse-jdt-core = "3.43.0"
 eclipse-text = "3.14.400"
+spotless = "8.4.0"
 
 [libraries]
 slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
@@ -49,3 +50,4 @@ spring-boot-starter-validation = { module = "org.springframework.boot:spring-boo
 spring-boot-actuator = { module = "org.springframework.boot:spring-boot-actuator", version.ref = "spring-boot" }
 eclipse-jdt-core = { module = "org.eclipse.jdt:org.eclipse.jdt.core", version.ref = "eclipse-jdt-core" }
 eclipse-text = { module = "org.eclipse.platform:org.eclipse.text", version.ref = "eclipse-text" }
+spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
