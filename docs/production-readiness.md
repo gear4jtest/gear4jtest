@@ -84,7 +84,8 @@ When JDBC persistence is enabled:
   default with `PersistenceConfiguration.stationLogFlushThreshold(...)`, or a
   single execution with `RunRequest.persistence(...)`; per-run values must not
   exceed `max-pending-logs-per-run`;
-- monitor failed flushes, rejected appends and active buffers;
+- monitor failed flushes, rejected appends, active buffers and
+  `gear4j.persistence.flush.duration{trigger,outcome}` p95/p99;
 - keep persistence history queries paginated. `PageRequest` is intentionally
   capped at 1,000 rows per call to avoid accidental large reads. The external
   JDBC repositories also expose paginated variants for operation-chain objects
@@ -230,6 +231,12 @@ transactionally atomic.
 low-cardinality in production; avoid unbounded operation or branch identifiers as
 metric labels for dynamically generated pipelines.
 
+Track `gear4j.branches.rejected` separately from terminal branch failures and
+graph `gear4j.branches.duration{status}` percentiles for executed branches.
+Synthetic branches contribute to `completed{status}` but do not emit a duration.
+The persistence flush histogram has only closed `trigger` and `outcome` tags;
+async samples include executor queue delay.
+
 Alert on any artifact-integrity failure, sustained generated-loading or
 compilation queues, executor rejections/timeouts, classloader registration
 rejections and artifact-spool quota/cleanup failures. A single transient queue
@@ -254,7 +261,7 @@ are aggregated under `other`. Event and reaction drop metrics remain aggregate
 and tagless.
 
 Generated infrastructure metrics use only finite framework-owned `phase`,
-`outcome`, `result` and `operation` values. They never include hashes, pipeline
+`outcome`, `result`, `operation` and `trigger` values. They never include hashes, pipeline
 IDs, exception messages or business data. The Spring Boot starter auto-binds
 only a unique candidate; bind multiple managers or stores explicitly instead of
 adding a raw bean name as a tag.

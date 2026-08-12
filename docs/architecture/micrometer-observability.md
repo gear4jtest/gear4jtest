@@ -6,7 +6,7 @@
 | --- | --- |
 | Status | Critical operational surface implemented; optional additions tracked below |
 | Owner | Gear4J maintainers |
-| Last reviewed | 2026-08-12 |
+| Last reviewed | 2026-08-13 |
 | Source of truth | [`gear4jtest-micrometer/README.md`](../../gear4jtest-micrometer/README.md) and binder implementations |
 
 The `gear4jtest-micrometer` module is an optional integration. It provides
@@ -17,7 +17,8 @@ generated loading/compilation, classloader retention and artifact stores/spools.
 
 The current module registers lifecycle, duration and persistence signals. It is
 useful to confirm that Gear4J is active, understand completed run/station latency
-and verify that persistence buffers are not silently accumulating.
+and branch latency, and verify that persistence buffers are not silently
+accumulating.
 
 See the module README for the exact metric names:
 
@@ -30,9 +31,10 @@ are present and consistent. Missing or inverted timestamps are ignored rather th
 emitting misleading zero or negative durations.
 
 `PersistenceMetricsBinder` exposes active run buffers, buffered station logs,
-the age of the oldest buffered log, scheduled/completed/failed flushes and
-rejected appends. Cumulative failure and rejection counters are alert signals;
-they are not used as permanent health state.
+the age of the oldest buffered log, scheduled/completed/failed flushes,
+rejected appends and a percentile-histogram flush timer. Cumulative failure and
+rejection counters are alert signals; they are not used as permanent health
+state. Async flush duration includes queue wait; empty no-op calls are excluded.
 
 Internal runtime wiring can bind `EventMetricsBinder` to the run-local event
 manager to expose best-effort in-memory counters: published/dispatched/dropped/
@@ -61,12 +63,12 @@ present.
 
 | Surface | Status | Existing signal or remaining gap | Target version | Last verified |
 | --- | --- | --- | --- | --- |
-| Run outcomes and duration | `DELIVERED` | `gear4j.runs.completed{status}` and `gear4j.runs.duration{status}` cover succeeded, failed, stopped and cancelled runs | 1.0 | 2026-08-12 |
-| Station outcomes and duration | `DELIVERED` | `gear4j.stations.completed{status}` and `gear4j.stations.duration{status}` cover succeeded, failed, skipped, stopped and cancelled stations | 1.0 | 2026-08-12 |
-| Cancellation totals | `DELIVERED` | Run and station completion meters expose the bounded `status=CANCELLED` series | 1.0 | 2026-08-12 |
-| Timeout categorization | `BACKLOG` | Timeouts currently contribute to existing failure outcomes; a distinct low-cardinality category requires a stable error-classification contract | Post-1.0; unscheduled | 2026-08-12 |
-| Persistence flush duration distribution | `BACKLOG` | Scheduling, completion, failure, backlog age and rejected appends exist; no flush timer is exposed | Post-1.0; unscheduled | 2026-08-12 |
-| Parallel-branch rejections and duration | `BACKLOG` | No stable branch lifecycle hook currently exposes these signals without coupling Micrometer to core internals | Post-1.0; unscheduled | 2026-08-12 |
+| Run outcomes and duration | `DELIVERED` | `gear4j.runs.completed{status}` and `gear4j.runs.duration{status}` cover succeeded, failed, stopped and cancelled runs | 1.0 | 2026-08-13 |
+| Station outcomes and duration | `DELIVERED` | `gear4j.stations.completed{status}` and `gear4j.stations.duration{status}` cover succeeded, failed, skipped, stopped and cancelled stations | 1.0 | 2026-08-13 |
+| Branch outcomes, rejections and duration | `DELIVERED` | `gear4j.branches.completed{status}`, `rejected` and `duration{status}` derive from stable station snapshots, including synthetic terminal outcomes | 1.0 | 2026-08-13 |
+| Cancellation totals | `DELIVERED` | Run, station and branch completion meters expose the bounded `status=CANCELLED` series | 1.0 | 2026-08-13 |
+| Timeout categorization | `BACKLOG` | Timeouts currently contribute to existing failure outcomes; a distinct application-error category requires a stable error-classification contract | Post-1.0; unscheduled | 2026-08-13 |
+| Persistence flush duration distribution | `DELIVERED` | `gear4j.persistence.flush.duration{trigger,outcome}` is a histogram-enabled timer fed by provider-neutral observations | 1.0 | 2026-08-13 |
 | Experimental-cache outcomes | `DEFERRED` | The experimental cache is outside the critical operational contract | Post-1.0; unscheduled | 2026-08-12 |
 
 ## Error categorization
@@ -104,7 +106,8 @@ behavior for migration only. It is deprecated for removal because dynamically
 generated identifiers can exhaust a metrics backend.
 
 Infrastructure metrics do not consult that policy: their only tags are finite
-framework-owned values named `phase`, `outcome`, `result` and `operation`.
+framework-owned values named `phase`, `outcome`, `result`, `operation` and
+`trigger`.
 
 ## Recommended MVP dashboards
 
@@ -116,8 +119,10 @@ saturation, latency and drops:
 | Run throughput | `gear4j.runs.started`, `gear4j.runs.completed` | completed much lower than started for a sustained period |
 | Run latency | `gear4j.runs.duration` | p95/p99 above the application SLO |
 | Station latency | `gear4j.stations.duration` | one station class starts dominating runtime |
+| Branch pressure | `gear4j.branches.started`, `gear4j.branches.completed`, `gear4j.branches.rejected` | rejection increases or completed stops following started outside expected synthetic outcomes |
+| Branch latency | `gear4j.branches.duration` | p95/p99 exceeds the application branch SLO |
 | Persistence backlog | `gear4j.persistence.buffered.station.logs`, `gear4j.persistence.buffered.station.logs.oldest.age.seconds`, `gear4j.persistence.active.runs` | steadily increasing backlog or age |
-| Persistence flush health | `gear4j.persistence.flushes.scheduled`, `gear4j.persistence.flushes.completed`, `gear4j.persistence.flushes.failed` | failed flushes increasing or completed no longer following scheduled |
+| Persistence flush health | `gear4j.persistence.flushes.scheduled`, `gear4j.persistence.flushes.completed`, `gear4j.persistence.flushes.failed`, `gear4j.persistence.flush.duration` | failures increase, completed no longer follows scheduled, or p95/p99 exceeds the database SLO |
 | Persistence backpressure | `gear4j.persistence.appends.rejected` | any sustained non-zero value |
 | Event queue pressure | `gear4j.events.queued`, `gear4j.events.queue.remaining.capacity`, `gear4j.events.dropped` | remaining capacity near zero or dropped events increasing |
 | Reaction pressure | `gear4j.reactions.pending`, `gear4j.reactions.in.flight`, `gear4j.reactions.dropped`, `gear4j.reactions.failed` | pending grows, dropped/failed increases |

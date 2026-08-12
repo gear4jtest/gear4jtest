@@ -245,7 +245,9 @@ Core applications can still depend only on the generic contracts:
 - `AssemblyRunRepository`;
 - `AssemblyRunRecord`;
 - `StationLogRecord`;
-- `PersistenceRuntimeMonitor` / `PersistenceRuntimeStats` for implementation-neutral observability.
+- `PersistenceRuntimeMonitor` / `PersistenceRuntimeStats` for implementation-neutral observability;
+- `PersistenceFlushObservation` / `PersistenceFlushObserver` for removable, provider-neutral flush latency
+  observations without a Micrometer dependency.
 
 ## Testing
 

@@ -6,7 +6,7 @@
 | --- | --- |
 | Status | Living backlog |
 | Owner | Gear4J maintainers |
-| Last reviewed | 2026-08-12 |
+| Last reviewed | 2026-08-13 |
 | Review trigger | Before each release candidate and whenever a linked ADR changes status |
 
 This file distinguishes delivered foundations, contract reviews and unscheduled backlog. A backlog entry is not a release
@@ -21,6 +21,7 @@ Status values are `DELIVERED`, `REVIEW`, `BACKLOG` and `DEFERRED`.
 | Restricted GEL parser/evaluator and XML conditions | `DELIVERED` | 1.0 | [ADR 0008](../decisions/0008-gear-expression-language-is-security-boundary.md), [ADR 0018](../decisions/0018-gel-property-access-is-explicit.md), [ADR 0033](../decisions/0033-xml-operator-capabilities-are-mode-aware.md) | 2026-08-12 |
 | Inline Java and Java class names restricted to explicit trusted XML mode | `DELIVERED` | 1.0 | [XML security boundary](../architecture/xml-security.md) | 2026-08-12 |
 | Low-cardinality run/station outcomes and duration metrics | `DELIVERED` | 1.0 | [Micrometer observability](../architecture/micrometer-observability.md) | 2026-08-12 |
+| Low-cardinality parallel-branch outcomes/rejections/duration and persistence-flush distributions | `DELIVERED` | 1.0 | [ADR 0039](../decisions/0039-runtime-latency-metrics-use-bounded-observations.md) | 2026-08-13 |
 
 ## Near-term review areas
 
@@ -46,7 +47,6 @@ Status values are `DELIVERED`, `REVIEW`, `BACKLOG` and `DEFERRED`.
 | Side-compute isolation for high-volume or latency-critical workloads | `BACKLOG` | Post-1.0 | — | 2026-08-12 |
 | Event-dispatch bottleneck review at representative multi-run load | `BACKLOG` | Post-1.0 | [Events](../architecture/events.md) | 2026-08-12 |
 | Local durable append before remote persistence flush | `BACKLOG` | Post-1.0 | [Durable events](../architecture/durable-events.md) | 2026-08-12 |
-| Parallel-branch rejections/duration and persistence-flush duration distributions | `BACKLOG` | Post-1.0 | [Micrometer observability](../architecture/micrometer-observability.md) | 2026-08-12 |
 | Dedicated Gear4J datasource or connection pool | `BACKLOG` | Post-1.0 | [Dedicated persistence datasource](dedicated-persistence-datasource.md) | 2026-08-12 |
 
 ## Eventing

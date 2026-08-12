@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
 import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
+import io.github.gear4jtest.core.persistence.PersistenceFlushSubscription;
 import io.github.gear4jtest.core.persistence.PersistenceRuntimeMonitor;
 import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
@@ -204,8 +205,8 @@ public class Gear4jAutoConfiguration {
     @ConditionalOnProperty(prefix = "gear4j.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
     Gear4jPersistenceMetricsRegistrar gear4jPersistenceMetricsRegistrar(MeterRegistry meterRegistry,
                                                                         PersistenceRuntimeMonitor manager) {
-        PersistenceMetricsBinder.bind(meterRegistry, manager);
-        return new Gear4jPersistenceMetricsRegistrar();
+        return new Gear4jPersistenceMetricsRegistrar(PersistenceMetricsBinder.bindWithSubscription(meterRegistry,
+                                                                                                   manager));
     }
 
     @Bean
@@ -252,7 +253,17 @@ public class Gear4jAutoConfiguration {
         return new Gear4jArtifactSpoolMetricsRegistrar();
     }
 
-    static final class Gear4jPersistenceMetricsRegistrar {
+    static final class Gear4jPersistenceMetricsRegistrar implements AutoCloseable {
+        private final PersistenceFlushSubscription flushSubscription;
+
+        private Gear4jPersistenceMetricsRegistrar(PersistenceFlushSubscription flushSubscription) {
+            this.flushSubscription = flushSubscription;
+        }
+
+        @Override
+        public void close() {
+            flushSubscription.close();
+        }
     }
 
     static final class Gear4jEventMetricsRegistrar {

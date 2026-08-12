@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -17,6 +18,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
+import io.github.gear4jtest.core.persistence.PersistenceFlushObservation;
+import io.github.gear4jtest.core.persistence.PersistenceFlushObserver;
+import io.github.gear4jtest.core.persistence.PersistenceFlushSubscription;
 import io.github.gear4jtest.core.persistence.PersistenceRuntimeStats;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
@@ -38,6 +42,7 @@ final class PersistenceFlushCoordinator {
     private final PersistenceShutdownWriter shutdownWriter;
     private final ScheduledFuture<?> periodicFlushTask;
     private final PersistenceOperationGate operationGate = new PersistenceOperationGate();
+    private final CopyOnWriteArrayList<PersistenceFlushObserver> flushObservers = new CopyOnWriteArrayList<>();
     private final ReentrantLock shutdownLock = new ReentrantLock();
     private volatile PersistenceShutdownReport shutdownReport;
 
@@ -80,6 +85,12 @@ final class PersistenceFlushCoordinator {
         return counters.snapshot(buffers, !operationGate.isOpen());
     }
 
+    PersistenceFlushSubscription subscribeToFlushes(PersistenceFlushObserver observer) {
+        Objects.requireNonNull(observer, "observer must not be null");
+        flushObservers.add(observer);
+        return () -> flushObservers.remove(observer);
+    }
+
     boolean isShutdown() {
         return !operationGate.isOpen();
     }
@@ -109,10 +120,12 @@ final class PersistenceFlushCoordinator {
             return;
         }
         counters.recordScheduledFlush();
+        long startedNanos = System.nanoTime();
         try {
             flushExecutor.execute(() -> {
                 try {
-                    flushBufferBlocking(buffer, drainCompletely);
+                    flushBufferBlocking(buffer, drainCompletely, PersistenceFlushObservation.Trigger.ASYNC,
+                                        startedNanos);
                     counters.recordCompletedFlush();
                 } catch (Exception e) {
                     counters.recordFailedFlush();
@@ -126,19 +139,40 @@ final class PersistenceFlushCoordinator {
             buffer.clearFlushScheduled();
             counters.recordFailedFlush();
             buffer.recordFailure(e);
+            observeFlush(startedNanos, PersistenceFlushObservation.Trigger.ASYNC,
+                         PersistenceFlushObservation.Outcome.REJECTED);
             throw new ExecutionPersistenceException("Station log flush executor rejected a flush. runId="
                     + buffer.runId(), e);
         }
     }
 
     void flushBufferBlocking(OperationRecordBuffer buffer, boolean drainCompletely) {
-        flushBufferBlocking(buffer, drainCompletely, true, drainCompletely);
+        PersistenceFlushObservation.Trigger trigger = drainCompletely
+                ? PersistenceFlushObservation.Trigger.TERMINAL
+                : PersistenceFlushObservation.Trigger.EXPLICIT;
+        flushBufferBlocking(buffer, drainCompletely, trigger, System.nanoTime());
     }
 
     private void flushBufferBlocking(OperationRecordBuffer buffer,
                                      boolean drainCompletely,
-                                     boolean requireHealthy,
-                                     boolean recordTerminalFailure) {
+                                     PersistenceFlushObservation.Trigger trigger,
+                                     long startedNanos) {
+        try {
+            boolean attempted = flushBufferUnobserved(buffer, drainCompletely, true, drainCompletely);
+            if (attempted) {
+                observeFlush(startedNanos, trigger, PersistenceFlushObservation.Outcome.SUCCEEDED);
+            }
+        } catch (RuntimeException exception) {
+            observeFlush(startedNanos, trigger, PersistenceFlushObservation.Outcome.FAILED);
+            throw exception;
+        }
+    }
+
+    private boolean flushBufferUnobserved(OperationRecordBuffer buffer,
+                                          boolean drainCompletely,
+                                          boolean requireHealthy,
+                                          boolean recordTerminalFailure) {
+        boolean attempted = false;
         buffer.lockFlush();
         try {
             if (requireHealthy) {
@@ -147,8 +181,9 @@ final class PersistenceFlushCoordinator {
             do {
                 List<StationLogRecord> batch = buffer.drainBatch();
                 if (batch.isEmpty()) {
-                    return;
+                    return attempted;
                 }
+                attempted = true;
                 try {
                     repository.saveOperationRecordsBatch(batch);
                     counters.recordSuccessfulFlushProgress();
@@ -168,6 +203,7 @@ final class PersistenceFlushCoordinator {
         if (operationGate.isOpen() && buffer.pendingCount() >= buffer.flushThreshold()) {
             scheduleAsyncFlush(buffer, false);
         }
+        return attempted;
     }
 
     PersistenceShutdownReport shutdown(Duration timeout) {
@@ -338,8 +374,10 @@ final class PersistenceFlushCoordinator {
                                       PersistenceShutdownDeadline deadline,
                                       ExecutorService shutdownJdbcExecutor) {
         state.recordAttempt();
+        long startedNanos = System.nanoTime();
         PersistenceShutdownWriter.FlushOutcome outcome = shutdownWriter.flushBuffer(state.buffer(), deadline,
                                                                                     shutdownJdbcExecutor);
+        observeFlush(startedNanos, PersistenceFlushObservation.Trigger.SHUTDOWN, flushOutcome(outcome));
         if (outcome.successful()) {
             if (state.buffer().retainedCount() == 0) {
                 if (!state.finalizationPending()) {
@@ -434,6 +472,38 @@ final class PersistenceFlushCoordinator {
     private boolean hasRetryablePendingLogs(Map<UUID, PersistenceShutdownRunState> runStates) {
         return runStates.values().stream()
                 .anyMatch(state -> state.retryable() && state.buffer().pendingCount() > 0);
+    }
+
+    private PersistenceFlushObservation.Outcome flushOutcome(PersistenceShutdownWriter.FlushOutcome outcome) {
+        if (outcome.successful()) {
+            return PersistenceFlushObservation.Outcome.SUCCEEDED;
+        }
+        if (outcome.deadlineReached()) {
+            return PersistenceFlushObservation.Outcome.TIMED_OUT;
+        }
+        if (outcome.interrupted()) {
+            return PersistenceFlushObservation.Outcome.INTERRUPTED;
+        }
+        return PersistenceFlushObservation.Outcome.FAILED;
+    }
+
+    private void observeFlush(long startedNanos,
+                              PersistenceFlushObservation.Trigger trigger,
+                              PersistenceFlushObservation.Outcome outcome) {
+        if (flushObservers.isEmpty()) {
+            return;
+        }
+        long elapsedNanos = Math.max(0L, System.nanoTime() - startedNanos);
+        PersistenceFlushObservation observation = new PersistenceFlushObservation(Duration.ofNanos(elapsedNanos),
+                trigger, outcome);
+        for (PersistenceFlushObserver observer : flushObservers) {
+            try {
+                observer.onFlush(observation);
+            } catch (RuntimeException exception) {
+                LOGGER.warn("Persistence flush observer failed. observer={}, trigger={}, outcome={}",
+                            observer.getClass().getName(), trigger, outcome, exception);
+            }
+        }
     }
 
     private void flushPendingBuffersSafely() {

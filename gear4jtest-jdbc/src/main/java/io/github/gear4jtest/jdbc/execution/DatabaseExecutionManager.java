@@ -19,6 +19,8 @@ import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.api.context.PayloadCloners;
 import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
+import io.github.gear4jtest.core.persistence.PersistenceFlushObserver;
+import io.github.gear4jtest.core.persistence.PersistenceFlushSubscription;
 import io.github.gear4jtest.core.persistence.PersistenceOperationalStatus;
 import io.github.gear4jtest.core.persistence.PersistenceRuntimeMonitor;
 import io.github.gear4jtest.core.persistence.PersistenceRuntimeStats;
@@ -352,6 +354,11 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
 
     public PersistenceRuntimeStats snapshotStats() {
         return flushCoordinator.snapshotStats();
+    }
+
+    @Override
+    public PersistenceFlushSubscription subscribeToFlushes(PersistenceFlushObserver observer) {
+        return flushCoordinator.subscribeToFlushes(observer);
     }
 
     @Override

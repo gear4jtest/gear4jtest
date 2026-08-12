@@ -11,7 +11,7 @@ metrics and when your application already exposes a Micrometer `MeterRegistry`.
 | --- | --- |
 | Status | Critical operational surface implemented; optional additions tracked below |
 | Owner | Gear4J maintainers |
-| Last reviewed | 2026-08-12 |
+| Last reviewed | 2026-08-13 |
 | Architecture reference | [Micrometer observability](../docs/architecture/micrometer-observability.md) |
 
 The module covers lifecycle, event/persistence pressure and the generated-code
@@ -30,6 +30,10 @@ gear4j.runs.duration
 gear4j.stations.started
 gear4j.stations.completed
 gear4j.stations.duration
+gear4j.branches.started
+gear4j.branches.completed
+gear4j.branches.duration
+gear4j.branches.rejected
 gear4j.persistence.buffered.station.logs
 gear4j.persistence.buffered.station.logs.oldest.age.seconds
 gear4j.persistence.active.runs
@@ -37,6 +41,7 @@ gear4j.persistence.flushes.scheduled
 gear4j.persistence.flushes.completed
 gear4j.persistence.flushes.failed
 gear4j.persistence.appends.rejected
+gear4j.persistence.flush.duration{trigger,outcome}
 gear4j.events.published
 gear4j.events.dispatched
 gear4j.events.dropped
@@ -104,15 +109,35 @@ gear4j.artifacts.spool.quota.rejections
 gear4j.artifacts.spool.cleanup.failures
 ```
 
-These metrics are useful to confirm that Gear4J is active, track completed run
-and station latency, and ensure that persistence and the best-effort event
+These metrics are useful to confirm that Gear4J is active, track completed run,
+station and branch latency, and ensure that persistence and the best-effort event
 runtime are not silently accumulating, saturating, running late reactions or dropping work. They are still
 intentionally conservative.
+
+Branch `started` counts only work that entered the ordinary station runner.
+Branch `completed{status}` also includes synthetic skip, cancellation,
+interruption and failed-before-start outcomes; `rejected` is the subset rejected
+by the branch executor. `duration{status}` is recorded only for an executed
+branch with consistent timestamps.
+
+The flush timer measures real attempts only. `trigger` is one of `async`,
+`explicit`, `terminal` or `shutdown`; `outcome` is one of `succeeded`, `failed`,
+`rejected`, `timed_out` or `interrupted`. Async duration starts at admission and
+includes executor queue delay. Empty explicit/terminal calls do not create a
+sample. Percentile histograms are enabled so a compatible backend can calculate
+p95/p99 distributions.
 
 `PersistenceMetricsBinder` is auto-registered by the Spring Boot starter when a
 `DatabaseExecutionManager` and a `MeterRegistry` are available. The starter also calls
 `EventMetricsBinder.bindProcessWide(...)` once for the tag-free aggregate. Run-local binding remains internal because
 the concrete event-runtime lifecycle is not part of the stable consumer API.
+
+Manual integrations may retain and close the removable observation subscription:
+
+```java
+PersistenceFlushSubscription subscription =
+        PersistenceMetricsBinder.bindWithSubscription(registry, persistenceMonitor);
+```
 
 The starter also auto-binds `AssemblyLineManager`,
 `InMemoryClassLoaderRegistry`, `ArtifactStoreMonitor` and
@@ -134,20 +159,20 @@ Metrics with tags such as `assemblyLineId`, `operationId`, `exceptionClass` or
 pipelines are generated dynamically by a BO.
 
 Infrastructure binders never expose application identifiers. Their only tags
-are the closed sets `phase`, `outcome`, `result` and `operation`; no exception
+are the closed sets `phase`, `outcome`, `result`, `operation` and `trigger`; no exception
 class, exception message, hash, pipeline ID or business content is emitted.
 
 ## Delivered and remaining application-specific observability
 
 | Surface | Status | Existing signal or remaining gap | Target version | Last verified |
 | --- | --- | --- | --- | --- |
-| Run outcomes and duration | `DELIVERED` | `gear4j.runs.completed{status}` and `gear4j.runs.duration{status}` | 1.0 | 2026-08-12 |
-| Station outcomes and duration | `DELIVERED` | `gear4j.stations.completed{status}` and `gear4j.stations.duration{status}` | 1.0 | 2026-08-12 |
-| Event-reaction outcomes | `DELIVERED` | Separate completed, failed and dropped counters avoid an additional tagged duplicate meter | 1.0 | 2026-08-12 |
-| Pipeline, operation or branch identifiers | `APPLICATION` | Use an explicit bounded `Gear4jMeterTagPolicy`; raw dynamic identifiers are not default metrics | Application-owned | 2026-08-12 |
-| Timeout categorization | `BACKLOG` | Requires a stable low-cardinality error-classification contract | Post-1.0; unscheduled | 2026-08-12 |
-| Persistence flush duration distribution | `BACKLOG` | Flush counts and backlog pressure exist; no flush timer is exposed | Post-1.0; unscheduled | 2026-08-12 |
-| Parallel-branch rejections and duration | `BACKLOG` | Requires stable branch lifecycle hooks that do not expose core internals | Post-1.0; unscheduled | 2026-08-12 |
+| Run outcomes and duration | `DELIVERED` | `gear4j.runs.completed{status}` and `gear4j.runs.duration{status}` | 1.0 | 2026-08-13 |
+| Station outcomes and duration | `DELIVERED` | `gear4j.stations.completed{status}` and `gear4j.stations.duration{status}` | 1.0 | 2026-08-13 |
+| Event-reaction outcomes | `DELIVERED` | Separate completed, failed and dropped counters avoid an additional tagged duplicate meter | 1.0 | 2026-08-13 |
+| Pipeline, operation or branch identifiers | `APPLICATION` | Use an explicit bounded `Gear4jMeterTagPolicy`; raw dynamic identifiers are not default metrics | Application-owned | 2026-08-13 |
+| Application timeout categorization | `BACKLOG` | Run/station failure causes require a stable low-cardinality error-classification contract | Post-1.0; unscheduled | 2026-08-13 |
+| Persistence flush duration distribution | `DELIVERED` | `gear4j.persistence.flush.duration{trigger,outcome}` enables bounded backend percentiles | 1.0 | 2026-08-13 |
+| Parallel-branch rejections and duration | `DELIVERED` | Branch lifecycle meters cover executed and synthetic terminal outcomes without engine coupling | 1.0 | 2026-08-13 |
 | Experimental-cache outcomes | `DEFERRED` | Outside the critical operational contract while the cache module remains experimental | Post-1.0; unscheduled | 2026-08-12 |
 
 An application-level error categorizer may normalize runtime failures into

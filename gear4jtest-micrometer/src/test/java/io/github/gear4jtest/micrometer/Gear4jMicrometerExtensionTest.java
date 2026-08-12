@@ -4,9 +4,13 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import io.github.gear4jtest.core.api.trace.RunTrace;
+import io.github.gear4jtest.core.event.StationCancellationReason;
+import io.github.gear4jtest.core.event.StationInterruptionReason;
+import io.github.gear4jtest.core.event.StationSkipReason;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
@@ -73,6 +77,42 @@ class Gear4jMicrometerExtensionTest {
         assertThat(durationMillis)
                 .as("completed station duration")
                 .isEqualTo(1000.0d);
+        assertThat(meterRegistry.counter("gear4j.branches.started").count()).isEqualTo(1.0d);
+        assertThat(meterRegistry.counter("gear4j.branches.completed", "status", "SUCCEEDED").count())
+                .isEqualTo(1.0d);
+        assertThat(meterRegistry.timer("gear4j.branches.duration", "status", "SUCCEEDED")
+                .totalTime(TimeUnit.MILLISECONDS)).isEqualTo(1000.0d);
+    }
+
+    @Test
+    void should_record_synthetic_branch_outcomes_and_executor_rejections() {
+        // Given
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        Gear4jMicrometerExtension extension = new Gear4jMicrometerExtension(meterRegistry);
+        StationLogRecord skipped = stationWithStatus("branch-skipped", StationLogStatus.SKIPPED);
+        StationLogRecord cancelled = stationWithStatus("branch-cancelled", StationLogStatus.CANCELLED);
+        StationLogRecord interrupted = stationWithStatus("branch-interrupted", StationLogStatus.CANCELLED);
+        StationLogRecord rejected = stationWithStatus("branch-rejected", StationLogStatus.FAILED);
+
+        // When
+        extension.onStationSkipped(null, null, skipped, StationSkipReason.CONDITION_NOT_SATISFIED);
+        extension.onStationCancelled(null, null, cancelled, StationCancellationReason.TIMEOUT,
+                                     new RuntimeException("timeout"));
+        extension.onStationInterrupted(null, null, interrupted, StationInterruptionReason.SIBLING_FLOW_INTERRUPTED,
+                                       "sibling", new RuntimeException("interrupted"));
+        extension.onStationFailedBeforeStart(null, null, rejected, new RejectedExecutionException("full"));
+
+        // Then
+        assertThat(meterRegistry.counter("gear4j.branches.completed", "status", "SKIPPED").count())
+                .isEqualTo(1.0d);
+        assertThat(meterRegistry.counter("gear4j.branches.completed", "status", "CANCELLED").count())
+                .isEqualTo(2.0d);
+        assertThat(meterRegistry.counter("gear4j.branches.completed", "status", "FAILED").count())
+                .isEqualTo(1.0d);
+        assertThat(meterRegistry.counter("gear4j.branches.rejected").count()).isEqualTo(1.0d);
+        assertThat(meterRegistry.find("gear4j.branches.duration").timer())
+                .as("synthetic branches have no execution duration")
+                .isNull();
     }
 
     @Test
@@ -140,6 +180,23 @@ class Gear4jMicrometerExtensionTest {
         assertThat(meterCount(meterRegistry, "gear4j.stations.started")).isEqualTo(1);
         assertThat(meterCount(meterRegistry, "gear4j.stations.completed")).isEqualTo(1);
         assertThat(meterCount(meterRegistry, "gear4j.stations.duration")).isEqualTo(1);
+        assertThat(meterCount(meterRegistry, "gear4j.branches.started")).isEqualTo(1);
+        assertThat(meterCount(meterRegistry, "gear4j.branches.completed")).isEqualTo(1);
+        assertThat(meterCount(meterRegistry, "gear4j.branches.duration")).isEqualTo(1);
+    }
+
+    @Test
+    void default_policy_shouldKeepRejectedBranchCardinalityBounded() {
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        Gear4jMicrometerExtension extension = new Gear4jMicrometerExtension(meterRegistry);
+
+        for (int index = 0; index < 1_000; index++) {
+            StationLogRecord rejected = stationWithStatus("dynamic-branch-" + index, StationLogStatus.FAILED);
+            extension.onStationFailedBeforeStart(null, null, rejected, new RejectedExecutionException("full"));
+        }
+
+        assertThat(meterCount(meterRegistry, "gear4j.branches.rejected")).isEqualTo(1);
+        assertThat(meterCount(meterRegistry, "gear4j.branches.completed")).isEqualTo(1);
     }
 
     @Test
@@ -201,6 +258,12 @@ class Gear4jMicrometerExtensionTest {
         return new StationLogRecord(UUID.randomUUID(), UUID.randomUUID(), operationId, null, branchId,
                 StationLogStatus.SUCCEEDED, Instant.parse("2026-06-08T10:15:30Z"),
                 Instant.parse("2026-06-08T10:15:31Z"), null, null, Map.of(), "item-1");
+    }
+
+    private static StationLogRecord stationWithStatus(String branchId, StationLogStatus status) {
+        return new StationLogRecord(UUID.randomUUID(), UUID.randomUUID(), "parallel-step", null, branchId,
+                status, Instant.parse("2026-06-08T10:15:31Z"), Instant.parse("2026-06-08T10:15:31Z"),
+                null, null, Map.of(), "item-1");
     }
 
     private static long meterCount(SimpleMeterRegistry meterRegistry, String name) {

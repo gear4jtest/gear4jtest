@@ -1,6 +1,7 @@
 package io.github.gear4jtest.jdbc.execution;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -11,6 +12,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
+import io.github.gear4jtest.core.persistence.PersistenceFlushObservation;
+import io.github.gear4jtest.core.persistence.PersistenceFlushSubscription;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
 import org.junit.jupiter.api.Test;
@@ -101,6 +104,8 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         doThrow(new RejectedExecutionException("full")).when(flushExecutor).execute(any(Runnable.class));
         PersistenceFlushCoordinator coordinator = coordinator(mock(ScheduledFuture.class), flushExecutor, false, false);
         OperationRecordBuffer buffer = new OperationRecordBuffer(java.util.UUID.randomUUID(), 2, 2);
+        List<PersistenceFlushObservation> observations = new ArrayList<>();
+        coordinator.subscribeToFlushes(observations::add);
 
         assertThatThrownBy(() -> coordinator.scheduleAsyncFlush(buffer, false))
                 .isInstanceOf(ExecutionPersistenceException.class)
@@ -108,6 +113,11 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         assertThat(coordinator.snapshotStats().scheduledFlushes()).isEqualTo(1L);
         assertThat(coordinator.snapshotStats().failedFlushes()).isEqualTo(1L);
         assertThatThrownBy(buffer::assertHealthy).isInstanceOf(ExecutionPersistenceException.class);
+        assertThat(observations).singleElement().satisfies(observation -> {
+            assertThat(observation.trigger()).isEqualTo(PersistenceFlushObservation.Trigger.ASYNC);
+            assertThat(observation.outcome()).isEqualTo(PersistenceFlushObservation.Outcome.REJECTED);
+            assertThat(observation.duration()).isGreaterThanOrEqualTo(Duration.ZERO);
+        });
     }
 
     @Test
@@ -136,6 +146,8 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         PersistenceFlushCoordinator coordinator = coordinator(repository, mock(ScheduledFuture.class), flushExecutor,
                                                               new OperationRecordBufferRegistry(10, 2), false, false);
         OperationRecordBuffer buffer = bufferedRecord(coordinator, false);
+        List<PersistenceFlushObservation> observations = new ArrayList<>();
+        coordinator.subscribeToFlushes(observations::add);
 
         // When
         coordinator.scheduleAsyncFlush(buffer, false);
@@ -144,6 +156,10 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         assertThat(buffer.pendingCount()).isEqualTo(1);
         assertThat(buffer.currentFailure()).isNull();
         assertThat(coordinator.snapshotStats().failedFlushes()).isEqualTo(1L);
+        assertThat(observations).singleElement().satisfies(observation -> {
+            assertThat(observation.trigger()).isEqualTo(PersistenceFlushObservation.Trigger.ASYNC);
+            assertThat(observation.outcome()).isEqualTo(PersistenceFlushObservation.Outcome.FAILED);
+        });
     }
 
     @Test
@@ -205,6 +221,79 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         assertThat(coordinator.snapshotStats().scheduledFlushes()).isEqualTo(1L);
         verify(repository).saveOperationRecordsBatch(anyList());
         verify(flushExecutor).execute(any(Runnable.class));
+    }
+
+    @Test
+    void flushBufferBlocking_shouldObserveAttemptAndIsolateObserverFailures() {
+        // Given
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        PersistenceFlushCoordinator coordinator = coordinator(repository, mock(ScheduledFuture.class),
+                                                              mock(ExecutorService.class),
+                                                              new OperationRecordBufferRegistry(10, 2), false, false);
+        OperationRecordBuffer buffer = bufferedRecord(coordinator, false);
+        List<PersistenceFlushObservation> observations = new ArrayList<>();
+        coordinator.subscribeToFlushes(observation -> {
+            throw new IllegalStateException("broken metrics backend");
+        });
+        coordinator.subscribeToFlushes(observations::add);
+
+        // When
+        coordinator.flushBufferBlocking(buffer, false);
+
+        // Then
+        verify(repository).saveOperationRecordsBatch(anyList());
+        assertThat(observations).singleElement().satisfies(observation -> {
+            assertThat(observation.trigger()).isEqualTo(PersistenceFlushObservation.Trigger.EXPLICIT);
+            assertThat(observation.outcome()).isEqualTo(PersistenceFlushObservation.Outcome.SUCCEEDED);
+        });
+    }
+
+    @Test
+    void flushBufferBlocking_shouldNotObserveNoOpFlush() {
+        PersistenceFlushCoordinator coordinator = coordinator(mock(ScheduledFuture.class),
+                                                              mock(ExecutorService.class), false, false);
+        List<PersistenceFlushObservation> observations = new ArrayList<>();
+        coordinator.subscribeToFlushes(observations::add);
+
+        coordinator.flushBufferBlocking(new OperationRecordBuffer(UUID.randomUUID(), 10, 2), false);
+
+        assertThat(observations).isEmpty();
+    }
+
+    @Test
+    void flushSubscription_shouldBeRemovable() {
+        PersistenceFlushCoordinator coordinator = coordinator(mock(ScheduledFuture.class),
+                                                              mock(ExecutorService.class), false, false);
+        List<PersistenceFlushObservation> observations = new ArrayList<>();
+        PersistenceFlushSubscription subscription = coordinator.subscribeToFlushes(observations::add);
+        subscription.close();
+
+        coordinator.flushBufferBlocking(bufferedRecord(coordinator, false), false);
+
+        assertThat(observations).isEmpty();
+    }
+
+    @Test
+    void shutdown_shouldObserveSuccessfulDrain() {
+        // Given
+        OperationRecordBufferRegistry buffers = new OperationRecordBufferRegistry(10, 2);
+        PersistenceFlushCoordinator coordinator = coordinator(mock(DatabaseAssemblyRunRepository.class),
+                                                              mock(ScheduledFuture.class),
+                                                              mock(ExecutorService.class), buffers, false, false);
+        OperationRecordBuffer buffer = buffers.createFresh(UUID.randomUUID(), 2);
+        buffer.append(mock(StationLogRecord.class), coordinator.counters());
+        List<PersistenceFlushObservation> observations = new ArrayList<>();
+        coordinator.subscribeToFlushes(observations::add);
+
+        // When
+        PersistenceShutdownReport report = coordinator.shutdown(Duration.ofSeconds(1));
+
+        // Then
+        assertThat(report.successful()).isTrue();
+        assertThat(observations).singleElement().satisfies(observation -> {
+            assertThat(observation.trigger()).isEqualTo(PersistenceFlushObservation.Trigger.SHUTDOWN);
+            assertThat(observation.outcome()).isEqualTo(PersistenceFlushObservation.Outcome.SUCCEEDED);
+        });
     }
 
     @Test

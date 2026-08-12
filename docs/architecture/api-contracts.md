@@ -148,5 +148,7 @@ literals, no reflection and no arbitrary static access.
 ## Stable facade rule
 
 Application code should depend on `AssemblyLineExecutor`, `RunTrace`, `StationTrace`, `RunPersistenceManager` and
-`PersistenceRuntimeMonitor`. `AssemblyLineEngine`, mutable trace implementations and execution registries remain internal
+`PersistenceRuntimeMonitor`. Active persistence instrumentation uses the provider-neutral
+`PersistenceFlushObservation`, `PersistenceFlushObserver` and removable `PersistenceFlushSubscription`; none exposes a
+JDBC or Micrometer type. `AssemblyLineEngine`, mutable trace implementations and execution registries remain internal
 wiring types even when a public class is retained temporarily for binary or framework integration.
