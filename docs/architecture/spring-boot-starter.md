@@ -118,10 +118,16 @@ starter contributes separate liveness and readiness indicators:
 - `gear4jPersistenceHealthIndicator` remains an alias of the readiness bean for
   compatibility.
 
-`connectivity-probe-timeout` is applied through JDBC
-`Statement#setQueryTimeout` after a connection is acquired. The host application
-must also configure a finite datasource/pool connection-acquisition timeout;
-JDBC has no portable per-call timeout for `DataSource#getConnection()`.
+`connectivity-probe-timeout` bounds the complete Gear4J readiness check, including
+datasource/pool connection acquisition and the validation statement. Gear4J runs
+the check on one daemon worker per persistence runtime and fails overlapping
+checks fast while an earlier driver call is still stuck. The same duration is
+also applied through JDBC `Statement#setQueryTimeout` after acquisition.
+
+The host application must still configure a finite datasource/pool
+connection-acquisition timeout. JDBC has no portable way for Gear4J to terminate
+a `DataSource#getConnection()` call that ignores interruption; the pool timeout
+reclaims the worker and also protects normal persistence writes.
 
 A historical flush failure or rejected append remains visible in metrics and
 health details, but does not keep readiness permanently `DOWN`. Readiness returns

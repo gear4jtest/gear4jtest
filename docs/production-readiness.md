@@ -222,9 +222,11 @@ When Spring Boot Actuator is present and JDBC persistence is enabled, put
 readiness checks current database connectivity, backlog size/age and recovery
 after a failed flush. Do not restart an otherwise live process solely because the
 database is temporarily unavailable.
-Configure the datasource/pool connection-acquisition timeout in addition to the
-Gear4J connectivity-query timeout so a saturated pool cannot block readiness
-indefinitely.
+The Gear4J connectivity-probe timeout bounds the complete readiness call,
+including pool acquisition. Configure the datasource/pool
+connection-acquisition timeout as well: it reclaims the single daemon probe
+worker if a JDBC call ignores interruption and protects normal writes, which do
+not run through the readiness worker.
 
 The default lifecycle metrics omit pipeline, operation and branch identifiers.
 If those dimensions are needed, use a reviewed finite allowlist; unknown values
@@ -291,11 +293,13 @@ CPU, wall-clock and filesystem/network limits.
 
 The process-wide in-memory event dispatcher uses a bounded non-blocking queue. Its default capacity is 4,096 lightweight
 drain tasks and it rejects new tasks when saturated; the affected `EventManager` drops its pending best-effort events and
-increments `EventRuntimeStats.droppedEvents()`.
+increments `EventRuntimeStats.droppedEvents()`. Each admitted task drains at most 64 events from one run before a
+non-empty run is re-enqueued at the tail. This prevents an asymmetric loud run from monopolizing a dispatcher worker,
+but it is not a wall-clock latency SLO.
 
 The startup-only system property `gear4j.event.dispatcher.queue-capacity` can override the shared capacity with a
 strictly positive integer. Invalid values fall back to 4,096 with a warning. Size this queue from observed concurrent run
-counts, not from the number of business events: one scheduled drain task can process several events from one manager.
+counts, not from the number of business events: one scheduled drain task can process up to 64 events from one manager.
 
 ## Experimental assembly-line cache
 

@@ -123,10 +123,12 @@ database. `gear4jPersistenceReadinessIndicator` verifies current database
 connectivity and persistence backlog recovery. The legacy
 `gear4jPersistenceHealthIndicator` bean name aliases readiness.
 
-The connectivity probe timeout bounds the validation statement. Configure a
+The connectivity probe timeout bounds the complete Gear4J readiness call,
+including connection acquisition and the validation statement. Configure a
 finite connection-acquisition timeout on the application datasource/pool as
-well, because JDBC does not expose a portable per-call timeout for
-`DataSource#getConnection()`.
+well: JDBC does not expose a portable way to terminate a
+`DataSource#getConnection()` call that ignores interruption, and normal writes
+do not use the readiness worker.
 
 Keep liveness and readiness in separate Actuator health groups. Cumulative
 failed-flush and rejected-append counters remain observable but do not make a

@@ -51,6 +51,7 @@ import org.slf4j.MDC;
 @Internal
 public final class EventManager implements EventPublisher {
     private static final Logger LOGGER = LoggerFactory.getLogger(EventManager.class);
+    static final int MAX_EVENTS_PER_DISPATCH_TASK = 64;
     private final List<EventSubscription<?>> subscriptions;
     private final BlockingQueue<QueuedEvent> queue;
     private final Object submissionMonitor = new Object();
@@ -69,12 +70,20 @@ public final class EventManager implements EventPublisher {
     private final AtomicLong droppedReactions = new AtomicLong();
     private final AtomicLong failedReactions = new AtomicLong();
     private final ExecutorService reactionExecutor;
+    private final EventDispatcher dispatcher;
     private final EventRuntimeShutdown runtimeShutdown;
     private final int eventQueueCapacity;
     /** Guarded by {@link #submissionMonitor}. */
     private boolean accepting;
 
     public EventManager(EventHandlingDefinition definition, ExecutionContextRegistry registry) {
+        this(definition, registry, EventDispatcher.shared());
+    }
+
+    EventManager(EventHandlingDefinition definition,
+                 ExecutionContextRegistry registry,
+                 EventDispatcher dispatcher) {
+        this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher must not be null");
         EventHandlingDefinition effectiveDefinition = definition != null ? definition
                 : EventHandlingDefinition.builder().build();
 
@@ -184,7 +193,7 @@ public final class EventManager implements EventPublisher {
         if (!dispatchTaskScheduled.compareAndSet(false, true)) {
             return;
         }
-        boolean submitted = EventDispatcher.shared().submit(this::dispatchFromSharedDispatcher);
+        boolean submitted = dispatcher.submit(this::dispatchFromSharedDispatcher);
         if (!submitted) {
             dispatchTaskScheduled.set(false);
             dropPendingQueuedEvents();
@@ -197,7 +206,8 @@ public final class EventManager implements EventPublisher {
         dispatchingEvents.incrementAndGet();
         try {
             QueuedEvent queuedEvent;
-            while ((queuedEvent = queue.poll()) != null) {
+            int remainingInSlice = MAX_EVENTS_PER_DISPATCH_TASK;
+            while (remainingInSlice-- > 0 && (queuedEvent = queue.poll()) != null) {
                 dispatchedEvents.incrementAndGet();
                 EventRuntimeMetrics.eventDispatched(queuedEvent.queuedNanos());
                 dispatch(queuedEvent);

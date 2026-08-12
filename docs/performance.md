@@ -39,6 +39,10 @@ explicit decision. Production sizing still requires representative payloads, dat
 Unit and stress tests complement nominal JMH throughput:
 
 - the shared event dispatcher proves non-blocking rejection at its fixed capacity and continues after task failure;
+- an asymmetric two-run load proves that a quiet run reaches reaction submission after at most one 64-event loud-run
+  dispatch slice, with a generous two-second portable test ceiling rather than a production SLO;
+- a saturated JDBC datasource proves that the complete readiness probe returns within its configured budget envelope,
+  overlapping checks fail fast and a non-cooperative acquisition occupies at most one daemon worker per runtime;
 - the cache proves concurrent capacity bounds, TTL cleanup, least-recently-used eviction and mutable-output isolation;
 - persistence tests retain and retry drained batches after failures.
 

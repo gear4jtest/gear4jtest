@@ -27,7 +27,8 @@ The event path is:
 1. a station publishes an event;
 2. the run-local `EventManager` reserves capacity in its bounded in-memory queue accounting;
 3. a lightweight dispatch task is submitted to the shared in-process event dispatcher;
-4. the shared dispatcher invokes the run-local dispatch task;
+4. the shared dispatcher invokes the run-local dispatch task for a slice of at most 64 events, then re-enqueues the run
+   at the tail when more events remain;
 5. matching subscriptions are submitted to the run's configured `ExecutorService`;
 6. accepted reactions run asynchronously;
 7. events rejected by run-local queue accounting and reactions rejected by the executor are logged and counted as dropped.
@@ -71,7 +72,11 @@ resources are cleaned up after `detachCleanupTimeout` even if user reaction code
 
 ## What the runtime does not guarantee
 
-The shared dispatcher removes the previous "one dispatcher thread per run" cost. It does not make the runtime durable or globally ordered. Each run still owns its own subscriptions, shutdown mode, counters and reaction executor configuration.
+The shared dispatcher removes the previous "one dispatcher thread per run" cost. Its 64-event service slice prevents a
+continuously loud run from draining its entire queue before another scheduled run receives service. This is a fairness
+bound in units of admitted events, not a wall-clock latency guarantee: reaction-executor saturation and slow application
+reactions can still increase end-to-end latency. The dispatcher does not make the runtime durable or globally ordered.
+Each run still owns its own subscriptions, shutdown mode, counters and reaction executor configuration.
 
 The current event runtime does not provide:
 

@@ -44,6 +44,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
     private final PersistenceRuntimeConfiguration configuration;
     private final OperationRecordBufferRegistry buffers;
     private final PersistenceFlushCoordinator flushCoordinator;
+    private final PersistenceConnectivityProbe connectivityProbe;
     private final SensitiveDataRedactor redactor;
     private final PayloadCloner payloadCloner;
 
@@ -61,6 +62,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
                 configuration.batchSize());
         this.redactor = builder.redactor != null ? builder.redactor : SensitiveDataRedactor.discardSensitiveValues();
         this.payloadCloner = builder.payloadCloner != null ? builder.payloadCloner : PayloadCloners.immutableAware();
+        this.connectivityProbe = new PersistenceConnectivityProbe();
         if (SensitiveDataRedactor.isNone(this.redactor)) {
             LOGGER.warn("[Gear4J] JDBC persistence is configured to allow unredacted sensitive data capture. "
                     + "Assembly line payloads, contexts, results and error messages will be persisted as-is.");
@@ -367,7 +369,9 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
 
         boolean connectivityAvailable;
         try {
-            connectivityAvailable = repository.checkConnectivity(configuration.connectivityProbeTimeout());
+            connectivityAvailable = connectivityProbe.execute(configuration.connectivityProbeTimeout(),
+                                                              () -> repository.checkConnectivity(configuration
+                                                                      .connectivityProbeTimeout()));
         } catch (RuntimeException exception) {
             connectivityAvailable = false;
         }
@@ -428,6 +432,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
      * remainder.
      */
     public PersistenceShutdownReport shutdownWithReport(Duration timeout) {
+        connectivityProbe.shutdown();
         return flushCoordinator.shutdown(timeout);
     }
 

@@ -20,6 +20,10 @@ final class PersistenceThreadFactories {
         return namedDaemonFactory("gear4j-db-shutdown-");
     }
 
+    static ThreadFactory connectivityProbe() {
+        return namedDaemonFactory("gear4j-db-connectivity-probe-");
+    }
+
     private static ThreadFactory namedDaemonFactory(String prefix) {
         AtomicInteger counter = new AtomicInteger();
         return runnable -> {
