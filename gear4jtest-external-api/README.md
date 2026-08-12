@@ -99,6 +99,10 @@ AssemblyLineManager manager = AssemblyLineManager.builder()
 
 The in-memory implementation is thread-safe and atomic within one JVM, but it is not durable or distributed. JDBC
 applications should use `OperationChainObjectRepositoryJdbc`, which implements the publication capability transactionally.
+After restart, construct a new `ArtifactPublicationReconciler` over the durable repositories and the store configuration
+fingerprinted in the stage. A crash after staging but before the artifact write is resolved by conditional abort after the
+grace period. A crash after the artifact write but before commit is resolved by committing the invisible stage. Repeating
+the reconciliation pass is idempotent.
 Version listing through `OperationChainObjectRepository` always requires a bounded `PageRequest`; there is no unbounded
 fallback. Custom repository implementations must apply the page before materializing results.
 
@@ -243,6 +247,16 @@ invariant.
 Configure `spoolDirectory` as a private, application-owned path. On a filesystem whose isolation is enforced outside
 the JVM, the explicit `requirePrivatePermissions=false` policy may be used only after the operator has provisioned and
 verified equivalent access controls. This opt-out does not make a shared temporary directory safe.
+
+The spool is a bounded temporary workspace, not a recovery queue or write-ahead log. Its `.tmp` files do not encode a
+destination or operation, so initialization never replays them. After a crash, recent residues count against the quota;
+residues older than `staleFileAge` are deleted on the next initialization. The default 24-hour age is a cleanup retention
+period, not a delivery window.
+
+For `ASYNC_FALLBACKS`, a successful call guarantees the primary write only. A JVM crash can lose every fallback copy that
+has not completed, including a queued copy backed by a spool file. Use `SYNC_ALL` when the call must await fallback writes.
+If queued fallback copies must survive a process crash, use externally durable replication or a durable outbox; the
+managed spool does not provide that guarantee.
 
 ## Filesystem artifact-store security
 

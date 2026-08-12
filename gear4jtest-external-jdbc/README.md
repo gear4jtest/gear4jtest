@@ -102,6 +102,18 @@ Set `requirePrivatePermissions=false` only when the configured spool directory i
 filesystem, container or operating-system policy. It is an explicit operator responsibility, not a permissive fallback
 for a shared temporary directory.
 
+The database spool is temporary hashing/input staging, not a durable recovery log. If the process terminates before the
+database write completes, the caller has no successful acknowledgement to rely on and a `.tmp` residue may remain. A new
+store instance accounts for recent residues against the quota and deletes residues older than `spoolStaleFileAge`; it does
+not replay them. The database transaction, rather than the local spool, is the durability boundary for a completed
+`put`.
+
+JDBC publication stages are different: they are durable, invisible metadata records. If a process terminates between
+stage and store write, or between store write and metadata commit, reconstruct the repositories and store and run
+`ArtifactPublicationReconciler` after the configured grace period. It conditionally aborts a stage whose hash is absent
+and commits one whose hash exists. The production-dialect integration matrix qualifies both restart windows on
+PostgreSQL, MySQL, MariaDB and Oracle; H2 covers the same path without Docker.
+
 ## Verification
 
 ```bash

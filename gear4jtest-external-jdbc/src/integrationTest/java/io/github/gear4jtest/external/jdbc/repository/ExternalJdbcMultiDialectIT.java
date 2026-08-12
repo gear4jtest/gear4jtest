@@ -22,10 +22,12 @@ import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.ExecutionMode;
 import io.github.gear4jtest.external.api.StoreType;
 import io.github.gear4jtest.external.api.artifact.ArtifactHashes;
+import io.github.gear4jtest.external.api.consistency.ArtifactPublicationReconciler;
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
 import io.github.gear4jtest.external.api.repository.OperationChainRepositoryException;
+import io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFingerprint;
 import io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStore;
 import io.github.gear4jtest.jdbc.migration.SchemaMigrationException;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
@@ -88,6 +90,7 @@ class ExternalJdbcMultiDialectIT {
         verifyManagedTransactionRollback(dataSource, scenario, assemblyLineId + "-managed-rollback");
         verifyConfigurationRoundTrip(dataSource, scenario.dialect(), assemblyLineId);
         verifyAtomicPublicationTagsAndPagination(dataSource, scenario.dialect(), assemblyLineId);
+        verifyCrashWindowReconciliation(dataSource, scenario, assemblyLineId + "-crash-recovery");
         verifyArtifactBlobStreaming(dataSource, scenario, assemblyLineId);
     }
 
@@ -268,6 +271,82 @@ class ExternalJdbcMultiDialectIT {
                 .hasMessageContaining(assemblyLineId + ":1.0.0:RUN");
         OperationChainObject committed = objects.find(assemblyLineId, "1.0.0", ExecutionMode.RUN).orElseThrow();
         assertThat(committed.contentHash()).isEqualTo(HASH_B);
+    }
+
+    private void verifyCrashWindowReconciliation(DataSource dataSource,
+                                                 DatabaseScenario scenario,
+                                                 String assemblyLineId)
+            throws Exception {
+        // Given: one crash window contains the external bytes while the other ends
+        // immediately after durable metadata staging.
+        OperationChainConfig config = new OperationChainConfig(assemblyLineId, false, StoreType.DATABASE,
+                Map.of("dialect", scenario.id()));
+        OperationChainConfigRepositoryJdbc beforeCrashConfigs = OperationChainConfigRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(scenario.dialect())
+                .build();
+        beforeCrashConfigs.upsert(config);
+        OperationChainObjectRepositoryJdbc beforeCrashMetadata = OperationChainObjectRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(scenario.dialect())
+                .build();
+        DatabaseArtifactStore beforeCrashStore = DatabaseArtifactStore.builder()
+                .dataSource(dataSource)
+                .databaseDialect(scenario.dialect())
+                .spoolDirectory(tempDirectory.resolve(scenario.id()).resolve("crash-before"))
+                .build();
+        byte[] presentContent = ("stored-before-commit-" + scenario.id()).getBytes(StandardCharsets.UTF_8);
+        byte[] missingContent = ("not-stored-before-crash-" + scenario.id()).getBytes(StandardCharsets.UTF_8);
+        Instant publishedAt = Instant.parse("2026-07-15T10:16:00Z");
+        OperationChainObject present = new OperationChainObject(null, assemblyLineId, "recovered",
+                ExecutionMode.TEST, ArtifactHashes.sha256Hex(presentContent), presentContent.length,
+                "application/octet-stream", publishedAt.minusSeconds(1), "phase-16", publishedAt);
+        OperationChainObject missing = new OperationChainObject(null, assemblyLineId, "aborted",
+                ExecutionMode.TEST, ArtifactHashes.sha256Hex(missingContent), missingContent.length,
+                "application/octet-stream", publishedAt.minusSeconds(1), "phase-16", publishedAt);
+        String fingerprint = ArtifactStoreConfigurationFingerprint.from(config);
+        var presentStage = beforeCrashMetadata.stage(present, List.of("recovered"), fingerprint);
+        var missingStage = beforeCrashMetadata.stage(missing, List.of("aborted"), fingerprint);
+        assertThat(beforeCrashStore.put(presentContent)).isEqualTo(present.contentHash());
+        assertThat(beforeCrashMetadata.find(assemblyLineId, "recovered", ExecutionMode.TEST)).isEmpty();
+
+        // When: every Gear4J repository and store object is reconstructed before
+        // reconciliation, as it would be after a process restart.
+        OperationChainConfigRepositoryJdbc recoveredConfigs = OperationChainConfigRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(scenario.dialect())
+                .build();
+        OperationChainObjectRepositoryJdbc recoveredMetadata = OperationChainObjectRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(scenario.dialect())
+                .build();
+        OperationChainTagRepositoryJdbc recoveredTags = OperationChainTagRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(scenario.dialect())
+                .build();
+        DatabaseArtifactStore recoveredStore = DatabaseArtifactStore.builder()
+                .dataSource(dataSource)
+                .databaseDialect(scenario.dialect())
+                .spoolDirectory(tempDirectory.resolve(scenario.id()).resolve("crash-after"))
+                .build();
+        ArtifactPublicationReconciler reconciler = new ArtifactPublicationReconciler(recoveredConfigs,
+                recoveredMetadata, ignored -> recoveredStore);
+        ArtifactPublicationReconciler.Report report = reconciler
+                .reconcileStagedBefore(Instant.now().plusSeconds(1));
+
+        // Then
+        assertThat(report.stagesChecked()).isEqualTo(2);
+        assertThat(report.committed()).isEqualTo(1);
+        assertThat(report.aborted()).isEqualTo(1);
+        assertThat(report.fullyReconciled()).isTrue();
+        assertThat(recoveredMetadata.find(assemblyLineId, "recovered", ExecutionMode.TEST))
+                .hasValueSatisfying(saved -> assertThat(saved.contentIdentity()).isEqualTo(present.contentIdentity()));
+        assertThat(recoveredMetadata.find(assemblyLineId, "aborted", ExecutionMode.TEST)).isEmpty();
+        assertThat(recoveredTags.listTags(assemblyLineId)).containsExactly("recovered");
+        assertThat(recoveredMetadata.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10)))
+                .doesNotContain(presentStage, missingStage)
+                .isEmpty();
+        assertThat(reconciler.reconcileStagedBefore(Instant.now().plusSeconds(1)).stagesChecked()).isZero();
     }
 
     private void verifyArtifactBlobStreaming(DataSource dataSource,

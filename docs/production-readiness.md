@@ -167,6 +167,18 @@ provisioned and verified outside Gear4J. The managed spool defaults to a 100 MiB
 quota and deletes `.tmp` residues older than 24 hours when a store is initialized.
 Recent residues count toward the quota.
 
+Treat the managed spool as temporary workspace, not as a recovery queue. It does
+not record a destination or operation and therefore never replays `.tmp` files
+after restart. A crash can leave recent bytes charged to the quota until they
+become stale and a later initialization deletes them. The cleanup age is a
+retention control, not an RPO or delivery deadline. For synchronous database
+artifact writes, no successful acknowledgement exists until the database write
+returns. For composite `ASYNC_FALLBACKS`, the acknowledged durability boundary
+is the primary store: every fallback copy still queued or executing can be lost
+on a JVM crash. Select `SYNC_ALL` when waiting for every fallback is required;
+use a durable replication service or outbox when queued copies themselves must
+survive restart.
+
 Database artifact reads are lazy and keep a JDBC connection open until the
 returned stream is closed. Use `Artifact#openStreamChecked()` in
 try-with-resources. Monitor `ArtifactStoreMonitor#snapshotStats()` for byte,
@@ -191,6 +203,14 @@ stage is retained and reported instead of being checked against the new backend.
 Avoid changing store configuration until old stages have been reconciled or
 explicitly resolved. The generic SPI still cannot enumerate legacy store-only
 objects.
+
+Exercise restart recovery before production: stage two unique publications,
+persist the expected hash for only one, reconstruct the configuration,
+publication and artifact-store objects, then run reconciliation after the grace
+period. The present hash must become visible with its tags, the missing hash
+must remain invisible and be conditionally aborted, no stage may remain, and a
+second pass must inspect zero stages. Use a durable JDBC publication repository;
+the in-memory implementation cannot survive process restart.
 
 Artifact-store booleans accept only `true` or `false`; replication and
 self-healing require at least one complete `fallback.N.type` group. Treat a

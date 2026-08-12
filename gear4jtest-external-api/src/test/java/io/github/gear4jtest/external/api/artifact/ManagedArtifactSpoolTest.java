@@ -103,4 +103,52 @@ class ManagedArtifactSpoolTest {
         assertThat(spool.snapshotStats().currentBytes()).isEqualTo(7L);
         spool.delete(residualFile);
     }
+
+    @Test
+    void restart_shouldAccountForCrashResidueThenDeleteItAfterRetention() throws Exception {
+        // Given: the first process writes a spool file and terminates before cleanup.
+        byte[] pendingCopy = "pending-fallback-copy".getBytes(StandardCharsets.UTF_8);
+        ArtifactSpoolPolicy policy = ArtifactSpoolPolicy.builder()
+                .directory(tempDirectory)
+                .maxBytes(pendingCopy.length)
+                .staleFileAge(Duration.ofHours(1))
+                .build();
+        ManagedArtifactSpool beforeCrash = new ManagedArtifactSpool(policy);
+        Path abandonedFile = beforeCrash.createTempFile("async-");
+        try (var output = beforeCrash.openOutput(abandonedFile)) {
+            output.write(pendingCopy);
+        }
+
+        // When: a new process initializes the same spool before the retention age.
+        ManagedArtifactSpool immediateRestart = new ManagedArtifactSpool(policy);
+
+        // Then: the residue is never replayed or hidden from the quota.
+        assertThat(immediateRestart.snapshotStats().currentFiles()).isEqualTo(1L);
+        assertThat(immediateRestart.snapshotStats().currentBytes()).isEqualTo(pendingCopy.length);
+        assertThat(abandonedFile).exists();
+        Path rejectedFile = immediateRestart.createTempFile("quota-after-restart-");
+        try {
+            assertThatThrownBy(() -> {
+                try (var output = immediateRestart.openOutput(rejectedFile)) {
+                    output.write(1);
+                }
+            }).isInstanceOf(IOException.class)
+                    .hasMessageContaining("quota exceeded");
+        } finally {
+            immediateRestart.delete(rejectedFile);
+        }
+        assertThat(immediateRestart.snapshotStats().quotaRejections()).isEqualTo(1L);
+        assertThat(immediateRestart.snapshotStats().currentFiles()).isEqualTo(1L);
+
+        // When: a later restart occurs after the configured retention age.
+        Files.setLastModifiedTime(abandonedFile, FileTime.from(Instant.now().minus(Duration.ofHours(2))));
+        ManagedArtifactSpool afterRetentionRestart = new ManagedArtifactSpool(policy);
+
+        // Then
+        assertThat(abandonedFile).doesNotExist();
+        assertThat(afterRetentionRestart.snapshotStats().currentFiles()).isZero();
+        assertThat(afterRetentionRestart.snapshotStats().currentBytes()).isZero();
+        assertThat(afterRetentionRestart.snapshotStats().staleFilesDeleted()).isEqualTo(1L);
+        assertThat(afterRetentionRestart.snapshotStats().staleBytesDeleted()).isEqualTo(pendingCopy.length);
+    }
 }

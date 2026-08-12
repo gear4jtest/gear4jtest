@@ -1,24 +1,34 @@
 package io.github.gear4jtest.external.jdbc.repository;
 
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.ExecutionMode;
+import io.github.gear4jtest.external.api.StoreType;
+import io.github.gear4jtest.external.api.artifact.ArtifactHashes;
+import io.github.gear4jtest.external.api.consistency.ArtifactPublicationReconciler;
+import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
 import io.github.gear4jtest.external.api.repository.OperationChainRepositoryException;
+import io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFingerprint;
+import io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStore;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -26,6 +36,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Tag("integration")
 class OperationChainPublicationRepositoryJdbcIT {
     private static final String HASH = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    @TempDir
+    Path tempDirectory;
 
     @Test
     void publish_shouldCommitObjectAndTagsAndMakeIdenticalRetriesIdempotent() throws Exception {
@@ -163,6 +176,61 @@ class OperationChainPublicationRepositoryJdbcIT {
                 .containsExactlyInAnyOrder(firstStage, secondStage);
     }
 
+    @Test
+    void reconcileAfterRestart_shouldResolveBothStageToStoreCrashWindows() throws Exception {
+        // Given: durable metadata and artifact storage survive reconstruction of all
+        // Gear4J objects.
+        DataSource dataSource = h2DataSource();
+        ExternalJdbcSchemaMigrator.forDialect(Gear4jDatabaseDialect.H2).migrate(dataSource);
+        OperationChainConfig config = new OperationChainConfig("line", false, StoreType.DATABASE,
+                Map.of("dialect", "h2"));
+        OperationChainConfigRepositoryJdbc beforeCrashConfigs = configRepository(dataSource);
+        beforeCrashConfigs.upsert(config);
+        OperationChainObjectRepositoryJdbc beforeCrashMetadata = repository(dataSource);
+        DatabaseArtifactStore beforeCrashStore = artifactStore(dataSource, "before-crash");
+        byte[] presentContent = "stored-before-metadata-commit".getBytes(StandardCharsets.UTF_8);
+        byte[] missingContent = "crashed-before-store-write".getBytes(StandardCharsets.UTF_8);
+        OperationChainObject present = publication("7.0.0", ArtifactHashes.sha256Hex(presentContent),
+                                                   presentContent.length);
+        OperationChainObject missing = publication("8.0.0", ArtifactHashes.sha256Hex(missingContent),
+                                                   missingContent.length);
+        String fingerprint = ArtifactStoreConfigurationFingerprint.from(config);
+        var presentStage = beforeCrashMetadata.stage(present, List.of("recovered"), fingerprint);
+        var missingStage = beforeCrashMetadata.stage(missing, List.of("aborted"), fingerprint);
+        assertThat(beforeCrashStore.put(presentContent)).isEqualTo(present.contentHash());
+
+        // When: the process restarts after the artifact write but before commit. A
+        // second stage represents a crash before the external write began.
+        OperationChainConfigRepositoryJdbc recoveredConfigs = configRepository(dataSource);
+        OperationChainObjectRepositoryJdbc recoveredMetadata = repository(dataSource);
+        OperationChainTagRepositoryJdbc recoveredTags = tagRepository(dataSource);
+        DatabaseArtifactStore recoveredStore = artifactStore(dataSource, "after-restart");
+        ArtifactPublicationReconciler reconciler = new ArtifactPublicationReconciler(recoveredConfigs,
+                recoveredMetadata, ignored -> recoveredStore);
+        ArtifactPublicationReconciler.Report report = reconciler
+                .reconcileStagedBefore(Instant.now().plusSeconds(1));
+
+        // Then: existing content is committed, missing content is abandoned and a
+        // repeated recovery pass is idempotent.
+        assertThat(report.stagesChecked()).isEqualTo(2);
+        assertThat(report.committed()).isEqualTo(1);
+        assertThat(report.aborted()).isEqualTo(1);
+        assertThat(report.retained()).isZero();
+        assertThat(report.fullyReconciled()).isTrue();
+        assertThat(recoveredMetadata.find("line", "7.0.0", ExecutionMode.TEST))
+                .hasValueSatisfying(saved -> assertThat(saved.contentIdentity()).isEqualTo(present.contentIdentity()));
+        assertThat(recoveredTags.listTags("line")).containsExactly("recovered");
+        assertThat(recoveredMetadata.find("line", "8.0.0", ExecutionMode.TEST)).isEmpty();
+        assertThat(recoveredMetadata.findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10)))
+                .doesNotContain(presentStage, missingStage)
+                .isEmpty();
+
+        ArtifactPublicationReconciler.Report repeated = reconciler
+                .reconcileStagedBefore(Instant.now().plusSeconds(1));
+        assertThat(repeated.stagesChecked()).isZero();
+        assertThat(repeated.fullyReconciled()).isTrue();
+    }
+
     private static OperationChainObjectRepositoryJdbc repository(DataSource dataSource) {
         return OperationChainObjectRepositoryJdbc.builder()
                 .dataSource(dataSource)
@@ -172,6 +240,12 @@ class OperationChainPublicationRepositoryJdbcIT {
 
     private static OperationChainObject publication(String version, String hash) {
         return publication("line", version, hash);
+    }
+
+    private static OperationChainObject publication(String version, String hash, long sizeBytes) {
+        Instant now = Instant.parse("2026-07-10T10:15:30Z");
+        return new OperationChainObject(null, "line", version, ExecutionMode.TEST, hash, sizeBytes,
+                "application/xml", now, "tester", now);
     }
 
     private static OperationChainObject publication(String assemblyLineId, String version, String hash) {
@@ -200,6 +274,28 @@ class OperationChainPublicationRepositoryJdbcIT {
             statement.setString(1, assemblyLineId);
             statement.executeUpdate();
         }
+    }
+
+    private static OperationChainConfigRepositoryJdbc configRepository(DataSource dataSource) {
+        return OperationChainConfigRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.H2)
+                .build();
+    }
+
+    private static OperationChainTagRepositoryJdbc tagRepository(DataSource dataSource) {
+        return OperationChainTagRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.H2)
+                .build();
+    }
+
+    private DatabaseArtifactStore artifactStore(DataSource dataSource, String directory) {
+        return DatabaseArtifactStore.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.H2)
+                .spoolDirectory(tempDirectory.resolve(directory))
+                .build();
     }
 
     private static int count(DataSource dataSource, String sql) throws SQLException {
