@@ -1,0 +1,81 @@
+import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.tasks.bundling.Jar
+
+plugins {
+    id 'gear4j.java-library'
+}
+
+def projectArtifactId = project.name
+def projectDisplayName = projectArtifactId
+        .replace('gear4jtest-', 'Gear4J ')
+        .replace('-', ' ')
+def projectDescription = project.description ?: 'Gear4J Java pipeline orchestration library.'
+def projectHomepage = 'https://github.com/gear4jtest/gear4jtest'
+def stagingRepositoryDir = rootProject.layout.buildDirectory.dir('staging-deploy')
+
+extensions.getByType(JavaPluginExtension).with {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+normalization {
+    runtimeClasspath {
+        metaInf {
+            ignoreAttribute('Implementation-Version')
+            ignoreAttribute('Specification-Version')
+        }
+    }
+}
+
+tasks.named('jar', Jar) {
+    manifest.attributes(
+        'Specification-Title': projectArtifactId,
+        'Specification-Version': project.version,
+        'Implementation-Title': projectArtifactId,
+        'Implementation-Version': project.version,
+        'Automatic-Module-Name': project.findProperty('moduleName')
+            ?: project.name.replace('-', '.')
+    )
+}
+
+def publishing = extensions.getByType(PublishingExtension)
+publishing.repositories.maven { repository ->
+    repository.name = 'mavenCentralStaging'
+    repository.url = stagingRepositoryDir
+}
+
+publishing.publications.create('mavenJava', MavenPublication) { publication ->
+    publication.from(project.components.getByName('java'))
+    publication.artifactId = projectArtifactId
+
+    def pom = publication.pom
+    pom.name.set(projectDisplayName)
+    pom.description.set(projectDescription)
+    pom.url.set(projectHomepage)
+
+    pom.licenses { licenses ->
+        licenses.license { license ->
+            license.name.set('Apache License, Version 2.0')
+            license.url.set('https://www.apache.org/licenses/LICENSE-2.0.txt')
+            license.distribution.set('repo')
+        }
+    }
+
+    pom.developers { developers ->
+        developers.developer { developer ->
+            developer.id.set('gear4jtest')
+            developer.name.set('Gear4J contributors')
+        }
+    }
+
+    pom.scm { scm ->
+        scm.connection.set('scm:git:https://github.com/gear4jtest/gear4jtest.git')
+        scm.developerConnection.set('scm:git:ssh://git@github.com/gear4jtest/gear4jtest.git')
+        scm.url.set(projectHomepage)
+        scm.tag.set(project.version.toString().endsWith('-SNAPSHOT')
+            ? 'HEAD'
+            : "v${project.version}")
+    }
+}

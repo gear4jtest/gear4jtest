@@ -223,6 +223,148 @@ public final class CriticalPath {
         assertThat(result.task(':verifyRootConventionModel').outcome).isEqualTo(TaskOutcome.SUCCESS)
     }
 
+    @Test
+    void publishingAndReleaseConventionsPreserveStagingMetadataAndPublicTasks() {
+        write('settings.gradle', '''
+rootProject.name = 'release-convention-fixture'
+includeBuild 'release-tools'
+include 'sample-library'
+'''.stripIndent())
+        write('LICENSE', '''
+Apache License
+Version 2.0
+'''.stripIndent())
+        write('NOTICE', '''
+Gear4J
+Copyright Gear4J contributors
+'''.stripIndent())
+        write('jreleaser.yml', 'project: fixture\n')
+        write('gradlew', '#!/bin/sh\n')
+        write('config/consumer-smoke/build.gradle', '\n')
+        write('release-tools/settings.gradle', "rootProject.name = 'release-tools'\n")
+        write('release-tools/build.gradle', '''
+tasks.register('jreleaserConfig')
+tasks.register('jreleaserDeploy')
+'''.stripIndent())
+        write('sample-library/build.gradle', '\n')
+        write('sample-library/src/main/java/fixture/PublishedType.java', '''
+package fixture;
+
+public final class PublishedType {
+    private PublishedType() {
+    }
+}
+'''.stripIndent())
+        write('build.gradle', '''
+plugins {
+    id 'base'
+    id 'gear4j.publishing' apply false
+    id 'gear4j.root-release' apply false
+}
+
+group = 'io.github.gear4jtest'
+version = '1.0.0'
+
+['verifyDocumentationLinks', 'verifyDecisionIdentifiers', 'dependencyCheckAggregate',
+ 'verifyDependencyCheckSuppressions', 'verifyPerformanceBudgets'].each { taskName ->
+    tasks.register(taskName)
+}
+
+project(':sample-library') {
+    group = rootProject.group
+    version = rootProject.version
+    description = 'Published fixture library.'
+    ext.moduleName = 'io.github.gear4jtest.fixture.published'
+
+    apply plugin: 'gear4j.publishing'
+}
+
+apply plugin: 'gear4j.root-release'
+
+tasks.register('verifyReleaseConventionModel') {
+    doLast {
+        def publishedProject = project(':sample-library')
+        assert publishedProject.plugins.hasPlugin('java-library')
+        assert publishedProject.plugins.hasPlugin('maven-publish')
+
+        assert publishedProject.tasks.findByName('sourcesJar') != null
+        assert publishedProject.tasks.findByName('javadocJar') != null
+
+        def publishing = publishedProject.extensions
+            .getByType(org.gradle.api.publish.PublishingExtension)
+        def repository = publishing.repositories.getByName('mavenCentralStaging')
+        assert new File(repository.url).canonicalFile ==
+            layout.buildDirectory.dir('staging-deploy').get().asFile.canonicalFile
+        def publication = publishing.publications.getByName('mavenJava')
+        assert publication.artifactId == 'sample-library'
+        assert publication.pom.name.get() == 'sample library'
+        assert publication.pom.description.get() == 'Published fixture library.'
+        assert publication.pom.url.get() == 'https://github.com/gear4jtest/gear4jtest'
+
+        def jarTask = publishedProject.tasks.named('jar', Jar).get()
+        assert jarTask.manifest.attributes['Specification-Title'] == 'sample-library'
+        assert jarTask.manifest.attributes['Specification-Version'] == '1.0.0'
+        assert jarTask.manifest.attributes['Implementation-Title'] == 'sample-library'
+        assert jarTask.manifest.attributes['Implementation-Version'] == '1.0.0'
+        assert jarTask.manifest.attributes['Automatic-Module-Name'] ==
+            'io.github.gear4jtest.fixture.published'
+
+        ['verifyReleaseAssets', 'jreleaserConfig', 'jreleaserDeploy', 'releaseMetadataCheck',
+         'stageMavenCentral', 'verifyStagedReleaseArtifacts', 'consumerSmokeTest',
+         'verifyReleaseDatabaseMatrixSelection', 'verifyJava17AndArchiveConfiguration',
+         'verifyApiCompatibilityConfiguration', 'apiCompatibilityCheck', 'releaseCheck'].each {
+            assert tasks.findByName(it) != null
+        }
+
+        def checkTask = tasks.named('check').get()
+        assert checkTask.taskDependencies.getDependencies(checkTask)
+            .contains(tasks.named('verifyJava17AndArchiveConfiguration').get())
+
+        def releaseCheck = tasks.named('releaseCheck').get()
+        def releaseDependencies = releaseCheck.taskDependencies.getDependencies(releaseCheck)
+        assert releaseDependencies.contains(tasks.named('check').get())
+        assert releaseDependencies.contains(tasks.named('consumerSmokeTest').get())
+        assert releaseDependencies.contains(tasks.named('verifyStagedReleaseArtifacts').get())
+        assert releaseDependencies.contains(tasks.named('apiCompatibilityCheck').get())
+    }
+}
+'''.stripIndent())
+
+        BuildResult result = GradleRunner.create()
+            .withProjectDir(projectDirectory.toFile())
+            .withArguments('verifyReleaseConventionModel', 'verifyStagedReleaseArtifacts',
+                '--stacktrace', '--warning-mode=all')
+            .withPluginClasspath()
+            .build()
+
+        assertThat(result.task(':verifyReleaseConventionModel').outcome)
+            .isEqualTo(TaskOutcome.SUCCESS)
+        assertThat(result.task(':verifyStagedReleaseArtifacts').outcome)
+            .isEqualTo(TaskOutcome.SUCCESS)
+        assertThat(Files.readString(projectDirectory.resolve(
+            'build/reports/release/staged-artifacts.txt')))
+            .isEqualTo('Verified 3 JARs and 1 POMs.\n')
+
+        def stagedPom = new groovy.xml.XmlSlurper(false, false).parse(projectDirectory.resolve(
+            'build/staging-deploy/io/github/gear4jtest/sample-library/1.0.0/'
+                + 'sample-library-1.0.0.pom').toFile())
+        assertThat(stagedPom.licenses.license.name.text())
+            .isEqualTo('Apache License, Version 2.0')
+        assertThat(stagedPom.licenses.license.url.text())
+            .isEqualTo('https://www.apache.org/licenses/LICENSE-2.0.txt')
+        assertThat(stagedPom.licenses.license.distribution.text()).isEqualTo('repo')
+        assertThat(stagedPom.developers.developer.id.text()).isEqualTo('gear4jtest')
+        assertThat(stagedPom.developers.developer.name.text())
+            .isEqualTo('Gear4J contributors')
+        assertThat(stagedPom.scm.connection.text())
+            .isEqualTo('scm:git:https://github.com/gear4jtest/gear4jtest.git')
+        assertThat(stagedPom.scm.developerConnection.text())
+            .isEqualTo('scm:git:ssh://git@github.com/gear4jtest/gear4jtest.git')
+        assertThat(stagedPom.scm.url.text())
+            .isEqualTo('https://github.com/gear4jtest/gear4jtest')
+        assertThat(stagedPom.scm.tag.text()).isEqualTo('v1.0.0')
+    }
+
     private void write(String relativePath, String content) {
         Path destination = projectDirectory.resolve(relativePath)
         Files.createDirectories(destination.parent)

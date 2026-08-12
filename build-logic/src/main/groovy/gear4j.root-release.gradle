@@ -1,0 +1,372 @@
+import org.gradle.api.tasks.JavaExec
+import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
+import org.gradle.api.tasks.bundling.Jar
+
+plugins {
+    id 'base'
+}
+
+def licenseAsset = layout.projectDirectory.file('LICENSE')
+def noticeAsset = layout.projectDirectory.file('NOTICE')
+def jreleaserAsset = layout.projectDirectory.file('jreleaser.yml')
+def releaseToolsBuildAsset = layout.projectDirectory.file('release-tools/build.gradle')
+def releaseToolsSettingsAsset = layout.projectDirectory.file('release-tools/settings.gradle')
+def requiredReleaseAssets = [licenseAsset, noticeAsset, jreleaserAsset, releaseToolsBuildAsset,
+    releaseToolsSettingsAsset]
+
+tasks.register('verifyReleaseAssets') {
+    group = 'verification'
+    description = 'Verifies the legal and JReleaser files required by the release pipeline.'
+    inputs.files(requiredReleaseAssets)
+
+    doLast {
+        def missingOrEmpty = requiredReleaseAssets.findAll { asset ->
+            !asset.asFile.isFile() || asset.asFile.length() == 0L
+        }.collect { it.asFile.name }
+        if (!missingOrEmpty.isEmpty()) {
+            throw new GradleException('Required release assets are missing or empty: '
+                + missingOrEmpty.join(', '))
+        }
+
+        def licenseText = licenseAsset.asFile.getText('UTF-8')
+        if (!licenseText.contains('Apache License') || !licenseText.contains('Version 2.0')) {
+            throw new GradleException('LICENSE must contain the Apache License, Version 2.0 text')
+        }
+
+        def noticeText = noticeAsset.asFile.getText('UTF-8')
+        if (!noticeText.contains('Gear4J') || !noticeText.contains('Gear4J contributors')) {
+            throw new GradleException('NOTICE must identify Gear4J and its contributors')
+        }
+
+        def jreleaserText = jreleaserAsset.asFile.getText('UTF-8')
+        def requiredJreleaserFragments = [
+            'license: Apache-2.0',
+            'active: RELEASE',
+            'stagingRepositories:',
+            'build/staging-deploy'
+        ]
+        def missingFragments = requiredJreleaserFragments.findAll { !jreleaserText.contains(it) }
+        if (!missingFragments.isEmpty()) {
+            throw new GradleException('jreleaser.yml is missing required release configuration: '
+                + missingFragments.join(', '))
+        }
+
+        def jreleaserLines = jreleaserText.readLines()
+            .collect { it.trim() }
+            .findAll { it && !it.startsWith('#') }
+        def expectedGithubProvider = [
+            'release:',
+            'github:',
+            'enabled: true',
+            'token: not-used-maven-central-only',
+            'skipTag: true',
+            'skipRelease: true',
+            'uploadAssets: NEVER',
+            'changelog:',
+            'enabled: false'
+        ]
+        def releaseIndex = jreleaserLines.indexOf('release:')
+        def actualGithubProvider = releaseIndex >= 0
+                && releaseIndex + expectedGithubProvider.size() <= jreleaserLines.size()
+            ? jreleaserLines.subList(releaseIndex, releaseIndex + expectedGithubProvider.size())
+            : []
+        if (actualGithubProvider != expectedGithubProvider) {
+            throw new GradleException(
+                'jreleaser.yml must configure an inert GitHub provider for deploy-only validation')
+        }
+
+        def releaseToolsText = releaseToolsBuildAsset.asFile.getText('UTF-8')
+        if (!releaseToolsText.contains("id 'base'")
+                || !releaseToolsText.contains("id 'org.jreleaser' version '1.25.0'")
+                || !releaseToolsText.contains("configFile = file('../jreleaser.yml')")
+                || !releaseToolsText.contains("tasks.named('jreleaserConfig')")
+                || !releaseToolsText.contains('projectDirectory.set(repositoryRoot)')
+                || releaseToolsText.contains('basedir =')) {
+            throw new GradleException(
+                'release-tools/build.gradle must apply base and isolate JReleaser 1.25.0')
+        }
+    }
+}
+
+def releaseToolsBuild = gradle.includedBuild('release-tools')
+
+tasks.register('jreleaserConfig') {
+    group = 'verification'
+    description = 'Validates the JReleaser model in an isolated Gradle build.'
+    dependsOn releaseToolsBuild.task(':jreleaserConfig')
+}
+
+tasks.register('jreleaserDeploy') {
+    group = 'publishing'
+    description = 'Deploys the staged Maven repository through the isolated JReleaser build.'
+    dependsOn releaseToolsBuild.task(':jreleaserDeploy')
+}
+
+tasks.register('releaseMetadataCheck') {
+    group = 'verification'
+    description = 'Validates release assets, documentation links and the JReleaser configuration.'
+    dependsOn 'verifyReleaseAssets', 'verifyDocumentationLinks', 'verifyDecisionIdentifiers',
+        'jreleaserConfig'
+}
+
+def stagedPublicationTasks = subprojects.collect {
+    "${it.path}:publishAllPublicationsToMavenCentralStagingRepository"
+}
+
+tasks.register('stageMavenCentral') {
+    group = 'publishing'
+    description = 'Stages all Maven publications under build/staging-deploy for JReleaser.'
+    dependsOn stagedPublicationTasks
+}
+
+tasks.register('verifyStagedReleaseArtifacts') {
+    group = 'verification'
+    description = 'Verifies legal files in staged JARs and Maven Central metadata in staged POMs.'
+    dependsOn tasks.named('stageMavenCentral')
+
+    def stagingRepository = layout.buildDirectory.dir('staging-deploy')
+    def stagedJarFiles = fileTree(stagingRepository) {
+        include '**/*.jar'
+    }
+    def stagedPomFiles = fileTree(stagingRepository) {
+        include '**/*.pom'
+    }
+    def reportFile = layout.buildDirectory.file('reports/release/staged-artifacts.txt')
+    inputs.files(stagedJarFiles, stagedPomFiles)
+    outputs.file(reportFile)
+
+    doLast {
+        def jarFiles = stagedJarFiles.files.sort()
+        def pomFiles = stagedPomFiles.files.sort()
+        if (jarFiles.isEmpty() || pomFiles.isEmpty()) {
+            throw new GradleException(
+                'Staged Maven repository must contain both JAR and POM artifacts')
+        }
+
+        def failures = []
+        jarFiles.each { jarFile ->
+            new java.util.zip.ZipFile(jarFile).withCloseable { archive ->
+                ['META-INF/LICENSE', 'META-INF/NOTICE'].each { entryName ->
+                    if (archive.getEntry(entryName) == null) {
+                        failures << "${jarFile.name} is missing ${entryName}"
+                    }
+                }
+            }
+        }
+
+        pomFiles.each { pomFile ->
+            def pom = new groovy.xml.XmlSlurper(false, false).parse(pomFile)
+            if (pom.name.text().trim().isEmpty()) {
+                failures << "${pomFile.name} is missing project name"
+            }
+            if (pom.description.text().trim().isEmpty()) {
+                failures << "${pomFile.name} is missing project description"
+            }
+            if (pom.url.text().trim().isEmpty()) {
+                failures << "${pomFile.name} is missing project URL"
+            }
+            def apacheLicense = pom.licenses.license.find { license ->
+                license.name.text() == 'Apache License, Version 2.0'
+                    && license.url.text() == 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                    && license.distribution.text() == 'repo'
+            }
+            if (apacheLicense.size() == 0) {
+                failures << "${pomFile.name} is missing the Apache-2.0 Maven license metadata"
+            }
+            if (pom.developers.developer.name.text().trim().isEmpty()) {
+                failures << "${pomFile.name} is missing developer metadata"
+            }
+            if (pom.scm.connection.text().trim().isEmpty()
+                    || pom.scm.developerConnection.text().trim().isEmpty()
+                    || pom.scm.url.text().trim().isEmpty()) {
+                failures << "${pomFile.name} is missing SCM metadata"
+            }
+        }
+
+        if (!failures.isEmpty()) {
+            throw new GradleException('Invalid staged Maven artifacts:\n - '
+                + failures.join('\n - '))
+        }
+
+        def output = reportFile.get().asFile
+        output.parentFile.mkdirs()
+        output.setText("Verified ${jarFiles.size()} JARs and ${pomFiles.size()} POMs.\n", 'UTF-8')
+    }
+}
+
+tasks.register('consumerSmokeTest', Exec) {
+    group = 'verification'
+    description = 'Compiles and runs an autonomous consumer against the staged Maven artifacts and plugin marker.'
+    dependsOn tasks.named('stageMavenCentral')
+
+    def consumerProject = layout.projectDirectory.dir('config/consumer-smoke')
+    def stagingRepository = layout.buildDirectory.dir('staging-deploy')
+    inputs.dir(consumerProject)
+    inputs.dir(stagingRepository)
+
+    workingDir consumerProject
+    commandLine rootProject.file('gradlew').absolutePath,
+        '--no-daemon',
+        '--refresh-dependencies',
+        '-p', consumerProject.asFile.absolutePath,
+        'clean', 'consumerSmoke',
+        "-Pgear4jVersion=${project.version}",
+        "-Pgear4jRepository=${stagingRepository.get().asFile.absolutePath}"
+}
+
+def selectedDatabaseDialect = providers.gradleProperty('gear4jDatabaseDialect')
+    .map { it.trim().toLowerCase(java.util.Locale.ROOT) }
+    .orElse('all')
+
+tasks.register('verifyReleaseDatabaseMatrixSelection') {
+    group = 'verification'
+    description = 'Requires release validation to execute every supported JDBC dialect.'
+    inputs.property('gear4jDatabaseDialect', selectedDatabaseDialect)
+
+    doLast {
+        if (selectedDatabaseDialect.get() != 'all') {
+            throw new GradleException('releaseCheck requires the complete JDBC matrix. '
+                + 'Remove -Pgear4jDatabaseDialect or set it to all.')
+        }
+    }
+}
+
+tasks.register('verifyJava17AndArchiveConfiguration') {
+    group = 'verification'
+    description = 'Verifies Java 17 release compilation and reproducible archive settings for every published module.'
+
+    doLast {
+        def failures = []
+        subprojects.each { candidate ->
+            candidate.tasks.withType(JavaCompile).each { compileTask ->
+                if (compileTask.options.release.orNull != 17) {
+                    failures << "${compileTask.path} must compile with --release 17"
+                }
+            }
+            candidate.tasks.withType(AbstractArchiveTask).each { archiveTask ->
+                if (archiveTask.preserveFileTimestamps) {
+                    failures << "${archiveTask.path} must set preserveFileTimestamps=false"
+                }
+                if (!archiveTask.reproducibleFileOrder) {
+                    failures << "${archiveTask.path} must set reproducibleFileOrder=true"
+                }
+                if (archiveTask instanceof Jar
+                        && archiveTask.manifest.attributes.containsKey('Created-By')) {
+                    failures << "${archiveTask.path} must not contain a runtime-specific Created-By attribute"
+                }
+            }
+        }
+        if (!failures.isEmpty()) {
+            throw new GradleException('Java/archive hardening violations:\n - '
+                + failures.join('\n - '))
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyJava17AndArchiveConfiguration')
+}
+
+def japicmpConfiguration = configurations.create('japicmp')
+dependencies.add(japicmpConfiguration.name,
+    'com.github.siom79.japicmp:japicmp:0.26.1:jar-with-dependencies') {
+    transitive = false
+}
+
+def apiBaselineVersion = providers.gradleProperty('gear4j.apiBaselineVersion')
+def publishedLibraryProjects = subprojects.findAll { it.plugins.hasPlugin('maven-publish') }
+def apiCompatibilityTasks = []
+
+if (apiBaselineVersion.isPresent()) {
+    def baselineVersion = apiBaselineVersion.get()
+    publishedLibraryProjects.each { candidate ->
+        def oldApi = configurations.detachedConfiguration(
+            dependencies.create("${candidate.group}:${candidate.name}:${baselineVersion}"))
+        oldApi.transitive = false
+        def taskSuffix = candidate.name.split('-').collect { it.capitalize() }.join('')
+        apiCompatibilityTasks << tasks.register("japicmp${taskSuffix}", JavaExec) {
+            group = 'verification'
+            description = "Checks ${candidate.name} against published baseline ${baselineVersion}."
+            dependsOn candidate.tasks.named('jar')
+            classpath = japicmpConfiguration
+            mainClass = 'japicmp.JApiCmp'
+            outputs.file(layout.buildDirectory.file("reports/japicmp/${candidate.name}.xml"))
+
+            doFirst {
+                def exclusions = ['@io.github.gear4jtest.core.api.annotation.Internal',
+                                  '@io.github.gear4jtest.core.api.annotation.Experimental']
+                fileTree(candidate.layout.projectDirectory.dir('src/main/java')) {
+                    include '**/package-info.java'
+                }.files.each { packageInfo ->
+                    def source = packageInfo.getText('UTF-8')
+                    if (source.contains('@io.github.gear4jtest.core.api.annotation.Internal')
+                            || source.contains('@io.github.gear4jtest.core.api.annotation.Experimental')) {
+                        def matcher = source =~ /(?m)^package\s+([A-Za-z0-9_.]+);/
+                        if (matcher.find()) {
+                            exclusions << matcher.group(1) + '.*'
+                        }
+                    }
+                }
+                def currentJar = candidate.tasks.named('jar').get().archiveFile.get().asFile
+                args '--old', oldApi.singleFile.absolutePath,
+                    '--new', currentJar.absolutePath,
+                    '-a', 'public',
+                    '--only-modified',
+                    '--ignore-missing-classes',
+                    '--exclude', exclusions.unique().join(';'),
+                    '--no-error-on-exclusion-incompatibility',
+                    '--error-on-binary-incompatibility',
+                    '--error-on-source-incompatibility',
+                    '--xml-file', layout.buildDirectory
+                        .file("reports/japicmp/${candidate.name}.xml").get().asFile.absolutePath
+            }
+        }
+    }
+}
+
+tasks.register('verifyApiCompatibilityConfiguration') {
+    group = 'verification'
+    description = 'Requires an N-1 API baseline after the first stable 1.0.0 release.'
+    doLast {
+        String currentVersion = project.version.toString()
+        boolean stableVersion = currentVersion ==~ /\d+\.\d+\.\d+/
+        boolean firstStableRelease = currentVersion == '1.0.0'
+        if (stableVersion && !firstStableRelease && !apiBaselineVersion.isPresent()) {
+            throw new GradleException('Stable releases after 1.0.0 require '
+                + '-Pgear4j.apiBaselineVersion=<previous-release> for source/binary compatibility checks')
+        }
+    }
+}
+
+def gradlePluginProject = findProject(':gear4jtest-gradle-xml2java')
+
+tasks.register('apiCompatibilityCheck') {
+    group = 'verification'
+    description = 'Checks public source and binary compatibility against the configured N-1 release.'
+    dependsOn tasks.named('verifyApiCompatibilityConfiguration')
+    dependsOn apiCompatibilityTasks
+    if (gradlePluginProject != null) {
+        dependsOn ':gear4jtest-gradle-xml2java:gradlePluginCompatibilityTest'
+    }
+    if (!apiBaselineVersion.isPresent()) {
+        doLast {
+            logger.lifecycle(
+                'No API baseline configured; this is allowed only for snapshots, prereleases and 1.0.0.')
+        }
+    }
+}
+
+if (gradlePluginProject != null) {
+    tasks.named('check') {
+        dependsOn ':gear4jtest-gradle-xml2java:gradlePluginCompatibilityTest'
+    }
+}
+
+tasks.register('releaseCheck') {
+    group = 'verification'
+    description = 'Runs the checks expected before staging a Maven Central release.'
+    dependsOn 'check', 'consumerSmokeTest', 'dependencyCheckAggregate', 'verifyReleaseAssets',
+        'verifyStagedReleaseArtifacts', 'verifyDependencyCheckSuppressions',
+        'verifyPerformanceBudgets', 'verifyReleaseDatabaseMatrixSelection', 'apiCompatibilityCheck'
+}
