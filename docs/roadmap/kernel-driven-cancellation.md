@@ -1,8 +1,13 @@
 # Kernel-driven cancellation — future direction
 
-## Status
+## Document control
 
-Not implemented yet.
+| Field | Value |
+| --- | --- |
+| Status | Future direction; not implemented |
+| Owner | Gear4J maintainers |
+| Last reviewed | 2026-08-12 |
+| Target version | Post-1.0; unscheduled |
 
 This note captures the preferred future direction for cancelling a running Gear4J pipeline, especially once a BO can request cancellation of an execution already in progress.
 

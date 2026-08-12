@@ -1,8 +1,13 @@
 # Dedicated Gear4J persistence datasource
 
-## Status
+## Document control
 
-Future direction. Not implemented yet.
+| Field | Value |
+| --- | --- |
+| Status | Future direction; not implemented |
+| Owner | Gear4J maintainers |
+| Last reviewed | 2026-08-12 |
+| Target version | Post-1.0; unscheduled |
 
 ## Context
 

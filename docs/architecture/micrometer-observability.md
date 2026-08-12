@@ -1,8 +1,13 @@
 # Micrometer observability
 
-## Status
+## Document control
 
-Implemented for the critical operational surface.
+| Field | Value |
+| --- | --- |
+| Status | Critical operational surface implemented; optional additions tracked below |
+| Owner | Gear4J maintainers |
+| Last reviewed | 2026-08-12 |
+| Source of truth | [`gear4jtest-micrometer/README.md`](../../gear4jtest-micrometer/README.md) and binder implementations |
 
 The `gear4jtest-micrometer` module is an optional integration. It provides
 lifecycle counters/timers plus low-level signals for persistence, event runtime,
@@ -52,17 +57,17 @@ Spring Boot auto-registers these binders only for a single candidate of each
 supported type. It never chooses an arbitrary manager or store when several are
 present.
 
-## Remaining optional metric surface
+## Delivered and remaining optional metric surface
 
-A richer module should expose counters and timers for:
-
-- pipeline outcomes: succeeded, failed, stopped, cancelled;
-- station outcomes: succeeded, failed, skipped, stopped, cancelled;
-- timeout and cancellation counts;
-- persistence flush duration and latency distribution;
-- parallel branch rejections and branch durations.
-- persistence flush latency distributions;
-- experimental-cache outcomes.
+| Surface | Status | Existing signal or remaining gap | Target version | Last verified |
+| --- | --- | --- | --- | --- |
+| Run outcomes and duration | `DELIVERED` | `gear4j.runs.completed{status}` and `gear4j.runs.duration{status}` cover succeeded, failed, stopped and cancelled runs | 1.0 | 2026-08-12 |
+| Station outcomes and duration | `DELIVERED` | `gear4j.stations.completed{status}` and `gear4j.stations.duration{status}` cover succeeded, failed, skipped, stopped and cancelled stations | 1.0 | 2026-08-12 |
+| Cancellation totals | `DELIVERED` | Run and station completion meters expose the bounded `status=CANCELLED` series | 1.0 | 2026-08-12 |
+| Timeout categorization | `BACKLOG` | Timeouts currently contribute to existing failure outcomes; a distinct low-cardinality category requires a stable error-classification contract | Post-1.0; unscheduled | 2026-08-12 |
+| Persistence flush duration distribution | `BACKLOG` | Scheduling, completion, failure, backlog age and rejected appends exist; no flush timer is exposed | Post-1.0; unscheduled | 2026-08-12 |
+| Parallel-branch rejections and duration | `BACKLOG` | No stable branch lifecycle hook currently exposes these signals without coupling Micrometer to core internals | Post-1.0; unscheduled | 2026-08-12 |
+| Experimental-cache outcomes | `DEFERRED` | The experimental cache is outside the critical operational contract | Post-1.0; unscheduled | 2026-08-12 |
 
 ## Error categorization
 

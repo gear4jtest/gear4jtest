@@ -111,6 +111,52 @@ tasks.named('check') {
     dependsOn tasks.named('verifyDecisionIdentifiers')
 }
 
+def livingDocumentationFiles = files(
+    fileTree(layout.projectDirectory.dir('docs/roadmap')) {
+        include '*.md'
+    },
+    layout.projectDirectory.file('docs/architecture/micrometer-observability.md'),
+    layout.projectDirectory.file('gear4jtest-micrometer/README.md'))
+
+tasks.register('verifyLivingDocumentationMetadata') {
+    group = 'verification'
+    description = 'Checks owner, status and review-date metadata on living documentation.'
+    inputs.files(livingDocumentationFiles)
+
+    doLast {
+        def failures = []
+        livingDocumentationFiles.files.findAll { it.isFile() }.sort().each { documentationFile ->
+            def metadata = [:]
+            def matcher = documentationFile.getText('UTF-8') =~
+                /(?m)^\|\s*(Status|Owner|Last reviewed)\s*\|\s*([^|]+?)\s*\|\s*$/
+            matcher.each { match ->
+                metadata[match[1]] = match[2].trim()
+            }
+
+            def relativePath = repositoryRootDirectory.toPath().relativize(documentationFile.toPath())
+            ['Status', 'Owner', 'Last reviewed'].each { field ->
+                if (!metadata[field]) {
+                    failures << "${relativePath}: missing ${field} metadata"
+                }
+            }
+            if (metadata['Last reviewed']) {
+                try {
+                    java.time.LocalDate.parse(metadata['Last reviewed'])
+                } catch (java.time.format.DateTimeParseException ignored) {
+                    failures << "${relativePath}: Last reviewed must use YYYY-MM-DD"
+                }
+            }
+        }
+        if (!failures.isEmpty()) {
+            throw new GradleException('Invalid living-documentation metadata:\n - ' + failures.join('\n - '))
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyLivingDocumentationMetadata')
+}
+
 def workflowFiles = fileTree(layout.projectDirectory.dir('.github/workflows')) {
     include '*.yml', '*.yaml'
 }

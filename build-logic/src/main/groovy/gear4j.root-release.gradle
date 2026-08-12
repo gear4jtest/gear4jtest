@@ -107,7 +107,7 @@ tasks.register('releaseMetadataCheck') {
     group = 'verification'
     description = 'Validates release assets, documentation links and the JReleaser configuration.'
     dependsOn 'verifyReleaseAssets', 'verifyDocumentationLinks', 'verifyDecisionIdentifiers',
-        'jreleaserConfig'
+        'verifyLivingDocumentationMetadata', 'jreleaserConfig'
 }
 
 def stagedPublicationTasks = subprojects.collect {

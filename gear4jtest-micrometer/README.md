@@ -5,9 +5,14 @@ Optional Micrometer instrumentation for Gear4J runtime lifecycle events.
 The core runtime has no Micrometer dependency. Add this module only when you want
 metrics and when your application already exposes a Micrometer `MeterRegistry`.
 
-## Status
+## Document control
 
-Critical operational surface implemented.
+| Field | Value |
+| --- | --- |
+| Status | Critical operational surface implemented; optional additions tracked below |
+| Owner | Gear4J maintainers |
+| Last reviewed | 2026-08-12 |
+| Architecture reference | [Micrometer observability](../docs/architecture/micrometer-observability.md) |
 
 The module covers lifecycle, event/persistence pressure and the generated-code
 infrastructure involved in artifact reads, translation, compilation,
@@ -132,25 +137,18 @@ Infrastructure binders never expose application identifiers. Their only tags
 are the closed sets `phase`, `outcome`, `result` and `operation`; no exception
 class, exception message, hash, pipeline ID or business content is emitted.
 
-## Remaining application-specific observability
+## Delivered and remaining application-specific observability
 
-Possible later extensions include:
-
-```text
-gear4j.pipeline.runs
-  tags: pipeline.id, pipeline.version, outcome
-
-gear4j.station.executions
-  tags: station.kind, operation.type, status
-
-gear4j.event.reactions
-  tags: status=completed|failed|dropped
-
-gear4j.persistence.flush.duration
-gear4j.parallel.rejected.tasks
-gear4j.parallel.branch.duration
-gear4j.experimental.cache.operations
-```
+| Surface | Status | Existing signal or remaining gap | Target version | Last verified |
+| --- | --- | --- | --- | --- |
+| Run outcomes and duration | `DELIVERED` | `gear4j.runs.completed{status}` and `gear4j.runs.duration{status}` | 1.0 | 2026-08-12 |
+| Station outcomes and duration | `DELIVERED` | `gear4j.stations.completed{status}` and `gear4j.stations.duration{status}` | 1.0 | 2026-08-12 |
+| Event-reaction outcomes | `DELIVERED` | Separate completed, failed and dropped counters avoid an additional tagged duplicate meter | 1.0 | 2026-08-12 |
+| Pipeline, operation or branch identifiers | `APPLICATION` | Use an explicit bounded `Gear4jMeterTagPolicy`; raw dynamic identifiers are not default metrics | Application-owned | 2026-08-12 |
+| Timeout categorization | `BACKLOG` | Requires a stable low-cardinality error-classification contract | Post-1.0; unscheduled | 2026-08-12 |
+| Persistence flush duration distribution | `BACKLOG` | Flush counts and backlog pressure exist; no flush timer is exposed | Post-1.0; unscheduled | 2026-08-12 |
+| Parallel-branch rejections and duration | `BACKLOG` | Requires stable branch lifecycle hooks that do not expose core internals | Post-1.0; unscheduled | 2026-08-12 |
+| Experimental-cache outcomes | `DEFERRED` | Outside the critical operational contract while the cache module remains experimental | Post-1.0; unscheduled | 2026-08-12 |
 
 An application-level error categorizer may normalize runtime failures into
 example:

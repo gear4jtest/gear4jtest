@@ -1,8 +1,13 @@
 # Dry-run and mock configuration
 
-## Status
+## Document control
 
-Future direction. Not implemented yet.
+| Field | Value |
+| --- | --- |
+| Status | Future direction; not implemented |
+| Owner | Gear4J maintainers |
+| Last reviewed | 2026-08-12 |
+| Target version | Post-1.0; unscheduled |
 
 This note keeps the intent behind the former commented dry-run/mock-configuration experiments. The old code should not be
 kept as dead code, but the feature remains important for Gear4J, especially for external pipeline authoring and future BO

@@ -1,8 +1,13 @@
 # Iterator item id model
 
-## Status
+## Document control
 
-Review topic. A targeted propagation fix is implemented, but the broader model should be revisited.
+| Field | Value |
+| --- | --- |
+| Status | Review topic; targeted propagation fix delivered, broader model open |
+| Owner | Gear4J maintainers |
+| Last reviewed | 2026-08-12 |
+| Target version | Post-1.0; unscheduled |
 
 ## Context
 

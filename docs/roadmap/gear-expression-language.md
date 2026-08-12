@@ -1,13 +1,21 @@
 # Gear4J expression language
 
-## Status
+## Document control
 
-MVP parser/evaluator and XML condition integration are implemented in
-`io.github.gear4jtest.xml.expression`. Property access is secure by default and
-defined by ADR 0018; the original language-boundary decision is captured in ADR
-0008.
+| Field | Value |
+| --- | --- |
+| Status | MVP delivered; post-MVP language extensions remain open |
+| Owner | Gear4J maintainers |
+| Last reviewed | 2026-08-12 |
+| Target version | MVP in 1.0; extensions post-1.0 and unscheduled |
 
-This note captures the target direction for replacing inline Java expressions in XML or BO-authored pipeline definitions.
+The parser/evaluator and XML condition integration are implemented in
+`io.github.gear4jtest.xml.expression`. Property access is secure by default and defined by
+[ADR 0018](../decisions/0018-gel-property-access-is-explicit.md); the original language boundary is captured in
+[ADR 0008](../decisions/0008-gear-expression-language-is-security-boundary.md). Mode-aware operator capabilities are
+defined separately by [ADR 0033](../decisions/0033-xml-operator-capabilities-are-mode-aware.md).
+
+This note separates the delivered MVP from possible post-1.0 language extensions.
 
 ## Problem
 
@@ -17,9 +25,9 @@ conditions, guards, parameter mappings or fallback expressions.
 
 A safe configuration language must not allow arbitrary Java execution.
 
-## Goal
+## Post-MVP direction
 
-Introduce a small Gear4J expression language for common pipeline decisions:
+Evolve the small Gear4J expression language for additional pipeline decisions without weakening its security boundary:
 
 ```text
 input.amount > 100
@@ -101,11 +109,11 @@ Implemented property-access rules:
 - a deprecated legacy policy supports migration with warnings;
 - accessor lookup uses `ClassValue` and cached `MethodHandle` instances.
 
-## XML integration direction
+## XML integration and future direction
 
 Trusted XML can keep Java inline as an advanced developer feature.
 
-Untrusted XML should use Gear4J expressions instead:
+Restricted XML uses Gear4J expressions instead:
 
 ```xml
 <condition language="gel" expression="input.amount > param('threshold')" />

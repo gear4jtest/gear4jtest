@@ -1,85 +1,96 @@
 # Future work and review notes
 
-## Status
+## Document control
 
-Living note.
+| Field | Value |
+| --- | --- |
+| Status | Living backlog |
+| Owner | Gear4J maintainers |
+| Last reviewed | 2026-08-12 |
+| Review trigger | Before each release candidate and whenever a linked ADR changes status |
 
-This file collects known review topics and future ideas. Items here are not necessarily implemented.
+This file distinguishes delivered foundations, contract reviews and unscheduled backlog. A backlog entry is not a release
+commitment unless a target version is stated explicitly.
+
+Status values are `DELIVERED`, `REVIEW`, `BACKLOG` and `DEFERRED`.
+
+## Delivered or constrained foundations
+
+| Work item | Status | Target version | ADR / reference | Last verified |
+| --- | --- | --- | --- | --- |
+| Restricted GEL parser/evaluator and XML conditions | `DELIVERED` | 1.0 | [ADR 0008](../decisions/0008-gear-expression-language-is-security-boundary.md), [ADR 0018](../decisions/0018-gel-property-access-is-explicit.md), [ADR 0033](../decisions/0033-xml-operator-capabilities-are-mode-aware.md) | 2026-08-12 |
+| Inline Java and Java class names restricted to explicit trusted XML mode | `DELIVERED` | 1.0 | [XML security boundary](../architecture/xml-security.md) | 2026-08-12 |
+| Low-cardinality run/station outcomes and duration metrics | `DELIVERED` | 1.0 | [Micrometer observability](../architecture/micrometer-observability.md) | 2026-08-12 |
 
 ## Near-term review areas
 
-- Logging strategy and signal-to-noise ratio.
-- Test coverage around runtime edge cases.
-- Extension strategy, ordering and failure impact.
-- Generic typing around station registries and generated code.
-- Packaging and module naming cleanup.
-- Skip semantics: condition-triggered station skips are represented as `SKIPPED`; fallback transformers only provide continuation output.
-- Run timing ownership: decide exactly which component sets begin/end times and whether pre/post hooks are included in
-  measured orchestration time.
-- Exception policy: define where exceptions are caught, converted to `ExecutionResult`, rethrown or treated as fatal.
-- Container behavior: timeouts while waiting for futures, fail-fast semantics, sequential branch failure behavior and
-  executor ownership.
-- Payload deep cloning behavior and performance.
+| Work item | Status | Target version | ADR / reference | Last verified |
+| --- | --- | --- | --- | --- |
+| Logging strategy and signal-to-noise ratio | `REVIEW` | 1.0 review | — | 2026-08-12 |
+| Runtime edge-case test coverage | `REVIEW` | Continuous | [Runtime guarantees](../runtime/runtime-guarantees.md) | 2026-08-12 |
+| Extension ordering, failure impact and lifecycle contracts | `REVIEW` | 1.0 review | [Extensions](../architecture/extensions.md) | 2026-08-12 |
+| Generic typing around station registries and generated code | `BACKLOG` | Unscheduled | — | 2026-08-12 |
+| Packaging and module naming cleanup | `REVIEW` | 1.0 review | [Compatibility policy](../compatibility-policy.md) | 2026-08-12 |
+| Skip semantics: condition skips are `SKIPPED`; fallback transformers only provide continuation output | `REVIEW` | 1.0 review | [Runtime error semantics](../runtime/error-semantics.md) | 2026-08-12 |
+| Run timing ownership, including whether pre/post hooks are measured | `REVIEW` | 1.0 review | [Micrometer observability](../architecture/micrometer-observability.md) | 2026-08-12 |
+| Exception conversion, propagation and fatal-error boundaries | `REVIEW` | 1.0 review | [Exception semantics](../architecture/exception-semantics.md) | 2026-08-12 |
+| Container timeout, fail-fast, sequential failure and executor-ownership semantics | `REVIEW` | 1.0 review | [Core runtime](../architecture/core-runtime.md) | 2026-08-12 |
+| Payload deep-cloning behavior and performance | `BACKLOG` | Post-1.0 | — | 2026-08-12 |
 
 ## Persistence and observability
 
-Potential future work:
-
-- Consider advanced persistence tuning after ADR 0015: adaptive batch sizing, explicit metrics for core terminal-record buffers, and custom failure/reporting policies for batched terminal snapshots.
-- Consider advanced context propagation diagnostics after ADR 0016, such as metrics for omitted keys or reusable project-specific context copiers.
-- Review side-compute execution isolation if side-compute becomes high-volume or latency-critical. The current model waits synchronously from the station thread for work completed by the async event/reaction infrastructure.
-- Avoid a single bottleneck thread for all pipelines if that becomes a real limit.
-- Consider local durable append before remote DB flush for stronger crash behavior.
-- Add parallel-branch and persistence-flush latency distributions only after defining stable lifecycle hooks that do not couple Micrometer to core. See [Micrometer observability](../architecture/micrometer-observability.md).
-- Consider a dedicated Gear4J `DataSource` / connection pool for persistence isolation. See [dedicated persistence datasource](dedicated-persistence-datasource.md).
+| Work item | Status | Target version | ADR / reference | Last verified |
+| --- | --- | --- | --- | --- |
+| Adaptive terminal-record batching and custom failure/reporting policies | `BACKLOG` | Post-1.0 | [ADR 0015](../decisions/0015-terminal-station-persistence-batching.md) | 2026-08-12 |
+| Context-propagation diagnostics and project-specific copier guidance | `BACKLOG` | Post-1.0 | [ADR 0016](../decisions/0016-nested-run-context-propagation-policy.md) | 2026-08-12 |
+| Side-compute isolation for high-volume or latency-critical workloads | `BACKLOG` | Post-1.0 | — | 2026-08-12 |
+| Event-dispatch bottleneck review at representative multi-run load | `BACKLOG` | Post-1.0 | [Events](../architecture/events.md) | 2026-08-12 |
+| Local durable append before remote persistence flush | `BACKLOG` | Post-1.0 | [Durable events](../architecture/durable-events.md) | 2026-08-12 |
+| Parallel-branch rejections/duration and persistence-flush duration distributions | `BACKLOG` | Post-1.0 | [Micrometer observability](../architecture/micrometer-observability.md) | 2026-08-12 |
+| Dedicated Gear4J datasource or connection pool | `BACKLOG` | Post-1.0 | [Dedicated persistence datasource](dedicated-persistence-datasource.md) | 2026-08-12 |
 
 ## Eventing
 
-Potential future work:
-
-- Durable event subsystem separate from `EventManager`; SPI exists, JDBC outbox implementation remains future work.
-- JDBC outbox or local durable queue.
-- Explicit transport envelope SPI.
-- Retry and dead-letter strategy.
-- Idempotency guidance for reactions.
+| Work item | Status | Target version | ADR / reference | Last verified |
+| --- | --- | --- | --- | --- |
+| Durable event subsystem, such as a JDBC outbox or local durable queue | `DEFERRED` | Post-1.0 | [ADR 0001](../decisions/0001-event-runtime-is-best-effort.md), [ADR 0002](../decisions/0002-event-transport-spi-is-a-future-extension.md) | 2026-08-12 |
+| Explicit transport-envelope SPI | `BACKLOG` | Post-1.0 | [ADR 0002](../decisions/0002-event-transport-spi-is-a-future-extension.md) | 2026-08-12 |
+| Retry and dead-letter strategy | `BACKLOG` | Post-1.0 | [Durable events](../architecture/durable-events.md) | 2026-08-12 |
+| Idempotency guidance for reactions | `BACKLOG` | Post-1.0 | [Events](../architecture/events.md) | 2026-08-12 |
 
 ## Cancellation
 
-Potential future work:
-
-- Move from scattered cancellation checks to a kernel-driven execution control model. See [kernel-driven cancellation](kernel-driven-cancellation.md).
-- Define `RUN` vs `BRANCH` cancellation scopes.
-- Define cancellation policy phases: soft stop, interrupt, logical abandon and hard cancellation for isolated workers.
-- Keep user-facing checkpoints only for long-running or blocking user code that cannot be controlled by framework boundaries.
+| Work item | Status | Target version | ADR / reference | Last verified |
+| --- | --- | --- | --- | --- |
+| Kernel-driven execution control instead of scattered cancellation checks | `DEFERRED` | Post-1.0 | [Kernel-driven cancellation](kernel-driven-cancellation.md) | 2026-08-12 |
+| Explicit `RUN` and `BRANCH` cancellation scopes | `BACKLOG` | Post-1.0 | [Kernel-driven cancellation](kernel-driven-cancellation.md) | 2026-08-12 |
+| Soft-stop, interrupt, logical-abandon and isolated hard-cancel phases | `BACKLOG` | Post-1.0 | [Kernel-driven cancellation](kernel-driven-cancellation.md) | 2026-08-12 |
+| User checkpoints only for blocking code outside framework-controlled boundaries | `REVIEW` | 1.0 review | [Runtime guarantees](../runtime/runtime-guarantees.md) | 2026-08-12 |
 
 ## XML and expressions
 
-Potential future work:
-
-- Introduce a safe Gear4J expression language for BO-authored and untrusted XML definitions. See [Gear4J expression language](gear-expression-language.md).
-- Keep inline Java as a trusted developer/admin feature only.
+| Work item | Status | Target version | ADR / reference | Last verified |
+| --- | --- | --- | --- | --- |
+| Extend GEL beyond its delivered MVP with ordered comparisons, limited functions or station references | `BACKLOG` | Post-1.0 | [Gear4J expression language](gear-expression-language.md) | 2026-08-12 |
 
 ## External pipelines
 
-Potential future work:
-
-- Dry-run execution and mock scenarios for BO-driven pipeline validation. See [dry-run and mock configuration](dry-run-and-mock-configuration.md).
-- Introduce a small JSON map codec abstraction for external persistence repositories. The optional
-  `gear4jtest-external-jdbc` module currently uses Jackson directly; a future extraction could let repositories depend on
-  a `JsonMapCodec` contract and move the Jackson implementation to a narrower integration module.
-- JSON translator module.
-- Better dependency tracking for pipeline references.
-- Alias invalidation events.
-- Cache staleness and TTL rules.
-- BO-facing metadata model.
-- Revisit iterator item identity semantics. See [iterator item id model](item-id-model.md).
+| Work item | Status | Target version | ADR / reference | Last verified |
+| --- | --- | --- | --- | --- |
+| Dry-run execution and mock scenarios for BO validation | `BACKLOG` | Post-1.0 | [Dry-run and mock configuration](dry-run-and-mock-configuration.md) | 2026-08-12 |
+| JSON map codec SPI for external persistence repositories | `BACKLOG` | Post-1.0 | — | 2026-08-12 |
+| JSON translator module | `BACKLOG` | Post-1.0 | — | 2026-08-12 |
+| Pipeline-reference dependency tracking | `BACKLOG` | Post-1.0 | — | 2026-08-12 |
+| Alias invalidation events and cache staleness/TTL rules | `BACKLOG` | Post-1.0 | [External assembly lines](../architecture/external-assembly-lines.md) | 2026-08-12 |
+| BO-facing metadata model | `BACKLOG` | Post-1.0 | — | 2026-08-12 |
+| Iterator item-identity model | `REVIEW` | Post-1.0 | [Iterator item id model](item-id-model.md) | 2026-08-12 |
 
 ## Documentation
 
-Potential future work:
-
-- Add a first tutorial once APIs stabilize.
-- Add generated-code examples for XML.
-- Add diagrams for runner chain, event runtime and external pipeline compilation.
-- Add a migration guide when module/package names are finalized.
-- Revisit JPMS descriptors before 1.0 once public API/SPI boundaries and advanced extension points are stable.
+| Work item | Status | Target version | ADR / reference | Last verified |
+| --- | --- | --- | --- | --- |
+| Progressive first-use tutorial | `BACKLOG` | After first stable API | — | 2026-08-12 |
+| Generated-code examples for XML | `BACKLOG` | Post-1.0 | [XML generation](../architecture/xml-generation.md) | 2026-08-12 |
+| Runtime, event and external-compilation diagrams | `BACKLOG` | Post-1.0 | — | 2026-08-12 |
+| Migration guide for finalized module/package names | `BACKLOG` | After first stable API | [Compatibility policy](../compatibility-policy.md) | 2026-08-12 |
+| JPMS descriptor review after public boundaries stabilize | `DEFERRED` | Post-1.0 | [Compatibility policy](../compatibility-policy.md) | 2026-08-12 |

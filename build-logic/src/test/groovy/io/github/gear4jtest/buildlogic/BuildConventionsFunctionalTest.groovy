@@ -265,7 +265,8 @@ plugins {
 group = 'io.github.gear4jtest'
 version = '1.0.0'
 
-['verifyDocumentationLinks', 'verifyDecisionIdentifiers', 'dependencyCheckAggregate',
+['verifyDocumentationLinks', 'verifyDecisionIdentifiers', 'verifyLivingDocumentationMetadata',
+ 'dependencyCheckAggregate',
  'verifyDependencyCheckSuppressions', 'verifyPerformanceBudgets'].each { taskName ->
     tasks.register(taskName)
 }
@@ -319,6 +320,10 @@ tasks.register('verifyReleaseConventionModel') {
         def checkTask = tasks.named('check').get()
         assert checkTask.taskDependencies.getDependencies(checkTask)
             .contains(tasks.named('verifyJava17AndArchiveConfiguration').get())
+
+        def releaseMetadataCheck = tasks.named('releaseMetadataCheck').get()
+        assert releaseMetadataCheck.taskDependencies.getDependencies(releaseMetadataCheck)
+            .contains(tasks.named('verifyLivingDocumentationMetadata').get())
 
         def releaseCheck = tasks.named('releaseCheck').get()
         def releaseDependencies = releaseCheck.taskDependencies.getDependencies(releaseCheck)

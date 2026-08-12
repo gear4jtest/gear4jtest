@@ -67,8 +67,8 @@ Gear4J is a runtime library, so the most important operational limits are explic
 ## Build and test
 
 The repository is a multi-module Gradle project. Dependency coordinates are centralized in the Gradle version catalog at
-`gradle/libs.versions.toml`; module build files should use typed catalog accessors such as `libs.junit` or `libs.spring.boot.autoconfigure` rather than hard-coded dependency versions
-versions.
+`gradle/libs.versions.toml`; module build files should use typed catalog accessors such as `libs.junit` or
+`libs.spring.boot.autoconfigure` rather than hard-coded dependency versions.
 
 Common commands:
 
