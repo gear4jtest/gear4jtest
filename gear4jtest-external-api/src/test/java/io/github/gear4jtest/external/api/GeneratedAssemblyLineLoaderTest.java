@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +24,6 @@ import io.github.gear4jtest.external.api.compiler.GeneratedSourceCompiler;
 import io.github.gear4jtest.external.api.compiler.JavaxToolsGeneratedSourceCompiler;
 import io.github.gear4jtest.external.api.exception.CompilationTimeoutException;
 import io.github.gear4jtest.external.api.exception.GeneratedAssemblyLineLoadTimeoutException;
-import io.github.gear4jtest.external.api.loader.ClassLoaderRegistry;
 import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
 import io.github.gear4jtest.external.api.loader.InMemoryClassLoaderRegistry;
 import io.github.gear4jtest.external.api.loader.SimpleDependencyInjector;
@@ -37,6 +35,19 @@ import io.github.gear4jtest.external.api.translator.OperationChainTranslator;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslatorResolver;
 import org.junit.jupiter.api.Test;
 
+import static io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTestFixture.BLOCKING_CONSTRUCTOR_CLASS;
+import static io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTestFixture.BLOCKING_CONSTRUCTOR_SOURCE;
+import static io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTestFixture.BlockingFirstRegistrationRegistry;
+import static io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTestFixture.CoordinatedRegistry;
+import static io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTestFixture.GENERATED_CLASS;
+import static io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTestFixture.GENERATED_SOURCE;
+import static io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTestFixture.LoaderFixture;
+import static io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTestFixture.await;
+import static io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTestFixture.awaitIgnoringInterruption;
+import static io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTestFixture.awaitStats;
+import static io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTestFixture.compileGeneratedClass;
+import static io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTestFixture.fixture;
+import static io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTestFixture.object;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,35 +57,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class GeneratedAssemblyLineLoaderTest {
-    private static final String GENERATED_CLASS = "io.github.gear4jtest.generated.ConcurrentGenerated";
-    private static final String GENERATED_SOURCE = """
-            package io.github.gear4jtest.generated;
-
-            public final class ConcurrentGenerated
-                    implements io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine {
-                @Override
-                public io.github.gear4jtest.core.api.AssemblyLine getAssemblyLineDefinition() {
-                    return null;
-                }
-            }
-            """;
-    private static final String BLOCKING_CONSTRUCTOR_CLASS = "io.github.gear4jtest.generated.BlockingConstructorGenerated";
-    private static final String BLOCKING_CONSTRUCTOR_SOURCE = """
-            package io.github.gear4jtest.generated;
-
-            public final class BlockingConstructorGenerated
-                    implements io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine {
-                public BlockingConstructorGenerated() {
-                    io.github.gear4jtest.external.api.GeneratedLoadingTestHooks.awaitInConstructor();
-                }
-
-                @Override
-                public io.github.gear4jtest.core.api.AssemblyLine getAssemblyLineDefinition() {
-                    return null;
-                }
-            }
-            """;
-
     @Test
     void loadOrCompile_shouldCompileOnlyOnceForConcurrentArtifactLookups() throws Exception {
         // Given
@@ -556,185 +538,4 @@ class GeneratedAssemblyLineLoaderTest {
         }
     }
 
-    private static LoaderFixture fixture(GeneratedSourceCompiler compiler, ClassLoaderRegistry registry)
-            throws Exception {
-        InMemoryArtifactStore artifactStore = new InMemoryArtifactStore();
-        byte[] artifactBytes = "<pipeline/>".getBytes(StandardCharsets.UTF_8);
-        String hash = artifactStore.put(artifactBytes);
-        OperationChainConfig config = new OperationChainConfig("line", false, StoreType.MEMORY, Map.of());
-        OperationChainObject object = new OperationChainObject(null, "line", "1.0.0", ExecutionMode.TEST, hash,
-                artifactBytes.length, "application/xml", Instant.parse("2026-07-13T08:00:00Z"), "tester",
-                Instant.parse("2026-07-13T08:00:00Z"));
-        OperationChainConfigRepository configRepository = mock(OperationChainConfigRepository.class);
-        when(configRepository.findByAssemblyLineId("line")).thenReturn(Optional.of(config));
-        ArtifactStoreProvider storeProvider = mock(ArtifactStoreProvider.class);
-        when(storeProvider.forConfig(config)).thenReturn(artifactStore);
-        OperationChainTranslator translator = mock(OperationChainTranslator.class);
-        when(translator.translate(any(byte[].class), eq("application/xml"), eq(ExecutionMode.TEST)))
-                .thenReturn(new OperationChainTranslator.GenerationResult(GENERATED_CLASS, GENERATED_SOURCE));
-        OperationChainTranslatorResolver translatorResolver = mock(OperationChainTranslatorResolver.class);
-        when(translatorResolver.resolve("application/xml")).thenReturn(translator);
-        AssemblyLineStoreResolver storeResolver = new AssemblyLineStoreResolver(configRepository, storeProvider);
-        GeneratedAssemblyLineLoader loader = new GeneratedAssemblyLineLoader(storeResolver, registry,
-                translatorResolver, compiler, new SimpleDependencyInjector(),
-                GeneratedAssemblyLineLoaderTest.class.getClassLoader(), ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES);
-        return new LoaderFixture(loader, object, storeResolver, translatorResolver);
-    }
-
-    private static OperationChainObject object(String assemblyLineId,
-                                               String version,
-                                               String hash,
-                                               long sizeBytes) {
-        return new OperationChainObject(null, assemblyLineId, version, ExecutionMode.TEST, hash, sizeBytes,
-                "application/xml", Instant.parse("2026-07-13T08:00:00Z"), "tester",
-                Instant.parse("2026-07-13T08:00:00Z"));
-    }
-
-    private static Map<String, byte[]> compileGeneratedClass() {
-        return new JavaxToolsGeneratedSourceCompiler(GeneratedAssemblyLineLoaderTest.class.getClassLoader())
-                .compile(GENERATED_CLASS, GENERATED_SOURCE.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private static void await(CountDownLatch latch) {
-        try {
-            latch.await();
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("test interrupted", exception);
-        }
-    }
-
-    private static void awaitIgnoringInterruption(CountDownLatch latch) {
-        boolean released = false;
-        while (!released) {
-            try {
-                released = latch.await(5, TimeUnit.SECONDS);
-            } catch (InterruptedException ignored) {
-                // Deliberately non-cooperative component used to prove timeout cleanup.
-            }
-        }
-    }
-
-    private static void awaitStats(Condition condition) throws InterruptedException {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
-        while (!condition.evaluate() && System.nanoTime() < deadline) {
-            Thread.sleep(5L);
-        }
-        assertThat(condition.evaluate()).isTrue();
-    }
-
-    @FunctionalInterface
-    private interface Condition {
-        boolean evaluate();
-    }
-
-    private record LoaderFixture(GeneratedAssemblyLineLoader loader,
-                                 OperationChainObject object,
-                                 AssemblyLineStoreResolver storeResolver,
-                                 OperationChainTranslatorResolver translatorResolver) {}
-
-    private static final class CoordinatedRegistry implements ClassLoaderRegistry {
-        private final ClassLoaderRegistry delegate = InMemoryClassLoaderRegistry.builder().build();
-        private final CountDownLatch initialLookups;
-
-        private CoordinatedRegistry(int concurrentLookups) {
-            this.initialLookups = new CountDownLatch(concurrentLookups);
-        }
-
-        @Override
-        public ClassLoader get(String internalLoaderId) {
-            initialLookups.countDown();
-            await(initialLookups);
-            return delegate.get(internalLoaderId);
-        }
-
-        @Override
-        public void register(String internalLoaderId,
-                             ClassLoader loader,
-                             GeneratedAssemblyLine bound,
-                             long bytecodeWeightBytes,
-                             ClassLoaderRegistry.RegistrationLease registrationLease) {
-            delegate.register(internalLoaderId, loader, bound, bytecodeWeightBytes, registrationLease);
-        }
-
-        @Override
-        public void evict(String internalLoaderId) {
-            delegate.evict(internalLoaderId);
-        }
-
-        @Override
-        public boolean evictIfOwned(String internalLoaderId, ClassLoader expectedLoader) {
-            return delegate.evictIfOwned(internalLoaderId, expectedLoader);
-        }
-
-        @Override
-        public void setAlias(String alias, String internalLoaderId) {
-            delegate.setAlias(alias, internalLoaderId);
-        }
-
-        @Override
-        public String resolveAlias(String alias) {
-            return delegate.resolveAlias(alias);
-        }
-
-        @Override
-        public GeneratedAssemblyLine getBoundAssemblyLine(String internalLoaderId) {
-            return delegate.getBoundAssemblyLine(internalLoaderId);
-        }
-    }
-
-    private static final class BlockingFirstRegistrationRegistry implements ClassLoaderRegistry {
-        private final InMemoryClassLoaderRegistry delegate = InMemoryClassLoaderRegistry.builder().build();
-        private final CountDownLatch registrationEntered = new CountDownLatch(1);
-        private final CountDownLatch releaseRegistration = new CountDownLatch(1);
-        private final AtomicInteger registrations = new AtomicInteger();
-
-        @Override
-        public ClassLoader get(String internalLoaderId) {
-            return delegate.get(internalLoaderId);
-        }
-
-        @Override
-        public void register(String internalLoaderId,
-                             ClassLoader loader,
-                             GeneratedAssemblyLine bound,
-                             long bytecodeWeightBytes,
-                             ClassLoaderRegistry.RegistrationLease registrationLease) {
-            int registration = registrations.incrementAndGet();
-            delegate.register(internalLoaderId, loader, bound, bytecodeWeightBytes, registrationLease);
-            if (registration == 1) {
-                registrationEntered.countDown();
-                awaitIgnoringInterruption(releaseRegistration);
-            }
-        }
-
-        @Override
-        public void evict(String internalLoaderId) {
-            delegate.evict(internalLoaderId);
-        }
-
-        @Override
-        public boolean evictIfOwned(String internalLoaderId, ClassLoader expectedLoader) {
-            return delegate.evictIfOwned(internalLoaderId, expectedLoader);
-        }
-
-        @Override
-        public void setAlias(String alias, String internalLoaderId) {
-            delegate.setAlias(alias, internalLoaderId);
-        }
-
-        @Override
-        public String resolveAlias(String alias) {
-            return delegate.resolveAlias(alias);
-        }
-
-        @Override
-        public GeneratedAssemblyLine getBoundAssemblyLine(String internalLoaderId) {
-            return delegate.getBoundAssemblyLine(internalLoaderId);
-        }
-
-        InMemoryClassLoaderRegistry.RegistryStats snapshotStats() {
-            return delegate.snapshotStats();
-        }
-    }
 }
