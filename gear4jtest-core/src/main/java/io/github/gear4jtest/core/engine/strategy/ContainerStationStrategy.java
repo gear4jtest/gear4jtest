@@ -47,9 +47,10 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
                                            parallelConfiguration.effectiveAwaitTimeout(station.getAwaitTimeout()))
                 : sequentialExecutor.execute(station, input, runner, context, flowConfig);
 
-        if (aggregation.interruptingChild() != null) {
+        if (aggregation.interruptingChild().isPresent()) {
+            var interruptingChild = aggregation.interruptingChild().orElseThrow();
             FlowStrategySupport.applyInterruptToParentLog(EngineStationContexts.trace(context),
-                                                          aggregation.interruptingChild(),
+                                                          interruptingChild,
                                                           flowConfig);
             return null;
         }

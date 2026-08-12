@@ -56,7 +56,7 @@ class ParallelContainerBranchExecutorTest {
         assertThat(branchLog.getStatus()).isEqualTo(StationLogStatus.FAILED);
         assertThat(branchLog.getBranchId()).isEqualTo("rejected");
         assertThat(branchLog.getParentOperationId()).isEqualTo(context.stationLogTrace().getId());
-        assertThat(aggregation.interruptingChild()).isSameAs(branchLog);
+        assertThat(aggregation.interruptingChild()).contains(branchLog);
     }
 
     @Test
@@ -82,7 +82,7 @@ class ParallelContainerBranchExecutorTest {
                 .containsExactly(StationLogStatus.FAILED, StationLogStatus.CANCELLED, StationLogStatus.CANCELLED);
         assertThat(aggregation.results().subList(1, 3))
                 .allMatch(log -> "SIBLING_FLOW_INTERRUPTED".equals(log.getContext().get("synthetic.reason")));
-        assertThat(aggregation.interruptingChild()).isSameAs(aggregation.results().get(0));
+        assertThat(aggregation.interruptingChild()).contains(aggregation.results().get(0));
     }
 
     @Test
@@ -105,7 +105,7 @@ class ParallelContainerBranchExecutorTest {
             StationLogTrace branchLog = aggregation.results().get(0);
             assertThat(branchLog.getStatus()).isEqualTo(StationLogStatus.SKIPPED);
             assertThat(branchLog.getBranchId()).isEqualTo("skipped");
-            assertThat(aggregation.interruptingChild()).isNull();
+            assertThat(aggregation.interruptingChild()).isEmpty();
         } finally {
             executor.shutdownNow();
         }
@@ -176,7 +176,7 @@ class ParallelContainerBranchExecutorTest {
         StationLogTrace branchLog = aggregation.results().get(0);
         assertThat(branchLog.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
         assertThat(branchLog.<String>getOutput()).isEqualTo("input");
-        assertThat(aggregation.interruptingChild()).isNull();
+        assertThat(aggregation.interruptingChild()).isEmpty();
     }
 
     @Test
@@ -213,7 +213,7 @@ class ParallelContainerBranchExecutorTest {
                 .noneMatch(log -> "FAILED_BEFORE_START".equals(log.getContext().get("synthetic.reason")));
         assertThat(unvisitedConditionCalls).hasValue(0);
         assertThat(aggregation.collectedErrors()).isEmpty();
-        assertThat(aggregation.interruptingChild()).isSameAs(aggregation.results().get(1));
+        assertThat(aggregation.interruptingChild()).contains(aggregation.results().get(1));
     }
 
     @Test

@@ -56,10 +56,10 @@ final class SequentialContainerBranchExecutor {
                                                                                                                  + childLog
                                                                                                                          .getOperationId()));
                 case INTERRUPT -> {
-                    return new ContainerExecutionAggregation(results, collectedErrors, childLog);
+                    return ContainerExecutionAggregation.interrupted(results, collectedErrors, childLog);
                 }
             }
         }
-        return new ContainerExecutionAggregation(results, collectedErrors, null);
+        return ContainerExecutionAggregation.completed(results, collectedErrors);
     }
 }
