@@ -84,6 +84,19 @@ can commit DDL statement by statement. Follow the
 [partial-migration recovery runbook](../docs/architecture/jdbc-migrations.md#partial-migration-recovery-runbook)
 before calling `JdbcSchemaMigrator.prepareRetry(...)`.
 
+Execution-history pagination is backed by composite indexes whose final columns
+match `ORDER BY start_time, id`. The integration matrix seeds 20,000 runs and
+10,000 station logs, verifies the ordered index definitions independently from
+optimizer choice, and writes p50/p95/max plus natural-plan evidence under
+`build/reports/sql-plan-qualification`. Each report states whether the reference
+index was selected and whether a full scan was observed. PostgreSQL, MySQL,
+MariaDB and Oracle are qualified; H2 remains a local functional dialect. The
+timing ceiling is a catastrophic-regression guardrail, not a production SLO.
+
+The corrected indexes are part of V1 because Gear4J has no production adopters.
+Recreate older development schemas before using this source version; do not
+baseline an old V1 schema unless it contains the complete current index set.
+
 For an observable shutdown, call `manager.shutdownWithReport(timeout)`. The
 returned `PersistenceShutdownReport` states how many station logs were drained,
 which runs still retain data, how many retry attempts occurred, whether the

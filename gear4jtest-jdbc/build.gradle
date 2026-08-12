@@ -8,3 +8,8 @@ dependencies {
 }
 
 ext.moduleName = 'io.github.gear4jtest.jdbc'
+
+tasks.named('integrationTest') {
+    systemProperty 'gear4j.test.sqlPlanReportDirectory',
+        layout.buildDirectory.dir('reports/sql-plan-qualification').get().asFile.absolutePath
+}

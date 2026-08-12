@@ -139,6 +139,21 @@ existing table exactly matches the shipped SQL. Applications with strict DB
 requirements should manage the SQL through their own migration process and review
 it explicitly.
 
+## Execution-history indexes
+
+The V1 execution schema includes ordered-pagination indexes matching the full
+repository order, including the `id` tie-breaker. Assembly-run history uses
+`(assembly_line_id, start_time, id)`, `(status, start_time, id)` and
+`(start_time, id)`. Station-log hierarchy pages use
+`(assembly_line_execution_id, parent_log_id, start_time, id)`; all logs for one
+run use `(assembly_line_execution_id, start_time, id)`.
+
+These definitions are qualified against PostgreSQL, MySQL, MariaDB and Oracle
+at representative library-level cardinalities. Because Gear4J remains pre-1.0
+with no production adopters, the index corrections stay in V1 rather than
+adding a compatibility migration. Existing development schemas created from an
+older V1 must be recreated before running this version.
+
 ## Station-log write strategy
 
 Core station-log persistence preserves finalized rows: once a station log has an `end_time`, later writes for the same id

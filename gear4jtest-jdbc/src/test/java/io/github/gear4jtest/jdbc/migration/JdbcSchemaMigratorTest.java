@@ -101,7 +101,14 @@ class JdbcSchemaMigratorTest {
                     .doesNotContain("V2__add_execution_history_indexes.sql");
             assertThat(v1Content).as("V1 migration for %s", dialect)
                     .contains("idx_ar_assembly_line_start")
-                    .contains("idx_ar_status_start");
+                    .contains("idx_ar_status_start")
+                    .contains("idx_ar_start");
+            String normalizedMigration = v1Content.replaceAll("\\s+", " ");
+            assertThat(normalizedMigration).as("ordered pagination indexes for %s", dialect)
+                    .contains("(assembly_line_id, start_time, id)")
+                    .contains("(status, start_time, id)")
+                    .contains("(start_time, id)")
+                    .contains("(assembly_line_execution_id, parent_log_id, start_time, id)");
         }
     }
 

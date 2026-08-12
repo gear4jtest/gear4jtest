@@ -94,7 +94,9 @@ CREATE TABLE IF NOT EXISTS station_log
 CREATE INDEX IF NOT EXISTS idx_ar_assembly_line_id ON assembly_run(assembly_line_id);
 CREATE INDEX IF NOT EXISTS idx_ar_status ON assembly_run(status);
 CREATE INDEX IF NOT EXISTS idx_sl_assembly_line_execution_id ON station_log(assembly_line_execution_id);
-CREATE INDEX IF NOT EXISTS idx_station_log_exec_parent ON station_log(assembly_line_execution_id, parent_log_id);
+CREATE INDEX IF NOT EXISTS idx_station_log_exec_parent
+    ON station_log(assembly_line_execution_id, parent_log_id, start_time, id);
 CREATE INDEX IF NOT EXISTS idx_station_log_run_start ON station_log (assembly_line_execution_id, start_time, id);
-CREATE INDEX IF NOT EXISTS idx_ar_assembly_line_start ON assembly_run (assembly_line_id, start_time);
-CREATE INDEX IF NOT EXISTS idx_ar_status_start ON assembly_run (status, start_time);
+CREATE INDEX IF NOT EXISTS idx_ar_assembly_line_start ON assembly_run (assembly_line_id, start_time, id);
+CREATE INDEX IF NOT EXISTS idx_ar_status_start ON assembly_run (status, start_time, id);
+CREATE INDEX IF NOT EXISTS idx_ar_start ON assembly_run (start_time, id);

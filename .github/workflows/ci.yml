@@ -131,6 +131,7 @@ jobs:
           path: |
             gear4jtest-jdbc/build/test-results/integrationTest/*.xml
             gear4jtest-jdbc/build/reports/tests/integrationTest/**
+            gear4jtest-jdbc/build/reports/sql-plan-qualification/**
             gear4jtest-external-jdbc/build/test-results/integrationTest/*.xml
             gear4jtest-external-jdbc/build/reports/tests/integrationTest/**
           if-no-files-found: ignore

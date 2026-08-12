@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class DatabaseAssemblyRunRepositoryMultiDialectIT {
     @ParameterizedTest(name = "{0}")
     @MethodSource("databases")
-    void repositoryAndMigrationRecovery_shouldWorkAcrossDialects(DatabaseScenario scenario) {
+    void repositoryMigrationAndRepresentativePlans_shouldWorkAcrossDialects(DatabaseScenario scenario) {
         try (JdbcDatabaseContainer<?> database = scenario.containerFactory().get()) {
             database.start();
             exerciseRepository(scenario.dialect(), database);
@@ -93,6 +93,8 @@ class DatabaseAssemblyRunRepositoryMultiDialectIT {
                     assertThat(savedLog.operationId()).isEqualTo("step");
                     assertThat(savedLog.context()).containsEntry("station", "context");
                 });
+
+        new SqlPlanQualification(dialect, dataSource, repository).execute();
     }
 
     private void verifyPartialMigrationRecovery(Gear4jDatabaseDialect dialect, DataSource dataSource) {

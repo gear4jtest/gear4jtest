@@ -155,7 +155,7 @@ public final class JdbcSchemaMigrator {
                                  "parent_log_id", "branch_id", "status", "start_time", "end_time",
                                  "error_message", "error_handler_messages", "context", "item_id")
                 .requiredIndexes(ASSEMBLY_RUN_TABLE, "idx_ar_assembly_line_id", "idx_ar_status",
-                                 "idx_ar_assembly_line_start", "idx_ar_status_start")
+                                 "idx_ar_assembly_line_start", "idx_ar_status_start", "idx_ar_start")
                 .requiredIndexes("station_log", "idx_sl_assembly_line_execution_id",
                                  "idx_station_log_exec_parent", "idx_station_log_run_start")
                 .build();

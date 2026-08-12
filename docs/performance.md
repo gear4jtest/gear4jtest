@@ -101,3 +101,42 @@ The plan and timing are published as JUnit report entries under
 budget: database startup, host capacity and JDBC driver behavior differ across
 runners. A missing index in the plan is a regression and fails the integration
 test.
+
+### Core execution-history plan qualification
+
+The core JDBC matrix also seeds 20,000 assembly runs and 10,000 station logs in
+the already-started dialect container. Six repository reads are qualified:
+
+- assembly-line history;
+- status history;
+- global history;
+- root station logs;
+- child station logs;
+- all station logs for one run.
+
+Each scenario verifies the repository result, performs three warmups and nine
+measured executions on one connection, and then records the engine plan.
+PostgreSQL uses `EXPLAIN ANALYZE`, MySQL uses `EXPLAIN ANALYZE FORMAT=TREE`,
+MariaDB uses `ANALYZE FORMAT=JSON`, and Oracle combines a timed execution with
+`EXPLAIN PLAN`/`DBMS_XPLAN`. H2 remains a functional test dialect and is not
+reported as production plan evidence.
+
+The connected test verifies the five ordered-index column lists directly from
+JDBC metadata. The natural plan is then retained as evidence and the report
+states whether the reference index was selected and whether a full scan was
+observed. Those observations are deliberately not exact-plan assertions:
+optimizers may legitimately choose a narrower predicate or foreign-key index,
+or a scan for a small table. A two-second per-call ceiling catches catastrophic
+regressions on shared CI; p50, p95 and maximum durations are evidence rather
+than production SLOs. Reports are written to:
+
+```text
+gear4jtest-jdbc/build/reports/sql-plan-qualification/<dialect>.md
+```
+
+Run all four engines or select one diagnostic engine with:
+
+```bash
+./gradlew :gear4jtest-jdbc:integrationTest
+./gradlew :gear4jtest-jdbc:integrationTest -Pgear4jDatabaseDialect=postgresql
+```

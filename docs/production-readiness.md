@@ -250,6 +250,30 @@ call that ignores interruption may continue on a daemon worker, but the manager
 returns a conservative report instead of blocking the application shutdown.
 Configure the connection-pool acquisition timeout separately for normal writes.
 
+## JDBC execution-history query plans
+
+The mandatory JDBC matrix qualifies the six execution-history reads at 20,000
+runs and 10,000 station logs per dialect job. Keep the generated
+`sql-plan-qualification/<dialect>.md` reports with release evidence and review
+the reference-index selection, any observed full scan and measured p95 before
+materially increasing retention or page sizes. An alternative natural plan is
+not automatically a defect when the engine selects a narrower predicate or
+foreign-key index; the report retains the raw plan for that review.
+
+The built-in two-second ceiling is intentionally loose and detects only a
+catastrophic regression on shared CI. It is not a production latency SLO.
+Production sizing still requires plans and timings with the application's data
+distribution, retention window, pool, database configuration and network.
+
+The V1 schema indexes match complete deterministic ordering:
+
+- `(assembly_line_id, start_time, id)` for assembly-line history;
+- `(status, start_time, id)` for status history;
+- `(start_time, id)` for global history;
+- `(assembly_line_execution_id, parent_log_id, start_time, id)` for root/child
+  station-log pages;
+- `(assembly_line_execution_id, start_time, id)` for all logs in a run.
+
 
 ## Worker concurrency
 
