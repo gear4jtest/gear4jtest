@@ -83,6 +83,28 @@ Container branches must have explicit, stable branch identifiers. Branch ids are
 outcomes in sequential containers, not only as trace labels. The runtime must not generate random branch ids, because
 branch ids need to remain deterministic across runs, tests, logs and future BO visualizations.
 
+### Container execution contract
+
+Sequential containers visit branches in declaration order. A branch result is
+normalized before the next sibling condition or `FlowConfig` decision is
+evaluated. `FAIL_FAST` stops before the next branch,
+`IGNORE_AND_CONTINUE` preserves the result slot and proceeds, and
+`COLLECT_AND_FAIL` proceeds before failing the container with the first
+collected error. Sibling-aware conditions are therefore supported only in
+sequential containers.
+
+Parallel containers submit every eligible branch to the caller-supplied
+executor and consume completions as they arrive, while exposing results in
+declaration order. The effective await timeout starts after submission and
+bounds only the completion wait. Timeout and fail-fast cancellation call
+`Future.cancel(true)` for pending work, but a user task that ignores interruption
+may continue after the container returns. A branch that completed during the
+cancellation race wins over a synthetic cancellation outcome.
+
+Container executors are always caller-owned. Neither normal completion,
+fail-fast, timeout nor executor decoration shuts them down. An
+`ExecutorWrapperExtension` must likewise return a non-owning view.
+
 ## Flow decisions
 
 Flow decisions should be based on runtime station outcomes and explicit flow configuration.
@@ -97,6 +119,21 @@ General rules:
 - STOP and CANCEL should be modeled as flow outcomes.
 - JVM `Error` should not be swallowed as an ordinary recoverable failure.
 - Persistence and event failures must not silently corrupt the runtime trace.
+
+## Cancellation checkpoints
+
+Gear4J checks run cancellation at every station entry, before parallel branch
+submission and while waiting for parallel completions. Sequential, iterator,
+if/else and inline-call strategies re-enter the station runner at each child or
+item boundary, so they inherit the station-entry checkpoint.
+
+Application code needs an explicit checkpoint only while Gear4J cannot regain
+control: long operator/processor loops, blocking conditions or item resolvers,
+external I/O and custom retry/backoff loops. Such code should call
+`StationExecutionContext.getGlobalContext().getCancellationToken()` and either
+poll `isCancellationRequested()` or invoke
+`throwIfCancellationRequested()`, while also respecting thread interruption and
+its own I/O timeout.
 
 ## AssemblyLine calls
 

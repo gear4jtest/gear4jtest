@@ -14,6 +14,7 @@ import io.github.gear4jtest.core.event.StationSkipReason;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.extension.LifecycleFailureMode;
 import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
+import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
 import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -40,7 +41,7 @@ public final class Gear4jMicrometerExtension implements RunLifecycleExtension, S
 
     @Override
     public int getOrder() {
-        return 20;
+        return RuntimeExtension.TERMINAL_OBSERVER_ORDER;
     }
 
     @Override

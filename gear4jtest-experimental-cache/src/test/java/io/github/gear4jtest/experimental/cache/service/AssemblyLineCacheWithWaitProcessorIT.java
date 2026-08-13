@@ -120,7 +120,7 @@ class AssemblyLineCacheWithWaitProcessorIT {
                 .resourceFactory(resourceFactory).extensionResolver(new RuntimeExtensionResolver(List.of()))
                 .executionContextRegistry(executionContextRegistry).build();
 
-        RunRequest request = RunRequest.builder()
+        RunRequest<String> request = RunRequest.builder()
                 .input("42")
                 .context(Map.of("tenantId", "tenant-a"))
                 .with(cacheExtension)

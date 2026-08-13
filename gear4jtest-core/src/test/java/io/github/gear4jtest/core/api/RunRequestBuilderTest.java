@@ -50,7 +50,7 @@ class RunRequestBuilderTest {
     @Test
     void builder_shouldExposeDefaultsAndCopyNullContextToEmptyMap() {
         // When
-        RunRequest request = RunRequest.builder().context(null).build();
+        RunRequest<Object> request = RunRequest.builder().context(null).build();
 
         // Then
         assertThat(request.getInput()).isNull();
@@ -84,7 +84,7 @@ class RunRequestBuilderTest {
         PersistenceConfiguration persistence = PersistenceConfiguration.builder()
                 .stationLogFlushThreshold(7)
                 .build();
-        RunRequest request = RunRequest.builder()
+        RunRequest<String> request = RunRequest.builder()
                 .input("input")
                 .context(sourceContext)
                 .resourceFactory(resourceFactory)
@@ -97,7 +97,7 @@ class RunRequestBuilderTest {
                 .build();
 
         // When
-        RunRequest copy = request.toBuilder().context(Map.of("copied", true)).build();
+        RunRequest<String> copy = request.toBuilder().context(Map.of("copied", true)).build();
         sourceContext.put("late", "mutation");
 
         // Then
@@ -126,7 +126,7 @@ class RunRequestBuilderTest {
         PersistenceConfiguration persistence = PersistenceConfiguration.builder()
                 .stationLogFlushThreshold(11)
                 .build();
-        RunRequest request = RunRequest.builder()
+        RunRequest<String> request = RunRequest.builder()
                 .input("input")
                 .context(Map.of("tenant", "acme"))
                 .withIdGenerator(idGenerator)
@@ -138,7 +138,7 @@ class RunRequestBuilderTest {
                 .build();
 
         // When
-        RunRequest independent = request.toIndependentBuilder().input("copy-input").build();
+        RunRequest<String> independent = request.toIndependentBuilder().input("copy-input").build();
 
         // Then
         assertThat(independent.getInput()).isEqualTo("copy-input");

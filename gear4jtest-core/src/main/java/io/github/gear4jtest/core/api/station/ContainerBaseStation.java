@@ -12,6 +12,16 @@ import io.github.gear4jtest.core.api.behavior.BranchCondition;
 import io.github.gear4jtest.core.api.behavior.Condition;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 
+/**
+ * A typed group of named branches executed sequentially or through a supplied
+ * executor.
+ *
+ * <p>
+ * Parallel executors remain caller-owned. The await timeout bounds Gear4J's
+ * wait after branch submission; it requests interruption of pending futures but
+ * cannot forcibly terminate user code that ignores interruption.
+ * </p>
+ */
 public class ContainerBaseStation<IN, OUT> extends AbstractStation<IN, OUT> {
     private final List<Branch<IN>> pipelines;
     private final ContainerResultsFunction<OUT> resultsFunc;

@@ -10,7 +10,8 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
  * <p>
  * Typical use cases are MDC propagation, tracing context propagation or metrics
  * around asynchronous tasks. A wrapper must not shut down an executor it does
- * not own.
+ * not own. Lower-order wrappers are applied outermost, consistently with run
+ * and station wrappers.
  * </p>
  */
 public interface ExecutorWrapperExtension extends RuntimeExtension {

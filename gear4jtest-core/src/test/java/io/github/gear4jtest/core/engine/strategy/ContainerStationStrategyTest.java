@@ -3,6 +3,7 @@ package io.github.gear4jtest.core.engine.strategy;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -444,6 +445,34 @@ class ContainerStationStrategyTest {
 
             // Then
             assertThat(context.getRecord().getStatus()).isEqualTo(StationLogStatus.CANCELLED);
+        } finally {
+            executorService.shutdownNow();
+        }
+    }
+
+    @Test
+    void should_leave_caller_owned_parallel_executor_running_after_completion() {
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        try {
+            // Given
+            ContainerStationStrategy strategy = new ContainerStationStrategy();
+            DummyStation branch = station("branch");
+            var container = new ContainerBaseStation.Builder<Object, Object>(executorService)
+                    .id("container")
+                    .withBranch("branch", branch)
+                    .returns(results -> results.orderedOutputs());
+            StationExecutionContext context = newOperationExecutionContext("container");
+
+            // When
+            Object result = strategy.doExecute(container, "input",
+                                               (input, station, ctx) -> successLog("branch", "output"),
+                                               context);
+
+            // Then
+            assertThat(result).isEqualTo(List.of("output"));
+            assertThat(executorService.isShutdown())
+                    .as("the application owns executors supplied to parallel containers")
+                    .isFalse();
         } finally {
             executorService.shutdownNow();
         }

@@ -33,6 +33,12 @@ import io.github.gear4jtest.core.persistence.StationLogRecord;
  * other failed child station. It is not thrown directly to the API consumer by
  * this wrapper.
  * </p>
+ *
+ * <p>
+ * Start callbacks run from higher order to lower order; terminal callbacks run
+ * from lower order to higher order. This bracket ordering lets final observers
+ * see failures introduced by ordinary critical lifecycle extensions.
+ * </p>
  */
 @Spi
 public interface StationLifecycleExtension extends RuntimeExtension {

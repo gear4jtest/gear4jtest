@@ -187,9 +187,6 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
                                     runContext.context(),
                                     runContext.execution());
         if (completionFailure != null) {
-            runContext.execution().setEndTime(Instant.now());
-            runContext.execution().setStatus(ExecutionStatus.FAILED);
-            runContext.execution().setError(completionFailure);
             finalizedResult = ExecutionResult.failure(completionFailure, runContext.execution());
         }
         return finalizedResult;

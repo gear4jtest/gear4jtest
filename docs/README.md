@@ -37,4 +37,5 @@ Do not describe future-direction ideas as current behavior.
 
 - [API, SPI and internal contracts](architecture/api-contracts.md)
 - [Runtime logging strategy](architecture/logging.md)
+- [Final 1.0 runtime contract review](audit/final-runtime-contract-review-phase-20-2026-08-13.md)
 - [Runtime guarantees and non-guarantees](runtime/runtime-guarantees.md)

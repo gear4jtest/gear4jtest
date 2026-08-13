@@ -30,6 +30,20 @@ The built-in duration timers are recorded only when both start and end timestamp
 are present and consistent. Missing or inverted timestamps are ignored rather than
 emitting misleading zero or negative durations.
 
+## Run duration boundary
+
+The official run interval starts before `RunLifecycleExtension.onRunStarted` and
+therefore includes start hooks, run interceptors and station execution. It closes
+when the root result enters finalization, before final-context snapshotting,
+ordinary `onRunCompleted` hooks and event-runtime drain/cleanup. Consequently,
+wall-clock latency of `AssemblyLineExecutor.execute(...)` can be longer than
+`gear4j.runs.duration`.
+
+There is one deliberate exception: if a `CRITICAL` completion hook changes the
+final outcome to `FAILED`, the run end time advances to the point where that
+failure is detected. Later terminal observers, including Micrometer and
+persistence, then receive the failed outcome and the corrected interval.
+
 `PersistenceMetricsBinder` exposes active run buffers, buffered station logs,
 the age of the oldest buffered log, scheduled/completed/failed flushes,
 rejected appends and a percentile-histogram flush timer. Cumulative failure and

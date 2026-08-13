@@ -61,6 +61,20 @@ Gradle 9.6.1 on Java 17. Compatibility with other Gradle versions is not claimed
 until that version is added to the TestKit/CI matrix. Changing the minimum or
 tested Gradle runtime is a documented build-tool compatibility change.
 
+## Published artifacts and module names
+
+The artifact ids listed in the migration guide and every corresponding
+`Automatic-Module-Name` are frozen as 1.x compatibility contracts. Release
+verification requires each published project to declare a valid, distinct
+dotted module name and checks that its primary JAR manifest publishes that exact
+value. This protects classpath consumers and stable automatic-module users
+without introducing JPMS descriptors in 1.0.
+
+Package stability remains marker-driven: every production package has exactly
+one `@PublicApi`, `@Spi`, `@Internal` or `@Experimental` marker. No further
+package move is planned for 1.0; a later move across stable packages follows the
+same major-version and migration rules as a removed public type.
+
 ## SPI compatibility
 
 SPI changes receive the same binary/source checks as public API. New abstract methods are forbidden in a minor or patch

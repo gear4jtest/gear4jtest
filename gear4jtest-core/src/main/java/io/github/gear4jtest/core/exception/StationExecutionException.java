@@ -14,14 +14,17 @@ public final class StationExecutionException extends Gear4JException {
         return new StationExecutionException(cause);
     }
 
-    public static Exception unwrap(Throwable throwable) {
-        if (throwable instanceof StationExecutionException stationExecutionException) {
+    /**
+     * Removes one station-boundary wrapper from a recoverable exception.
+     *
+     * @param exception recoverable exception caught by the station boundary
+     * @return the original exception when wrapped, otherwise {@code exception}
+     */
+    public static Exception unwrap(Exception exception) {
+        if (exception instanceof StationExecutionException stationExecutionException) {
             return stationExecutionException.getOriginalException();
         }
-        if (throwable instanceof Exception exception) {
-            return exception;
-        }
-        return new RuntimeException(throwable);
+        return exception;
     }
 
     public Exception getOriginalException() {

@@ -29,13 +29,13 @@ Status values are `DELIVERED`, `REVIEW`, `BACKLOG` and `DEFERRED`.
 | --- | --- | --- | --- | --- |
 | Logging strategy and signal-to-noise ratio | `DELIVERED` | 1.0 | [Logging](../architecture/logging.md), [ADR 0041](../decisions/0041-repeated-runtime-logs-require-an-exhaustive-signal.md) | 2026-08-13 |
 | Runtime edge-case test coverage | `REVIEW` | Continuous | [Runtime guarantees](../runtime/runtime-guarantees.md) | 2026-08-12 |
-| Extension ordering, failure impact and lifecycle contracts | `REVIEW` | 1.0 review | [Extensions](../architecture/extensions.md) | 2026-08-12 |
+| Extension ordering, failure impact and lifecycle contracts | `DELIVERED` | 1.0 | [Extensions](../architecture/extensions.md), [ADR 0042](../decisions/0042-runtime-contracts-use-bracketed-lifecycle-and-cooperative-boundaries.md) | 2026-08-13 |
 | Generic typing around station registries and generated code | `BACKLOG` | Unscheduled | — | 2026-08-12 |
-| Packaging and module naming cleanup | `REVIEW` | 1.0 review | [Compatibility policy](../compatibility-policy.md) | 2026-08-12 |
-| Skip semantics: condition skips are `SKIPPED`; fallback transformers only provide continuation output | `REVIEW` | 1.0 review | [Runtime error semantics](../runtime/error-semantics.md) | 2026-08-12 |
-| Run timing ownership, including whether pre/post hooks are measured | `REVIEW` | 1.0 review | [Micrometer observability](../architecture/micrometer-observability.md) | 2026-08-12 |
-| Exception conversion, propagation and fatal-error boundaries | `REVIEW` | 1.0 review | [Exception semantics](../architecture/exception-semantics.md) | 2026-08-12 |
-| Container timeout, fail-fast, sequential failure and executor-ownership semantics | `REVIEW` | 1.0 review | [Core runtime](../architecture/core-runtime.md) | 2026-08-12 |
+| Packaging and module naming cleanup | `DELIVERED` | 1.0 | [Compatibility policy](../compatibility-policy.md), [ADR 0042](../decisions/0042-runtime-contracts-use-bracketed-lifecycle-and-cooperative-boundaries.md) | 2026-08-13 |
+| Skip semantics: condition skips are `SKIPPED`; fallback transformers only provide continuation output | `DELIVERED` | 1.0 | [Runtime error semantics](../runtime/error-semantics.md), [ADR 0042](../decisions/0042-runtime-contracts-use-bracketed-lifecycle-and-cooperative-boundaries.md) | 2026-08-13 |
+| Run timing ownership, including whether pre/post hooks are measured | `DELIVERED` | 1.0 | [Micrometer observability](../architecture/micrometer-observability.md), [ADR 0042](../decisions/0042-runtime-contracts-use-bracketed-lifecycle-and-cooperative-boundaries.md) | 2026-08-13 |
+| Exception conversion, propagation and fatal-error boundaries | `DELIVERED` | 1.0 | [Exception semantics](../architecture/exception-semantics.md), [ADR 0042](../decisions/0042-runtime-contracts-use-bracketed-lifecycle-and-cooperative-boundaries.md) | 2026-08-13 |
+| Container timeout, fail-fast, sequential failure and executor-ownership semantics | `DELIVERED` | 1.0 | [Core runtime](../architecture/core-runtime.md), [ADR 0042](../decisions/0042-runtime-contracts-use-bracketed-lifecycle-and-cooperative-boundaries.md) | 2026-08-13 |
 | Payload deep-cloning behavior and performance | `BACKLOG` | Post-1.0 | — | 2026-08-12 |
 
 ## Persistence and observability
@@ -65,7 +65,7 @@ Status values are `DELIVERED`, `REVIEW`, `BACKLOG` and `DEFERRED`.
 | Kernel-driven execution control instead of scattered cancellation checks | `DEFERRED` | Post-1.0 | [Kernel-driven cancellation](kernel-driven-cancellation.md) | 2026-08-12 |
 | Explicit `RUN` and `BRANCH` cancellation scopes | `BACKLOG` | Post-1.0 | [Kernel-driven cancellation](kernel-driven-cancellation.md) | 2026-08-12 |
 | Soft-stop, interrupt, logical-abandon and isolated hard-cancel phases | `BACKLOG` | Post-1.0 | [Kernel-driven cancellation](kernel-driven-cancellation.md) | 2026-08-12 |
-| User checkpoints only for blocking code outside framework-controlled boundaries | `REVIEW` | 1.0 review | [Runtime guarantees](../runtime/runtime-guarantees.md) | 2026-08-12 |
+| User checkpoints only for blocking code outside framework-controlled boundaries | `DELIVERED` | 1.0 | [Runtime guarantees](../runtime/runtime-guarantees.md), [ADR 0042](../decisions/0042-runtime-contracts-use-bracketed-lifecycle-and-cooperative-boundaries.md) | 2026-08-13 |
 
 ## XML and expressions
 

@@ -17,8 +17,16 @@ final class AssemblyLineRunLifecycleInvoker {
     void invokeRunStarted(List<RunLifecycleExtension> lifecycleExtensions,
                           ExecutionContext context,
                           AssemblyRunTrace execution) {
-        for (RunLifecycleExtension lifecycleExtension : lifecycleExtensions) {
-            invokeRunStartedSafely(lifecycleExtension, context, execution);
+        Exception firstCriticalFailure = null;
+        for (int index = lifecycleExtensions.size() - 1; index >= 0; index--) {
+            Exception failure = invokeRunStartedSafely(lifecycleExtensions.get(index), context, execution);
+            if (firstCriticalFailure == null && failure != null) {
+                firstCriticalFailure = failure;
+            }
+        }
+        if (firstCriticalFailure != null) {
+            throw firstCriticalFailure instanceof RuntimeException runtimeException ? runtimeException
+                    : new RuntimeException(firstCriticalFailure);
         }
     }
 
@@ -31,27 +39,33 @@ final class AssemblyLineRunLifecycleInvoker {
             if (failure != null) {
                 if (firstCriticalFailure == null) {
                     firstCriticalFailure = failure;
+                    execution.setEndTime(Instant.now());
+                    execution.setStatus(ExecutionStatus.FAILED);
+                    execution.setError(failure);
+                } else {
+                    firstCriticalFailure.addSuppressed(failure);
                 }
-                execution.setEndTime(Instant.now());
-                execution.setStatus(ExecutionStatus.FAILED);
-                execution.setError(failure);
             }
         }
         return firstCriticalFailure;
     }
 
-    private void invokeRunStartedSafely(RunLifecycleExtension lifecycleExtension,
-                                        ExecutionContext context,
-                                        AssemblyRunTrace execution) {
+    private Exception invokeRunStartedSafely(RunLifecycleExtension lifecycleExtension,
+                                             ExecutionContext context,
+                                             AssemblyRunTrace execution) {
         try {
             lifecycleExtension.onRunStarted(context, execution);
+            return null;
         } catch (Exception e) {
             if (lifecycleExtension.failureMode() == LifecycleFailureMode.CRITICAL) {
-                throw e instanceof RuntimeException runtimeException ? runtimeException : new RuntimeException(e);
+                LOGGER.error("A critical RunLifecycleExtension failed during onRunStarted. extension={}",
+                             lifecycleExtension.getClass().getName(), e);
+                return e;
             }
 
             LOGGER.error("A RunLifecycleExtension failed during onRunStarted. Ignoring. extension={}",
                          lifecycleExtension.getClass().getName(), e);
+            return null;
         }
     }
 

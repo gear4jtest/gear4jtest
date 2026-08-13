@@ -37,8 +37,8 @@ public class StationLifecycleRunner implements StationRunner {
         publishStartedEvent(runCtx, ctx, input);
 
         boolean criticalStartFailure = false;
-        for (StationLifecycleExtension extension : lifecycleExtensions) {
-            criticalStartFailure |= invokeStartedSafely(extension, runCtx, ctx, startedSnapshot);
+        for (int index = lifecycleExtensions.size() - 1; index >= 0; index--) {
+            criticalStartFailure |= invokeStartedSafely(lifecycleExtensions.get(index), runCtx, ctx, startedSnapshot);
         }
 
         StationLogTrace result = criticalStartFailure ? EngineStationContexts.trace(ctx)

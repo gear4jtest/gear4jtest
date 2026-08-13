@@ -23,14 +23,28 @@ import io.github.gear4jtest.core.api.assemblyline.RuntimeRequirement;
  */
 public interface RuntimeExtension {
     /**
+     * Reserved order for built-in observers that must see the normalized terminal
+     * outcome after ordinary application extensions.
+     */
+    int TERMINAL_OBSERVER_ORDER = Integer.MAX_VALUE - 1;
+
+    /**
+     * Reserved final order for persistence, which must observe the terminal outcome
+     * after every other lifecycle observer.
+     */
+    int PERSISTENCE_ORDER = Integer.MAX_VALUE;
+
+    /**
      * Returns the extension order.
      *
      * <p>
      * Lower values are applied first and are generally outermost when extensions
      * wrap runtime behavior. Typical examples: tracing/logging around order
-     * {@code 0}, application concerns around {@code 50}, infrastructure/persistence
-     * around {@code 100}. When two extensions return the same order, Gear4J uses
-     * the implementation class name as a deterministic tie-breaker.
+     * {@code 0}, application concerns around {@code 50} and ordinary infrastructure
+     * concerns around {@code 100}. The two highest values are reserved for the
+     * built-in terminal observer and persistence. When two extensions return the
+     * same order, Gear4J uses the implementation class name as a deterministic
+     * tie-breaker.
      * </p>
      *
      * @return the extension ordering value

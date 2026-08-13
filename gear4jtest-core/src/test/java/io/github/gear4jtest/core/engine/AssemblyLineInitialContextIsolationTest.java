@@ -52,7 +52,7 @@ class AssemblyLineInitialContextIsolationTest {
                 .containsExactly("default");
     }
 
-    private static RunRequest request() {
+    private static RunRequest<String> request() {
         return RunRequest.builder()
                 .input("input")
                 .resourceFactory(reflectiveResourceFactory())

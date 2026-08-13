@@ -36,7 +36,7 @@ class AssemblyLineExecutionResultMapperTest {
         AssemblyLine<String, String> pipeline = AssemblyLine.<String, String>builder("pipe")
                 .then(new TestStation())
                 .build();
-        RunRequest request = RunRequest.builder().input("input").build();
+        RunRequest<String> request = RunRequest.builder().input("input").build();
         ExecutionContext globalContext = executionContext();
         StationExecutionContext rootContext = stationContext(globalContext);
         AssemblyRunTrace execution = new AssemblyRunTrace(globalContext.getExecutionId(), "pipe", Map.of());

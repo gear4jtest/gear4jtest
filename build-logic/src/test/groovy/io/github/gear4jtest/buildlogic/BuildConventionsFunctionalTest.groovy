@@ -338,6 +338,7 @@ tasks.register('verifyReleaseConventionModel') {
         BuildResult result = GradleRunner.create()
             .withProjectDir(projectDirectory.toFile())
             .withArguments('verifyReleaseConventionModel', 'verifyStagedReleaseArtifacts',
+                'verifyJava17AndArchiveConfiguration',
                 '--stacktrace', '--warning-mode=all')
             .withPluginClasspath()
             .build()
@@ -345,6 +346,8 @@ tasks.register('verifyReleaseConventionModel') {
         assertThat(result.task(':verifyReleaseConventionModel').outcome)
             .isEqualTo(TaskOutcome.SUCCESS)
         assertThat(result.task(':verifyStagedReleaseArtifacts').outcome)
+            .isEqualTo(TaskOutcome.SUCCESS)
+        assertThat(result.task(':verifyJava17AndArchiveConfiguration').outcome)
             .isEqualTo(TaskOutcome.SUCCESS)
         assertThat(Files.readString(projectDirectory.resolve(
             'build/reports/release/staged-artifacts.txt')))

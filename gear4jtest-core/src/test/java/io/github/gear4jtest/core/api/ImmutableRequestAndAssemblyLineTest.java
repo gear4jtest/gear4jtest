@@ -27,7 +27,7 @@ class ImmutableRequestAndAssemblyLineTest {
         context.put("initial", "value");
 
         // When
-        RunRequest request = RunRequest.builder().context(context).build();
+        RunRequest<Object> request = RunRequest.builder().context(context).build();
         context.put("late", "mutation");
 
         // Then
@@ -56,7 +56,7 @@ class ImmutableRequestAndAssemblyLineTest {
         PersistenceConfiguration persistence = PersistenceConfiguration.builder()
                 .stationLogFlushThreshold(13)
                 .build();
-        RunRequest request = RunRequest.builder()
+        RunRequest<String> request = RunRequest.builder()
                 .input("input")
                 .context(Map.of("key", "value"))
                 .resourceFactory(resourceFactory)
@@ -69,7 +69,7 @@ class ImmutableRequestAndAssemblyLineTest {
                 .build();
 
         // When
-        RunRequest copy = request.toBuilder().input("copy-input").build();
+        RunRequest<String> copy = request.toBuilder().input("copy-input").build();
 
         // Then
         assertThat(copy.getInput()).isEqualTo("copy-input");
@@ -86,7 +86,7 @@ class ImmutableRequestAndAssemblyLineTest {
     @Test
     void runRequestBuilder_shouldRejectNullExtension() {
         // Given
-        RunRequest.Builder builder = RunRequest.builder();
+        RunRequest.Builder<Object> builder = RunRequest.builder();
 
         // When / Then
         assertThatThrownBy(() -> builder.with(null)).isInstanceOf(NullPointerException.class);

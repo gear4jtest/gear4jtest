@@ -12,6 +12,7 @@ import io.github.gear4jtest.core.persistence.RunPersistenceManager;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.extension.LifecycleFailureMode;
 import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
+import io.github.gear4jtest.core.spi.extension.RuntimeExtension;
 import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
 
 /**
@@ -47,7 +48,7 @@ public class PersistenceExtension implements RunLifecycleExtension, StationLifec
      */
     @Override
     public int getOrder() {
-        return Integer.MAX_VALUE;
+        return RuntimeExtension.PERSISTENCE_ORDER;
     }
 
     @Override

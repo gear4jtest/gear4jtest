@@ -17,8 +17,9 @@ final class AssemblyLineRunSupportFactory {
                                    PayloadCloner payloadCloner) {
         ExecutorDecorator decorator = (rawExec, context) -> {
             ExecutorService wrapped = rawExec;
-            for (var wrapperExt : resolvedExtensions.executorWrappers()) {
-                wrapped = wrapperExt.wrapExecutor(wrapped, context);
+            var wrappers = resolvedExtensions.executorWrappers();
+            for (int index = wrappers.size() - 1; index >= 0; index--) {
+                wrapped = wrappers.get(index).wrapExecutor(wrapped, context);
             }
             return wrapped;
         };

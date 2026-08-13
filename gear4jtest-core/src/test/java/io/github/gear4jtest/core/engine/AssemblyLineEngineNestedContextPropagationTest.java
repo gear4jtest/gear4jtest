@@ -89,7 +89,7 @@ class AssemblyLineEngineNestedContextPropagationTest {
                 .build();
     }
 
-    private static RunRequest requestWithContext(Map<String, ?> context) {
+    private static RunRequest<String> requestWithContext(Map<String, ?> context) {
         return RunRequest.builder()
                 .input("input")
                 .context(new LinkedHashMap<>(context))

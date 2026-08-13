@@ -100,7 +100,8 @@ class AssemblyLineCacheWithSideComputeIntegrationTest {
         AssemblyLine<String, FinalOutput> pipeline = AssemblyLine.<String, FinalOutput>builder("customer-enrichment")
                 .version("1.0.0").build();
 
-        RunRequest request = RunRequest.builder().input("42").context(Map.of("tenantId", "tenant-a")).build();
+        RunRequest<String> request = RunRequest.builder().input("42").context(Map.of("tenantId", "tenant-a"))
+                .build();
 
         AtomicInteger businessExecutions = new AtomicInteger();
 
@@ -176,7 +177,8 @@ class AssemblyLineCacheWithSideComputeIntegrationTest {
         AssemblyLine<String, FinalOutput> pipeline = AssemblyLine.<String, FinalOutput>builder("customer-enrichment")
                 .version("1.0.0").build();
 
-        RunRequest request = RunRequest.builder().input("42").context(Map.of("tenantId", "tenant-a")).build();
+        RunRequest<String> request = RunRequest.builder().input("42").context(Map.of("tenantId", "tenant-a"))
+                .build();
 
         AtomicInteger businessExecutions = new AtomicInteger();
 

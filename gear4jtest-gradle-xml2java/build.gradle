@@ -135,3 +135,10 @@ gradlePlugin {
 }
 
 ext.moduleName = 'io.github.gear4jtest.gradle.xml2java'
+
+tasks.named('jar', Jar) {
+    inputs.property('moduleName', project.moduleName)
+    manifest.attributes(
+        'Automatic-Module-Name': project.moduleName
+    )
+}

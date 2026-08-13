@@ -44,6 +44,11 @@ Move per-run input, context, resource overrides, persistence overrides, cancella
 Keep pipeline identity, stations, defaults and default runtime configuration on `AssemblyLine`. Read execution state
 through `ExecutionResult`, `RunTrace` and `StationTrace`; do not cast those views to mutable execution records.
 
+`StationExecutionException.unwrap(...)` now accepts `Exception`, not
+`Throwable`. This makes the public signature match the runtime boundary: JVM
+`Error` values are never converted into recoverable station failures and must
+not be passed through an error policy.
+
 Spring applications should inject `AssemblyLineExecutor`. Executor customization uses
 `Gear4jAssemblyLineExecutorCustomizer`, while operators and runtime extensions remain ordinary Spring beans.
 

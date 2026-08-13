@@ -234,10 +234,11 @@ tasks.register('verifyReleaseDatabaseMatrixSelection') {
 
 tasks.register('verifyJava17AndArchiveConfiguration') {
     group = 'verification'
-    description = 'Verifies Java 17 release compilation and reproducible archive settings for every published module.'
+    description = 'Verifies Java 17, module names and reproducible archives for every published module.'
 
     doLast {
         def failures = []
+        def moduleNameOwners = [:]
         subprojects.each { candidate ->
             candidate.tasks.withType(JavaCompile).each { compileTask ->
                 if (compileTask.options.release.orNull != 17) {
@@ -256,9 +257,29 @@ tasks.register('verifyJava17AndArchiveConfiguration') {
                     failures << "${archiveTask.path} must not contain a runtime-specific Created-By attribute"
                 }
             }
+            if (candidate.plugins.hasPlugin('maven-publish')) {
+                def configuredModuleName = candidate.findProperty('moduleName')
+                def moduleName = configuredModuleName == null
+                    ? '' : configuredModuleName.toString().trim()
+                if (!(moduleName ==~ /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$/)) {
+                    failures << "${candidate.path} must declare a valid dotted moduleName"
+                } else if (moduleNameOwners.containsKey(moduleName)) {
+                    failures << "${candidate.path} and ${moduleNameOwners[moduleName]} declare duplicate "
+                        + "moduleName ${moduleName}"
+                } else {
+                    moduleNameOwners[moduleName] = candidate.path
+                }
+
+                def mainJar = candidate.tasks.findByName('jar')
+                def manifestModuleName = mainJar instanceof Jar
+                    ? mainJar.manifest.attributes['Automatic-Module-Name'] : null
+                if (moduleName && manifestModuleName != moduleName) {
+                    failures << "${candidate.path}:jar must publish Automatic-Module-Name=${moduleName}"
+                }
+            }
         }
         if (!failures.isEmpty()) {
-            throw new GradleException('Java/archive hardening violations:\n - '
+            throw new GradleException('Java/module/archive hardening violations:\n - '
                 + failures.join('\n - '))
         }
     }
