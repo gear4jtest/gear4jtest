@@ -19,8 +19,6 @@ import io.github.gear4jtest.core.api.annotation.Internal;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.util.MonotonicDeadline;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
@@ -50,7 +48,6 @@ import org.slf4j.MDC;
  */
 @Internal
 public final class EventManager implements EventPublisher {
-    private static final Logger LOGGER = LoggerFactory.getLogger(EventManager.class);
     static final int MAX_EVENTS_PER_DISPATCH_TASK = 64;
     private final List<EventSubscription<?>> subscriptions;
     private final BlockingQueue<QueuedEvent> queue;
@@ -138,8 +135,7 @@ public final class EventManager implements EventPublisher {
             } else {
                 droppedEvents.incrementAndGet();
                 EventRuntimeMetrics.eventRejectedBeforeQueue();
-                LOGGER.warn("Dropping event because the in-memory event queue is full. eventType={}, capacity={}",
-                            event.getName(), eventQueueCapacity);
+                EventRuntimeLogSignals.eventQueueRejected(event.getName(), eventQueueCapacity);
                 return;
             }
         }
@@ -197,7 +193,7 @@ public final class EventManager implements EventPublisher {
         if (!submitted) {
             dispatchTaskScheduled.set(false);
             dropPendingQueuedEvents();
-            LOGGER.warn("Dropping pending events because the shared event dispatcher rejected the dispatch task.");
+            EventRuntimeLogSignals.dispatchRejected();
             tryCompleteTermination();
         }
     }
@@ -248,14 +244,12 @@ public final class EventManager implements EventPublisher {
                 EventRuntimeMetrics.reactionSubmitted();
             } catch (RejectedExecutionException rejectedExecutionException) {
                 markReactionDroppedBeforeExecution(task);
-                LOGGER.warn("Dropping event reaction because the reaction executor rejected the submission. "
-                        + "eventType={}, subscriptionType={}",
-                            event.getName(), subscription.eventType().getName(), rejectedExecutionException);
+                EventRuntimeLogSignals.reactionRejected(event.getName(), subscription.eventType().getName(),
+                                                        rejectedExecutionException);
             } catch (RuntimeException runtimeException) {
                 markReactionDroppedBeforeExecution(task);
-                LOGGER.error("Dropping event reaction because submitting it to the reaction executor failed unexpectedly. "
-                        + "eventType={}, subscriptionType={}",
-                             event.getName(), subscription.eventType().getName(), runtimeException);
+                EventRuntimeLogSignals.reactionSubmissionFailed(event.getName(), subscription.eventType().getName(),
+                                                                runtimeException);
             }
         }
     }
@@ -266,8 +260,7 @@ public final class EventManager implements EventPublisher {
         } catch (Exception exception) {
             failedReactions.incrementAndGet();
             EventRuntimeMetrics.reactionFailed();
-            LOGGER.error("Asynchronous event reaction failed. eventType={}, subscriptionType={}", event.getName(),
-                         subscription.eventType().getName(), exception);
+            EventRuntimeLogSignals.reactionFailed(event.getName(), subscription.eventType().getName(), exception);
         }
     }
 
@@ -278,8 +271,7 @@ public final class EventManager implements EventPublisher {
         } catch (RuntimeException exception) {
             failedReactions.incrementAndGet();
             EventRuntimeMetrics.reactionFailed();
-            LOGGER.error("Asynchronous event predicate failed. eventType={}, subscriptionType={}", event.getName(),
-                         subscription.eventType().getName(), exception);
+            EventRuntimeLogSignals.predicateFailed(event.getName(), subscription.eventType().getName(), exception);
             return;
         }
         if (accepted) {

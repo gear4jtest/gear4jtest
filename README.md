@@ -162,6 +162,7 @@ deterministic output, but transient generated files should not be edited directl
 - `gear4jtest-xml/README.md`: XML translation model.
 - `gear4jtest-gradle-xml2java/README.md`: Gradle XML generation plugin.
 - `docs/architecture/`: durable architecture notes.
+- `docs/architecture/logging.md`: runtime severity, flood-control and alerting contract.
 - `docs/audit/closure-matrix-2026-07-13.md`: status and residual backlog for all 47 audit findings.
 - `docs/contributing/code-style.md`: style, formatter and Checkstyle rules.
 - `docs/decisions/`: decision records and future-direction notes, including source-level API boundary policy.

@@ -36,4 +36,5 @@ Do not describe future-direction ideas as current behavior.
 - [Migrate a pre-1.0 application to the Gear4J 1.0 surface](migration/to-1.0.md)
 
 - [API, SPI and internal contracts](architecture/api-contracts.md)
+- [Runtime logging strategy](architecture/logging.md)
 - [Runtime guarantees and non-guarantees](runtime/runtime-guarantees.md)

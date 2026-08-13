@@ -76,6 +76,32 @@ class EventManagerFailureTest {
     }
 
     @Test
+    void dispatch_shouldCountEveryRejectedReactionWhenRepeatedLogsAreSuppressed() throws Exception {
+        // Given
+        ExecutorService executor = mock(ExecutorService.class);
+        doThrow(new RejectedExecutionException("saturated")).when(executor).execute(any(Runnable.class));
+        EventManager manager = eventManager(executor);
+        int eventCount = 20;
+
+        try {
+            // When
+            for (int index = 0; index < eventCount; index++) {
+                manager.publish(new Event("pipe", UUID.randomUUID(), "REJECTED_" + index));
+            }
+
+            // Then
+            awaitStats(manager, stats -> stats.droppedReactions() == eventCount);
+            EventRuntimeStats stats = manager.snapshotStats();
+            assertThat(stats.publishedEvents()).isEqualTo(eventCount);
+            assertThat(stats.dispatchedEvents()).isEqualTo(eventCount);
+            assertThat(stats.droppedReactions()).isEqualTo(eventCount);
+            assertThat(stats.pendingReactions()).isZero();
+        } finally {
+            manager.shutdown();
+        }
+    }
+
+    @Test
     void dispatch_shouldCountUnexpectedSubmissionFailuresAsDropped() throws Exception {
         ExecutorService executor = mock(ExecutorService.class);
         doThrow(new IllegalStateException("executor broken")).when(executor).execute(any(Runnable.class));

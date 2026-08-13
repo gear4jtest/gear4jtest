@@ -45,8 +45,8 @@ Reactions may be lost if:
 - shutdown cancels pending work;
 - the reaction itself fails.
 
-Dropped events, dropped reactions and failed reactions should be observable through runtime stats and logs, but those
-stats are not durable audit records.
+Dropped events, dropped reactions and failed reactions are counted exhaustively in runtime statistics. Representative
+logs are rate-limited under sustained repetition; neither signal is a durable audit record.
 
 ## Future direction
 

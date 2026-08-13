@@ -31,7 +31,8 @@ The event path is:
    at the tail when more events remain;
 5. matching subscriptions are submitted to the run's configured `ExecutorService`;
 6. accepted reactions run asynchronously;
-7. events rejected by run-local queue accounting and reactions rejected by the executor are logged and counted as dropped.
+7. events rejected by run-local queue accounting and reactions rejected by the executor are counted as dropped and
+   produce rate-limited representative logs.
 
 There is no durable hand-off, replay log or persistent acknowledgement.
 
@@ -107,6 +108,9 @@ Use these counters for observability. Do not treat them as durable audit records
 events/reactions, shared-dispatcher rejections, current queued/in-flight work and queue-to-dispatch latency. The Spring
 Boot starter registers these process gauges automatically when Micrometer is enabled; they are operational signals, not
 durable audit records.
+
+Repeated rejection and failure logs are bounded independently from these counters. See the
+[runtime logging strategy](logging.md); alerting must use the exhaustive metrics rather than log-line counts.
 
 ## Durable eventing
 

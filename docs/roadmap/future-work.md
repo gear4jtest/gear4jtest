@@ -27,7 +27,7 @@ Status values are `DELIVERED`, `REVIEW`, `BACKLOG` and `DEFERRED`.
 
 | Work item | Status | Target version | ADR / reference | Last verified |
 | --- | --- | --- | --- | --- |
-| Logging strategy and signal-to-noise ratio | `REVIEW` | 1.0 review | — | 2026-08-12 |
+| Logging strategy and signal-to-noise ratio | `DELIVERED` | 1.0 | [Logging](../architecture/logging.md), [ADR 0041](../decisions/0041-repeated-runtime-logs-require-an-exhaustive-signal.md) | 2026-08-13 |
 | Runtime edge-case test coverage | `REVIEW` | Continuous | [Runtime guarantees](../runtime/runtime-guarantees.md) | 2026-08-12 |
 | Extension ordering, failure impact and lifecycle contracts | `REVIEW` | 1.0 review | [Extensions](../architecture/extensions.md) | 2026-08-12 |
 | Generic typing around station registries and generated code | `BACKLOG` | Unscheduled | — | 2026-08-12 |
