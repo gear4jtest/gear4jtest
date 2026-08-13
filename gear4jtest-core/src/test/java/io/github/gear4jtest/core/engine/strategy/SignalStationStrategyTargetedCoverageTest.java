@@ -7,7 +7,6 @@ import io.github.gear4jtest.core.api.behavior.SignalType;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.SignalStation;
 import io.github.gear4jtest.core.api.station.StationKind;
 import io.github.gear4jtest.core.api.station.WorkStation;
@@ -25,8 +24,8 @@ class SignalStationStrategyTargetedCoverageTest {
 
     @Test
     void supports_shouldMatchSignalStationsOnly() {
-        assertThat(strategy.supports(stationType(SignalStation.class))).isTrue();
-        assertThat(strategy.supports(stationType(WorkStation.class))).isFalse();
+        assertThat(strategy.supports(SignalStation.class)).isTrue();
+        assertThat(strategy.supports(WorkStation.class)).isFalse();
     }
 
     @Test
@@ -54,11 +53,6 @@ class SignalStationStrategyTargetedCoverageTest {
         strategy.doExecute(signal(SignalType.FATAL, false), "input", null, context);
 
         assertThat(context.getRecord().getStatus()).isEqualTo(StationLogStatus.RUNNING);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Class<? extends AbstractStation<?, ?>> stationType(Class<?> type) {
-        return (Class<? extends AbstractStation<?, ?>>) type;
     }
 
     private static SignalStation<String> signal(SignalType signalType, boolean eligible) {

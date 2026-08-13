@@ -22,7 +22,6 @@ final class AssemblyLineExecutionResultMapper {
     private AssemblyLineExecutionResultMapper() {
     }
 
-    @SuppressWarnings("unchecked")
     static <IN, OUT> ExecutionResult<OUT> executeRootStation(AssemblyLine<IN, OUT> pipeline,
                                                              RunRequest<IN> request,
                                                              StationRunner rootRunner,
@@ -33,23 +32,24 @@ final class AssemblyLineExecutionResultMapper {
                                                                                     pipeline.getRootStation(),
                                                                                     rootContext));
         Object result = rootLog.getOutput();
+        OUT typedResult = outputAs(result);
 
         ExecutionStatus rootStatus = rootLog.getStatus().toExecutionStatus();
         return switch (rootStatus) {
             case SUCCEEDED -> {
                 execution.setStatus(rootStatus);
                 execution.setResult(result);
-                yield (ExecutionResult<OUT>) ExecutionResult.success(result, execution);
+                yield ExecutionResult.success(typedResult, execution);
             }
             case SKIPPED -> {
                 execution.setStatus(rootStatus);
                 execution.setResult(result);
-                yield (ExecutionResult<OUT>) ExecutionResult.skipped(result, execution);
+                yield ExecutionResult.skipped(typedResult, execution);
             }
             case STOPPED -> {
                 execution.setStatus(rootStatus);
                 execution.setResult(result);
-                yield (ExecutionResult<OUT>) ExecutionResult.stopped(result, execution);
+                yield ExecutionResult.stopped(typedResult, execution);
             }
             case CANCELLED -> {
                 Exception cancellation = rootLog.getErrorMessage() != null
@@ -59,14 +59,14 @@ final class AssemblyLineExecutionResultMapper {
                 if (cancellation != null) {
                     execution.setError(cancellation);
                 }
-                yield (ExecutionResult<OUT>) ExecutionResult.cancelled(result, execution, cancellation);
+                yield ExecutionResult.cancelled(typedResult, execution, cancellation);
             }
             case FAILED -> {
                 Exception failure = new RuntimeException(
                         rootLog.getErrorMessage() != null ? rootLog.getErrorMessage() : "AssemblyLine failed");
                 execution.setStatus(rootStatus);
                 execution.setError(failure);
-                yield (ExecutionResult<OUT>) ExecutionResult.failure(failure, execution);
+                yield ExecutionResult.failure(failure, execution);
             }
             case RUNNING -> {
                 Exception failure = new IllegalStateException("Root station returned non-terminal RUNNING status");
@@ -75,11 +75,16 @@ final class AssemblyLineExecutionResultMapper {
                              pipeline.getId());
                 execution.setStatus(ExecutionStatus.FAILED);
                 execution.setError(failure);
-                yield (ExecutionResult<OUT>) ExecutionResult.failure(failure, execution);
+                yield ExecutionResult.failure(failure, execution);
             }
             case PENDING, INITIALIZING, PAUSED -> throw new IllegalStateException(
                     "Root station returned unsupported active status " + rootStatus);
         };
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <OUT> OUT outputAs(Object output) {
+        return (OUT) output;
     }
 
     static void finalizeRunFromResult(ExecutionContext context,

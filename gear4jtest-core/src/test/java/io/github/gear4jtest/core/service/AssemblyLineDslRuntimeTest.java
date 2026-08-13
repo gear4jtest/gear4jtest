@@ -63,16 +63,8 @@ class AssemblyLineDslRuntimeTest {
         ExecutionResult<List<List<String>>> result = engine.execute(assemblyLine, request);
 
         // Then
-        assertThat(result)
-                .isNotNull()
-                .extracting(ExecutionResult::getResult)
-                .isInstanceOf(List.class)
-                .asList()
-                .hasSize(1)
-                .first()
-                .isInstanceOf(List.class)
-                .asList()
-                .contains("");
+        assertThat(result).isNotNull();
+        assertThat(result.getResult()).containsExactly(List.of(""));
     }
 
     @Test
@@ -109,8 +101,8 @@ class AssemblyLineDslRuntimeTest {
         ExecutionResult<List<List<String>>> result = engine.execute(assemblyLine, request);
 
         // Then
-        assertThat(result).isNotNull().extracting(ExecutionResult::getResult).isInstanceOf(List.class).asList()
-                .hasSize(1).first().isInstanceOf(List.class).asList().contains("");
+        assertThat(result).isNotNull();
+        assertThat(result.getResult()).containsExactly(List.of(""));
 
         CoreRuntimeTestSupport.assertParameterEventsPublished(testEventListener);
     }

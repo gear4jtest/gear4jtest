@@ -19,7 +19,7 @@ import io.github.gear4jtest.core.api.context.StationParameter;
 import io.github.gear4jtest.core.api.context.StationParameterModel;
 
 public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
-    private final Class<Operator<IN, OUT>> type;
+    private final Class<? extends Operator<IN, OUT>> type;
     private final List<StationParameterModel<?, ?>> parameters;
     /**
      * Whether the operator instance is reused for the whole assembly line run.
@@ -27,7 +27,7 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
     private final boolean reuseOperatorInstanceWithinRun;
 
     WorkStation(String id,
-                Class<Operator<IN, OUT>> type,
+                Class<? extends Operator<IN, OUT>> type,
                 List<StationParameterModel<?, ?>> parameters,
                 List<Processor> processors,
                 List<BaseError<IN>> onErrors,
@@ -46,7 +46,7 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
         return parameters;
     }
 
-    public Class<Operator<IN, OUT>> getType() {
+    public Class<? extends Operator<IN, OUT>> getType() {
         return type;
     }
 
@@ -202,10 +202,10 @@ public class WorkStation<IN, OUT> extends AbstractStation<IN, OUT> {
             return this;
         }
 
-        @SuppressWarnings({ "unchecked", "rawtypes" })
+        @SuppressWarnings("unchecked")
         public WorkStation<IN, OUT> build() {
             return new WorkStation<>(id,
-                    (Class) type,
+                    (Class<? extends Operator<IN, OUT>>) (Class<?>) type,
                     parameters,
                     processors,
                     onErrors,

@@ -4,7 +4,6 @@ import io.github.gear4jtest.core.api.config.FlowConfig;
 import io.github.gear4jtest.core.api.config.FlowDecider;
 import io.github.gear4jtest.core.api.config.FlowDecision;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.api.station.UnaryIfElseContainerStation;
 import io.github.gear4jtest.core.engine.context.EngineStationContexts;
@@ -21,7 +20,7 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
     }
 
     @Override
-    public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
+    public boolean supports(Class<?> type) {
         return UnaryIfElseContainerStation.class.isAssignableFrom(type);
     }
 

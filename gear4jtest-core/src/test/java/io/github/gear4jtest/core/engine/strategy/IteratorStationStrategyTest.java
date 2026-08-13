@@ -1,7 +1,6 @@
 package io.github.gear4jtest.core.engine.strategy;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -53,7 +52,7 @@ class IteratorStationStrategyTest {
         // Then
         assertThat(seenItemIds).containsExactly("iterator#item-0", "iterator#item-1");
         assertThat(globalContext.getCurrentItemId()).isNull();
-        assertThat((Collection<String>) result).containsExactly("a-out", "b-out");
+        assertThat(result).isEqualTo(List.of("a-out", "b-out"));
     }
 
     private record TestStationExecutionContext(ExecutionContext globalContext,

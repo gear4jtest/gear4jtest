@@ -212,10 +212,10 @@ class AssemblyLineCacheWithWaitProcessorIT {
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public <T> TaskHistoryResult<T> get(String key, Class<T> type) {
             totalCalls.incrementAndGet();
-            return (TaskHistoryResult<T>) values.get(key);
+            TaskHistoryResult<?> stored = values.get(key);
+            return stored == null ? null : new TaskHistoryResult<>(type.cast(stored.value()), stored.expiresAt());
         }
 
         int totalCalls() {
@@ -233,13 +233,12 @@ class AssemblyLineCacheWithWaitProcessorIT {
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public <T> T getResource(Class<T> clazz) {
             if (clazz.equals(TriggerSideComputeOperator.class)) {
-                return (T) triggerOperator;
+                return clazz.cast(triggerOperator);
             }
             if (clazz.equals(JoinUsingContextOperator.class)) {
-                return (T) joinOperator;
+                return clazz.cast(joinOperator);
             }
             throw new IllegalArgumentException("Unsupported resource: " + clazz);
         }

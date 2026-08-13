@@ -68,13 +68,12 @@ class ManagedArtifactSpoolTest {
 
         try {
             // When / Then
-            assertThatThrownBy(() -> {
-                try (var output = spool.openOutput(file)) {
-                    output.write(new byte[4]);
-                }
-            }).isInstanceOf(IOException.class)
-                    .hasMessageContaining("quota exceeded")
-                    .hasMessageNotContaining("fixture-secret");
+            try (var output = spool.openOutput(file)) {
+                assertThatThrownBy(() -> output.write(new byte[4]))
+                        .isInstanceOf(IOException.class)
+                        .hasMessageContaining("quota exceeded")
+                        .hasMessageNotContaining("fixture-secret");
+            }
             assertThat(Files.size(file)).isZero();
             assertThat(spool.snapshotStats().quotaRejections()).isEqualTo(1L);
         } finally {
@@ -128,12 +127,11 @@ class ManagedArtifactSpoolTest {
         assertThat(abandonedFile).exists();
         Path rejectedFile = immediateRestart.createTempFile("quota-after-restart-");
         try {
-            assertThatThrownBy(() -> {
-                try (var output = immediateRestart.openOutput(rejectedFile)) {
-                    output.write(1);
-                }
-            }).isInstanceOf(IOException.class)
-                    .hasMessageContaining("quota exceeded");
+            try (var output = immediateRestart.openOutput(rejectedFile)) {
+                assertThatThrownBy(() -> output.write(1))
+                        .isInstanceOf(IOException.class)
+                        .hasMessageContaining("quota exceeded");
+            }
         } finally {
             immediateRestart.delete(rejectedFile);
         }

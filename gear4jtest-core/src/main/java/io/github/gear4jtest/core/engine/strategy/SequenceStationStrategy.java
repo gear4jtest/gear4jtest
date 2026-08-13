@@ -16,7 +16,7 @@ import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class SequenceStationStrategy extends AbstractStationStrategy<SequenceStation<?, ?>> {
     @Override
-    public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
+    public boolean supports(Class<?> type) {
         return SequenceStation.class.isAssignableFrom(type);
     }
 

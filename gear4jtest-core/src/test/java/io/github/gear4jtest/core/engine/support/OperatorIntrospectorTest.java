@@ -37,7 +37,6 @@ class OperatorIntrospectorTest {
     void isStateful_shouldUseExplicitStatelessFromConcurrencyAwareTransformerEvenIfParameterPresent() {
         // on triche : on met un champ Parameter malgré tout
         class ExplicitStatelessWithParameter extends ExplicitStatelessTransformer {
-            @SuppressWarnings("unused")
             private final StationParameter<String> param = StationParameter.<String>newBuilder().build();
         }
 
@@ -69,7 +68,6 @@ class OperatorIntrospectorTest {
      * Operators with a Parameter field should be detected as stateful.
      */
     static class StatefulByParameter {
-        @SuppressWarnings("unused")
         private final StationParameter<String> param = StationParameter.<String>newBuilder().build();
     }
 
@@ -97,7 +95,6 @@ class OperatorIntrospectorTest {
      * AUTO statefulness with a Parameter field should be detected as stateful.
      */
     static class AutoWithParameter implements ConcurrencyAwareTransformer {
-        @SuppressWarnings("unused")
         private final StationParameter<Integer> param = StationParameter.<Integer>newBuilder().build();
     }
 }

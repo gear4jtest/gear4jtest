@@ -59,7 +59,7 @@ tasks.named('javadoc') {
 tasks.register('javadocJar', Jar) {
     dependsOn publicDslGroovydoc
     archiveClassifier = 'javadoc'
-    from(publicDslGroovydoc.flatMap { it.destinationDirectory })
+    from(publicDslGroovydoc)
     inputs.property('publicDslDocumentationEntry', publicDslDocumentationEntry)
 
     doLast {

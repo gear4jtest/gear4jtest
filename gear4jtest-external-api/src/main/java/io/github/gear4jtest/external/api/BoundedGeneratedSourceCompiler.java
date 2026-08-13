@@ -479,5 +479,10 @@ final class BoundedGeneratedSourceCompiler implements GeneratedSourceCompiler, A
         public int hashCode() {
             return 31 * className.hashCode() + Arrays.hashCode(sourceHash);
         }
+
+        @Override
+        public String toString() {
+            return "CompilationKey[className=" + className + ", sourceHash=" + Arrays.toString(sourceHash) + ']';
+        }
     }
 }

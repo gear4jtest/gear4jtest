@@ -40,7 +40,6 @@ public record AssemblyRunRecord(UUID id,
         return from(trace, redactor, PayloadCloners.immutableAware());
     }
 
-    @SuppressWarnings("unchecked")
     public static AssemblyRunRecord from(RunTrace trace,
                                          SensitiveDataRedactor redactor,
                                          PayloadCloner payloadCloner) {
@@ -52,7 +51,7 @@ public record AssemblyRunRecord(UUID id,
                 : Map.copyOf(new LinkedHashMap<>(trace.getContext()));
         Object redactedContext = effective.redact(RedactionTarget.RUN_CONTEXT, context);
         Map<String, Object> storedContext = redactedContext instanceof Map<?, ?> map
-                ? PersistenceSnapshots.capture((Map<String, Object>) map, payloadCloner) : Map.of();
+                ? PersistenceSnapshots.captureContext(map, payloadCloner) : Map.of();
         return new AssemblyRunRecord(trace.getId(), trace.getAssemblyLineId(), storedContext,
                 PersistenceSnapshots.capture(effective.redact(RedactionTarget.RUN_INPUT, trace.getInputParams()),
                                              payloadCloner),

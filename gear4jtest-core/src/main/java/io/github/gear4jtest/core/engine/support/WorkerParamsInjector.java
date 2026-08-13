@@ -49,7 +49,7 @@ public class WorkerParamsInjector implements Processor {
         }
 
         ResolvedParameters cache = operationExecution.getResolvedParameters();
-        ResolvedParameters.Resolution<T> resolution = cache.resolve(rawParam, ctx);
+        ResolvedParameters.Resolution<T> resolution = cache.resolve(param, ctx);
         T value = resolution.value();
         parameterValue.injectValue(value);
 

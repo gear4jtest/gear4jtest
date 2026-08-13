@@ -101,6 +101,7 @@ final class OperationRecordBuffer {
         if (stationLogRecords == null || stationLogRecords.isEmpty()) {
             return false;
         }
+        List<StationLogRecord> records = List.copyOf(stationLogRecords);
         assertHealthy();
         flushLock.lock();
         try {
@@ -108,20 +109,20 @@ final class OperationRecordBuffer {
             if (closed.get()) {
                 throw new ExecutionPersistenceException(
                         "Cannot append station logs to a closed run buffer. runId=" + runId
-                                + ", stationLogCount=" + stationLogRecords.size());
+                                + ", stationLogCount=" + records.size());
             }
-            if (queue.remainingCapacity() < stationLogRecords.size()) {
+            if (queue.remainingCapacity() < records.size()) {
                 counters.recordRejectedAppend();
                 throw new ExecutionPersistenceException("Station log persistence buffer is full. runId=" + runId
                         + ", maxPendingLogsPerRun=" + capacity
-                        + ", attemptedAppendCount=" + stationLogRecords.size());
+                        + ", attemptedAppendCount=" + records.size());
             }
-            for (StationLogRecord stationLogRecord : stationLogRecords) {
-                queue.offer(stationLogRecord);
+            if (!queue.addAll(records)) {
+                throw new IllegalStateException("Non-empty station log batch did not modify the persistence queue");
             }
-            retainedCount.addAndGet(stationLogRecords.size());
+            retainedCount.addAndGet(records.size());
             markRetained();
-            return pendingCount.addAndGet(stationLogRecords.size()) >= flushThreshold;
+            return pendingCount.addAndGet(records.size()) >= flushThreshold;
         } finally {
             flushLock.unlock();
         }

@@ -221,9 +221,8 @@ public abstract class AbstractStationLogState<T extends AbstractStationLogState<
         this.subOperations = new ArrayList<>(subOperations == null ? List.of() : subOperations);
     }
 
-    @SuppressWarnings("unchecked")
-    public <R> R getOutput() {
-        return (R) output;
+    public Object getOutput() {
+        return output;
     }
 
     public void setOutput(Object output) {

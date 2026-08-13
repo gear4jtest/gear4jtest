@@ -89,7 +89,6 @@ public class SimpleDependencyInjector implements DependencyInjector {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> Optional<T> getBean(String name, Class<T> type) {
         requireNonNull(name, "name must not be null");
         requireNonNull(type, "type must not be null");
@@ -97,10 +96,9 @@ public class SimpleDependencyInjector implements DependencyInjector {
         if (registeredBean == null || !type.isInstance(registeredBean.bean())) {
             return Optional.empty();
         }
-        return Optional.of((T) registeredBean.bean());
+        return Optional.of(type.cast(registeredBean.bean()));
     }
 
-    @SuppressWarnings("unchecked")
     private <T> InjectionCandidate findCandidate(String name, Class<T> type, ExecutionMode mode) {
         RegisteredBean registeredBean = beans.get(name);
         if (registeredBean == null) {
@@ -112,7 +110,7 @@ public class SimpleDependencyInjector implements DependencyInjector {
         if (!type.isInstance(registeredBean.bean())) {
             return InjectionCandidate.notFound();
         }
-        return InjectionCandidate.found(Optional.of((T) registeredBean.bean()));
+        return InjectionCandidate.found(Optional.of(type.cast(registeredBean.bean())));
     }
 
     private record RegisteredBean(Object bean, EnumSet<ExecutionMode> allowedModes) {

@@ -308,7 +308,6 @@ class XmlOperationChainTranslatorTest {
     }
 
     @Test
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     void should_translate_compile_instantiate_inject_and_execute_generated_pipeline() throws Exception {
         // Given
         byte[] xml = resource("/samples/assembly-line-iterator.xml");
@@ -321,17 +320,32 @@ class XmlOperationChainTranslatorTest {
 
         // When
         Class<?> generatedClass = generatedClassLoader.loadClass(translated.className());
-        var generated = (GeneratedAssemblyLine) generatedClass.getDeclaredConstructor().newInstance();
+        Object generatedInstance = generatedClass.getDeclaredConstructor().newInstance();
+        assertThat(generatedInstance).isInstanceOf(GeneratedAssemblyLine.class);
+        GeneratedAssemblyLine<?, ?> generated = (GeneratedAssemblyLine<?, ?>) generatedInstance;
         var injector = new SimpleDependencyInjector();
         injector.registerBean("modelsService", new ModelsService(), ExecutionMode.TEST);
         injector.injectDependencies(generated, ExecutionMode.TEST);
-        AssemblyLine pipeline = generated.getAssemblyLineDefinition();
-        ExecutionResult<?> result = engine().execute(pipeline, RunRequest.builder().input("b")
-                .context(new HashMap<>(Map.of("a", 45612))).resourceFactory(reflectiveResourceFactory()).build());
+        AssemblyLine<?, ?> pipeline = generated.getAssemblyLineDefinition();
+        ExecutionResult<?> result = executeGeneratedPipeline(pipeline, "b");
 
         // Then
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.getResult()).isEqualTo(List.of(List.of("1")));
+    }
+
+    private ExecutionResult<?> executeGeneratedPipeline(AssemblyLine<?, ?> pipeline, Object input) {
+        return executeGeneratedPipelineTyped(pipeline, input);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <IN, OUT> ExecutionResult<OUT> executeGeneratedPipelineTyped(AssemblyLine<IN, OUT> pipeline,
+                                                                         Object input) {
+        RunRequest<IN> request = RunRequest.<IN>builder().input((IN) input)
+                .context(new HashMap<>(Map.of("a", 45612)))
+                .resourceFactory(reflectiveResourceFactory())
+                .build();
+        return engine().execute(pipeline, request);
     }
 
     private static final class ReflectiveResourceFactory implements ResourceFactory {

@@ -315,10 +315,10 @@ class AssemblyLineCacheWithSideComputeIntegrationTest {
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public <T> TaskHistoryResult<T> get(String key, Class<T> type) {
             totalCalls.incrementAndGet();
-            return (TaskHistoryResult<T>) values.get(key);
+            TaskHistoryResult<?> stored = values.get(key);
+            return stored == null ? null : new TaskHistoryResult<>(type.cast(stored.value()), stored.expiresAt());
         }
 
         public int totalCalls() {

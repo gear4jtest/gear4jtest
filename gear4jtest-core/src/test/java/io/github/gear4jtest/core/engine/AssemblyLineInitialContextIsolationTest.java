@@ -21,7 +21,7 @@ class AssemblyLineInitialContextIsolationTest {
     @Test
     void independentRuns_shouldAllowDefensiveCopiesOfMutableContextValues() {
         // Given
-        List<String> pipelineDefault = new ArrayList<>(List.of("default"));
+        MutableItems pipelineDefault = new MutableItems(List.of("default"));
         AssemblyLine<String, List<String>> pipeline = AssemblyLines.<String>createAssemblyLine("context-isolation")
                 .putContext("items", pipelineDefault)
                 .then(processingOperation("mutate", MutateItemsContext.class).build())
@@ -31,8 +31,8 @@ class AssemblyLineInitialContextIsolationTest {
                 .extensionResolver(new RuntimeExtensionResolver(null))
                 .executionContextRegistry(new ExecutionContextRegistry())
                 .initialRunContextPolicy(ContextPropagationPolicy.copyValues((key, value) -> {
-                    if (value instanceof List<?> list) {
-                        return new ArrayList<>(list);
+                    if (value instanceof MutableItems items) {
+                        return items.copy();
                     }
                     return value;
                 }))
@@ -48,7 +48,7 @@ class AssemblyLineInitialContextIsolationTest {
         assertThat(first.getResult()).containsExactly("default", "run");
         assertThat(second.getResult()).containsExactly("default", "run");
         assertThat(second.getResult()).isNotSameAs(first.getResult());
-        assertThat(pipelineDefault).as("pipeline defaults must not be shared with isolated runs")
+        assertThat(pipelineDefault.values()).as("pipeline defaults must not be shared with isolated runs")
                 .containsExactly("default");
     }
 
@@ -75,10 +75,29 @@ class AssemblyLineInitialContextIsolationTest {
     public static final class MutateItemsContext implements Operator<String, List<String>> {
         @Override
         public List<String> transform(String input, StationExecutionContext operationExecution) {
-            @SuppressWarnings("unchecked")
-            List<String> items = operationExecution.getGlobalContext().get("items", List.class);
+            MutableItems items = operationExecution.getGlobalContext().get("items", MutableItems.class);
             items.add("run");
-            return items;
+            return items.values();
+        }
+    }
+
+    private static final class MutableItems {
+        private final List<String> values;
+
+        private MutableItems(List<String> values) {
+            this.values = new ArrayList<>(values);
+        }
+
+        private void add(String value) {
+            values.add(value);
+        }
+
+        private List<String> values() {
+            return values;
+        }
+
+        private MutableItems copy() {
+            return new MutableItems(values);
         }
     }
 }

@@ -61,7 +61,7 @@ class AssemblyLineCallStationStrategyStatusMappingTest {
         // Then
         assertThat(output).isEqualTo("child-output");
         assertThat(context.getRecord().getStatus()).isEqualTo(StationLogStatus.SKIPPED);
-        assertThat(context.getRecord().<String>getOutput()).isEqualTo("child-output");
+        assertThat(context.getRecord().getOutput()).isEqualTo("child-output");
         assertThat(context.getRecord().getContext()).containsEntry("assemblyLine.call.mode", "INLINE")
                 .containsEntry("assemblyLine.call.declaredReference", "child:1")
                 .containsEntry("assemblyLine.call.resolvedReference", "child:1")

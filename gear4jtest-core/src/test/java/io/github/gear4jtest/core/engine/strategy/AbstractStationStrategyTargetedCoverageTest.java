@@ -51,7 +51,7 @@ class AbstractStationStrategyTargetedCoverageTest {
         StationLogTrace result = strategy.run(station, "input", context, noopRunner());
 
         assertThat(result.getStatus()).isEqualTo(StationLogStatus.SKIPPED);
-        assertThat(result.<String>getOutput()).isEqualTo("input-fallback");
+        assertThat(result.getOutput()).isEqualTo("input-fallback");
         assertThat(result.getContext()).containsEntry("skip.reason", "not today");
         assertThat(strategy.executed).isFalse();
     }
@@ -90,7 +90,7 @@ class AbstractStationStrategyTargetedCoverageTest {
         StationLogTrace result = new TestStrategy().run(station, "input", context, noopRunner());
 
         assertThat(result.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
-        assertThat(result.<String>getOutput()).isEqualTo("input-out");
+        assertThat(result.getOutput()).isEqualTo("input-out");
         assertThat(result.getErrorHandlerMessages()).contains("before ignored", "after ignored");
     }
 
@@ -129,7 +129,7 @@ class AbstractStationStrategyTargetedCoverageTest {
         StationLogTrace result = strategy.run(station, "input", context, noopRunner());
 
         assertThat(result.getStatus()).isEqualTo(StationLogStatus.STOPPED);
-        assertThat(result.<String>getOutput()).isEqualTo("input-out");
+        assertThat(result.getOutput()).isEqualTo("input-out");
         assertThat(result.getEndedAt()).isNotNull();
     }
 
@@ -143,7 +143,7 @@ class AbstractStationStrategyTargetedCoverageTest {
         StationLogTrace result = strategy.run(station, "input", context, noopRunner());
 
         assertThat(result.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
-        assertThat(result.<String>getOutput()).isEqualTo("input-out");
+        assertThat(result.getOutput()).isEqualTo("input-out");
         assertThat(result.getErrorHandlerMessages()).contains("release failed");
     }
 
@@ -186,7 +186,7 @@ class AbstractStationStrategyTargetedCoverageTest {
         private java.util.function.Consumer<List<Throwable>> releaseObserver;
 
         @Override
-        public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
+        public boolean supports(Class<?> type) {
             return TestStation.class.isAssignableFrom(type);
         }
 

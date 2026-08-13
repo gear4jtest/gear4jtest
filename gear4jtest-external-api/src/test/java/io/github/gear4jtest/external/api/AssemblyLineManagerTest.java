@@ -529,13 +529,13 @@ class AssemblyLineManagerTest {
         AssemblyLineManager manager = manager();
         OperationChainObject runObject = object("line", "1.0.0", ExecutionMode.RUN, "b".repeat(64), 42L);
         String loaderId = AssemblyLineIdentifiers.toInternalLoaderId(runObject);
-        GeneratedAssemblyLine generated = mock(GeneratedAssemblyLine.class);
+        GeneratedAssemblyLine<?, ?> generated = mock(GeneratedAssemblyLine.class);
         when(objectRepository.find("line", "1.0.0", ExecutionMode.RUN)).thenReturn(Optional.of(runObject));
         when(classLoaderRegistry.get(loaderId)).thenReturn(getClass().getClassLoader());
-        when(classLoaderRegistry.getBoundAssemblyLine(loaderId)).thenReturn(generated);
+        when(classLoaderRegistry.getBoundAssemblyLine(loaderId)).thenAnswer(ignored -> generated);
 
         // When
-        GeneratedAssemblyLine result = manager.getOperationChain("line", "1.0.0", ExecutionMode.RUN);
+        GeneratedAssemblyLine<?, ?> result = manager.getOperationChain("line", "1.0.0", ExecutionMode.RUN);
 
         // Then
         assertThat(result).as("cached generated assembly line is returned directly").isSameAs(generated);
@@ -548,14 +548,14 @@ class AssemblyLineManagerTest {
         AssemblyLineManager manager = manager();
         OperationChainObject latestRun = object("line", "2.0.0", ExecutionMode.RUN, "c".repeat(64), 42L);
         String loaderId = AssemblyLineIdentifiers.toInternalLoaderId(latestRun);
-        GeneratedAssemblyLine generated = mock(GeneratedAssemblyLine.class);
+        GeneratedAssemblyLine<?, ?> generated = mock(GeneratedAssemblyLine.class);
         when(objectRepository.findLatestRun("line")).thenReturn(Optional.of(latestRun));
         when(classLoaderRegistry.resolveAlias("al/line/RUN/latest")).thenReturn("stale-loader-id");
         when(classLoaderRegistry.get(loaderId)).thenReturn(getClass().getClassLoader());
-        when(classLoaderRegistry.getBoundAssemblyLine(loaderId)).thenReturn(generated);
+        when(classLoaderRegistry.getBoundAssemblyLine(loaderId)).thenAnswer(ignored -> generated);
 
         // When
-        GeneratedAssemblyLine result = manager.getOperationChain("line", ExecutionMode.RUN);
+        GeneratedAssemblyLine<?, ?> result = manager.getOperationChain("line", ExecutionMode.RUN);
 
         // Then
         assertThat(result).as("latest RUN resolves to the current persisted object").isSameAs(generated);

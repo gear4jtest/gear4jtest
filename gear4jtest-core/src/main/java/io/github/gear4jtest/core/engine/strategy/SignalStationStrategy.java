@@ -1,7 +1,6 @@
 package io.github.gear4jtest.core.engine.strategy;
 
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.SignalStation;
 import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
@@ -14,7 +13,7 @@ public class SignalStationStrategy extends AbstractStationStrategy<SignalStation
     }
 
     @Override
-    public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
+    public boolean supports(Class<?> type) {
         return SignalStation.class.isAssignableFrom(type);
     }
 

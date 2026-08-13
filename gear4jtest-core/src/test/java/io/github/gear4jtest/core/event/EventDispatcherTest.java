@@ -58,6 +58,7 @@ class EventDispatcherTest {
         // Then
         assertThat(followingTaskCompleted.await(2, TimeUnit.SECONDS)).isTrue();
         awaitFailedTasks(dispatcher, 1);
+        awaitCompletedTasks(dispatcher, 1);
         assertThat(dispatcher.snapshotStats().failedTasks()).isEqualTo(1);
         assertThat(dispatcher.snapshotStats().completedTasks()).isEqualTo(1);
     }

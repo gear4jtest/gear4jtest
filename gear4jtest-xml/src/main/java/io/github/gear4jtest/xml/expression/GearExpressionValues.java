@@ -36,6 +36,10 @@ public final class GearExpressionValues {
         return new MapSnapshotState().snapshot(value, 0);
     }
 
+    static Map<String, ?> snapshotMaps(Map<String, ?> value) {
+        return new MapSnapshotState().snapshotMap(value, 0);
+    }
+
     static boolean isSafeScalar(Object value) {
         return value instanceof String
                 || value instanceof Boolean
@@ -149,24 +153,37 @@ public final class GearExpressionValues {
             if (!(value instanceof Map<?, ?> map)) {
                 return value;
             }
+            return snapshotMapContents(map, depth);
+        }
+
+        Map<String, Object> snapshotMap(Map<?, ?> value, int depth) {
+            countNode();
+            return snapshotMapContents(value, depth);
+        }
+
+        private Map<String, Object> snapshotMapContents(Map<?, ?> map, int depth) {
             if (depth >= DEFAULT_MAX_DEPTH) {
                 throw new GearExpressionException("GEL map snapshot exceeds max depth " + DEFAULT_MAX_DEPTH);
             }
-            if (activeMaps.put(value, Boolean.TRUE) != null) {
+            if (activeMaps.put(map, Boolean.TRUE) != null) {
                 throw new GearExpressionException("GEL map snapshot contains a cycle");
             }
             try {
-                Map<String, Object> copy = new LinkedHashMap<>();
-                map.forEach((key, child) -> {
-                    if (!(key instanceof String stringKey)) {
-                        throw new GearExpressionException("GEL context map keys must be strings");
-                    }
-                    copy.put(stringKey, snapshot(child, depth + 1));
-                });
-                return new InertValueMap(copy);
+                return snapshotEntries(map, depth);
             } finally {
-                activeMaps.remove(value);
+                activeMaps.remove(map);
             }
+        }
+
+        private Map<String, Object> snapshotEntries(Map<?, ?> map, int depth) {
+            Map<String, Object> copy = new LinkedHashMap<>();
+            map.forEach((key, child) -> {
+                if (!(key instanceof String stringKey)) {
+                    throw new GearExpressionException("GEL context map keys must be strings");
+                }
+                copy.put(stringKey, snapshot(child, depth + 1));
+            });
+            return new InertValueMap(copy);
         }
 
         private void countNode() {

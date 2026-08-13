@@ -4,14 +4,12 @@ import io.github.gear4jtest.core.api.AssemblyLine;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 class GeneratedAssemblyLineTypeTest {
     @Test
     void definition_shouldPreserveInputAndOutputTypes() {
         // Given
-        @SuppressWarnings("unchecked")
-        AssemblyLine<String, Integer> definition = mock(AssemblyLine.class);
+        AssemblyLine<String, Integer> definition = AssemblyLine.<String, Integer>builder("typed").build();
         GeneratedAssemblyLine<String, Integer> generated = () -> definition;
 
         // When

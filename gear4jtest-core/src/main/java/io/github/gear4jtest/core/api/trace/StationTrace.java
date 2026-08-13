@@ -33,7 +33,7 @@ public interface StationTrace {
 
     List<? extends StationTrace> getSubOperations();
 
-    <T> T getOutput();
+    Object getOutput();
 
     List<Throwable> getThrowables();
 

@@ -42,6 +42,7 @@ class GeneratedLoadingMetricsBinderTest {
 
         // Then
         assertThat(meterRegistry.getMeters()).hasSize(50).allSatisfy(meter -> assertThat(meter.measure())
+                .isNotEmpty()
                 .allSatisfy(measurement -> assertThat(measurement.getValue()).isFinite()));
         assertThat(meterRegistry.get("gear4j.generated.loading.cache.requests")
                 .tag("result", "hit").functionCounter().count()).isEqualTo(1.0d);

@@ -56,7 +56,7 @@ class StationErrorPolicyExecutorTest {
 
         // Then
         assertThat(stationLog.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
-        assertThat(stationLog.<String>getOutput()).isEqualTo("already-done");
+        assertThat(stationLog.getOutput()).isEqualTo("already-done");
         assertThat(stationLog.getErrorHandlerMessages()).isEqualTo("late");
     }
 
@@ -100,7 +100,7 @@ class StationErrorPolicyExecutorTest {
         // Then
         assertThat(actions).hasValue(1);
         assertThat(stationLog.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
-        assertThat(stationLog.<String>getOutput()).isEqualTo("input-fallback");
+        assertThat(stationLog.getOutput()).isEqualTo("input-fallback");
     }
 
     @Test
@@ -121,7 +121,7 @@ class StationErrorPolicyExecutorTest {
 
         // Then
         assertThat(stationLog.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
-        assertThat(stationLog.<String>getOutput()).isEqualTo("input-fallback");
+        assertThat(stationLog.getOutput()).isEqualTo("input-fallback");
         assertThat(stationLog.getErrorHandlerMessages()).contains("handler failed");
         assertThat(stationLog.getThrowables()).contains(actionFailure);
     }
@@ -156,7 +156,7 @@ class StationErrorPolicyExecutorTest {
 
         // Then
         assertThat(stationLog.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
-        assertThat(stationLog.<String>getOutput()).isEqualTo("input");
+        assertThat(stationLog.getOutput()).isEqualTo("input");
     }
 
     @Test

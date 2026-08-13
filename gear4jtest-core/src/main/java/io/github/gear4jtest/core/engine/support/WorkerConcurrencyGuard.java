@@ -98,7 +98,11 @@ public final class WorkerConcurrencyGuard {
                             + " while waiting for worker lock");
                 }
                 try {
-                    available.awaitNanos(remainingNanos);
+                    long remainingAfterWait = available.awaitNanos(remainingNanos);
+                    if (remainingAfterWait <= 0L && inUse) {
+                        throw new ConcurrentTransformerUseException("Timed out after " + lockWaitTimeout
+                                + " while waiting for worker lock");
+                    }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new ConcurrentTransformerUseException("Interrupted while waiting for worker lock", e);

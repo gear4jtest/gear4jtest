@@ -63,17 +63,15 @@ public record StationLogRecord(UUID id,
                 log.getErrorMessage(), log.getErrorHandlerMessages(), copiedContext, log.getItemId());
     }
 
-    @SuppressWarnings("unchecked")
     public StationLogRecord redactedWith(SensitiveDataRedactor redactor) {
         return redactedWith(redactor, PayloadCloners.immutableAware());
     }
 
-    @SuppressWarnings("unchecked")
     public StationLogRecord redactedWith(SensitiveDataRedactor redactor, PayloadCloner payloadCloner) {
         SensitiveDataRedactor effective = redactor != null ? redactor : SensitiveDataRedactor.discardSensitiveValues();
         Object redactedContext = effective.redact(RedactionTarget.STATION_CONTEXT, context);
         Map<String, Object> storedContext = redactedContext instanceof Map<?, ?> map
-                ? PersistenceSnapshots.capture((Map<String, Object>) map, payloadCloner) : Map.of();
+                ? PersistenceSnapshots.captureContext(map, payloadCloner) : Map.of();
         return new StationLogRecord(id, assemblyLineExecutionId, operationId, parentOperationId, branchId, status,
                 startedAt, endedAt, stringValue(effective.redact(RedactionTarget.STATION_ERROR_MESSAGE, errorMessage)),
                 stringValue(effective.redact(RedactionTarget.STATION_ERROR_HANDLER_MESSAGES, errorHandlerMessages)),

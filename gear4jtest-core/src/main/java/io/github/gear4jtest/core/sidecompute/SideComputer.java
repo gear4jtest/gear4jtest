@@ -41,7 +41,7 @@ public final class SideComputer<E extends Event, T, R> {
     }
 
     public static <E extends Event, T> Builder<E, T, T> onEvent(Class<E> eventType, String key) {
-        return new Builder<>(eventType, key);
+        return new Builder<>(eventType, key, Function.identity());
     }
 
     public static <T> Builder<StationFinishedEvent, T, T> onStationFinished(String operationId, String key) {
@@ -111,13 +111,13 @@ public final class SideComputer<E extends Event, T, R> {
         private final List<SideComputeHandler<E, T>> handlers = new ArrayList<>();
         private Predicate<E> trigger = __ -> true;
         private Function<E, T> computer;
-        @SuppressWarnings("unchecked")
-        private Function<T, R> mapper = value -> (R) value;
+        private Function<T, R> mapper;
 
-        private Builder(Class<E> eventType, String key) {
+        private Builder(Class<E> eventType, String key, Function<T, R> mapper) {
             this.eventType = Objects.requireNonNull(eventType, "eventType");
             SideComputeKeys.validateUserKey(key);
             this.key = key;
+            this.mapper = Objects.requireNonNull(mapper, "mapper");
         }
 
         public Builder<E, T, R> filter(Predicate<E> predicate) {
@@ -139,11 +139,10 @@ public final class SideComputer<E extends Event, T, R> {
         }
 
         public <NEW_R> Builder<E, T, NEW_R> map(Function<T, NEW_R> mapper) {
-            Builder<E, T, NEW_R> next = new Builder<>(eventType, key);
+            Builder<E, T, NEW_R> next = new Builder<>(eventType, key, mapper);
             next.trigger = this.trigger;
             next.computer = this.computer;
             next.handlers.addAll(this.handlers);
-            next.mapper = Objects.requireNonNull(mapper, "mapper");
             return next;
         }
 

@@ -22,7 +22,6 @@ public class StationErrorPolicyExecutor {
         return fallback.transform((I) input, ctx);
     }
 
-    @SuppressWarnings("unchecked")
     public StationLogTrace apply(AbstractStation<?, ?> station,
                                  Object input,
                                  StationExecutionContext stationCtx,
@@ -35,14 +34,14 @@ public class StationErrorPolicyExecutor {
             return stationLog;
         }
 
-        List<BaseError<Object>> onErrors = (List<BaseError<Object>>) (List<?>) station.getOnErrors();
+        List<? extends BaseError<?>> onErrors = station.getOnErrors();
         if (onErrors == null || onErrors.isEmpty()) {
             stationLog.markFailed(exception);
             return stationLog;
         }
 
-        BaseError<Object> matched = null;
-        for (BaseError<Object> error : onErrors) {
+        BaseError<?> matched = null;
+        for (BaseError<?> error : onErrors) {
             if (error == null) {
                 continue;
             }
@@ -52,8 +51,7 @@ public class StationErrorPolicyExecutor {
                 continue;
             }
 
-            Condition<Object> condition = error.getCondition();
-            if (condition != null && !condition.test(input, stationCtx.getGlobalContext())) {
+            if (!conditionMatches(error, input, stationCtx)) {
                 continue;
             }
 
@@ -87,6 +85,20 @@ public class StationErrorPolicyExecutor {
                 yield stationLog;
             }
         };
+    }
+
+    private static boolean conditionMatches(BaseError<?> error,
+                                            Object input,
+                                            StationExecutionContext stationCtx) {
+        return conditionMatchesTyped(error, input, stationCtx);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> boolean conditionMatchesTyped(BaseError<T> error,
+                                                     Object input,
+                                                     StationExecutionContext stationCtx) {
+        Condition<T> condition = error.getCondition();
+        return condition == null || condition.test((T) input, stationCtx.getGlobalContext());
     }
 
     private StationLogTrace applyIgnorePolicy(AbstractStation<?, ?> station,

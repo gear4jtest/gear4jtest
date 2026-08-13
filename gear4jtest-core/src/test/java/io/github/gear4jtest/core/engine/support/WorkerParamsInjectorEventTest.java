@@ -90,9 +90,8 @@ class WorkerParamsInjectorEventTest {
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public <T> T getResource(Class<T> clazz) {
-            return (T) instance;
+            return clazz.cast(instance);
         }
     }
 }

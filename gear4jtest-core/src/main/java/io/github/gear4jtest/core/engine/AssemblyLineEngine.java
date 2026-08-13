@@ -108,14 +108,20 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
         }
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     private ExecutionResult<?> executeNestedAssemblyLine(AssemblyLineCallStation<?, ?> station,
                                                          AssemblyLine<?, ?> childAssemblyLine,
                                                          Object input,
                                                          StationExecutionContext parentContext) {
-        RunRequest<Object> childRequest = NestedRunRequestFactory.create(input, parentContext, defaultIdGenerator,
-                                                                         nestedRunContextPropagationPolicy);
-        return execute((AssemblyLine) childAssemblyLine, childRequest);
+        return executeNestedAssemblyLine(childAssemblyLine, input, parentContext);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <IN, OUT> ExecutionResult<OUT> executeNestedAssemblyLine(AssemblyLine<IN, OUT> childAssemblyLine,
+                                                                     Object input,
+                                                                     StationExecutionContext parentContext) {
+        RunRequest<IN> childRequest = NestedRunRequestFactory.create((IN) input, parentContext, defaultIdGenerator,
+                                                                     nestedRunContextPropagationPolicy);
+        return execute(childAssemblyLine, childRequest);
     }
 
     private <IN, OUT> ExecutionResult<OUT> executeWithCallStack(AssemblyLine<IN, OUT> pipeline,

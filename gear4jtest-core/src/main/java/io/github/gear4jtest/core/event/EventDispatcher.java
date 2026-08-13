@@ -72,7 +72,7 @@ final class EventDispatcher {
     }
 
     private void dispatchLoop() {
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             Runnable task;
             try {
                 task = queue.take();

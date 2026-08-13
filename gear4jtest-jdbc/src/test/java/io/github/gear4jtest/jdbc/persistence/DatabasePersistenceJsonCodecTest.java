@@ -59,7 +59,8 @@ class DatabasePersistenceJsonCodecTest {
                 .thenThrow(new IllegalStateException("read class failed"));
         org.mockito.Mockito
                 .when(failingMapper.readValue(org.mockito.Mockito.anyString(),
-                                              org.mockito.Mockito.any(TypeReference.class)))
+                                              org.mockito.ArgumentMatchers
+                                                      .<TypeReference<Map<String, Object>>>any()))
                 .thenThrow(new IllegalStateException("read type failed"));
         DatabasePersistenceJsonCodec codec = new DatabasePersistenceJsonCodec(failingMapper);
 

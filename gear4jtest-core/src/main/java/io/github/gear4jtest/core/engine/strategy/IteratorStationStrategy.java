@@ -9,7 +9,6 @@ import io.github.gear4jtest.core.api.config.FlowConfig;
 import io.github.gear4jtest.core.api.config.FlowDecider;
 import io.github.gear4jtest.core.api.config.FlowDecision;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.IteratorStation;
 import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
@@ -24,7 +23,7 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
     }
 
     @Override
-    public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
+    public boolean supports(Class<?> type) {
         return IteratorStation.class.isAssignableFrom(type);
     }
 

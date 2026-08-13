@@ -104,11 +104,12 @@ public final class WorkerConcurrencyManager {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void drainReferenceQueue() {
         Reference<? extends Object> reference;
         while ((reference = referenceQueue.poll()) != null) {
-            guards.remove((WeakIdentityKey) reference);
+            if (reference instanceof WeakIdentityKey key) {
+                guards.remove(key);
+            }
         }
     }
 

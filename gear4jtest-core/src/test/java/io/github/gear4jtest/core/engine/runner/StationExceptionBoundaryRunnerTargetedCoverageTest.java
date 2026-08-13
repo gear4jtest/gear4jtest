@@ -34,7 +34,7 @@ class StationExceptionBoundaryRunnerTargetedCoverageTest {
 
         assertThat(result).isSameAs(context.getRecord());
         assertThat(result.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
-        assertThat(result.<String>getOutput()).isEqualTo("ok");
+        assertThat(result.getOutput()).isEqualTo("ok");
     }
 
     @Test

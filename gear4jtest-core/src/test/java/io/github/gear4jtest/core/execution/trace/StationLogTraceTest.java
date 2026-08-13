@@ -15,7 +15,7 @@ class StationLogTraceTest {
         rec.markSuccess("OUT");
 
         assertThat(rec.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
-        assertThat(rec.<String>getOutput()).isEqualTo("OUT");
+        assertThat(rec.getOutput()).isEqualTo("OUT");
     }
 
     @Test

@@ -130,12 +130,11 @@ class DatabaseArtifactStoreStreamingTest {
         Artifact artifact = store.get(HASH).orElseThrow();
 
         // When / Then
-        assertThatThrownBy(() -> {
-            try (InputStream input = artifact.openStreamChecked()) {
-                input.readAllBytes();
-            }
-        }).isInstanceOf(IOException.class)
-                .hasMessageContaining("exceeds declared or configured size");
+        try (InputStream input = artifact.openStreamChecked()) {
+            assertThatThrownBy(input::readAllBytes)
+                    .isInstanceOf(IOException.class)
+                    .hasMessageContaining("exceeds declared or configured size");
+        }
         verify(jdbc.contentResultSet()).close();
         verify(jdbc.contentStatement()).close();
         verify(jdbc.contentConnection()).close();
@@ -151,13 +150,12 @@ class DatabaseArtifactStoreStreamingTest {
         Artifact artifact = store.get(HASH).orElseThrow();
 
         // When / Then
-        assertThatThrownBy(() -> {
-            try (InputStream input = artifact.openStreamChecked()) {
-                input.readAllBytes();
-            }
-        }).isInstanceOf(IOException.class)
-                .hasMessageContaining("content hash mismatch")
-                .hasMessageContaining(HASH);
+        try (InputStream input = artifact.openStreamChecked()) {
+            assertThatThrownBy(input::readAllBytes)
+                    .isInstanceOf(IOException.class)
+                    .hasMessageContaining("content hash mismatch")
+                    .hasMessageContaining(HASH);
+        }
         verify(jdbc.contentResultSet()).close();
         verify(jdbc.contentStatement()).close();
         verify(jdbc.contentConnection()).close();

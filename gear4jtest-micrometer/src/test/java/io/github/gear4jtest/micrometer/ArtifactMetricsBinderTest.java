@@ -31,6 +31,7 @@ class ArtifactMetricsBinderTest {
 
         // Then
         assertThat(meterRegistry.getMeters()).hasSize(17).allSatisfy(meter -> assertThat(meter.measure())
+                .isNotEmpty()
                 .allSatisfy(measurement -> assertThat(measurement.getValue()).isFinite()));
         assertThat(meterRegistry.get("gear4j.artifacts.store.operations")
                 .tags("operation", "read", "outcome", "failed").functionCounter().count()).isEqualTo(8.0d);

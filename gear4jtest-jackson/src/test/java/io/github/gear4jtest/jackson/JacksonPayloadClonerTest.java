@@ -207,7 +207,6 @@ class JacksonPayloadClonerTest {
         payload.add(new NestedValue("two"));
 
         // When
-        @SuppressWarnings("unchecked")
         LinkedHashSet<NestedValue> cloned = cloner.clonePayload(payload);
 
         // Then

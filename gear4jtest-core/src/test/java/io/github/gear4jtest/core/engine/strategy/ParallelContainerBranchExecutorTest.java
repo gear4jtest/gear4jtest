@@ -175,7 +175,7 @@ class ParallelContainerBranchExecutorTest {
         assertThat(aggregation.results()).hasSize(1);
         StationLogTrace branchLog = aggregation.results().get(0);
         assertThat(branchLog.getStatus()).isEqualTo(StationLogStatus.SUCCEEDED);
-        assertThat(branchLog.<String>getOutput()).isEqualTo("input");
+        assertThat(branchLog.getOutput()).isEqualTo("input");
         assertThat(aggregation.interruptingChild()).isEmpty();
     }
 

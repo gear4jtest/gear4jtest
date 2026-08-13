@@ -17,7 +17,7 @@ import io.github.gear4jtest.core.api.context.StationParameterModel;
 
 public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
     private UnaryWorkStation(String id,
-                             Class<Operator<INOUT, INOUT>> type,
+                             Class<? extends Operator<INOUT, INOUT>> type,
                              List<StationParameterModel<?, ?>> parameters,
                              List<Processor> processors,
                              List<BaseError<INOUT>> onErrors,
@@ -138,10 +138,10 @@ public class UnaryWorkStation<INOUT> extends WorkStation<INOUT, INOUT> {
             return this;
         }
 
-        @SuppressWarnings({ "unchecked", "rawtypes" })
+        @SuppressWarnings("unchecked")
         public UnaryWorkStation<INOUT> build() {
             return new UnaryWorkStation<>(id,
-                    (Class) type,
+                    (Class<? extends Operator<INOUT, INOUT>>) (Class<?>) type,
                     parameters,
                     processors,
                     onErrors,

@@ -87,13 +87,12 @@ class AssemblyLineEngineWorkerConcurrencyPolicyTest {
         private final AtomicReference<ExplicitStatefulOperator> latest = new AtomicReference<>();
 
         @Override
-        @SuppressWarnings("unchecked")
         public <T> T getResource(Class<T> clazz) {
             if (clazz == ExplicitStatefulOperator.class) {
                 ExplicitStatefulOperator operator = new ExplicitStatefulOperator();
                 created.incrementAndGet();
                 latest.set(operator);
-                return (T) operator;
+                return clazz.cast(operator);
             }
             throw new IllegalArgumentException("Unsupported resource type: " + clazz.getName());
         }

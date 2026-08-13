@@ -26,6 +26,20 @@ final class PersistenceSnapshots {
         return (T) captureValue(value, effectiveCloner, new IdentityHashMap<>());
     }
 
+    static Map<String, Object> captureContext(Map<?, ?> value, PayloadCloner payloadCloner) {
+        PayloadCloner effectiveCloner = Objects.requireNonNull(payloadCloner, "payloadCloner must not be null");
+        Map<?, ?> snapshot = captureMap(value, effectiveCloner, new IdentityHashMap<>());
+        Map<String, Object> context = new LinkedHashMap<>();
+        snapshot.forEach((key, entryValue) -> {
+            if (!(key instanceof String stringKey)) {
+                throw new PayloadCloneException("Persistence context keys must be strings, but found "
+                        + (key == null ? "null" : key.getClass().getName()));
+            }
+            context.put(stringKey, entryValue);
+        });
+        return Collections.unmodifiableMap(context);
+    }
+
     private static Object captureValue(Object value,
                                        PayloadCloner payloadCloner,
                                        IdentityHashMap<Object, Boolean> visiting) {

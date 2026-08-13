@@ -66,9 +66,8 @@ public class DefaultStationExecutionContext implements EngineStationExecutionCon
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> Optional<T> getCapability(Class<T> type) {
-        return Optional.ofNullable((T) capabilities.get(type));
+        return Optional.ofNullable(type.cast(capabilities.get(type)));
     }
 
     @Override

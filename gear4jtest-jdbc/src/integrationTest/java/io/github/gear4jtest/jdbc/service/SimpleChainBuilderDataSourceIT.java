@@ -21,7 +21,6 @@ import io.github.gear4jtest.core.event.EventSubscription;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
-import io.github.gear4jtest.core.persistence.AssemblyRunView;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
@@ -124,8 +123,8 @@ public class SimpleChainBuilderDataSourceIT {
         ExecutionResult<List<List<String>>> result = engine.execute(assemblyLine, request);
 
         // Then
-        assertThat(result).isNotNull().extracting(ExecutionResult::getResult).isInstanceOf(List.class).asList()
-                .hasSize(1).first().isInstanceOf(List.class).asList().contains("");
+        assertThat(result).isNotNull();
+        assertThat(result.getResult()).containsExactly(List.of(""));
 
         DatabaseAssemblyRunRepository repository = DatabaseAssemblyRunRepository.builder()
                 .dataSource(dataSource)
@@ -140,9 +139,10 @@ public class SimpleChainBuilderDataSourceIT {
                                  ExecutionStatus.SUCCEEDED);
 
         var assemblyLineDetails = repository.findViewById(result.getExecution().getId(), PageRequest.first(100));
-        assertThat(assemblyLineDetails).isPresent().get().extracting(AssemblyRunView::getRootOperations).asList()
+        assertThat(assemblyLineDetails).isPresent();
+        assertThat(assemblyLineDetails.orElseThrow().getRootOperations())
                 .hasSize(1)
-                .first().asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(StationLogRecord.class))
+                .first()
                 .extracting(StationLogRecord::assemblyLineExecutionId, StationLogRecord::operationId,
                             StationLogRecord::parentOperationId, StationLogRecord::status, StationLogRecord::context)
                 .containsExactly(result.getExecution().getId(), "test:root", null, StationLogStatus.SUCCEEDED,
@@ -215,7 +215,7 @@ public class SimpleChainBuilderDataSourceIT {
 
         @Override
         public <T> T getResource(Class<T> clazz) {
-            return (T) BEANS.get(clazz);
+            return clazz.cast(BEANS.get(clazz));
         }
     }
 

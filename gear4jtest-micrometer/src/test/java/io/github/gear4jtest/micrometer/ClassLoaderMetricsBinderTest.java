@@ -27,6 +27,7 @@ class ClassLoaderMetricsBinderTest {
 
         // Then
         assertThat(meterRegistry.getMeters()).hasSize(10).allSatisfy(meter -> assertThat(meter.measure())
+                .isNotEmpty()
                 .allSatisfy(measurement -> assertThat(measurement.getValue()).isFinite()));
         assertThat(meterRegistry.get("gear4j.generated.classloaders.cached").gauge().value()).isEqualTo(1.0d);
         assertThat(meterRegistry.get("gear4j.generated.classloaders.bytecode.bytes").gauge().value()).isEqualTo(4.0d);

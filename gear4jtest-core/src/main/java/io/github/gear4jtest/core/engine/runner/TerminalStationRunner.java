@@ -18,11 +18,9 @@ public class TerminalStationRunner implements StationRunner {
         this.recursiveRunner = Objects.requireNonNull(recursiveRunner, "recursiveRunner must not be null");
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public StationLogTrace run(Object input, AbstractStation<?, ?> station, StationExecutionContext ctx) {
-        StationExecutionStrategy<AbstractStation<?, ?>> strategy = (StationExecutionStrategy) registry
-                .getStrategy(station);
+        StationExecutionStrategy<AbstractStation<?, ?>> strategy = registry.getStrategy(station);
         return strategy.run(station, input, ctx, recursiveRunner);
     }
 }

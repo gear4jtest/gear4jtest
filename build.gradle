@@ -75,6 +75,54 @@ tasks.named('check') {
     dependsOn tasks.named('verifyDocumentationLinks')
 }
 
+def javaSources = fileTree(layout.projectDirectory) {
+    include 'gear4jtest-*/src/**/*.java'
+}
+
+tasks.register('verifySuppressWarningsBudget') {
+    group = 'verification'
+    description = 'Prevents unchecked-warning suppressions from growing without an explicit review.'
+    inputs.files(javaSources)
+
+    doLast {
+        def productionCount = 0
+        def supportCount = 0
+        def forbidden = []
+
+        javaSources.files.findAll { it.isFile() }.sort().each { sourceFile ->
+            def source = sourceFile.getText('UTF-8')
+            def count = (source =~ /(?m)^[\t ]*@SuppressWarnings\b/).count
+            if (sourceFile.path.replace('\\', '/').contains('/src/main/')) {
+                productionCount += count
+            } else {
+                supportCount += count
+            }
+            if (source =~ /@SuppressWarnings\s*\(\s*"all"\s*\)/) {
+                forbidden << repositoryRootDirectory.toPath().relativize(sourceFile.toPath())
+            }
+        }
+
+        def failures = []
+        if (productionCount > 29) {
+            failures << "production suppressions: ${productionCount} (budget: 29)"
+        }
+        if (supportCount > 9) {
+            failures << "test, integration and benchmark suppressions: ${supportCount} (budget: 9)"
+        }
+        if (!forbidden.isEmpty()) {
+            failures << "@SuppressWarnings(\"all\") is forbidden in: ${forbidden.sort().join(', ')}"
+        }
+        if (!failures.isEmpty()) {
+            throw new GradleException('SuppressWarnings quality budget exceeded. Remove or narrowly justify the '
+                    + 'new suppression before changing the reviewed budget:\n - ' + failures.join('\n - '))
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifySuppressWarningsBudget')
+}
+
 def decisionFiles = fileTree(layout.projectDirectory.dir('docs/decisions')) {
     include '*.md'
 }

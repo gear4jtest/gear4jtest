@@ -12,6 +12,7 @@ import io.github.gear4jtest.core.exception.PayloadCloneException;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
+import io.github.gear4jtest.core.spi.security.RedactionTarget;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import org.junit.jupiter.api.Test;
 
@@ -120,6 +121,21 @@ class PersistenceRecordSnapshotTest {
                 .isInstanceOf(PayloadCloneException.class)
                 .hasMessageContaining("Could not isolate persistence value")
                 .hasMessageContaining("PayloadCloner");
+    }
+
+    @Test
+    void factory_shouldRejectNonStringContextKeysReturnedByRedactor() {
+        // Given
+        AssemblyRunTrace trace = new AssemblyRunTrace(UUID.randomUUID(), "line", Map.of());
+        trace.setContext(Map.of("tenant", "acme"));
+        SensitiveDataRedactor invalidRedactor = (target, value) -> target == RedactionTarget.RUN_CONTEXT
+                ? Map.of(42, "invalid") : value;
+
+        // When / Then
+        assertThatThrownBy(() -> AssemblyRunRecord.from(trace, invalidRedactor))
+                .isInstanceOf(PayloadCloneException.class)
+                .hasMessageContaining("Persistence context keys must be strings")
+                .hasMessageContaining(Integer.class.getName());
     }
 
     private static AssemblyRunRecord assemblyRunRecord(UUID id,

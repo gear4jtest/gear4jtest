@@ -80,8 +80,7 @@ class DatabaseExecutionManagerTest {
             manager.flush(runId);
 
             // Then
-            @SuppressWarnings("unchecked")
-            ArgumentCaptor<List<StationLogRecord>> records = ArgumentCaptor.forClass(List.class);
+            ArgumentCaptor<List<StationLogRecord>> records = ArgumentCaptor.captor();
             verify(repository).saveOperationRecordsBatch(records.capture());
             MutablePayload persisted = (MutablePayload) records.getValue().get(0).context().get("payload");
             assertThat(persisted.values()).containsExactly("captured");
@@ -256,8 +255,7 @@ class DatabaseExecutionManagerTest {
             awaitCompletedFlushes(manager, 1);
 
             // Then
-            @SuppressWarnings("unchecked")
-            ArgumentCaptor<List<StationLogRecord>> batch = ArgumentCaptor.forClass(List.class);
+            ArgumentCaptor<List<StationLogRecord>> batch = ArgumentCaptor.captor();
             verify(repository).saveOperationRecordsBatch(batch.capture());
             assertThat(batch.getValue()).hasSize(2)
                     .allMatch(record -> record.assemblyLineExecutionId().equals(fastRun.getId()));

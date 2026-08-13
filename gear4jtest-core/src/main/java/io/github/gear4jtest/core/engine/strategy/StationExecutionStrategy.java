@@ -18,7 +18,7 @@ public interface StationExecutionStrategy<S extends AbstractStation<?, ?>> {
     /**
      * Returns whether this strategy can execute stations of the provided type.
      */
-    boolean supports(Class<? extends AbstractStation<?, ?>> stationType);
+    boolean supports(Class<?> stationType);
 
     /**
      * Executes a station and returns its runtime trace.

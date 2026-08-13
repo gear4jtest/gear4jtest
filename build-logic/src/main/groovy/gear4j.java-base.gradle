@@ -25,6 +25,8 @@ tasks.withType(Test).configureEach {
     javaLauncher.set(javaToolchains.launcherFor {
         languageVersion = JavaLanguageVersion.of(17)
     })
+    // Test instrumentation appends to the bootstrap class path, so CDS is unavailable in test JVMs.
+    jvmArgs '-Xshare:off'
 }
 
 tasks.withType(JavaExec).configureEach {

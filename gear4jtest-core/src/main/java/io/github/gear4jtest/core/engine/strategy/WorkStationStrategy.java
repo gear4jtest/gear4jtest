@@ -8,10 +8,10 @@ import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.config.WorkerConcurrencyConfiguration;
 import io.github.gear4jtest.core.api.config.WorkerConcurrencyPolicy;
 import io.github.gear4jtest.core.api.config.WorkerLockAcquisitionPolicy;
+import io.github.gear4jtest.core.api.context.ExecutionServices;
 import io.github.gear4jtest.core.api.context.StationContextUtils;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.context.StationParameters;
-import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.WorkStation;
 import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyGuard;
@@ -76,7 +76,7 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
     }
 
     @Override
-    public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
+    public boolean supports(Class<?> type) {
         return WorkStation.class.isAssignableFrom(type);
     }
 
@@ -84,19 +84,9 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
     public void setUp(WorkStation<?, ?> station, Object input, StationExecutionContext operationExecution) {
         var services = operationExecution.getServices();
 
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        Class<Operator<?, ?>> operatorType = (Class) station.getType();
+        Class<? extends Operator<?, ?>> operatorType = station.getType();
 
-        Operator<?, ?> operation;
-        if (station.isReuseOperatorInstanceWithinRun()) {
-            operation = services
-                    .getOrCreateStationResource(station.getId(), operatorType,
-                                                () -> resolveOperator(station, operatorType,
-                                                                      services.getResourceFactory()
-                                                                              .getResource(operatorType)));
-        } else {
-            operation = resolveOperator(station, operatorType, services.getResourceFactory().getResource(operatorType));
-        }
+        Operator<?, ?> operation = resolveOperator(station, operatorType, services);
 
         EngineStationContexts.addCapability(operationExecution, Operator.class, operation);
         var parameters = StationParameters.newBuilder();
@@ -173,9 +163,21 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
         return isStateful(operationExecution);
     }
 
-    private Operator<?, ?> resolveOperator(WorkStation<?, ?> station,
-                                           Class<Operator<?, ?>> operatorType,
-                                           Object resource) {
+    private <T extends Operator<?, ?>> T resolveOperator(WorkStation<?, ?> station,
+                                                         Class<T> operatorType,
+                                                         ExecutionServices services) {
+        if (station.isReuseOperatorInstanceWithinRun()) {
+            return services.getOrCreateStationResource(station.getId(), operatorType,
+                                                       () -> requireOperator(station, operatorType,
+                                                                             services.getResourceFactory()
+                                                                                     .getResource(operatorType)));
+        }
+        return requireOperator(station, operatorType, services.getResourceFactory().getResource(operatorType));
+    }
+
+    private <T extends Operator<?, ?>> T requireOperator(WorkStation<?, ?> station,
+                                                         Class<T> operatorType,
+                                                         Object resource) {
         if (resource == null) {
             throw new ResourceResolutionException("ResourceFactory returned null for operator "
                     + operatorType.getName() + " required by station '" + station.getId() + "'");

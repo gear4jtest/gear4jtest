@@ -8,6 +8,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
 class ContextPropagationPolicyTest {
     @Test
@@ -55,7 +56,10 @@ class ContextPropagationPolicyTest {
                 .propagate(parent);
 
         assertThat(child).containsOnlyKeys("mutable");
-        assertThat(child.get("mutable")).isEqualTo(mutable).isNotSameAs(mutable);
+        assertThat(child.get("mutable"))
+                .asInstanceOf(list(String.class))
+                .containsExactlyElementsOf(mutable)
+                .isNotSameAs(mutable);
     }
 
     @Test

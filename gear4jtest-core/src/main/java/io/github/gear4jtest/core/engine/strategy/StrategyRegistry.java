@@ -13,7 +13,7 @@ import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.engine.support.WorkerConcurrencyManager;
 
 public class StrategyRegistry {
-    private final Map<Class<? extends AbstractStation<?, ?>>, StationExecutionStrategy<?>> cache = new ConcurrentHashMap<>();
+    private final Map<Class<?>, StationExecutionStrategy<?>> cache = new ConcurrentHashMap<>();
     private final List<StationExecutionStrategy<?>> strategies;
 
     public StrategyRegistry(List<StationExecutionStrategy<?>> strategies) {
@@ -95,7 +95,7 @@ public class StrategyRegistry {
     @SuppressWarnings("unchecked")
     public <S extends AbstractStation<?, ?>> StationExecutionStrategy<S> getStrategy(S station) {
         return (StationExecutionStrategy<S>) cache
-                .computeIfAbsent((Class<? extends AbstractStation<?, ?>>) station.getClass(),
+                .computeIfAbsent(station.getClass(),
                                  type -> strategies.stream()
                                          .filter(s -> s.supports(type))
                                          .findFirst()

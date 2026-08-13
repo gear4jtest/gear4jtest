@@ -45,20 +45,21 @@ class AssemblyLineEngineNestedContextPropagationTest {
 
     @Test
     void nestedRun_shouldAllowDefensiveCopiesOfMutableValues() {
-        List<String> parentList = new ArrayList<>(List.of("parent"));
+        MutableItems parentItems = new MutableItems(List.of("parent"));
         AssemblyLine<String, List<String>> parent = parentCalling(childMutatingListContext());
         AssemblyLineEngine engine = engine(ContextPropagationPolicy.copyValues((key, value) -> {
-            if (value instanceof List<?> list) {
-                return new ArrayList<>(list);
+            if (value instanceof MutableItems items) {
+                return items.copy();
             }
             return value;
         }));
 
-        ExecutionResult<List<String>> result = engine.execute(parent, requestWithContext(Map.of("items", parentList)));
+        ExecutionResult<List<String>> result = engine.execute(parent,
+                                                              requestWithContext(Map.of("items", parentItems)));
 
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.getResult()).containsExactly("parent", "child");
-        assertThat(parentList).as("the parent value should not be shared with the child run")
+        assertThat(parentItems.values()).as("the parent value should not be shared with the child run")
                 .containsExactly("parent");
     }
 
@@ -122,10 +123,29 @@ class AssemblyLineEngineNestedContextPropagationTest {
     public static class MutateItemsContext implements Operator<String, List<String>> {
         @Override
         public List<String> transform(String input, StationExecutionContext operationExecution) {
-            @SuppressWarnings("unchecked")
-            List<String> items = operationExecution.getGlobalContext().get("items", List.class);
+            MutableItems items = operationExecution.getGlobalContext().get("items", MutableItems.class);
             items.add("child");
-            return items;
+            return items.values();
+        }
+    }
+
+    private static final class MutableItems {
+        private final List<String> values;
+
+        private MutableItems(List<String> values) {
+            this.values = new ArrayList<>(values);
+        }
+
+        private void add(String value) {
+            values.add(value);
+        }
+
+        private List<String> values() {
+            return values;
+        }
+
+        private MutableItems copy() {
+            return new MutableItems(values);
         }
     }
 }

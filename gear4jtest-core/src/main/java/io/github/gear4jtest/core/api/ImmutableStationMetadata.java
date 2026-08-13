@@ -13,8 +13,7 @@ final class ImmutableStationMetadata implements StationMetadata {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> Optional<T> get(Class<T> type) {
-        return Optional.ofNullable((T) values.get(type));
+        return Optional.ofNullable(type.cast(values.get(type)));
     }
 }

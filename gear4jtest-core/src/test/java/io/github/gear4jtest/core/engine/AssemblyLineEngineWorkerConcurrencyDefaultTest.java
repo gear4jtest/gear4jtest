@@ -83,10 +83,9 @@ class AssemblyLineEngineWorkerConcurrencyDefaultTest {
 
     public static final class SharedResourceFactory implements ResourceFactory {
         @Override
-        @SuppressWarnings("unchecked")
         public <T> T getResource(Class<T> clazz) {
             if (clazz == SharedStatefulOperator.class) {
-                return (T) SharedStatefulOperator.INSTANCE;
+                return clazz.cast(SharedStatefulOperator.INSTANCE);
             }
             throw new IllegalArgumentException("Unsupported resource type: " + clazz.getName());
         }

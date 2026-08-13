@@ -16,13 +16,16 @@ import org.springframework.beans.factory.ListableBeanFactory;
 public final class SpringAssemblyLineRegistry implements AssemblyLineRegistry {
     private final Map<String, AssemblyLine<?, ?>> assemblyLinesByBeanName;
 
-    @SuppressWarnings("rawtypes")
     public SpringAssemblyLineRegistry(ListableBeanFactory beanFactory) {
         Objects.requireNonNull(beanFactory, "beanFactory must not be null");
 
-        Map<String, AssemblyLine> discovered = beanFactory.getBeansOfType(AssemblyLine.class);
+        Map<String, ?> discovered = beanFactory.getBeansOfType(AssemblyLine.class);
         Map<String, AssemblyLine<?, ?>> ordered = new LinkedHashMap<>();
-        discovered.forEach(ordered::put);
+        discovered.forEach((name, candidate) -> {
+            if (candidate instanceof AssemblyLine<?, ?> assemblyLine) {
+                ordered.put(name, assemblyLine);
+            }
+        });
         this.assemblyLinesByBeanName = Map.copyOf(ordered);
     }
 

@@ -8,9 +8,8 @@ public final class MutableStationMetadata implements StationMetadata {
     private final Map<Class<?>, Object> values = new ConcurrentHashMap<>();
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> Optional<T> get(Class<T> type) {
-        return Optional.ofNullable((T) values.get(type));
+        return Optional.ofNullable(type.cast(values.get(type)));
     }
 
     public <T> MutableStationMetadata put(Class<T> type, T value) {

@@ -13,10 +13,7 @@ public record GearExpressionContext(Object input,
     public GearExpressionContext {
         propertyAccessPolicy = Objects.requireNonNull(propertyAccessPolicy, "propertyAccessPolicy");
         input = GearExpressionValues.snapshotMaps(input);
-        Object inertVariables = GearExpressionValues.snapshotMaps(variables == null ? Map.of() : variables);
-        @SuppressWarnings("unchecked")
-        Map<String, ?> checkedVariables = (Map<String, ?>) inertVariables;
-        variables = checkedVariables;
+        variables = GearExpressionValues.snapshotMaps(variables == null ? Map.of() : variables);
     }
 
     public static GearExpressionContext ofInput(Object input) {
@@ -35,8 +32,7 @@ public record GearExpressionContext(Object input,
      *             {@link GearExpressionValues#snapshot(Object, PropertyAccessPolicy)}.
      */
     @Deprecated(forRemoval = true)
-    @SuppressWarnings("removal")
     public static GearExpressionContext legacy(Object input, Map<String, ?> variables) {
-        return new GearExpressionContext(input, variables, PropertyAccessPolicy.legacyBeanAccess());
+        return new GearExpressionContext(input, variables, StandardPropertyAccessPolicy.LEGACY_BEAN_ACCESS);
     }
 }

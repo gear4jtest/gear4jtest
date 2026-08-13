@@ -5,7 +5,6 @@ import java.util.Objects;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.engine.context.EngineStationContexts;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
@@ -31,7 +30,7 @@ public class ContainerStationStrategy extends AbstractStationStrategy<ContainerB
     }
 
     @Override
-    public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
+    public boolean supports(Class<?> type) {
         return ContainerBaseStation.class.isAssignableFrom(type);
     }
 

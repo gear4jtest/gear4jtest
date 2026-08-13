@@ -54,7 +54,10 @@ final class PersistenceOperationGate {
             }
             while (!inFlightOperations.isEmpty() && !deadline.reached()) {
                 try {
-                    idle.awaitNanos(deadline.remainingNanos());
+                    long remainingAfterWait = idle.awaitNanos(deadline.remainingNanos());
+                    if (remainingAfterWait <= 0L && !inFlightOperations.isEmpty()) {
+                        break;
+                    }
                 } catch (InterruptedException exception) {
                     interrupted = true;
                     break;

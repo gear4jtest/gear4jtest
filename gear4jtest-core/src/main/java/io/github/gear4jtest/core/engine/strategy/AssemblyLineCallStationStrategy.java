@@ -11,7 +11,6 @@ import io.github.gear4jtest.core.api.assemblyline.AssemblyLineReference;
 import io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContractValidator;
 import io.github.gear4jtest.core.api.assemblyline.AssemblyLineTarget;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.AssemblyLineCallStation;
 import io.github.gear4jtest.core.api.trace.RunTrace;
 import io.github.gear4jtest.core.engine.context.EngineStationContexts;
@@ -30,7 +29,7 @@ public class AssemblyLineCallStationStrategy extends AbstractStationStrategy<Ass
     }
 
     @Override
-    public boolean supports(Class<? extends AbstractStation<?, ?>> type) {
+    public boolean supports(Class<?> type) {
         return AssemblyLineCallStation.class.isAssignableFrom(type);
     }
 

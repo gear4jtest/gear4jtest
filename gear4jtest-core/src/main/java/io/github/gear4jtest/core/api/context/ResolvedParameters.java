@@ -4,6 +4,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.github.gear4jtest.core.api.behavior.Operator;
+
 public final class ResolvedParameters {
     private final Map<StationParameterModel<?, ?>, Object> resolved = new ConcurrentHashMap<>();
 
@@ -11,30 +13,33 @@ public final class ResolvedParameters {
         return resolved.containsKey(model);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> T get(StationParameterModel<?, ?> model) {
-        return (T) resolved.get(model);
+    public <OP extends Operator<?, ?>, T> T get(StationParameterModel<OP, T> model) {
+        return valueAs(resolved.get(model));
     }
 
-    public <T> Resolution<T> resolve(StationParameterModel<?, ?> rawModel,
-                                     ParameterResolutionContext<?> interpretationCtx) {
-        Objects.requireNonNull(rawModel, "rawModel");
+    public <OP extends Operator<?, ?>, T> Resolution<T> resolve(StationParameterModel<OP, T> model,
+                                                                ParameterResolutionContext<?> interpretationCtx) {
+        Objects.requireNonNull(model, "model");
         Objects.requireNonNull(interpretationCtx, "interpretationCtx");
 
         final boolean[] computedHere = { false };
 
-        @SuppressWarnings("unchecked")
-        T value = (T) resolved.computeIfAbsent(rawModel, model -> {
+        Object resolvedValue = resolved.computeIfAbsent(model, ignored -> {
             computedHere[0] = true;
-            return ((StationParameterModel<?, T>) model).getValue(interpretationCtx);
+            return model.getValue(interpretationCtx);
         });
 
-        return new Resolution<>(value, !computedHere[0]);
+        return new Resolution<>(valueAs(resolvedValue), !computedHere[0]);
     }
 
-    public <T> T resolveIfAbsent(StationParameterModel<?, ?> rawModel,
-                                 ParameterResolutionContext<?> interpretationCtx) {
-        return this.<T>resolve(rawModel, interpretationCtx).value();
+    public <OP extends Operator<?, ?>, T> T resolveIfAbsent(StationParameterModel<OP, T> model,
+                                                            ParameterResolutionContext<?> interpretationCtx) {
+        return resolve(model, interpretationCtx).value();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T valueAs(Object value) {
+        return (T) value;
     }
 
     public record Resolution<T>(T value, boolean cacheHit) {}
