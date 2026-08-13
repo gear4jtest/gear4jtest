@@ -10,9 +10,11 @@ future-direction notes that should survive individual refactors.
 - `architecture/`: durable explanations of runtime, extension, event, external-pipeline, XML-generation, JDBC migration, Boot and observability architecture.
 - `audit/`: finding closure matrices and explicitly deferred remediation work.
 - `decisions/`: decision records and future-direction notes.
+- `migration/`: source and operational upgrade guidance for stable public boundaries.
 - `roadmap/`: known work items, review notes and non-MVP ideas, including kernel-driven cancellation and Gear4J expression language.
 - `runtime/`: implemented runtime semantics and execution contracts.
 - `security/`: supply-chain and runtime security guidance.
+- `tutorial/`: progressive, release-gated first-use guidance.
 - `releasing.md`: release workflow and Maven Central publication checklist.
 - `performance.md`: JMH scenarios, versioned budgets, coverage ratchets and database-matrix execution.
 
@@ -29,6 +31,9 @@ Use these status markers consistently:
 Do not describe future-direction ideas as current behavior.
 
 - [Production readiness checklist](production-readiness.md)
+
+- [Build and run a first Gear4J pipeline](tutorial/getting-started.md)
+- [Migrate a pre-1.0 application to the Gear4J 1.0 surface](migration/to-1.0.md)
 
 - [API, SPI and internal contracts](architecture/api-contracts.md)
 - [Runtime guarantees and non-guarantees](runtime/runtime-guarantees.md)

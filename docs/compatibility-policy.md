@@ -5,6 +5,9 @@
 This policy starts with `1.0.0`. Packages marked `@PublicApi` or `@Spi` are compatibility-sensitive. Packages and types
 marked `@Internal` or `@Experimental` are excluded unless a release note explicitly promotes them.
 
+Applications upgrading from a development snapshot should follow the [1.0 migration guide](migration/to-1.0.md) before
+adopting this policy as their stable baseline.
+
 ## Java source and binary compatibility
 
 Patch and minor 1.x releases must not remove or narrow public/SPI classes, methods, constructors, fields or implemented

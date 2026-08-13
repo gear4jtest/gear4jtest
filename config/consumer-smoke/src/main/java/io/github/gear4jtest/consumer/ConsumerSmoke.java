@@ -1,6 +1,7 @@
 package io.github.gear4jtest.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.external.api.translator.OperationChainTranslator;
 import io.github.gear4jtest.jackson.JacksonPayloadCloners;
@@ -15,8 +16,10 @@ public final class ConsumerSmoke {
         ObjectMapper objectMapper = new ObjectMapper();
         PayloadCloner payloadCloner = JacksonPayloadCloners.with(objectMapper);
         OperationChainTranslator translator = XmlOperationChainTranslator.gelOnly();
+        ExecutionResult<String> tutorialResult = GettingStartedExample.run(" Ada ");
 
-        if (payloadCloner == null || !translator.supports(XmlOperationChainTranslator.VENDOR_MEDIA_TYPE)) {
+        if (payloadCloner == null || !translator.supports(XmlOperationChainTranslator.VENDOR_MEDIA_TYPE)
+                || !tutorialResult.isSuccess() || !"Hello, Ada!".equals(tutorialResult.getResult())) {
             throw new IllegalStateException("Staged Gear4J artifacts are not usable");
         }
     }

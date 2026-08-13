@@ -18,6 +18,9 @@ Gear4J aims to provide:
 - optional modules for XML-defined pipelines, Jackson-based cloning and Spring integration;
 - a future path toward externally managed pipelines authored by tools or back offices.
 
+New to the project? Start with [Build and run a first Gear4J pipeline](docs/tutorial/getting-started.md). Applications
+moving from a development snapshot should also read [Migrate to the Gear4J 1.0 surface](docs/migration/to-1.0.md).
+
 ## Module map
 
 | Module                       | Purpose                                                                                                                                                        |
@@ -162,6 +165,8 @@ deterministic output, but transient generated files should not be edited directl
 - `docs/audit/closure-matrix-2026-07-13.md`: status and residual backlog for all 47 audit findings.
 - `docs/contributing/code-style.md`: style, formatter and Checkstyle rules.
 - `docs/decisions/`: decision records and future-direction notes, including source-level API boundary policy.
+- `docs/tutorial/getting-started.md`: compile-backed first pipeline using the public executor facade.
+- `docs/migration/to-1.0.md`: pre-1.0 package, facade, module and operational migration checklist.
 - `docs/roadmap/future-work.md`: known work items and non-MVP ideas.
 - `docs/releasing.md`: Maven Central release process.
 - `docs/security/dependency-supply-chain.md`: current 1.0 dependency-security baseline and deferred hardening backlog.

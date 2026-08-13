@@ -71,7 +71,8 @@ the build-script contract before and after the first stable release.
 staged Maven repository, while their third-party transitive dependencies resolve from Maven Central. The fixture
 applies `io.github.gear4jtest.xml2java` through its plugin marker and verifies the transitive public API scopes for
 core, Jackson, XML, execution JDBC, external JDBC, Spring, Spring Boot Actuator and Micrometer. It also enforces the
-critical JaCoCo branch ratchets and the versioned JMH latency, throughput, allocation, heap and thread budgets.
+compile-backed first-use tutorial, critical JaCoCo branch ratchets and the versioned JMH latency, throughput,
+allocation, heap and thread budgets.
 
 The same gate runs `verifyStagedReleaseArtifacts`. Every staged JAR, including source and Javadoc JARs, must contain
 `META-INF/LICENSE` and `META-INF/NOTICE`. Every staged POM must contain a name, description, project URL, Apache-2.0

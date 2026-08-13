@@ -2,6 +2,10 @@
 
 `gear4jtest-core` contains the Gear4J runtime engine and public Java API.
 
+For a progressive, executable introduction, start with the
+[first-pipeline tutorial](../docs/tutorial/getting-started.md). This module guide is the deeper reference for the runtime
+model and extension points used after that first example.
+
 This module is the dependency-agnostic heart of the project. It must not depend on Spring, XML, Jackson-specific
 behavior, external transport systems or storage-specific implementations. JDBC persistence lives in the optional
 `gear4jtest-jdbc` module; core keeps only the persistence contracts and trace/record models needed by runtime SPIs.

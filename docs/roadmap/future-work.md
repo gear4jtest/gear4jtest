@@ -89,8 +89,8 @@ Status values are `DELIVERED`, `REVIEW`, `BACKLOG` and `DEFERRED`.
 
 | Work item | Status | Target version | ADR / reference | Last verified |
 | --- | --- | --- | --- | --- |
-| Progressive first-use tutorial | `BACKLOG` | After first stable API | — | 2026-08-12 |
+| Progressive first-use tutorial | `DELIVERED` | 1.0 | [Tutorial](../tutorial/getting-started.md), [ADR 0040](../decisions/0040-first-use-documentation-is-a-release-gated-consumer.md) | 2026-08-13 |
 | Generated-code examples for XML | `BACKLOG` | Post-1.0 | [XML generation](../architecture/xml-generation.md) | 2026-08-12 |
 | Runtime, event and external-compilation diagrams | `BACKLOG` | Post-1.0 | — | 2026-08-12 |
-| Migration guide for finalized module/package names | `BACKLOG` | After first stable API | [Compatibility policy](../compatibility-policy.md) | 2026-08-12 |
+| Migration guide for finalized module/package names | `DELIVERED` | 1.0 | [1.0 migration](../migration/to-1.0.md), [compatibility policy](../compatibility-policy.md) | 2026-08-13 |
 | JPMS descriptor review after public boundaries stabilize | `DEFERRED` | Post-1.0 | [Compatibility policy](../compatibility-policy.md) | 2026-08-12 |
