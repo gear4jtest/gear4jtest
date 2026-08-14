@@ -45,6 +45,9 @@ jobs:
           COVERAGE_BASE_REF: ${{ github.base_ref }}
         run: scripts/verify-coverage-ratchet.py "origin/${COVERAGE_BASE_REF}"
 
+      - name: Test release policy and evidence helpers
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+
       - name: Validate XML plugin configuration, compatibility and build caches
         run: |
           ./gradlew --no-daemon \
@@ -64,7 +67,7 @@ jobs:
       - name: Build and coverage
         run: |
           ./gradlew --no-daemon --warning-mode=all \
-            clean build coverageReport \
+            clean build coverageReport releaseMetadataCheck \
             -Pgear4jDatabaseDialect=postgresql
 
       - name: SonarQube scan

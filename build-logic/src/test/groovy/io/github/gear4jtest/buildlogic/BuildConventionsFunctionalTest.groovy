@@ -267,7 +267,7 @@ plugins {
 }
 
 group = 'io.github.gear4jtest'
-version = '1.0.0'
+version = findProperty('projectVersion') ?: '1.0.0'
 
 ['verifyDocumentationLinks', 'verifyDecisionIdentifiers', 'verifyLivingDocumentationMetadata',
  'dependencyCheckAggregate',
@@ -286,9 +286,12 @@ project(':sample-library') {
 
 apply plugin: 'gear4j.root-release'
 
+def publishedProject = project(':sample-library')
+def rootTasks = tasks
+def stagingDirectory = layout.buildDirectory.dir('staging-deploy')
+
 tasks.register('verifyReleaseConventionModel') {
     doLast {
-        def publishedProject = project(':sample-library')
         assert publishedProject.plugins.hasPlugin('java-library')
         assert publishedProject.plugins.hasPlugin('maven-publish')
 
@@ -299,7 +302,7 @@ tasks.register('verifyReleaseConventionModel') {
             .getByType(org.gradle.api.publish.PublishingExtension)
         def repository = publishing.repositories.getByName('mavenCentralStaging')
         assert new File(repository.url).canonicalFile ==
-            layout.buildDirectory.dir('staging-deploy').get().asFile.canonicalFile
+            stagingDirectory.get().asFile.canonicalFile
         def publication = publishing.publications.getByName('mavenJava')
         assert publication.artifactId == 'sample-library'
         assert publication.pom.name.get() == 'sample library'
@@ -314,27 +317,29 @@ tasks.register('verifyReleaseConventionModel') {
         assert jarTask.manifest.attributes['Automatic-Module-Name'] ==
             'io.github.gear4jtest.fixture.published'
 
-        ['verifyReleaseAssets', 'jreleaserConfig', 'jreleaserDeploy', 'releaseMetadataCheck',
+        ['verifyReleaseAssets', 'verifyReleaseVersion', 'jreleaserConfig', 'jreleaserDeploy', 'releaseMetadataCheck',
          'stageMavenCentral', 'verifyStagedReleaseArtifacts', 'consumerSmokeTest',
          'verifyReleaseDatabaseMatrixSelection', 'verifyJava17AndArchiveConfiguration',
          'verifyApiCompatibilityConfiguration', 'apiCompatibilityCheck', 'releaseCheck'].each {
-            assert tasks.findByName(it) != null
+            assert rootTasks.findByName(it) != null
         }
 
-        def checkTask = tasks.named('check').get()
+        def checkTask = rootTasks.named('check').get()
         assert checkTask.taskDependencies.getDependencies(checkTask)
-            .contains(tasks.named('verifyJava17AndArchiveConfiguration').get())
+            .contains(rootTasks.named('verifyJava17AndArchiveConfiguration').get())
 
-        def releaseMetadataCheck = tasks.named('releaseMetadataCheck').get()
+        def releaseMetadataCheck = rootTasks.named('releaseMetadataCheck').get()
         assert releaseMetadataCheck.taskDependencies.getDependencies(releaseMetadataCheck)
-            .contains(tasks.named('verifyLivingDocumentationMetadata').get())
+            .contains(rootTasks.named('verifyLivingDocumentationMetadata').get())
 
-        def releaseCheck = tasks.named('releaseCheck').get()
+        def releaseCheck = rootTasks.named('releaseCheck').get()
         def releaseDependencies = releaseCheck.taskDependencies.getDependencies(releaseCheck)
-        assert releaseDependencies.contains(tasks.named('check').get())
-        assert releaseDependencies.contains(tasks.named('consumerSmokeTest').get())
-        assert releaseDependencies.contains(tasks.named('verifyStagedReleaseArtifacts').get())
-        assert releaseDependencies.contains(tasks.named('apiCompatibilityCheck').get())
+        assert releaseDependencies.contains(rootTasks.named('check').get())
+        assert releaseDependencies.contains(rootTasks.named('consumerSmokeTest').get())
+        assert releaseDependencies.contains(rootTasks.named('verifyStagedReleaseArtifacts').get())
+        assert releaseDependencies.contains(rootTasks.named('apiCompatibilityCheck').get())
+        assert releaseDependencies.contains(rootTasks.named('releaseMetadataCheck').get())
+        assert releaseDependencies.contains(rootTasks.named('verifyReleaseVersion').get())
     }
 }
 '''.stripIndent())
@@ -342,7 +347,7 @@ tasks.register('verifyReleaseConventionModel') {
         BuildResult result = GradleRunner.create()
             .withProjectDir(projectDirectory.toFile())
             .withArguments('verifyReleaseConventionModel', 'verifyStagedReleaseArtifacts',
-                'verifyJava17AndArchiveConfiguration',
+                'verifyJava17AndArchiveConfiguration', 'verifyReleaseVersion',
                 '--stacktrace', '--warning-mode=all')
             .withPluginClasspath()
             .build()
@@ -352,6 +357,8 @@ tasks.register('verifyReleaseConventionModel') {
         assertThat(result.task(':verifyStagedReleaseArtifacts').outcome)
             .isEqualTo(TaskOutcome.SUCCESS)
         assertThat(result.task(':verifyJava17AndArchiveConfiguration').outcome)
+            .isEqualTo(TaskOutcome.SUCCESS)
+        assertThat(result.task(':verifyReleaseVersion').outcome)
             .isEqualTo(TaskOutcome.SUCCESS)
         assertThat(Files.readString(projectDirectory.resolve(
             'build/reports/release/staged-artifacts.txt')))
@@ -375,6 +382,17 @@ tasks.register('verifyReleaseConventionModel') {
         assertThat(stagedPom.scm.url.text())
             .isEqualTo('https://github.com/gear4jtest/gear4jtest')
         assertThat(stagedPom.scm.tag.text()).isEqualTo('v1.0.0')
+
+        BuildResult rejectedSnapshot = GradleRunner.create()
+            .withProjectDir(projectDirectory.toFile())
+            .withArguments('verifyReleaseVersion', '-PprojectVersion=1.0.0-SNAPSHOT',
+                '--stacktrace', '--warning-mode=all')
+            .withPluginClasspath()
+            .buildAndFail()
+        assertThat(rejectedSnapshot.task(':verifyReleaseVersion').outcome)
+            .isEqualTo(TaskOutcome.FAILED)
+        assertThat(rejectedSnapshot.output)
+            .contains('releaseCheck requires a SemVer-like non-snapshot project version')
     }
 
     private void write(String relativePath, String content) {

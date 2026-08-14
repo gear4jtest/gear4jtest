@@ -24,6 +24,11 @@ The following controls are intentionally not required for 1.0:
 They must be introduced only through a later dedicated hardening phase, after validating the maintenance and upgrade
 workflow. Their absence must not make `build`, `check` or `releaseCheck` fail in the 1.0 line.
 
+Successful release dry runs and publications record this accepted risk in
+`build/reports/release/release-evidence.json` together with the commit identity
+and hashes of the enforced 1.0 evidence. This makes the deferral visible without
+turning the deferred controls into an implicit gate.
+
 ## Current commands
 
 ```bash

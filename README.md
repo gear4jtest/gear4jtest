@@ -6,7 +6,8 @@ It lets applications describe a pipeline as an `AssemblyLine`, compose it from t
 runtime engine, and extend that runtime with persistence, events, side-compute, resource lookup, payload cloning and
 framework integrations.
 
-The project is still evolving quickly. The public API and module boundaries are not yet considered stable.
+The project is finalizing its 1.0 surface. Packages marked `@PublicApi` or `@Spi` are the intended stable contract once
+1.0.0 is published; `@Experimental` and `@Internal` surfaces are deliberately excluded from that compatibility promise.
 
 ## Goals
 
@@ -26,7 +27,7 @@ moving from a development snapshot should also read [Migrate to the Gear4J 1.0 s
 | Module                       | Purpose                                                                                                                                                        |
 |------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `gear4jtest-core`            | Runtime engine, public Java API, stations, flow policies, events, side-compute, persistence traces and extension SPI.                                          |
-| `gear4jtest-experimental-cache` | Experimental assembly-line cache helpers intended for opt-in personal/advanced usage; API may disappear before 1.0.                              |
+| `gear4jtest-experimental-cache` | Opt-in assembly-line cache helpers published as an explicitly experimental artifact; its API is outside the 1.0 compatibility guarantee.       |
 | `gear4jtest-external-api`    | Provider-neutral contracts and infrastructure for externally stored pipeline definitions: artifacts, repositories, translators, compilation and loading. |
 | `gear4jtest-external-jdbc`   | Optional JDBC repositories, schema migrations and database-backed artifact storage for external definitions.                                         |
 | `gear4jtest-xml`             | XML parser, validator and Java source generator for externalized Gear4J pipelines.                                                                             |

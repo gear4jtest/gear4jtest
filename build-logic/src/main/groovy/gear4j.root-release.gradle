@@ -218,6 +218,24 @@ tasks.register('consumerSmokeTest', Exec) {
 def selectedDatabaseDialect = providers.gradleProperty('gear4jDatabaseDialect')
     .map { it.trim().toLowerCase(java.util.Locale.ROOT) }
     .orElse('all')
+String configuredReleaseVersion = version.toString()
+
+tasks.register('verifyReleaseVersion') {
+    group = 'verification'
+    description = 'Requires a non-snapshot SemVer-like version for release validation.'
+    inputs.property('projectVersion', configuredReleaseVersion)
+
+    doLast {
+        String releaseVersionPattern = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)/ +
+            /(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/
+        boolean validVersion = configuredReleaseVersion ==~ releaseVersionPattern
+        if (!validVersion
+                || configuredReleaseVersion.toUpperCase(java.util.Locale.ROOT).contains('SNAPSHOT')) {
+            throw new GradleException('releaseCheck requires a SemVer-like non-snapshot project version, '
+                + 'for example -PprojectVersion=1.0.0 or 1.0.0-rc1')
+        }
+    }
+}
 
 tasks.register('verifyReleaseDatabaseMatrixSelection') {
     group = 'verification'
@@ -350,9 +368,8 @@ tasks.register('verifyApiCompatibilityConfiguration') {
     group = 'verification'
     description = 'Requires an N-1 API baseline after the first stable 1.0.0 release.'
     doLast {
-        String currentVersion = project.version.toString()
-        boolean stableVersion = currentVersion ==~ /\d+\.\d+\.\d+/
-        boolean firstStableRelease = currentVersion == '1.0.0'
+        boolean stableVersion = configuredReleaseVersion ==~ /\d+\.\d+\.\d+/
+        boolean firstStableRelease = configuredReleaseVersion == '1.0.0'
         if (stableVersion && !firstStableRelease && !apiBaselineVersion.isPresent()) {
             throw new GradleException('Stable releases after 1.0.0 require '
                 + '-Pgear4j.apiBaselineVersion=<previous-release> for source/binary compatibility checks')
@@ -387,7 +404,8 @@ if (gradlePluginProject != null) {
 tasks.register('releaseCheck') {
     group = 'verification'
     description = 'Runs the checks expected before staging a Maven Central release.'
-    dependsOn 'check', 'consumerSmokeTest', 'dependencyCheckAggregate', 'verifyReleaseAssets',
+    dependsOn 'check', 'consumerSmokeTest', 'dependencyCheckAggregate', 'releaseMetadataCheck',
+        'verifyReleaseAssets', 'verifyReleaseVersion',
         'verifyStagedReleaseArtifacts', 'verifyDependencyCheckSuppressions',
         'verifyPerformanceBudgets', 'verifyReleaseDatabaseMatrixSelection', 'apiCompatibilityCheck'
 }

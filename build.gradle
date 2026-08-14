@@ -308,6 +308,46 @@ tasks.named('check') {
     dependsOn tasks.named('verifyWorkflowSecurity')
 }
 
+tasks.register('verifyReleaseWorkflowContract') {
+    group = 'verification'
+    description = 'Keeps release preflight, metadata validation and evidence generation wired into CI.'
+
+    def ciWorkflow = layout.projectDirectory.file('.github/workflows/ci.yml')
+    def releaseWorkflow = layout.projectDirectory.file('.github/workflows/release.yml')
+    inputs.files(ciWorkflow, releaseWorkflow)
+
+    doLast {
+        def requiredFragments = [
+            (ciWorkflow): [
+                "python3 -m unittest discover -s scripts -p 'test_*.py'",
+                'clean build coverageReport releaseMetadataCheck'
+            ],
+            (releaseWorkflow): [
+                'preflight:',
+                'needs: [preflight, database-matrix]',
+                'python3 scripts/validate_release_invocation.py',
+                'python3 scripts/write_release_evidence.py',
+                'build/reports/release/**'
+            ]
+        ]
+        def failures = []
+        requiredFragments.each { workflow, fragments ->
+            def source = workflow.asFile.getText('UTF-8')
+            fragments.findAll { !source.contains(it) }.each { missing ->
+                failures << "${workflow.asFile.name}: missing release contract fragment: ${missing}"
+            }
+        }
+        if (!failures.isEmpty()) {
+            throw new GradleException('Release workflow contract violations:\n - '
+                + failures.join('\n - '))
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyReleaseWorkflowContract')
+}
+
 allprojects {
     version = rootProject.defaultProjectVersion
     group = 'io.github.gear4jtest'

@@ -3,7 +3,9 @@
 Experimental cache and history helpers for Gear4J assembly lines.
 
 This module is intentionally unstable and opt-in. It contains reusable cache helpers that were previously test-only code
-inside `gear4jtest-core`. The API may change or disappear before Gear4J 1.0.
+inside `gear4jtest-core`. The artifact is published with Gear4J 1.0, but its `@Experimental` API is excluded from the
+stable compatibility contract and may change or be removed in a later release. Production applications should isolate
+their dependency on this module behind an application-owned adapter.
 
 `JsonSha256FingerprintStrategy` exposes an optional `ObjectMapper` constructor for callers that need application-specific
 serialization. Jackson is therefore a published API dependency of this module; consumers do not need to redeclare

@@ -44,7 +44,7 @@ class XmlAssemblyLineGeneratorDslCompatibilityTest {
             'xmlGenerateAssemblyLine',
             '--configuration-cache',
             '--configuration-cache-problems=fail',
-            '--build-cache',
+            '--no-build-cache',
             '--warning-mode=all',
             '--stacktrace'
         ]
@@ -72,7 +72,6 @@ class XmlAssemblyLineGeneratorDslCompatibilityTest {
         return GradleRunner.create()
             .withProjectDir(projectDirectory.toFile())
             .withPluginClasspath()
-            .withTestKitDir(projectDirectory.resolve('.test-kit').toFile())
             .withArguments(arguments)
     }
 

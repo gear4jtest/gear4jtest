@@ -49,6 +49,11 @@ PROJECT_VERSION=1.0.0 JRELEASER_DRY_RUN=true \
   -PprojectVersion=1.0.0
 ```
 
+`releaseCheck` accepts only a non-snapshot SemVer-like version such as `1.0.0`
+or `1.0.0-rc1`. It now depends on `releaseMetadataCheck`, so the legal files,
+documentation links, ADR metadata and isolated JReleaser model are validated by
+the same local gate rather than relying on a separate operator command.
+
 From `1.0.1` onward, add the immediately preceding stable release so Japicmp can enforce public API/SPI compatibility:
 
 ```bash
@@ -135,20 +140,45 @@ git push origin v1.0.0
 
 The release workflow will:
 
-1. run the four-dialect JDBC matrix;
-2. validate legal files, local documentation links and the JReleaser configuration;
-3. run checks and critical branch-coverage ratchets;
-4. verify the versioned JMH performance budgets;
-5. run the dependency vulnerability scan;
-6. stage Maven libraries, the Gradle plugin and its markers under `build/staging-deploy`;
-7. verify legal entries and Maven Central metadata in the staged artifacts;
-8. compile and execute the autonomous staged-artifact consumer;
-9. rebuild and compare staged JAR, POM and Gradle module metadata hashes;
-10. compare every stable public library and the Gradle plugin implementation
+1. validate the version and trusted source ref before expensive or credentialed work;
+2. run the four-dialect JDBC matrix;
+3. validate legal files, local documentation links and the JReleaser configuration;
+4. run checks and critical branch-coverage ratchets;
+5. verify the versioned JMH performance budgets;
+6. run the dependency vulnerability scan;
+7. stage Maven libraries, the Gradle plugin and its markers under `build/staging-deploy`;
+8. verify legal entries and Maven Central metadata in the staged artifacts;
+9. compile and execute the autonomous staged-artifact consumer;
+10. rebuild and compare staged JAR, POM and Gradle module metadata hashes;
+11. compare every stable public library and the Gradle plugin implementation
     artifact with the configured N-1 release after 1.0.0;
-11. sign, validate and deploy staged artifacts with JReleaser.
+12. sign, validate and deploy staged artifacts with JReleaser;
+13. emit the commit-bound release-evidence manifest.
 
 Manual dispatch is also available. It defaults to dry-run mode.
+
+The release workflow validates its version and source ref before starting the
+four database jobs. A tag-triggered run must use a tag exactly matching
+`v<version>`. A manual dry run may use any selected ref, while a manual
+publication (`dry-run=false`) is accepted only from the repository default
+branch or the exact matching version tag. This prevents an accidental
+credentialed publication from a feature branch while preserving inexpensive
+release experiments.
+
+After every successful dry run or publication, the workflow writes:
+
+```text
+build/reports/release/release-evidence.json
+build/reports/release/release-evidence.md
+```
+
+The evidence binds the version, commit SHA, ref, workflow run, dry-run mode,
+database-matrix result and API baseline to SHA-256 hashes of the staged-artifact
+inspection, reproducibility inventories, dependency scan, JMH results and the
+versioned coverage/performance policies. It also records the accepted 1.0 risk
+that advanced dependency verification remains deferred. Keep this manifest
+with the staging and JReleaser logs; a source ZIP or an unqualified local build
+is not release evidence.
 
 
 ## Dependency-security and reproducibility gates

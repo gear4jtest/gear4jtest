@@ -136,7 +136,15 @@ class XmlAssemblyLineGeneratorFunctionalTest {
     }
 
     private void writeBuild(String configuration = '') {
-        Files.writeString(projectDirectory.resolve('settings.gradle'), "rootProject.name = 'functional-test'\n")
+        Files.writeString(projectDirectory.resolve('settings.gradle'), '''
+rootProject.name = 'functional-test'
+
+buildCache {
+    local {
+        directory = file('.build-cache')
+    }
+}
+'''.stripIndent())
         Files.writeString(projectDirectory.resolve('build.gradle'), """
 plugins {
     id 'java'
@@ -189,7 +197,6 @@ xmlAssemblyLineGenerator {
         return GradleRunner.create()
             .withProjectDir(projectDirectory.toFile())
             .withPluginClasspath()
-            .withTestKitDir(projectDirectory.resolve('.test-kit').toFile())
             .withArguments(arguments)
     }
 
