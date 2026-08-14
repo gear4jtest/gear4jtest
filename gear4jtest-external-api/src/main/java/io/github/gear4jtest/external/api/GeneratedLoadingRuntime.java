@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import io.github.gear4jtest.external.api.exception.GeneratedAssemblyLineLoadTimeoutException;
 import io.github.gear4jtest.external.api.loader.ClassLoaderRegistry;
 import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 
@@ -28,6 +30,7 @@ import static java.util.Objects.requireNonNull;
  * Bounded executor, deadline and single-flight lifecycle for generated loads.
  */
 final class GeneratedLoadingRuntime implements AutoCloseable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GeneratedLoadingRuntime.class);
     private static final AtomicInteger THREAD_SEQUENCE = new AtomicInteger();
 
     private final GeneratedLoadingConfiguration configuration;
@@ -128,6 +131,12 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
             LoadResult loaded = operation.load(attempt);
             if (loaded != null) {
                 completeSuccessfully(internalLoaderId, flight, loaded);
+            } else if (!flight.isTerminal()) {
+                completeExceptionally(internalLoaderId, flight,
+                                      new IOException(
+                                              "Generated assembly-line loading operation returned no result for "
+                                                      + internalLoaderId),
+                                      counters::recordLoadFailed);
             }
         } catch (IOException | RuntimeException | Error failure) {
             completeExceptionally(internalLoaderId, flight, failure, counters::recordLoadFailed);
@@ -197,11 +206,18 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
         if (!claim.claimed()) {
             return false;
         }
-        beforeCompletion.run();
-        if (!claim.registrationCleanupRequired()) {
-            inFlight.remove(internalLoaderId, flight);
+        try {
+            beforeCompletion.run();
+        } catch (RuntimeException | Error completionFailure) {
+            if (completionFailure != failure) {
+                failure.addSuppressed(completionFailure);
+            }
+        } finally {
+            if (!claim.registrationCleanupRequired()) {
+                inFlight.remove(internalLoaderId, flight);
+            }
+            flight.completeExceptionally(failure);
         }
-        flight.completeExceptionally(failure);
         return true;
     }
 
@@ -209,14 +225,21 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
                                      LoadFlight flight,
                                      LoadResult loaded,
                                      Throwable primaryFailure) {
+        Throwable cleanupFailure = null;
         try {
             loaded.discard().run();
+        } catch (RuntimeException | Error failure) {
+            cleanupFailure = failure;
+            if (primaryFailure != null && primaryFailure != failure) {
+                primaryFailure.addSuppressed(failure);
+            }
+        } finally {
             flight.registrationCleanupFinished();
             inFlight.remove(internalLoaderId, flight);
-        } catch (RuntimeException | Error cleanupFailure) {
-            if (primaryFailure != null) {
-                primaryFailure.addSuppressed(cleanupFailure);
-            }
+        }
+        if (cleanupFailure != null) {
+            LOGGER.warn("Generated classloader registration cleanup failed; the single-flight slot was released. "
+                    + "internalLoaderId={}", internalLoaderId, cleanupFailure);
         }
     }
 

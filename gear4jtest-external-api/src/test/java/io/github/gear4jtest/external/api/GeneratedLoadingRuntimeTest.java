@@ -11,10 +11,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 class GeneratedLoadingRuntimeTest {
     private static final GeneratedAssemblyLine<Object, Object> GENERATED = () -> null;
@@ -140,6 +142,44 @@ class GeneratedLoadingRuntimeTest {
     }
 
     @Test
+    void load_shouldReleaseFailedFlightWhenRegistrationCleanupAlsoFails() throws Exception {
+        // Given
+        AtomicInteger registrations = new AtomicInteger();
+        AtomicInteger cleanups = new AtomicInteger();
+        GeneratedLoadingRuntime.LoadingOperation operation = attempt -> new GeneratedLoadingRuntime.LoadResult(
+                GENERATED,
+                () -> {
+                    if (registrations.incrementAndGet() == 1) {
+                        throw new IllegalStateException("registry unavailable");
+                    }
+                },
+                () -> {
+                    if (cleanups.incrementAndGet() == 1) {
+                        throw new IllegalStateException("registry cleanup failed");
+                    }
+                });
+
+        try (var runtime = new GeneratedLoadingRuntime(GeneratedLoadingConfiguration.defaults())) {
+            // When
+            Throwable failure = catchThrowable(() -> runtime.load("loader", operation));
+            awaitFlightRelease(runtime);
+
+            // Then
+            assertThat(failure)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("registry unavailable");
+            assertThat(failure.getSuppressed())
+                    .singleElement()
+                    .asInstanceOf(InstanceOfAssertFactories.THROWABLE)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("registry cleanup failed");
+            assertThat(runtime.snapshotStats().inFlightLoads()).isZero();
+            assertThat(runtime.load("loader", operation)).isSameAs(GENERATED);
+            assertThat(registrations).hasValue(2);
+        }
+    }
+
+    @Test
     void close_shouldWakeInFlightCallerAndRejectLaterLoads() throws Exception {
         // Given
         CountDownLatch loadEntered = new CountDownLatch(1);
@@ -186,5 +226,15 @@ class GeneratedLoadingRuntimeTest {
                 // Deliberately non-cooperative test operation.
             }
         }
+    }
+
+    private static void awaitFlightRelease(GeneratedLoadingRuntime runtime) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2L);
+        while (runtime.snapshotStats().inFlightLoads() != 0 && System.nanoTime() < deadline) {
+            TimeUnit.MILLISECONDS.sleep(10L);
+        }
+        assertThat(runtime.snapshotStats().inFlightLoads())
+                .as("registration cleanup must not retain a completed single-flight")
+                .isZero();
     }
 }

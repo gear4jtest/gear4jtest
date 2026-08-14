@@ -9,6 +9,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
@@ -19,6 +20,7 @@ import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -325,6 +327,44 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         // Then
         assertThat(coordinator.snapshotStats().scheduledFlushes()).isEqualTo(1L);
         verify(flushExecutor).execute(any(Runnable.class));
+    }
+
+    @Test
+    void periodicFlush_shouldSurviveSchedulingRejectionAndProcessLaterBuffers() {
+        // Given
+        AtomicReference<Runnable> periodicFlush = new AtomicReference<>();
+        ScheduledExecutorService maintenanceExecutor = mock(ScheduledExecutorService.class);
+        doAnswer(invocation -> {
+            periodicFlush.set(invocation.getArgument(0));
+            return mock(ScheduledFuture.class);
+        }).when(maintenanceExecutor)
+                .scheduleWithFixedDelay(any(Runnable.class), anyLong(), anyLong(), eq(TimeUnit.NANOSECONDS));
+        AtomicInteger submissions = new AtomicInteger();
+        ExecutorService flushExecutor = mock(ExecutorService.class);
+        doAnswer(invocation -> {
+            if (submissions.incrementAndGet() == 1) {
+                throw new RejectedExecutionException("temporarily saturated");
+            }
+            ((Runnable) invocation.getArgument(0)).run();
+            return null;
+        }).when(flushExecutor).execute(any(Runnable.class));
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        OperationRecordBufferRegistry buffers = new OperationRecordBufferRegistry(10, 2);
+        PersistenceFlushCoordinator coordinator = new PersistenceFlushCoordinator(repository, configuration(), buffers,
+                flushExecutor, maintenanceExecutor, false, false);
+        OperationRecordBuffer rejectedBuffer = buffers.createFresh(UUID.randomUUID(), 2);
+        rejectedBuffer.append(mock(StationLogRecord.class), coordinator.counters());
+
+        // When / Then
+        assertThatCode(periodicFlush.get()::run).doesNotThrowAnyException();
+
+        OperationRecordBuffer laterBuffer = buffers.createFresh(UUID.randomUUID(), 2);
+        laterBuffer.append(mock(StationLogRecord.class), coordinator.counters());
+        assertThatCode(periodicFlush.get()::run).doesNotThrowAnyException();
+
+        assertThat(submissions.get()).isGreaterThanOrEqualTo(3);
+        assertThat(laterBuffer.pendingCount()).isZero();
+        verify(repository).saveOperationRecordsBatch(anyList());
     }
 
     private static ExecutorService inlineExecutor() {

@@ -512,7 +512,12 @@ final class PersistenceFlushCoordinator {
         }
         for (OperationRecordBuffer buffer : buffers.activeBuffers()) {
             if (buffer.pendingCount() > 0 && !buffer.isClosed()) {
-                scheduleAsyncFlush(buffer, false);
+                try {
+                    scheduleAsyncFlush(buffer, false);
+                } catch (ExecutionPersistenceException exception) {
+                    LOGGER.error("Periodic station log flush scheduling failed. Future maintenance passes remain "
+                            + "active. runId={}", buffer.runId(), exception);
+                }
             }
         }
     }
