@@ -176,11 +176,12 @@ Application operators and processors should be written cooperatively:
 - keep retry/backoff policies explicit.
 
 Gear4J already checks the token at station entry, around parallel branch
-submission and while awaiting parallel completion. Sequential, iterator,
-if/else and inline-call traversal re-enters that station boundary. User
-checkpoints are therefore needed only inside work that keeps control away from
-the framework, such as a long loop, blocking condition/item resolver, external
-I/O call or custom retry sequence.
+submission and while awaiting parallel completion. Sequential, if/else and
+inline-call traversal re-enters that station boundary. Iterator traversal also
+checks cancellation before requesting each item and defaults to a 100,000-item
+limit. User checkpoints are therefore needed only inside work that keeps
+control away from the framework, such as a blocking `hasNext`/`next`, condition
+or item resolver, external I/O call or custom retry sequence.
 
 A `CancellationToken` is one-shot state. Sharing one token between unrelated top-level runs couples their lifecycle:
 cancelling one run cancels every run that reused the same token. `RunRequest.toBuilder()` preserves the token;

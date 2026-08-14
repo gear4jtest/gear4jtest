@@ -1,5 +1,6 @@
 package io.github.gear4jtest.external.api.artifact;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -106,9 +107,7 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
                 }
             }
             case ASYNC_FALLBACKS -> {
-                for (var fb : fallbacks) {
-                    scheduleAsyncWrite(fb, stored);
-                }
+                scheduleAsyncWrites(fallbacks, stored);
             }
         }
         return hash;
@@ -142,9 +141,7 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
                 }
             }
             case ASYNC_FALLBACKS -> {
-                for (var fb : fallbacks) {
-                    scheduleAsyncWrite(fb, tempFile, "Asynchronous fallback artifact write failed.");
-                }
+                scheduleAsyncWrites(fallbacks, tempFile, "Asynchronous fallback artifact write failed.");
             }
         }
         return hash;
@@ -210,7 +207,7 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
         Path asyncCopy;
         try {
             asyncCopy = copyTempFile(sourceFile);
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             LOGGER.warn("Unable to prepare artifact self-healing copy.", e);
             return;
         }
@@ -227,32 +224,46 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
         }, () -> spool.delete(asyncCopy), "Asynchronous artifact self-healing write was rejected.");
     }
 
-    private void scheduleAsyncWrite(ArtifactStore store, byte[] source) {
-        byte[] asyncContent = Arrays.copyOf(source, source.length);
-        executeBestEffort(() -> {
-            try {
-                store.put(asyncContent);
-            } catch (IOException | RuntimeException e) {
-                LOGGER.warn("Asynchronous fallback artifact write failed.", e);
-            }
-        }, () -> {
-            // No external resource is held when the byte-array task is rejected.
-        }, "Asynchronous fallback artifact write was rejected after primary success.");
+    private void scheduleAsyncWrites(java.util.List<ArtifactStore> stores, byte[] source) {
+        if (stores.isEmpty()) {
+            return;
+        }
+        Path asyncCopy;
+        try {
+            asyncCopy = copyToTempFile(new ByteArrayInputStream(source));
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warn("Unable to prepare asynchronous artifact copy after primary success.", e);
+            return;
+        }
+        schedulePreparedAsyncWrites(stores, asyncCopy, "Asynchronous fallback artifact write failed.");
     }
 
-    private void scheduleAsyncWrite(ArtifactStore store, Path sourceFile, String failureMessage) {
+    private void scheduleAsyncWrites(java.util.List<ArtifactStore> stores, Path sourceFile, String failureMessage) {
+        if (stores.isEmpty()) {
+            return;
+        }
         Path asyncCopy;
         try {
             asyncCopy = copyTempFile(sourceFile);
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             LOGGER.warn("Unable to prepare asynchronous artifact copy.", e);
             return;
         }
+        schedulePreparedAsyncWrites(stores, asyncCopy, failureMessage);
+    }
+
+    private void schedulePreparedAsyncWrites(java.util.List<ArtifactStore> stores,
+                                             Path asyncCopy,
+                                             String failureMessage) {
         executeBestEffort(() -> {
-            try (InputStream content = Files.newInputStream(asyncCopy)) {
-                store.put(content, ArtifactStore.UNLIMITED_SIZE);
-            } catch (IOException | RuntimeException e) {
-                LOGGER.warn(failureMessage, e);
+            try {
+                for (ArtifactStore store : stores) {
+                    try (InputStream content = Files.newInputStream(asyncCopy)) {
+                        store.put(content, ArtifactStore.UNLIMITED_SIZE);
+                    } catch (IOException | RuntimeException e) {
+                        LOGGER.warn("{} fallbackStore={}", failureMessage, store.getClass().getName(), e);
+                    }
+                }
             } finally {
                 spool.delete(asyncCopy);
             }
@@ -309,15 +320,19 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
     }
 
     private Path copyTempFile(Path sourceFile) throws IOException {
+        try (InputStream source = Files.newInputStream(sourceFile)) {
+            return copyToTempFile(source);
+        }
+    }
+
+    private Path copyToTempFile(InputStream source) throws IOException {
         Path copy = spool.createTempFile("async-");
         try {
-            try (InputStream source = Files.newInputStream(sourceFile)) {
-                spool.copy(source, copy);
-            }
+            spool.copy(source, copy);
             return copy;
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException exception) {
             spool.delete(copy);
-            throw e;
+            throw exception;
         }
     }
 

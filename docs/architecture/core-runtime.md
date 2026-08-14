@@ -70,7 +70,8 @@ Examples:
 - `SequenceStationStrategy` executes children in order.
 - `ContainerStationStrategy` executes branches and aggregates outcomes.
 - `IfElseContainerStationStrategy` chooses a branch.
-- `IteratorStationStrategy` iterates and accumulates output.
+- `IteratorStationStrategy` checks cancellation between items, enforces the
+  station item limit and accumulates output in one pass.
 - `AssemblyLineCallStationStrategy` executes child pipelines.
 - `SignalStationStrategy` produces flow signals.
 
@@ -123,9 +124,12 @@ General rules:
 ## Cancellation checkpoints
 
 Gear4J checks run cancellation at every station entry, before parallel branch
-submission and while waiting for parallel completions. Sequential, iterator,
-if/else and inline-call strategies re-enter the station runner at each child or
-item boundary, so they inherit the station-entry checkpoint.
+submission and while waiting for parallel completions. Sequential, if/else and
+inline-call strategies re-enter the station runner at child boundaries.
+Iterator stations additionally check the token before requesting each next item
+and process at most `IteratorStation.DEFAULT_MAX_ITEMS` (100,000) by default.
+Set `maxItems(...)` to a smaller application limit; use `UNLIMITED_ITEMS` only
+for a trusted iterable that is bounded externally.
 
 Application code needs an explicit checkpoint only while Gear4J cannot regain
 control: long operator/processor loops, blocking conditions or item resolvers,

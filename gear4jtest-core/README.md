@@ -100,7 +100,9 @@ Main station kinds:
 - `SequenceStation`: executes children in order.
 - `ContainerBaseStation`: executes multiple branches, sequentially or with an executor.
 - `UnaryIfElseContainerStation`: conditional branch container.
-- `IteratorStation`: iterates over input and accumulates results.
+- `IteratorStation`: iterates over input, checks cancellation between items and
+  accumulates results with a default 100,000-item limit. Configure
+  `maxItems(...)` explicitly for a different bound.
 - `SignalStation`: emits explicit STOP or FATAL-like flow signals.
 - `AssemblyLineCallStation`: calls another pipeline either inline or as a nested run.
 

@@ -103,6 +103,9 @@ Java compilation is only one part of the upgrade. Before deployment:
 - review metric names and bounded tags before changing dashboards or alerts;
 - choose an explicit persistence redaction policy before retaining payloads, context, results or error messages;
 - retain the best-effort event-delivery assumption unless the application owns a separate durable transport.
+- review iterator workloads above 100,000 items: `IteratorStation` now enforces
+  that safe default; configure `maxItems(...)` explicitly or use
+  `UNLIMITED_ITEMS` only when an external bound is guaranteed.
 
 See the [compatibility policy](../compatibility-policy.md),
 [JDBC migration architecture](../architecture/jdbc-migrations.md),

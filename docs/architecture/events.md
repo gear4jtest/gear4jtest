@@ -69,7 +69,9 @@ internal: it does not change `EventManager.ShutdownHandle` or the best-effort de
 Use `ShutdownMode.DETACH_AND_DRAIN` when the application wants to return the pipeline result before best-effort reactions
 finish. `RuntimeConfiguration.detachAndDrainDefaults()` exists as a readable shortcut for this common best-effort mode.
 Detached mode is still not durable delivery: reactions may already have been dropped under saturation, and run-scoped
-resources are cleaned up after `detachCleanupTimeout` even if user reaction code is still blocked.
+resources are cleaned up after `detachCleanupTimeout` even if user reaction code is still blocked. Timeout cleanup uses
+a dedicated daemon scheduler; normal reaction completion cancels and removes its pending timeout so completed runs are
+not retained until the full delay expires.
 
 ## What the runtime does not guarantee
 

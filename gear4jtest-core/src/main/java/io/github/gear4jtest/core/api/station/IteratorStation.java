@@ -16,12 +16,20 @@ import io.github.gear4jtest.core.api.context.ExecutionContext;
  * child sequence for each item.
  */
 public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
+    /** Default maximum number of elements processed by one iterator station. */
+    public static final long DEFAULT_MAX_ITEMS = 100_000L;
+    /**
+     * Explicit opt-out for trusted iterables whose size is controlled externally.
+     */
+    public static final long UNLIMITED_ITEMS = -1L;
+
     private final Function<IN, ? extends Iterable<?>> func;
     private final SequenceStation<?, ?> chain;
     private final ItemIdResolver itemIdResolver;
     private final FlowConfig flowConfig;
     private final Accumulator accumulator;
     private final Collector<?, ?, ?> collector;
+    private final long maxItems;
 
     private IteratorStation(String id,
                             Function<IN, ? extends Iterable<?>> func,
@@ -29,7 +37,8 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
                             ItemIdResolver itemIdResolver,
                             FlowConfig flowConfig,
                             Accumulator accumulator,
-                            Collector<?, ?, ?> collector) {
+                            Collector<?, ?, ?> collector,
+                            long maxItems) {
         super(id, StationKind.ITERATOR, null, null, null, false, null, null);
         this.func = func;
         this.chain = chain;
@@ -37,6 +46,7 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
         this.flowConfig = flowConfig;
         this.accumulator = accumulator;
         this.collector = collector;
+        this.maxItems = requireValidMaxItems(maxItems);
     }
 
     public Function<IN, ? extends Iterable<?>> getFunc() {
@@ -63,6 +73,17 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
         return flowConfig;
     }
 
+    public long getMaxItems() {
+        return maxItems;
+    }
+
+    private static long requireValidMaxItems(long maxItems) {
+        if (maxItems != UNLIMITED_ITEMS && maxItems < 1L) {
+            throw new IllegalArgumentException("iterator maxItems must be > 0 or UNLIMITED_ITEMS");
+        }
+        return maxItems;
+    }
+
     @FunctionalInterface
     public interface ItemIdResolver {
         String resolve(Object element, long index, ExecutionContext ctx);
@@ -76,6 +97,7 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
         private FlowConfig flowConfig;
         private Accumulator accumulator;
         private Collector<?, ?, ?> collector;
+        private long maxItems = DEFAULT_MAX_ITEMS;
 
         public Builder(String id) {
             this.id = id;
@@ -89,6 +111,7 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
             this.flowConfig = source.flowConfig;
             this.accumulator = source.accumulator;
             this.collector = source.collector;
+            this.maxItems = source.maxItems;
         }
 
         public <A> Builder<IN, A> iterableFunction(Function<IN, ? extends Iterable<A>> func) {
@@ -108,6 +131,19 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
             return this;
         }
 
+        /**
+         * Bounds the number of elements consumed from the iterable.
+         *
+         * <p>
+         * The default is {@link #DEFAULT_MAX_ITEMS}. Pass {@link #UNLIMITED_ITEMS} only
+         * when the iterable is trusted and externally bounded.
+         * </p>
+         */
+        public Builder<IN, OUT> maxItems(long maxItems) {
+            this.maxItems = requireValidMaxItems(maxItems);
+            return this;
+        }
+
         public Builder<IN, OUT> accumulator(Accumulator accumulator) {
             this.accumulator = accumulator;
             return this;
@@ -120,7 +156,8 @@ public class IteratorStation<IN, OUT> extends AbstractStation<IN, OUT> {
         }
 
         public IteratorStation<IN, OUT> build() {
-            return new IteratorStation<>(id, func, chain, itemIdResolver, flowConfig, accumulator, collector);
+            return new IteratorStation<>(id, func, chain, itemIdResolver, flowConfig, accumulator, collector,
+                    maxItems);
         }
     }
 

@@ -61,6 +61,7 @@ class TypedBuilderIsolationTest {
     void iteratorIterableTransition_shouldNotMutateSourceBuilder() {
         // Given
         IteratorStation.Builder<List<String>, List<String>> source = new IteratorStation.Builder<>("iterator");
+        source.maxItems(7L);
 
         // When
         IteratorStation.Builder<List<String>, String> typed = source.iterableFunction(values -> values);
@@ -68,6 +69,7 @@ class TypedBuilderIsolationTest {
         // Then
         assertThat(source.build().getFunc()).isNull();
         assertThat(typed.build().getFunc()).isNotNull();
+        assertThat(typed.build().getMaxItems()).isEqualTo(7L);
     }
 
     @Test
@@ -97,6 +99,13 @@ class TypedBuilderIsolationTest {
         // Then
         assertThat(source.build().getCollector()).isNull();
         assertThat(typed.build().getCollector()).isNotNull();
+    }
+
+    @Test
+    void iteratorBuilder_shouldRejectInvalidItemLimits() {
+        assertThatThrownBy(() -> new IteratorStation.Builder<String, String>("iterator").maxItems(0L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("iterator maxItems must be > 0 or UNLIMITED_ITEMS");
     }
 
     @Test

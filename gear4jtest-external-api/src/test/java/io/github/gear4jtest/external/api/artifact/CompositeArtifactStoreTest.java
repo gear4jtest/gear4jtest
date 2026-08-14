@@ -94,6 +94,38 @@ class CompositeArtifactStoreTest {
     }
 
     @Test
+    void putByteArray_shouldScheduleOneBoundedSpoolCopyForAllFallbacks() throws IOException {
+        // Given
+        InMemoryArtifactStore primary = new InMemoryArtifactStore();
+        InMemoryArtifactStore firstFallback = new InMemoryArtifactStore();
+        InMemoryArtifactStore secondFallback = new InMemoryArtifactStore();
+        RecordingExecutor executor = new RecordingExecutor();
+        CompositeArtifactStore store = new CompositeArtifactStore(primary, List.of(firstFallback, secondFallback),
+                CompositeArtifactStore.WriteMode.ASYNC_FALLBACKS,
+                CompositeArtifactStore.ReadMode.PREFER_PRIMARY, false, false,
+                ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES, spoolDirectory, executor);
+
+        // When
+        String hash = store.put("payload".getBytes(StandardCharsets.UTF_8));
+
+        // Then
+        assertThat(primary.exists(hash)).isTrue();
+        assertThat(firstFallback.exists(hash)).isFalse();
+        assertThat(secondFallback.exists(hash)).isFalse();
+        assertThat(executor.tasks()).hasSize(1);
+        assertThat(store.snapshotSpoolStats().currentFiles()).isEqualTo(1L);
+
+        // When
+        executor.runAll();
+
+        // Then
+        assertThat(firstFallback.exists(hash)).isTrue();
+        assertThat(secondFallback.exists(hash)).isTrue();
+        assertThat(store.snapshotSpoolStats().currentFiles()).isZero();
+        assertThat(store.snapshotSpoolStats().currentBytes()).isZero();
+    }
+
+    @Test
     void putInputStream_shouldKeepPrimarySuccessAndCleanSpoolWhenAsyncFallbackSchedulingIsRejected()
             throws IOException {
         // Given
@@ -118,6 +150,25 @@ class CompositeArtifactStoreTest {
         return command -> {
             throw new RejectedExecutionException("executor saturated");
         };
+    }
+
+    private static final class RecordingExecutor implements Executor {
+        private final List<Runnable> tasks = new ArrayList<>();
+
+        @Override
+        public void execute(Runnable command) {
+            tasks.add(command);
+        }
+
+        private List<Runnable> tasks() {
+            return List.copyOf(tasks);
+        }
+
+        private void runAll() {
+            List<Runnable> scheduled = List.copyOf(tasks);
+            tasks.clear();
+            scheduled.forEach(Runnable::run);
+        }
     }
 
     private static final class StreamOnlyArtifactStore implements ArtifactStore {

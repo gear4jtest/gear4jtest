@@ -168,8 +168,7 @@ class GeneratedLoadingRuntimeTest {
             assertThat(failure)
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("registry unavailable");
-            assertThat(failure.getSuppressed())
-                    .singleElement()
+            assertThat(failure.getSuppressed()).singleElement()
                     .asInstanceOf(InstanceOfAssertFactories.THROWABLE)
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("registry cleanup failed");

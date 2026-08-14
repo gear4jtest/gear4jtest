@@ -176,9 +176,11 @@ retention control, not an RPO or delivery deadline. For synchronous database
 artifact writes, no successful acknowledgement exists until the database write
 returns. For composite `ASYNC_FALLBACKS`, the acknowledged durability boundary
 is the primary store: every fallback copy still queued or executing can be lost
-on a JVM crash. Select `SYNC_ALL` when waiting for every fallback is required;
-use a durable replication service or outbox when queued copies themselves must
-survive restart.
+on a JVM crash. A single quota-accounted spool copy and executor task serve all
+fallbacks for one artifact. Saturation rejects that task after primary success
+instead of running fallback I/O on the caller thread. Select `SYNC_ALL` when
+waiting for every fallback is required; use a durable replication service or
+outbox when queued copies themselves must survive restart.
 
 Database artifact reads are lazy and keep a JDBC connection open until the
 returned stream is closed. Use `Artifact#openStreamChecked()` in

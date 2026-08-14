@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.engine.strategy;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.function.Function;
 import java.util.stream.Collector;
 
@@ -17,9 +18,8 @@ import io.github.gear4jtest.core.spi.runner.StationRunner;
 
 public class IteratorStationStrategy extends AbstractStationStrategy<IteratorStation<?, ?>> {
     @SuppressWarnings("unchecked")
-    private static <A, R> R collectResults(Collection<Object> results, Collector<?, A, R> collector) {
-        return results.stream()
-                .collect((Collector<? super Object, A, R>) collector);
+    private static Collector<Object, Object, Object> resultCollector(Collector<?, ?, ?> collector) {
+        return (Collector<Object, Object, Object>) collector;
     }
 
     @Override
@@ -35,19 +35,51 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
                             StationExecutionContext operationExecution) {
         FlowConfig config = FlowStrategySupport.resolveFlowConfig(station.getFlowConfig());
 
-        Iterable<?> collection;
+        Object source;
         if (station.getFunc() != null) {
-            collection = ((Function<Object, ? extends Iterable<?>>) station.getFunc()).apply(input);
+            source = ((Function<Object, ? extends Iterable<?>>) station.getFunc()).apply(input);
         } else {
-            collection = (Iterable<?>) input;
+            source = input;
+        }
+        if (!(source instanceof Iterable<?> iterable)) {
+            throw new IllegalArgumentException("Iterator station '" + station.getId()
+                    + "' requires a non-null Iterable source");
+        }
+        Iterator<?> iterator = iterable.iterator();
+        if (iterator == null) {
+            throw new IllegalStateException("Iterator station '" + station.getId() + "' returned a null iterator");
         }
 
-        Collection<Object> results = new ArrayList<>();
-        Collection<Throwable> collectedErrors = new ArrayList<>();
+        Collection<Object> results = null;
+        Collector<Object, Object, Object> collector = null;
+        Object collectorState = null;
+        if (station.getAccumulator() != null) {
+            results = station.getAccumulator().getCollectionSupplier().getSupplier().get();
+        } else if (station.getCollector() != null) {
+            collector = resultCollector(station.getCollector());
+            collectorState = collector.supplier().get();
+        } else {
+            results = new ArrayList<>();
+        }
+        Throwable collectedError = null;
 
         long index = 0L;
 
-        for (Object element : collection) {
+        while (true) {
+            if (operationExecution.getGlobalContext().getCancellationToken().isCancellationRequested()) {
+                EngineStationContexts.trace(operationExecution)
+                        .markCancelled(operationExecution.getGlobalContext().getCancellationToken()
+                                .cancellationCause().orElse(null));
+                break;
+            }
+            if (!iterator.hasNext()) {
+                break;
+            }
+            if (station.getMaxItems() != IteratorStation.UNLIMITED_ITEMS && index >= station.getMaxItems()) {
+                throw new IllegalStateException("Iterator station '" + station.getId()
+                        + "' exceeded its maximum item count of " + station.getMaxItems());
+            }
+            Object element = iterator.next();
             String itemId = (station.getItemIdResolver() != null)
                     ? station.getItemIdResolver().resolve(element, index, operationExecution.getGlobalContext())
                     : station.getId() + "#item-" + index;
@@ -63,11 +95,19 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
             switch (decision) {
                 case PROCEED -> {
                     if (chainResult.getStatus() == StationLogStatus.SUCCEEDED) {
-                        results.add(chainResult.getOutput());
+                        if (collector != null) {
+                            collector.accumulator().accept(collectorState, chainResult.getOutput());
+                        } else {
+                            results.add(chainResult.getOutput());
+                        }
                     }
                 }
-                case MARK_AND_PROCEED -> collectedErrors.add(FlowStrategySupport
-                        .representativeThrowable(chainResult, "Item failed without exception: " + itemId));
+                case MARK_AND_PROCEED -> {
+                    if (collectedError == null) {
+                        collectedError = FlowStrategySupport
+                                .representativeThrowable(chainResult, "Item failed without exception: " + itemId);
+                    }
+                }
                 case INTERRUPT ->
                     FlowStrategySupport.applyInterruptToParentLog(EngineStationContexts.trace(operationExecution),
                                                                   chainResult, config);
@@ -80,20 +120,15 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
             index++;
         }
 
-        if (!collectedErrors.isEmpty()) {
-            Throwable first = collectedErrors.iterator().next();
+        if (collectedError != null
+                && EngineStationContexts.trace(operationExecution).getStatus() == StationLogStatus.RUNNING) {
+            Throwable first = collectedError;
             EngineStationContexts.trace(operationExecution)
                     .markFailed(first instanceof Exception ex ? ex : new RuntimeException(first.getMessage(), first));
         }
 
-        if (station.getAccumulator() != null) {
-            Collection<Object> acc = station.getAccumulator().getCollectionSupplier().getSupplier().get();
-            acc.addAll(results);
-            return acc;
-        }
-
-        if (station.getCollector() != null) {
-            return collectResults(results, station.getCollector());
+        if (collector != null) {
+            return collector.finisher().apply(collectorState);
         }
 
         return results;

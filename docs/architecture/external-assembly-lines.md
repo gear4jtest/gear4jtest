@@ -184,7 +184,11 @@ trusted deployments.
 `CompositeArtifactStore.WriteMode.ASYNC_FALLBACKS` is best-effort replication.
 Once the primary store has accepted an artifact, executor rejection or a
 fallback write failure is logged and does not turn the completed primary write
-into an apparent caller failure. Use `SYNC_ALL` when the caller must wait for
-every configured fallback. Stores are independent, so even synchronous mode
-cannot provide a cross-store atomic transaction: a later fallback failure may
-still occur after an earlier store accepted the content.
+into an apparent caller failure. One bounded spool copy and one executor task
+are shared by all fallbacks for an artifact, preventing heap/task amplification
+as fallback count grows. The default executor has a finite queue and rejects at
+saturation; it never converts the asynchronous write into caller-thread I/O.
+Use `SYNC_ALL` when the caller must wait for every configured fallback. Stores
+are independent, so even synchronous mode cannot provide a cross-store atomic
+transaction: a later fallback failure may still occur after an earlier store
+accepted the content.
