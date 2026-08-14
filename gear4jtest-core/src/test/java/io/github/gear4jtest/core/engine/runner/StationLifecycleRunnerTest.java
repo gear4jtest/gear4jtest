@@ -9,6 +9,7 @@ import io.github.gear4jtest.core.api.ExecutionResult;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.config.CancelPolicy;
+import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.api.config.FailurePolicy;
 import io.github.gear4jtest.core.api.config.FlowConfig;
 import io.github.gear4jtest.core.api.config.StopPolicy;
@@ -21,6 +22,7 @@ import io.github.gear4jtest.core.api.util.Stations;
 import io.github.gear4jtest.core.builtin.extension.PersistenceExtension;
 import io.github.gear4jtest.core.engine.AssemblyLineEngine;
 import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
+import io.github.gear4jtest.core.event.EventPayloadPolicy;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.persistence.RunPersistenceManager;
@@ -122,6 +124,53 @@ class StationLifecycleRunnerTest {
         assertThat(result.getResult()).isEqualTo("ok-second");
     }
 
+    @Test
+    void inputPayloadMappingFailure_shouldNotFailRun() {
+        // Given
+        EXECUTIONS.set(0);
+        EventPayloadPolicy policy = new EventPayloadPolicy() {
+            @Override
+            public Object mapStationInput(Object input, StationExecutionContext stationExecutionContext) {
+                throw new IllegalStateException("input mapping failed");
+            }
+        };
+
+        // When
+        ExecutionResult<String> result = engine(List.of())
+                .execute(pipeline(policy), RunRequest.builder().input("ok").build());
+
+        // Then
+        assertThat(result.isSuccess()).isTrue();
+        assertThat(result.getResult()).isEqualTo("ok");
+        assertThat(EXECUTIONS).hasValue(1);
+    }
+
+    @Test
+    void outputPayloadMappingFailure_shouldNotFailRun() {
+        // Given
+        EXECUTIONS.set(0);
+        EventPayloadPolicy policy = new EventPayloadPolicy() {
+            @Override
+            public Object mapStationInput(Object input, StationExecutionContext stationExecutionContext) {
+                return input;
+            }
+
+            @Override
+            public Object mapStationOutput(Object output, StationExecutionContext stationExecutionContext) {
+                throw new IllegalStateException("output mapping failed");
+            }
+        };
+
+        // When
+        ExecutionResult<String> result = engine(List.of())
+                .execute(pipeline(policy), RunRequest.builder().input("ok").build());
+
+        // Then
+        assertThat(result.isSuccess()).isTrue();
+        assertThat(result.getResult()).isEqualTo("ok");
+        assertThat(EXECUTIONS).hasValue(1);
+    }
+
     private static AssemblyLineEngine engine(StationLifecycleExtension extension) {
         return engine(List.of(extension));
     }
@@ -135,6 +184,18 @@ class StationLifecycleRunnerTest {
     private static AssemblyLine<String, String> pipeline() {
         return AssemblyLines.<String>createAssemblyLine("lifecycle-test")
                 .then(Stations.processingOperation("echo", EchoOperator.class).build()).build();
+    }
+
+    private static AssemblyLine<String, String> pipeline(EventPayloadPolicy eventPayloadPolicy) {
+        EventHandlingDefinition eventHandling = EventHandlingDefinition.builder()
+                .globalEventConfiguration(EventHandlingDefinition.EventConfiguration.builder()
+                        .eventPayloadPolicy(eventPayloadPolicy)
+                        .build())
+                .build();
+        return AssemblyLines.<String>createAssemblyLine("lifecycle-test")
+                .configuration(AssemblyLine.Configuration.builder().eventHandling(eventHandling).build())
+                .then(Stations.processingOperation("echo", EchoOperator.class).build())
+                .build();
     }
 
     private static ResourceFactory reflectiveResourceFactory() {

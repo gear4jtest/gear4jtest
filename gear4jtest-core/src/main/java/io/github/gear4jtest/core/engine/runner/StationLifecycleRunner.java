@@ -61,12 +61,15 @@ public class StationLifecycleRunner implements StationRunner {
             return;
         }
         StationLogTrace stationLog = EngineStationContexts.trace(stationCtx);
-        runCtx.getServices().getEventManager()
-                .publish(new StationStartedEvent(runCtx.getAssemblyLineId(), runCtx.getExecutionId(),
-                        stationLog.getId(),
-                        stationCtx.getOperationId(), stationLog.getParentOperationId(), stationLog.getBranchId(),
-                        stationLog.getItemId(), runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
-                                .mapStationInput(input, stationCtx)));
+        BestEffortStationEventPublisher.publish(StationStartedEvent.class.getSimpleName(), stationCtx.getOperationId(),
+                                                () -> runCtx.getServices().getEventManager()
+                                                        .publish(new StationStartedEvent(runCtx.getAssemblyLineId(),
+                                                                runCtx.getExecutionId(), stationLog.getId(),
+                                                                stationCtx.getOperationId(),
+                                                                stationLog.getParentOperationId(),
+                                                                stationLog.getBranchId(), stationLog.getItemId(),
+                                                                runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
+                                                                        .mapStationInput(input, stationCtx))));
     }
 
     private void publishFinishedEvent(ExecutionContext runCtx,
@@ -76,14 +79,20 @@ public class StationLifecycleRunner implements StationRunner {
         if (runCtx.getServices().getEventManager() == null || result == null) {
             return;
         }
-        runCtx.getServices().getEventManager()
-                .publish(new StationFinishedEvent(runCtx.getAssemblyLineId(), runCtx.getExecutionId(), result.getId(),
-                        stationCtx.getOperationId(), result.getParentOperationId(), result.getBranchId(),
-                        result.getItemId(), runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
-                                .mapStationInput(input, stationCtx),
-                        result.getStatus(), runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
-                                .mapStationOutput(result.getOutput(), stationCtx),
-                        extractPrimaryError(result)));
+        BestEffortStationEventPublisher.publish(StationFinishedEvent.class.getSimpleName(), stationCtx.getOperationId(),
+                                                () -> runCtx.getServices().getEventManager()
+                                                        .publish(new StationFinishedEvent(runCtx.getAssemblyLineId(),
+                                                                runCtx.getExecutionId(), result.getId(),
+                                                                stationCtx.getOperationId(),
+                                                                result.getParentOperationId(), result.getBranchId(),
+                                                                result.getItemId(),
+                                                                runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
+                                                                        .mapStationInput(input, stationCtx),
+                                                                result.getStatus(),
+                                                                runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
+                                                                        .mapStationOutput(result.getOutput(),
+                                                                                          stationCtx),
+                                                                extractPrimaryError(result))));
     }
 
     private Exception extractPrimaryError(StationLogTrace result) {

@@ -45,8 +45,11 @@ Reactions may be lost if:
 - shutdown cancels pending work;
 - the reaction itself fails.
 
-Dropped events, dropped reactions and failed reactions are counted exhaustively in runtime statistics. Representative
-logs are rate-limited under sustained repetition; neither signal is a durable audit record.
+Built-in station-event payload mapping and publication are isolated from station execution: an ordinary mapping or
+publication exception drops the event and emits a rate-limited warning, while JVM-level `Error` failures are not
+swallowed. Once an event reaches `EventManager`, dropped events, dropped reactions and failed reactions are counted in
+runtime statistics. A failure before that hand-off is represented by the warning only. Neither signal is a durable audit
+record.
 
 ## Future direction
 

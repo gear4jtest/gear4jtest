@@ -14,6 +14,7 @@ Status: Implemented.
 Guaranteed today:
 
 - event queue capacity is bounded by configuration;
+- an ordinary built-in station-event payload mapping or publication failure does not change the station result;
 - events rejected because the queue is full are counted in runtime stats;
 - reactions rejected by the executor are counted as dropped reactions;
 - publisher MDC context is captured when an event is published and restored around asynchronous reaction execution.
@@ -25,6 +26,9 @@ Not guaranteed today:
 - exactly-once reaction execution;
 - dead-letter handling;
 - transactional hand-off to an external broker.
+
+Payload mapping failures happen before `EventManager` hand-off. They are reported by a rate-limited warning but are not
+included in the manager's run-local counters.
 
 Durable eventing remains a separate subsystem concern and must not be assumed from the in-memory event runtime.
 

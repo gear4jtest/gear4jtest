@@ -121,15 +121,6 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
     }
 
     @Override
-    protected void afterProcessors(WorkStation<?, ?> station,
-                                   Object result,
-                                   StationExecutionContext operationExecution) {
-        if (station.getParameters() != null && !station.getParameters().isEmpty()) {
-            paramsInjector.afterExecution(result, operationExecution);
-        }
-    }
-
-    @Override
     public Object doExecute(WorkStation<?, ?> station,
                             Object input,
                             StationRunner runner,
@@ -145,10 +136,16 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
                            StationExecutionContext context,
                            List<Throwable> errors) {
         try {
-            context.getCapability(WorkerConcurrencyGuard.class).ifPresent(WorkerConcurrencyGuard::afterUse);
+            if (station.getParameters() != null && !station.getParameters().isEmpty()) {
+                paramsInjector.afterExecution(result, context);
+            }
         } finally {
-            // Delegate remaining cleanup to the base strategy.
-            super.release(station, result, context, errors);
+            try {
+                context.getCapability(WorkerConcurrencyGuard.class).ifPresent(WorkerConcurrencyGuard::afterUse);
+            } finally {
+                // Delegate remaining cleanup to the base strategy.
+                super.release(station, result, context, errors);
+            }
         }
     }
 

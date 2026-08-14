@@ -69,15 +69,6 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
 
             result = doExecute(station, input, runner, context);
 
-            if (EngineStationContexts.trace(context).getStatus() == StationLogStatus.RUNNING) {
-                EngineStationContexts.trace(context).markSuccess(result);
-            } else {
-                EngineStationContexts.trace(context).setOutput(result);
-                if (EngineStationContexts.trace(context).getEndedAt() == null) {
-                    EngineStationContexts.trace(context).setEndedAt(java.time.Instant.now());
-                }
-            }
-
             if (station.getProcessors() != null && !station.getProcessors().isEmpty()) {
                 for (Processor processor : station.getProcessors()) {
                     try {
@@ -92,6 +83,15 @@ public abstract class AbstractStationStrategy<S extends AbstractStation<?, ?>> i
             }
 
             afterProcessors(station, result, context);
+
+            if (EngineStationContexts.trace(context).getStatus() == StationLogStatus.RUNNING) {
+                EngineStationContexts.trace(context).markSuccess(result);
+            } else {
+                EngineStationContexts.trace(context).setOutput(result);
+                if (EngineStationContexts.trace(context).getEndedAt() == null) {
+                    EngineStationContexts.trace(context).setEndedAt(java.time.Instant.now());
+                }
+            }
 
             return EngineStationContexts.trace(context);
         } catch (Exception e) {

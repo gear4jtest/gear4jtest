@@ -15,6 +15,8 @@ import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.StationKind;
 import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.engine.context.EngineStationContexts;
+import io.github.gear4jtest.core.engine.runner.StationErrorPolicyExecutor;
+import io.github.gear4jtest.core.engine.runner.StationExceptionBoundaryRunner;
 import io.github.gear4jtest.core.exception.StationExecutionException;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
@@ -117,6 +119,40 @@ class AbstractStationStrategyTest {
                 .isInstanceOf(StationExecutionException.class)
                 .hasCauseInstanceOf(IllegalStateException.class)
                 .hasRootCauseMessage("before fatal");
+    }
+
+    @Test
+    void run_shouldFailStationWhenAfterProcessorFailureModeFailsStation() {
+        // Given
+        TestStation station = new TestStation(List.of(new Processor() {
+            @Override
+            public <I> void beforeExecution(I input, StationExecutionContext ctx) {
+                // no-op
+            }
+
+            @Override
+            public void afterExecution(Object result, StationExecutionContext context) {
+                throw new IllegalStateException("after fatal");
+            }
+
+            @Override
+            public FailureMode afterExecutionFailureMode() {
+                return FailureMode.FAIL_STATION;
+            }
+        }), null, List.of());
+        StationExecutionContext context = stationContext("after-processor-fatal");
+        TestStrategy strategy = new TestStrategy();
+        StationRunner strategyRunner = (input, currentStation, currentContext) -> strategy
+                .run((TestStation) currentStation, input, currentContext, noopRunner());
+        StationRunner runner = new StationExceptionBoundaryRunner(strategyRunner, new StationErrorPolicyExecutor());
+
+        // When
+        var result = runner.run("input", station, context);
+
+        // Then
+        assertThat(result.getStatus()).isEqualTo(StationLogStatus.FAILED);
+        assertThat(result.getErrorMessage()).isEqualTo("after fatal");
+        assertThat(result.getErrorHandlerMessages()).contains("after fatal");
     }
 
     @Test

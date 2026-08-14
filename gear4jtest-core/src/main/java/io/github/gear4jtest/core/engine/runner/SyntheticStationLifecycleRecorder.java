@@ -115,11 +115,16 @@ public final class SyntheticStationLifecycleRecorder {
         if (runCtx.getServices().getEventManager() == null) {
             return;
         }
-        runCtx.getServices().getEventManager()
-                .publish(new StationSkippedEvent(runCtx.getAssemblyLineId(), runCtx.getExecutionId(), log.getId(),
-                        stationCtx.getOperationId(), log.getParentOperationId(), log.getBranchId(), log.getItemId(),
-                        runCtx.getEventRuntimeOptions().getEventPayloadPolicy().mapStationInput(input, stationCtx),
-                        reason));
+        BestEffortStationEventPublisher.publish(StationSkippedEvent.class.getSimpleName(), stationCtx.getOperationId(),
+                                                () -> runCtx.getServices().getEventManager()
+                                                        .publish(new StationSkippedEvent(runCtx.getAssemblyLineId(),
+                                                                runCtx.getExecutionId(), log.getId(),
+                                                                stationCtx.getOperationId(),
+                                                                log.getParentOperationId(), log.getBranchId(),
+                                                                log.getItemId(),
+                                                                runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
+                                                                        .mapStationInput(input, stationCtx),
+                                                                reason)));
     }
 
     private void publishCancelled(ExecutionContext runCtx,
@@ -131,11 +136,17 @@ public final class SyntheticStationLifecycleRecorder {
         if (runCtx.getServices().getEventManager() == null) {
             return;
         }
-        runCtx.getServices().getEventManager()
-                .publish(new StationCancelledEvent(runCtx.getAssemblyLineId(), runCtx.getExecutionId(), log.getId(),
-                        stationCtx.getOperationId(), log.getParentOperationId(), log.getBranchId(), log.getItemId(),
-                        runCtx.getEventRuntimeOptions().getEventPayloadPolicy().mapStationInput(input, stationCtx),
-                        reason, error));
+        BestEffortStationEventPublisher.publish(StationCancelledEvent.class.getSimpleName(),
+                                                stationCtx.getOperationId(),
+                                                () -> runCtx.getServices().getEventManager()
+                                                        .publish(new StationCancelledEvent(runCtx.getAssemblyLineId(),
+                                                                runCtx.getExecutionId(), log.getId(),
+                                                                stationCtx.getOperationId(),
+                                                                log.getParentOperationId(), log.getBranchId(),
+                                                                log.getItemId(),
+                                                                runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
+                                                                        .mapStationInput(input, stationCtx),
+                                                                reason, error)));
     }
 
     private void publishInterrupted(ExecutionContext runCtx,
@@ -148,11 +159,17 @@ public final class SyntheticStationLifecycleRecorder {
         if (runCtx.getServices().getEventManager() == null) {
             return;
         }
-        runCtx.getServices().getEventManager()
-                .publish(new StationInterruptedEvent(runCtx.getAssemblyLineId(), runCtx.getExecutionId(), log.getId(),
-                        stationCtx.getOperationId(), log.getParentOperationId(), log.getBranchId(), log.getItemId(),
-                        runCtx.getEventRuntimeOptions().getEventPayloadPolicy().mapStationInput(input, stationCtx),
-                        reason, interruptingOperationId, error));
+        BestEffortStationEventPublisher.publish(StationInterruptedEvent.class.getSimpleName(),
+                                                stationCtx.getOperationId(),
+                                                () -> runCtx.getServices().getEventManager()
+                                                        .publish(new StationInterruptedEvent(runCtx.getAssemblyLineId(),
+                                                                runCtx.getExecutionId(), log.getId(),
+                                                                stationCtx.getOperationId(),
+                                                                log.getParentOperationId(), log.getBranchId(),
+                                                                log.getItemId(),
+                                                                runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
+                                                                        .mapStationInput(input, stationCtx),
+                                                                reason, interruptingOperationId, error)));
     }
 
     private void publishFailedBeforeStart(ExecutionContext runCtx,
@@ -163,12 +180,17 @@ public final class SyntheticStationLifecycleRecorder {
         if (runCtx.getServices().getEventManager() == null) {
             return;
         }
-        runCtx.getServices().getEventManager()
-                .publish(new StationFailedBeforeStartEvent(runCtx.getAssemblyLineId(), runCtx.getExecutionId(),
-                        log.getId(), stationCtx.getOperationId(), log.getParentOperationId(), log.getBranchId(),
-                        log.getItemId(), runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
-                                .mapStationInput(input, stationCtx),
-                        error));
+        BestEffortStationEventPublisher.publish(StationFailedBeforeStartEvent.class.getSimpleName(),
+                                                stationCtx.getOperationId(),
+                                                () -> runCtx.getServices().getEventManager()
+                                                        .publish(new StationFailedBeforeStartEvent(
+                                                                runCtx.getAssemblyLineId(), runCtx.getExecutionId(),
+                                                                log.getId(), stationCtx.getOperationId(),
+                                                                log.getParentOperationId(), log.getBranchId(),
+                                                                log.getItemId(),
+                                                                runCtx.getEventRuntimeOptions().getEventPayloadPolicy()
+                                                                        .mapStationInput(input, stationCtx),
+                                                                error)));
     }
 
     private void invokeSkippedSafely(StationLifecycleExtension extension,

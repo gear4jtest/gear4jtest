@@ -1,5 +1,8 @@
 package io.github.gear4jtest.core.engine.support;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.behavior.Processor;
 import io.github.gear4jtest.core.api.context.ParameterResolutionContext;
@@ -28,9 +31,11 @@ public class WorkerParamsInjector implements Processor {
         ParameterResolutionContext<I> ctx = new ParameterResolutionContext<>(input,
                 operationExecution.getGlobalContext(),
                 operationExecution);
+        InjectedParameters injectedParameters = new InjectedParameters();
+        EngineStationContexts.addCapability(operationExecution, InjectedParameters.class, injectedParameters);
 
         for (StationParameterModel<?, ?> rawParam : processingParameters.get().getParameters()) {
-            injectParameter(rawParam, transformer.get(), ctx, operationExecution);
+            injectParameter(rawParam, transformer.get(), ctx, operationExecution, injectedParameters);
         }
     }
 
@@ -38,7 +43,8 @@ public class WorkerParamsInjector implements Processor {
     private <IN, OUT, OP extends Operator<IN, OUT>, T> void injectParameter(StationParameterModel<?, ?> rawParam,
                                                                             Operator<?, ?> rawOperator,
                                                                             ParameterResolutionContext<?> ctx,
-                                                                            StationExecutionContext operationExecution) {
+                                                                            StationExecutionContext operationExecution,
+                                                                            InjectedParameters injectedParameters) {
         StationParameterModel<OP, T> param = (StationParameterModel<OP, T>) rawParam;
         OP op = (OP) rawOperator;
 
@@ -52,6 +58,7 @@ public class WorkerParamsInjector implements Processor {
         ResolvedParameters.Resolution<T> resolution = cache.resolve(param, ctx);
         T value = resolution.value();
         parameterValue.injectValue(value);
+        injectedParameters.record(parameterValue);
 
         publishParameterResolvedEvent(rawParam, operationExecution, resolution, value);
     }
@@ -81,28 +88,21 @@ public class WorkerParamsInjector implements Processor {
 
     @Override
     public void afterExecution(Object result, StationExecutionContext operationExecution) {
-        var processingParameters = StationContextUtils.getProcessingParameters(operationExecution);
-        var transformer = StationContextUtils.getTransformer(operationExecution);
-        if (processingParameters.isEmpty() || transformer.isEmpty()) {
-            return;
-        }
-
-        for (StationParameterModel<?, ?> rawParam : processingParameters.get().getParameters()) {
-            cleanupParameter(rawParam, transformer.get());
-        }
+        operationExecution.getCapability(InjectedParameters.class).ifPresent(InjectedParameters::cleanup);
     }
 
-    @SuppressWarnings("unchecked")
-    private <IN, OUT, OP extends Operator<IN, OUT>, T> void cleanupParameter(StationParameterModel<?, ?> rawParam,
-                                                                             Operator<?, ?> rawOperator) {
+    private static final class InjectedParameters {
+        private final List<StationParameter<?>> parameters = new ArrayList<>();
 
-        StationParameterModel<OP, T> paramModel = (StationParameterModel<OP, T>) rawParam;
-        OP op = (OP) rawOperator;
+        private void record(StationParameter<?> parameter) {
+            parameters.add(parameter);
+        }
 
-        StationParameter<T> parameterValue = paramModel.getParamRetriever().getParameterValue(op);
-
-        if (parameterValue != null) {
-            parameterValue.afterExecutionCleanup();
+        private void cleanup() {
+            for (int index = parameters.size() - 1; index >= 0; index--) {
+                parameters.get(index).afterExecutionCleanup();
+            }
+            parameters.clear();
         }
     }
 }
