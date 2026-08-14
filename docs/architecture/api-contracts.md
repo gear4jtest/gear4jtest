@@ -94,6 +94,8 @@ Known internal implementation areas:
 - `io.github.gear4jtest.core.internal.*`
 - `io.github.gear4jtest.core.util.*`
 - `io.github.gear4jtest.external.api.storage.*`
+- `io.github.gear4jtest.external.api.compiler.JDTInMemoryCompiler`
+- `io.github.gear4jtest.external.api.repository.OperationChainPublicationTags`
 - `io.github.gear4jtest.jdbc.migration.*`
 - `io.github.gear4jtest.xml.generator.*`
 - `io.github.gear4jtest.xml.model.*`
@@ -125,6 +127,8 @@ forbidden from importing JDBC packages. See `docs/decisions/0012-source-level-ap
 
 Some public packages contain individual classes or methods marked `@Internal`. Those members are implementation details
 kept public for wiring, tests or historical compatibility; they are not part of the stable consumer contract.
+In particular, applications select JDT through `GeneratedSourceCompilers.jdt(...)`; the concrete JDT adapter is internal
+because its in-memory integration depends on Eclipse compiler implementation packages.
 
 ## Generated XML definitions
 

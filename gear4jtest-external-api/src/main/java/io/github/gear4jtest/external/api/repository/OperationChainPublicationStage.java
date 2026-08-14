@@ -26,14 +26,13 @@ public record OperationChainPublicationStage(String stageId,
                                              Instant stagedAt,
                                              long revision) {
 
-    private static final int MAX_TAG_LENGTH = 100;
     private static final Pattern SHA_256_HEX = Pattern.compile("[0-9a-f]{64}");
     public OperationChainPublicationStage {
         if (stageId == null || stageId.isBlank()) {
             throw new IllegalArgumentException("stageId must not be blank");
         }
         object = Objects.requireNonNull(object, "object must not be null");
-        tags = normalizeTags(tags);
+        tags = OperationChainPublicationTags.normalize(tags);
         if (storeFingerprint == null || !SHA_256_HEX.matcher(storeFingerprint).matches()) {
             throw new IllegalArgumentException("storeFingerprint must be a lowercase SHA-256 value");
         }
@@ -58,21 +57,4 @@ public record OperationChainPublicationStage(String stageId,
         this(stageId, object, tags, storeFingerprint, stagedAt, 1L);
     }
 
-    static List<String> normalizeTags(List<String> tags) {
-        return Objects.requireNonNull(tags, "tags must not be null").stream()
-                .map(OperationChainPublicationStage::requireValidTag)
-                .distinct()
-                .sorted()
-                .toList();
-    }
-
-    private static String requireValidTag(String tag) {
-        if (tag == null || tag.isBlank()) {
-            throw new IllegalArgumentException("tag must not be blank");
-        }
-        if (tag.length() > MAX_TAG_LENGTH) {
-            throw new IllegalArgumentException("tag must not exceed " + MAX_TAG_LENGTH + " characters");
-        }
-        return tag;
-    }
 }

@@ -194,16 +194,17 @@ public final class InMemoryOperationChainRepository
     public synchronized void addTag(String assemblyLineId, String tag) {
         tagsByAssemblyLine.computeIfAbsent(Objects.requireNonNull(assemblyLineId, "assemblyLineId must not be null"),
                                            ignored -> new TreeSet<>())
-                .add(Objects.requireNonNull(tag, "tag must not be null"));
+                .add(OperationChainPublicationTags.requireValidTag(tag));
     }
 
     @Override
     public synchronized void removeTag(String assemblyLineId, String tag) {
+        String requiredTag = OperationChainPublicationTags.requireValidTag(tag);
         Set<String> tags = tagsByAssemblyLine.get(assemblyLineId);
         if (tags == null) {
             return;
         }
-        tags.remove(tag);
+        tags.remove(requiredTag);
         if (tags.isEmpty()) {
             tagsByAssemblyLine.remove(assemblyLineId);
         }
@@ -217,10 +218,10 @@ public final class InMemoryOperationChainRepository
 
     @Override
     public synchronized List<String> findAssemblyLineIdsByTag(String tag) {
-        Objects.requireNonNull(tag, "tag must not be null");
+        String requiredTag = OperationChainPublicationTags.requireValidTag(tag);
         List<String> assemblyLineIds = new ArrayList<>();
         tagsByAssemblyLine.forEach((assemblyLineId, tags) -> {
-            if (tags.contains(tag)) {
+            if (tags.contains(requiredTag)) {
                 assemblyLineIds.add(assemblyLineId);
             }
         });
@@ -240,13 +241,11 @@ public final class InMemoryOperationChainRepository
     }
 
     private static List<String> normalizedTags(List<String> tags) {
-        return tags == null ? List.of() : OperationChainPublicationStage.normalizeTags(tags);
+        return OperationChainPublicationTags.normalize(tags);
     }
 
     private static List<String> mergeTags(List<String> existing, List<String> additional) {
-        TreeSet<String> merged = new TreeSet<>(existing);
-        merged.addAll(additional);
-        return List.copyOf(merged);
+        return OperationChainPublicationTags.merge(existing, additional);
     }
 
     private static OperationChainPublicationConflictException conflict(PublicationKey key) {

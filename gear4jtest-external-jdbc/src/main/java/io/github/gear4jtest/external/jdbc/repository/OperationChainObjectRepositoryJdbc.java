@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.TreeSet;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
 
@@ -24,6 +23,7 @@ import io.github.gear4jtest.external.api.repository.OperationChainObjectReposito
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationStage;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationTags;
 import io.github.gear4jtest.external.api.repository.OperationChainRepositoryException;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.jdbc.persistence.JdbcStatementOptions;
@@ -205,6 +205,10 @@ public final class OperationChainObjectRepositoryJdbc
                 verifyCommittedPublicationCompatible(connection, object);
                 StageInsertResult stageResult = insertStageIdempotently(connection, stageId, object,
                                                                         requiredStoreFingerprint);
+                if (!stageResult.inserted()) {
+                    lockStageForUpdate(connection, stageId);
+                    OperationChainPublicationTags.merge(findStageTags(connection, stageId), requiredTags);
+                }
                 insertStageTags(connection, stageId, requiredTags);
                 if (!stageResult.inserted()) {
                     renewStage(connection, stageId, Instant.now());
@@ -366,6 +370,18 @@ public final class OperationChainObjectRepositoryJdbc
         }
     }
 
+    private void lockStageForUpdate(Connection connection, String stageId) throws SQLException {
+        String sql = "SELECT stage_id FROM operation_chain_publication_stage WHERE stage_id=? FOR UPDATE";
+        try (PreparedStatement statement = prepare(connection, sql)) {
+            statement.setString(1, stageId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new SQLException("Publication stage disappeared while it was being locked: " + stageId);
+                }
+            }
+        }
+    }
+
     private void renewStage(Connection connection, String stageId, Instant stagedAt) throws SQLException {
         String sql = "UPDATE operation_chain_publication_stage SET staged_at=?, "
                 + "stage_revision=stage_revision+1 WHERE stage_id=?";
@@ -419,20 +435,17 @@ public final class OperationChainObjectRepositoryJdbc
     }
 
     private void insertStageTags(Connection connection, String stageId, List<String> tags) throws SQLException {
-        for (String tag : tags) {
-            Savepoint savepoint = connection.setSavepoint();
-            try (PreparedStatement statement = prepare(connection,
-                                                       "INSERT INTO operation_chain_publication_stage_tag(stage_id, "
-                                                               + "tag) VALUES (?,?)")) {
+        if (tags.isEmpty()) {
+            return;
+        }
+        String sql = ExternalRepositorySqlDialect.insertPublicationStageTagIfAbsentSql(databaseDialect);
+        try (PreparedStatement statement = prepare(connection, sql)) {
+            for (String tag : tags) {
                 statement.setString(1, stageId);
                 statement.setString(2, tag);
-                statement.executeUpdate();
-            } catch (SQLException exception) {
-                if (!ExternalRepositorySqlDialect.isUniqueViolation(databaseDialect, exception)) {
-                    throw exception;
-                }
-                connection.rollback(savepoint);
+                statement.addBatch();
             }
+            statement.executeBatch();
         }
     }
 
@@ -513,8 +526,9 @@ public final class OperationChainObjectRepositoryJdbc
             for (String tag : tags) {
                 statement.setString(1, assemblyLineId);
                 statement.setString(2, tag);
-                statement.executeUpdate();
+                statement.addBatch();
             }
+            statement.executeBatch();
         }
     }
 
@@ -550,20 +564,7 @@ public final class OperationChainObjectRepositoryJdbc
     }
 
     private static List<String> normalizedTags(List<String> tags) {
-        if (tags == null) {
-            return List.of();
-        }
-        TreeSet<String> normalized = new TreeSet<>();
-        for (String tag : tags) {
-            if (tag == null || tag.isBlank()) {
-                throw new IllegalArgumentException("tag must not be blank");
-            }
-            if (tag.length() > 100) {
-                throw new IllegalArgumentException("tag must not exceed 100 characters");
-            }
-            normalized.add(tag);
-        }
-        return List.copyOf(normalized);
+        return OperationChainPublicationTags.normalize(tags);
     }
 
     private static String requireStageId(String stageId) {

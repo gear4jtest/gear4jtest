@@ -54,6 +54,8 @@ tasks.register('verifyConventionModel') {
 
         def testTask = tasks.named('test', Test).get()
         assert testTask.javaLauncher.get().metadata.languageVersion.asInt() == 17
+        assert testTask.systemProperties['junit.jupiter.execution.timeout.default'] == '2 m'
+        assert testTask.systemProperties['junit.jupiter.execution.timeout.lifecycle.method.default'] == '5 m'
         assert tasks.named('probeJavaExec', JavaExec).get()
             .javaLauncher.get().metadata.languageVersion.asInt() == 17
 
@@ -76,6 +78,8 @@ tasks.register('verifyConventionModel') {
             'Runs integration tests. Database-dependent tests use Testcontainers.'
         assert integrationTask.testClassesDirs.files == integrationSourceSet.output.classesDirs.files
         assert integrationTask.javaLauncher.get().metadata.languageVersion.asInt() == 17
+        assert integrationTask.systemProperties['junit.jupiter.execution.timeout.default'] == '2 m'
+        assert integrationTask.systemProperties['junit.jupiter.execution.timeout.lifecycle.method.default'] == '5 m'
 
         def jacocoReport = tasks.named('jacocoTestReport').get()
         assert jacocoReport.reports.xml.required.get()

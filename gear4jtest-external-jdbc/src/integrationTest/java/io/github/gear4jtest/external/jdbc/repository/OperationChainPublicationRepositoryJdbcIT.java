@@ -8,10 +8,18 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.persistence.PageRequest;
@@ -22,18 +30,22 @@ import io.github.gear4jtest.external.api.consistency.ArtifactPublicationReconcil
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationStage;
 import io.github.gear4jtest.external.api.repository.OperationChainRepositoryException;
 import io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFingerprint;
 import io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStore;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Tag("integration")
+@Timeout(value = 30, unit = TimeUnit.SECONDS)
 class OperationChainPublicationRepositoryJdbcIT {
     private static final String HASH = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
@@ -155,6 +167,65 @@ class OperationChainPublicationRepositoryJdbcIT {
     }
 
     @Test
+    void concurrentStageRetries_shouldSerializeThePersistedTagLimit() throws Exception {
+        // Given
+        DataSource dataSource = h2DataSource();
+        ExternalJdbcSchemaMigrator.forDialect(Gear4jDatabaseDialect.H2).migrate(dataSource);
+        insertConfig(dataSource, "line");
+        OperationChainObjectRepositoryJdbc repository = repository(dataSource);
+        OperationChainObject publication = publication("6.1.0", "d".repeat(64));
+        List<String> initialTags = IntStream.range(0, 63)
+                .mapToObj(index -> "tag-" + index)
+                .toList();
+        var initialStage = repository.stage(publication, initialTags);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch retriesReady = new CountDownLatch(2);
+        CountDownLatch startRetries = new CountDownLatch(1);
+
+        try {
+            Future<String> firstRetry = executor.submit(
+                                                        () -> stageAfterRelease(repository, publication, "retry-a",
+                                                                                retriesReady, startRetries));
+            Future<String> secondRetry = executor.submit(
+                                                         () -> stageAfterRelease(repository, publication, "retry-b",
+                                                                                 retriesReady, startRetries));
+            assertThat(retriesReady.await(2, TimeUnit.SECONDS)).isTrue();
+
+            // When
+            startRetries.countDown();
+            List<String> acceptedRetries = new ArrayList<>();
+            List<Throwable> rejectedRetries = new ArrayList<>();
+            for (Future<String> retry : List.of(firstRetry, secondRetry)) {
+                try {
+                    acceptedRetries.add(retry.get(5, TimeUnit.SECONDS));
+                } catch (ExecutionException executionException) {
+                    rejectedRetries.add(executionException.getCause());
+                }
+            }
+
+            // Then
+            assertThat(acceptedRetries).hasSize(1);
+            assertThat(List.of("retry-a", "retry-b")).contains(acceptedRetries.get(0));
+            assertThat(rejectedRetries).singleElement()
+                    .asInstanceOf(InstanceOfAssertFactories.THROWABLE)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("publication must not contain more than 64 tags");
+
+            List<OperationChainPublicationStage> stages = repository
+                    .findStagedBefore(Instant.now().plusSeconds(1), PageRequest.first(10));
+            assertThat(stages).singleElement().satisfies(stage -> {
+                assertThat(stage.stageId()).isEqualTo(initialStage.stageId());
+                assertThat(stage.tags()).hasSize(64).containsAll(initialTags);
+                assertThat(stage.tags().stream().filter(tag -> tag.startsWith("retry-")).toList()).hasSize(1);
+            });
+        } finally {
+            startRetries.countDown();
+            executor.shutdownNow();
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+        }
+    }
+
+    @Test
     void stage_shouldKeepLegacyDelimiterCollisionCandidatesSeparate() throws Exception {
         // Given
         DataSource dataSource = h2DataSource();
@@ -236,6 +307,20 @@ class OperationChainPublicationRepositoryJdbcIT {
                 .dataSource(dataSource)
                 .databaseDialect(Gear4jDatabaseDialect.H2)
                 .build();
+    }
+
+    private static String stageAfterRelease(OperationChainObjectRepositoryJdbc repository,
+                                            OperationChainObject publication,
+                                            String tag,
+                                            CountDownLatch retriesReady,
+                                            CountDownLatch startRetries)
+            throws InterruptedException {
+        retriesReady.countDown();
+        if (!startRetries.await(2, TimeUnit.SECONDS)) {
+            throw new IllegalStateException("Concurrent stage retries were not released");
+        }
+        repository.stage(publication, List.of(tag));
+        return tag;
     }
 
     private static OperationChainObject publication(String version, String hash) {

@@ -27,6 +27,8 @@ contract.
 For TEST and direct RUN publication, `AssemblyLineManager` validates identifiers, tags, media type, size and content hash,
 then translates the supplied bytes and compiles the generated Java **before any artifact write**. Promotion from TEST to
 RUN validates the already stored TEST artifact before staging RUN metadata or invalidating the latest alias.
+Each request is limited to 64 tag entries of at most 100 characters. Normalization is shared by the manager, in-memory
+repository and JDBC provider so malformed or oversized tag sets fail before artifact storage or transaction work.
 
 After validation, Gear4J resolves the exact store configuration and computes a stable fingerprint. Publication then
 follows a durable three-step protocol:
@@ -34,6 +36,9 @@ follows a durable three-step protocol:
 1. stage object metadata, tags and the store fingerprint in `OperationChainPublicationRepository`;
 2. write the content-addressed artifact;
 3. atomically commit the stage so object metadata and tags become visible together.
+
+JDBC stage-tag and committed-tag persistence uses one dialect-specific idempotent batch per tag set. A retry locks its
+existing stage before merging tags, preserving the persisted 64-tag limit under concurrent retry attempts.
 
 A stage is durable but invisible to normal object and tag repositories. A storage or commit failure therefore cannot leave
 a newly written artifact completely unknown to the metadata system. `ArtifactPublicationReconciler` processes stages older

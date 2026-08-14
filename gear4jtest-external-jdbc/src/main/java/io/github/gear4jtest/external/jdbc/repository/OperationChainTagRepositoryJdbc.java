@@ -10,6 +10,7 @@ import java.util.Set;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.persistence.PageRequest;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationTags;
 import io.github.gear4jtest.external.api.repository.OperationChainRepositoryException;
 import io.github.gear4jtest.external.api.repository.OperationChainTagRepository;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
@@ -90,33 +91,35 @@ public final class OperationChainTagRepositoryJdbc implements OperationChainTagR
 
     @Override
     public void addTag(String alId, String tag) {
+        String requiredTag = OperationChainPublicationTags.requireValidTag(tag);
         String sql = ExternalRepositorySqlDialect.insertTagIfAbsentSql(databaseDialect);
         try {
             transactionOperations.execute(connection -> {
                 try (PreparedStatement statement = prepare(connection, sql)) {
                     statement.setString(1, alId);
-                    statement.setString(2, tag);
+                    statement.setString(2, requiredTag);
                     statement.executeUpdate();
                 }
             });
         } catch (SQLException e) {
-            throw repositoryFailure("add tag " + tag + " to " + alId, e);
+            throw repositoryFailure("add tag " + requiredTag + " to " + alId, e);
         }
     }
 
     @Override
     public void removeTag(String alId, String tag) {
+        String requiredTag = OperationChainPublicationTags.requireValidTag(tag);
         String sql = "DELETE FROM operation_chain_tag WHERE al_id=? AND tag=?";
         try {
             transactionOperations.execute(connection -> {
                 try (PreparedStatement statement = prepare(connection, sql)) {
                     statement.setString(1, alId);
-                    statement.setString(2, tag);
+                    statement.setString(2, requiredTag);
                     statement.executeUpdate();
                 }
             });
         } catch (SQLException e) {
-            throw repositoryFailure("remove tag " + tag + " from " + alId, e);
+            throw repositoryFailure("remove tag " + requiredTag + " from " + alId, e);
         }
     }
 
@@ -154,11 +157,12 @@ public final class OperationChainTagRepositoryJdbc implements OperationChainTagR
 
     @Override
     public List<String> findAssemblyLineIdsByTag(String tag, PageRequest pageRequest) {
+        String requiredTag = OperationChainPublicationTags.requireValidTag(tag);
         String orderedSql = "SELECT al_id FROM operation_chain_tag WHERE tag=? ORDER BY al_id";
         String sql = pageRequest == null ? orderedSql
                 : ExternalRepositorySqlDialect.pagedSql(databaseDialect, orderedSql);
         try (var c = ds.getConnection(); var ps = prepare(c, sql)) {
-            ps.setString(1, tag);
+            ps.setString(1, requiredTag);
             if (pageRequest != null) {
                 ExternalRepositorySqlDialect.bindPage(databaseDialect, ps, 2, pageRequest);
             }
@@ -170,7 +174,7 @@ public final class OperationChainTagRepositoryJdbc implements OperationChainTagR
                 return list;
             }
         } catch (java.sql.SQLException e) {
-            throw repositoryFailure("find operation chains for tag " + tag, e);
+            throw repositoryFailure("find operation chains for tag " + requiredTag, e);
         }
     }
 

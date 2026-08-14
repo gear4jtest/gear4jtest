@@ -18,12 +18,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+@Timeout(value = 10, unit = TimeUnit.SECONDS)
 class EventManagerTest {
     @Test
     void publish_shouldDispatchOnlyMatchingSubscriptions() throws Exception {
@@ -63,16 +65,18 @@ class EventManagerTest {
     @Test
     void shutdown_shouldDrainAlreadyQueuedEvents() throws Exception {
         CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch releaseReaction = new CountDownLatch(1);
         CountDownLatch completed = new CountDownLatch(1);
         List<String> handled = new CopyOnWriteArrayList<>();
+        RecordingThreadPoolExecutor executor = new RecordingThreadPoolExecutor();
 
         EventHandlingDefinition definition = EventHandlingDefinition.builder().on(Event.class, event -> {
             started.countDown();
-            Thread.sleep(150);
+            releaseReaction.await();
             handled.add(event.getName());
             completed.countDown();
         }).runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
-                .reactionExecutorFactory(Executors::newSingleThreadExecutor).shutdownTimeout(Duration.ofSeconds(2))
+                .reactionExecutorFactory(() -> executor).shutdownTimeout(Duration.ofSeconds(2))
                 .build()).build();
 
         EventManager manager = new EventManager(definition, new ExecutionContextRegistry());
@@ -80,12 +84,21 @@ class EventManagerTest {
             manager.publish(new Event("pipe", UUID.randomUUID(), "FIRST"));
             assertThat(started.await(2, TimeUnit.SECONDS)).isTrue();
 
-            manager.shutdown();
+            CompletableFuture<EventManager.ShutdownHandle> shutdown = CompletableFuture.supplyAsync(manager::shutdown);
+            assertThat(executor.shutdownInitiated.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(shutdown.isDone()).isFalse();
+
+            releaseReaction.countDown();
+            EventManager.ShutdownHandle handle = shutdown.get(2, TimeUnit.SECONDS);
 
             assertThat(completed.getCount()).isZero();
             assertThat(handled).containsExactly("FIRST");
+            assertThat(handle.completion()).isCompleted();
         } finally {
+            releaseReaction.countDown();
             manager.shutdown();
+            executor.shutdownNow();
+            executor.awaitTermination(2, TimeUnit.SECONDS);
         }
     }
 
@@ -374,10 +387,17 @@ class EventManagerTest {
     }
 
     private static final class RecordingThreadPoolExecutor extends ThreadPoolExecutor {
+        private final CountDownLatch shutdownInitiated = new CountDownLatch(1);
         private final AtomicLong lastAwaitTerminationNanos = new AtomicLong(-1L);
 
         private RecordingThreadPoolExecutor() {
             super(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+        }
+
+        @Override
+        public void shutdown() {
+            shutdownInitiated.countDown();
+            super.shutdown();
         }
 
         @Override

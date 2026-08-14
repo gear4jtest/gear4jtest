@@ -54,7 +54,7 @@ Typical flow:
 | `GeneratedLoadingPhase`            | Finite artifact/translation/compilation/classloading/construction/injection phases. |
 | `GeneratedLoadingPhaseStats`       | Attempts, failures and cumulative/maximum duration for one loading phase.           |
 | `JavaxToolsGeneratedSourceCompiler` | Default compiler when the runtime provides the JDK `javax.tools.JavaCompiler`.    |
-| `JDTInMemoryCompiler`              | Fallback Eclipse JDT compiler for runtimes without `jdk.compiler`.                |
+| `GeneratedSourceCompilers.jdt(...)` | Selects the internal Eclipse JDT fallback for runtimes without `jdk.compiler`.   |
 | `ClassLoaderRegistry`              | Tracks generated classloaders and aliases.                                        |
 | `DependencyInjector`               | Injects external dependencies into generated pipeline instances.                  |
 | `ArtifactStore`                    | Stores raw external pipeline artifacts by content hash; supports bounded streaming writes. |
@@ -77,6 +77,10 @@ aborts stages whose artifact is still missing. Idempotent publication retries re
 a stale reconciliation pass from deleting an active retry. A changed store configuration retains the stage and reports a
 fingerprint mismatch instead of probing a different backend. Store or metadata failures leave the stage available for a
 later retry.
+
+One publication request accepts at most 64 tag entries, each non-blank and at most 100 characters. Tags are
+deduplicated and sorted before staging. Idempotent retries merge tags under the same 64-tag persisted limit. JDBC
+repositories batch the stage and committed-tag writes inside the owning transaction.
 
 This design makes every artifact written by the manager discoverable through durable metadata. It does not retroactively
 enumerate or delete store-only artifacts created by older versions or by code that bypasses `AssemblyLineManager`.
@@ -124,6 +128,10 @@ the standard JDK `javax.tools.JavaCompiler` is used when `jdk.compiler` is
 available, otherwise Eclipse JDT is used. A javac source error is returned directly
 and is never retried with JDT. The javac implementation resolves file-based URLs
 from the supplied parent classloader in addition to the process classpath.
+`JDTInMemoryCompiler` is an `@Internal` adapter because Eclipse exposes the
+low-level in-memory hooks through implementation packages. Consumer code must
+depend on `GeneratedSourceCompiler` and the `GeneratedSourceCompilers` factories;
+only the adapter is allowed to import `org.eclipse.jdt.internal.*`.
 
 The manager wraps the selected compiler in a bounded 128-entry/16-MiB, single-flight
 cache shared by publication validation and runtime loading. Delegate calls run in

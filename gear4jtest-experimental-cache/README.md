@@ -5,6 +5,10 @@ Experimental cache and history helpers for Gear4J assembly lines.
 This module is intentionally unstable and opt-in. It contains reusable cache helpers that were previously test-only code
 inside `gear4jtest-core`. The API may change or disappear before Gear4J 1.0.
 
+`JsonSha256FingerprintStrategy` exposes an optional `ObjectMapper` constructor for callers that need application-specific
+serialization. Jackson is therefore a published API dependency of this module; consumers do not need to redeclare
+`jackson-databind` merely to call that constructor.
+
 ## In-memory repository contract
 
 `InMemoryAssemblyLineCacheRepository` is thread-safe, access-ordered and bounded. Its no-argument constructor retains at

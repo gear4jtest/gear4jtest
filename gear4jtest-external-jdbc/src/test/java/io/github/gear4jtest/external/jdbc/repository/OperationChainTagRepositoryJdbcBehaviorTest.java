@@ -11,12 +11,14 @@ import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class OperationChainTagRepositoryJdbcBehaviorTest {
@@ -57,6 +59,23 @@ class OperationChainTagRepositoryJdbcBehaviorTest {
         verify(jdbc.statement()).setString(1, "pipeline");
         verify(jdbc.statement()).setString(2, "stable");
         verify(jdbc.statement()).executeUpdate();
+    }
+
+    @Test
+    void tagOperations_shouldRejectValuesOutsideTheSchemaBeforeOpeningAConnection() {
+        DataSource dataSource = mock(DataSource.class);
+        OperationChainTagRepositoryJdbc repository = repository(dataSource);
+
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> repository.addTag("pipeline", " "))
+                .withMessage("tag must not be blank");
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> repository.removeTag("pipeline", "x".repeat(101)))
+                .withMessage("tag must not exceed 100 characters");
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> repository.findAssemblyLineIdsByTag(null))
+                .withMessage("tag must not be blank");
+        verifyNoInteractions(dataSource);
     }
 
     @Test

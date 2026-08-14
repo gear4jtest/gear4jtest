@@ -34,6 +34,19 @@ class InMemoryOperationChainRepositoryTest {
     }
 
     @Test
+    void directTagOperations_shouldApplyThePublicationTagSchema() {
+        assertThatThrownBy(() -> repository.addTag("line", " "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("tag must not be blank");
+        assertThatThrownBy(() -> repository.removeTag("line", "x".repeat(101)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("tag must not exceed 100 characters");
+        assertThatThrownBy(() -> repository.findAssemblyLineIdsByTag(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("tag must not be blank");
+    }
+
+    @Test
     void publish_shouldLeaveExistingObjectAndTagsUnchangedOnConflict() {
         // Given
         OperationChainObject existing = object("line", "1.0.0", ExecutionMode.TEST, "a".repeat(64),

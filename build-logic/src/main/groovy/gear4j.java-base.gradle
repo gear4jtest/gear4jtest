@@ -27,6 +27,11 @@ tasks.withType(Test).configureEach {
     })
     // Test instrumentation appends to the bootstrap class path, so CDS is unavailable in test JVMs.
     jvmArgs '-Xshare:off'
+    // Keep an accidentally blocked test from occupying a CI worker indefinitely.
+    // More specific @Timeout declarations remain authoritative for deliberately
+    // long-running integration scenarios.
+    systemProperty 'junit.jupiter.execution.timeout.default', '2 m'
+    systemProperty 'junit.jupiter.execution.timeout.lifecycle.method.default', '5 m'
 }
 
 tasks.withType(JavaExec).configureEach {

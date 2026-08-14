@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.gear4jtest.external.api.exception.CompilationException;
-import org.eclipse.jdt.internal.compiler.impl.CompilerOptions;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -154,10 +153,10 @@ class GeneratedSourceCompilersTest {
     @Test
     void jdtCompiler_shouldEnableJava17ReleaseSemantics() {
         assertThat(JDTInMemoryCompiler.compilerOptionValues())
-                .containsEntry(CompilerOptions.OPTION_Source, CompilerOptions.VERSION_17)
-                .containsEntry(CompilerOptions.OPTION_TargetPlatform, CompilerOptions.VERSION_17)
-                .containsEntry(CompilerOptions.OPTION_Compliance, CompilerOptions.VERSION_17)
-                .containsEntry(CompilerOptions.OPTION_Release, CompilerOptions.ENABLED);
+                .containsEntry(JDTInMemoryCompiler.SOURCE_OPTION, JDTInMemoryCompiler.JAVA_17)
+                .containsEntry(JDTInMemoryCompiler.TARGET_OPTION, JDTInMemoryCompiler.JAVA_17)
+                .containsEntry(JDTInMemoryCompiler.COMPLIANCE_OPTION, JDTInMemoryCompiler.JAVA_17)
+                .containsEntry(JDTInMemoryCompiler.RELEASE_OPTION, JDTInMemoryCompiler.ENABLED);
     }
 
 }

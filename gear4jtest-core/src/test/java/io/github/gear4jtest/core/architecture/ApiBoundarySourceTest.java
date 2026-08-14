@@ -94,6 +94,26 @@ final class ApiBoundarySourceTest {
         assertThat(violations).isEmpty();
     }
 
+    @Test
+    void externalApi_shouldConfineEclipseCompilerInternalsToTheInternalJdtAdapter() throws IOException {
+        Path sourceRoot = findRepositoryRoot().resolve("gear4jtest-external-api/src/main/java");
+        Path allowedAdapter = sourceRoot.resolve(
+                                                 "io/github/gear4jtest/external/api/compiler/JDTInMemoryCompiler.java");
+        List<String> violations = new ArrayList<>();
+
+        for (Path sourceFile : javaSources(sourceRoot)) {
+            if (!sourceFile.equals(allowedAdapter)
+                    && Files.readString(sourceFile).contains("import org.eclipse.jdt.internal.")) {
+                violations.add(sourceRoot.relativize(sourceFile).toString());
+            }
+        }
+
+        assertThat(violations).isEmpty();
+        assertThat(Files.readString(allowedAdapter))
+                .contains("@Internal")
+                .contains("final class JDTInMemoryCompiler");
+    }
+
     private static Path findRepositoryRoot() {
         Path current = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
         if (Files.isDirectory(current.resolve("gear4jtest-core"))) {

@@ -5,6 +5,10 @@ plugins {
 
 def gear4jVersion = providers.gradleProperty('gear4jVersion').get()
 
+sourceSets {
+    experimentalCacheScope
+}
+
 dependencies {
     implementation "io.github.gear4jtest:gear4jtest-jackson:${gear4jVersion}"
     implementation "io.github.gear4jtest:gear4jtest-jdbc:${gear4jVersion}"
@@ -13,6 +17,8 @@ dependencies {
     implementation "io.github.gear4jtest:gear4jtest-spring:${gear4jVersion}"
     implementation "io.github.gear4jtest:gear4jtest-spring-boot-starter:${gear4jVersion}"
     implementation "io.github.gear4jtest:gear4jtest-xml:${gear4jVersion}"
+    experimentalCacheScopeImplementation(
+        "io.github.gear4jtest:gear4jtest-experimental-cache:${gear4jVersion}")
 }
 
 java {
@@ -24,7 +30,7 @@ java {
 tasks.register('consumerSmoke', JavaExec) {
     group = 'verification'
     description = 'Runs the staged-artifact consumer smoke test.'
-    dependsOn tasks.named('classes')
+    dependsOn tasks.named('classes'), tasks.named('experimentalCacheScopeClasses')
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'io.github.gear4jtest.consumer.ConsumerSmoke'
 }

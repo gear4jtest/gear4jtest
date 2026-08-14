@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.github.gear4jtest.core.api.annotation.Internal;
 import io.github.gear4jtest.external.api.exception.CompilationException;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.internal.compiler.CompilationResult;
@@ -25,7 +26,25 @@ import org.eclipse.jdt.internal.compiler.lookup.LookupEnvironment;
 import org.eclipse.jdt.internal.compiler.lookup.ModuleBinding;
 import org.eclipse.jdt.internal.compiler.problem.DefaultProblemFactory;
 
-public class JDTInMemoryCompiler implements GeneratedSourceCompiler {
+/**
+ * Internal Eclipse JDT adapter exposed through the stable
+ * {@link GeneratedSourceCompiler} contract.
+ *
+ * <p>
+ * The implementation necessarily tracks JDT compiler internals and is not a
+ * compatibility surface for consumers. Use {@link GeneratedSourceCompilers} to
+ * select a compiler.
+ * </p>
+ */
+@Internal
+public final class JDTInMemoryCompiler implements GeneratedSourceCompiler {
+    static final String SOURCE_OPTION = CompilerOptions.OPTION_Source;
+    static final String TARGET_OPTION = CompilerOptions.OPTION_TargetPlatform;
+    static final String COMPLIANCE_OPTION = CompilerOptions.OPTION_Compliance;
+    static final String RELEASE_OPTION = CompilerOptions.OPTION_Release;
+    static final String JAVA_17 = CompilerOptions.VERSION_17;
+    static final String ENABLED = CompilerOptions.ENABLED;
+
     private final ClassLoader parentClassLoader;
     private final InMemoryNameEnvironment nameEnvironment;
 
@@ -46,14 +65,14 @@ public class JDTInMemoryCompiler implements GeneratedSourceCompiler {
 
     static Map<String, String> compilerOptionValues() {
         Map<String, String> optionsMap = new HashMap<>();
-        optionsMap.put(CompilerOptions.OPTION_Source, CompilerOptions.VERSION_17);
-        optionsMap.put(CompilerOptions.OPTION_TargetPlatform, CompilerOptions.VERSION_17);
-        optionsMap.put(CompilerOptions.OPTION_Compliance, CompilerOptions.VERSION_17);
+        optionsMap.put(SOURCE_OPTION, JAVA_17);
+        optionsMap.put(TARGET_OPTION, JAVA_17);
+        optionsMap.put(COMPLIANCE_OPTION, JAVA_17);
         optionsMap.put(CompilerOptions.OPTION_Encoding, StandardCharsets.UTF_8.name());
         optionsMap.put(CompilerOptions.OPTION_ReportDeprecation, CompilerOptions.IGNORE);
         optionsMap.put(CompilerOptions.OPTION_ReportUnusedImport, CompilerOptions.IGNORE);
         optionsMap.put(CompilerOptions.OPTION_EnablePreviews, CompilerOptions.DISABLED);
-        optionsMap.put(CompilerOptions.OPTION_Release, CompilerOptions.ENABLED);
+        optionsMap.put(RELEASE_OPTION, ENABLED);
         optionsMap.put(CompilerOptions.OPTION_ReportUnstableAutoModuleName, CompilerOptions.DISABLED);
         optionsMap.put(CompilerOptions.OPTION_IgnoreUnnamedModuleForSplitPackage, CompilerOptions.DISABLED);
         return Map.copyOf(optionsMap);

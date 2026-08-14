@@ -39,8 +39,8 @@ class EventDispatcherTest {
 
         releaseFirstTask.countDown();
         assertThat(queuedTaskCompleted.await(2, TimeUnit.SECONDS)).isTrue();
-        awaitCompletedTasks(dispatcher, 2);
-        assertThat(dispatcher.snapshotStats().completedTasks()).isEqualTo(2);
+        EventDispatcher.EventDispatcherStats drainedStats = snapshotAfterPreviouslySubmittedTasks(dispatcher);
+        assertThat(drainedStats.completedTasks()).isEqualTo(2);
     }
 
     @Test
@@ -57,10 +57,9 @@ class EventDispatcherTest {
 
         // Then
         assertThat(followingTaskCompleted.await(2, TimeUnit.SECONDS)).isTrue();
-        awaitFailedTasks(dispatcher, 1);
-        awaitCompletedTasks(dispatcher, 1);
-        assertThat(dispatcher.snapshotStats().failedTasks()).isEqualTo(1);
-        assertThat(dispatcher.snapshotStats().completedTasks()).isEqualTo(1);
+        EventDispatcher.EventDispatcherStats recoveredStats = snapshotAfterPreviouslySubmittedTasks(dispatcher);
+        assertThat(recoveredStats.failedTasks()).isEqualTo(1);
+        assertThat(recoveredStats.completedTasks()).isEqualTo(1);
     }
 
     private static void await(CountDownLatch latch) {
@@ -71,17 +70,20 @@ class EventDispatcherTest {
         }
     }
 
-    private static void awaitCompletedTasks(EventDispatcher dispatcher, long expected) throws InterruptedException {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
-        while (dispatcher.snapshotStats().completedTasks() < expected && System.nanoTime() < deadline) {
-            Thread.sleep(1);
-        }
-    }
-
-    private static void awaitFailedTasks(EventDispatcher dispatcher, long expected) throws InterruptedException {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
-        while (dispatcher.snapshotStats().failedTasks() < expected && System.nanoTime() < deadline) {
-            Thread.sleep(1);
+    private static EventDispatcher.EventDispatcherStats snapshotAfterPreviouslySubmittedTasks(
+                                                                                              EventDispatcher dispatcher)
+            throws InterruptedException {
+        CountDownLatch barrierStarted = new CountDownLatch(1);
+        CountDownLatch releaseBarrier = new CountDownLatch(1);
+        assertThat(dispatcher.submit(() -> {
+            barrierStarted.countDown();
+            await(releaseBarrier);
+        })).isTrue();
+        assertThat(barrierStarted.await(2, TimeUnit.SECONDS)).isTrue();
+        try {
+            return dispatcher.snapshotStats();
+        } finally {
+            releaseBarrier.countDown();
         }
     }
 }

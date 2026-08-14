@@ -37,6 +37,7 @@ import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -47,6 +48,7 @@ import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@Timeout(value = 10, unit = TimeUnit.SECONDS)
 class ContainerStationStrategyTest {
     private static StationExecutionContext newOperationExecutionContext(String operationId) {
         AssemblyRunTrace assemblyRun = new AssemblyRunTrace(UUID.randomUUID(), "pipeline-1", Map.of());
@@ -276,6 +278,7 @@ class ContainerStationStrategyTest {
     @Test
     void should_cancel_parent_when_parallel_branch_times_out_with_default_cancel_policy() {
         ExecutorService executorService = Executors.newFixedThreadPool(2);
+        CountDownLatch releaseSlowBranch = new CountDownLatch(1);
         try {
             // Given
             ContainerStationStrategy strategy = new ContainerStationStrategy();
@@ -291,11 +294,7 @@ class ContainerStationStrategyTest {
 
             StationRunner runner = (input, station, ctx) -> {
                 if ("slow".equals(station.getId())) {
-                    try {
-                        Thread.sleep(250);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+                    awaitRelease(releaseSlowBranch);
                     return successLog("slow", "A");
                 }
                 return successLog("fast", "B");
@@ -308,6 +307,7 @@ class ContainerStationStrategyTest {
             assertThat(result).isNull();
             assertThat(operationExecution.getRecord().getStatus()).isEqualTo(StationLogStatus.CANCELLED);
         } finally {
+            releaseSlowBranch.countDown();
             executorService.shutdownNow();
         }
     }
@@ -315,6 +315,7 @@ class ContainerStationStrategyTest {
     @Test
     void should_ignore_parallel_timeout_and_keep_null_slot_when_cancel_policy_allows_it() {
         ExecutorService executorService = Executors.newFixedThreadPool(2);
+        CountDownLatch releaseSlowBranch = new CountDownLatch(1);
         try {
             // Given
             ContainerStationStrategy strategy = new ContainerStationStrategy();
@@ -334,11 +335,7 @@ class ContainerStationStrategyTest {
 
             StationRunner runner = (input, station, ctx) -> {
                 if ("slow".equals(station.getId())) {
-                    try {
-                        Thread.sleep(250);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+                    awaitRelease(releaseSlowBranch);
                     return successLog("slow", "A");
                 }
                 return successLog("fast", "B");
@@ -352,6 +349,7 @@ class ContainerStationStrategyTest {
             assertThat(operationExecution.getRecord().getStatus())
                     .isNotIn(StationLogStatus.FAILED, StationLogStatus.CANCELLED, StationLogStatus.STOPPED);
         } finally {
+            releaseSlowBranch.countDown();
             executorService.shutdownNow();
         }
     }
@@ -359,6 +357,7 @@ class ContainerStationStrategyTest {
     @Test
     void should_interrupt_parallel_container_without_waiting_for_all_branches_when_fail_fast() throws Exception {
         ExecutorService executorService = Executors.newFixedThreadPool(2);
+        CountDownLatch releaseSlowBranch = new CountDownLatch(1);
         try {
             // Given
             ContainerStationStrategy strategy = new ContainerStationStrategy();
@@ -382,7 +381,7 @@ class ContainerStationStrategyTest {
                         bothStarted.await();
 
                         try {
-                            Thread.sleep(5_000L);
+                            releaseSlowBranch.await();
                         } catch (InterruptedException e) {
                             slowInterrupted.countDown();
                             Thread.currentThread().interrupt();
@@ -414,6 +413,7 @@ class ContainerStationStrategyTest {
             assertThat(elapsedMillis).isLessThan(1_500L);
             assertThat(slowInterrupted.await(500, TimeUnit.MILLISECONDS)).isTrue();
         } finally {
+            releaseSlowBranch.countDown();
             executorService.shutdownNow();
         }
     }
@@ -421,6 +421,7 @@ class ContainerStationStrategyTest {
     @Test
     void should_apply_engine_default_timeout_when_parallel_station_has_no_override() {
         ExecutorService executorService = Executors.newFixedThreadPool(1);
+        CountDownLatch releaseSlowBranch = new CountDownLatch(1);
         try {
             // Given
             ContainerStationStrategy strategy = new ContainerStationStrategy(
@@ -432,11 +433,7 @@ class ContainerStationStrategyTest {
                     .returns(results -> results.orderedOutputs());
             StationExecutionContext context = newOperationExecutionContext("container");
             StationRunner runner = (input, station, ctx) -> {
-                try {
-                    Thread.sleep(250L);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+                awaitRelease(releaseSlowBranch);
                 return successLog("slow", "A");
             };
 
@@ -446,7 +443,16 @@ class ContainerStationStrategyTest {
             // Then
             assertThat(context.getRecord().getStatus()).isEqualTo(StationLogStatus.CANCELLED);
         } finally {
+            releaseSlowBranch.countDown();
             executorService.shutdownNow();
+        }
+    }
+
+    private static void awaitRelease(CountDownLatch release) {
+        try {
+            release.await();
+        } catch (InterruptedException interruptedException) {
+            Thread.currentThread().interrupt();
         }
     }
 

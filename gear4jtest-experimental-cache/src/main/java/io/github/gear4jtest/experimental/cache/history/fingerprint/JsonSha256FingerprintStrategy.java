@@ -1,6 +1,7 @@
 package io.github.gear4jtest.experimental.cache.history.fingerprint;
 
 import java.security.MessageDigest;
+import java.util.Objects;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -15,7 +16,7 @@ public final class JsonSha256FingerprintStrategy<T> implements FingerprintStrate
     }
 
     public JsonSha256FingerprintStrategy(ObjectMapper mapper) {
-        this.mapper = mapper;
+        this.mapper = Objects.requireNonNull(mapper, "mapper must not be null");
     }
 
     @Override

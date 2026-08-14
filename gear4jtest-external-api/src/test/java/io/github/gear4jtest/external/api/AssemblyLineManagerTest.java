@@ -23,6 +23,7 @@ import io.github.gear4jtest.external.api.repository.OperationChainObjectReposito
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationStage;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationTags;
 import io.github.gear4jtest.external.api.repository.OperationChainRepositoryException;
 import io.github.gear4jtest.external.api.repository.OperationChainTagRepository;
 import io.github.gear4jtest.external.api.spi.ArtifactStoreProvider;
@@ -277,6 +278,25 @@ class AssemblyLineManagerTest {
                                                               "application/xml", List.of(" "), "tester"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("tag must not be blank");
+        verify(publicationRepository, never()).stage(any(), any(), any());
+        verifyNoInteractions(storeProvider, translatorResolver, compiler);
+    }
+
+    @Test
+    void registerAssemblyLine_shouldRejectTooManyTagsBeforeValidationOrStorage() {
+        // Given
+        AssemblyLineManager manager = manager();
+        List<String> tags = java.util.stream.IntStream
+                .range(0, OperationChainPublicationTags.MAX_TAGS_PER_PUBLICATION + 1)
+                .mapToObj(index -> "tag-" + index)
+                .toList();
+
+        // When / Then
+        assertThatThrownBy(() -> manager.registerAssemblyLine("line", "1.0.0", ExecutionMode.TEST,
+                                                              "<pipeline/>".getBytes(StandardCharsets.UTF_8),
+                                                              "application/xml", tags, "tester"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must not contain more than 64 tags");
         verify(publicationRepository, never()).stage(any(), any(), any());
         verifyNoInteractions(storeProvider, translatorResolver, compiler);
     }

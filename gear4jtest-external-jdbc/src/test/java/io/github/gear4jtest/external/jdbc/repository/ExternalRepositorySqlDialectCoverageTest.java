@@ -70,6 +70,21 @@ class ExternalRepositorySqlDialectCoverageTest {
         assertThat(ExternalRepositorySqlDialect.insertTagIfAbsentSql(Gear4jDatabaseDialect.H2))
                 .startsWith("MERGE INTO operation_chain_tag");
 
+        assertThat(ExternalRepositorySqlDialect
+                .insertPublicationStageTagIfAbsentSql(Gear4jDatabaseDialect.POSTGRESQL))
+                .contains("ON CONFLICT (stage_id, tag) DO NOTHING");
+        assertThat(ExternalRepositorySqlDialect
+                .insertPublicationStageTagIfAbsentSql(Gear4jDatabaseDialect.MYSQL))
+                .contains("ON DUPLICATE KEY UPDATE");
+        assertThat(ExternalRepositorySqlDialect
+                .insertPublicationStageTagIfAbsentSql(Gear4jDatabaseDialect.ORACLE))
+                .startsWith("MERGE INTO operation_chain_publication_stage_tag")
+                .contains("FROM dual");
+        assertThat(ExternalRepositorySqlDialect
+                .insertPublicationStageTagIfAbsentSql(Gear4jDatabaseDialect.H2))
+                .startsWith("MERGE INTO operation_chain_publication_stage_tag")
+                .contains("KEY(stage_id, tag)");
+
         assertThat(ExternalRepositorySqlDialect.upsertOperationChainConfigSql(Gear4jDatabaseDialect.POSTGRESQL))
                 .contains("CAST(? AS JSONB)");
         assertThat(ExternalRepositorySqlDialect.updateOperationChainStoreSql(Gear4jDatabaseDialect.ORACLE))

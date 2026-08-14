@@ -14,12 +14,11 @@ import io.github.gear4jtest.external.api.repository.OperationChainObjectReposito
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationStage;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationTags;
 
 import static java.util.Objects.requireNonNull;
 
 final class AssemblyLinePublicationService {
-    private static final int MAX_TAG_LENGTH = 100;
-
     private final OperationChainConfigRepository configRepository;
     private final OperationChainObjectRepository objectRepository;
     private final OperationChainPublicationRepository publicationRepository;
@@ -54,7 +53,7 @@ final class AssemblyLinePublicationService {
             throws IOException, PolicyViolationException {
         requireNonNull(content, "content must not be null");
         String normalizedMediaType = AssemblyLineIdentifiers.normalizeMediaType(mediaType);
-        List<String> publicationTags = normalizeTags(tags);
+        List<String> publicationTags = OperationChainPublicationTags.normalize(tags);
         String hash = ArtifactHashes.sha256Hex(content);
         Instant now = Instant.now();
         OperationChainObject object = new OperationChainObject(null, alId, version, mode, hash, content.length,
@@ -146,24 +145,4 @@ final class AssemblyLinePublicationService {
         }
     }
 
-    private static List<String> normalizeTags(List<String> tags) {
-        if (tags == null) {
-            return List.of();
-        }
-        return tags.stream()
-                .map(tag -> requireValidTag(tag))
-                .distinct()
-                .sorted()
-                .toList();
-    }
-
-    private static String requireValidTag(String tag) {
-        if (tag == null || tag.isBlank()) {
-            throw new IllegalArgumentException("tag must not be blank");
-        }
-        if (tag.length() > MAX_TAG_LENGTH) {
-            throw new IllegalArgumentException("tag must not exceed " + MAX_TAG_LENGTH + " characters");
-        }
-        return tag;
-    }
 }

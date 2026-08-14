@@ -35,6 +35,22 @@ public final class ExternalRepositorySqlDialect {
         };
     }
 
+    static String insertPublicationStageTagIfAbsentSql(Gear4jDatabaseDialect dialect) {
+        return switch (requireDialect(dialect)) {
+            case POSTGRESQL -> "INSERT INTO operation_chain_publication_stage_tag(stage_id, tag) VALUES (?,?) "
+                    + "ON CONFLICT (stage_id, tag) DO NOTHING";
+            case MYSQL, MARIADB ->
+                "INSERT INTO operation_chain_publication_stage_tag(stage_id, tag) VALUES (?,?) "
+                        + "ON DUPLICATE KEY UPDATE tag=VALUES(tag)";
+            case ORACLE -> "MERGE INTO operation_chain_publication_stage_tag target "
+                    + "USING (SELECT ? AS stage_id, ? AS tag FROM dual) source "
+                    + "ON (target.stage_id=source.stage_id AND target.tag=source.tag) "
+                    + "WHEN NOT MATCHED THEN INSERT (stage_id, tag) VALUES (source.stage_id, source.tag)";
+            case H2 -> "MERGE INTO operation_chain_publication_stage_tag (stage_id, tag) "
+                    + "KEY(stage_id, tag) VALUES (?,?)";
+        };
+    }
+
     static String upsertOperationChainConfigSql(Gear4jDatabaseDialect dialect) {
         return switch (requireDialect(dialect)) {
             case POSTGRESQL ->
