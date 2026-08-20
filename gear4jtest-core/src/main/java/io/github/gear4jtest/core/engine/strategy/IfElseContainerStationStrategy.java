@@ -61,6 +61,7 @@ public class IfElseContainerStationStrategy extends AbstractStationStrategy<Unar
             return input;
         }
         normalizeSelectedBranchLog(selectedBranchLog, selectedBranchId, operationExecution);
+        EngineStationContexts.trace(operationExecution).addSubOperation(selectedBranchLog);
 
         FlowDecision decision = FlowDecider.decide(selectedBranchLog, config);
         return switch (decision) {

@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
+import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 import io.github.gear4jtest.core.persistence.PersistenceFlushObservation;
 import io.github.gear4jtest.core.persistence.PersistenceFlushSubscription;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -114,7 +116,7 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
                 .hasMessageContaining("flush executor rejected");
         assertThat(coordinator.snapshotStats().scheduledFlushes()).isEqualTo(1L);
         assertThat(coordinator.snapshotStats().failedFlushes()).isEqualTo(1L);
-        assertThatThrownBy(buffer::assertHealthy).isInstanceOf(ExecutionPersistenceException.class);
+        assertThat(buffer.currentFailure()).isNotNull();
         assertThat(observations).singleElement().satisfies(observation -> {
             assertThat(observation.trigger()).isEqualTo(PersistenceFlushObservation.Trigger.ASYNC);
             assertThat(observation.outcome()).isEqualTo(PersistenceFlushObservation.Outcome.REJECTED);
@@ -156,7 +158,8 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
 
         // Then
         assertThat(buffer.pendingCount()).isEqualTo(1);
-        assertThat(buffer.currentFailure()).isNull();
+        assertThat(buffer.currentFailure()).isNotNull();
+        assertThat(buffer.append(mock(StationLogRecord.class), coordinator.counters())).isTrue();
         assertThat(coordinator.snapshotStats().failedFlushes()).isEqualTo(1L);
         assertThat(observations).singleElement().satisfies(observation -> {
             assertThat(observation.trigger()).isEqualTo(PersistenceFlushObservation.Trigger.ASYNC);
@@ -180,7 +183,7 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
 
         // Then
         assertThat(buffer.pendingCount()).isEqualTo(1);
-        assertThatThrownBy(buffer::assertHealthy).isInstanceOf(ExecutionPersistenceException.class);
+        assertThat(buffer.currentFailure()).isNotNull();
     }
 
     @Test
@@ -199,7 +202,7 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
 
         // Then
         assertThat(buffer.pendingCount()).isEqualTo(1);
-        assertThatThrownBy(buffer::assertHealthy).isInstanceOf(ExecutionPersistenceException.class);
+        assertThat(buffer.currentFailure()).isNotNull();
     }
 
     @Test
@@ -299,7 +302,7 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
     }
 
     @Test
-    void periodicFlush_shouldScheduleOnlyOpenBuffersContainingRecords() {
+    void periodicFlush_shouldScheduleOpenAndFinalizationPendingBuffers() {
         // Given
         AtomicReference<Runnable> periodicFlush = new AtomicReference<>();
         ScheduledFuture<?> periodicTask = mock(ScheduledFuture.class);
@@ -317,7 +320,7 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         buffers.createFresh(UUID.randomUUID(), 2);
         OperationRecordBuffer closedBuffer = buffers.createFresh(UUID.randomUUID(), 2);
         closedBuffer.append(mock(StationLogRecord.class), coordinator.counters());
-        closedBuffer.close();
+        closedBuffer.beginFinalization(mock(AssemblyRunRecord.class));
         OperationRecordBuffer openBuffer = buffers.createFresh(UUID.randomUUID(), 2);
         openBuffer.append(mock(StationLogRecord.class), coordinator.counters());
 
@@ -325,8 +328,8 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         periodicFlush.get().run();
 
         // Then
-        assertThat(coordinator.snapshotStats().scheduledFlushes()).isEqualTo(1L);
-        verify(flushExecutor).execute(any(Runnable.class));
+        assertThat(coordinator.snapshotStats().scheduledFlushes()).isEqualTo(2L);
+        verify(flushExecutor, times(2)).execute(any(Runnable.class));
     }
 
     @Test
@@ -362,9 +365,10 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         laterBuffer.append(mock(StationLogRecord.class), coordinator.counters());
         assertThatCode(periodicFlush.get()::run).doesNotThrowAnyException();
 
-        assertThat(submissions.get()).isGreaterThanOrEqualTo(3);
+        assertThat(submissions.get()).isEqualTo(3);
+        assertThat(rejectedBuffer.pendingCount()).isZero();
         assertThat(laterBuffer.pendingCount()).isZero();
-        verify(repository).saveOperationRecordsBatch(anyList());
+        verify(repository, times(2)).saveOperationRecordsBatch(anyList());
     }
 
     private static ExecutorService inlineExecutor() {

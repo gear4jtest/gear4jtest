@@ -39,6 +39,7 @@ final class PersistenceFlushCoordinator {
     private final boolean ownsFlushExecutor;
     private final boolean ownsMaintenanceExecutor;
     private final PersistenceRuntimeCounters counters = new PersistenceRuntimeCounters();
+    private final PersistenceBatchProcessor batchProcessor;
     private final PersistenceShutdownWriter shutdownWriter;
     private final ScheduledFuture<?> periodicFlushTask;
     private final PersistenceOperationGate operationGate = new PersistenceOperationGate();
@@ -53,6 +54,18 @@ final class PersistenceFlushCoordinator {
                                 ScheduledExecutorService maintenanceExecutor,
                                 boolean ownsFlushExecutor,
                                 boolean ownsMaintenanceExecutor) {
+        this(repository, configuration, buffers, flushExecutor, maintenanceExecutor, ownsFlushExecutor,
+                ownsMaintenanceExecutor, RejectedPersistenceRecordHandler.loggingOnly());
+    }
+
+    PersistenceFlushCoordinator(DatabaseAssemblyRunRepository repository,
+                                PersistenceRuntimeConfiguration configuration,
+                                OperationRecordBufferRegistry buffers,
+                                ExecutorService flushExecutor,
+                                ScheduledExecutorService maintenanceExecutor,
+                                boolean ownsFlushExecutor,
+                                boolean ownsMaintenanceExecutor,
+                                RejectedPersistenceRecordHandler rejectedRecordHandler) {
         this.repository = Objects.requireNonNull(repository, "repository must not be null");
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
         this.buffers = Objects.requireNonNull(buffers, "buffers must not be null");
@@ -61,7 +74,9 @@ final class PersistenceFlushCoordinator {
                                                           "maintenanceExecutor must not be null");
         this.ownsFlushExecutor = ownsFlushExecutor;
         this.ownsMaintenanceExecutor = ownsMaintenanceExecutor;
-        this.shutdownWriter = new PersistenceShutdownWriter(repository, configuration, counters);
+        this.batchProcessor = new PersistenceBatchProcessor(counters,
+                Objects.requireNonNull(rejectedRecordHandler, "rejectedRecordHandler must not be null"));
+        this.shutdownWriter = new PersistenceShutdownWriter(repository, configuration, batchProcessor);
         long intervalNanos = configuration.flushInterval().toNanos();
         this.periodicFlushTask = this.maintenanceExecutor.scheduleWithFixedDelay(this::flushPendingBuffersSafely,
                                                                                  intervalNanos, intervalNanos,
@@ -124,14 +139,15 @@ final class PersistenceFlushCoordinator {
         try {
             flushExecutor.execute(() -> {
                 try {
-                    flushBufferBlocking(buffer, drainCompletely, PersistenceFlushObservation.Trigger.ASYNC,
-                                        startedNanos);
+                    if (buffer.isFinalizationPending()) {
+                        finalizeBufferBlocking(buffer, PersistenceFlushObservation.Trigger.ASYNC, startedNanos);
+                    } else {
+                        flushBufferBlocking(buffer, drainCompletely, PersistenceFlushObservation.Trigger.ASYNC,
+                                            startedNanos);
+                    }
                     counters.recordCompletedFlush();
                 } catch (Exception e) {
                     counters.recordFailedFlush();
-                    if (drainCompletely || buffer.isClosed()) {
-                        buffer.recordFailure(e);
-                    }
                     LOGGER.error("Asynchronous station log flush failed. runId={}", buffer.runId(), e);
                 }
             });
@@ -158,7 +174,7 @@ final class PersistenceFlushCoordinator {
                                      PersistenceFlushObservation.Trigger trigger,
                                      long startedNanos) {
         try {
-            boolean attempted = flushBufferUnobserved(buffer, drainCompletely, true, drainCompletely);
+            boolean attempted = flushBufferUnobserved(buffer, drainCompletely);
             if (attempted) {
                 observeFlush(startedNanos, trigger, PersistenceFlushObservation.Outcome.SUCCEEDED);
             }
@@ -168,33 +184,17 @@ final class PersistenceFlushCoordinator {
         }
     }
 
-    private boolean flushBufferUnobserved(OperationRecordBuffer buffer,
-                                          boolean drainCompletely,
-                                          boolean requireHealthy,
-                                          boolean recordTerminalFailure) {
+    private boolean flushBufferUnobserved(OperationRecordBuffer buffer, boolean drainCompletely) {
         boolean attempted = false;
         buffer.lockFlush();
         try {
-            if (requireHealthy) {
-                buffer.assertHealthy();
-            }
             do {
                 List<StationLogRecord> batch = buffer.drainBatch();
                 if (batch.isEmpty()) {
                     return attempted;
                 }
                 attempted = true;
-                try {
-                    repository.saveOperationRecordsBatch(batch);
-                    counters.recordSuccessfulFlushProgress();
-                    buffer.acknowledgeDrainedBatch(batch);
-                } catch (Exception e) {
-                    buffer.restoreDrainedBatch(batch);
-                    if (recordTerminalFailure) {
-                        buffer.recordFailure(e);
-                    }
-                    throw e;
-                }
+                batchProcessor.persist(buffer, batch, repository::saveOperationRecordsBatch);
             } while (drainCompletely);
         } finally {
             buffer.clearFlushScheduled();
@@ -204,6 +204,61 @@ final class PersistenceFlushCoordinator {
             scheduleAsyncFlush(buffer, false);
         }
         return attempted;
+    }
+
+    void finalizeBufferBlocking(OperationRecordBuffer buffer) {
+        finalizeBufferBlocking(buffer, PersistenceFlushObservation.Trigger.TERMINAL, System.nanoTime());
+    }
+
+    private void finalizeBufferBlocking(OperationRecordBuffer buffer,
+                                        PersistenceFlushObservation.Trigger trigger,
+                                        long startedNanos) {
+        try {
+            boolean attempted = finalizeBufferUnobserved(buffer);
+            if (attempted) {
+                observeFlush(startedNanos, trigger, PersistenceFlushObservation.Outcome.SUCCEEDED);
+            }
+        } catch (RuntimeException exception) {
+            observeFlush(startedNanos, trigger, PersistenceFlushObservation.Outcome.FAILED);
+            throw exception;
+        }
+    }
+
+    private boolean finalizeBufferUnobserved(OperationRecordBuffer buffer) {
+        boolean attempted = false;
+        boolean completed = false;
+        buffer.lockFlush();
+        try {
+            while (true) {
+                List<StationLogRecord> batch = buffer.drainBatch();
+                if (batch.isEmpty()) {
+                    break;
+                }
+                attempted = true;
+                batchProcessor.persist(buffer, batch, repository::saveOperationRecordsBatch);
+            }
+            if (buffer.isFinalizationPending()) {
+                attempted = true;
+                try {
+                    repository.update(buffer.finalRecord());
+                    buffer.completeFinalization();
+                    buffer.clearFailure();
+                    counters.recordSuccessfulFlushProgress();
+                } catch (RuntimeException exception) {
+                    buffer.recordFinalizationFailure(exception);
+                    buffer.recordFailure(exception);
+                    throw exception;
+                }
+            }
+            completed = buffer.retainedCount() == 0 && !buffer.isFinalizationPending();
+            return attempted;
+        } finally {
+            buffer.clearFlushScheduled();
+            buffer.unlockFlush();
+            if (completed) {
+                buffers.remove(buffer.runId());
+            }
+        }
     }
 
     PersistenceShutdownReport shutdown(Duration timeout) {
@@ -244,7 +299,7 @@ final class PersistenceFlushCoordinator {
         try {
             if (idleWait.idle() && !deadline.reached()) {
                 flushAttempts = attemptInitialShutdownFlushes(runStates, deadline, shutdownJdbcExecutor);
-                while (hasRetryablePendingLogs(runStates) && !deadline.reached()) {
+                while (hasRetryablePendingWork(runStates) && !deadline.reached()) {
                     RetryPass retryPass = retryEligibleBuffers(runStates, deadline, shutdownJdbcExecutor);
                     flushAttempts += retryPass.attempts();
                     if (!retryPass.attempted() && !sleepUntilNextRetry(runStates, deadline)) {
@@ -270,8 +325,8 @@ final class PersistenceFlushCoordinator {
         int remainingActiveRuns = buffers.activeRunCount();
         int remainingStationLogs = buffers.bufferedStationLogCount();
         boolean executorsTerminated = asyncTermination.terminated() && shutdownTermination.terminated();
-        boolean incomplete = !idleWait.unfinishedOperations().isEmpty() || remainingStationLogs > 0
-                || !executorsTerminated;
+        boolean incomplete = !idleWait.unfinishedOperations().isEmpty() || remainingActiveRuns > 0
+                || remainingStationLogs > 0 || !executorsTerminated;
         boolean reached = incomplete && deadline.reached();
         int flushedStationLogs = Math.max(0, initialBufferedStationLogs - remainingStationLogs);
         return new PersistenceShutdownReport(deadline.startedAt(), deadline.elapsed(), initialActiveRuns,
@@ -291,7 +346,7 @@ final class PersistenceFlushCoordinator {
     private Map<UUID, PersistenceShutdownRunState> shutdownRunStates() {
         Map<UUID, PersistenceShutdownRunState> runStates = new LinkedHashMap<>();
         for (OperationRecordBuffer buffer : new ArrayList<>(buffers.activeBuffers())) {
-            boolean finalizationPending = buffer.isClosed();
+            boolean finalizationPending = buffer.isFinalizationPending();
             buffer.close();
             runStates.put(buffer.runId(), new PersistenceShutdownRunState(buffer,
                     configuration.shutdownRetryInitialBackoff(), finalizationPending));
@@ -311,10 +366,8 @@ final class PersistenceFlushCoordinator {
             if (pendingCheck.interrupted()) {
                 break;
             }
-            if (!pendingCheck.pending()) {
-                if (!state.finalizationPending()) {
-                    buffers.remove(state.buffer().runId());
-                }
+            if (!pendingCheck.pending() && !state.finalizationPending()) {
+                buffers.remove(state.buffer().runId());
                 continue;
             }
             if (deadline.reached()) {
@@ -337,7 +390,7 @@ final class PersistenceFlushCoordinator {
                                                                            "waiting for an in-flight buffer flush"));
                 return new PendingCheck(true, false);
             }
-            return new PendingCheck(state.buffer().pendingCount() > 0, false);
+            return new PendingCheck(state.buffer().pendingCount() > 0 || state.finalizationPending(), false);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             state.recordTerminalFailure(new ExecutionPersistenceException(
@@ -357,7 +410,7 @@ final class PersistenceFlushCoordinator {
         int attempts = 0;
         long now = System.nanoTime();
         for (PersistenceShutdownRunState state : runStates.values()) {
-            if (!state.retryable() || state.buffer().pendingCount() == 0 || now < state.nextAttemptNanos()) {
+            if (!state.retryable() || !hasPendingWork(state) || now < state.nextAttemptNanos()) {
                 continue;
             }
             attemptShutdownFlush(state, deadline, shutdownJdbcExecutor);
@@ -379,6 +432,9 @@ final class PersistenceFlushCoordinator {
                                                                                     shutdownJdbcExecutor);
         observeFlush(startedNanos, PersistenceFlushObservation.Trigger.SHUTDOWN, flushOutcome(outcome));
         if (outcome.successful()) {
+            if (!state.buffer().isFinalizationPending()) {
+                state.recordFinalizationSuccess();
+            }
             if (state.buffer().retainedCount() == 0) {
                 if (!state.finalizationPending()) {
                     buffers.remove(state.buffer().runId());
@@ -408,7 +464,7 @@ final class PersistenceFlushCoordinator {
                                         PersistenceShutdownDeadline deadline) {
         long wakeUpNanos = PersistenceShutdownDeadline.addSaturated(System.nanoTime(), deadline.remainingNanos());
         for (PersistenceShutdownRunState state : runStates.values()) {
-            if (state.retryable() && state.buffer().pendingCount() > 0) {
+            if (state.retryable() && hasPendingWork(state)) {
                 wakeUpNanos = Math.min(wakeUpNanos, state.nextAttemptNanos());
             }
         }
@@ -469,9 +525,13 @@ final class PersistenceFlushCoordinator {
         return failures;
     }
 
-    private boolean hasRetryablePendingLogs(Map<UUID, PersistenceShutdownRunState> runStates) {
+    private boolean hasRetryablePendingWork(Map<UUID, PersistenceShutdownRunState> runStates) {
         return runStates.values().stream()
-                .anyMatch(state -> state.retryable() && state.buffer().pendingCount() > 0);
+                .anyMatch(state -> state.retryable() && hasPendingWork(state));
+    }
+
+    private boolean hasPendingWork(PersistenceShutdownRunState state) {
+        return state.buffer().pendingCount() > 0 || state.finalizationPending();
     }
 
     private PersistenceFlushObservation.Outcome flushOutcome(PersistenceShutdownWriter.FlushOutcome outcome) {
@@ -511,7 +571,7 @@ final class PersistenceFlushCoordinator {
             return;
         }
         for (OperationRecordBuffer buffer : buffers.activeBuffers()) {
-            if (buffer.pendingCount() > 0 && !buffer.isClosed()) {
+            if (buffer.pendingCount() > 0 || buffer.isFinalizationPending()) {
                 try {
                     scheduleAsyncFlush(buffer, false);
                 } catch (ExecutionPersistenceException exception) {

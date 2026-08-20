@@ -22,6 +22,8 @@ class Gear4jPropertiesTest {
         assertThat(properties.getPersistence().isBaselineOnMigrate()).isFalse();
         assertThat(properties.getPersistence().getBatchSize()).isEqualTo(500);
         assertThat(properties.getPersistence().getMaxPendingLogsPerRun()).isEqualTo(10_000);
+        assertThat(properties.getPersistence().getMaxActiveRuns()).isEqualTo(1_000);
+        assertThat(properties.getPersistence().getMaxBufferedStationLogs()).isEqualTo(10_000);
         assertThat(properties.getPersistence().getFlushThreads()).isEqualTo(1);
         assertThat(properties.getPersistence().getMaxScheduledFlushTasks()).isEqualTo(1_000);
         assertThat(properties.getPersistence().getFlushInterval()).isEqualTo(Duration.ofSeconds(1));
@@ -49,6 +51,8 @@ class Gear4jPropertiesTest {
         properties.getPersistence().setBaselineOnMigrate(true);
         properties.getPersistence().setBatchSize(25);
         properties.getPersistence().setMaxPendingLogsPerRun(50);
+        properties.getPersistence().setMaxActiveRuns(75);
+        properties.getPersistence().setMaxBufferedStationLogs(100);
         properties.getPersistence().setFlushThreads(3);
         properties.getPersistence().setMaxScheduledFlushTasks(12);
         properties.getPersistence().setFlushInterval(Duration.ofMillis(250));
@@ -70,6 +74,8 @@ class Gear4jPropertiesTest {
         assertThat(properties.getPersistence().isBaselineOnMigrate()).isTrue();
         assertThat(properties.getPersistence().getBatchSize()).isEqualTo(25);
         assertThat(properties.getPersistence().getMaxPendingLogsPerRun()).isEqualTo(50);
+        assertThat(properties.getPersistence().getMaxActiveRuns()).isEqualTo(75);
+        assertThat(properties.getPersistence().getMaxBufferedStationLogs()).isEqualTo(100);
         assertThat(properties.getPersistence().getFlushThreads()).isEqualTo(3);
         assertThat(properties.getPersistence().getMaxScheduledFlushTasks()).isEqualTo(12);
         assertThat(properties.getPersistence().getFlushInterval()).isEqualTo(Duration.ofMillis(250));
@@ -124,6 +130,12 @@ class Gear4jPropertiesTest {
         Gear4jProperties.PersistenceProperties invalidProbeTimeout = validPersistence();
         invalidProbeTimeout.setConnectivityProbeTimeout(Duration.ofMillis(-1));
 
+        Gear4jProperties.PersistenceProperties invalidActiveRunLimit = validPersistence();
+        invalidActiveRunLimit.setMaxActiveRuns(0);
+
+        Gear4jProperties.PersistenceProperties invalidGlobalLogLimit = validPersistence();
+        invalidGlobalLogLimit.setMaxBufferedStationLogs(0);
+
         // When / Then
         assertThatThrownBy(missingDialect::validateWhenEnabled)
                 .isInstanceOf(IllegalStateException.class)
@@ -150,6 +162,12 @@ class Gear4jPropertiesTest {
         assertThatThrownBy(invalidProbeTimeout::validateWhenEnabled)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("gear4j.persistence.connectivity-probe-timeout must be > 0");
+        assertThatThrownBy(invalidActiveRunLimit::validateWhenEnabled)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("gear4j.persistence.max-active-runs must be > 0");
+        assertThatThrownBy(invalidGlobalLogLimit::validateWhenEnabled)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("gear4j.persistence.max-buffered-station-logs must be > 0");
         assertThatCode(validPersistence()::validateWhenEnabled).doesNotThrowAnyException();
     }
 

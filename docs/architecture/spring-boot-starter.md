@@ -15,6 +15,8 @@ gear4j:
     auto-create-tables: false
     batch-size: 500
     max-pending-logs-per-run: 10000
+    max-active-runs: 1000
+    max-buffered-station-logs: 10000
     flush-threads: 1
     max-scheduled-flush-tasks: 1000
     flush-interval: 1s
@@ -79,6 +81,11 @@ flushes.
 Gear4J JDBC persistence statements through `Statement#setQueryTimeout`. Set it to
 `0` only when the datasource, driver or infrastructure already enforces a
 statement/query timeout.
+
+A single application `RejectedPersistenceRecordHandler` bean replaces the
+logging-only default for station logs isolated as permanent record-data
+failures. The handler must complete its durable write before returning; if it
+throws, the station log remains in the bounded in-memory buffer for retry.
 
 ## JDBC transaction ownership
 

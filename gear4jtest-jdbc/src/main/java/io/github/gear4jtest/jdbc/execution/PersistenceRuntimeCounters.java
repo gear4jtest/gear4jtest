@@ -12,6 +12,7 @@ final class PersistenceRuntimeCounters {
     private final AtomicLong completedFlushes = new AtomicLong();
     private final AtomicLong failedFlushes = new AtomicLong();
     private final AtomicLong rejectedAppends = new AtomicLong();
+    private final AtomicLong quarantinedStationLogs = new AtomicLong();
     private final AtomicReference<Instant> lastSuccessfulFlushAt = new AtomicReference<>();
     private final AtomicReference<Instant> lastFailedFlushAt = new AtomicReference<>();
     private final AtomicReference<Instant> lastRejectedAppendAt = new AtomicReference<>();
@@ -39,6 +40,10 @@ final class PersistenceRuntimeCounters {
         lastRejectedAppendAt.set(Instant.now());
     }
 
+    void recordQuarantinedStationLog() {
+        quarantinedStationLogs.incrementAndGet();
+    }
+
     PersistenceRuntimeStats snapshot(OperationRecordBufferRegistry buffers) {
         return snapshot(buffers, false);
     }
@@ -46,8 +51,8 @@ final class PersistenceRuntimeCounters {
     PersistenceRuntimeStats snapshot(OperationRecordBufferRegistry buffers, boolean shutdown) {
         Instant observedAt = Instant.now();
         return new PersistenceRuntimeStats(buffers.activeRunCount(), buffers.bufferedStationLogCount(),
-                scheduledFlushes.get(), completedFlushes.get(), failedFlushes.get(), rejectedAppends.get(), observedAt,
-                buffers.oldestBufferedStationLogAge(observedAt), lastSuccessfulFlushAt.get(), lastFailedFlushAt.get(),
-                lastRejectedAppendAt.get(), shutdown);
+                scheduledFlushes.get(), completedFlushes.get(), failedFlushes.get(), rejectedAppends.get(),
+                quarantinedStationLogs.get(), observedAt, buffers.oldestBufferedStationLogAge(observedAt),
+                lastSuccessfulFlushAt.get(), lastFailedFlushAt.get(), lastRejectedAppendAt.get(), shutdown);
     }
 }

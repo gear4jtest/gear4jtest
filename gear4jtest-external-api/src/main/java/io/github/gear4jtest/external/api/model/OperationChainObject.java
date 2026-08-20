@@ -16,7 +16,7 @@ public record OperationChainObject(Long id,
                                    String createdBy,
                                    Instant publishedAt) {
     public OperationChainObject {
-        alId = OperationChainModelValidation.requireText(alId, "alId", 200);
+        alId = OperationChainModelValidation.requireText(alId, "alId", 255);
         version = OperationChainModelValidation.requireText(version, "version", 100);
         mode = Objects.requireNonNull(mode, "mode must not be null");
         OperationChainContentIdentity contentIdentity = new OperationChainContentIdentity(contentHash, sizeBytes,

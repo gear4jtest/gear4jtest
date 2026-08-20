@@ -18,7 +18,7 @@ class Gear4jPersistenceHealthIndicatorTest {
     void health_shouldExposeCurrentReadinessAndRuntimeStats() {
         // Given
         PersistenceRuntimeMonitor manager = mock(PersistenceRuntimeMonitor.class);
-        PersistenceRuntimeStats stats = stats(2, 3, 4, 5, 6, 7,
+        PersistenceRuntimeStats stats = stats(2, 3, 4, 5, 6, 7, 8,
                                               Instant.parse("2026-07-12T18:00:02Z"),
                                               Instant.parse("2026-07-12T18:00:01Z"));
         when(manager.probeHealth()).thenReturn(status(true, true, true,
@@ -38,14 +38,15 @@ class Gear4jPersistenceHealthIndicatorTest {
                 .containsEntry("activeRuns", 2)
                 .containsEntry("bufferedStationLogs", 3)
                 .containsEntry("failedFlushes", 6L)
-                .containsEntry("rejectedAppends", 7L);
+                .containsEntry("rejectedAppends", 7L)
+                .containsEntry("quarantinedStationLogs", 8L);
     }
 
     @Test
     void health_shouldBeDownWhileCurrentConnectivityIsUnavailable() {
         // Given
         PersistenceRuntimeMonitor manager = mock(PersistenceRuntimeMonitor.class);
-        PersistenceRuntimeStats stats = stats(1, 2, 3, 4, 1, 0, null,
+        PersistenceRuntimeStats stats = stats(1, 2, 3, 4, 1, 0, 0, null,
                                               Instant.parse("2026-07-12T18:00:01Z"));
         when(manager.probeHealth()).thenReturn(status(false, false, false,
                                                       PersistenceOperationalStatus.Reason.CONNECTIVITY_UNAVAILABLE,
@@ -66,8 +67,8 @@ class Gear4jPersistenceHealthIndicatorTest {
         // Given
         PersistenceRuntimeMonitor manager = mock(PersistenceRuntimeMonitor.class);
         Instant failedAt = Instant.parse("2026-07-12T18:00:01Z");
-        PersistenceRuntimeStats pending = stats(1, 2, 3, 2, 1, 0, null, failedAt);
-        PersistenceRuntimeStats recovered = stats(1, 0, 4, 3, 1, 0, failedAt.plusSeconds(1), failedAt);
+        PersistenceRuntimeStats pending = stats(1, 2, 3, 2, 1, 0, 0, null, failedAt);
+        PersistenceRuntimeStats recovered = stats(1, 0, 4, 3, 1, 0, 0, failedAt.plusSeconds(1), failedAt);
         when(manager.probeHealth())
                 .thenReturn(status(false, true, false, PersistenceOperationalStatus.Reason.RECOVERY_PENDING, pending))
                 .thenReturn(status(true, true, true, PersistenceOperationalStatus.Reason.READY, recovered));
@@ -107,10 +108,12 @@ class Gear4jPersistenceHealthIndicatorTest {
                                                  long completedFlushes,
                                                  long failedFlushes,
                                                  long rejectedAppends,
+                                                 long quarantinedStationLogs,
                                                  Instant lastSuccessfulFlushAt,
                                                  Instant lastFailedFlushAt) {
         return new PersistenceRuntimeStats(activeRuns, bufferedStationLogs, scheduledFlushes, completedFlushes,
-                failedFlushes, rejectedAppends, Instant.parse("2026-07-12T18:00:03Z"), Duration.ofSeconds(2),
+                failedFlushes, rejectedAppends, quarantinedStationLogs,
+                Instant.parse("2026-07-12T18:00:03Z"), Duration.ofSeconds(2),
                 lastSuccessfulFlushAt, lastFailedFlushAt, null, false);
     }
 }

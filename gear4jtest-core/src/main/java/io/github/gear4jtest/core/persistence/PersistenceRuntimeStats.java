@@ -13,6 +13,7 @@ public record PersistenceRuntimeStats(int activeRuns,
                                       long completedFlushes,
                                       long failedFlushes,
                                       long rejectedAppends,
+                                      long quarantinedStationLogs,
                                       Instant observedAt,
                                       Duration oldestBufferedStationLogAge,
                                       Instant lastSuccessfulFlushAt,
@@ -33,8 +34,25 @@ public record PersistenceRuntimeStats(int activeRuns,
                                    long scheduledFlushes,
                                    long completedFlushes,
                                    long failedFlushes,
+                                   long rejectedAppends,
+                                   Instant observedAt,
+                                   Duration oldestBufferedStationLogAge,
+                                   Instant lastSuccessfulFlushAt,
+                                   Instant lastFailedFlushAt,
+                                   Instant lastRejectedAppendAt,
+                                   boolean shutdown) {
+        this(activeRuns, bufferedStationLogs, scheduledFlushes, completedFlushes, failedFlushes, rejectedAppends, 0L,
+                observedAt, oldestBufferedStationLogAge, lastSuccessfulFlushAt, lastFailedFlushAt,
+                lastRejectedAppendAt, shutdown);
+    }
+
+    public PersistenceRuntimeStats(int activeRuns,
+                                   int bufferedStationLogs,
+                                   long scheduledFlushes,
+                                   long completedFlushes,
+                                   long failedFlushes,
                                    long rejectedAppends) {
-        this(activeRuns, bufferedStationLogs, scheduledFlushes, completedFlushes, failedFlushes, rejectedAppends,
+        this(activeRuns, bufferedStationLogs, scheduledFlushes, completedFlushes, failedFlushes, rejectedAppends, 0L,
                 Instant.now(), Duration.ZERO, null, null, null, false);
     }
 }

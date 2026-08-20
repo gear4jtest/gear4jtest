@@ -16,6 +16,7 @@ import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.StationKind;
 import io.github.gear4jtest.core.api.station.UnaryIfElseContainerStation;
+import io.github.gear4jtest.core.api.trace.StationTrace;
 import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.engine.support.ExecutorDecorator;
@@ -171,6 +172,9 @@ class IfElseContainerStationStrategyTest {
         assertThat(context.getGlobalContext().getCurrentBranchId()).isNull();
         assertThat(childLog.get().getParentOperationId()).isEqualTo(context.getRecord().getId());
         assertThat(childLog.get().getBranchId()).isEqualTo("selected-branch");
+        assertThat(context.getRecord().getSubOperations())
+                .extracting(StationTrace::getOperationId)
+                .containsExactly("selected");
     }
 
     @Test

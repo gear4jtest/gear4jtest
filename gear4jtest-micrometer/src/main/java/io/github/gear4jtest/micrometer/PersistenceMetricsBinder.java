@@ -49,6 +49,9 @@ public final class PersistenceMetricsBinder {
         registerGauge(meterRegistry, manager, "gear4j.persistence.appends.rejected",
                       "Number of station log append attempts rejected because the persistence buffer was full",
                       value -> value.snapshotStats().rejectedAppends());
+        registerGauge(meterRegistry, manager, "gear4j.persistence.station.logs.quarantined",
+                      "Number of station logs removed after a record-specific permanent rejection",
+                      value -> value.snapshotStats().quarantinedStationLogs());
         PersistenceFlushSubscription subscription = manager.subscribeToFlushes(observation -> recordFlush(
                                                                                                           meterRegistry,
                                                                                                           observation));

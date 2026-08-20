@@ -11,7 +11,7 @@ public record OperationChainConfig(String alId,
                                    StoreType storeType,
                                    Map<String, String> storeProps) {
     public OperationChainConfig {
-        alId = OperationChainModelValidation.requireText(alId, "alId", 200);
+        alId = OperationChainModelValidation.requireText(alId, "alId", 255);
         allowRunPublicationWithoutTest = requireNonNull(allowRunPublicationWithoutTest,
                                                         "allowRunPublicationWithoutTest");
         storeType = requireNonNull(storeType, "storeType");

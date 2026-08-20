@@ -165,6 +165,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     @Override
     public void save(AssemblyRunRecord execution) {
+        JdbcPersistenceRecordValidator.validate(execution);
         try {
             transactionOperations.execute(conn -> {
                 try (PreparedStatement stmt = prepare(conn,
@@ -180,6 +181,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
 
     @Override
     public void update(AssemblyRunRecord execution) {
+        JdbcPersistenceRecordValidator.validate(execution);
         try {
             transactionOperations.execute(conn -> {
                 try (PreparedStatement stmt = prepare(conn,
@@ -339,6 +341,7 @@ public class DatabaseAssemblyRunRepository implements AssemblyRunRepository {
         if (records == null || records.isEmpty()) {
             return;
         }
+        JdbcPersistenceRecordValidator.validateAll(records);
 
         try {
             transactionOperations.execute(conn -> {

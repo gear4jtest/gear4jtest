@@ -19,6 +19,8 @@ class PersistenceRuntimeConfigurationTest {
         // Then
         assertThat(configuration.batchSize()).isPositive();
         assertThat(configuration.maxPendingLogsPerRun()).isGreaterThanOrEqualTo(configuration.batchSize());
+        assertThat(configuration.maxActiveRuns()).isEqualTo(1_000);
+        assertThat(configuration.maxBufferedStationLogs()).isEqualTo(10_000);
         assertThat(configuration.flushInterval()).isPositive();
         assertThat(configuration.maxScheduledFlushTasks()).isPositive();
         assertThat(configuration.shutdownRetryInitialBackoff()).isEqualTo(Duration.ofMillis(100));
@@ -46,6 +48,8 @@ class PersistenceRuntimeConfigurationTest {
         PersistenceRuntimeConfiguration original = PersistenceRuntimeConfiguration.builder()
                 .batchSize(17)
                 .maxPendingLogsPerRun(101)
+                .maxActiveRuns(103)
+                .maxBufferedStationLogs(107)
                 .flushInterval(Duration.ofMillis(250))
                 .shutdownTimeout(Duration.ofSeconds(11))
                 .shutdownRetryInitialBackoff(Duration.ofMillis(25))
@@ -65,6 +69,8 @@ class PersistenceRuntimeConfigurationTest {
         assertThat(original.batchSize()).isEqualTo(17);
         assertThat(copy.batchSize()).isEqualTo(19);
         assertThat(copy.maxPendingLogsPerRun()).isEqualTo(101);
+        assertThat(copy.maxActiveRuns()).isEqualTo(103);
+        assertThat(copy.maxBufferedStationLogs()).isEqualTo(107);
         assertThat(copy.flushInterval()).isEqualTo(Duration.ofMillis(250));
         assertThat(copy.shutdownTimeout()).isEqualTo(Duration.ofSeconds(11));
         assertThat(copy.shutdownRetryInitialBackoff()).isEqualTo(Duration.ofMillis(25));
@@ -136,6 +142,16 @@ class PersistenceRuntimeConfigurationTest {
         assertThatThrownBy(builder::build)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("maxScheduledFlushTasks");
+    }
+
+    @Test
+    void build_shouldRejectNonPositiveGlobalCapacities() {
+        assertThatThrownBy(() -> PersistenceRuntimeConfiguration.builder().maxActiveRuns(0).build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxActiveRuns");
+        assertThatThrownBy(() -> PersistenceRuntimeConfiguration.builder().maxBufferedStationLogs(0).build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxBufferedStationLogs");
     }
 
     @Test

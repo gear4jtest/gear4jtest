@@ -302,7 +302,7 @@ class DatabaseExecutionManagerShutdownTest {
     }
 
     @Test
-    void end_shouldKeepRunBufferWhenFinalUpdateFailsSoCallerCanRetry() {
+    void end_shouldKeepRunBufferWhenFinalUpdateFailsSoExplicitFlushCanRetry() {
         // Given
         DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
         doThrow(new ExecutionPersistenceException("database update failed"))
@@ -310,8 +310,10 @@ class DatabaseExecutionManagerShutdownTest {
                 .when(repository).update(any());
         ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        DatabaseExecutionManager manager = manager(repository, PersistenceRuntimeConfiguration.defaults(),
-                                                   flushExecutor, scheduler);
+        PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.defaults().toBuilder()
+                .flushInterval(Duration.ofDays(1))
+                .build();
+        DatabaseExecutionManager manager = manager(repository, configuration, flushExecutor, scheduler);
         UUID runId = UUID.randomUUID();
         AssemblyRunTrace trace = new AssemblyRunTrace(runId, "assembly-line", Map.of());
         trace.markSuccess("ok");
@@ -327,7 +329,7 @@ class DatabaseExecutionManagerShutdownTest {
                     .isEqualTo(1);
 
             // When
-            manager.end(trace);
+            manager.flush(runId);
 
             // Then
             assertThat(manager.snapshotStats().activeRuns()).isZero();
@@ -346,8 +348,10 @@ class DatabaseExecutionManagerShutdownTest {
                 .when(repository).update(any());
         ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        DatabaseExecutionManager manager = manager(repository, PersistenceRuntimeConfiguration.defaults(),
-                                                   flushExecutor, scheduler);
+        PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.defaults().toBuilder()
+                .flushInterval(Duration.ofDays(1))
+                .build();
+        DatabaseExecutionManager manager = manager(repository, configuration, flushExecutor, scheduler);
         UUID runId = UUID.randomUUID();
         AssemblyRunTrace trace = new AssemblyRunTrace(runId, "assembly-line", Map.of());
         trace.markSuccess("ok");
@@ -362,13 +366,14 @@ class DatabaseExecutionManagerShutdownTest {
 
             // Then
             assertThat(report.successful()).isFalse();
-            assertThat(report.deadlineReached()).isFalse();
+            assertThat(report.deadlineReached()).isTrue();
             assertThat(report.initialActiveRuns()).isEqualTo(1);
             assertThat(report.remainingActiveRuns()).isEqualTo(1);
             assertThat(report.remainingStationLogs()).isZero();
+            assertThat(report.flushAttempts()).isPositive();
             assertThat(report.failures()).singleElement().satisfies(failure -> {
                 assertThat(failure.runId()).isEqualTo(runId);
-                assertThat(failure.attempts()).isZero();
+                assertThat(failure.attempts()).isEqualTo(report.flushAttempts());
                 assertThat(failure.remainingStationLogs()).isZero();
                 assertThat(failure.message()).contains("final run update unavailable");
             });

@@ -12,7 +12,7 @@ CREATE TABLE artifact_store
 
 CREATE TABLE operation_chain_config
 (
-    al_id                              VARCHAR(200) PRIMARY KEY,
+    al_id                              VARCHAR(255) PRIMARY KEY,
     allow_run_publication_without_test BOOLEAN     NOT NULL DEFAULT FALSE,
     store_type                         VARCHAR(30) NOT NULL,
     store_props                        JSONB       NOT NULL DEFAULT '{}'::jsonb,
@@ -23,7 +23,7 @@ CREATE TABLE operation_chain_config
 CREATE TABLE operation_chain_object
 (
     id           BIGSERIAL PRIMARY KEY,
-    al_id        VARCHAR(200)   NOT NULL,
+    al_id        VARCHAR(255)   NOT NULL,
     version      VARCHAR(100)   NOT NULL,
     publication_mode execution_mode NOT NULL,
     content_hash CHAR(64)       NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE operation_chain_object
 CREATE TABLE operation_chain_publication_stage
 (
     stage_id         VARCHAR(36) PRIMARY KEY,
-    al_id            VARCHAR(200) NOT NULL,
+    al_id            VARCHAR(255) NOT NULL,
     version          VARCHAR(100) NOT NULL,
     publication_mode execution_mode NOT NULL,
     content_hash     CHAR(64) NOT NULL,
@@ -67,7 +67,7 @@ CREATE INDEX idx_op_chain_stage_age
 
 CREATE TABLE operation_chain_tag
 (
-    al_id VARCHAR(200) NOT NULL,
+    al_id VARCHAR(255) NOT NULL,
     tag   VARCHAR(100) NOT NULL,
     PRIMARY KEY (al_id, tag),
     FOREIGN KEY (al_id) REFERENCES operation_chain_config (al_id) ON DELETE CASCADE

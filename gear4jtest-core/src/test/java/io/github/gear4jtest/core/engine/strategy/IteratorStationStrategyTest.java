@@ -16,6 +16,7 @@ import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.IteratorStation;
 import io.github.gear4jtest.core.api.station.SequenceStation;
 import io.github.gear4jtest.core.api.station.StationKind;
+import io.github.gear4jtest.core.api.trace.StationTrace;
 import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
@@ -59,6 +60,9 @@ class IteratorStationStrategyTest {
         assertThat(seenItemIds).containsExactly("iterator#item-0", "iterator#item-1");
         assertThat(globalContext.getCurrentItemId()).isNull();
         assertThat(result).isEqualTo(List.of("a-out", "b-out"));
+        assertThat(stationContext.getRecord().getSubOperations())
+                .extracting(StationTrace::getOutput)
+                .containsExactly("a-out", "b-out");
     }
 
     @Test

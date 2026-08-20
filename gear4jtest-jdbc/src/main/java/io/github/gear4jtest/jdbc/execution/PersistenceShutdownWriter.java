@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import io.github.gear4jtest.core.exception.ExecutionPersistenceException;
+import io.github.gear4jtest.core.persistence.AssemblyRunRecord;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
 
@@ -19,14 +20,14 @@ import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
 final class PersistenceShutdownWriter {
     private final DatabaseAssemblyRunRepository repository;
     private final PersistenceRuntimeConfiguration configuration;
-    private final PersistenceRuntimeCounters counters;
+    private final PersistenceBatchProcessor batchProcessor;
 
     PersistenceShutdownWriter(DatabaseAssemblyRunRepository repository,
                               PersistenceRuntimeConfiguration configuration,
-                              PersistenceRuntimeCounters counters) {
+                              PersistenceBatchProcessor batchProcessor) {
         this.repository = repository;
         this.configuration = configuration;
-        this.counters = counters;
+        this.batchProcessor = batchProcessor;
     }
 
     ExecutorService createExecutor() {
@@ -43,21 +44,31 @@ final class PersistenceShutdownWriter {
             if (!locked) {
                 return FlushOutcome.deadline(deadlineFailure(buffer, "acquiring its flush lock"));
             }
-            do {
+            while (true) {
                 if (deadline.reached()) {
-                    return FlushOutcome.deadline(deadlineFailure(buffer, "starting the next JDBC batch"));
+                    return FlushOutcome.deadline(deadlineFailure(buffer, "starting the next JDBC operation"));
                 }
                 List<StationLogRecord> batch = buffer.drainBatch();
                 if (batch.isEmpty()) {
-                    return FlushOutcome.success();
+                    break;
                 }
-                FlushOutcome batchOutcome = persistBatch(buffer, batch, deadline, executor);
-                if (!batchOutcome.successful()) {
-                    return batchOutcome;
-                }
-                counters.recordSuccessfulFlushProgress();
-                buffer.acknowledgeDrainedBatch(batch);
-            } while (true);
+                batchProcessor.persist(buffer, batch,
+                                       records -> persistBatch(records, buffer, deadline, executor),
+                                       (record, context) -> persistRejectedRecord(record, context, buffer, deadline,
+                                                                                  executor));
+            }
+            if (buffer.isFinalizationPending()) {
+                persistFinalRecord(buffer.finalRecord(), buffer, deadline, executor);
+                buffer.completeFinalization();
+            }
+            return FlushOutcome.success();
+        } catch (ShutdownDeadlineException exception) {
+            return FlushOutcome.deadline(exception);
+        } catch (ShutdownInterruptedException exception) {
+            Thread.currentThread().interrupt();
+            return FlushOutcome.interrupted(exception);
+        } catch (RuntimeException exception) {
+            return FlushOutcome.retryable(exception);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             return FlushOutcome.interrupted(new ExecutionPersistenceException(
@@ -87,38 +98,64 @@ final class PersistenceShutdownWriter {
                 + ". runId=" + buffer.runId() + ", remainingStationLogs=" + buffer.retainedCount());
     }
 
-    private FlushOutcome persistBatch(OperationRecordBuffer buffer,
-                                      List<StationLogRecord> batch,
-                                      PersistenceShutdownDeadline deadline,
-                                      ExecutorService executor) {
-        Future<?> write;
+    private void persistBatch(List<StationLogRecord> batch,
+                              OperationRecordBuffer buffer,
+                              PersistenceShutdownDeadline deadline,
+                              ExecutorService executor) {
+        executeWithinDeadline(() -> repository.saveOperationRecordsBatch(batch), buffer, deadline, executor,
+                              "waiting for JDBC batch completion");
+    }
+
+    private void persistFinalRecord(AssemblyRunRecord record,
+                                    OperationRecordBuffer buffer,
+                                    PersistenceShutdownDeadline deadline,
+                                    ExecutorService executor) {
         try {
-            write = executor.submit(() -> repository.saveOperationRecordsBatch(batch));
+            executeWithinDeadline(() -> repository.update(record), buffer, deadline, executor,
+                                  "waiting for run finalization");
+        } catch (RuntimeException exception) {
+            buffer.recordFinalizationFailure(exception);
+            throw exception;
+        }
+    }
+
+    private void persistRejectedRecord(StationLogRecord record,
+                                       RejectedPersistenceRecordContext context,
+                                       OperationRecordBuffer buffer,
+                                       PersistenceShutdownDeadline deadline,
+                                       ExecutorService executor) {
+        executeWithinDeadline(() -> batchProcessor.invokeRejectedRecordHandler(record, context), buffer, deadline,
+                              executor, "waiting for rejected-record handling");
+    }
+
+    private void executeWithinDeadline(Runnable write,
+                                       OperationRecordBuffer buffer,
+                                       PersistenceShutdownDeadline deadline,
+                                       ExecutorService executor,
+                                       String activity) {
+        Future<?> future;
+        try {
+            future = executor.submit(write);
         } catch (RejectedExecutionException exception) {
-            buffer.restoreDrainedBatch(batch);
-            return FlushOutcome.terminal(new ExecutionPersistenceException(
-                    "Persistence shutdown JDBC worker rejected a batch for runId=" + buffer.runId(), exception));
+            throw new ExecutionPersistenceException(
+                    "Persistence shutdown JDBC worker rejected work for runId=" + buffer.runId(), exception);
         }
         try {
-            write.get(deadline.remainingNanos(), TimeUnit.NANOSECONDS);
-            return FlushOutcome.success();
+            future.get(deadline.remainingNanos(), TimeUnit.NANOSECONDS);
         } catch (TimeoutException exception) {
-            write.cancel(true);
-            buffer.restoreDrainedBatch(batch);
-            return FlushOutcome.deadline(deadlineFailure(buffer, "waiting for JDBC batch completion"));
+            future.cancel(true);
+            throw new ShutdownDeadlineException(deadlineFailure(buffer, activity));
         } catch (InterruptedException exception) {
-            write.cancel(true);
-            buffer.restoreDrainedBatch(batch);
-            Thread.currentThread().interrupt();
-            return FlushOutcome.interrupted(new ExecutionPersistenceException(
+            future.cancel(true);
+            throw new ShutdownInterruptedException(new ExecutionPersistenceException(
                     "Persistence shutdown was interrupted while writing runId=" + buffer.runId(), exception));
         } catch (ExecutionException exception) {
-            buffer.restoreDrainedBatch(batch);
             Throwable cause = exception.getCause();
-            Exception failure = cause instanceof Exception checked ? checked
-                    : new ExecutionPersistenceException("Persistence shutdown JDBC batch failed for runId="
-                            + buffer.runId(), cause);
-            return FlushOutcome.retryable(failure);
+            if (cause instanceof RuntimeException runtimeFailure) {
+                throw runtimeFailure;
+            }
+            throw new ExecutionPersistenceException("Persistence shutdown JDBC work failed for runId="
+                    + buffer.runId(), cause);
         }
     }
 
@@ -137,16 +174,28 @@ final class PersistenceShutdownWriter {
             return new FlushOutcome(false, true, false, false, failure);
         }
 
-        private static FlushOutcome terminal(Exception failure) {
-            return new FlushOutcome(false, false, false, false, failure);
-        }
-
         private static FlushOutcome interrupted(Exception failure) {
             return new FlushOutcome(false, false, true, false, failure);
         }
 
         private static FlushOutcome deadline(Exception failure) {
             return new FlushOutcome(false, false, false, true, failure);
+        }
+    }
+
+    private static final class ShutdownDeadlineException extends ExecutionPersistenceException {
+        private static final long serialVersionUID = 1L;
+
+        private ShutdownDeadlineException(ExecutionPersistenceException cause) {
+            super(cause.getMessage(), cause);
+        }
+    }
+
+    private static final class ShutdownInterruptedException extends ExecutionPersistenceException {
+        private static final long serialVersionUID = 1L;
+
+        private ShutdownInterruptedException(ExecutionPersistenceException cause) {
+            super(cause.getMessage(), cause);
         }
     }
 }

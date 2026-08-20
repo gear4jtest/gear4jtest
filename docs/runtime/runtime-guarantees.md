@@ -57,18 +57,26 @@ JDBC station-log persistence uses per-run buffers, asynchronous batch flushes an
 Guaranteed today:
 
 - pending station logs per run are bounded;
+- active run buffers are bounded process-wide by `maxActiveRuns`;
+- station logs retained across all buffers, including in-flight batches, are bounded by `maxBufferedStationLogs`;
 - scheduled asynchronous flush tasks are bounded by `maxScheduledFlushTasks`;
 - one flush-task scheduling rejection cannot terminate later periodic maintenance passes;
 - failed flushes restore drained records when possible before reporting the failure;
+- positively classified record-data failures are isolated by batch bisection, while healthy subsets commit independently;
+- an isolated bad record is released only after `RejectedPersistenceRecordHandler` accepts it; a handler failure restores
+  the record for retry;
+- transient and unknown/systemic database failures are not bisected or quarantined;
+- run finalization state remains retained after a failed final update and periodic maintenance retries it;
 - JDBC statements created by Gear4J persistence apply the configured statement timeout when supported by the driver;
 - shutdown starts one end-to-end deadline before closing admission, bounds per-run lock waits and executes final JDBC
-  drains through shutdown-only daemon workers;
+  drains and rejection-handler calls through shutdown-only daemon workers;
 - a timed-out or uncertain batch is restored in memory and reported instead of keeping the shutdown caller blocked;
 - the shutdown report exposes admitted operations that did not finish before the deadline.
 
 Not guaranteed today:
 
 - persistence can survive a process crash before buffered logs are flushed;
+- the default logging-only rejection handler provides durable recovery of quarantined records;
 - final shutdown flush can succeed when the database is unavailable;
 - user code or JDBC driver calls are forcibly stopped by persistence shutdown;
 - a JDBC call that ignores interruption cannot outlive the immutable shutdown report on a daemon worker;
@@ -80,6 +88,12 @@ inputs, results and error messages are discarded. `SensitiveDataRedactor.none()`
 or Spring Boot `redaction-mode=DISABLED` are explicit opt-ins to raw capture.
 `REQUIRE` fails startup without an effective redactor. The deprecated Spring
 Boot `WARN` mode retains the former raw-capture behavior and emits a warning.
+
+Identifier validation is performed before JDBC execution and uses Unicode code
+points. Assembly-line, operation, branch and item identifiers are limited to
+255 code points, matching the bundled V1 schemas. Because this source version
+has no production adopters, those schema corrections are made directly in V1;
+older development schemas must be recreated instead of baselined.
 
 ## Default identifier generation
 

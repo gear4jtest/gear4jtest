@@ -80,4 +80,12 @@ public final class ExecutionServices {
     public <T> T getOrCreateStationResource(String stationId, Class<T> type, Supplier<T> factory) {
         return stationScopedResources.getOrCreate(stationId, type, factory);
     }
+
+    @Internal
+    public <T> T getOrCreateStationResource(Object stationIdentity,
+                                            String stationId,
+                                            Class<T> type,
+                                            Supplier<T> factory) {
+        return stationScopedResources.getOrCreate(stationIdentity, stationId, type, factory);
+    }
 }

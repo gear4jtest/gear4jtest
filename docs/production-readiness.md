@@ -71,7 +71,8 @@ When JDBC persistence is enabled:
 - set `gear4j.persistence.redaction-mode=REQUIRE` in Spring Boot deployments
   that must fail fast without an explicit redactor;
 - tune `gear4j.persistence.batch-size`, `max-pending-logs-per-run`,
-  `flush-threads`, `max-scheduled-flush-tasks` and
+  `max-active-runs`, `max-buffered-station-logs`, `flush-threads`,
+  `max-scheduled-flush-tasks` and
   `jdbc-statement-timeout` for expected volume and database latency;
 - normal run operations do not hold a manager-wide lock during JDBC I/O.
   Independent runs may call the repository concurrently, while each run buffer
@@ -84,8 +85,10 @@ When JDBC persistence is enabled:
   default with `PersistenceConfiguration.stationLogFlushThreshold(...)`, or a
   single execution with `RunRequest.persistence(...)`; per-run values must not
   exceed `max-pending-logs-per-run`;
-- monitor failed flushes, rejected appends, active buffers and
-  `gear4j.persistence.flush.duration{trigger,outcome}` p95/p99;
+- provide a durable `RejectedPersistenceRecordHandler` when isolated invalid
+  station logs must remain recoverable; the default only logs safe metadata;
+- monitor failed flushes, rejected appends, quarantined station logs, active
+  buffers and `gear4j.persistence.flush.duration{trigger,outcome}` p95/p99;
 - keep persistence history queries paginated. `PageRequest` is intentionally
   capped at 1,000 rows per call to avoid accidental large reads. The external
   JDBC repositories also expose paginated variants for operation-chain objects

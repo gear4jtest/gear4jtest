@@ -32,7 +32,8 @@ public final class Gear4jPersistenceHealthIndicator implements HealthIndicator {
                     .withDetail("scheduledFlushes", stats.scheduledFlushes())
                     .withDetail("completedFlushes", stats.completedFlushes())
                     .withDetail("failedFlushes", stats.failedFlushes())
-                    .withDetail("rejectedAppends", stats.rejectedAppends());
+                    .withDetail("rejectedAppends", stats.rejectedAppends())
+                    .withDetail("quarantinedStationLogs", stats.quarantinedStationLogs());
             addTimestamp(health, "lastSuccessfulFlushAt", stats.lastSuccessfulFlushAt());
             addTimestamp(health, "lastFailedFlushAt", stats.lastFailedFlushAt());
             addTimestamp(health, "lastRejectedAppendAt", stats.lastRejectedAppendAt());

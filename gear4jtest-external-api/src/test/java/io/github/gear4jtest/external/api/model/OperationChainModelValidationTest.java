@@ -83,6 +83,18 @@ class OperationChainModelValidationTest {
     }
 
     @Test
+    void assemblyLineId_shouldUseTheShared255UnicodeCodePointLimit() {
+        String maxSupplementaryCharacters = "\uD83D\uDE80".repeat(255);
+
+        assertThat(new OperationChainConfig(maxSupplementaryCharacters, false, StoreType.MEMORY, Map.of()).alId())
+                .isEqualTo(maxSupplementaryCharacters);
+        assertThatThrownBy(() -> new OperationChainConfig("a".repeat(256), false, StoreType.MEMORY, Map.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("alId")
+                .hasMessageContaining("255");
+    }
+
+    @Test
     void configToString_shouldRedactStorePropertyValues() {
         // Given
         String secret = "secret-access-key";

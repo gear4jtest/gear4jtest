@@ -63,6 +63,7 @@ public class AssemblyLineCallStationStrategy extends AbstractStationStrategy<Ass
                                                                                          childAssemblyLine
                                                                                                  .getRootStation(),
                                                                                          operationExecution));
+            EngineStationContexts.trace(operationExecution).addSubOperation(childRootLog);
             return mapInlineChildStatus(station, childAssemblyLine, childRootLog,
                                         EngineStationContexts.trace(operationExecution));
         }

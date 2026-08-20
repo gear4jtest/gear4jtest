@@ -7,6 +7,8 @@ import java.util.Objects;
 public final class PersistenceRuntimeConfiguration {
     private static final int DEFAULT_BATCH_SIZE = 500;
     private static final int DEFAULT_MAX_PENDING_LOGS_PER_RUN = 10_000;
+    private static final int DEFAULT_MAX_ACTIVE_RUNS = 1_000;
+    private static final int DEFAULT_MAX_BUFFERED_STATION_LOGS = 10_000;
     private static final Duration DEFAULT_FLUSH_INTERVAL = Duration.ofSeconds(1);
     private static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
     private static final Duration DEFAULT_SHUTDOWN_RETRY_INITIAL_BACKOFF = Duration.ofMillis(100);
@@ -20,6 +22,8 @@ public final class PersistenceRuntimeConfiguration {
 
     private final int batchSize;
     private final int maxPendingLogsPerRun;
+    private final int maxActiveRuns;
+    private final int maxBufferedStationLogs;
     private final Duration flushInterval;
     private final Duration shutdownTimeout;
     private final Duration shutdownRetryInitialBackoff;
@@ -37,6 +41,8 @@ public final class PersistenceRuntimeConfiguration {
         if (maxPendingLogsPerRun < batchSize) {
             throw new IllegalArgumentException("maxPendingLogsPerRun must be >= batchSize");
         }
+        this.maxActiveRuns = positive(builder.maxActiveRuns, "maxActiveRuns");
+        this.maxBufferedStationLogs = positive(builder.maxBufferedStationLogs, "maxBufferedStationLogs");
         this.flushInterval = positive(builder.flushInterval, "flushInterval");
         this.shutdownTimeout = positive(builder.shutdownTimeout, "shutdownTimeout");
         this.shutdownRetryInitialBackoff = positive(builder.shutdownRetryInitialBackoff,
@@ -72,6 +78,14 @@ public final class PersistenceRuntimeConfiguration {
 
     public int maxPendingLogsPerRun() {
         return maxPendingLogsPerRun;
+    }
+
+    public int maxActiveRuns() {
+        return maxActiveRuns;
+    }
+
+    public int maxBufferedStationLogs() {
+        return maxBufferedStationLogs;
     }
 
     public Duration flushInterval() {
@@ -140,6 +154,8 @@ public final class PersistenceRuntimeConfiguration {
     public static final class Builder {
         private int batchSize = DEFAULT_BATCH_SIZE;
         private int maxPendingLogsPerRun = DEFAULT_MAX_PENDING_LOGS_PER_RUN;
+        private int maxActiveRuns = DEFAULT_MAX_ACTIVE_RUNS;
+        private int maxBufferedStationLogs = DEFAULT_MAX_BUFFERED_STATION_LOGS;
         private Duration flushInterval = DEFAULT_FLUSH_INTERVAL;
         private Duration shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
         private Duration shutdownRetryInitialBackoff = DEFAULT_SHUTDOWN_RETRY_INITIAL_BACKOFF;
@@ -157,6 +173,8 @@ public final class PersistenceRuntimeConfiguration {
         private Builder(PersistenceRuntimeConfiguration configuration) {
             this.batchSize = configuration.batchSize;
             this.maxPendingLogsPerRun = configuration.maxPendingLogsPerRun;
+            this.maxActiveRuns = configuration.maxActiveRuns;
+            this.maxBufferedStationLogs = configuration.maxBufferedStationLogs;
             this.flushInterval = configuration.flushInterval;
             this.shutdownTimeout = configuration.shutdownTimeout;
             this.shutdownRetryInitialBackoff = configuration.shutdownRetryInitialBackoff;
@@ -176,6 +194,16 @@ public final class PersistenceRuntimeConfiguration {
 
         public Builder maxPendingLogsPerRun(int maxPendingLogsPerRun) {
             this.maxPendingLogsPerRun = maxPendingLogsPerRun;
+            return this;
+        }
+
+        public Builder maxActiveRuns(int maxActiveRuns) {
+            this.maxActiveRuns = maxActiveRuns;
+            return this;
+        }
+
+        public Builder maxBufferedStationLogs(int maxBufferedStationLogs) {
+            this.maxBufferedStationLogs = maxBufferedStationLogs;
             return this;
         }
 

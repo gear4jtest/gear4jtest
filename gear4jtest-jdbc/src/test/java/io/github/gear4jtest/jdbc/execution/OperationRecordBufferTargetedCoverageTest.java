@@ -125,12 +125,12 @@ class OperationRecordBufferTargetedCoverageTest {
         StationLogRecord first = record();
         StationLogRecord second = record();
 
-        buffer.restoreDrainedBatch(List.of(first, second));
-
-        assertThat(buffer.pendingCount()).isEqualTo(1);
-        assertThatThrownBy(buffer::assertHealthy)
+        assertThatThrownBy(() -> buffer.restoreDrainedBatch(List.of(first, second)))
                 .isInstanceOf(ExecutionPersistenceException.class)
-                .hasMessageContaining("Persistence failed for runId");
+                .hasMessageContaining("atomically requeue");
+
+        assertThat(buffer.pendingCount()).isZero();
+        assertThat(buffer.currentFailure()).isNotNull();
     }
 
     private static StationLogRecord record() {

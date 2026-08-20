@@ -63,8 +63,23 @@ public class PersistenceExtension implements RunLifecycleExtension, StationLifec
 
     @Override
     public void onRunCompleted(ExecutionContext ctx, RunTrace run) {
-        manager.flush(run.getId());
-        manager.end(run);
+        RuntimeException firstFailure = null;
+        try {
+            manager.flush(run.getId());
+        } catch (RuntimeException exception) {
+            firstFailure = exception;
+        }
+        try {
+            manager.end(run);
+        } catch (RuntimeException exception) {
+            if (firstFailure == null) {
+                throw exception;
+            }
+            firstFailure.addSuppressed(exception);
+        }
+        if (firstFailure != null) {
+            throw firstFailure;
+        }
     }
 
     @Override

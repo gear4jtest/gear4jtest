@@ -10,7 +10,7 @@ CREATE TABLE artifact_store
 
 CREATE TABLE operation_chain_config
 (
-    al_id                              VARCHAR(200) PRIMARY KEY,
+    al_id                              VARCHAR(255) PRIMARY KEY,
     allow_run_publication_without_test TINYINT(1) NOT NULL DEFAULT 0,
     store_type                         ENUM('DATABASE','FILESYSTEM','S3','SFTP','MEMORY') NOT NULL,
     store_props                        JSON      NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE operation_chain_config
 CREATE TABLE operation_chain_object
 (
     id           BIGINT AUTO_INCREMENT PRIMARY KEY,
-    al_id        VARCHAR(200) NOT NULL,
+    al_id        VARCHAR(255) NOT NULL,
     version      VARCHAR(100) NOT NULL,
     publication_mode ENUM('TEST','RUN') NOT NULL,
     content_hash CHAR(64)     NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE operation_chain_object
 CREATE TABLE operation_chain_publication_stage
 (
     stage_id         VARCHAR(36) PRIMARY KEY,
-    al_id            VARCHAR(200) NOT NULL,
+    al_id            VARCHAR(255) NOT NULL,
     version          VARCHAR(100) NOT NULL,
     publication_mode ENUM('TEST','RUN') NOT NULL,
     content_hash     CHAR(64) NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE operation_chain_publication_stage_tag
 
 CREATE TABLE operation_chain_tag
 (
-    al_id VARCHAR(200) NOT NULL,
+    al_id VARCHAR(255) NOT NULL,
     tag   VARCHAR(100) NOT NULL,
     PRIMARY KEY (al_id, tag),
     CONSTRAINT fk_operation_chain_tag_config FOREIGN KEY (al_id)

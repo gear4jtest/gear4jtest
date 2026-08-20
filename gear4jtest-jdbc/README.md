@@ -21,6 +21,8 @@ Gear4J is intended to own its schema lifecycle.
 var persistenceRuntime = PersistenceRuntimeConfiguration.builder()
         .batchSize(500)
         .maxPendingLogsPerRun(10_000)
+        .maxActiveRuns(1_000)
+        .maxBufferedStationLogs(10_000)
         .flushInterval(Duration.ofSeconds(1))
         .build();
 
@@ -74,6 +76,34 @@ consistently to asynchronous, periodic, final and shutdown drains. Values above
 the manager's bounded `maxPendingLogsPerRun` capacity are rejected before the run
 record is written.
 
+The manager also enforces process-wide limits through `maxActiveRuns` and
+`maxBufferedStationLogs`. A station log continues to consume global capacity
+while its JDBC write is in flight; capacity is released only after a successful
+commit or after the record has been accepted by the configured rejection
+handler. Reaching either limit fails the admitting call synchronously instead of
+allocating another unbounded per-run queue.
+
+Record-local data failures are handled separately from transient and systemic
+database failures. After a failed batch is positively classified as a rejected
+record (for example SQLState `22001`), Gear4J bisects that batch, commits healthy
+subsets in independent transactions and invokes `RejectedPersistenceRecordHandler`
+for each isolated bad record. Unknown constraint failures and infrastructure
+failures are never guessed to be record-local: the unresolved records are put
+back in their original order for retry. If the rejection handler itself fails,
+the rejected record is also restored and the flush fails.
+
+The default rejection handler writes only safe identifiers and bounded failure
+metadata to the log; it is not a durable dead-letter store. Applications that
+require zero-loss accounting must provide a durable handler:
+
+```java
+DatabaseExecutionManager manager = DatabaseExecutionManager.builder()
+        .dataSource(dataSource)
+        .databaseDialect(Gear4jDatabaseDialect.POSTGRESQL)
+        .rejectedPersistenceRecordHandler((record, failure) -> durableSink.store(record, failure))
+        .build();
+```
+
 Auto-migration does not silently adopt a pre-existing Gear4J schema that has no
 `gear4j_schema_history` entry. For a verified compatible schema, adoption must
 be explicitly enabled with `.baselineOnMigrate(true)`; the migrator then checks
@@ -116,9 +146,15 @@ to the builder must be thread-safe. Shutdown closes admission first and waits fo
 until the shared end-to-end deadline. If they remain active, the report exposes
 `unfinishedOperations` and the drain is not started concurrently with them.
 
-Failed batches remain in memory and are listed in the report; no durable
-dead-letter store is enabled implicitly. The shutdown deadline starts before admission closure and bounds operation waits,
-per-run locks, retries, backoff and worker termination. Shutdown-only JDBC calls
-run on daemon workers, so a pool or driver that ignores interruption may outlive
-the report without blocking the caller. In that case the drained batch is
-restored, `deadlineReached` is true and `flushExecutorTerminated` is false.
+Failed unresolved batches and failed final run updates remain in memory for
+retry and are listed in the report. Periodic maintenance retries a pending final
+update even when the caller does not invoke `end(...)` again, and `flush(runId)`
+can trigger the same retry explicitly. The run-buffer
+permit is released only when both its station logs and final update have
+completed. No durable dead-letter store is enabled implicitly. The shutdown
+deadline starts before admission closure and bounds operation waits, per-run
+locks, retries, backoff, rejection-handler calls and worker termination.
+Shutdown-only JDBC and rejection-handler calls run on daemon workers, so a pool,
+driver or application handler that ignores interruption may outlive the report
+without blocking the caller. In that case the drained batch is restored,
+`deadlineReached` is true and `flushExecutorTerminated` is false.

@@ -1,7 +1,7 @@
 CREATE TABLE assembly_run
 (
     id VARCHAR2(36) PRIMARY KEY,
-    assembly_line_id VARCHAR2(255) NOT NULL,
+    assembly_line_id VARCHAR2(255 CHAR) NOT NULL,
     input_parameters CLOB CHECK (input_parameters IS JSON),
     context CLOB CHECK (context IS JSON),
     result CLOB CHECK (result IS JSON),
@@ -18,16 +18,16 @@ CREATE TABLE station_log
 (
     id VARCHAR2(36) PRIMARY KEY,
     assembly_line_execution_id VARCHAR2(36) NOT NULL,
-    operation_id VARCHAR2(255) NOT NULL,
+    operation_id VARCHAR2(255 CHAR) NOT NULL,
     parent_log_id VARCHAR2(36),
-    branch_id VARCHAR2(255),
+    branch_id VARCHAR2(255 CHAR),
     status VARCHAR2(50) NOT NULL,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP,
     error_message CLOB,
     error_handler_messages CLOB,
     context CLOB CHECK (context IS JSON),
-    item_id VARCHAR2(255),
+    item_id VARCHAR2(255 CHAR),
     CONSTRAINT fk_assembly_line_exec FOREIGN KEY (assembly_line_execution_id)
         REFERENCES assembly_run (id) ON DELETE CASCADE,
     CONSTRAINT fk_parent_op FOREIGN KEY (parent_log_id)

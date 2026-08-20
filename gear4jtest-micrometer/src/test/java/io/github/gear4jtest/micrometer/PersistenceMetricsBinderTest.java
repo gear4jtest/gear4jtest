@@ -22,7 +22,7 @@ class PersistenceMetricsBinderTest {
         // Given
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         PersistenceRuntimeMonitor manager = mock(PersistenceRuntimeMonitor.class);
-        when(manager.snapshotStats()).thenReturn(new PersistenceRuntimeStats(2, 3, 4, 5, 6, 7,
+        when(manager.snapshotStats()).thenReturn(new PersistenceRuntimeStats(2, 3, 4, 5, 6, 7, 8,
                 Instant.parse("2026-07-12T18:00:00Z"), Duration.ofMillis(2_500), null, null, null, false));
 
         // When
@@ -37,6 +37,8 @@ class PersistenceMetricsBinderTest {
         assertThat(meterRegistry.get("gear4j.persistence.flushes.completed").gauge().value()).isEqualTo(5.0d);
         assertThat(meterRegistry.get("gear4j.persistence.flushes.failed").gauge().value()).isEqualTo(6.0d);
         assertThat(meterRegistry.get("gear4j.persistence.appends.rejected").gauge().value()).isEqualTo(7.0d);
+        assertThat(meterRegistry.get("gear4j.persistence.station.logs.quarantined").gauge().value())
+                .isEqualTo(8.0d);
     }
 
     @Test

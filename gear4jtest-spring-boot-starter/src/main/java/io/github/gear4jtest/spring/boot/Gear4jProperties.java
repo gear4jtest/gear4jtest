@@ -83,6 +83,8 @@ public class Gear4jProperties {
         private boolean baselineOnMigrate;
         @Min(1) private int batchSize = 500;
         @Min(1) private int maxPendingLogsPerRun = 10_000;
+        @Min(1) private int maxActiveRuns = 1_000;
+        @Min(1) private int maxBufferedStationLogs = 10_000;
         /**
          * Number of worker threads used for asynchronous JDBC station-log flushes.
          * Default: 1.
@@ -157,6 +159,22 @@ public class Gear4jProperties {
 
         public void setMaxPendingLogsPerRun(int maxPendingLogsPerRun) {
             this.maxPendingLogsPerRun = maxPendingLogsPerRun;
+        }
+
+        public int getMaxActiveRuns() {
+            return maxActiveRuns;
+        }
+
+        public void setMaxActiveRuns(int maxActiveRuns) {
+            this.maxActiveRuns = maxActiveRuns;
+        }
+
+        public int getMaxBufferedStationLogs() {
+            return maxBufferedStationLogs;
+        }
+
+        public void setMaxBufferedStationLogs(int maxBufferedStationLogs) {
+            this.maxBufferedStationLogs = maxBufferedStationLogs;
         }
 
         public int getFlushThreads() {
@@ -266,6 +284,12 @@ public class Gear4jProperties {
             }
             if (maxPendingLogsPerRun < batchSize) {
                 throw new IllegalStateException("gear4j.persistence.max-pending-logs-per-run must be >= batch-size");
+            }
+            if (maxActiveRuns <= 0) {
+                throw new IllegalStateException("gear4j.persistence.max-active-runs must be > 0");
+            }
+            if (maxBufferedStationLogs <= 0) {
+                throw new IllegalStateException("gear4j.persistence.max-buffered-station-logs must be > 0");
             }
             if (readinessMaxBufferedStationLogs <= 0) {
                 throw new IllegalStateException("gear4j.persistence.readiness-max-buffered-station-logs must be > 0");

@@ -34,6 +34,7 @@ public class SequenceStationStrategy extends AbstractStationStrategy<SequenceSta
             StationLogTrace childLog = EngineStationContexts.mutableTrace(
                                                                           runner.run(currentInput, child,
                                                                                      operationExecution));
+            EngineStationContexts.trace(operationExecution).addSubOperation(childLog);
 
             FlowDecision decision = FlowDecider.decide(childLog, config);
             switch (decision) {

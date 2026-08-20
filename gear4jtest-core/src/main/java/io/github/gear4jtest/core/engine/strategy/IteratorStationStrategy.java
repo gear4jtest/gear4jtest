@@ -90,6 +90,7 @@ public class IteratorStationStrategy extends AbstractStationStrategy<IteratorSta
                                                                  runner.run(element, station.getChain(),
                                                                             operationExecution));
             }
+            EngineStationContexts.trace(operationExecution).addSubOperation(chainResult);
 
             FlowDecision decision = FlowDecider.decide(chainResult, config);
             switch (decision) {

@@ -8,7 +8,7 @@ import java.time.Duration;
  */
 final class PersistenceShutdownRunState {
     private final OperationRecordBuffer buffer;
-    private final boolean finalizationPending;
+    private boolean finalizationPending;
     private int attempts;
     private Exception lastFailure;
     private long nextAttemptNanos;
@@ -49,6 +49,10 @@ final class PersistenceShutdownRunState {
 
     void recordAttempt() {
         attempts++;
+    }
+
+    void recordFinalizationSuccess() {
+        finalizationPending = false;
     }
 
     void recordRetryableFailure(Exception failure, Duration maxBackoff) {

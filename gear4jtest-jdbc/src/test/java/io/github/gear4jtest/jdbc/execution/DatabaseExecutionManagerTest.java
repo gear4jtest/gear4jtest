@@ -44,10 +44,39 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class DatabaseExecutionManagerTest {
+    @Test
+    void start_shouldApplyTheGlobalRunLimitBeforeWritingAnotherRunRecord() {
+        DatabaseAssemblyRunRepository repository = mock(DatabaseAssemblyRunRepository.class);
+        ExecutorService flushExecutor = Executors.newSingleThreadExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        PersistenceRuntimeConfiguration configuration = PersistenceRuntimeConfiguration.builder()
+                .maxActiveRuns(1)
+                .flushInterval(Duration.ofDays(1))
+                .build();
+        DatabaseExecutionManager manager = manager(repository, configuration, flushExecutor, scheduler);
+        AssemblyRunTrace admitted = new AssemblyRunTrace(UUID.randomUUID(), "admitted", Map.of());
+        AssemblyRunTrace rejected = new AssemblyRunTrace(UUID.randomUUID(), "rejected", Map.of());
+
+        try {
+            manager.start(admitted);
+
+            assertThatThrownBy(() -> manager.start(rejected))
+                    .isInstanceOf(ExecutionPersistenceException.class)
+                    .hasMessageContaining("maxActiveRuns=1");
+            verify(repository, times(1)).save(any());
+        } finally {
+            manager.end(admitted);
+            manager.shutdown(Duration.ofSeconds(1));
+            flushExecutor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
     @Test
     void bufferedRecord_shouldNotChangeWhenCallerMutatesNestedPayloadBeforeFlush() {
         // Given

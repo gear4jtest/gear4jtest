@@ -164,7 +164,7 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
                                                          Class<T> operatorType,
                                                          ExecutionServices services) {
         if (station.isReuseOperatorInstanceWithinRun()) {
-            return services.getOrCreateStationResource(station.getId(), operatorType,
+            return services.getOrCreateStationResource(station, station.getId(), operatorType,
                                                        () -> requireOperator(station, operatorType,
                                                                              services.getResourceFactory()
                                                                                      .getResource(operatorType)));

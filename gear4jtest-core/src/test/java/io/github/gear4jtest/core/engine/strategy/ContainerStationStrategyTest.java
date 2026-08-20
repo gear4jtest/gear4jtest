@@ -25,6 +25,7 @@ import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.api.station.ContainerBaseStation;
 import io.github.gear4jtest.core.api.station.ContainerBranch;
 import io.github.gear4jtest.core.api.station.StationKind;
+import io.github.gear4jtest.core.api.trace.StationTrace;
 import io.github.gear4jtest.core.engine.context.DefaultStationExecutionContext;
 import io.github.gear4jtest.core.engine.support.ExecutionSupport;
 import io.github.gear4jtest.core.engine.support.ExecutorDecorator;
@@ -177,6 +178,9 @@ class ContainerStationStrategyTest {
         assertThat(result).isEqualTo(Arrays.asList(null, "B"));
         assertThat(operationExecution.getRecord().getStatus())
                 .isNotIn(StationLogStatus.FAILED, StationLogStatus.CANCELLED, StationLogStatus.STOPPED);
+        assertThat(operationExecution.getRecord().getSubOperations())
+                .extracting(StationTrace::getOperationId)
+                .containsExactly("first", "second");
 
         verify(runner).run(any(), same(first), same(operationExecution));
         verify(runner).run(any(), same(second), same(operationExecution));

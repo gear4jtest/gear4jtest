@@ -20,6 +20,8 @@ also contributes separate persistence liveness and readiness indicators.
 | `gear4j.persistence.baseline-on-migrate` | `boolean` | `false` | Explicitly adopts a verified compatible Gear4J schema without migration history. V1 tables, columns and named indexes are validated first. |
 | `gear4j.persistence.batch-size` | `int` | `500` | Number of station logs flushed per persistence batch. |
 | `gear4j.persistence.max-pending-logs-per-run` | `int` | `10000` | Backpressure guard for buffered station logs per active run. Must be greater than or equal to `batch-size`. |
+| `gear4j.persistence.max-active-runs` | `int` | `1000` | Process-wide maximum number of run buffers, including runs awaiting final persistence. |
+| `gear4j.persistence.max-buffered-station-logs` | `int` | `10000` | Process-wide maximum number of retained station logs, including batches currently being written. |
 | `gear4j.persistence.flush-threads` | `int` | `1` | Number of worker threads used for asynchronous JDBC station-log flushes. |
 | `gear4j.persistence.max-scheduled-flush-tasks` | `int` | `1000` | Maximum queued asynchronous flush tasks before persistence fails fast with backpressure. |
 | `gear4j.persistence.flush-interval` | `Duration` | `1s` | Periodic flush interval for pending station logs. |
@@ -98,6 +100,14 @@ case; Spring recommends at least one additional connection beyond the number of
 concurrent threads that can hold outer transactions.
 The starter also verifies that the selected `DataSourceTransactionManager`
 targets the datasource used by Gear4J and fails startup on a mismatch.
+
+The starter automatically applies a single application
+`RejectedPersistenceRecordHandler` bean. Gear4J calls it only after a failed
+batch has been classified and bisected down to one proven record-local data
+failure. The default handler logs safe metadata but is not durable; provide a
+handler backed by an application dead-letter table or queue when rejected
+records must remain recoverable. If that handler throws, the record stays in
+memory for retry and readiness continues to observe the backlog.
 
 
 ## Redaction migration

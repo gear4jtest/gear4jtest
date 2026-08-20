@@ -25,7 +25,7 @@ public abstract class AbstractStationLogState<T extends AbstractStationLogState<
     private String errorMessage;
     private String errorHandlerMessages;
     private Map<String, Object> context;
-    private List<T> subOperations = Collections.synchronizedList(new ArrayList<>());
+    private final List<T> subOperations = Collections.synchronizedList(new ArrayList<>());
     private String itemId;
 
     protected AbstractStationLogState() {
@@ -214,11 +214,22 @@ public abstract class AbstractStationLogState<T extends AbstractStationLogState<
     }
 
     public List<T> getSubOperations() {
-        return Collections.unmodifiableList(subOperations);
+        synchronized (subOperations) {
+            return List.copyOf(subOperations);
+        }
     }
 
     public void setSubOperations(List<T> subOperations) {
-        this.subOperations = new ArrayList<>(subOperations == null ? List.of() : subOperations);
+        synchronized (this.subOperations) {
+            this.subOperations.clear();
+            this.subOperations.addAll(subOperations == null ? List.of() : subOperations);
+        }
+    }
+
+    public void addSubOperation(T subOperation) {
+        if (subOperation != null) {
+            subOperations.add(subOperation);
+        }
     }
 
     public Object getOutput() {

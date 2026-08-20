@@ -11,7 +11,7 @@ metrics and when your application already exposes a Micrometer `MeterRegistry`.
 | --- | --- |
 | Status | Critical operational surface implemented; optional additions tracked below |
 | Owner | Gear4J maintainers |
-| Last reviewed | 2026-08-13 |
+| Last reviewed | 2026-08-20 |
 | Architecture reference | [Micrometer observability](../docs/architecture/micrometer-observability.md) |
 
 The module covers lifecycle, event/persistence pressure and the generated-code
@@ -41,6 +41,7 @@ gear4j.persistence.flushes.scheduled
 gear4j.persistence.flushes.completed
 gear4j.persistence.flushes.failed
 gear4j.persistence.appends.rejected
+gear4j.persistence.station.logs.quarantined
 gear4j.persistence.flush.duration{trigger,outcome}
 gear4j.events.published
 gear4j.events.dispatched

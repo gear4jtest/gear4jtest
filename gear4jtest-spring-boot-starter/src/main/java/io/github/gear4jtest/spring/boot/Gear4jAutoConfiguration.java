@@ -16,6 +16,7 @@ import io.github.gear4jtest.external.api.artifact.ArtifactStoreMonitor;
 import io.github.gear4jtest.external.api.loader.InMemoryClassLoaderRegistry;
 import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
 import io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfiguration;
+import io.github.gear4jtest.jdbc.execution.RejectedPersistenceRecordHandler;
 import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 import io.github.gear4jtest.jdbc.persistence.PersistenceJsonCodec;
 import io.github.gear4jtest.micrometer.ArtifactSpoolMetricsBinder;
@@ -59,6 +60,7 @@ public class Gear4jAutoConfiguration {
                                                              ObjectProvider<PayloadCloner> payloadClonerProvider,
                                                              ObjectProvider<PersistenceJsonCodec> jsonCodecProvider,
                                                              ObjectProvider<JdbcTransactionOperations> jdbcTransactions,
+                                                             ObjectProvider<RejectedPersistenceRecordHandler> rejectedRecordProvider,
                                                              ObjectProvider<ObjectMapper> objectMapperProvider) {
         Gear4jProperties.PersistenceProperties persistence = properties.getPersistence();
         persistence.validateWhenEnabled();
@@ -67,6 +69,8 @@ public class Gear4jAutoConfiguration {
         PersistenceRuntimeConfiguration runtimeConfiguration = PersistenceRuntimeConfiguration.builder()
                 .batchSize(persistence.getBatchSize())
                 .maxPendingLogsPerRun(persistence.getMaxPendingLogsPerRun())
+                .maxActiveRuns(persistence.getMaxActiveRuns())
+                .maxBufferedStationLogs(persistence.getMaxBufferedStationLogs())
                 .flushInterval(persistence.getFlushInterval())
                 .shutdownTimeout(persistence.getShutdownTimeout())
                 .shutdownRetryInitialBackoff(persistence.getShutdownRetryInitialBackoff())
@@ -87,6 +91,7 @@ public class Gear4jAutoConfiguration {
                 .redactor(redactor);
         payloadClonerProvider.ifAvailable(managerBuilder::payloadCloner);
         jdbcTransactions.ifAvailable(managerBuilder::transactionOperations);
+        rejectedRecordProvider.ifAvailable(managerBuilder::rejectedPersistenceRecordHandler);
         PersistenceJsonCodec jsonCodec = jsonCodecProvider.getIfAvailable();
         if (jsonCodec != null) {
             managerBuilder.jsonCodec(jsonCodec);
@@ -106,9 +111,11 @@ public class Gear4jAutoConfiguration {
                                                        ObjectProvider<PayloadCloner> payloadClonerProvider,
                                                        ObjectProvider<PersistenceJsonCodec> jsonCodecProvider,
                                                        ObjectProvider<JdbcTransactionOperations> jdbcTransactions,
+                                                       ObjectProvider<RejectedPersistenceRecordHandler> rejectedRecordProvider,
                                                        ObjectProvider<ObjectMapper> objectMapperProvider) {
         return createPersistenceManager(dataSource, properties, redactorProvider, payloadClonerProvider,
-                                        jsonCodecProvider, jdbcTransactions, objectMapperProvider);
+                                        jsonCodecProvider, jdbcTransactions, rejectedRecordProvider,
+                                        objectMapperProvider);
     }
 
     @Bean(name = "gear4jDatabaseExecutionManager", destroyMethod = "shutdown")
@@ -121,9 +128,11 @@ public class Gear4jAutoConfiguration {
                                                          ObjectProvider<PayloadCloner> payloadClonerProvider,
                                                          ObjectProvider<PersistenceJsonCodec> jsonCodecProvider,
                                                          ObjectProvider<JdbcTransactionOperations> jdbcTransactions,
+                                                         ObjectProvider<RejectedPersistenceRecordHandler> rejectedRecordProvider,
                                                          ObjectProvider<ObjectMapper> objectMapperProvider) {
         return createPersistenceManager(dataSource, properties, redactorProvider, payloadClonerProvider,
-                                        jsonCodecProvider, jdbcTransactions, objectMapperProvider);
+                                        jsonCodecProvider, jdbcTransactions, rejectedRecordProvider,
+                                        objectMapperProvider);
     }
 
     @Bean(name = "gear4jJdbcTransactionOperations")

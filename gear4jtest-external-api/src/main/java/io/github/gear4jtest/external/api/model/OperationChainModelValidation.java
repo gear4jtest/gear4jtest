@@ -13,8 +13,8 @@ final class OperationChainModelValidation {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(name + " must not be blank");
         }
-        if (value.length() > maxLength) {
-            throw new IllegalArgumentException(name + " must not exceed " + maxLength + " characters");
+        if (value.codePointCount(0, value.length()) > maxLength) {
+            throw new IllegalArgumentException(name + " must not exceed " + maxLength + " Unicode code points");
         }
         return value;
     }
@@ -23,8 +23,8 @@ final class OperationChainModelValidation {
         if (value == null) {
             return null;
         }
-        if (value.length() > maxLength) {
-            throw new IllegalArgumentException(name + " must not exceed " + maxLength + " characters");
+        if (value.codePointCount(0, value.length()) > maxLength) {
+            throw new IllegalArgumentException(name + " must not exceed " + maxLength + " Unicode code points");
         }
         return value;
     }

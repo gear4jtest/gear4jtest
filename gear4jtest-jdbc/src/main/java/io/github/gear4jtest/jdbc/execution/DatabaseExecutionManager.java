@@ -29,6 +29,7 @@ import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.security.SensitiveDataRedactor;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.jdbc.persistence.JdbcPersistenceRecordValidator;
 import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 import io.github.gear4jtest.jdbc.persistence.PersistenceJsonCodec;
 import org.slf4j.Logger;
@@ -60,8 +61,10 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
                 ? builder.repository
                 : createRepository(builder.dataSource, builder.databaseDialect, this.configuration,
                                    builder.baselineOnMigrate, builder.jsonCodec, builder.transactionOperations);
+        PersistenceCapacityGuard capacityGuard = new PersistenceCapacityGuard(configuration.maxActiveRuns(),
+                configuration.maxBufferedStationLogs());
         this.buffers = new OperationRecordBufferRegistry(configuration.maxPendingLogsPerRun(),
-                configuration.batchSize());
+                configuration.batchSize(), capacityGuard);
         this.redactor = builder.redactor != null ? builder.redactor : SensitiveDataRedactor.discardSensitiveValues();
         this.payloadCloner = builder.payloadCloner != null ? builder.payloadCloner : PayloadCloners.immutableAware();
         this.connectivityProbe = new PersistenceConnectivityProbe();
@@ -82,7 +85,8 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
         boolean ownsFlushExecutor = builder.flushExecutor == null || builder.ownsFlushExecutor;
         boolean ownsMaintenanceExecutor = builder.maintenanceExecutor == null || builder.ownsMaintenanceExecutor;
         this.flushCoordinator = new PersistenceFlushCoordinator(this.repository, this.configuration, buffers,
-                flushExecutor, maintenanceExecutor, ownsFlushExecutor, ownsMaintenanceExecutor);
+                flushExecutor, maintenanceExecutor, ownsFlushExecutor, ownsMaintenanceExecutor,
+                builder.rejectedRecordHandler);
     }
 
     private static DatabaseAssemblyRunRepository createRepository(DataSource dataSource,
@@ -120,6 +124,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
         private SensitiveDataRedactor redactor;
         private PayloadCloner payloadCloner;
         private JdbcTransactionOperations transactionOperations;
+        private RejectedPersistenceRecordHandler rejectedRecordHandler = RejectedPersistenceRecordHandler.loggingOnly();
 
         private Builder() {
         }
@@ -207,6 +212,13 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
             return this;
         }
 
+        /** Configures the sink used for isolated record-specific JDBC rejections. */
+        public Builder rejectedPersistenceRecordHandler(RejectedPersistenceRecordHandler rejectedRecordHandler) {
+            this.rejectedRecordHandler = Objects.requireNonNull(rejectedRecordHandler,
+                                                                "rejectedRecordHandler must not be null");
+            return this;
+        }
+
         /**
          * Configures ownership of JDBC write transactions for the repository created by
          * this builder.
@@ -243,9 +255,16 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
     public void start(RunTrace execution, PersistenceConfiguration runConfiguration) {
         Objects.requireNonNull(execution, "execution must not be null");
         int flushThreshold = effectiveFlushThreshold(runConfiguration);
+        AssemblyRunRecord record = AssemblyRunRecord.from(execution, redactor, payloadCloner);
+        JdbcPersistenceRecordValidator.validate(record);
         flushCoordinator.executeWhileOpen(execution.getId(), () -> {
-            repository.save(AssemblyRunRecord.from(execution, redactor, payloadCloner));
             buffers.createFresh(execution.getId(), flushThreshold);
+            try {
+                repository.save(record);
+            } catch (RuntimeException exception) {
+                buffers.remove(execution.getId());
+                throw exception;
+            }
         });
     }
 
@@ -267,6 +286,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
         }
         flushCoordinator.ensureOpen();
         StationLogRecord redactedRecord = stationLogRecord.redactedWith(redactor, payloadCloner);
+        JdbcPersistenceRecordValidator.validate(redactedRecord);
         flushCoordinator.executeWhileOpen(redactedRecord.assemblyLineExecutionId(),
                                           () -> appendRunBatch(List.of(redactedRecord)));
     }
@@ -283,6 +303,7 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
                 continue;
             }
             StationLogRecord redactedRecord = record.redactedWith(redactor, payloadCloner);
+            JdbcPersistenceRecordValidator.validate(redactedRecord);
             recordsByRun.computeIfAbsent(redactedRecord.assemblyLineExecutionId(), ignored -> new ArrayList<>())
                     .add(redactedRecord);
         }
@@ -298,10 +319,10 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
             return;
         }
         UUID runId = records.get(0).assemblyLineExecutionId();
-        OperationRecordBuffer buffer = buffers.getOrCreate(runId);
-        boolean shouldScheduleFlush = buffer.appendAll(records, flushCoordinator.counters());
-        if (shouldScheduleFlush) {
-            flushCoordinator.scheduleAsyncFlush(buffer, false);
+        OperationRecordBufferRegistry.AppendResult result = buffers.appendAll(runId, records,
+                                                                              flushCoordinator.counters());
+        if (result.flushRequired()) {
+            flushCoordinator.scheduleAsyncFlush(result.buffer(), false);
         }
     }
 
@@ -316,40 +337,27 @@ public class DatabaseExecutionManager implements RunPersistenceManager, Persiste
     private void flushWhileOpen(UUID runId) {
         OperationRecordBuffer buffer = buffers.get(runId);
         if (buffer != null) {
-            buffer.assertHealthy();
-            flushCoordinator.flushBufferBlocking(buffer, false);
-            buffer.assertHealthy();
+            if (buffer.isFinalizationPending()) {
+                flushCoordinator.finalizeBufferBlocking(buffer);
+            } else {
+                flushCoordinator.flushBufferBlocking(buffer, false);
+            }
         }
     }
 
     @Override
     public void end(RunTrace finalExecution) {
         Objects.requireNonNull(finalExecution, "finalExecution must not be null");
-        flushCoordinator.executeWhileOpen(finalExecution.getId(), () -> endWhileOpen(finalExecution));
+        AssemblyRunRecord finalRecord = AssemblyRunRecord.from(finalExecution, redactor, payloadCloner);
+        JdbcPersistenceRecordValidator.validate(finalRecord);
+        flushCoordinator.executeWhileOpen(finalExecution.getId(), () -> endWhileOpen(finalRecord));
     }
 
-    private void endWhileOpen(RunTrace finalExecution) {
-        UUID runId = finalExecution.getId();
+    private void endWhileOpen(AssemblyRunRecord finalRecord) {
+        UUID runId = finalRecord.id();
         OperationRecordBuffer buffer = buffers.getOrCreate(runId);
-        buffer.close();
-        boolean completed = false;
-        try {
-            buffer.assertHealthy();
-            flushCoordinator.flushBufferBlocking(buffer, true);
-            buffer.assertHealthy();
-            try {
-                repository.update(AssemblyRunRecord.from(finalExecution, redactor, payloadCloner));
-                buffer.clearFinalizationFailure();
-            } catch (RuntimeException exception) {
-                buffer.recordFinalizationFailure(exception);
-                throw exception;
-            }
-            completed = true;
-        } finally {
-            if (completed) {
-                buffers.remove(runId);
-            }
-        }
+        buffer.beginFinalization(finalRecord);
+        flushCoordinator.finalizeBufferBlocking(buffer);
     }
 
     public PersistenceRuntimeStats snapshotStats() {

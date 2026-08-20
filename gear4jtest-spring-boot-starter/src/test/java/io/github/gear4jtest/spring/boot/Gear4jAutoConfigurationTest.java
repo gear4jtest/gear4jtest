@@ -25,6 +25,7 @@ import io.github.gear4jtest.external.api.artifact.ArtifactSpoolMonitor;
 import io.github.gear4jtest.external.api.artifact.ArtifactStoreMonitor;
 import io.github.gear4jtest.external.api.loader.InMemoryClassLoaderRegistry;
 import io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager;
+import io.github.gear4jtest.jdbc.execution.RejectedPersistenceRecordHandler;
 import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 import io.github.gear4jtest.jdbc.persistence.PersistenceJsonCodec;
 import io.github.gear4jtest.micrometer.Gear4jMicrometerExtension;
@@ -341,6 +342,23 @@ class Gear4jAutoConfigurationTest {
                     DatabaseExecutionManager manager = context.getBean(DatabaseExecutionManager.class);
 
                     assertThat(ReflectionTestUtils.getField(manager, "payloadCloner")).isSameAs(payloadCloner);
+                });
+    }
+
+    @Test
+    void should_use_application_rejected_record_handler_for_jdbc_persistence() {
+        RejectedPersistenceRecordHandler handler = mock(RejectedPersistenceRecordHandler.class);
+
+        contextRunner.withBean(DataSource.class, () -> mock(DataSource.class))
+                .withBean(RejectedPersistenceRecordHandler.class, () -> handler)
+                .withPropertyValues("gear4j.persistence.enabled=true", "gear4j.persistence.dialect=H2")
+                .run(context -> {
+                    DatabaseExecutionManager manager = context.getBean(DatabaseExecutionManager.class);
+                    Object coordinator = ReflectionTestUtils.getField(manager, "flushCoordinator");
+                    Object batchProcessor = ReflectionTestUtils.getField(coordinator, "batchProcessor");
+
+                    assertThat(ReflectionTestUtils.getField(batchProcessor, "rejectedRecordHandler"))
+                            .isSameAs(handler);
                 });
     }
 

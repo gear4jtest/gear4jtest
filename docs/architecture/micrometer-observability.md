@@ -6,7 +6,7 @@
 | --- | --- |
 | Status | Critical operational surface implemented; optional additions tracked below |
 | Owner | Gear4J maintainers |
-| Last reviewed | 2026-08-13 |
+| Last reviewed | 2026-08-20 |
 | Source of truth | [`gear4jtest-micrometer/README.md`](../../gear4jtest-micrometer/README.md) and binder implementations |
 
 The `gear4jtest-micrometer` module is an optional integration. It provides
@@ -46,9 +46,10 @@ persistence, then receive the failed outcome and the corrected interval.
 
 `PersistenceMetricsBinder` exposes active run buffers, buffered station logs,
 the age of the oldest buffered log, scheduled/completed/failed flushes,
-rejected appends and a percentile-histogram flush timer. Cumulative failure and
-rejection counters are alert signals; they are not used as permanent health
-state. Async flush duration includes queue wait; empty no-op calls are excluded.
+rejected appends, quarantined station logs and a percentile-histogram flush
+timer. Cumulative failure, rejection and quarantine counters are alert signals;
+they are not used as permanent health state. Async flush duration includes queue
+wait; empty no-op calls are excluded.
 
 Internal runtime wiring can bind `EventMetricsBinder` to the run-local event
 manager to expose best-effort in-memory counters: published/dispatched/dropped/
@@ -138,6 +139,7 @@ saturation, latency and drops:
 | Persistence backlog | `gear4j.persistence.buffered.station.logs`, `gear4j.persistence.buffered.station.logs.oldest.age.seconds`, `gear4j.persistence.active.runs` | steadily increasing backlog or age |
 | Persistence flush health | `gear4j.persistence.flushes.scheduled`, `gear4j.persistence.flushes.completed`, `gear4j.persistence.flushes.failed`, `gear4j.persistence.flush.duration` | failures increase, completed no longer follows scheduled, or p95/p99 exceeds the database SLO |
 | Persistence backpressure | `gear4j.persistence.appends.rejected` | any sustained non-zero value |
+| Persistence quarantine | `gear4j.persistence.station.logs.quarantined` | any increase should be reconciled with the configured rejection sink |
 | Event queue pressure | `gear4j.events.queued`, `gear4j.events.queue.remaining.capacity`, `gear4j.events.dropped` | remaining capacity near zero or dropped events increasing |
 | Reaction pressure | `gear4j.reactions.pending`, `gear4j.reactions.in.flight`, `gear4j.reactions.dropped`, `gear4j.reactions.failed` | pending grows, dropped/failed increases |
 | Generated load saturation | `gear4j.generated.loading.executor.active`, `gear4j.generated.loading.executor.queued`, `gear4j.generated.loading.loads{outcome="rejected"}` | queue remains non-empty or rejections increase |

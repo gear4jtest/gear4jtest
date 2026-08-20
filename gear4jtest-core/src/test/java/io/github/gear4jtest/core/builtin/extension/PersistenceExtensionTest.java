@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 class PersistenceExtensionTest {
     @Test
@@ -67,6 +68,39 @@ class PersistenceExtensionTest {
         assertThatThrownBy(() -> new PersistenceExtension(null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessage("manager must not be null");
+    }
+
+    @Test
+    void runCompletion_shouldAlwaysAttemptEndAndPreserveBothFailures() {
+        AtomicInteger ends = new AtomicInteger();
+        RunPersistenceManager manager = new RunPersistenceManager() {
+            @Override
+            public void start(RunTrace execution) {
+                // no-op
+            }
+
+            @Override
+            public void flush(UUID runId) {
+                throw new IllegalStateException("flush failed");
+            }
+
+            @Override
+            public void end(RunTrace finalExecution) {
+                ends.incrementAndGet();
+                throw new IllegalArgumentException("end failed");
+            }
+        };
+
+        RuntimeException failure = catchThrowableOfType(
+                                                        () -> new PersistenceExtension(manager)
+                                                                .onRunCompleted(null, run()),
+                                                        RuntimeException.class);
+
+        assertThat(ends).hasValue(1);
+        assertThat(failure).isInstanceOf(IllegalStateException.class).hasMessage("flush failed");
+        assertThat(failure.getSuppressed()).singleElement().satisfies(suppressed -> assertThat(suppressed)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("end failed"));
     }
 
     @Test

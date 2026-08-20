@@ -38,6 +38,36 @@ class StationScopedResourceRegistryTest {
     }
 
     @Test
+    void identityScopedResources_shouldNotCollideForDistinctStationsSharingAnId() {
+        StationScopedResourceRegistry registry = new StationScopedResourceRegistry();
+        Object firstStation = new Object();
+        Object secondStation = new Object();
+
+        String first = registry.getOrCreate(firstStation, "duplicate", String.class, () -> "first");
+        String firstAgain = registry.getOrCreate(firstStation, "duplicate", String.class, () -> "other");
+        String second = registry.getOrCreate(secondStation, "duplicate", String.class, () -> "second");
+
+        assertThat(firstAgain).isSameAs(first);
+        assertThat(second).isEqualTo("second").isNotSameAs(first);
+    }
+
+    @Test
+    void clear_shouldRemoveEveryIdentityScopedResourceMatchingThePublicStationKey() {
+        StationScopedResourceRegistry registry = new StationScopedResourceRegistry();
+        Object firstStation = new Object();
+        Object secondStation = new Object();
+        registry.getOrCreate(firstStation, "duplicate", String.class, () -> "first");
+        registry.getOrCreate(secondStation, "duplicate", String.class, () -> "second");
+
+        registry.clear("duplicate", String.class);
+
+        assertThat(registry.getOrCreate(firstStation, "duplicate", String.class, () -> "first-new"))
+                .isEqualTo("first-new");
+        assertThat(registry.getOrCreate(secondStation, "duplicate", String.class, () -> "second-new"))
+                .isEqualTo("second-new");
+    }
+
+    @Test
     void clear_shouldRemoveOnlyOneStationScopedResource() {
         StationScopedResourceRegistry registry = new StationScopedResourceRegistry();
         String original = registry.getOrCreate("station", String.class, () -> "one");
