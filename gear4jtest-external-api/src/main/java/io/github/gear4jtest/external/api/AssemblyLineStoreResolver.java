@@ -30,15 +30,13 @@ final class AssemblyLineStoreResolver {
         var config = configRepository.findByAssemblyLineId(alId)
                 .orElseThrow(() -> new OperationChainNotFoundException("Config not found for alId=" + alId));
         StoreFingerprint fingerprint = StoreFingerprint.from(config);
-        StoreCacheEntry cached = storeCacheByAl.get(alId);
-        ArtifactStore store;
-        if (cached != null && cached.fingerprint().equals(fingerprint)) {
-            store = cached.store();
-        } else {
-            store = storeProvider.forConfig(config);
-            storeCacheByAl.put(alId, new StoreCacheEntry(fingerprint, store));
-        }
-        return new ResolvedStore(store, ArtifactStoreConfigurationFingerprint.from(config));
+        StoreCacheEntry resolved = storeCacheByAl.compute(alId, (ignored, cached) -> {
+            if (cached != null && cached.fingerprint().equals(fingerprint)) {
+                return cached;
+            }
+            return new StoreCacheEntry(fingerprint, storeProvider.forConfig(config));
+        });
+        return new ResolvedStore(resolved.store(), ArtifactStoreConfigurationFingerprint.from(config));
     }
 
     void invalidate(String alId) {

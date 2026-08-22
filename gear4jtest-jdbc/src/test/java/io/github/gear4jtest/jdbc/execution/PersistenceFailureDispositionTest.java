@@ -61,6 +61,42 @@ class PersistenceFailureDispositionTest {
     }
 
     @Test
+    void chainedRecordDataFailure_shouldBisectAndExposeTheDecisiveSqlException() {
+        // Given
+        PersistenceRuntimeCounters counters = new PersistenceRuntimeCounters();
+        List<StationLogRecord> rejected = new ArrayList<>();
+        AtomicReference<RejectedPersistenceRecordContext> rejectionContext = new AtomicReference<>();
+        PersistenceBatchProcessor processor = new PersistenceBatchProcessor(counters, (record, context) -> {
+            rejected.add(record);
+            rejectionContext.set(context);
+        });
+        OperationRecordBuffer buffer = new OperationRecordBuffer(UUID.randomUUID(), 3, 3);
+        List<StationLogRecord> records = List.of(record("first"), record("poison"), record("third"));
+        buffer.appendAll(records, counters);
+        List<String> persisted = new ArrayList<>();
+
+        // When
+        processor.persist(buffer, buffer.drainBatch(), batch -> {
+            if (batch.stream().anyMatch(record -> "poison".equals(record.operationId()))) {
+                SQLException batchFailure = new SQLException("batch failed");
+                batchFailure.setNextException(new SQLException("too long", "22001", 14_001));
+                throw new ExecutionPersistenceException("invalid record", batchFailure);
+            }
+            batch.stream().map(StationLogRecord::operationId).forEach(persisted::add);
+        });
+
+        // Then
+        assertThat(persisted).containsExactly("first", "third");
+        assertThat(rejected).extracting(StationLogRecord::operationId).containsExactly("poison");
+        assertThat(rejectionContext.get())
+                .extracting(RejectedPersistenceRecordContext::failureType,
+                            RejectedPersistenceRecordContext::sqlState,
+                            RejectedPersistenceRecordContext::vendorCode)
+                .containsExactly(SQLException.class.getName(), "22001", 14_001);
+        assertThat(buffer.retainedCount()).isZero();
+    }
+
+    @Test
     void rejectedRecordHandlerFailure_shouldRestoreTheRecordWithoutCountingItAsQuarantined() {
         PersistenceRuntimeCounters counters = new PersistenceRuntimeCounters();
         PersistenceBatchProcessor processor = new PersistenceBatchProcessor(counters, (record, context) -> {
