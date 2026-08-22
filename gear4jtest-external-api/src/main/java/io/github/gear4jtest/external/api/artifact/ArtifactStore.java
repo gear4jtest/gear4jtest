@@ -13,7 +13,7 @@ import io.github.gear4jtest.core.api.annotation.Spi;
  * accepting the artifact.
  */
 @Spi
-public interface ArtifactStore {
+public interface ArtifactStore extends AutoCloseable {
     long UNLIMITED_SIZE = -1L;
     long DEFAULT_MAX_ARTIFACT_SIZE_BYTES = 5L * 1024L * 1024L;
 
@@ -30,6 +30,21 @@ public interface ArtifactStore {
     Optional<Artifact> get(String hashHex) throws IOException;
 
     boolean exists(String hashHex) throws IOException;
+
+    /**
+     * Releases resources owned by this store.
+     *
+     * <p>
+     * Most stores do not own closeable resources, so the default implementation is
+     * intentionally a no-op. Providers that create stores with temporary spools,
+     * threads or other owned resources can override it. A store must not close an
+     * externally supplied {@code DataSource} or executor.
+     * </p>
+     */
+    @Override
+    default void close() {
+        // No owned resources by default.
+    }
 
     static byte[] readAllBytes(InputStream in, long maxBytes) throws IOException {
         if (in == null) {

@@ -83,6 +83,8 @@ class AssemblyLineManagerTest {
                                  "application/xml", "tester");
         verify(objectRepository, never()).insert(any());
         verify(tagRepository, never()).addTag(any(), any());
+        manager.close();
+        verify(storeProvider).release(artifactStore);
     }
 
     @Test

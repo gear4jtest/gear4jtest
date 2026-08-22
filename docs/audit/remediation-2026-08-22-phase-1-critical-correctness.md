@@ -13,7 +13,7 @@ with urgent correctness fixes.
 | Phase | Scope | Audit findings |
 | --- | --- | --- |
 | 1 — critical correctness | Secure JDBC integration coordinates, atomic store resolution and complete JDBC failure chains | F-01, F-02, F-05; partial F-16 |
-| 2 — resource ownership and supply chain | Store registry/lifecycle, global spool quota, bounded MEMORY store, dependency locking and verification | F-03, F-04, F-10, F-11, remaining multi-instance F-16 tests |
+| 2 — resource ownership | Store registry/lifecycle, global spool quota and bounded MEMORY store | F-03, F-04, F-10, remaining multi-instance F-16 tests |
 | 3 — bounded operations and configuration | Keyset/cursor sweepers, execution budgets and schema-aware store configuration | F-06, F-07 |
 | 4 — extensibility and maintainability | Deterministic SPI selection, open/closed store type decision, JDBC repository decomposition and bytecode defensive copy | F-08, F-09, F-12, F-13 |
 | 5 — release qualification | Remove residual time-based tests, align compiler documentation, complete observability and replay all release gates | F-14, F-15 and cross-cutting release evidence |
@@ -43,6 +43,10 @@ fingerprint comparison and replacement through
 assembly line therefore receive the single store instance installed for that
 configuration instead of independently constructing stores and overwriting the
 cache.
+
+Phase 2 supersedes this unbounded phase-1 implementation with a bounded,
+access-ordered resolver that preserves the same atomic identity guarantee and
+adds provider-lease release on replacement, eviction, invalidation and close.
 
 The existing configuration behavior is preserved: a changed fingerprint
 replaces the cached store, while an unchanged fingerprint reuses it. Store
@@ -130,9 +134,9 @@ The Gradle/CI result is required before merging or releasing this phase.
   close/ownership contract; phase 2 introduces the shared bounded registry.
 - The spool quota is still per manager instance; phase 2 owns the shared-path
   accounting and lease design.
-- Dependency locking and strict artifact verification are not generated in a
-  disconnected environment; phase 2 performs that change with the resolved
-  dependency graph under review.
+- Dependency locking and Gradle verification metadata remain explicitly
+  deferred until after 1.0 by the established project policy; they are outside
+  this pre-release remediation roadmap.
 - Reconciler/checker pagination and total-work budgets are unchanged until
   phase 3.
 - No public Java API or database migration changes in this phase.

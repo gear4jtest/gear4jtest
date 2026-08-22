@@ -40,13 +40,17 @@ class DefaultArtifactStoreProviderIT {
         DefaultArtifactStoreProvider provider = new DefaultArtifactStoreProvider(
                 Thread.currentThread().getContextClassLoader(), context, Runnable::run);
 
-        // When / Then
-        assertRoundTrip(provider.forConfig(config(StoreType.MEMORY, Map.of())), "memory-content");
-        assertRoundTrip(provider.forConfig(config(StoreType.FILESYSTEM, Map.of("root", tempDir.toString()))),
-                        "filesystem-content");
-        assertRoundTrip(provider.forConfig(config(StoreType.DATABASE,
-                                                  Map.of("dialect", Gear4jDatabaseDialect.H2.name()))),
-                        "database-content");
+        try {
+            // When / Then
+            assertRoundTrip(provider.forConfig(config(StoreType.MEMORY, Map.of())), "memory-content");
+            assertRoundTrip(provider.forConfig(config(StoreType.FILESYSTEM, Map.of("root", tempDir.toString()))),
+                            "filesystem-content");
+            assertRoundTrip(provider.forConfig(config(StoreType.DATABASE,
+                                                      Map.of("dialect", Gear4jDatabaseDialect.H2.name()))),
+                            "database-content");
+        } finally {
+            provider.close();
+        }
     }
 
     private static OperationChainConfig config(StoreType storeType, Map<String, String> props) {

@@ -391,6 +391,15 @@ public final class DatabaseArtifactStore implements ArtifactStore, ArtifactStore
         }
     }
 
+    /**
+     * Releases the temporary spool owned by this store; the supplied data source
+     * remains application-owned.
+     */
+    @Override
+    public void close() {
+        spool.close();
+    }
+
     private void requireStoredSize(String hash, long size) throws IOException {
         if (size < 0) {
             throw new ArtifactIntegrityException("Database artifact has a negative declared size. hash=" + hash

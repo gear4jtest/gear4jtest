@@ -74,6 +74,7 @@ class ArtifactConsistencyCheckerTest {
                                                                      "3", 5L, null));
         verify(store, times(1)).get(PRESENT_HASH);
         verify(store, times(1)).get(MISSING_HASH);
+        verify(storeProvider).release(store);
         verify(objectRepository).findAll("line", new PageRequest(0, 2));
         verify(objectRepository).findAll("line", new PageRequest(2, 2));
     }

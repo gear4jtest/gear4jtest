@@ -98,4 +98,46 @@ class AssemblyLineStoreResolverTest {
             callers.shutdownNow();
         }
     }
+
+    @Test
+    void resolver_shouldBoundTheCacheAndReleaseStoresAfterTheirFinalReference() {
+        // Given
+        OperationChainConfigRepository configRepository = mock(OperationChainConfigRepository.class);
+        when(configRepository.findByAssemblyLineId("first"))
+                .thenReturn(Optional.of(new OperationChainConfig("first", false, StoreType.MEMORY, Map.of())));
+        when(configRepository.findByAssemblyLineId("second"))
+                .thenReturn(Optional.of(new OperationChainConfig("second", false, StoreType.MEMORY, Map.of())));
+        when(configRepository.findByAssemblyLineId("third"))
+                .thenReturn(Optional.of(new OperationChainConfig("third", false, StoreType.MEMORY, Map.of("id", "3"))));
+        InMemoryArtifactStore shared = new InMemoryArtifactStore();
+        InMemoryArtifactStore third = new InMemoryArtifactStore();
+        List<ArtifactStore> released = new ArrayList<>();
+        ArtifactStoreProvider provider = new ArtifactStoreProvider() {
+            @Override
+            public ArtifactStore forConfig(OperationChainConfig config) {
+                return "third".equals(config.alId()) ? third : shared;
+            }
+
+            @Override
+            public void release(ArtifactStore store) {
+                released.add(store);
+            }
+        };
+        AssemblyLineStoreResolver resolver = new AssemblyLineStoreResolver(configRepository, provider, 2);
+
+        // When
+        resolver.resolve("first");
+        resolver.resolve("second");
+        resolver.resolve("third");
+
+        // Then: evicting first does not release the store still referenced by second.
+        assertThat(released).isEmpty();
+
+        // When
+        resolver.invalidate("second");
+        resolver.close();
+
+        // Then
+        assertThat(released).containsExactlyInAnyOrder(shared, third);
+    }
 }

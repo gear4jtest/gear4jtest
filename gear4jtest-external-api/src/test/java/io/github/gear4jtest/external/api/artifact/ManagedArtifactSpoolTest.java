@@ -47,14 +47,17 @@ class ManagedArtifactSpoolTest {
                 .maxBytes(1024)
                 .staleFileAge(Duration.ofHours(1))
                 .build());
-
-        // Then
-        assertThat(staleFile).doesNotExist();
-        ArtifactSpoolStats stats = spool.snapshotStats();
-        assertThat(stats.currentFiles()).isZero();
-        assertThat(stats.currentBytes()).isZero();
-        assertThat(stats.staleFilesDeleted()).isEqualTo(1L);
-        assertThat(stats.staleBytesDeleted()).isEqualTo(secret.length);
+        try {
+            // Then
+            assertThat(staleFile).doesNotExist();
+            ArtifactSpoolStats stats = spool.snapshotStats();
+            assertThat(stats.currentFiles()).isZero();
+            assertThat(stats.currentBytes()).isZero();
+            assertThat(stats.staleFilesDeleted()).isEqualTo(1L);
+            assertThat(stats.staleBytesDeleted()).isEqualTo(secret.length);
+        } finally {
+            spool.close();
+        }
     }
 
     @Test
@@ -78,6 +81,7 @@ class ManagedArtifactSpoolTest {
             assertThat(spool.snapshotStats().quotaRejections()).isEqualTo(1L);
         } finally {
             spool.delete(file);
+            spool.close();
         }
 
         assertThat(spool.snapshotStats().currentFiles()).isZero();
@@ -101,6 +105,7 @@ class ManagedArtifactSpoolTest {
         assertThat(spool.snapshotStats().currentFiles()).isEqualTo(1L);
         assertThat(spool.snapshotStats().currentBytes()).isEqualTo(7L);
         spool.delete(residualFile);
+        spool.close();
     }
 
     @Test
@@ -117,6 +122,7 @@ class ManagedArtifactSpoolTest {
         try (var output = beforeCrash.openOutput(abandonedFile)) {
             output.write(pendingCopy);
         }
+        beforeCrash.close();
 
         // When: a new process initializes the same spool before the retention age.
         ManagedArtifactSpool immediateRestart = new ManagedArtifactSpool(policy);
@@ -148,5 +154,79 @@ class ManagedArtifactSpoolTest {
         assertThat(afterRetentionRestart.snapshotStats().currentBytes()).isZero();
         assertThat(afterRetentionRestart.snapshotStats().staleFilesDeleted()).isEqualTo(1L);
         assertThat(afterRetentionRestart.snapshotStats().staleBytesDeleted()).isEqualTo(pendingCopy.length);
+        immediateRestart.close();
+        afterRetentionRestart.close();
+    }
+
+    @Test
+    void instancesSharingADirectory_shouldEnforceOneGlobalQuota() throws Exception {
+        // Given
+        ArtifactSpoolPolicy policy = ArtifactSpoolPolicy.builder()
+                .directory(tempDirectory)
+                .maxBytes(5L)
+                .build();
+        ManagedArtifactSpool first = new ManagedArtifactSpool(policy);
+        ManagedArtifactSpool second = new ManagedArtifactSpool(policy);
+        Path firstFile = first.createTempFile("first-");
+        Path secondFile = second.createTempFile("second-");
+
+        try {
+            // When
+            try (var output = first.openOutput(firstFile)) {
+                output.write(new byte[3]);
+            }
+
+            // Then
+            try (var output = second.openOutput(secondFile)) {
+                assertThatThrownBy(() -> output.write(new byte[3]))
+                        .isInstanceOf(IOException.class)
+                        .hasMessageContaining("currentBytes=3");
+            }
+            assertThat(first.snapshotStats().currentBytes()).isEqualTo(3L);
+            assertThat(second.snapshotStats().quotaRejections()).isEqualTo(1L);
+        } finally {
+            first.delete(firstFile);
+            second.delete(secondFile);
+            first.close();
+            second.close();
+        }
+    }
+
+    @Test
+    void instancesSharingADirectory_shouldRejectIncompatiblePolicies() throws Exception {
+        // Given
+        ManagedArtifactSpool first = new ManagedArtifactSpool(ArtifactSpoolPolicy.builder()
+                .directory(tempDirectory)
+                .maxBytes(5L)
+                .build());
+
+        try {
+            // When / Then
+            assertThatThrownBy(() -> new ManagedArtifactSpool(ArtifactSpoolPolicy.builder()
+                    .directory(tempDirectory)
+                    .maxBytes(6L)
+                    .build()))
+                    .isInstanceOf(IOException.class)
+                    .hasMessageContaining("different policy");
+        } finally {
+            first.close();
+        }
+    }
+
+    @Test
+    void close_shouldRejectNewFilesAndRemainIdempotent() throws Exception {
+        // Given
+        ManagedArtifactSpool spool = new ManagedArtifactSpool(ArtifactSpoolPolicy.builder()
+                .directory(tempDirectory)
+                .build());
+
+        // When
+        spool.close();
+        spool.close();
+
+        // Then
+        assertThatThrownBy(() -> spool.createTempFile("closed-"))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("closed");
     }
 }

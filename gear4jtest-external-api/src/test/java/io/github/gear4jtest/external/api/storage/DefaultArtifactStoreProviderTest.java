@@ -1,5 +1,6 @@
 package io.github.gear4jtest.external.api.storage;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import io.github.gear4jtest.external.api.StoreType;
@@ -149,5 +150,34 @@ class DefaultArtifactStoreProviderTest {
                 Map.of("fallback.0.type", "MEMORY"))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("positive integer");
+    }
+
+    @Test
+    void provider_shouldShareEquivalentStoreConfigurationsUntilEveryLeaseIsReleased() throws Exception {
+        // Given
+        DefaultArtifactStoreProvider provider = new DefaultArtifactStoreProvider(
+                new ArtifactStoreResolver(getClass().getClassLoader()), null, Runnable::run);
+        OperationChainConfig firstConfig = new OperationChainConfig("first", false, StoreType.MEMORY, Map.of());
+        OperationChainConfig secondConfig = new OperationChainConfig("second", false, StoreType.MEMORY, Map.of());
+
+        // When
+        ArtifactStore first = provider.forConfig(firstConfig);
+        ArtifactStore second = provider.forConfig(secondConfig);
+        String hash = first.put("shared".getBytes(StandardCharsets.UTF_8));
+        provider.release(first);
+
+        // Then
+        assertThat(second).isSameAs(first);
+        assertThat(second.exists(hash)).isTrue();
+
+        // When
+        provider.release(second);
+        ArtifactStore replacement = provider.forConfig(firstConfig);
+
+        // Then
+        assertThat(replacement).isNotSameAs(first);
+        assertThat(replacement.exists(hash)).isFalse();
+        provider.release(replacement);
+        provider.close();
     }
 }

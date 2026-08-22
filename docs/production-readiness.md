@@ -121,6 +121,11 @@ non-zero after a timeout. Cancellation is best-effort for custom compilers that
 ignore interruption; their late results are discarded, but the worker remains
 occupied until the delegate returns.
 
+Manager shutdown also releases its bounded artifact-store cache. If the
+application calls `DefaultArtifactStoreProvider.forConfig(...)` directly, pair
+the call with `release(store)` or close the provider only after every dependent
+manager and maintenance task has stopped.
+
 ## Generated assembly-line loading
 
 Runtime loading has a separate 60-second end-to-end deadline by default. It
@@ -170,6 +175,13 @@ mechanism can prove confidentiality. `requirePrivatePermissions` defaults to
 provisioned and verified outside Gear4J. The managed spool defaults to a 100 MiB
 quota and deletes `.tmp` residues older than 24 hours when a store is initialized.
 Recent residues count toward the quota.
+
+The quota is shared by every live store using the same canonical directory in a
+JVM. Sharing one directory with different spool policies is rejected, and a
+private lock marker prevents concurrent use by another process. Provision a
+dedicated `spoolDirectory` for each process/container; the implicit default is
+isolated per JVM. Alert on quota rejections and cleanup failures from the shared
+directory-level statistics.
 
 Treat the managed spool as temporary workspace, not as a recovery queue. It does
 not record a destination or operation and therefore never replays `.tmp` files

@@ -203,7 +203,18 @@ compilation, class loading, construction and injection.
 
 `AssemblyLineManager` owns both loading and compilation workers and implements
 `AutoCloseable`. Long-lived applications must close it during shutdown; tests and
-short-lived uses should prefer try-with-resources.
+short-lived uses should prefer try-with-resources. Closing the manager also
+releases all artifact-store leases retained by its bounded 256-entry store
+cache. Store invalidation and manager close must happen after callers using that
+manager have quiesced.
+
+`ArtifactStoreProvider.forConfig(...)` returns a store lease. The manager,
+consistency checker and publication reconciler return those leases
+automatically. Code that uses `DefaultArtifactStoreProvider` directly must call
+`release(store)` in a `finally` block or close the provider after all consumers
+have stopped. Equivalent store type/property maps share one store while leases
+remain active; this keeps `MEMORY` identity coherent between manager operations
+and maintenance tools in the same process.
 
 Applications that need deterministic compiler selection should inject
 `GeneratedSourceCompilers.javac(...)`, `GeneratedSourceCompilers.jdt(...)`, or
@@ -245,6 +256,12 @@ composite artifact-store configuration and the advanced manager constructor with
 Passing `ArtifactStore.UNLIMITED_SIZE` disables only the caller-specific limit;
 backend limits still apply.
 
+`InMemoryArtifactStore` additionally defaults to 64 MiB total and 10,000
+distinct entries. New content is rejected at capacity; referenced artifacts are
+never evicted silently. Configure `maxArtifactSizeBytes`, `maxTotalBytes` and
+`maxEntries` on a `MEMORY` store, or use the explicit three-argument constructor,
+when a different finite budget has been reviewed.
+
 ## Artifact spool confidentiality
 
 Composite and database stores stage streaming writes in a managed temporary spool. `ArtifactSpoolPolicy` requires
@@ -260,6 +277,14 @@ The spool is a bounded temporary workspace, not a recovery queue or write-ahead 
 destination or operation, so initialization never replays them. After a crash, recent residues count against the quota;
 residues older than `staleFileAge` are deleted on the next initialization. The default 24-hour age is a cleanup retention
 period, not a delivery window.
+
+Quota is global to the canonical spool directory across all store instances in
+one JVM. Every live store sharing that directory must use identical
+`spoolMaxBytes`, `spoolStaleFileAge` and `requirePrivatePermissions` values.
+Gear4J holds a private `.gear4j-spool.lock` marker and rejects an explicitly
+configured directory already used by another process. Configure a dedicated
+directory per process or container. When `spoolDirectory` is omitted, Gear4J
+uses a per-JVM subdirectory under the system temporary directory.
 
 For `ASYNC_FALLBACKS`, a successful call guarantees the primary write only. A JVM crash can lose every fallback copy that
 has not completed, including a queued copy backed by a spool file. Use `SYNC_ALL` when the call must await fallback writes.

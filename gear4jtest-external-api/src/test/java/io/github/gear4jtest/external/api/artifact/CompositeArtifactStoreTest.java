@@ -60,7 +60,7 @@ class CompositeArtifactStoreTest {
     }
 
     @Test
-    void get_shouldRejectArtifactsAboveConfiguredVerificationLimit() {
+    void get_shouldRejectArtifactsAboveConfiguredVerificationLimit() throws IOException {
         // Given
         InMemoryArtifactStore primary = new InMemoryArtifactStore();
         byte[] content = "payload".getBytes(StandardCharsets.UTF_8);
@@ -123,6 +123,7 @@ class CompositeArtifactStoreTest {
         assertThat(secondFallback.exists(hash)).isTrue();
         assertThat(store.snapshotSpoolStats().currentFiles()).isZero();
         assertThat(store.snapshotSpoolStats().currentBytes()).isZero();
+        store.close();
     }
 
     @Test
@@ -144,6 +145,38 @@ class CompositeArtifactStoreTest {
         assertThat(fallback.exists(hash)).isFalse();
         assertThat(store.snapshotSpoolStats().currentFiles()).isZero();
         assertThat(store.snapshotSpoolStats().currentBytes()).isZero();
+        store.close();
+    }
+
+    @Test
+    void close_shouldWaitForAlreadyAcceptedAsyncWritesBeforeClosingDelegates() throws Exception {
+        // Given
+        StreamOnlyArtifactStore primary = new StreamOnlyArtifactStore();
+        StreamOnlyArtifactStore fallback = new StreamOnlyArtifactStore();
+        RecordingExecutor executor = new RecordingExecutor();
+        CompositeArtifactStore store = new CompositeArtifactStore(primary, List.of(fallback),
+                CompositeArtifactStore.WriteMode.ASYNC_FALLBACKS,
+                CompositeArtifactStore.ReadMode.PREFER_PRIMARY, false, false,
+                ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES, spoolDirectory, executor);
+        String hash = store.put(new ByteArrayInputStream("payload".getBytes(StandardCharsets.UTF_8)), 16L);
+
+        // When
+        store.close();
+
+        // Then
+        assertThat(primary.closed()).isFalse();
+        assertThat(fallback.closed()).isFalse();
+
+        // When
+        executor.runAll();
+
+        // Then
+        assertThat(fallback.storedHashes()).containsExactly(hash);
+        assertThat(primary.closed()).isTrue();
+        assertThat(fallback.closed()).isTrue();
+        assertThatThrownBy(() -> store.exists(hash))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("closed");
     }
 
     private static Executor rejectingExecutor() {
@@ -174,6 +207,7 @@ class CompositeArtifactStoreTest {
     private static final class StreamOnlyArtifactStore implements ArtifactStore {
         private final List<String> storedHashes = new ArrayList<>();
         private int streamWrites;
+        private boolean closed;
 
         @Override
         public String put(byte[] content) {
@@ -198,12 +232,21 @@ class CompositeArtifactStoreTest {
             return storedHashes.contains(hashHex);
         }
 
+        @Override
+        public void close() {
+            closed = true;
+        }
+
         private List<String> storedHashes() {
             return storedHashes;
         }
 
         private int streamWrites() {
             return streamWrites;
+        }
+
+        private boolean closed() {
+            return closed;
         }
     }
 }

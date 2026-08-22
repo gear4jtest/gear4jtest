@@ -58,36 +58,40 @@ public final class ArtifactConsistencyChecker {
                         "Operation-chain configuration not found for " + assemblyLineId));
         ArtifactStore store = Objects.requireNonNull(storeProvider.forConfig(config),
                                                      "storeProvider returned null");
-        List<Issue> issues = new ArrayList<>();
-        Map<String, ArtifactMetadata> artifactsByHash = new HashMap<>();
-        int objectsChecked = 0;
-        int offset = 0;
-        while (true) {
-            List<OperationChainObject> page = objectRepository.findAll(assemblyLineId,
-                                                                       new PageRequest(offset, pageSize));
-            for (OperationChainObject object : page) {
-                objectsChecked++;
-                ArtifactMetadata artifact = artifactsByHash.get(object.contentHash());
-                if (artifact == null) {
-                    artifact = loadMetadata(store, object.contentHash());
-                    artifactsByHash.put(object.contentHash(), artifact);
+        try {
+            List<Issue> issues = new ArrayList<>();
+            Map<String, ArtifactMetadata> artifactsByHash = new HashMap<>();
+            int objectsChecked = 0;
+            int offset = 0;
+            while (true) {
+                List<OperationChainObject> page = objectRepository.findAll(assemblyLineId,
+                                                                           new PageRequest(offset, pageSize));
+                for (OperationChainObject object : page) {
+                    objectsChecked++;
+                    ArtifactMetadata artifact = artifactsByHash.get(object.contentHash());
+                    if (artifact == null) {
+                        artifact = loadMetadata(store, object.contentHash());
+                        artifactsByHash.put(object.contentHash(), artifact);
+                    }
+                    if (!artifact.present()) {
+                        issues.add(Issue.missing(object));
+                    } else if (artifact.sizeBytes() != object.sizeBytes()) {
+                        issues.add(Issue.sizeMismatch(object, artifact.sizeBytes()));
+                    }
                 }
-                if (!artifact.present()) {
-                    issues.add(Issue.missing(object));
-                } else if (artifact.sizeBytes() != object.sizeBytes()) {
-                    issues.add(Issue.sizeMismatch(object, artifact.sizeBytes()));
+                if (page.size() < pageSize) {
+                    break;
+                }
+                try {
+                    offset = Math.addExact(offset, pageSize);
+                } catch (ArithmeticException exception) {
+                    throw new IllegalStateException("Artifact consistency pagination offset overflow", exception);
                 }
             }
-            if (page.size() < pageSize) {
-                break;
-            }
-            try {
-                offset = Math.addExact(offset, pageSize);
-            } catch (ArithmeticException exception) {
-                throw new IllegalStateException("Artifact consistency pagination offset overflow", exception);
-            }
+            return new Report(assemblyLineId, objectsChecked, artifactsByHash.size(), issues);
+        } finally {
+            storeProvider.release(store);
         }
-        return new Report(assemblyLineId, objectsChecked, artifactsByHash.size(), issues);
     }
 
     private static ArtifactMetadata loadMetadata(ArtifactStore store, String hash) throws IOException {

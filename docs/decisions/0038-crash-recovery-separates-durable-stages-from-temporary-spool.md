@@ -23,6 +23,10 @@ reconciliation.
 - Keep `ManagedArtifactSpool` as private, quota-bounded temporary workspace. On
   initialization it accounts for recent residues and deletes stale residues; it
   never replays a file.
+- Account quota once per canonical directory across all live stores in the JVM.
+  Isolate the default directory per JVM and hold a process lock for explicitly
+  configured directories so two processes cannot concurrently account or clean
+  the same spool.
 - Define spool crash loss explicitly. A synchronous database-store call has no
   acknowledged success before its database write returns. A successful composite
   `ASYNC_FALLBACKS` call acknowledges the primary only, so a crash can lose every

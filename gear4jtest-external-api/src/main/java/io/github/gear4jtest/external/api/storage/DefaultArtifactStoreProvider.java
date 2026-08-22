@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -30,11 +31,20 @@ import io.github.gear4jtest.external.api.spi.ArtifactStoreResolver;
  * properties include read/write mode, self-healing flags and numbered
  * {@code fallback.N.*} entries.
  * </p>
+ *
+ * <p>
+ * Each call to {@link #forConfig(OperationChainConfig)} acquires a lease.
+ * Callers must balance it with {@link #release(ArtifactStore)}, or close the
+ * provider only after every consumer has stopped.
+ * </p>
  */
-public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider {
+public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider, AutoCloseable {
     private final ArtifactStoreResolver resolver;
     private final ArtifactStorePlugin.Context ctx;
     private final Executor asyncExec;
+    private final Map<StoreConfiguration, StoreLease> storesByConfiguration = new HashMap<>();
+    private final IdentityHashMap<ArtifactStore, Integer> leasesByStore = new IdentityHashMap<>();
+    private boolean closed;
 
     /**
      * Creates a provider that discovers store plugins through the supplied class
@@ -132,8 +142,70 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
     }
 
     @Override
-    public ArtifactStore forConfig(OperationChainConfig cfg) {
+    public synchronized ArtifactStore forConfig(OperationChainConfig cfg) {
         Objects.requireNonNull(cfg, "cfg");
+        if (closed) {
+            throw new IllegalStateException("Artifact-store provider is closed");
+        }
+        StoreConfiguration configuration = StoreConfiguration.from(cfg);
+        StoreLease existing = storesByConfiguration.get(configuration);
+        if (existing != null) {
+            existing.retain();
+            leasesByStore.merge(existing.store(), 1, Integer::sum);
+            return existing.store();
+        }
+
+        ArtifactStore store = buildStore(cfg);
+        storesByConfiguration.put(configuration, new StoreLease(store));
+        leasesByStore.merge(store, 1, Integer::sum);
+        return store;
+    }
+
+    @Override
+    public synchronized void release(ArtifactStore store) {
+        if (store == null) {
+            return;
+        }
+        StoreConfiguration releasedConfiguration = null;
+        StoreLease releasedLease = null;
+        for (var entry : storesByConfiguration.entrySet()) {
+            if (entry.getValue().store() == store && entry.getValue().references() > 0) {
+                releasedConfiguration = entry.getKey();
+                releasedLease = entry.getValue();
+                break;
+            }
+        }
+        if (releasedLease == null) {
+            return;
+        }
+
+        if (releasedLease.release() == 0) {
+            storesByConfiguration.remove(releasedConfiguration);
+        }
+        Integer totalReferences = leasesByStore.get(store);
+        if (totalReferences == null || totalReferences <= 1) {
+            leasesByStore.remove(store);
+            store.close();
+        } else {
+            leasesByStore.put(store, totalReferences - 1);
+        }
+    }
+
+    @Override
+    public synchronized void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
+        List<ArtifactStore> stores = new ArrayList<>(leasesByStore.keySet());
+        storesByConfiguration.clear();
+        leasesByStore.clear();
+        for (ArtifactStore store : stores) {
+            store.close();
+        }
+    }
+
+    private ArtifactStore buildStore(OperationChainConfig cfg) {
         Map<String, String> props = cfg.storeProps();
 
         CompositeArtifactStore.WriteMode writeMode = parseWriteMode(props.get("mode.write"));
@@ -161,28 +233,80 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
                 .requirePrivatePermissions(requirePrivatePermissions)
                 .build();
 
-        // Primary store type declared by the pipeline configuration.
-        ArtifactStore primary = resolver.resolve(cfg.storeType().name(), props, ctx);
+        ArtifactStore primary = null;
+        List<ArtifactStore> fallbacks = List.of();
+        try {
+            // Primary store type declared by the pipeline configuration.
+            primary = resolver.resolve(cfg.storeType().name(), props, ctx);
 
-        // Numbered fallback stores: fallback.N.type and fallback.N.props.*
-        List<ArtifactStore> fallbacks = buildFallbacks(props);
+            // Numbered fallback stores: fallback.N.type and fallback.N.props.*
+            fallbacks = buildFallbacks(props);
 
-        if (fallbacks.isEmpty()) {
-            if (writeMode != CompositeArtifactStore.WriteMode.PRIMARY_ONLY) {
-                throw new IllegalArgumentException("Artifact store property 'mode.write' requires at least one "
-                        + "complete fallback store");
+            if (fallbacks.isEmpty()) {
+                if (writeMode != CompositeArtifactStore.WriteMode.PRIMARY_ONLY) {
+                    throw new IllegalArgumentException("Artifact store property 'mode.write' requires at least one "
+                            + "complete fallback store");
+                }
+                if (selfHealing) {
+                    throw new IllegalArgumentException("Artifact store property 'selfHealing=true' requires at least "
+                            + "one complete fallback store");
+                }
+                if (!verifyOnRead) {
+                    return primary;
+                }
             }
-            if (selfHealing) {
-                throw new IllegalArgumentException("Artifact store property 'selfHealing=true' requires at least "
-                        + "one complete fallback store");
-            }
-            if (!verifyOnRead) {
-                return primary;
+
+            return new CompositeArtifactStore(primary, fallbacks, writeMode, readMode, verifyOnRead, selfHealing,
+                    verificationMaxArtifactSizeBytes, spoolPolicy, asyncExec);
+        } catch (RuntimeException | Error exception) {
+            closeStores(primary, fallbacks);
+            throw exception;
+        }
+    }
+
+    private static void closeStores(ArtifactStore primary, List<ArtifactStore> fallbacks) {
+        IdentityHashMap<ArtifactStore, Boolean> closed = new IdentityHashMap<>();
+        if (primary != null) {
+            closed.put(primary, Boolean.TRUE);
+            primary.close();
+        }
+        for (ArtifactStore fallback : fallbacks) {
+            if (closed.put(fallback, Boolean.TRUE) == null) {
+                fallback.close();
             }
         }
+    }
 
-        return new CompositeArtifactStore(primary, fallbacks, writeMode, readMode, verifyOnRead, selfHealing,
-                verificationMaxArtifactSizeBytes, spoolPolicy, asyncExec);
+    private record StoreConfiguration(String type, Map<String, String> properties) {
+        private static StoreConfiguration from(OperationChainConfig config) {
+            return new StoreConfiguration(config.storeType().name(), Map.copyOf(config.storeProps()));
+        }
+    }
+
+    private static final class StoreLease {
+        private final ArtifactStore store;
+        private int references = 1;
+
+        private StoreLease(ArtifactStore store) {
+            this.store = Objects.requireNonNull(store, "artifact-store plugin returned null");
+        }
+
+        private ArtifactStore store() {
+            return store;
+        }
+
+        private int references() {
+            return references;
+        }
+
+        private void retain() {
+            references = Math.addExact(references, 1);
+        }
+
+        private int release() {
+            references--;
+            return references;
+        }
     }
 
     private static Duration parseDuration(String value, Duration defaultValue, String property) {
@@ -236,21 +360,27 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         }
 
         List<ArtifactStore> out = new ArrayList<>();
-        for (FallbackGroup fallback : ordered) {
-            Map<String, String> g = fallback.properties();
-            String type = opt(g, "type");
-            if (type == null || type.isBlank()) {
-                throw new IllegalArgumentException("Artifact fallback " + fallback.order()
-                        + " must define fallback." + fallback.order() + ".type");
+        try {
+            for (FallbackGroup fallback : ordered) {
+                Map<String, String> g = fallback.properties();
+                String type = opt(g, "type");
+                if (type == null || type.isBlank()) {
+                    throw new IllegalArgumentException("Artifact fallback " + fallback.order()
+                            + " must define fallback." + fallback.order() + ".type");
+                }
+
+                // Convert props.* entries into the child store property map.
+                Map<String, String> childProps = g.entrySet().stream()
+                        .filter(en -> en.getKey().startsWith("props."))
+                        .collect(Collectors.toMap(en -> en.getKey().substring("props.".length()),
+                                                  Map.Entry::getValue));
+
+                out.add(resolver.resolve(type, childProps, ctx));
             }
-
-            // Convert props.* entries into the child store property map.
-            Map<String, String> childProps = g.entrySet().stream()
-                    .filter(en -> en.getKey().startsWith("props."))
-                    .collect(Collectors.toMap(en -> en.getKey().substring("props.".length()), Map.Entry::getValue));
-
-            out.add(resolver.resolve(type, childProps, ctx));
+            return out;
+        } catch (RuntimeException | Error exception) {
+            closeStores(null, out);
+            throw exception;
         }
-        return out;
     }
 }

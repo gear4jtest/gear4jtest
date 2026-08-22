@@ -4,10 +4,13 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import io.github.gear4jtest.core.persistence.PageRequest;
+import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.repository.OperationChainConfigRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainNotFoundException;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
@@ -70,28 +73,37 @@ public final class ArtifactPublicationReconciler {
         int committed = 0;
         int aborted = 0;
         List<Failure> failures = new ArrayList<>();
+        Map<String, ArtifactStore> storesByFingerprint = new LinkedHashMap<>();
 
-        for (OperationChainPublicationStage stage : stages) {
-            try {
-                var config = configRepository.findByAssemblyLineId(stage.object().alId())
-                        .orElseThrow(() -> new OperationChainNotFoundException(
-                                "Config not found for alId=" + stage.object().alId()));
-                String currentFingerprint = ArtifactStoreConfigurationFingerprint.from(config);
-                if (!Objects.equals(currentFingerprint, stage.storeFingerprint())) {
-                    throw new IllegalStateException("Artifact-store configuration changed for alId="
-                            + stage.object().alId() + "; staged publication retained");
+        try {
+            for (OperationChainPublicationStage stage : stages) {
+                try {
+                    var config = configRepository.findByAssemblyLineId(stage.object().alId())
+                            .orElseThrow(() -> new OperationChainNotFoundException(
+                                    "Config not found for alId=" + stage.object().alId()));
+                    String currentFingerprint = ArtifactStoreConfigurationFingerprint.from(config);
+                    if (!Objects.equals(currentFingerprint, stage.storeFingerprint())) {
+                        throw new IllegalStateException("Artifact-store configuration changed for alId="
+                                + stage.object().alId() + "; staged publication retained");
+                    }
+                    ArtifactStore store = storesByFingerprint.computeIfAbsent(currentFingerprint,
+                                                                              ignored -> Objects
+                                                                                      .requireNonNull(storeProvider
+                                                                                              .forConfig(config),
+                                                                                                      "storeProvider returned null"));
+                    if (store.exists(stage.object().contentHash())) {
+                        publicationRepository.commit(stage.stageId());
+                        committed++;
+                    } else if (publicationRepository.abortIfUnchanged(stage)) {
+                        aborted++;
+                    }
+                } catch (IOException | RuntimeException exception) {
+                    failures.add(new Failure(stage.stageId(), stage.object().alId(), stage.object().version(),
+                            exception.getMessage(), exception));
                 }
-                var store = storeProvider.forConfig(config);
-                if (store.exists(stage.object().contentHash())) {
-                    publicationRepository.commit(stage.stageId());
-                    committed++;
-                } else if (publicationRepository.abortIfUnchanged(stage)) {
-                    aborted++;
-                }
-            } catch (IOException | RuntimeException exception) {
-                failures.add(new Failure(stage.stageId(), stage.object().alId(), stage.object().version(),
-                        exception.getMessage(), exception));
             }
+        } finally {
+            storesByFingerprint.values().forEach(storeProvider::release);
         }
         return new Report(stages.size(), committed, aborted, List.copyOf(failures));
     }

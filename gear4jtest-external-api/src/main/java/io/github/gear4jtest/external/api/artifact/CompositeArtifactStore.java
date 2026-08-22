@@ -7,6 +7,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.IdentityHashMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executor;
@@ -26,6 +27,10 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
     private final long verificationMaxArtifactSizeBytes;
     private final ManagedArtifactSpool spool;
     private final Executor asyncExec;
+    private final Object lifecycleMonitor = new Object();
+    private int pendingAsyncTasks;
+    private boolean closing;
+    private boolean resourcesClosed;
 
     public CompositeArtifactStore(ArtifactStore primary,
                                   java.util.List<ArtifactStore> fallbacks,
@@ -95,6 +100,7 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
 
     @Override
     public String put(byte[] content) throws IOException {
+        requireOpen();
         byte[] stored = Arrays.copyOf(Objects.requireNonNull(content, "content must not be null"), content.length);
         String hash = primary.put(stored);
         switch (writeMode) {
@@ -115,6 +121,7 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
 
     @Override
     public String put(InputStream in, long maxBytes) throws IOException {
+        requireOpen();
         Objects.requireNonNull(in, "input stream must not be null");
         TempArtifact temp = spoolToTempFile(in, maxBytes);
         try {
@@ -149,6 +156,7 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
 
     @Override
     public Optional<Artifact> get(String hashHex) throws IOException {
+        requireOpen();
         String hash = ArtifactHashes.requireSha256Hex(hashHex);
         var artifact = primary.get(hash);
         if (artifact.isPresent()) {
@@ -165,6 +173,7 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
 
     @Override
     public boolean exists(String hashHex) throws IOException {
+        requireOpen();
         String hash = ArtifactHashes.requireSha256Hex(hashHex);
         if (primary.exists(hash)) {
             return true;
@@ -272,14 +281,89 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
     }
 
     private void executeBestEffort(Runnable task, Runnable rejectionCleanup, String rejectionMessage) {
+        if (!registerAsyncTask()) {
+            rejectionCleanup.run();
+            LOGGER.warn("{} Artifact store is closing.", rejectionMessage);
+            return;
+        }
         try {
-            asyncExec.execute(task);
+            asyncExec.execute(() -> {
+                try {
+                    task.run();
+                } finally {
+                    completeAsyncTask();
+                }
+            });
         } catch (RuntimeException rejected) {
+            completeAsyncTask();
             rejectionCleanup.run();
             LOGGER.warn(rejectionMessage, rejected);
         } catch (Error error) {
+            completeAsyncTask();
             rejectionCleanup.run();
             throw error;
+        }
+    }
+
+    @Override
+    public void close() {
+        boolean closeNow;
+        synchronized (lifecycleMonitor) {
+            if (closing) {
+                return;
+            }
+            closing = true;
+            closeNow = pendingAsyncTasks == 0;
+        }
+        if (closeNow) {
+            closeResources();
+        }
+    }
+
+    private void requireOpen() throws IOException {
+        synchronized (lifecycleMonitor) {
+            if (closing) {
+                throw new IOException("Composite artifact store is closed");
+            }
+        }
+    }
+
+    private boolean registerAsyncTask() {
+        synchronized (lifecycleMonitor) {
+            if (closing) {
+                return false;
+            }
+            pendingAsyncTasks = Math.addExact(pendingAsyncTasks, 1);
+            return true;
+        }
+    }
+
+    private void completeAsyncTask() {
+        boolean closeNow;
+        synchronized (lifecycleMonitor) {
+            pendingAsyncTasks--;
+            closeNow = closing && pendingAsyncTasks == 0;
+        }
+        if (closeNow) {
+            closeResources();
+        }
+    }
+
+    private void closeResources() {
+        synchronized (lifecycleMonitor) {
+            if (resourcesClosed) {
+                return;
+            }
+            resourcesClosed = true;
+        }
+        spool.close();
+        IdentityHashMap<ArtifactStore, Boolean> closedStores = new IdentityHashMap<>();
+        closedStores.put(primary, Boolean.TRUE);
+        primary.close();
+        for (ArtifactStore fallback : fallbacks) {
+            if (closedStores.put(fallback, Boolean.TRUE) == null) {
+                fallback.close();
+            }
         }
     }
 

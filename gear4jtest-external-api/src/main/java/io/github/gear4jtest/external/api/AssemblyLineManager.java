@@ -299,16 +299,24 @@ public class AssemblyLineManager implements AutoCloseable {
     }
 
     /**
-     * Stops owned compilation workers and cancels pending compilations.
+     * Stops owned workers, cancels pending work and releases cached artifact-store
+     * leases.
      *
      * <p>
      * Cancellation is best-effort for compiler implementations that ignore thread
-     * interruption.
+     * interruption. Callers must quiesce manager operations before closing it.
      * </p>
      */
     @Override
     public void close() {
-        loader.close();
-        compilationRuntime.close();
+        try {
+            loader.close();
+        } finally {
+            try {
+                compilationRuntime.close();
+            } finally {
+                storeResolver.close();
+            }
+        }
     }
 }

@@ -15,8 +15,10 @@ import java.nio.file.attribute.UserPrincipal;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 final class ArtifactSpoolFiles {
+    private static final String RUNTIME_DIRECTORY = ProcessHandle.current().pid() + "-" + UUID.randomUUID();
     private static final Set<PosixFilePermission> DIRECTORY_PERMISSIONS = Set.of(PosixFilePermission.OWNER_READ,
                                                                                  PosixFilePermission.OWNER_WRITE,
                                                                                  PosixFilePermission.OWNER_EXECUTE);
@@ -41,7 +43,7 @@ final class ArtifactSpoolFiles {
 
     static Path prepareDirectory(Path configuredDirectory, boolean requirePrivatePermissions) throws IOException {
         Path directory = configuredDirectory != null ? configuredDirectory
-                : Path.of(System.getProperty("java.io.tmpdir"), "gear4j-artifacts");
+                : Path.of(System.getProperty("java.io.tmpdir"), "gear4j-artifacts", RUNTIME_DIRECTORY);
         directory = directory.toAbsolutePath().normalize();
         if (Files.exists(directory, LinkOption.NOFOLLOW_LINKS) && Files.isSymbolicLink(directory)) {
             throw new IOException("Artifact spool directory must not be a symbolic link: " + directory);

@@ -182,9 +182,10 @@ class DatabaseArtifactStoreStreamingTest {
         assertThat(content.bytesProduced()).isLessThanOrEqualTo(maxBytes + 8192L);
         verifyNoInteractions(dataSource);
         try (var files = Files.list(tempDirectory)) {
-            assertThat(files.toList()).isEmpty();
+            assertThat(files.filter(path -> path.getFileName().toString().endsWith(".tmp")).toList()).isEmpty();
         }
         assertThat(store.snapshotStats().writeFailures()).isEqualTo(1);
+        store.close();
     }
 
     @Test
@@ -207,11 +208,12 @@ class DatabaseArtifactStoreStreamingTest {
                 .hasMessageNotContaining(secret);
         verifyNoInteractions(dataSource);
         try (var files = Files.list(tempDirectory)) {
-            assertThat(files.toList()).isEmpty();
+            assertThat(files.filter(path -> path.getFileName().toString().endsWith(".tmp")).toList()).isEmpty();
         }
         assertThat(store.snapshotSpoolStats().quotaRejections()).isEqualTo(1L);
         assertThat(store.snapshotSpoolStats().currentFiles()).isZero();
         assertThat(store.snapshotSpoolStats().currentBytes()).isZero();
+        store.close();
     }
 
     @Test
@@ -259,8 +261,9 @@ class DatabaseArtifactStoreStreamingTest {
         assertThat(stats.writeFailures()).isZero();
         verify(connection).commit();
         try (var files = Files.list(tempDirectory)) {
-            assertThat(files.toList()).isEmpty();
+            assertThat(files.filter(path -> path.getFileName().toString().endsWith(".tmp")).toList()).isEmpty();
         }
+        store.close();
     }
 
     private static DatabaseArtifactStore store(DataSource dataSource, long maxArtifactSizeBytes) {
