@@ -1,19 +1,41 @@
 package io.github.gear4jtest.external.api.spi;
 
-import java.util.HashMap;
-import java.util.Locale;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
+import io.github.gear4jtest.external.api.StoreType;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 
 public final class ArtifactStoreResolver {
-    private final Map<String, ArtifactStorePlugin> byType = new HashMap<>();
+    private final Map<String, ArtifactStorePlugin> byType;
+    private final Set<String> availableTypes;
 
     public ArtifactStoreResolver(ClassLoader cl) {
-        ServiceLoader.load(ArtifactStorePlugin.class, cl)
-                .forEach(p -> byType.put(p.type().toUpperCase(Locale.ROOT), p));
+        this(ServiceLoader.load(ArtifactStorePlugin.class, Objects.requireNonNull(cl, "cl must not be null")));
+    }
+
+    ArtifactStoreResolver(Iterable<? extends ArtifactStorePlugin> plugins) {
+        Objects.requireNonNull(plugins, "plugins must not be null");
+        Map<String, ArtifactStorePlugin> discovered = new TreeMap<>();
+        for (ArtifactStorePlugin plugin : plugins) {
+            ArtifactStorePlugin requiredPlugin = Objects.requireNonNull(plugin,
+                                                                        "artifact-store plugin must not be null");
+            String type = StoreType.of(requiredPlugin.type()).name();
+            ArtifactStorePlugin previous = discovered.putIfAbsent(type, requiredPlugin);
+            if (previous != null) {
+                TreeSet<String> candidates = new TreeSet<>();
+                candidates.add(previous.getClass().getName());
+                candidates.add(requiredPlugin.getClass().getName());
+                throw new IllegalStateException("Ambiguous ArtifactStorePlugin for " + type + ": " + candidates);
+            }
+        }
+        byType = Map.copyOf(discovered);
+        availableTypes = Collections.unmodifiableSet(new TreeSet<>(discovered.keySet()));
     }
 
     public ArtifactStore resolve(String type, Map<String, String> props, ArtifactStorePlugin.Context ctx) {
@@ -27,7 +49,7 @@ public final class ArtifactStoreResolver {
     }
 
     public Set<String> availableTypes() {
-        return Set.copyOf(byType.keySet());
+        return availableTypes;
     }
 
     public ArtifactStorePropertySchema propertySchema(String type) {
@@ -38,7 +60,7 @@ public final class ArtifactStoreResolver {
         if (type == null || type.isBlank()) {
             throw new IllegalArgumentException("Store type must not be blank");
         }
-        ArtifactStorePlugin plugin = byType.get(type.toUpperCase(Locale.ROOT));
+        ArtifactStorePlugin plugin = byType.get(StoreType.of(type).name());
         if (plugin == null) {
             throw new IllegalArgumentException("Unknown store type: " + type);
         }

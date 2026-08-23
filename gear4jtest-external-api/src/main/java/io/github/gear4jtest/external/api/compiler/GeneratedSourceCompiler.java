@@ -18,6 +18,13 @@ import io.github.gear4jtest.core.api.annotation.Spi;
 @Spi
 public interface GeneratedSourceCompiler {
     /**
+     * Returns the stable identifier used for explicit SPI selection.
+     */
+    default String id() {
+        return getClass().getName();
+    }
+
+    /**
      * Compiles one generated Java source unit.
      *
      * @param className  fully-qualified generated class name

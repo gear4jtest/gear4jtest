@@ -1,6 +1,8 @@
 package io.github.gear4jtest.external.api.loader;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -21,13 +23,17 @@ public class InMemoryClassLoader extends ClassLoader {
     }
 
     public void addCompiledClasses(Map<String, byte[]> compiledClasses) {
-        compiledClasses.forEach((name, bytes) -> {
+        Map<String, byte[]> defensiveCopy = new LinkedHashMap<>();
+        Objects.requireNonNull(compiledClasses, "compiledClasses must not be null").forEach((name, bytes) -> {
             if (name == null) {
                 throw new IllegalArgumentException("compiled class name must not be null");
             }
             if (bytes == null) {
                 throw new IllegalArgumentException("compiled class bytes must not be null");
             }
+            defensiveCopy.put(name, bytes.clone());
+        });
+        defensiveCopy.forEach((name, bytes) -> {
             byte[] previous = classes.put(name, bytes);
             retainedBytecodeBytes.addAndGet(bytes.length - (previous == null ? 0L : previous.length));
         });

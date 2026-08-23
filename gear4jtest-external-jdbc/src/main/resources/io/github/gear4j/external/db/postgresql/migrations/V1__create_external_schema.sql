@@ -14,7 +14,8 @@ CREATE TABLE operation_chain_config
 (
     al_id                              VARCHAR(255) PRIMARY KEY,
     allow_run_publication_without_test BOOLEAN     NOT NULL DEFAULT FALSE,
-    store_type                         VARCHAR(30) NOT NULL,
+    store_type                         VARCHAR(64) NOT NULL
+        CHECK (store_type ~ '^[A-Z][A-Z0-9_-]{0,63}$'),
     store_props                        JSONB       NOT NULL DEFAULT '{}'::jsonb,
     created_at                         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at                         TIMESTAMPTZ NOT NULL DEFAULT NOW()

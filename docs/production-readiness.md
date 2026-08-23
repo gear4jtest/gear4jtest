@@ -248,6 +248,19 @@ the relevant schema. Third-party plugins remain open by default and should
 declare a closed `propertySchema()` when their configuration vocabulary is
 stable.
 
+Treat extension ambiguity as a startup/configuration failure. Artifact-store
+types are unique after canonicalization. More than one service-loaded compiler
+requires an explicit compiler id, and more than one translator supporting the
+same media type requires an explicit translator id or direct injection.
+`supports(...)` exceptions are preserved as suppressed diagnostic failures; do
+not catch and downgrade them to a generic "no provider" message.
+
+Third-party store ids use `StoreType.of(...)` and must match
+`[A-Z][A-Z0-9_-]{0,63}`. The unreleased V1 JDBC schema stores those ids in a
+validated `VARCHAR(64)`/`VARCHAR2(64)`. Development databases created from the
+older built-in-only MySQL/MariaDB enum must be recreated before using this
+source version.
+
 `mode.write=ASYNC_FALLBACKS` guarantees only that a successful return represents
 an accepted primary write. Fallback scheduling and writes are best effort:
 rejections and failures are logged after primary success without failing the

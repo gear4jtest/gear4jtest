@@ -80,6 +80,17 @@ SPI implementors should assume:
   failures;
 - blocking operations should document their timeout/cancellation behavior.
 
+`StoreType` is a validated open value object despite its historical name. The
+built-in constants remain convenient, while `StoreType.of(...)` represents a
+third-party `ArtifactStorePlugin.type()` without a core release. Code must not
+assume enum-only operations such as `values()` or exhaustive `switch`.
+
+SPI discovery does not establish precedence from classpath order. Store types
+must be unique. Translator and compiler `id()` values must be stable; ambiguity
+is rejected unless the caller uses an explicit id overload or injects the
+provider directly. A failing translator capability probe is surfaced with the
+aggregated resolver diagnostic instead of being silently treated as unsupported.
+
 ## Internal implementation
 
 Everything outside the public API/SPI lists above is internal unless a package

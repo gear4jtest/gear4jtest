@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS operation_chain_config
 (
     al_id                               VARCHAR(255) PRIMARY KEY,
     allow_run_publication_without_test BOOLEAN NOT NULL DEFAULT FALSE,
-    store_type                          VARCHAR(30) NOT NULL,
+    store_type                          VARCHAR(64) NOT NULL
+        CHECK (store_type REGEXP '^[A-Z][A-Z0-9_-]{0,63}$'),
     store_props                         CLOB NOT NULL,
     created_at                          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

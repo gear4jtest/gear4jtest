@@ -137,12 +137,13 @@ class ExternalJdbcMultiDialectIT {
         // When
         repository.upsert(initial);
         repository.setAllowRunPublicationWithoutTest(assemblyLineId, true);
-        repository.updateStore(assemblyLineId, StoreType.DATABASE, Map.of("updated", "true"));
+        StoreType thirdPartyStore = StoreType.of("CUSTOM-STORE");
+        repository.updateStore(assemblyLineId, thirdPartyStore, Map.of("updated", "true"));
 
         // Then
         OperationChainConfig saved = repository.findByAssemblyLineId(assemblyLineId).orElseThrow();
         assertThat(saved.allowRunPublicationWithoutTest()).isTrue();
-        assertThat(saved.storeType()).isEqualTo(StoreType.DATABASE);
+        assertThat(saved.storeType()).isEqualTo(thirdPartyStore);
         assertThat(saved.storeProps()).isEqualTo(Map.of("updated", "true"));
     }
 

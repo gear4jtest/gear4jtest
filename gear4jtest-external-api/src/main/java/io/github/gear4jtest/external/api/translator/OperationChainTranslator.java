@@ -6,6 +6,18 @@ import io.github.gear4jtest.external.api.ExecutionMode;
 
 public interface OperationChainTranslator {
     /**
+     * Returns the stable identifier used for explicit SPI selection.
+     *
+     * <p>
+     * Providers should override this when their implementation class name is not a
+     * suitable configuration value.
+     * </p>
+     */
+    default String id() {
+        return getClass().getName();
+    }
+
+    /**
      * Returns true when this translator can handle the supplied media type.
      *
      * <p>

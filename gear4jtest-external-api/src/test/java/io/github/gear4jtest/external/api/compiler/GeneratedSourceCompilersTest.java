@@ -95,6 +95,34 @@ class GeneratedSourceCompilersTest {
     }
 
     @Test
+    void serviceSelection_shouldRejectAmbiguityAndAllowExplicitSelectionRegardlessOfOrder() {
+        GeneratedSourceCompiler alpha = new IdentifiedCompiler("alpha");
+        GeneratedSourceCompiler beta = new IdentifiedCompiler("beta");
+
+        assertThatThrownBy(() -> GeneratedSourceCompilers.selectServiceProvider(List.of(alpha, beta), null,
+                                                                                () -> alpha))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Ambiguous GeneratedSourceCompiler providers: [alpha, beta]");
+        assertThatThrownBy(() -> GeneratedSourceCompilers.selectServiceProvider(List.of(beta, alpha), null,
+                                                                                () -> alpha))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("[alpha, beta]");
+        assertThat(GeneratedSourceCompilers.selectServiceProvider(List.of(beta, alpha), "alpha", () -> beta))
+                .isSameAs(alpha);
+    }
+
+    @Test
+    void serviceSelection_shouldRejectDuplicateStableIds() {
+        GeneratedSourceCompiler first = new IdentifiedCompiler("duplicate");
+        GeneratedSourceCompiler second = new IdentifiedCompiler("duplicate");
+
+        assertThatThrownBy(() -> GeneratedSourceCompilers.selectServiceProvider(List.of(first, second), "duplicate",
+                                                                                () -> first))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Ambiguous GeneratedSourceCompiler id=duplicate");
+    }
+
+    @Test
     void defaultCompiler_shouldSelectJavacOnceAndNeverRetrySourceErrorsWithJdt() {
         // Given
         AtomicInteger javacCreations = new AtomicInteger();
@@ -157,6 +185,13 @@ class GeneratedSourceCompilersTest {
                 .containsEntry(JDTInMemoryCompiler.TARGET_OPTION, JDTInMemoryCompiler.JAVA_17)
                 .containsEntry(JDTInMemoryCompiler.COMPLIANCE_OPTION, JDTInMemoryCompiler.JAVA_17)
                 .containsEntry(JDTInMemoryCompiler.RELEASE_OPTION, JDTInMemoryCompiler.ENABLED);
+    }
+
+    private record IdentifiedCompiler(String id) implements GeneratedSourceCompiler {
+        @Override
+        public Map<String, byte[]> compile(String className, byte[] sourceCode) {
+            return Map.of(className, new byte[] { 1 });
+        }
     }
 
 }

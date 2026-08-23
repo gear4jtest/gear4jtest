@@ -21,6 +21,13 @@ This module owns:
 It should not contain XML-specific parsing or generation logic. Format-specific modules should implement
 `OperationChainTranslator` and register themselves through `ServiceLoader` or explicit injection.
 
+SPI discovery has no classpath-order precedence. Translator ids and compiler
+ids must be stable. Duplicate store types, overlapping translators and multiple
+compiler providers fail with an ambiguity diagnostic unless the applicable
+resolver or factory selects one id explicitly. A translator whose
+`supports(...)` probe fails also fails resolution because Gear4J cannot prove
+that a remaining provider is unambiguous.
+
 ## Main flow
 
 `AssemblyLineManager` is the orchestration entrypoint for external definitions.
@@ -127,6 +134,7 @@ GeneratedSourceCompilers.defaultCompiler(classLoader); // javac when available, 
 GeneratedSourceCompilers.javac(classLoader);
 GeneratedSourceCompilers.jdt(classLoader);
 GeneratedSourceCompilers.fromServiceLoader(classLoader);
+GeneratedSourceCompilers.fromServiceLoader(classLoader, "company-javac");
 ```
 
 `AssemblyLineManager` uses `GeneratedSourceCompilers.defaultCompiler(...)` when
@@ -223,9 +231,19 @@ have stopped. Equivalent store type/property maps share one store while leases
 remain active; this keeps `MEMORY` identity coherent between manager operations
 and maintenance tools in the same process.
 
+`StoreType` is an open validated value object, not a closed enum. Built-ins keep
+the constants `MEMORY`, `FILESYSTEM`, `DATABASE`, `S3` and `SFTP`; a third-party
+plugin uses `StoreType.of("COMPANY_STORE")`. The value must match
+`[A-Z][A-Z0-9_-]{0,63}` after canonicalization. The same canonical value is used
+by `ArtifactStorePlugin.type()`, fallback declarations and JDBC persistence.
+Duplicate plugin types fail resolver construction instead of overwriting one
+another according to classpath order.
+
 Applications that need deterministic compiler selection should inject
 `GeneratedSourceCompilers.javac(...)`, `GeneratedSourceCompilers.jdt(...)`, or
-their own `GeneratedSourceCompiler`.
+their own `GeneratedSourceCompiler`. Service-loaded applications with exactly
+one provider can use the no-id overload; multiple providers must be selected by
+their stable `GeneratedSourceCompiler.id()`.
 
 ## Classloader lifecycle
 
@@ -243,6 +261,9 @@ also exposes `protectedLoaderCount()`, `isOverCapacityDueToProtectedLoaders()`
 and bytecode/rejection values through `snapshotStats()`. Defined class bytes are
 removed from the loader's heap map, while their original size remains charged
 conservatively because the class still occupies metaspace.
+`InMemoryClassLoader.addCompiledClasses(...)` takes a defensive snapshot of
+every byte array before registration, so a custom compiler may safely reuse or
+clear its output buffers after the call returns.
 
 Custom `ClassLoaderRegistry` implementations must retain the supplied
 `RegistrationLease` with each staged entry and keep it invisible until

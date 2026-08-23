@@ -12,7 +12,8 @@ CREATE TABLE operation_chain_config
 (
     al_id                              VARCHAR(255) PRIMARY KEY,
     allow_run_publication_without_test TINYINT(1) NOT NULL DEFAULT 0,
-    store_type                         ENUM('DATABASE','FILESYSTEM','S3','SFTP','MEMORY') NOT NULL,
+    store_type                         VARCHAR(64) NOT NULL
+        CHECK (store_type REGEXP '^[A-Z][A-Z0-9_-]{0,63}$'),
     store_props                        JSON      NOT NULL,
     created_at                         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

@@ -12,7 +12,8 @@ CREATE TABLE operation_chain_config
 (
     al_id                               VARCHAR2(255 CHAR) PRIMARY KEY,
     allow_run_publication_without_test NUMBER(1) DEFAULT 0 NOT NULL,
-    store_type                          VARCHAR2(30) NOT NULL,
+    store_type                          VARCHAR2(64) NOT NULL
+        CHECK (REGEXP_LIKE(store_type, '^[A-Z][A-Z0-9_-]{0,63}$')),
     store_props                         CLOB NOT NULL CHECK (store_props IS JSON),
     created_at                          TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at                          TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL

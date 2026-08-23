@@ -31,4 +31,26 @@ class InMemoryClassLoaderTest {
         assertThat(loader.retainedBytecodeBytes()).isZero();
         assertThat(loader.bytecodeWeightBytes()).isEqualTo(compiledBytes);
     }
+
+    @Test
+    void addCompiledClasses_shouldDefensivelyCopyCallerBytecode() throws Exception {
+        // Given
+        String className = "io.test.GeneratedForDefensiveCopy";
+        String source = """
+                package io.test;
+                public final class GeneratedForDefensiveCopy {}
+                """;
+        Map<String, byte[]> compiled = new JavaxToolsGeneratedSourceCompiler(getClass().getClassLoader())
+                .compile(className, source.getBytes(StandardCharsets.UTF_8));
+        byte[] callerBytes = compiled.get(className);
+        InMemoryClassLoader loader = new InMemoryClassLoader(getClass().getClassLoader());
+        loader.addCompiledClasses(Map.of(className, callerBytes));
+
+        // When
+        java.util.Arrays.fill(callerBytes, (byte) 0);
+        Class<?> loaded = loader.loadClass(className);
+
+        // Then
+        assertThat(loaded.getName()).isEqualTo(className);
+    }
 }

@@ -122,6 +122,13 @@ maintenance uses `idx_op_chain_stage_age` on `staged_at`, `stage_id`. These are
 V1 changes because no public Gear4J release exists; no compatibility V2
 migration is carried for a schema that has never been released.
 
+Artifact store identifiers are also open in that V1 schema. Every dialect uses
+`VARCHAR(64)` (Oracle uses `VARCHAR2(64)`) plus the canonical format check
+`[A-Z][A-Z0-9_-]{0,63}`. MySQL and MariaDB deliberately do not use a database
+enum: `ArtifactStorePlugin` implementations supplied by applications must be
+persistable without a Gear4J schema release. Development schemas created from
+an older V1 must be recreated; this pre-1.0 correction does not add a V2.
+
 ## Dedicated Flyway instance for Gear4J
 
 A future Spring Boot starter enhancement may expose a dedicated Gear4J Flyway

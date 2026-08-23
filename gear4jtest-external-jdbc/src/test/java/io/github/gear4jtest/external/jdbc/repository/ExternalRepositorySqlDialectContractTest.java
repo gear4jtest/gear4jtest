@@ -63,7 +63,10 @@ class ExternalRepositorySqlDialectContractTest {
                     .contains("operation_chain_tag")
                     .contains("artifact_store")
                     .contains("idx_op_chain_all")
-                    .contains("al_id, published_at DESC, id DESC");
+                    .contains("al_id, published_at DESC, id DESC")
+                    .containsPattern("(?i)store_type\\s+VARCHAR2?\\(64\\)")
+                    .contains("[A-Z][A-Z0-9_-]{0,63}")
+                    .doesNotContain("ENUM('DATABASE','FILESYSTEM','S3','SFTP','MEMORY')");
             if (dialect == Gear4jDatabaseDialect.POSTGRESQL) {
                 assertThat(sql)
                         .contains("ON operation_chain_object (al_id, published_at DESC, id DESC)")

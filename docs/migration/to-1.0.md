@@ -93,7 +93,26 @@ classes from another module.
 All artifact coordinates use the `io.github.gear4jtest` group. The legacy plugin id
 `io.github.gear4jtest.gradle.xml2java` remains compatible during 1.x, but new builds should use the canonical id above.
 
-## 5. Recheck operational migrations
+## 5. Migrate store identifiers and SPI selection
+
+`StoreType` is now an open value object so a third-party artifact-store plugin
+can be configured and persisted without changing Gear4J. Built-in source such
+as `StoreType.MEMORY`, equality and `name()` remains valid. Replace enum-only
+usage:
+
+- replace `StoreType.valueOf(value)` with `StoreType.of(value)` for new code;
+- replace `StoreType.values()` with the application's explicit supported-plugin
+  inventory;
+- replace exhaustive enum `switch` statements with equality against built-in
+  constants plus an explicit third-party/default branch.
+
+Service-loaded compilers and translators no longer select the first classpath
+entry. Ensure store types and provider ids are unique. Select a compiler with
+`GeneratedSourceCompilers.fromServiceLoader(classLoader, id)` when several are
+installed; use `OperationChainTranslatorResolver.resolve(mediaType, id)` or
+inject a configured resolver when media-type capabilities overlap.
+
+## 6. Recheck operational migrations
 
 Java compilation is only one part of the upgrade. Before deployment:
 
@@ -117,7 +136,7 @@ See the [compatibility policy](../compatibility-policy.md),
 [XML security boundary](../architecture/xml-security.md) and
 [Micrometer observability](../architecture/micrometer-observability.md) for those contracts.
 
-## 6. Qualify the migrated consumer
+## 7. Qualify the migrated consumer
 
 Run the application build on Java 17, then exercise representative success, failure, skip, stop and cancellation paths.
 Library maintainers additionally stage the full Gear4J publication and run its autonomous consumer:

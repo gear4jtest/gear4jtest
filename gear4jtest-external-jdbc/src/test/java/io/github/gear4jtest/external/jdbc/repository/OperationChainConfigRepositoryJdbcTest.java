@@ -45,6 +45,33 @@ class OperationChainConfigRepositoryJdbcTest {
     }
 
     @Test
+    void findByAssemblyLineId_shouldRepresentThirdPartyStoreType() throws Exception {
+        // Given
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        ResultSet resultSet = mock(ResultSet.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(org.mockito.ArgumentMatchers.anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(true);
+        when(resultSet.getString(1)).thenReturn("pipeline");
+        when(resultSet.getBoolean(2)).thenReturn(false);
+        when(resultSet.getString(3)).thenReturn("CUSTOM-STORE");
+        when(resultSet.getString(4)).thenReturn("{}");
+        OperationChainConfigRepositoryJdbc repository = OperationChainConfigRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.H2)
+                .build();
+
+        // When
+        var result = repository.findByAssemblyLineId("pipeline").orElseThrow();
+
+        // Then
+        assertThat(result.storeType()).isEqualTo(StoreType.of("CUSTOM-STORE"));
+    }
+
+    @Test
     void dialect_shouldProvideProviderSpecificUpsertSyntax() {
         // When / Then
         assertThat(ExternalRepositorySqlDialect.upsertOperationChainConfigSql(Gear4jDatabaseDialect.POSTGRESQL))

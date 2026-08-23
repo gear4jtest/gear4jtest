@@ -130,7 +130,7 @@ public final class OperationChainConfigRepositoryJdbc implements OperationChainC
                 }
                 String id = rs.getString(1);
                 boolean allowed = rs.getBoolean(2);
-                StoreType type = StoreType.valueOf(rs.getString(3));
+                StoreType type = StoreType.of(rs.getString(3));
                 Map<String, String> props = readJsonMap(rs.getString(4));
                 return Optional.of(new OperationChainConfig(id, allowed, type, props));
             }

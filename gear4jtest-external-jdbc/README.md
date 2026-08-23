@@ -61,6 +61,13 @@ conflicting content is rejected without changing existing metadata.
 Version listing is always bounded. `OperationChainObjectRepositoryJdbc#findAll` requires a `PageRequest` and applies it
 in SQL for every supported dialect; it never loads all versions before slicing the result.
 
+The public repository remains one facade so existing wiring can expose both
+object lookup and staged publication. Internally it owns only transaction,
+idempotency and conflict orchestration; package-private object, stage, tag and
+row-mapping collaborators own their SQL independently. Changes to pagination or
+mapping therefore do not share one 700-line implementation unit with the atomic
+publication protocol.
+
 All mutating operations of `OperationChainObjectRepositoryJdbc`,
 `OperationChainConfigRepositoryJdbc`, `OperationChainTagRepositoryJdbc` and
 `DatabaseArtifactStore` use autonomous `JdbcTransactionOperations` by default.
