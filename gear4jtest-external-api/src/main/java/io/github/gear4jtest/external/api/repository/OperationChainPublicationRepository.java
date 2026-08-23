@@ -108,4 +108,19 @@ public interface OperationChainPublicationRepository {
     default List<OperationChainPublicationStage> findStagedBefore(Instant cutoff, PageRequest pageRequest) {
         throw new UnsupportedOperationException("Staged publication is not supported by this repository");
     }
+
+    /**
+     * Returns the next bounded keyset page of stages created at or before the
+     * cutoff.
+     *
+     * @param cutoff inclusive maintenance snapshot boundary
+     * @param after  exclusive continuation key, or {@code null} for the first page
+     * @param limit  maximum number of stages, between 1 and
+     *               {@link PageRequest#MAX_LIMIT}
+     */
+    default List<OperationChainPublicationStage> findStagedAfter(Instant cutoff,
+                                                                 OperationChainPublicationStageCursor after,
+                                                                 int limit) {
+        throw new UnsupportedOperationException("Keyset staged publication lookup is not supported by this repository");
+    }
 }

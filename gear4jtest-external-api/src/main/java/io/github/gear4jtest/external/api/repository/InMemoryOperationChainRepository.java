@@ -160,6 +160,20 @@ public final class InMemoryOperationChainRepository
     }
 
     @Override
+    public synchronized List<OperationChainPublicationStage> findStagedAfter(Instant cutoff,
+                                                                             OperationChainPublicationStageCursor after,
+                                                                             int limit) {
+        Objects.requireNonNull(cutoff, "cutoff must not be null");
+        int requiredLimit = PageRequest.first(limit).limit();
+        return stagesById.values().stream()
+                .filter(stage -> !stage.stagedAt().isAfter(cutoff))
+                .filter(stage -> after == null || isAfter(stage, after))
+                .sorted(STAGE_ORDER)
+                .limit(requiredLimit)
+                .toList();
+    }
+
+    @Override
     public synchronized Optional<OperationChainObject> find(String assemblyLineId,
                                                             String version,
                                                             ExecutionMode mode) {
@@ -187,6 +201,19 @@ public final class InMemoryOperationChainRepository
                 .sorted(PUBLICATION_ORDER.reversed())
                 .skip(pageRequest.offset())
                 .limit(pageRequest.limit())
+                .toList();
+    }
+
+    @Override
+    public synchronized List<OperationChainObject> findAllAfter(String assemblyLineId,
+                                                                OperationChainObjectCursor after,
+                                                                int limit) {
+        int requiredLimit = PageRequest.first(limit).limit();
+        return objects.values().stream()
+                .filter(object -> Objects.equals(assemblyLineId, object.alId()))
+                .filter(object -> after == null || isAfter(object, after))
+                .sorted(PUBLICATION_ORDER.reversed())
+                .limit(requiredLimit)
                 .toList();
     }
 
@@ -232,6 +259,17 @@ public final class InMemoryOperationChainRepository
     private void removeStage(OperationChainPublicationStage stage) {
         stagesById.remove(stage.stageId());
         stageIdsByPublication.remove(PublicationKey.from(stage.object()), stage.stageId());
+    }
+
+    private static boolean isAfter(OperationChainPublicationStage stage,
+                                   OperationChainPublicationStageCursor cursor) {
+        int timeComparison = stage.stagedAt().compareTo(cursor.stagedAt());
+        return timeComparison > 0 || timeComparison == 0 && stage.stageId().compareTo(cursor.stageId()) > 0;
+    }
+
+    private static boolean isAfter(OperationChainObject object, OperationChainObjectCursor cursor) {
+        int timeComparison = object.publishedAt().compareTo(cursor.publishedAt());
+        return timeComparison < 0 || timeComparison == 0 && object.id() < cursor.id();
     }
 
     private OperationChainObject withIdentifier(OperationChainObject object) {

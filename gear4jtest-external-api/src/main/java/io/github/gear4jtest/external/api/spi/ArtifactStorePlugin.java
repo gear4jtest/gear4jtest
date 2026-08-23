@@ -12,6 +12,22 @@ public interface ArtifactStorePlugin {
     String type();
 
     /**
+     * Describes the backend-specific properties understood by this plugin.
+     *
+     * <p>
+     * The default remains open for compatibility with third-party plugins. A plugin
+     * should return a closed schema when its property vocabulary is known.
+     * </p>
+     */
+    default ArtifactStorePropertySchema propertySchema() {
+        return ArtifactStorePropertySchema.open();
+    }
+
+    default void validateProperties(Map<String, String> properties) {
+        propertySchema().validate(type(), properties);
+    }
+
+    /**
      * Builds a store from string properties without exposing backend-specific types
      * in the SPI signature.
      */

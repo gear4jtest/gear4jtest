@@ -102,6 +102,17 @@ budget: database startup, host capacity and JDBC driver behavior differ across
 runners. A missing index in the plan is a regression and fails the integration
 test.
 
+### External maintenance keysets
+
+Consistency scans page versions with the exclusive key
+`(published_at, id)` in descending order. The V1 `idx_op_chain_all` index starts
+with `al_id` and then those ordered columns, avoiding offset growth on large
+version histories. Staged-publication reconciliation uses the ascending
+`(staged_at, stage_id)` key and `idx_op_chain_stage_age`; processed rows may be
+deleted without shifting unseen work behind an offset. Both callers also apply
+a finite total-work budget, so an index regression cannot turn one scheduled
+pass into an unbounded sweep.
+
 ### Core execution-history plan qualification
 
 The core JDBC matrix also seeds 20,000 assembly runs and 10,000 station logs in

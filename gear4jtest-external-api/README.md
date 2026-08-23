@@ -110,6 +110,13 @@ the reconciliation pass is idempotent.
 Version listing through `OperationChainObjectRepository` always requires a bounded `PageRequest`; there is no unbounded
 fallback. Custom repository implementations must apply the page before materializing results.
 
+Maintenance scans use keyset methods in addition to ordinary UI-style pages.
+Custom object repositories implement `findAllAfter(...)` ordered by
+`publishedAt DESC, id DESC`; staged repositories implement
+`findStagedAfter(...)` ordered by `stagedAt, stageId`. Consistency and
+reconciliation reports expose `complete()` and `nextCursor()` so applications
+can schedule finite continuation passes.
+
 ## Compiler SPI
 
 `AssemblyLineManager` accepts a `GeneratedSourceCompiler`, so applications can
@@ -261,6 +268,11 @@ distinct entries. New content is rejected at capacity; referenced artifacts are
 never evicted silently. Configure `maxArtifactSizeBytes`, `maxTotalBytes` and
 `maxEntries` on a `MEMORY` store, or use the explicit three-argument constructor,
 when a different finite budget has been reviewed.
+
+Built-in artifact-store plugins publish closed property schemas and reject
+unknown names. This applies to primary and `fallback.N.props.*` configurations.
+Third-party plugins remain open by default; implement `propertySchema()` to opt
+into the same typo detection.
 
 ## Artifact spool confidentiality
 

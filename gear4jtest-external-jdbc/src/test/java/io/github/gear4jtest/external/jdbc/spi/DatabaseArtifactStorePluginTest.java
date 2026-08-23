@@ -169,4 +169,15 @@ class DatabaseArtifactStorePluginTest {
                 .hasMessageContaining("requires JdbcTransactionOperations")
                 .hasMessageContaining("missing");
     }
+
+    @Test
+    void build_shouldRejectUnknownPropertiesBeforeLookingUpResources() {
+        DatabaseArtifactStorePlugin plugin = new DatabaseArtifactStorePlugin();
+
+        assertThatThrownBy(() -> plugin.build(Map.of("dialect", "h2", "datasouce", "primary"), context))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("datasouce")
+                .hasMessageContaining("datasource");
+        verifyNoInteractions(dataSource);
+    }
 }

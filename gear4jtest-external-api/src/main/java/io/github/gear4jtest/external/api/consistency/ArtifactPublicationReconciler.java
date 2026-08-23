@@ -15,6 +15,7 @@ import io.github.gear4jtest.external.api.repository.OperationChainConfigReposito
 import io.github.gear4jtest.external.api.repository.OperationChainNotFoundException;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationStage;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationStageCursor;
 import io.github.gear4jtest.external.api.spi.ArtifactStoreProvider;
 import io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFingerprint;
 
@@ -30,22 +31,37 @@ import io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFinge
  */
 public final class ArtifactPublicationReconciler {
     private static final int DEFAULT_PAGE_SIZE = 250;
+    private static final int DEFAULT_MAX_STAGES_PER_RUN = 10_000;
+    private static final int DEFAULT_MAX_REPORTED_FAILURES = 1_000;
 
     private final OperationChainConfigRepository configRepository;
     private final OperationChainPublicationRepository publicationRepository;
     private final ArtifactStoreProvider storeProvider;
     private final int pageSize;
+    private final int maxStagesPerRun;
+    private final int maxReportedFailures;
 
     public ArtifactPublicationReconciler(OperationChainConfigRepository configRepository,
                                          OperationChainPublicationRepository publicationRepository,
                                          ArtifactStoreProvider storeProvider) {
-        this(configRepository, publicationRepository, storeProvider, DEFAULT_PAGE_SIZE);
+        this(configRepository, publicationRepository, storeProvider, DEFAULT_PAGE_SIZE, DEFAULT_MAX_STAGES_PER_RUN,
+                DEFAULT_MAX_REPORTED_FAILURES);
     }
 
     public ArtifactPublicationReconciler(OperationChainConfigRepository configRepository,
                                          OperationChainPublicationRepository publicationRepository,
                                          ArtifactStoreProvider storeProvider,
                                          int pageSize) {
+        this(configRepository, publicationRepository, storeProvider, pageSize, DEFAULT_MAX_STAGES_PER_RUN,
+                DEFAULT_MAX_REPORTED_FAILURES);
+    }
+
+    public ArtifactPublicationReconciler(OperationChainConfigRepository configRepository,
+                                         OperationChainPublicationRepository publicationRepository,
+                                         ArtifactStoreProvider storeProvider,
+                                         int pageSize,
+                                         int maxStagesPerRun,
+                                         int maxReportedFailures) {
         this.configRepository = Objects.requireNonNull(configRepository, "configRepository must not be null");
         this.publicationRepository = Objects.requireNonNull(publicationRepository,
                                                             "publicationRepository must not be null");
@@ -53,10 +69,18 @@ public final class ArtifactPublicationReconciler {
         if (!publicationRepository.supportsStaging()) {
             throw new IllegalArgumentException("publicationRepository must support staged publication");
         }
-        if (pageSize <= 0) {
-            throw new IllegalArgumentException("pageSize must be > 0");
+        if (pageSize <= 0 || pageSize > PageRequest.MAX_LIMIT) {
+            throw new IllegalArgumentException("pageSize must be between 1 and " + PageRequest.MAX_LIMIT);
+        }
+        if (maxStagesPerRun <= 0) {
+            throw new IllegalArgumentException("maxStagesPerRun must be > 0");
+        }
+        if (maxReportedFailures <= 0) {
+            throw new IllegalArgumentException("maxReportedFailures must be > 0");
         }
         this.pageSize = pageSize;
+        this.maxStagesPerRun = maxStagesPerRun;
+        this.maxReportedFailures = maxReportedFailures;
     }
 
     public Report reconcileOlderThan(Duration minimumAge) {
@@ -68,70 +92,103 @@ public final class ArtifactPublicationReconciler {
     }
 
     public Report reconcileStagedBefore(Instant cutoff) {
+        return reconcileStagedBefore(cutoff, null);
+    }
+
+    /**
+     * Reconciles one bounded pass after an optional continuation cursor. Callers
+     * continuing a pass must reuse the same cutoff.
+     */
+    public Report reconcileStagedBefore(Instant cutoff, OperationChainPublicationStageCursor after) {
         Objects.requireNonNull(cutoff, "cutoff must not be null");
-        List<OperationChainPublicationStage> stages = loadStages(cutoff);
+        int stagesChecked = 0;
         int committed = 0;
         int aborted = 0;
+        int failuresOmitted = 0;
+        boolean complete = false;
+        OperationChainPublicationStageCursor cursor = after;
         List<Failure> failures = new ArrayList<>();
         Map<String, ArtifactStore> storesByFingerprint = new LinkedHashMap<>();
 
         try {
-            for (OperationChainPublicationStage stage : stages) {
-                try {
-                    var config = configRepository.findByAssemblyLineId(stage.object().alId())
-                            .orElseThrow(() -> new OperationChainNotFoundException(
-                                    "Config not found for alId=" + stage.object().alId()));
-                    String currentFingerprint = ArtifactStoreConfigurationFingerprint.from(config);
-                    if (!Objects.equals(currentFingerprint, stage.storeFingerprint())) {
-                        throw new IllegalStateException("Artifact-store configuration changed for alId="
-                                + stage.object().alId() + "; staged publication retained");
-                    }
-                    ArtifactStore store = storesByFingerprint.computeIfAbsent(currentFingerprint,
-                                                                              ignored -> Objects
-                                                                                      .requireNonNull(storeProvider
-                                                                                              .forConfig(config),
-                                                                                                      "storeProvider returned null"));
-                    if (store.exists(stage.object().contentHash())) {
-                        publicationRepository.commit(stage.stageId());
-                        committed++;
-                    } else if (publicationRepository.abortIfUnchanged(stage)) {
-                        aborted++;
-                    }
-                } catch (IOException | RuntimeException exception) {
-                    failures.add(new Failure(stage.stageId(), stage.object().alId(), stage.object().version(),
-                            exception.getMessage(), exception));
+            while (stagesChecked < maxStagesPerRun) {
+                int limit = Math.min(pageSize, maxStagesPerRun - stagesChecked);
+                List<OperationChainPublicationStage> page = publicationRepository.findStagedAfter(cutoff, cursor,
+                                                                                                  limit);
+                if (page.isEmpty()) {
+                    complete = true;
+                    break;
                 }
+                for (OperationChainPublicationStage stage : page) {
+                    stagesChecked++;
+                    cursor = OperationChainPublicationStageCursor.after(stage);
+                    try {
+                        var config = configRepository.findByAssemblyLineId(stage.object().alId())
+                                .orElseThrow(() -> new OperationChainNotFoundException(
+                                        "Config not found for alId=" + stage.object().alId()));
+                        String currentFingerprint = ArtifactStoreConfigurationFingerprint.from(config);
+                        if (!Objects.equals(currentFingerprint, stage.storeFingerprint())) {
+                            throw new IllegalStateException("Artifact-store configuration changed for alId="
+                                    + stage.object().alId() + "; staged publication retained");
+                        }
+                        ArtifactStore store = storesByFingerprint.computeIfAbsent(currentFingerprint,
+                                                                                  ignored -> Objects
+                                                                                          .requireNonNull(storeProvider
+                                                                                                  .forConfig(config),
+                                                                                                          "storeProvider returned null"));
+                        if (store.exists(stage.object().contentHash())) {
+                            publicationRepository.commit(stage.stageId());
+                            committed++;
+                        } else if (publicationRepository.abortIfUnchanged(stage)) {
+                            aborted++;
+                        }
+                    } catch (IOException | RuntimeException exception) {
+                        Failure failure = new Failure(stage.stageId(), stage.object().alId(), stage.object().version(),
+                                exception.getMessage(), exception);
+                        if (failures.size() < maxReportedFailures) {
+                            failures.add(failure);
+                        } else {
+                            failuresOmitted++;
+                        }
+                    }
+                }
+                if (page.size() < limit) {
+                    complete = true;
+                    break;
+                }
+            }
+            if (!complete && publicationRepository.findStagedAfter(cutoff, cursor, 1).isEmpty()) {
+                complete = true;
             }
         } finally {
             storesByFingerprint.values().forEach(storeProvider::release);
         }
-        return new Report(stages.size(), committed, aborted, List.copyOf(failures));
+        return new Report(stagesChecked, committed, aborted, List.copyOf(failures), complete,
+                complete ? null : cursor, failuresOmitted);
     }
 
-    private List<OperationChainPublicationStage> loadStages(Instant cutoff) {
-        List<OperationChainPublicationStage> stages = new ArrayList<>();
-        int offset = 0;
-        while (true) {
-            List<OperationChainPublicationStage> page = publicationRepository.findStagedBefore(cutoff,
-                                                                                               new PageRequest(offset,
-                                                                                                       pageSize));
-            stages.addAll(page);
-            if (page.size() < pageSize) {
-                return List.copyOf(stages);
-            }
-            offset += page.size();
+    public record Report(int stagesChecked,
+                         int committed,
+                         int aborted,
+                         List<Failure> failures,
+                         boolean complete,
+                         OperationChainPublicationStageCursor nextCursor,
+                         int failuresOmitted) {
+        public Report(int stagesChecked, int committed, int aborted, List<Failure> failures) {
+            this(stagesChecked, committed, aborted, failures, true, null, 0);
         }
-    }
 
-    public record Report(int stagesChecked, int committed, int aborted, List<Failure> failures) {
         public Report {
-            if (stagesChecked < 0 || committed < 0 || aborted < 0) {
+            if (stagesChecked < 0 || committed < 0 || aborted < 0 || failuresOmitted < 0) {
                 throw new IllegalArgumentException("reconciliation counts must not be negative");
             }
             if (committed + aborted > stagesChecked) {
                 throw new IllegalArgumentException("resolved stages must not exceed stagesChecked");
             }
             failures = List.copyOf(Objects.requireNonNull(failures, "failures must not be null"));
+            if ((complete && nextCursor != null) || (!complete && nextCursor == null)) {
+                throw new IllegalArgumentException("nextCursor must be present exactly when the report is incomplete");
+            }
         }
 
         /**
@@ -142,7 +199,7 @@ public final class ArtifactPublicationReconciler {
         }
 
         public boolean successful() {
-            return failures.isEmpty();
+            return failures.isEmpty() && failuresOmitted == 0;
         }
 
         /**
@@ -154,7 +211,7 @@ public final class ArtifactPublicationReconciler {
          * </p>
          */
         public boolean fullyReconciled() {
-            return successful() && retained() == 0;
+            return complete && successful() && retained() == 0;
         }
     }
 

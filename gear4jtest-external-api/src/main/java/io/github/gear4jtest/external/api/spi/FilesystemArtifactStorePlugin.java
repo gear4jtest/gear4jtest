@@ -8,13 +8,24 @@ import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.artifact.FilesystemArtifactStore;
 
 public final class FilesystemArtifactStorePlugin implements ArtifactStorePlugin {
+    private static final ArtifactStorePropertySchema PROPERTY_SCHEMA = ArtifactStorePropertySchema.closed(
+                                                                                                          "root",
+                                                                                                          "path",
+                                                                                                          "maxArtifactSizeBytes");
+
     @Override
     public String type() {
         return "FILESYSTEM";
     }
 
     @Override
+    public ArtifactStorePropertySchema propertySchema() {
+        return PROPERTY_SCHEMA;
+    }
+
+    @Override
     public ArtifactStore build(Map<String, String> props, Context ctx) throws IOException {
+        validateProperties(props);
         String root = props == null ? null : props.get("root");
         if (root == null || root.isBlank()) {
             root = props == null ? null : props.get("path");

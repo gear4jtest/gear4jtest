@@ -19,10 +19,12 @@ import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.ExecutionMode;
 import io.github.gear4jtest.external.api.identity.OperationChainIdentityCodec;
 import io.github.gear4jtest.external.api.model.OperationChainObject;
+import io.github.gear4jtest.external.api.repository.OperationChainObjectCursor;
 import io.github.gear4jtest.external.api.repository.OperationChainObjectRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationConflictException;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationRepository;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationStage;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationStageCursor;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationTags;
 import io.github.gear4jtest.external.api.repository.OperationChainRepositoryException;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
@@ -278,8 +280,25 @@ public final class OperationChainObjectRepositoryJdbc
     public List<OperationChainPublicationStage> findStagedBefore(Instant cutoff, PageRequest pageRequest) {
         Objects.requireNonNull(cutoff, "cutoff must not be null");
         Objects.requireNonNull(pageRequest, "pageRequest must not be null");
+        return findStaged(cutoff, null, pageRequest);
+    }
+
+    @Override
+    public List<OperationChainPublicationStage> findStagedAfter(Instant cutoff,
+                                                                OperationChainPublicationStageCursor after,
+                                                                int limit) {
+        Objects.requireNonNull(cutoff, "cutoff must not be null");
+        return findStaged(cutoff, after, PageRequest.first(limit));
+    }
+
+    private List<OperationChainPublicationStage> findStaged(Instant cutoff,
+                                                            OperationChainPublicationStageCursor after,
+                                                            PageRequest pageRequest) {
+        String cursorPredicate = after == null ? ""
+                : " AND (staged_at > ? OR (staged_at = ? AND stage_id > ?))";
         String orderedStagesSql = "SELECT " + STAGE_COLUMNS
-                + " FROM operation_chain_publication_stage WHERE staged_at <= ? ORDER BY staged_at, stage_id";
+                + " FROM operation_chain_publication_stage WHERE staged_at <= ?" + cursorPredicate
+                + " ORDER BY staged_at, stage_id";
         String pagedStagesSql = ExternalRepositorySqlDialect.pagedSql(databaseDialect, orderedStagesSql);
         String sql = "SELECT " + PAGED_STAGE_COLUMNS + ", tag_row.tag AS stage_tag FROM ("
                 + pagedStagesSql + ") staged_page "
@@ -288,7 +307,14 @@ public final class OperationChainObjectRepositoryJdbc
                 + "ORDER BY staged_page.staged_at, staged_page.stage_id, tag_row.tag";
         try (Connection connection = ds.getConnection(); PreparedStatement statement = prepare(connection, sql)) {
             setTimestamp(statement, 1, cutoff);
-            ExternalRepositorySqlDialect.bindPage(databaseDialect, statement, 2, pageRequest);
+            int pageParameterIndex = 2;
+            if (after != null) {
+                setTimestamp(statement, 2, after.stagedAt());
+                setTimestamp(statement, 3, after.stagedAt());
+                statement.setString(4, after.stageId());
+                pageParameterIndex = 5;
+            }
+            ExternalRepositorySqlDialect.bindPage(databaseDialect, statement, pageParameterIndex, pageRequest);
             List<OperationChainPublicationStage> stages = new ArrayList<>();
             OperationChainPublicationStage currentStage = null;
             List<String> currentTags = new ArrayList<>();
@@ -638,6 +664,37 @@ public final class OperationChainObjectRepositoryJdbc
             }
         } catch (SQLException exception) {
             throw repositoryFailure("find operation-chain objects for " + alId, exception);
+        }
+    }
+
+    @Override
+    public List<OperationChainObject> findAllAfter(String alId, OperationChainObjectCursor after, int limit) {
+        PageRequest pageRequest = PageRequest.first(limit);
+        String cursorPredicate = after == null ? ""
+                : " AND (published_at < ? OR (published_at = ? AND id < ?))";
+        String orderedSql = "SELECT " + OBJECT_COLUMNS
+                + " FROM operation_chain_object WHERE al_id=?" + cursorPredicate
+                + " ORDER BY published_at DESC, id DESC";
+        String sql = ExternalRepositorySqlDialect.pagedSql(databaseDialect, orderedSql);
+        try (var connection = ds.getConnection(); var statement = prepare(connection, sql)) {
+            statement.setString(1, alId);
+            int pageParameterIndex = 2;
+            if (after != null) {
+                setTimestamp(statement, 2, after.publishedAt());
+                setTimestamp(statement, 3, after.publishedAt());
+                statement.setLong(4, after.id());
+                pageParameterIndex = 5;
+            }
+            ExternalRepositorySqlDialect.bindPage(databaseDialect, statement, pageParameterIndex, pageRequest);
+            try (var resultSet = statement.executeQuery()) {
+                List<OperationChainObject> list = new ArrayList<>();
+                while (resultSet.next()) {
+                    list.add(map(resultSet));
+                }
+                return List.copyOf(list);
+            }
+        } catch (SQLException exception) {
+            throw repositoryFailure("find operation-chain objects after cursor for " + alId, exception);
         }
     }
 }

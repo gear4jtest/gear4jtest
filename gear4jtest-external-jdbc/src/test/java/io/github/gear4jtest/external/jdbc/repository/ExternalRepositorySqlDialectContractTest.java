@@ -61,7 +61,9 @@ class ExternalRepositorySqlDialectContractTest {
                     .contains("stage_revision")
                     .contains("store_fingerprint")
                     .contains("operation_chain_tag")
-                    .contains("artifact_store");
+                    .contains("artifact_store")
+                    .contains("idx_op_chain_all")
+                    .contains("al_id, published_at DESC, id DESC");
             if (dialect == Gear4jDatabaseDialect.POSTGRESQL) {
                 assertThat(sql)
                         .contains("ON operation_chain_object (al_id, published_at DESC, id DESC)")

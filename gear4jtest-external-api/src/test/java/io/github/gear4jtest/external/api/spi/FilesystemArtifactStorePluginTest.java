@@ -50,4 +50,13 @@ class FilesystemArtifactStorePluginTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("maxArtifactSizeBytes");
     }
+
+    @Test
+    void build_shouldRejectUnknownProperties() {
+        assertThatThrownBy(() -> new FilesystemArtifactStorePlugin()
+                .build(Map.of("root", tempDir.toString(), "maxArtifactSizeByte", "4"), null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxArtifactSizeByte")
+                .hasMessageContaining("maxArtifactSizeBytes");
+    }
 }

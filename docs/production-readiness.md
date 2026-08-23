@@ -207,7 +207,9 @@ cleanup, quota rejections and cleanup failures.
 Because operation-chain artifacts may use non-database backends, no invalid
 global foreign key is installed from `operation_chain_object` to
 `artifact_store`. Schedule `ArtifactConsistencyChecker` for important assembly
-lines and alert when its report is inconsistent.
+lines and alert when its report is inconsistent. A default pass checks at most
+10,000 objects and retains at most 1,000 issues. When `complete()` is false,
+continue from `nextCursor()`; alert separately on `issuesOmitted()`.
 
 External publication now stages metadata before writing an artifact. Schedule
 `ArtifactPublicationReconciler` with a grace period longer than the slowest
@@ -222,6 +224,11 @@ Avoid changing store configuration until old stages have been reconciled or
 explicitly resolved. The generic SPI still cannot enumerate legacy store-only
 objects.
 
+Reconciliation uses `(stagedAt, stageId)` keyset pages and processes at most
+10,000 stages per default pass, retaining at most 1,000 failures. Continue an
+incomplete report from `nextCursor()` with the exact same cutoff. An incomplete
+successful slice is not `fullyReconciled()`.
+
 Exercise restart recovery before production: stage two unique publications,
 persist the expected hash for only one, reconstruct the configuration,
 publication and artifact-store objects, then run reconciliation after the grace
@@ -234,6 +241,12 @@ Artifact-store booleans accept only `true` or `false`; replication and
 self-healing require at least one complete `fallback.N.type` group. Treat a
 startup rejection as a configuration defect rather than silently disabling the
 requested durability behavior.
+
+Built-in MEMORY, FILESYSTEM and DATABASE stores reject unknown properties.
+Provider-level keys and every `fallback.N.props.*` child are validated against
+the relevant schema. Third-party plugins remain open by default and should
+declare a closed `propertySchema()` when their configuration vocabulary is
+stable.
 
 `mode.write=ASYNC_FALLBACKS` guarantees only that a successful return represents
 an accepted primary write. Fallback scheduling and writes are best effort:

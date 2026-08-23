@@ -10,7 +10,9 @@ import javax.sql.DataSource;
 
 import io.github.gear4jtest.core.persistence.PageRequest;
 import io.github.gear4jtest.external.api.ExecutionMode;
+import io.github.gear4jtest.external.api.repository.OperationChainObjectCursor;
 import io.github.gear4jtest.external.api.repository.OperationChainPublicationStage;
+import io.github.gear4jtest.external.api.repository.OperationChainPublicationStageCursor;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import org.junit.jupiter.api.Test;
 
@@ -75,6 +77,40 @@ class OperationChainObjectRepositoryJdbcTest {
                 .isThrownBy(() -> repository.findAll("pipeline", null))
                 .withMessage("pageRequest must not be null");
         verifyNoInteractions(dataSource);
+    }
+
+    @Test
+    void findAllAfter_shouldBindAStableKeysetCursorBeforeThePageLimit() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        ResultSet resultSet = mock(ResultSet.class);
+        String[] preparedSql = new String[1];
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenAnswer(invocation -> {
+            preparedSql[0] = invocation.getArgument(0);
+            return statement;
+        });
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(false);
+        OperationChainObjectRepositoryJdbc repository = OperationChainObjectRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.H2)
+                .build();
+        Instant publishedAt = Instant.parse("2026-01-02T00:00:00Z");
+
+        var result = repository.findAllAfter("pipeline", new OperationChainObjectCursor(publishedAt, 42L), 10);
+
+        assertThat(result).isEmpty();
+        assertThat(preparedSql[0])
+                .contains("published_at < ? OR (published_at = ? AND id < ?)")
+                .contains("ORDER BY published_at DESC, id DESC LIMIT ? OFFSET ?");
+        verify(statement).setString(1, "pipeline");
+        verify(statement).setTimestamp(eq(2), eq(Timestamp.from(publishedAt)), any(Calendar.class));
+        verify(statement).setTimestamp(eq(3), eq(Timestamp.from(publishedAt)), any(Calendar.class));
+        verify(statement).setLong(4, 42L);
+        verify(statement).setInt(5, 10);
+        verify(statement).setInt(6, 0);
     }
 
     @Test
@@ -173,5 +209,40 @@ class OperationChainObjectRepositoryJdbcTest {
         verify(statement, times(1)).executeQuery();
         verify(statement).setInt(2, 10);
         verify(statement).setInt(3, 5);
+    }
+
+    @Test
+    void findStagedAfter_shouldBindTheAgeAndIdentifierCursor() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        ResultSet resultSet = mock(ResultSet.class);
+        String[] preparedSql = new String[1];
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenAnswer(invocation -> {
+            preparedSql[0] = invocation.getArgument(0);
+            return statement;
+        });
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(false);
+        OperationChainObjectRepositoryJdbc repository = OperationChainObjectRepositoryJdbc.builder()
+                .dataSource(dataSource)
+                .databaseDialect(Gear4jDatabaseDialect.H2)
+                .build();
+        Instant cutoff = Instant.parse("2026-01-04T00:00:00Z");
+        Instant stagedAt = Instant.parse("2026-01-03T00:00:00Z");
+
+        var result = repository.findStagedAfter(cutoff,
+                                                new OperationChainPublicationStageCursor(stagedAt, "stage-a"), 10);
+
+        assertThat(result).isEmpty();
+        assertThat(preparedSql[0])
+                .contains("staged_at > ? OR (staged_at = ? AND stage_id > ?)")
+                .contains("ORDER BY staged_at, stage_id LIMIT ? OFFSET ?");
+        verify(statement).setTimestamp(eq(2), eq(Timestamp.from(stagedAt)), any(Calendar.class));
+        verify(statement).setTimestamp(eq(3), eq(Timestamp.from(stagedAt)), any(Calendar.class));
+        verify(statement).setString(4, "stage-a");
+        verify(statement).setInt(5, 10);
+        verify(statement).setInt(6, 0);
     }
 }

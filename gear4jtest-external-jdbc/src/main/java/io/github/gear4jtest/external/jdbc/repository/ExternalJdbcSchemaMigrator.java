@@ -31,7 +31,8 @@ public final class ExternalJdbcSchemaMigrator {
                                  "content_hash", "size_bytes", "mime_type", "created_at", "created_by",
                                  "published_at")
                 .requiredColumns("operation_chain_tag", "al_id", "tag")
-                .requiredIndexes("operation_chain_object", "idx_op_chain_latest_run", "idx_op_chain_by_hash")
+                .requiredIndexes("operation_chain_object", "idx_op_chain_latest_run", "idx_op_chain_all",
+                                 "idx_op_chain_by_hash")
                 .requiredIndexes("operation_chain_tag", "idx_tag_value")
                 .build();
     }

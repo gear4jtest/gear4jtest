@@ -18,11 +18,48 @@ import io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFinge
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ArtifactPublicationReconcilerTest {
+    @Test
+    void reconcile_shouldBoundOnePassAndContinueWithoutSkippingDeletedStages() throws Exception {
+        InMemoryOperationChainRepository repository = new InMemoryOperationChainRepository();
+        OperationChainObject first = object("line-1", "1".repeat(64));
+        OperationChainObject second = object("line-2", "2".repeat(64));
+        OperationChainObject third = object("line-3", "3".repeat(64));
+        for (OperationChainObject object : List.of(first, second, third)) {
+            repository.stage(object, List.of(), ArtifactStoreConfigurationFingerprint.from(config(object.alId())));
+        }
+        OperationChainConfigRepository configRepository = mock(OperationChainConfigRepository.class);
+        when(configRepository.findByAssemblyLineId(any()))
+                .thenAnswer(invocation -> Optional.of(config(invocation.getArgument(0))));
+        ArtifactStoreProvider storeProvider = mock(ArtifactStoreProvider.class);
+        ArtifactStore store = mock(ArtifactStore.class);
+        when(storeProvider.forConfig(any())).thenReturn(store);
+        ArtifactPublicationReconciler reconciler = new ArtifactPublicationReconciler(configRepository, repository,
+                storeProvider, 1, 2, 10);
+        Instant cutoff = Instant.now().plusSeconds(1);
+
+        ArtifactPublicationReconciler.Report firstPass = reconciler.reconcileStagedBefore(cutoff);
+        ArtifactPublicationReconciler.Report secondPass = reconciler.reconcileStagedBefore(cutoff,
+                                                                                           firstPass.nextCursor());
+
+        assertThat(firstPass.stagesChecked()).isEqualTo(2);
+        assertThat(firstPass.aborted()).isEqualTo(2);
+        assertThat(firstPass.complete()).isFalse();
+        assertThat(firstPass.nextCursor()).isNotNull();
+        assertThat(secondPass.stagesChecked()).isEqualTo(1);
+        assertThat(secondPass.aborted()).isEqualTo(1);
+        assertThat(secondPass.complete()).isTrue();
+        assertThat(secondPass.nextCursor()).isNull();
+        assertThat(repository.findStagedBefore(cutoff,
+                                               io.github.gear4jtest.core.persistence.PageRequest.first(10)))
+                .isEmpty();
+    }
+
     @Test
     void reconcile_shouldCommitStagesWhoseArtifactExistsAndAbortMissingOnes() throws Exception {
         // Given

@@ -32,4 +32,21 @@ public interface OperationChainObjectRepository {
      * @return the requested page in reverse publication order
      */
     List<OperationChainObject> findAll(String assemblyLineId, PageRequest pageRequest);
+
+    /**
+     * Finds the next bounded keyset page in reverse publication order.
+     *
+     * @param assemblyLineId assembly-line identifier whose versions are listed
+     * @param after          exclusive continuation key, or {@code null} for the
+     *                       first page
+     * @param limit          maximum number of rows, between 1 and
+     *                       {@link PageRequest#MAX_LIMIT}
+     * @return a stable page ordered by {@code published_at DESC, id DESC}
+     */
+    default List<OperationChainObject> findAllAfter(String assemblyLineId,
+                                                    OperationChainObjectCursor after,
+                                                    int limit) {
+        throw new UnsupportedOperationException(
+                "Keyset operation-chain object lookup is not supported by this repository");
+    }
 }

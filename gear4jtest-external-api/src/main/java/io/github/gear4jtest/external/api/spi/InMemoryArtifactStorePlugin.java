@@ -6,13 +6,24 @@ import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.artifact.InMemoryArtifactStore;
 
 public final class InMemoryArtifactStorePlugin implements ArtifactStorePlugin {
+    private static final ArtifactStorePropertySchema PROPERTY_SCHEMA = ArtifactStorePropertySchema.closed(
+                                                                                                          "maxArtifactSizeBytes",
+                                                                                                          "maxTotalBytes",
+                                                                                                          "maxEntries");
+
     @Override
     public String type() {
         return "MEMORY";
     }
 
     @Override
+    public ArtifactStorePropertySchema propertySchema() {
+        return PROPERTY_SCHEMA;
+    }
+
+    @Override
     public ArtifactStore build(Map<String, String> props, Context ctx) {
+        validateProperties(props);
         return new InMemoryArtifactStore(
                 parseLong(props, "maxArtifactSizeBytes", ArtifactStore.DEFAULT_MAX_ARTIFACT_SIZE_BYTES),
                 parseLong(props, "maxTotalBytes", InMemoryArtifactStore.DEFAULT_MAX_TOTAL_BYTES),

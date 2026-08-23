@@ -106,6 +106,11 @@ Java compilation is only one part of the upgrade. Before deployment:
 - review iterator workloads above 100,000 items: `IteratorStation` now enforces
   that safe default; configure `maxItems(...)` explicitly or use
   `UNLIMITED_ITEMS` only when an external bound is guaranteed.
+- implement `OperationChainObjectRepository.findAllAfter(...)` and, for staged
+  repositories, `OperationChainPublicationRepository.findStagedAfter(...)` with
+  the documented stable key order;
+- remove unknown built-in artifact-store keys: MEMORY, FILESYSTEM and DATABASE
+  configurations now fail closed instead of ignoring typos.
 
 See the [compatibility policy](../compatibility-policy.md),
 [JDBC migration architecture](../architecture/jdbc-migrations.md),

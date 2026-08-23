@@ -54,7 +54,7 @@ class DefaultArtifactStoreProviderTest {
                 new ArtifactStoreResolver(getClass().getClassLoader()), null, Runnable::run);
         OperationChainConfig config = new OperationChainConfig("pipeline", false, StoreType.MEMORY,
                 Map.of("fallback.2.type", "MEMORY",
-                       "fallback.2.props.ignored", "value",
+                       "fallback.2.props.maxEntries", "100",
                        "fallback.1.type", "MEMORY",
                        "verifyOnRead", "true",
                        "selfHealing", "true"));
@@ -62,6 +62,23 @@ class DefaultArtifactStoreProviderTest {
         ArtifactStore store = provider.forConfig(config);
 
         assertThat(store).isInstanceOf(CompositeArtifactStore.class);
+    }
+
+    @Test
+    void forConfig_shouldRejectUnknownPrimaryAndFallbackProperties() {
+        DefaultArtifactStoreProvider provider = new DefaultArtifactStoreProvider(
+                new ArtifactStoreResolver(getClass().getClassLoader()), null, Runnable::run);
+
+        assertThatThrownBy(() -> provider.forConfig(new OperationChainConfig("pipeline", false, StoreType.MEMORY,
+                Map.of("maxEntry", "10"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxEntry")
+                .hasMessageContaining("maxEntries");
+        assertThatThrownBy(() -> provider.forConfig(new OperationChainConfig("pipeline", false, StoreType.MEMORY,
+                Map.of("fallback.1.type", "MEMORY", "fallback.1.props.maxEntry", "10"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxEntry")
+                .hasMessageContaining("maxEntries");
     }
 
     @Test

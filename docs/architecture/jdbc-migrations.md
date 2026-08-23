@@ -116,6 +116,12 @@ PostgreSQL uses a partial RUN-only index ordered by `al_id`, `published_at DESC`
 and `id DESC`. H2, MySQL, MariaDB and Oracle use `al_id`, `publication_mode`,
 `published_at DESC` and `id DESC`.
 
+The same unreleased V1 schema also creates `idx_op_chain_all` on `al_id`,
+`published_at DESC`, `id DESC` for keyset consistency scans. Publication-stage
+maintenance uses `idx_op_chain_stage_age` on `staged_at`, `stage_id`. These are
+V1 changes because no public Gear4J release exists; no compatibility V2
+migration is carried for a schema that has never been released.
+
 ## Dedicated Flyway instance for Gear4J
 
 A future Spring Boot starter enhancement may expose a dedicated Gear4J Flyway

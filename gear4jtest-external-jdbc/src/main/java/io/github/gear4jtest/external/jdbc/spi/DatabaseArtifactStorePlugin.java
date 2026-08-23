@@ -10,18 +10,36 @@ import javax.sql.DataSource;
 import io.github.gear4jtest.external.api.artifact.ArtifactSpoolPolicy;
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.spi.ArtifactStorePlugin;
+import io.github.gear4jtest.external.api.spi.ArtifactStorePropertySchema;
 import io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStore;
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperations;
 
 public final class DatabaseArtifactStorePlugin implements ArtifactStorePlugin {
+    private static final ArtifactStorePropertySchema PROPERTY_SCHEMA = ArtifactStorePropertySchema.closed(
+                                                                                                          "datasource",
+                                                                                                          "table",
+                                                                                                          "dialect",
+                                                                                                          "maxArtifactSizeBytes",
+                                                                                                          "spoolDirectory",
+                                                                                                          "spoolMaxBytes",
+                                                                                                          "spoolStaleFileAge",
+                                                                                                          "requirePrivatePermissions",
+                                                                                                          "transactionOperations");
+
     @Override
     public String type() {
         return "DATABASE";
     }
 
     @Override
+    public ArtifactStorePropertySchema propertySchema() {
+        return PROPERTY_SCHEMA;
+    }
+
+    @Override
     public ArtifactStore build(Map<String, String> props, Context ctx) {
+        validateProperties(props);
         String dataSourceKey = props == null ? "datasource.default"
                 : props.getOrDefault("datasource", "datasource.default");
         Object candidate = ctx.lookup(dataSourceKey);

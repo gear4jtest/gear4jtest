@@ -17,9 +17,8 @@ public final class ArtifactStoreResolver {
     }
 
     public ArtifactStore resolve(String type, Map<String, String> props, ArtifactStorePlugin.Context ctx) {
-        var p = byType.get(type.toUpperCase(Locale.ROOT));
-        if (p == null)
-            throw new IllegalArgumentException("Unknown store type: " + type);
+        var p = plugin(type);
+        p.validateProperties(props);
         try {
             return p.build(props, ctx);
         } catch (Exception e) {
@@ -29,5 +28,20 @@ public final class ArtifactStoreResolver {
 
     public Set<String> availableTypes() {
         return Set.copyOf(byType.keySet());
+    }
+
+    public ArtifactStorePropertySchema propertySchema(String type) {
+        return plugin(type).propertySchema();
+    }
+
+    private ArtifactStorePlugin plugin(String type) {
+        if (type == null || type.isBlank()) {
+            throw new IllegalArgumentException("Store type must not be blank");
+        }
+        ArtifactStorePlugin plugin = byType.get(type.toUpperCase(Locale.ROOT));
+        if (plugin == null) {
+            throw new IllegalArgumentException("Unknown store type: " + type);
+        }
+        return plugin;
     }
 }

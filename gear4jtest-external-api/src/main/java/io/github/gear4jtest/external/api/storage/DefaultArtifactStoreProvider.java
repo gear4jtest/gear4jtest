@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
@@ -39,6 +41,12 @@ import io.github.gear4jtest.external.api.spi.ArtifactStoreResolver;
  * </p>
  */
 public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider, AutoCloseable {
+    private static final Set<String> PROVIDER_PROPERTIES = Set.of(
+                                                                  "mode.write", "mode.read", "verifyOnRead",
+                                                                  "selfHealing", "verificationMaxArtifactSizeBytes",
+                                                                  "spoolDirectory", "spoolMaxBytes",
+                                                                  "spoolStaleFileAge", "requirePrivatePermissions");
+
     private final ArtifactStoreResolver resolver;
     private final ArtifactStorePlugin.Context ctx;
     private final Executor asyncExec;
@@ -207,6 +215,7 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
 
     private ArtifactStore buildStore(OperationChainConfig cfg) {
         Map<String, String> props = cfg.storeProps();
+        validateTopLevelProperties(cfg.storeType().name(), props);
 
         CompositeArtifactStore.WriteMode writeMode = parseWriteMode(props.get("mode.write"));
         CompositeArtifactStore.ReadMode readMode = parseReadMode(props.get("mode.read"));
@@ -237,7 +246,7 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
         List<ArtifactStore> fallbacks = List.of();
         try {
             // Primary store type declared by the pipeline configuration.
-            primary = resolver.resolve(cfg.storeType().name(), props, ctx);
+            primary = resolver.resolve(cfg.storeType().name(), backendProperties(cfg.storeType().name(), props), ctx);
 
             // Numbered fallback stores: fallback.N.type and fallback.N.props.*
             fallbacks = buildFallbacks(props);
@@ -275,6 +284,35 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
                 fallback.close();
             }
         }
+    }
+
+    private void validateTopLevelProperties(String storeType, Map<String, String> properties) {
+        var schema = resolver.propertySchema(storeType);
+        if (schema.allowsUnknownProperties()) {
+            return;
+        }
+        var supported = schema.supportedProperties();
+        List<String> unknown = properties.keySet().stream()
+                .filter(name -> !name.startsWith("fallback."))
+                .filter(name -> !PROVIDER_PROPERTIES.contains(name))
+                .filter(name -> !supported.contains(name))
+                .sorted()
+                .toList();
+        if (!unknown.isEmpty()) {
+            Set<String> accepted = new TreeSet<>(PROVIDER_PROPERTIES);
+            accepted.addAll(supported);
+            throw new IllegalArgumentException("Unsupported " + storeType + " artifact store properties: " + unknown
+                    + ". Supported properties: " + accepted);
+        }
+    }
+
+    private Map<String, String> backendProperties(String storeType, Map<String, String> properties) {
+        var schema = resolver.propertySchema(storeType);
+        return properties.entrySet().stream()
+                .filter(entry -> !entry.getKey().startsWith("fallback."))
+                .filter(entry -> schema.supportedProperties().contains(entry.getKey())
+                        || (schema.allowsUnknownProperties() && !PROVIDER_PROPERTIES.contains(entry.getKey())))
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private record StoreConfiguration(String type, Map<String, String> properties) {
