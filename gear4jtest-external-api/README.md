@@ -60,6 +60,7 @@ Typical flow:
 | `GeneratedLoadingStats`            | Complete-load outcomes, integrity, phase duration/failure, timeout and saturation counters. |
 | `GeneratedLoadingPhase`            | Finite artifact/translation/compilation/classloading/construction/injection phases. |
 | `GeneratedLoadingPhaseStats`       | Attempts, failures and cumulative/maximum duration for one loading phase.           |
+| `ArtifactStoreResolutionStats`     | Bounded resolver occupancy, churn and provider-lease release counters.              |
 | `JavaxToolsGeneratedSourceCompiler` | Default compiler when the runtime provides the JDK `javax.tools.JavaCompiler`.    |
 | `GeneratedSourceCompilers.jdt(...)` | Selects the internal Eclipse JDT fallback for runtimes without `jdk.compiler`.   |
 | `ClassLoaderRegistry`              | Tracks generated classloaders and aliases.                                        |
@@ -215,6 +216,11 @@ container. `AssemblyLineManager.loadingStats()` exposes complete-load outcomes,
 single-flight joins, saturation, artifact-integrity failures and finite
 per-phase attempts/failures/durations for artifact reads, translation,
 compilation, class loading, construction and injection.
+
+`AssemblyLineManager.storeResolutionStats()` exposes bounded cache occupancy,
+hits/misses, configuration replacements, LRU evictions, explicit invalidations
+and final provider-lease releases. The snapshot does not expose assembly-line
+identifiers, store ids or configuration values.
 
 `AssemblyLineManager` owns both loading and compilation workers and implements
 `AutoCloseable`. Long-lived applications must close it during shutdown; tests and

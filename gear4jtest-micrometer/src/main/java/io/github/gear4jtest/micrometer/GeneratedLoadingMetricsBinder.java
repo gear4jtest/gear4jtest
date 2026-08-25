@@ -23,6 +23,7 @@ public final class GeneratedLoadingMetricsBinder {
         Objects.requireNonNull(manager, "manager must not be null");
         bindLoading(meterRegistry, manager);
         bindCompilation(meterRegistry, manager);
+        bindStoreResolution(meterRegistry, manager);
     }
 
     private static void bindLoading(MeterRegistry meterRegistry, AssemblyLineManager manager) {
@@ -136,6 +137,42 @@ public final class GeneratedLoadingMetricsBinder {
         registerGauge(meterRegistry, manager, "gear4j.generated.compilation.shutdown",
                       "Whether the generated-compilation runtime is shut down",
                       value -> value.compilationStats().shutdown() ? 1.0d : 0.0d);
+    }
+
+    private static void bindStoreResolution(MeterRegistry meterRegistry, AssemblyLineManager manager) {
+        registerCounter(meterRegistry, manager, "gear4j.artifacts.store.resolver.requests",
+                        "Artifact-store resolution requests by finite cache result",
+                        value -> value.storeResolutionStats().cacheHits(), "result", "hit");
+        registerCounter(meterRegistry, manager, "gear4j.artifacts.store.resolver.requests",
+                        "Artifact-store resolution requests by finite cache result",
+                        value -> value.storeResolutionStats().cacheMisses(), "result", "miss");
+        registerCounter(meterRegistry, manager, "gear4j.artifacts.store.resolver.installations",
+                        "Artifact-store resolver entries installed after provider acquisition",
+                        value -> value.storeResolutionStats().installedEntries());
+        registerCounter(meterRegistry, manager, "gear4j.artifacts.store.resolver.replacements",
+                        "Artifact-store resolver entries replaced after configuration changes",
+                        value -> value.storeResolutionStats().replacedEntries());
+        registerCounter(meterRegistry, manager, "gear4j.artifacts.store.resolver.evictions",
+                        "Artifact-store resolver entries evicted by the cache capacity",
+                        value -> value.storeResolutionStats().evictedEntries());
+        registerCounter(meterRegistry, manager, "gear4j.artifacts.store.resolver.invalidations",
+                        "Artifact-store resolver entries explicitly invalidated",
+                        value -> value.storeResolutionStats().invalidatedEntries());
+        registerCounter(meterRegistry, manager, "gear4j.artifacts.store.resolver.lease.releases",
+                        "Final resolver references released to the artifact-store provider",
+                        value -> value.storeResolutionStats().releasedStoreLeases());
+        registerGauge(meterRegistry, manager, "gear4j.artifacts.store.resolver.cache.entries",
+                      "Assembly-line store entries retained by the bounded resolver cache",
+                      value -> value.storeResolutionStats().cachedAssemblyLines());
+        registerGauge(meterRegistry, manager, "gear4j.artifacts.store.resolver.cache.capacity",
+                      "Maximum assembly-line entries retained by the store resolver",
+                      value -> value.storeResolutionStats().maxCachedAssemblyLines());
+        registerGauge(meterRegistry, manager, "gear4j.artifacts.store.resolver.stores",
+                      "Distinct artifact-store identities retained by the resolver",
+                      value -> value.storeResolutionStats().distinctStores());
+        registerGauge(meterRegistry, manager, "gear4j.artifacts.store.resolver.shutdown",
+                      "Whether the artifact-store resolver is shut down",
+                      value -> value.storeResolutionStats().shutdown() ? 1.0d : 0.0d);
     }
 
     private static void registerLoadingOutcome(MeterRegistry meterRegistry,

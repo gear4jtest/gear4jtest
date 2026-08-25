@@ -135,17 +135,16 @@ class EventManagerTest {
         CountDownLatch releaseFirstReaction = new CountDownLatch(1);
         AtomicBoolean secondReactionRan = new AtomicBoolean(false);
 
-        ThreadPoolExecutor sharedExecutor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>());
+        CancellationTrackingExecutor reactionExecutor = new CancellationTrackingExecutor(2);
 
         EventHandlingDefinition definition = EventHandlingDefinition.builder()
                 .subscription(EventSubscription.on(Event.class, event -> {
                     firstReactionStarted.countDown();
-                    assertThat(releaseFirstReaction.await(2, TimeUnit.SECONDS)).isTrue();
+                    awaitIgnoringInterruption(releaseFirstReaction);
                 }))
                 .subscription(EventSubscription.on(Event.class, event -> secondReactionRan.set(true)))
                 .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
-                        .sharedReactionExecutor(sharedExecutor)
+                        .reactionExecutorFactory(() -> reactionExecutor)
                         .shutdownMode(EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.CANCEL_PENDING_TASKS)
                         .shutdownTimeout(Duration.ofSeconds(2)).build())
                 .build();
@@ -155,22 +154,14 @@ class EventManagerTest {
             manager.publish(new Event("pipe", UUID.randomUUID(), "CANCEL"));
 
             assertThat(firstReactionStarted.await(2, TimeUnit.SECONDS)).isTrue();
-            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
-            while (manager.snapshotStats().submittedReactions() < 2 && System.nanoTime() < deadline) {
-                Thread.sleep(10);
-            }
+            assertThat(reactionExecutor.submissionsObserved.await(2, TimeUnit.SECONDS)).isTrue();
             assertThat(manager.snapshotStats().submittedReactions()).isEqualTo(2);
 
             CompletableFuture<EventManager.ShutdownHandle> shutdown = CompletableFuture.supplyAsync(manager::shutdown);
             try {
-                // Wait until shutdown has actually marked the queued task as dropped before
-                // releasing the running one.
-                // Otherwise the single-thread executor may legitimately run the second reaction
-                // first.
-                deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
-                while (manager.snapshotStats().droppedReactions() < 1 && System.nanoTime() < deadline) {
-                    Thread.sleep(10);
-                }
+                // Owned-executor shutdownNow happens after pending reactions are marked as
+                // dropped, so this is a causal synchronization point for the assertion.
+                assertThat(reactionExecutor.shutdownNowInitiated.await(2, TimeUnit.SECONDS)).isTrue();
                 assertThat(manager.snapshotStats().droppedReactions()).isEqualTo(1);
             } finally {
                 releaseFirstReaction.countDown();
@@ -185,7 +176,7 @@ class EventManagerTest {
         } finally {
             releaseFirstReaction.countDown();
             manager.shutdown();
-            sharedExecutor.shutdownNow();
+            reactionExecutor.shutdownNow();
         }
     }
 
@@ -408,6 +399,42 @@ class EventManagerTest {
 
         private long lastAwaitTerminationNanos() {
             return lastAwaitTerminationNanos.get();
+        }
+    }
+
+    private static void awaitIgnoringInterruption(CountDownLatch latch) {
+        boolean interrupted = false;
+        while (latch.getCount() > 0L) {
+            try {
+                latch.await();
+            } catch (InterruptedException ignored) {
+                interrupted = true;
+            }
+        }
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private static final class CancellationTrackingExecutor extends ThreadPoolExecutor {
+        private final CountDownLatch submissionsObserved;
+        private final CountDownLatch shutdownNowInitiated = new CountDownLatch(1);
+
+        private CancellationTrackingExecutor(int expectedSubmissions) {
+            super(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+            this.submissionsObserved = new CountDownLatch(expectedSubmissions);
+        }
+
+        @Override
+        public void execute(Runnable command) {
+            super.execute(command);
+            submissionsObserved.countDown();
+        }
+
+        @Override
+        public List<Runnable> shutdownNow() {
+            shutdownNowInitiated.countDown();
+            return super.shutdownNow();
         }
     }
 

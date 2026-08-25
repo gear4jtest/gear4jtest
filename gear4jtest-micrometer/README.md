@@ -86,6 +86,17 @@ gear4j.generated.compilation.executor.active
 gear4j.generated.compilation.executor.queued
 gear4j.generated.compilation.shutdown
 
+gear4j.artifacts.store.resolver.requests{result}
+gear4j.artifacts.store.resolver.installations
+gear4j.artifacts.store.resolver.replacements
+gear4j.artifacts.store.resolver.evictions
+gear4j.artifacts.store.resolver.invalidations
+gear4j.artifacts.store.resolver.lease.releases
+gear4j.artifacts.store.resolver.cache.entries
+gear4j.artifacts.store.resolver.cache.capacity
+gear4j.artifacts.store.resolver.stores
+gear4j.artifacts.store.resolver.shutdown
+
 gear4j.generated.classloaders.cached
 gear4j.generated.classloaders.capacity
 gear4j.generated.classloaders.protected
@@ -104,6 +115,7 @@ gear4j.artifacts.store.cleanup.failures
 gear4j.artifacts.spool.files
 gear4j.artifacts.spool.bytes
 gear4j.artifacts.spool.capacity.bytes
+gear4j.artifacts.spool.instances
 gear4j.artifacts.spool.stale.files.deleted
 gear4j.artifacts.spool.stale.bytes.deleted
 gear4j.artifacts.spool.quota.rejections

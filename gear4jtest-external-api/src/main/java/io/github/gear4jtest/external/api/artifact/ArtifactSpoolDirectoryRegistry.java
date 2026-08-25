@@ -184,7 +184,7 @@ final class ArtifactSpoolDirectoryRegistry {
 
         synchronized ArtifactSpoolStats snapshotStats() {
             return new ArtifactSpoolStats(sizesByFile.size(), currentBytes, maxBytes, staleFilesDeleted,
-                    staleBytesDeleted, quotaRejections, cleanupFailures);
+                    staleBytesDeleted, quotaRejections, cleanupFailures, owners.size());
         }
 
         synchronized void recordCleanupFailure() {

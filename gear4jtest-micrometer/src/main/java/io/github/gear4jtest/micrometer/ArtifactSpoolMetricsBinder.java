@@ -27,6 +27,9 @@ public final class ArtifactSpoolMetricsBinder {
         registerGauge(meterRegistry, monitor, "gear4j.artifacts.spool.capacity.bytes",
                       "Configured hard byte quota of the private artifact spool",
                       value -> value.snapshotSpoolStats().maxBytes());
+        registerGauge(meterRegistry, monitor, "gear4j.artifacts.spool.instances",
+                      "Live JVM-local spool instances sharing the directory-scoped quota",
+                      value -> value.snapshotSpoolStats().activeInstances());
         registerCounter(meterRegistry, monitor, "gear4j.artifacts.spool.stale.files.deleted",
                         "Stale temporary artifact files deleted from the private spool",
                         value -> value.snapshotSpoolStats().staleFilesDeleted());

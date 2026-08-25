@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -30,21 +31,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, unit = TimeUnit.SECONDS)
 class AssemblyLineDetachAndDrainIT {
-    private static void awaitRegistryRemoval(ExecutionContextRegistry registry, UUID executionId)
-            throws InterruptedException {
-        long deadline = System.currentTimeMillis() + 2_000L;
-        while (System.currentTimeMillis() < deadline) {
-            if (registry.find(executionId) == null) {
-                return;
-            }
-            Thread.sleep(25L);
-        }
-    }
-
     @Test
     void execute_shouldKeepExecutionContextRegisteredUntilDetachedDrainCompletes() throws Exception {
         CountDownLatch reactionStarted = new CountDownLatch(1);
         CountDownLatch releaseReaction = new CountDownLatch(1);
+        ExecutorService reactionExecutor = Executors.newSingleThreadExecutor();
         ExecutionContextRegistry registry = new ExecutionContextRegistry();
 
         AssemblyLine<String, Integer> pipeline = AssemblyLines.<String>createAssemblyLine("detach-drain")
@@ -54,7 +45,7 @@ class AssemblyLineDetachAndDrainIT {
                             assertThat(releaseReaction.await(2, TimeUnit.SECONDS)).isTrue();
                         }))
                         .runtimeConfiguration(EventHandlingDefinition.RuntimeConfiguration.builder()
-                                .reactionExecutorFactory(Executors::newSingleThreadExecutor)
+                                .sharedReactionExecutor(reactionExecutor)
                                 .shutdownTimeout(Duration.ofSeconds(2))
                                 .shutdownMode(EventHandlingDefinition.RuntimeConfiguration.ShutdownMode.DETACH_AND_DRAIN)
                                 .build())
@@ -68,17 +59,23 @@ class AssemblyLineDetachAndDrainIT {
                 .resourceFactory(new SingleResourceFactory(new LengthOperator()))
                 .extensionResolver(new RuntimeExtensionResolver(List.of())).executionContextRegistry(registry).build();
 
-        ExecutionResult<Integer> result = engine.execute(pipeline, RunRequest.builder().input("abcd").build());
-        UUID executionId = result.getExecution().getId();
+        try {
+            ExecutionResult<Integer> result = engine.execute(pipeline, RunRequest.builder().input("abcd").build());
+            UUID executionId = result.getExecution().getId();
 
-        assertThat(result.isSuccess()).isTrue();
-        assertThat(result.getResult()).isEqualTo(4);
-        assertThat(reactionStarted.await(2, TimeUnit.SECONDS)).isTrue();
-        assertThat(registry.find(executionId)).isNotNull();
+            assertThat(result.isSuccess()).isTrue();
+            assertThat(result.getResult()).isEqualTo(4);
+            assertThat(reactionStarted.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(registry.find(executionId)).isNotNull();
 
-        releaseReaction.countDown();
-        awaitRegistryRemoval(registry, executionId);
-        assertThat(registry.find(executionId)).isNull();
+            releaseReaction.countDown();
+            reactionExecutor.submit(() -> {
+            }).get(2, TimeUnit.SECONDS);
+            assertThat(registry.find(executionId)).isNull();
+        } finally {
+            releaseReaction.countDown();
+            reactionExecutor.shutdownNow();
+        }
     }
 
     static final class LengthOperator implements Operator<String, Integer> {

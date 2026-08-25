@@ -34,7 +34,7 @@ class AssemblyLineEngineWorkerConcurrencyDefaultTest {
     @Test
     void defaultWorkerConcurrency_shouldUseProcessWideLockAcrossIndependentEngines() throws Exception {
         // Given
-        SharedStatefulOperator.reset();
+        SharedStatefulOperator.reset(2);
         CountDownLatch start = new CountDownLatch(1);
         AssemblyLine<String, String> assemblyLine = AssemblyLines.<String>createAssemblyLine("default-lock")
                 .then(processingOperation("stateful", SharedStatefulOperator.class).build())
@@ -85,6 +85,7 @@ class AssemblyLineEngineWorkerConcurrencyDefaultTest {
         @Override
         public <T> T getResource(Class<T> clazz) {
             if (clazz == SharedStatefulOperator.class) {
+                SharedStatefulOperator.resourceResolved();
                 return clazz.cast(SharedStatefulOperator.INSTANCE);
             }
             throw new IllegalArgumentException("Unsupported resource type: " + clazz.getName());
@@ -97,14 +98,20 @@ class AssemblyLineEngineWorkerConcurrencyDefaultTest {
         private static final AtomicInteger INVOCATIONS = new AtomicInteger();
         private static final AtomicInteger CURRENT = new AtomicInteger();
         private static final AtomicInteger MAX_CONCURRENT = new AtomicInteger();
+        private static volatile CountDownLatch resourceResolutions = new CountDownLatch(0);
 
         private SharedStatefulOperator() {
         }
 
-        private static void reset() {
+        private static void reset(int expectedResourceResolutions) {
             INVOCATIONS.set(0);
             CURRENT.set(0);
             MAX_CONCURRENT.set(0);
+            resourceResolutions = new CountDownLatch(expectedResourceResolutions);
+        }
+
+        private static void resourceResolved() {
+            resourceResolutions.countDown();
         }
 
         private static int invocations() {
@@ -126,7 +133,9 @@ class AssemblyLineEngineWorkerConcurrencyDefaultTest {
             INVOCATIONS.incrementAndGet();
             MAX_CONCURRENT.accumulateAndGet(concurrent, Math::max);
             try {
-                Thread.sleep(100);
+                if (!resourceResolutions.await(2, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("both executions must resolve the shared worker");
+                }
                 return input + "-done";
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

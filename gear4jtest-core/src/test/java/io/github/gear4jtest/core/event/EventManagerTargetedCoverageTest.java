@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
@@ -60,7 +59,7 @@ class EventManagerTargetedCoverageTest {
         try {
             manager.publish(new Event("pipe", UUID.randomUUID(), "REJECTED"));
 
-            awaitStats(manager, stats -> stats.droppedReactions() == 1);
+            manager.shutdown();
             EventRuntimeStats stats = manager.snapshotStats();
             assertThat(stats.publishedEvents()).isEqualTo(1L);
             assertThat(stats.dispatchedEvents()).isEqualTo(1L);
@@ -81,7 +80,7 @@ class EventManagerTargetedCoverageTest {
         try {
             manager.publish(new Event("pipe", UUID.randomUUID(), "BROKEN_EXECUTOR"));
 
-            awaitStats(manager, stats -> stats.droppedReactions() == 1);
+            manager.shutdown();
             EventRuntimeStats stats = manager.snapshotStats();
             assertThat(stats.publishedEvents()).isEqualTo(1L);
             assertThat(stats.dispatchedEvents()).isEqualTo(1L);
@@ -100,12 +99,4 @@ class EventManagerTargetedCoverageTest {
         return new EventManager(definition, new ExecutionContextRegistry());
     }
 
-    private static void awaitStats(EventManager manager, java.util.function.Predicate<EventRuntimeStats> predicate)
-            throws InterruptedException {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
-        while (!predicate.test(manager.snapshotStats()) && System.nanoTime() < deadline) {
-            Thread.sleep(10);
-        }
-        assertThat(predicate.test(manager.snapshotStats())).isTrue();
-    }
 }

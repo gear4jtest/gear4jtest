@@ -351,7 +351,10 @@ class BoundedGeneratedSourceCompilerTest {
     private static void awaitStats(Condition condition) throws InterruptedException {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
         while (!condition.evaluate() && System.nanoTime() < deadline) {
-            Thread.sleep(5L);
+            if (Thread.interrupted()) {
+                throw new InterruptedException("interrupted while awaiting compiler statistics");
+            }
+            Thread.yield();
         }
         assertThat(condition.evaluate()).isTrue();
     }

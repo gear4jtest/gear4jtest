@@ -63,7 +63,7 @@ class EventManagerFailureTest {
         try {
             manager.publish(new Event("pipe", UUID.randomUUID(), "REJECTED"));
 
-            awaitStats(manager, stats -> stats.droppedReactions() == 1);
+            manager.shutdown();
             EventRuntimeStats stats = manager.snapshotStats();
             assertThat(stats.publishedEvents()).isEqualTo(1L);
             assertThat(stats.dispatchedEvents()).isEqualTo(1L);
@@ -90,7 +90,7 @@ class EventManagerFailureTest {
             }
 
             // Then
-            awaitStats(manager, stats -> stats.droppedReactions() == eventCount);
+            manager.shutdown();
             EventRuntimeStats stats = manager.snapshotStats();
             assertThat(stats.publishedEvents()).isEqualTo(eventCount);
             assertThat(stats.dispatchedEvents()).isEqualTo(eventCount);
@@ -110,7 +110,7 @@ class EventManagerFailureTest {
         try {
             manager.publish(new Event("pipe", UUID.randomUUID(), "BROKEN_EXECUTOR"));
 
-            awaitStats(manager, stats -> stats.droppedReactions() == 1);
+            manager.shutdown();
             EventRuntimeStats stats = manager.snapshotStats();
             assertThat(stats.publishedEvents()).isEqualTo(1L);
             assertThat(stats.dispatchedEvents()).isEqualTo(1L);
@@ -178,8 +178,10 @@ class EventManagerFailureTest {
 
             // Then
             assertThat(healthyReactionRan.await(2, TimeUnit.SECONDS)).isTrue();
-            awaitStats(manager, stats -> stats.failedReactions() == 1 && stats.completedReactions() == 2);
-            assertThat(manager.snapshotStats().failedReactions()).isEqualTo(1L);
+            manager.shutdown();
+            EventRuntimeStats stats = manager.snapshotStats();
+            assertThat(stats.failedReactions()).isEqualTo(1L);
+            assertThat(stats.completedReactions()).isEqualTo(2L);
         } finally {
             manager.shutdown();
             executor.shutdownNow();
@@ -193,12 +195,4 @@ class EventManagerFailureTest {
         return new EventManager(definition, new ExecutionContextRegistry());
     }
 
-    private static void awaitStats(EventManager manager, java.util.function.Predicate<EventRuntimeStats> predicate)
-            throws InterruptedException {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
-        while (!predicate.test(manager.snapshotStats()) && System.nanoTime() < deadline) {
-            Thread.sleep(10);
-        }
-        assertThat(predicate.test(manager.snapshotStats())).isTrue();
-    }
 }

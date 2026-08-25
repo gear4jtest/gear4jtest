@@ -299,6 +299,14 @@ public class AssemblyLineManager implements AutoCloseable {
     }
 
     /**
+     * Returns bounded store-resolution occupancy and lifecycle counters without
+     * exposing assembly-line identifiers.
+     */
+    public ArtifactStoreResolutionStats storeResolutionStats() {
+        return storeResolver.snapshotStats();
+    }
+
+    /**
      * Stops owned workers, cancels pending work and releases cached artifact-store
      * leases.
      *

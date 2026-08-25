@@ -93,6 +93,12 @@ class AssemblyLineStoreResolverTest {
                 assertThat(result.get(5, TimeUnit.SECONDS)).isSameAs(expected);
             }
             assertThat(creations).hasValue(1);
+            assertThat(resolver.snapshotStats())
+                    .extracting(ArtifactStoreResolutionStats::resolutions,
+                                ArtifactStoreResolutionStats::cacheHits,
+                                ArtifactStoreResolutionStats::cacheMisses,
+                                ArtifactStoreResolutionStats::installedEntries)
+                    .containsExactly(16L, 15L, 1L, 1L);
         } finally {
             start.countDown();
             callers.shutdownNow();
@@ -132,6 +138,13 @@ class AssemblyLineStoreResolverTest {
 
         // Then: evicting first does not release the store still referenced by second.
         assertThat(released).isEmpty();
+        assertThat(resolver.snapshotStats())
+                .extracting(ArtifactStoreResolutionStats::cachedAssemblyLines,
+                            ArtifactStoreResolutionStats::maxCachedAssemblyLines,
+                            ArtifactStoreResolutionStats::distinctStores,
+                            ArtifactStoreResolutionStats::evictedEntries,
+                            ArtifactStoreResolutionStats::releasedStoreLeases)
+                .containsExactly(2, 2, 2, 1L, 0L);
 
         // When
         resolver.invalidate("second");
@@ -139,5 +152,12 @@ class AssemblyLineStoreResolverTest {
 
         // Then
         assertThat(released).containsExactlyInAnyOrder(shared, third);
+        assertThat(resolver.snapshotStats())
+                .extracting(ArtifactStoreResolutionStats::cachedAssemblyLines,
+                            ArtifactStoreResolutionStats::distinctStores,
+                            ArtifactStoreResolutionStats::invalidatedEntries,
+                            ArtifactStoreResolutionStats::releasedStoreLeases,
+                            ArtifactStoreResolutionStats::shutdown)
+                .containsExactly(0, 0, 1L, 2L, true);
     }
 }

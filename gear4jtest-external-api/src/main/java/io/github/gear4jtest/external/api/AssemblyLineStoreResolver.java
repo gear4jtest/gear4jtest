@@ -23,6 +23,14 @@ final class AssemblyLineStoreResolver implements AutoCloseable {
     private final int maxCacheEntries;
     private final Map<String, StoreCacheEntry> storeCacheByAl = new LinkedHashMap<>(16, 0.75f, true);
     private final IdentityHashMap<ArtifactStore, Integer> storeReferences = new IdentityHashMap<>();
+    private long resolutions;
+    private long cacheHits;
+    private long cacheMisses;
+    private long installedEntries;
+    private long replacedEntries;
+    private long evictedEntries;
+    private long invalidatedEntries;
+    private long releasedStoreLeases;
     private boolean closed;
 
     AssemblyLineStoreResolver(OperationChainConfigRepository configRepository, ArtifactStoreProvider storeProvider) {
@@ -50,24 +58,42 @@ final class AssemblyLineStoreResolver implements AutoCloseable {
         StoreFingerprint fingerprint = StoreFingerprint.from(config);
         synchronized (this) {
             requireOpen();
+            resolutions++;
             StoreCacheEntry resolved = storeCacheByAl.get(alId);
             if (resolved == null || !resolved.fingerprint().equals(fingerprint)) {
+                cacheMisses++;
                 ArtifactStore replacement = requireNonNull(storeProvider.forConfig(config),
                                                            "storeProvider returned null");
                 StoreCacheEntry previous = storeCacheByAl.put(alId, new StoreCacheEntry(fingerprint, replacement));
+                installedEntries++;
+                if (previous != null) {
+                    replacedEntries++;
+                }
                 if (previous == null || previous.store() != replacement) {
                     retain(replacement);
                     release(previous);
                 }
                 resolved = storeCacheByAl.get(alId);
                 evictEldestEntries();
+            } else {
+                cacheHits++;
             }
             return new ResolvedStore(resolved.store(), ArtifactStoreConfigurationFingerprint.from(config));
         }
     }
 
     synchronized void invalidate(String alId) {
-        release(storeCacheByAl.remove(alId));
+        StoreCacheEntry removed = storeCacheByAl.remove(alId);
+        if (removed != null) {
+            invalidatedEntries++;
+            release(removed);
+        }
+    }
+
+    synchronized ArtifactStoreResolutionStats snapshotStats() {
+        return new ArtifactStoreResolutionStats(resolutions, cacheHits, cacheMisses, installedEntries,
+                replacedEntries, evictedEntries, invalidatedEntries, releasedStoreLeases,
+                storeCacheByAl.size(), maxCacheEntries, storeReferences.size(), closed);
     }
 
     @Override
@@ -88,6 +114,7 @@ final class AssemblyLineStoreResolver implements AutoCloseable {
             var iterator = storeCacheByAl.entrySet().iterator();
             StoreCacheEntry eldest = iterator.next().getValue();
             iterator.remove();
+            evictedEntries++;
             release(eldest);
         }
     }
@@ -105,6 +132,7 @@ final class AssemblyLineStoreResolver implements AutoCloseable {
         if (references == null || references <= 1) {
             storeReferences.remove(store);
             storeProvider.release(store);
+            releasedStoreLeases++;
         } else {
             storeReferences.put(store, references - 1);
         }

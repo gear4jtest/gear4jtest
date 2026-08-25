@@ -124,7 +124,10 @@ occupied until the delegate returns.
 Manager shutdown also releases its bounded artifact-store cache. If the
 application calls `DefaultArtifactStoreProvider.forConfig(...)` directly, pair
 the call with `release(store)` or close the provider only after every dependent
-manager and maintenance task has stopped.
+manager and maintenance task has stopped. Monitor
+`AssemblyLineManager.storeResolutionStats()` for sustained cache capacity,
+evictions, configuration replacements and final provider-lease releases. The
+snapshot deliberately contains no assembly-line or store identifiers.
 
 ## Generated assembly-line loading
 
@@ -180,8 +183,10 @@ The quota is shared by every live store using the same canonical directory in a
 JVM. Sharing one directory with different spool policies is rejected, and a
 private lock marker prevents concurrent use by another process. Provision a
 dedicated `spoolDirectory` for each process/container; the implicit default is
-isolated per JVM. Alert on quota rejections and cleanup failures from the shared
-directory-level statistics.
+isolated per JVM. `ArtifactSpoolStats.activeInstances()` reports how many live
+spool objects in the current JVM share that directory; the lock contract keeps
+the concurrent process count at one. Alert on quota rejections and cleanup
+failures from the shared directory-level statistics.
 
 Treat the managed spool as temporary workspace, not as a recovery queue. It does
 not record a destination or operation and therefore never replays `.tmp` files
@@ -282,9 +287,10 @@ async samples include executor queue delay.
 
 Alert on any artifact-integrity failure, sustained generated-loading or
 compilation queues, executor rejections/timeouts, classloader registration
-rejections and artifact-spool quota/cleanup failures. A single transient queue
-sample is not necessarily an incident; cumulative rejection, timeout and
-integrity counters should never be silently increasing.
+rejections, artifact-store resolver churn and artifact-spool quota/cleanup
+failures. A single transient queue or cache-capacity sample is not necessarily
+an incident; cumulative eviction, rejection, timeout and integrity counters
+should never be silently increasing.
 
 When Spring Boot Actuator is present and JDBC persistence is enabled, put
 `gear4jPersistenceLiveness` in the liveness group and

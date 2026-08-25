@@ -48,7 +48,7 @@ final class DatabaseExecutionManagerTestFixture {
     static void awaitShutdownAdmissionClosure(DatabaseExecutionManager manager) throws InterruptedException {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
         while (manager.isAlive() && System.nanoTime() < deadline) {
-            TimeUnit.MILLISECONDS.sleep(10);
+            yieldToAsyncWork();
         }
         assertThat(manager.isAlive()).as("shutdown must close operation admission before waiting").isFalse();
     }
@@ -62,7 +62,7 @@ final class DatabaseExecutionManagerTestFixture {
             if (stats.completedFlushes() >= expectedCompletedFlushes) {
                 return;
             }
-            TimeUnit.MILLISECONDS.sleep(10);
+            yieldToAsyncWork();
         } while (System.nanoTime() < deadline);
 
         assertThat(stats.completedFlushes()).isGreaterThanOrEqualTo(expectedCompletedFlushes);
@@ -80,12 +80,19 @@ final class DatabaseExecutionManagerTestFixture {
                     && stats.bufferedStationLogs() == expectedBufferedLogs) {
                 return;
             }
-            TimeUnit.MILLISECONDS.sleep(10);
+            yieldToAsyncWork();
         } while (System.nanoTime() < deadline);
 
         assertThat(stats.failedFlushes()).isEqualTo(expectedFailedFlushes);
         assertThat(stats.bufferedStationLogs()).as("failed flush must not lose the drained records")
                 .isEqualTo(expectedBufferedLogs);
+    }
+
+    private static void yieldToAsyncWork() throws InterruptedException {
+        if (Thread.interrupted()) {
+            throw new InterruptedException("interrupted while awaiting persistence statistics");
+        }
+        Thread.yield();
     }
 
     static StationLogRecord stationRecord(UUID runId) {

@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.config.ParallelExecutionConfiguration;
@@ -63,7 +62,7 @@ public final class CoreRuntimeTestSupport {
                 return;
             } catch (AssertionError e) {
                 lastFailure = e;
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+                Thread.yield();
             }
         }
         if (lastFailure != null) {

@@ -1,6 +1,7 @@
 package io.github.gear4jtest.spring.boot;
 
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.sql.DataSource;
@@ -85,8 +86,9 @@ class Gear4jAutoConfigurationTest {
     void boot_parallel_default_await_timeout_should_be_applied_to_runtime_strategies() {
         // Given
         ExecutorService branchExecutor = Executors.newSingleThreadExecutor();
+        SlowOperator slowOperator = new SlowOperator();
         try {
-            contextRunner.withBean(SlowOperator.class, SlowOperator::new)
+            contextRunner.withBean(SlowOperator.class, () -> slowOperator)
                     .withPropertyValues("gear4j.parallel.default-await-timeout=20ms")
                     .run(context -> {
                         var slowStation = Stations
@@ -110,6 +112,7 @@ class Gear4jAutoConfigurationTest {
                         assertThat(result.isCancelled()).isTrue();
                     });
         } finally {
+            slowOperator.release();
             branchExecutor.shutdownNow();
         }
     }
@@ -549,14 +552,20 @@ class Gear4jAutoConfigurationTest {
     }
 
     public static final class SlowOperator implements Operator<String, String> {
+        private final CountDownLatch release = new CountDownLatch(1);
+
         @Override
         public String transform(String input, StationExecutionContext operationExecution) {
             try {
-                Thread.sleep(250L);
+                release.await();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
             return input;
+        }
+
+        private void release() {
+            release.countDown();
         }
     }
 }

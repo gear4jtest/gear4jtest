@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import io.github.gear4jtest.external.api.ArtifactStoreResolutionStats;
 import io.github.gear4jtest.external.api.AssemblyLineManager;
 import io.github.gear4jtest.external.api.GeneratedCompilationStats;
 import io.github.gear4jtest.external.api.GeneratedLoadingPhase;
@@ -36,12 +37,14 @@ class GeneratedLoadingMetricsBinderTest {
                 9, 10, 11, 120L, 60L, 40L, 30L, 20L, 10L, 2L, phases, false));
         when(manager.compilationStats()).thenReturn(new GeneratedCompilationStats(11L, 12L, 13L, 14L, 15L,
                 16L, 17L, 18L, 19L, 20, 21L, 22, 23, 24, 140L, 70L, false));
+        when(manager.storeResolutionStats()).thenReturn(new ArtifactStoreResolutionStats(25L, 26L, 27L, 28L,
+                29L, 30L, 31L, 32L, 33, 34, 35, false));
 
         // When
         GeneratedLoadingMetricsBinder.bind(meterRegistry, manager);
 
         // Then
-        assertThat(meterRegistry.getMeters()).hasSize(50).allSatisfy(meter -> assertThat(meter.measure())
+        assertThat(meterRegistry.getMeters()).hasSize(61).allSatisfy(meter -> assertThat(meter.measure())
                 .isNotEmpty()
                 .allSatisfy(measurement -> assertThat(measurement.getValue()).isFinite()));
         assertThat(meterRegistry.get("gear4j.generated.loading.cache.requests")
@@ -60,6 +63,10 @@ class GeneratedLoadingMetricsBinderTest {
                 .tag("outcome", "limit_rejected").functionCounter().count()).isEqualTo(19.0d);
         assertThat(meterRegistry.get("gear4j.generated.compilation.executor.queued").gauge().value())
                 .isEqualTo(24.0d);
+        assertThat(meterRegistry.get("gear4j.artifacts.store.resolver.cache.entries").gauge().value())
+                .isEqualTo(33.0d);
+        assertThat(meterRegistry.get("gear4j.artifacts.store.resolver.requests")
+                .tag("result", "miss").functionCounter().count()).isEqualTo(27.0d);
         assertThat(meterRegistry.getMeters()).allSatisfy(meter -> {
             assertThat(meter.getId().getTags())
                     .allSatisfy(tag -> assertThat(tag.getKey()).isIn("phase", "outcome", "result"));

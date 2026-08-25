@@ -230,7 +230,10 @@ class GeneratedLoadingRuntimeTest {
     private static void awaitFlightRelease(GeneratedLoadingRuntime runtime) throws InterruptedException {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2L);
         while (runtime.snapshotStats().inFlightLoads() != 0 && System.nanoTime() < deadline) {
-            TimeUnit.MILLISECONDS.sleep(10L);
+            if (Thread.interrupted()) {
+                throw new InterruptedException("interrupted while awaiting loading-flight cleanup");
+            }
+            Thread.yield();
         }
         assertThat(runtime.snapshotStats().inFlightLoads())
                 .as("registration cleanup must not retain a completed single-flight")

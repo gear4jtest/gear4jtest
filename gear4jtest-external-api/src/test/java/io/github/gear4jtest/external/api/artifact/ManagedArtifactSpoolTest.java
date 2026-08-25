@@ -167,6 +167,8 @@ class ManagedArtifactSpoolTest {
                 .build();
         ManagedArtifactSpool first = new ManagedArtifactSpool(policy);
         ManagedArtifactSpool second = new ManagedArtifactSpool(policy);
+        assertThat(first.snapshotStats().activeInstances()).isEqualTo(2);
+        assertThat(second.snapshotStats().activeInstances()).isEqualTo(2);
         Path firstFile = first.createTempFile("first-");
         Path secondFile = second.createTempFile("second-");
 

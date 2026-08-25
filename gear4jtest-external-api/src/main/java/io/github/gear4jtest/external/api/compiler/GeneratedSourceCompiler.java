@@ -9,9 +9,12 @@ import io.github.gear4jtest.core.api.annotation.Spi;
  *
  * <p>
  * This SPI isolates Gear4J from a concrete compiler implementation. The default
- * implementation is {@link JDTInMemoryCompiler}, but callers can provide
- * another compiler without coupling {@code AssemblyLineManager} to Eclipse JDT
- * internals.
+ * strategy uses the JDK {@code javax.tools.JavaCompiler} when the runtime image
+ * provides {@code jdk.compiler}, and falls back to Eclipse JDT otherwise.
+ * Callers can also provide another compiler without coupling
+ * {@code AssemblyLineManager} to compiler internals. A custom {@code jlink}
+ * image that expects the javac backend must therefore include
+ * {@code jdk.compiler}.
  * </p>
  */
 @FunctionalInterface
