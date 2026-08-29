@@ -7,8 +7,12 @@ Gear4J deliberately keeps the dependency supply-chain policy minimal for the 1.0
 - the Gradle wrapper distribution is checksummed;
 - GitHub Actions are pinned by commit SHA;
 - repositories are limited to the expected Maven Central and staging locations;
-- OWASP Dependency-Check runs with a CVSS 7.0 failure threshold;
-- vulnerability suppressions must be reviewed and time-bounded;
+- OWASP Dependency-Check runs with a CVSS 7.0 failure threshold against published/runtime dependency configurations;
+- the Gradle `checkstyle` tool configuration is excluded because its Doxia/Saxon dependencies are build-tool implementation details and are not shipped in Gear4J artifacts;
+- the Sonatype Guide OSS Index analyzer is explicitly disabled for the 1.0 gate because authenticated, credit-metered access is now mandatory; NVD remains the vulnerability source of record for this gate;
+- vulnerability suppressions must be narrowly scoped, documented and time-bounded;
+- known Dependency-Check CPE/product-name false positives for Eclipse Platform runtime bundles are suppressed by PURL only and expire for mandatory re-review;
+- `gear4jtest-spring-boot-starter` pins the Log4j API/SLF4J bridge line to 2.25.5 until the Spring Boot 3.5 dependency management line incorporates the same or a newer patched version;
 - staged JAR, POM and Gradle module metadata are rebuilt and compared by SHA-256;
 - legal and release metadata are verified before publication.
 

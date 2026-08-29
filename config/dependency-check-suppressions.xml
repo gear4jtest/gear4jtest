@@ -1,7 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.4.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.4.xsd
+                                  https://dependency-check.github.io/DependencyCheck/dependency-suppression.1.4.xsd">
     <!--
       Add narrowly scoped suppressions only after a documented review.
-      Every <suppress> entry must include an <until> date so accepted risk expires automatically.
+      Every <suppress> entry must include an until="..." attribute so accepted risk expires automatically.
     -->
+
+    <suppress until="2027-02-28Z">
+        <notes><![CDATA[
+          False-positive CPE match. CVE-2020-27225 affects the Eclipse Platform Help Subsystem
+          in Eclipse Platform 4.18 and earlier. The matched dependencies below are modern
+          Eclipse Platform/JDT runtime bundles and are not the vulnerable Help Subsystem.
+          Re-review before expiry in case NVD/Dependency-Check matching changes.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.eclipse\.platform/org\.eclipse\.(?:core\.(?:commands|contenttype|expressions|filesystem|jobs|resources|runtime)|equinox\.(?:app|common|preferences|registry)|text)@.*$</packageUrl>
+        <cve>CVE-2020-27225</cve>
+    </suppress>
+
+    <suppress until="2027-02-28Z">
+        <notes><![CDATA[
+          False-positive product-name match. CVE-2014-125035 affects the unrelated
+          mrbobbybryant/Jobs-Plugin web project, not Eclipse org.eclipse.core.jobs.
+          Re-review before expiry in case NVD/Dependency-Check matching changes.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.eclipse\.platform/org\.eclipse\.core\.jobs@.*$</packageUrl>
+        <cve>CVE-2014-125035</cve>
+    </suppress>
 </suppressions>

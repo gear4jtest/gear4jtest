@@ -4,6 +4,7 @@ junit-platform = "1.12.2"
 slf4j = "2.0.17"
 assertj = "3.27.7"
 logback = "1.5.38"
+log4j = "2.25.5"
 mockito = "5.17.0"
 micrometer = "1.15.12"
 spring-boot = "3.5.16"
@@ -28,6 +29,8 @@ junit = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
+log4j-to-slf4j = { module = "org.apache.logging.log4j:log4j-to-slf4j", version.ref = "log4j" }
 mockito = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-junit = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }

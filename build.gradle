@@ -325,6 +325,8 @@ tasks.register('verifyReleaseWorkflowContract') {
             (releaseWorkflow): [
                 'preflight:',
                 'needs: [preflight, database-matrix]',
+                'RELEASE_VERSION: ${{ needs.preflight.outputs.version }}',
+                '-PprojectVersion="${RELEASE_VERSION}"',
                 'python3 scripts/validate_release_invocation.py',
                 'python3 scripts/write_release_evidence.py',
                 'build/reports/release/**'
@@ -537,10 +539,10 @@ tasks.register('verifyDependencyCheckSuppressions') {
     doLast {
         def document = new groovy.xml.XmlSlurper(false, false).parse(suppressionFile.asFile)
         def missingExpiry = document.suppress.findAll { suppression ->
-            suppression.until.text().trim().isEmpty()
+            suppression.@until.text().trim().isEmpty()
         }
         if (!missingExpiry.isEmpty()) {
-            throw new GradleException('Every dependency-check suppression must declare an <until> expiry date')
+            throw new GradleException('Every dependency-check suppression must declare an until="..." expiry date')
         }
     }
 }
@@ -549,8 +551,18 @@ dependencyCheck {
     failBuildOnCVSS = 7.0
     suppressionFiles = [layout.projectDirectory.file('config/dependency-check-suppressions.xml').asFile.absolutePath]
     formats = ['HTML', 'JSON']
+
+    // The Checkstyle configuration is the build tool's own classpath (Doxia/Saxon/etc.),
+    // not a dependency shipped by Gear4J. Tool upgrades are handled separately from the
+    // release artifact vulnerability gate.
+    skipConfigurations = ['checkstyle']
+
     analyzers {
         assemblyEnabled = false
+        // Sonatype Guide OSS Index requires authenticated, credit-metered access since 2026.
+        // The 1.0 release gate intentionally relies on NVD instead of silently requiring
+        // an additional external account/token.
+        ossIndex.enabled = false
     }
     if (System.getenv('NVD_API_KEY')) {
         nvd {

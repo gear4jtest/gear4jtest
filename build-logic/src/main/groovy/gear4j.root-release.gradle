@@ -79,12 +79,14 @@ tasks.register('verifyReleaseAssets') {
         def releaseToolsText = releaseToolsBuildAsset.asFile.getText('UTF-8')
         if (!releaseToolsText.contains("id 'base'")
                 || !releaseToolsText.contains("id 'org.jreleaser' version '1.25.0'")
+                || !releaseToolsText.contains("providers.environmentVariable('PROJECT_VERSION')")
+                || releaseToolsText.contains("providers.gradleProperty('projectVersion')")
                 || !releaseToolsText.contains("configFile = file('../jreleaser.yml')")
                 || !releaseToolsText.contains("tasks.named('jreleaserConfig')")
                 || !releaseToolsText.contains('projectDirectory.set(repositoryRoot)')
                 || releaseToolsText.contains('basedir =')) {
             throw new GradleException(
-                'release-tools/build.gradle must apply base and isolate JReleaser 1.25.0')
+                'release-tools/build.gradle must keep validation isolated from the root project version')
         }
     }
 }

@@ -54,6 +54,15 @@ or `1.0.0-rc1`. It now depends on `releaseMetadataCheck`, so the legal files,
 documentation links, ADR metadata and isolated JReleaser model are validated by
 the same local gate rather than relying on a separate operator command.
 
+The repository configures a 2 GiB Gradle daemon heap in the root `gradle.properties` because
+`dependencyCheckAggregate` performs the OWASP Dependency-Check aggregate analysis in-process.
+`NVD_API_KEY` remains optional for local validation, but configuring one is strongly recommended
+to speed up NVD updates; CI injects it from the corresponding repository secret when available.
+The Sonatype Guide OSS Index analyzer is deliberately disabled for the 1.0 release gate because
+it now requires authenticated, credit-metered access. The Gradle `checkstyle` configuration is also
+excluded from Dependency-Check because it is the Checkstyle toolchain itself, not a dependency
+shipped by Gear4J. Reviewed false-positive suppressions are PURL-scoped and carry an expiry date.
+
 From `1.0.1` onward, add the immediately preceding stable release so Japicmp can enforce public API/SPI compatibility:
 
 ```bash
@@ -106,11 +115,12 @@ generation disabled. `jreleaser.yml` supplies the fixed non-secret sentinel
 has no permissions. No GitHub tag or release operation is performed by JReleaser.
 
 Ordinary CI and the release workflow run `releaseMetadataCheck`, which invokes `jreleaserConfig` against the default
-snapshot version before publication credentials are used. JReleaser runs from the isolated `release-tools` included
-build so its JGit 5 runtime cannot be replaced by the incompatible JGit 7 runtime used by Spotless 8. JReleaser output
-is stored under `build/release-tools/jreleaser`. Because included builds do not inherit root-build properties reliably,
-deployment uses the explicit `PROJECT_VERSION` environment variable; the isolated task fails before publishing when it
-is absent.
+snapshot version before publication credentials are used. The isolated `release-tools` build deliberately ignores the
+root `-PprojectVersion` property: that property versions and stages the Maven artifacts, but must not activate JReleaser
+signing or Maven Central deployment during validation. JReleaser runs from the isolated included build so its JGit 5
+runtime cannot be replaced by the incompatible JGit 7 runtime used by Spotless 8. JReleaser output is stored under
+`build/release-tools/jreleaser`. Actual deployment uses the explicit `PROJECT_VERSION` environment variable; the
+isolated deploy task fails before publishing when it is absent.
 
 ## Legal and release-note files
 
