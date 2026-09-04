@@ -24,8 +24,10 @@ with urgent correctness fixes.
 
 The version catalog now selects:
 
-- PostgreSQL JDBC `42.7.11`, the patched release for
-  [CVE-2026-42198](https://github.com/advisories/GHSA-98qh-xjc8-98pq);
+- PostgreSQL JDBC `42.7.13`. Version `42.7.11` addressed the earlier
+  CVE-2026-42198 but is affected by the later
+  [CVE-2026-54291](https://jdbc.postgresql.org/security/); pgJDBC recommends
+  `42.7.12` or later;
 - MySQL Connector/J `26.7.0`, outside the `9.7.0-9.7.1` range identified by the
   [July 2026 MySQL advisory](https://dev.mysql.com/community/security/advisories/2026-07-21/);
 - Oracle `ojdbc11` `23.26.3.0.0`, after the `23.4.0-23.26.2` range identified by

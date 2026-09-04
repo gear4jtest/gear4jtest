@@ -131,8 +131,9 @@ For an observable shutdown, call `manager.shutdownWithReport(timeout)`. The
 returned `PersistenceShutdownReport` states how many station logs were drained,
 which runs still retain data, how many retry attempts occurred, whether the
 deadline was reached, whether an earlier run finalization remains unresolved and
-whether owned flush workers terminated, and how many normal operations admitted
-before closure were still running. The existing `shutdown()` methods remain
+whether the regular flush executor is caller-owned, terminated or still running,
+whether the shutdown-only JDBC executor terminated, and how many normal operations
+admitted before closure were still running. The existing `shutdown()` methods remain
 available and delegate to the same bounded retry workflow. Retry backoff defaults
 to `100ms` and grows exponentially up to `2s`; both values are configurable
 through `PersistenceRuntimeConfiguration`.
@@ -157,4 +158,4 @@ locks, retries, backoff, rejection-handler calls and worker termination.
 Shutdown-only JDBC and rejection-handler calls run on daemon workers, so a pool,
 driver or application handler that ignores interruption may outlive the report
 without blocking the caller. In that case the drained batch is restored,
-`deadlineReached` is true and `flushExecutorTerminated` is false.
+`deadlineReached` is true and `shutdownJdbcExecutorTerminated` is false.

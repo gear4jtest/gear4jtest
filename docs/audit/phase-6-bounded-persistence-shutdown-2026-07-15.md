@@ -22,9 +22,10 @@ potentially unbounded waits.
   deadline.
 - Stopped retrying a batch whose completion is uncertain after timeout, avoiding
   concurrent duplicate attempts while the original driver call may still run.
-- Included shutdown JDBC-worker termination in
-  `flushExecutorTerminated` and added `unfinishedOperations` to
-  `PersistenceShutdownReport`.
+- Added `unfinishedOperations` to `PersistenceShutdownReport`. A later audit
+  correction split the overloaded executor flag into
+  `flushExecutorShutdownStatus` and `shutdownJdbcExecutorTerminated`, so a
+  caller-owned executor is no longer reported as if Gear4J terminated it.
 - Removed method-level synchronization from the long shutdown body. Concurrent
   callers now use a timed shutdown lock.
 

@@ -318,20 +318,32 @@ final class PersistenceFlushCoordinator {
         PersistenceShutdownWriter.ExecutorTermination shutdownTermination = shutdownWriter
                 .awaitTermination(shutdownJdbcExecutor, deadline, 0);
         interrupted = interrupted || asyncTermination.interrupted() || shutdownTermination.interrupted();
+        PersistenceShutdownReport.FlushExecutorShutdownStatus flushExecutorShutdownStatus = ownsFlushExecutor
+                ? ownedFlushExecutorStatus(asyncTermination)
+                : PersistenceShutdownReport.FlushExecutorShutdownStatus.CALLER_OWNED;
 
         List<PersistenceShutdownReport.RunFailure> failures = idleWait.idle()
                 ? finalizeRemainingBuffers(runStates)
                 : unfinishedOperationFailures(idleWait.unfinishedOperations());
         int remainingActiveRuns = buffers.activeRunCount();
         int remainingStationLogs = buffers.bufferedStationLogCount();
-        boolean executorsTerminated = asyncTermination.terminated() && shutdownTermination.terminated();
         boolean incomplete = !idleWait.unfinishedOperations().isEmpty() || remainingActiveRuns > 0
-                || remainingStationLogs > 0 || !executorsTerminated;
+                || remainingStationLogs > 0
+                || flushExecutorShutdownStatus == PersistenceShutdownReport.FlushExecutorShutdownStatus.NOT_TERMINATED
+                || !shutdownTermination.terminated();
         boolean reached = incomplete && deadline.reached();
         int flushedStationLogs = Math.max(0, initialBufferedStationLogs - remainingStationLogs);
         return new PersistenceShutdownReport(deadline.startedAt(), deadline.elapsed(), initialActiveRuns,
                 initialBufferedStationLogs, flushedStationLogs, remainingActiveRuns, remainingStationLogs,
-                flushAttempts, reached, interrupted, executorsTerminated, asyncTermination.droppedTasks(), failures);
+                flushAttempts, reached, interrupted, flushExecutorShutdownStatus, shutdownTermination.terminated(),
+                asyncTermination.droppedTasks(), failures);
+    }
+
+    private static PersistenceShutdownReport.FlushExecutorShutdownStatus ownedFlushExecutorStatus(
+                                                                                                  PersistenceShutdownWriter.ExecutorTermination termination) {
+        return termination.terminated()
+                ? PersistenceShutdownReport.FlushExecutorShutdownStatus.TERMINATED
+                : PersistenceShutdownReport.FlushExecutorShutdownStatus.NOT_TERMINATED;
     }
 
     private boolean acquireShutdownLock(PersistenceShutdownDeadline deadline) {

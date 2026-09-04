@@ -113,7 +113,8 @@ A generated class should:
 The built-in `SimpleDependencyInjector` treats `registerBean(name, bean)` as RUN-only. TEST-safe dependencies must be
 registered with an explicit mode allowlist, for example `registerBean("modelsService", modelsService, ExecutionMode.TEST,
 ExecutionMode.RUN)`. Custom injectors should preserve the same principle: TEST and RUN do not automatically share the
-same application dependency surface.
+same application dependency surface. The built-in injector traverses generated-class superclasses and rejects annotated
+static or final fields because those fields do not have valid per-instance injection semantics.
 
 ## Versioning and aliases
 

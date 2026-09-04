@@ -17,7 +17,8 @@ public record PersistenceShutdownReport(Instant startedAt,
                                         int flushAttempts,
                                         boolean deadlineReached,
                                         boolean interrupted,
-                                        boolean flushExecutorTerminated,
+                                        FlushExecutorShutdownStatus flushExecutorShutdownStatus,
+                                        boolean shutdownJdbcExecutorTerminated,
                                         int droppedFlushTasks,
                                         List<RunFailure> failures) {
 
@@ -26,6 +27,7 @@ public record PersistenceShutdownReport(Instant startedAt,
     public PersistenceShutdownReport {
         Objects.requireNonNull(startedAt, "startedAt must not be null");
         Objects.requireNonNull(elapsed, "elapsed must not be null");
+        Objects.requireNonNull(flushExecutorShutdownStatus, "flushExecutorShutdownStatus must not be null");
         failures = List.copyOf(Objects.requireNonNull(failures, "failures must not be null"));
         requireNonNegative(initialActiveRuns, "initialActiveRuns");
         requireNonNegative(initialBufferedStationLogs, "initialBufferedStationLogs");
@@ -38,7 +40,25 @@ public record PersistenceShutdownReport(Instant startedAt,
 
     public boolean successful() {
         return remainingActiveRuns == 0 && remainingStationLogs == 0 && !deadlineReached && !interrupted
-                && flushExecutorTerminated && failures.isEmpty();
+                && flushExecutorShutdownStatus != FlushExecutorShutdownStatus.NOT_TERMINATED
+                && shutdownJdbcExecutorTerminated && failures.isEmpty();
+    }
+
+    /**
+     * Shutdown outcome for the regular asynchronous flush executor.
+     */
+    public enum FlushExecutorShutdownStatus {
+        /** The executor belongs to the caller and was deliberately left running. */
+        CALLER_OWNED,
+        /**
+         * The executor belongs to this component and terminated within the deadline.
+         */
+        TERMINATED,
+        /**
+         * The executor belongs to this component but did not terminate within the
+         * deadline.
+         */
+        NOT_TERMINATED
     }
 
     /**

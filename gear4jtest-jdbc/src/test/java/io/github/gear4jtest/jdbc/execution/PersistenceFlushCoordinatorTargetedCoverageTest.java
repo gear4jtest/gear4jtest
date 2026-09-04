@@ -98,7 +98,9 @@ class PersistenceFlushCoordinatorTargetedCoverageTest {
         // Then
         assertThat(report.successful()).isTrue();
         assertThat(report.droppedFlushTasks()).isEqualTo(1);
-        assertThat(report.flushExecutorTerminated()).isTrue();
+        assertThat(report.flushExecutorShutdownStatus())
+                .isEqualTo(PersistenceShutdownReport.FlushExecutorShutdownStatus.TERMINATED);
+        assertThat(report.shutdownJdbcExecutorTerminated()).isTrue();
         verify(flushExecutor).shutdownNow();
     }
 

@@ -7,6 +7,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class OperatorIntrospectorTest {
     @Test
+    void statefulCache_shouldUseClassValueToAvoidStrongClassRetention() throws Exception {
+        var cacheField = WorkerIntrospector.class.getDeclaredField("STATEFUL_CACHE");
+
+        assertThat(cacheField.getType()).isEqualTo(ClassValue.class);
+    }
+
+    @Test
     void isStateful_shouldReturnFalseForPlainTransformerWithoutParameters() {
         PlainTransformer transformer = new PlainTransformer();
 

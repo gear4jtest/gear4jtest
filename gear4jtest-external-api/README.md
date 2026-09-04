@@ -386,6 +386,10 @@ execution must opt in explicitly with `registerBean(name, bean, ExecutionMode.TE
 unpromoted external definitions from automatically receiving every application dependency registered in the lightweight
 injector.
 
+The built-in injector scans annotated fields declared by the generated class and
+its superclasses. `@Inject` fields must be mutable instance fields: static and
+final fields are rejected with `InjectionException` before resolution.
+
 This keeps generated code compatible with simple classloader-based loading while making the TEST/RUN dependency boundary
 explicit.
 

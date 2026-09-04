@@ -184,7 +184,9 @@ class DatabaseExecutionManagerShutdownTest {
             assertThat(report.deadlineReached()).isTrue();
             assertThat(report.unfinishedOperations()).isZero();
             assertThat(report.remainingStationLogs()).isEqualTo(1);
-            assertThat(report.flushExecutorTerminated()).isFalse();
+            assertThat(report.flushExecutorShutdownStatus())
+                    .isEqualTo(PersistenceShutdownReport.FlushExecutorShutdownStatus.CALLER_OWNED);
+            assertThat(report.shutdownJdbcExecutorTerminated()).isFalse();
             assertThat(report.failures()).hasSize(1);
             assertThat(report.failures().get(0).message()).contains("deadline reached");
         } finally {
@@ -619,9 +621,13 @@ class DatabaseExecutionManagerShutdownTest {
 
         try {
             // When
-            manager.shutdown(Duration.ofSeconds(1));
+            PersistenceShutdownReport report = manager.shutdownWithReport(Duration.ofSeconds(1));
 
             // Then
+            assertThat(report.successful()).isTrue();
+            assertThat(report.flushExecutorShutdownStatus())
+                    .isEqualTo(PersistenceShutdownReport.FlushExecutorShutdownStatus.CALLER_OWNED);
+            assertThat(report.shutdownJdbcExecutorTerminated()).isTrue();
             assertThat(flushExecutor.isShutdown()).isFalse();
             assertThat(scheduler.isShutdown()).isFalse();
         } finally {

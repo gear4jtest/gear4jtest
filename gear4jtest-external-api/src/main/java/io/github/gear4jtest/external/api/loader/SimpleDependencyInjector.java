@@ -1,5 +1,8 @@
 package io.github.gear4jtest.external.api.loader;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InaccessibleObjectException;
+import java.lang.reflect.Modifier;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
@@ -59,33 +62,50 @@ public class SimpleDependencyInjector implements DependencyInjector {
     public void injectDependencies(Object instance, ExecutionMode mode) throws InjectionException {
         requireNonNull(instance, "instance must not be null");
         requireNonNull(mode, "mode must not be null");
-        Class<?> clazz = instance.getClass();
-
-        // Annotation-based injection using the external API annotations.
-        java.lang.reflect.Field[] fields = clazz.getDeclaredFields();
-        for (java.lang.reflect.Field field : fields) {
-            if (field.isAnnotationPresent(Inject.class)) {
-                Inject inject = field.getAnnotation(Inject.class);
-                String beanName = inject.value().isEmpty() ? field.getName() : inject.value();
-
-                InjectionCandidate candidate = findCandidate(beanName, field.getType(), mode);
-                Optional<?> bean = candidate.bean();
-                if (bean.isPresent()) {
-                    try {
-                        field.setAccessible(true);
-                        field.set(instance, bean.get());
-                    } catch (IllegalAccessException e) {
-                        throw new InjectionException("Dependency injection failed for field: " + field.getName(), e);
-                    }
-                } else if (inject.required()) {
-                    if (candidate.disallowedForMode()) {
-                        throw new InjectionException("Bean '" + beanName + "' is not allowed in " + mode
-                                + " mode for field: " + field.getName());
-                    }
-                    throw new InjectionException("Required bean not found: " + beanName);
-                }
+        for (Class<?> type = instance.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
+            for (Field field : type.getDeclaredFields()) {
+                injectField(instance, mode, field);
             }
         }
+    }
+
+    private void injectField(Object instance, ExecutionMode mode, Field field) throws InjectionException {
+        Inject inject = field.getAnnotation(Inject.class);
+        if (inject == null) {
+            return;
+        }
+        if (Modifier.isStatic(field.getModifiers()) || Modifier.isFinal(field.getModifiers())) {
+            throw new InjectionException("@Inject field must not be static or final: " + fieldLocation(field));
+        }
+
+        String beanName = inject.value().isEmpty() ? field.getName() : inject.value();
+        InjectionCandidate candidate = findCandidate(beanName, field.getType(), mode);
+        Optional<?> bean = candidate.bean();
+        if (bean.isPresent()) {
+            setField(instance, field, bean.get());
+        } else if (inject.required()) {
+            if (candidate.disallowedForMode()) {
+                throw new InjectionException("Bean '" + beanName + "' is not allowed in " + mode
+                        + " mode for field: " + fieldLocation(field));
+            }
+            throw new InjectionException("Required bean not found: " + beanName + " for field: "
+                    + fieldLocation(field));
+        }
+    }
+
+    private static void setField(Object instance, Field field, Object bean) throws InjectionException {
+        try {
+            if (!field.trySetAccessible()) {
+                throw new InjectionException("Dependency injection cannot access field: " + fieldLocation(field));
+            }
+            field.set(instance, bean);
+        } catch (IllegalAccessException | InaccessibleObjectException | SecurityException exception) {
+            throw new InjectionException("Dependency injection failed for field: " + fieldLocation(field), exception);
+        }
+    }
+
+    private static String fieldLocation(Field field) {
+        return field.getDeclaringClass().getName() + "#" + field.getName();
     }
 
     @Override

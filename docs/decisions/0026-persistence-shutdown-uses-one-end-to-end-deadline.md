@@ -37,8 +37,10 @@ reported buffer state.
 
 The shutdown report exposes `unfinishedOperations` for normal operations that
 were admitted before closure but did not finish within the budget. Such
-operations are not forcibly stopped. `flushExecutorTerminated=false` also covers
-a shutdown JDBC worker that did not terminate before the deadline.
+operations are not forcibly stopped. `flushExecutorShutdownStatus` distinguishes
+a deliberately untouched caller-owned executor from an owned executor that
+terminated or outlived the deadline. `shutdownJdbcExecutorTerminated` separately
+reports a shutdown-only JDBC worker that did not terminate before the deadline.
 
 Concurrent shutdown callers do not wait indefinitely for one another. A caller
 that cannot acquire the shutdown coordinator within its own timeout receives an
@@ -50,7 +52,7 @@ that cannot acquire the shutdown coordinator within its own timeout receives an
   interruption behavior, apart from small scheduling overhead.
 - A driver call may continue on a daemon thread after the report. Operators must
   treat `deadlineReached`, `unfinishedOperations`, remaining logs and executor
-  termination as the authoritative result.
+  shutdown statuses as the authoritative result.
 - A timed-out batch is conservatively retained. The database may nevertheless
   commit it later; station-log writes are designed to be idempotent/upserted.
 - The regular `jdbcStatementTimeout` still applies to statements, but pool

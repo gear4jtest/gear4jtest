@@ -72,6 +72,38 @@ class SimpleDependencyInjectorTest {
     }
 
     @Test
+    void injectDependencies_shouldInjectAnnotatedFieldsDeclaredBySuperclasses() throws Exception {
+        // Given
+        SimpleDependencyInjector injector = new SimpleDependencyInjector();
+        SafeService safeService = new SafeService();
+        injector.registerBean("safeService", safeService, ExecutionMode.TEST);
+        var generated = new GeneratedWithInheritedSafeService();
+
+        // When
+        injector.injectDependencies(generated, ExecutionMode.TEST);
+
+        // Then
+        assertThat(generated.safeService()).isSameAs(safeService);
+    }
+
+    @Test
+    void injectDependencies_shouldRejectStaticAndFinalInjectionFields() {
+        // Given
+        SimpleDependencyInjector injector = new SimpleDependencyInjector();
+        injector.registerBean("safeService", new SafeService(), ExecutionMode.TEST);
+
+        // When / Then
+        assertThatThrownBy(() -> injector.injectDependencies(new GeneratedWithStaticInjection(), ExecutionMode.TEST))
+                .isInstanceOf(InjectionException.class)
+                .hasMessageContaining("@Inject field must not be static or final")
+                .hasMessageContaining("GeneratedWithStaticInjection#safeService");
+        assertThatThrownBy(() -> injector.injectDependencies(new GeneratedWithFinalInjection(), ExecutionMode.TEST))
+                .isInstanceOf(InjectionException.class)
+                .hasMessageContaining("@Inject field must not be static or final")
+                .hasMessageContaining("GeneratedWithFinalInjection#safeService");
+    }
+
+    @Test
     void registerBean_shouldValidateArgumentsAndAllowedModes() {
         // Given
         SimpleDependencyInjector injector = new SimpleDependencyInjector();
@@ -111,10 +143,10 @@ class SimpleDependencyInjectorTest {
         assertThatThrownBy(() -> injector.injectDependencies(new GeneratedWithRequiredSafeService(),
                                                              ExecutionMode.TEST))
                 .isInstanceOf(InjectionException.class)
-                .hasMessage("Required bean not found: safeService");
+                .hasMessageContaining("Required bean not found: safeService");
         assertThatThrownBy(() -> injector.injectDependencies(new GeneratedWithRequiredSecret(), ExecutionMode.RUN))
                 .isInstanceOf(InjectionException.class)
-                .hasMessage("Required bean not found: secretService");
+                .hasMessageContaining("Required bean not found: secretService");
     }
 
     @Test
@@ -157,6 +189,28 @@ class SimpleDependencyInjectorTest {
 
         @Inject(value = "missingService", required = false)
         private SecretService missingService;
+    }
+
+    private static class GeneratedWithInheritedInjection {
+        @Inject("safeService")
+        private SafeService safeService;
+
+        SafeService safeService() {
+            return safeService;
+        }
+    }
+
+    private static final class GeneratedWithInheritedSafeService extends GeneratedWithInheritedInjection {
+    }
+
+    private static final class GeneratedWithStaticInjection {
+        @Inject("safeService")
+        private static SafeService safeService;
+    }
+
+    private static final class GeneratedWithFinalInjection {
+        @Inject("safeService")
+        private final SafeService safeService = null;
     }
 
     private static final class SecretService {

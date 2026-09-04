@@ -2,13 +2,16 @@ package io.github.gear4jtest.core.engine.support;
 
 import java.lang.reflect.Field;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import io.github.gear4jtest.core.api.context.StationParameter;
 
 public final class WorkerIntrospector {
-    private static final ConcurrentMap<Class<?>, Boolean> STATEFUL_CACHE = new ConcurrentHashMap<>();
+    private static final ClassValue<Boolean> STATEFUL_CACHE = new ClassValue<>() {
+        @Override
+        protected Boolean computeValue(Class<?> type) {
+            return scanForParameters(type);
+        }
+    };
 
     private WorkerIntrospector() {
         // utility
@@ -29,7 +32,7 @@ public final class WorkerIntrospector {
     }
 
     private static boolean detectStateful(Class<?> transformerClass) {
-        return STATEFUL_CACHE.computeIfAbsent(transformerClass, WorkerIntrospector::scanForParameters);
+        return STATEFUL_CACHE.get(transformerClass);
     }
 
     private static boolean scanForParameters(Class<?> type) {
