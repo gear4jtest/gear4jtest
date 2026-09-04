@@ -66,12 +66,19 @@ The run-local `EventManager` owns queueing, dispatch and reaction accounting. Th
 `EventRuntimeShutdown` owns shutdown-mode interpretation, the shared deadline and executor ownership. This separation is
 internal: it does not change `EventManager.ShutdownHandle` or the best-effort delivery contract.
 
+The default reaction executor is a process-wide, library-owned, bounded daemon pool. Its core workers retire after 60
+seconds without work and are recreated on demand; run shutdown must not terminate this shared default. A reaction
+executor supplied by the application is caller-owned and is never shut down by Gear4J. A per-run executor created by an
+application-supplied factory is owned by that run and follows the configured shutdown deadline.
+
 Use `ShutdownMode.DETACH_AND_DRAIN` when the application wants to return the pipeline result before best-effort reactions
 finish. `RuntimeConfiguration.detachAndDrainDefaults()` exists as a readable shortcut for this common best-effort mode.
 Detached mode is still not durable delivery: reactions may already have been dropped under saturation, and run-scoped
 resources are cleaned up after `detachCleanupTimeout` even if user reaction code is still blocked. Timeout cleanup uses
-a dedicated daemon scheduler; normal reaction completion cancels and removes its pending timeout so completed runs are
-not retained until the full delay expires.
+a dedicated single-thread daemon scheduler; normal reaction completion cancels and removes its pending timeout so
+completed runs are not retained until the full delay expires. This deadline scheduler is process-scoped because a
+scheduled cleanup must remain eligible after `execute(...)` has returned and `AssemblyLineEngine` has no close lifecycle;
+its daemon thread does not prevent JVM shutdown.
 
 ## What the runtime does not guarantee
 

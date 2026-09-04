@@ -35,6 +35,35 @@ class JdbcStatementOptionsTest {
     }
 
     @Test
+    void of_shouldAcceptTheLargestJdbcTimeout() {
+        // When
+        JdbcStatementOptions options = JdbcStatementOptions.of(Duration.ofSeconds(Integer.MAX_VALUE));
+
+        // Then
+        assertThat(options.queryTimeoutSeconds()).isEqualTo(Integer.MAX_VALUE);
+    }
+
+    @Test
+    void of_shouldRejectAFractionAboveTheLargestJdbcTimeout() {
+        Duration invalidTimeout = Duration.ofSeconds(Integer.MAX_VALUE, 1L);
+
+        // When / Then
+        assertThatThrownBy(() -> JdbcStatementOptions.of(invalidTimeout))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("queryTimeout is too large for JDBC Statement#setQueryTimeout");
+    }
+
+    @Test
+    void of_shouldRejectHugeDurationsWithoutLeakingArithmeticException() {
+        Duration invalidTimeout = Duration.ofSeconds(Long.MAX_VALUE);
+
+        // When / Then
+        assertThatThrownBy(() -> JdbcStatementOptions.of(invalidTimeout))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("queryTimeout is too large for JDBC Statement#setQueryTimeout");
+    }
+
+    @Test
     void of_shouldRejectNegativeTimeout() {
         Duration invalidTimeout = Duration.ofMillis(-1);
 

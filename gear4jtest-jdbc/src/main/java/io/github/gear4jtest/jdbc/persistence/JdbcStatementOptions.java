@@ -55,11 +55,21 @@ public final class JdbcStatementOptions {
         if (queryTimeout.isZero()) {
             return 0;
         }
-        long millis = queryTimeout.toMillis();
-        long seconds = Math.max(1L, (millis + 999L) / 1000L);
+        long seconds = queryTimeout.getSeconds();
+        if (queryTimeout.getNano() > 0) {
+            if (seconds == Long.MAX_VALUE) {
+                throw queryTimeoutTooLarge();
+            }
+            seconds++;
+        }
+        seconds = Math.max(1L, seconds);
         if (seconds > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException("queryTimeout is too large for JDBC Statement#setQueryTimeout");
+            throw queryTimeoutTooLarge();
         }
         return (int) seconds;
+    }
+
+    private static IllegalArgumentException queryTimeoutTooLarge() {
+        return new IllegalArgumentException("queryTimeout is too large for JDBC Statement#setQueryTimeout");
     }
 }

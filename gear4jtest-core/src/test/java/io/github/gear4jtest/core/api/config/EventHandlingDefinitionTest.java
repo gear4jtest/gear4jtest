@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.api.config;
 
 import java.time.Duration;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import io.github.gear4jtest.core.event.Event;
 import io.github.gear4jtest.core.event.EventPayloadPolicy;
@@ -56,6 +57,9 @@ class EventHandlingDefinitionTest {
         assertThat(first.shutdownOnClose()).isFalse();
         assertThat(second.shutdownOnClose()).isFalse();
         assertThat(first.executorService()).isSameAs(second.executorService());
+        assertThat(first.executorService()).isInstanceOfSatisfying(ThreadPoolExecutor.class,
+                                                                   executor -> assertThat(executor
+                                                                           .allowsCoreThreadTimeOut()).isTrue());
     }
 
     @Test
