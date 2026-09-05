@@ -18,6 +18,7 @@ import io.github.gear4jtest.spring.boot.SpringJdbcTransactionOperations;
 import io.github.gear4jtest.spring.boot.actuate.Gear4jPersistenceHealthIndicator;
 import io.github.gear4jtest.xml.translator.XmlOperationChainTranslator;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -27,6 +28,7 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
  * The consumer deliberately declares no direct dependency on those libraries.
  */
 final class PublishedScopeCompilationProbe {
+    private @Nullable String nullableValue;
     private AssemblyLine<?, ?> assemblyLine;
     private AssemblyLineExecutor assemblyLineExecutor;
     private OperationChainTranslator translator;

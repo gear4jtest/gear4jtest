@@ -72,8 +72,7 @@ class BuilderFacadesTest {
 
         // When
         SignalStation<String> fatal = Stations.fatalSignal(String.class).id("fatal").build();
-        SignalStation<Map<String, Integer>> mapFatal = Stations
-                .fatalSignal(new Stations.MapType<>(String.class, Integer.class))
+        SignalStation<Map<String, Integer>> mapFatal = Stations.<Map<String, Integer>>fatalSignal()
                 .id("map-fatal")
                 .build();
 

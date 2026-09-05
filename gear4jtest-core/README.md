@@ -136,9 +136,24 @@ Important principles:
 - STOP and CANCEL are flow outcomes, not generic exceptions used for short-circuiting.
 - `ExecutionResult.isSuccess()` is true only for `SUCCEEDED`; use `getOutcome()` to distinguish `SKIPPED`, `STOPPED`, `CANCELLED` and `FAILED`.
 - `ExecutionResult` instances are created through outcome-specific factories; a failed result always carries a non-null exception and never carries an output.
+- Public nullable getters carry JSpecify metadata. Prefer `resultOptional()`, `executionOptional()` and
+  `errorOptional()` when absence is part of normal control flow.
 - JVM `Error` should not be treated as an ordinary recoverable pipeline failure.
 - Station-level error policies belong at the station boundary, not scattered through every strategy.
 - Persistence traces and logs are observability artifacts, not control-flow inputs.
+
+`ExecutionResult` presence rules are:
+
+| Outcome | Result | Execution trace | Error |
+| --- | --- | --- | --- |
+| `SUCCEEDED` | Nullable; an operator may return `null` | Present for standard engine executions | Absent |
+| `SKIPPED` | Nullable fallback/carried value | Present for standard engine executions | Absent |
+| `STOPPED` | Nullable partial value | Present for standard engine executions | Absent |
+| `CANCELLED` | Nullable partial value | Present for standard engine executions | Nullable cancellation cause |
+| `FAILED` | Always absent | Present for standard engine executions | Always present |
+
+Outcome-specific factories remain public for extensions and test fixtures, so a manually created result may omit its
+trace. Never infer the outcome from an empty result optional.
 
 ## Events
 

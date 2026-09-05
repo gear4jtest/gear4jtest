@@ -119,13 +119,14 @@ if (!result.isSuccess()) {
     throw new IllegalStateException("Pipeline ended with " + result.getOutcome(), result.getError());
 }
 
-String greeting = result.getResult(); // "Hello, Ada!"
-RunTrace trace = result.getExecution();
+String greeting = result.resultOptional().orElseThrow(); // "Hello, Ada!"
+RunTrace trace = result.executionOptional().orElseThrow();
 ```
 
-`ExecutionResult` distinguishes success, skip, stop, cancellation and normalized failure. Do not use a null result as a
-proxy for terminal state. `RunTrace` and its station views are read-only; engine and mutable trace implementations are
-not application contracts.
+`ExecutionResult` distinguishes success, skip, stop, cancellation and normalized failure. Do not use an empty result
+optional as a proxy for terminal state: a successful operator may deliberately return `null`. Nullable compatibility
+getters carry JSpecify metadata; the optional accessors are safer when absence is expected. `RunTrace` and its station
+views are read-only; engine and mutable trace implementations are not application contracts.
 
 ## 6. Choose the next integration
 

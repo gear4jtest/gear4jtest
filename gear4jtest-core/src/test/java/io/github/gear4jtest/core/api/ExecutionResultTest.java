@@ -2,6 +2,8 @@ package io.github.gear4jtest.core.api;
 
 import java.lang.reflect.Modifier;
 
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,6 +28,8 @@ class ExecutionResultTest {
         assertThat(executionResult.isSkipped()).isFalse();
         assertThat(executionResult.isStopped()).isFalse();
         assertThat(executionResult.isCancelled()).isFalse();
+        assertThat(executionResult.resultOptional()).contains("ok");
+        assertThat(executionResult.executionOptional()).isEmpty();
     }
 
     @Test
@@ -38,6 +42,8 @@ class ExecutionResultTest {
         assertThat(executionResult.isSkipped()).isTrue();
         assertThat(executionResult.isSuccess()).isFalse();
         assertThat(executionResult.isFailed()).isFalse();
+        assertThat(executionResult.resultOptional()).isEmpty();
+        assertThat(executionResult.errorOptional()).isEmpty();
     }
 
     @Test
@@ -65,6 +71,15 @@ class ExecutionResultTest {
         assertThat(executionResult.isSuccess()).isFalse();
         assertThat(executionResult.isFailed()).isFalse();
         assertThat(executionResult.getError()).isSameAs(cancellation);
+        assertThat(executionResult.errorOptional()).contains(cancellation);
+    }
+
+    @Test
+    void cancelled_shouldExposeAnEmptyOptionalWhenNoCauseIsAvailable() {
+        ExecutionResult<Void> executionResult = ExecutionResult.cancelled(null, null, null);
+
+        assertThat(executionResult.isCancelled()).isTrue();
+        assertThat(executionResult.errorOptional()).isEmpty();
     }
 
     @Test
@@ -80,6 +95,8 @@ class ExecutionResultTest {
         assertThat(executionResult.isFailed()).isTrue();
         assertThat(executionResult.isSuccess()).isFalse();
         assertThat(executionResult.getError()).isSameAs(error);
+        assertThat(executionResult.resultOptional()).isEmpty();
+        assertThat(executionResult.errorOptional()).contains(error);
     }
 
     @Test
@@ -87,5 +104,16 @@ class ExecutionResultTest {
         assertThatThrownBy(() -> ExecutionResult.failure(null, null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessage("error must not be null");
+    }
+
+    @Test
+    void publicNullableGetters_shouldExposeJSpecifyMetadata() throws Exception {
+        assertThat(ExecutionResult.class.isAnnotationPresent(NullMarked.class)).isTrue();
+        assertThat(ExecutionResult.class.getMethod("getResult").getAnnotatedReturnType()
+                .isAnnotationPresent(Nullable.class)).isTrue();
+        assertThat(ExecutionResult.class.getMethod("getExecution").getAnnotatedReturnType()
+                .isAnnotationPresent(Nullable.class)).isTrue();
+        assertThat(ExecutionResult.class.getMethod("getError").getAnnotatedReturnType()
+                .isAnnotationPresent(Nullable.class)).isTrue();
     }
 }

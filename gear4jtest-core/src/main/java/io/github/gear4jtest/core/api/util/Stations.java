@@ -1,6 +1,5 @@
 package io.github.gear4jtest.core.api.util;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 
@@ -42,12 +41,16 @@ public final class Stations {
 
     public static <T> SignalStation.Builder<T> fatalSignal(Class<T> clazz) {
         Objects.requireNonNull(clazz, CLAZZ_MUST_NOT_BE_NULL);
-        return new SignalStation.Builder<T>().type(SignalType.FATAL);
+        return fatalSignal();
     }
 
-    public static <U, V> SignalStation.Builder<Map<U, V>> fatalSignal(MapType<U, V> clazz) {
-        Objects.requireNonNull(clazz, CLAZZ_MUST_NOT_BE_NULL);
-        return new SignalStation.Builder<Map<U, V>>().type(SignalType.FATAL);
+    /**
+     * Creates a fatal signal builder when no reifiable class token exists for the
+     * payload type, for example
+     * {@code Stations.<Map<String, Integer>>fatalSignal()}.
+     */
+    public static <T> SignalStation.Builder<T> fatalSignal() {
+        return new SignalStation.Builder<T>().type(SignalType.FATAL);
     }
 
     public static <T> ContainerBaseStation.Builder<T, T> container(Class<T> clazz) {
@@ -103,25 +106,6 @@ public final class Stations {
 
         public Class<T> getClazz() {
             return clazz;
-        }
-    }
-
-    public static class MapType<U, V> extends Type<Map> {
-        private final Class<U> classA;
-        private final Class<V> classB;
-
-        public MapType(Class<U> classA, Class<V> classB) {
-            super(Map.class);
-            this.classA = classA;
-            this.classB = classB;
-        }
-
-        public Class<U> getClassA() {
-            return classA;
-        }
-
-        public Class<V> getClassB() {
-            return classB;
         }
     }
 }

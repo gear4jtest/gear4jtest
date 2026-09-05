@@ -4,7 +4,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | Partially implemented — phases 1 and 2 code complete; connected Gradle gate pending |
+| Status | Partially implemented — phases 1 to 3 code complete; connected Gradle gate pending |
 | Owner | Gear4J maintainers |
 | Last reviewed | 2026-09-04 |
 | Target version | Pre-1.0 stabilization |
@@ -18,7 +18,7 @@ naming and any project-wide module, package or artifact rename are outside this 
 | --- | --- | --- | --- | --- |
 | 1 — correctness and immediate security | P1 | Class-unloading-safe introspection cache; accurate persistence shutdown report; inherited and validated field injection; removal of the unused public checked exception; pgJDBC security update | Focused tests, `check`, integration dependency guard and documentation links pass | Implemented; Gradle gate pending |
 | 2 — runtime and persistence hardening | P2 | Define lifecycle for process-wide default executors; verify maintenance traversal and index-removal findings against existing evidence; reject overflowing JDBC timeout conversions | Lifecycle tests, timeout boundary tests, maintenance-path review and retained SQL-plan evidence pass | Implemented; Gradle gate pending |
-| 3 — API and maintainability cleanup | P2/P3 | Remove raw `Stations.MapType` usage; make `ExecutionResult` nullability explicit; remove the unused `JdbcRepositoryTransaction`; isolate and compatibility-test Eclipse JDT internal API usage | API surface review, consumer smoke tests and focused compatibility tests pass | Planned |
+| 3 — API and maintainability cleanup | P2/P3 | Remove raw `Stations.MapType` usage; make `ExecutionResult` nullability explicit; remove the unused `JdbcRepositoryTransaction`; isolate and compatibility-test Eclipse JDT internal API usage | API surface review, consumer smoke tests and focused compatibility tests pass | Implemented; Gradle gate pending |
 | 4 — release qualification | P2 | Broaden compiler linting; make vulnerability-feed availability explicit in release CI; run complete build, publication staging, consumer smoke test, database matrix and reproducibility checks | All release gates produce retained evidence | Planned |
 
 Dependency locking and verification metadata remain deferred until after 1.0. The existing dependency catalog, SCA and
@@ -86,6 +86,19 @@ serve random page access. Likewise, the simple JDBC indexes were retained becaus
 shows the optimizer selecting `idx_ar_status`; redundancy has not been proved across supported dialects. See the
 [phase 2 evidence record](../audit/remediation-2026-09-04-phase-2-runtime-persistence-hardening.md).
 
+## Phase 3 implementation
+
+The unused raw `MapType` tokens are replaced by a generic no-token fatal-signal builder. `ExecutionResult` now exposes
+JSpecify nullness metadata plus `resultOptional()`, `executionOptional()` and `errorOptional()` while preserving its
+existing getters. The public outcome/field matrix and the pre-1.0 `MapType` migration are documented.
+
+The unreferenced, weaker `JdbcRepositoryTransaction` duplicate is removed. The JDT internal imports were already
+confined to the `@Internal` adapter by an architecture guard; phase 3 adds an executable compatibility test covering Java
+17 records, sealed types, class-file target, class loading and error diagnostics. A separate optional JDT module remains
+deferred because it would change fallback availability and published dependency behavior without reducing the contained
+source-level coupling further. See the
+[phase 3 evidence record](../audit/remediation-2026-09-04-phase-3-api-maintainability.md).
+
 ## Required connected-environment validation
 
 ```bash
@@ -94,6 +107,10 @@ shows the optimizer selecting `idx_ar_status`; redundancy has not been proved ac
 ./gradlew :gear4jtest-external-api:test --tests '*SimpleDependencyInjectorTest'
 ./gradlew :gear4jtest-external-api:test --tests '*ArtifactStoreExecutorsTest'
 ./gradlew :gear4jtest-core:test --tests '*EventHandlingDefinitionTest'
+./gradlew :gear4jtest-core:test \
+  --tests '*BuilderFacadesTest' \
+  --tests '*ExecutionResultTest'
+./gradlew :gear4jtest-external-api:test --tests '*JdtCompilerCompatibilityTest'
 ./gradlew :gear4jtest-jdbc:test \
   --tests '*JdbcStatementOptionsTest' \
   --tests '*PersistenceFlushCoordinatorTargetedCoverageTest' \
@@ -113,7 +130,10 @@ documented in [Releasing](../releasing.md).
   caller-owned and component-owned persistence shutdown reporting.
 - Phase 2 production changes compile with Java 17 and `-Xlint:all`; standalone harnesses passed for actual idle worker
   retirement and the exact/overflowing JDBC timeout boundaries.
-- All 157 repository-local Markdown files considered by the documentation-link gate have valid local links.
+- Phase 3 core changes compile with Java 17 and `-Xlint:all`; the safe-accessor/nullability harness, Java source parser,
+  public API boundary analyzer and JDT-import confinement check pass. The real JDT adapter test requires Gradle and its
+  pinned dependency, which are unavailable in this environment.
+- All 158 repository-local Markdown files considered by the documentation-link gate have valid local links.
 - The nine Python release-tool tests pass and all shell scripts pass `bash -n`.
 - Gradle/JUnit, Spotless, Checkstyle, integration, SCA and publication tasks could not start because the wrapper needs
   `gradle-9.6.1-bin.zip` from an endpoint unavailable in this environment. They remain mandatory before merge.

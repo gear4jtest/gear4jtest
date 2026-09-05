@@ -49,6 +49,12 @@ configured N-1 release with Japicmp. In particular:
 - keep exceptions actionable and avoid exposing implementation-only exception
   types as mandatory control flow.
 
+Public nullness contracts use JSpecify. `@NullMarked` defines the local non-null default and `@Nullable` marks legitimate
+absence explicitly. Because these annotations are part of consumer-facing signatures, the small JSpecify annotation
+artifact is an API dependency and the staged consumer probe compiles a direct annotation reference. Optional accessors
+remain preferable when absence is ordinary control flow; annotations primarily protect legacy-compatible nullable
+getters and Java/Kotlin tooling.
+
 ## SPI
 
 SPI is intended for framework/integration authors. Implementations may be

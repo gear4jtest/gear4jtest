@@ -1,6 +1,5 @@
 package io.github.gear4jtest.core.api.util;
 
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import io.github.gear4jtest.core.api.AssemblyLine;
@@ -80,8 +79,8 @@ public final class ElementModelBuilders {
         return Stations.fatalSignal(clazz);
     }
 
-    public static <U, V> SignalStation.Builder<Map<U, V>> fatalSignal(MapType<U, V> clazz) {
-        return Stations.fatalSignal(clazz);
+    public static <T> SignalStation.Builder<T> fatalSignal() {
+        return Stations.fatalSignal();
     }
 
     public static <T> ContainerBaseStation.Builder<T, T> container(Class<T> clazz) {
@@ -147,12 +146,6 @@ public final class ElementModelBuilders {
     public static class Type<T> extends Stations.Type<T> {
         public Type(Class<T> clazz) {
             super(clazz);
-        }
-    }
-
-    public static class MapType<U, V> extends Stations.MapType<U, V> {
-        public MapType(Class<U> classA, Class<V> classB) {
-            super(classA, classB);
         }
     }
 }

@@ -3,6 +3,7 @@ junit = "5.12.2"
 junit-platform = "1.12.2"
 slf4j = "2.0.17"
 assertj = "3.27.7"
+jspecify = "1.0.0"
 logback = "1.5.38"
 log4j = "2.25.5"
 mockito = "5.17.0"
@@ -28,6 +29,7 @@ jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-dat
 junit = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
 log4j-to-slf4j = { module = "org.apache.logging.log4j:log4j-to-slf4j", version.ref = "log4j" }

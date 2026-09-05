@@ -72,6 +72,17 @@ artifact.
 Every abbreviated package in the table starts with `io.github.gear4jtest.`. The release gate scans both the binary and
 source core JARs and fails if one of these removed paths returns.
 
+The raw `Stations.MapType<K, V>` and `ElementModelBuilders.MapType<K, V>` tokens were also removed before 1.0. A fatal
+signal does not inspect its payload class at runtime, so parameterized payloads now use the generic no-token overload:
+
+```java
+SignalStation<Map<String, Integer>> signal =
+        Stations.<Map<String, Integer>>fatalSignal().id("fatal-map").build();
+```
+
+For execution results, nullable compatibility getters remain available and now carry JSpecify annotations. New code
+should prefer `resultOptional()`, `executionOptional()` and `errorOptional()` where absence is expected.
+
 ## 4. Select explicit published modules
 
 Declare the artifact that owns the feature used by the application. Do not depend on an aggregator or import internal

@@ -148,6 +148,11 @@ from the supplied parent classloader in addition to the process classpath.
 low-level in-memory hooks through implementation packages. Consumer code must
 depend on `GeneratedSourceCompiler` and the `GeneratedSourceCompilers` factories;
 only the adapter is allowed to import `org.eclipse.jdt.internal.*`.
+The supported JDT version is pinned in the dependency catalog. Every upgrade
+must pass `JdtCompilerCompatibilityTest`, which compiles and loads Java 17
+record/sealed-class bytecode, verifies class-file version 61 and checks that a
+source error still exposes diagnostics. This test complements the architecture
+guard; neither test turns the upstream internal packages into a stable contract.
 
 The manager wraps the selected compiler in a bounded 128-entry/16-MiB, single-flight
 cache shared by publication validation and runtime loading. Delegate calls run in

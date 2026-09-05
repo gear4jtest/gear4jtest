@@ -49,6 +49,8 @@ unbounded number of classloaders from eviction.
 ## Consequences
 
 - The standard JDK compiler is the preferred path when available; JDT is selected only when javac is unavailable.
+- JDT internal imports stay confined to the `@Internal` adapter. Upgrading the pinned JDT version requires the focused
+  Java 17 compilation, class loading, class-file target and diagnostic compatibility test to pass.
 - Syntax or type errors are reported once by the selected backend rather than compiled twice.
 - Untrusted XML has a concrete GEL-only path for conditions.
 - Runtime classloader churn is limited by default, while exact aliases remain

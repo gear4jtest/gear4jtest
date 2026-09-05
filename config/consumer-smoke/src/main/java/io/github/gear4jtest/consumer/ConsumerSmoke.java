@@ -19,7 +19,8 @@ public final class ConsumerSmoke {
         ExecutionResult<String> tutorialResult = GettingStartedExample.run(" Ada ");
 
         if (payloadCloner == null || !translator.supports(XmlOperationChainTranslator.VENDOR_MEDIA_TYPE)
-                || !tutorialResult.isSuccess() || !"Hello, Ada!".equals(tutorialResult.getResult())) {
+                || !tutorialResult.isSuccess()
+                || tutorialResult.resultOptional().filter("Hello, Ada!"::equals).isEmpty()) {
             throw new IllegalStateException("Staged Gear4J artifacts are not usable");
         }
     }

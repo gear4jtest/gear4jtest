@@ -1,4 +1,5 @@
 dependencies {
+    api libs.jspecify
     implementation libs.slf4j
 
     testImplementation libs.jackson
