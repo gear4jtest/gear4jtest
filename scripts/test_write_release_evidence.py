@@ -58,6 +58,10 @@ class ReleaseEvidenceTest(unittest.TestCase):
         self.assertEqual("1.0.0", manifest["release"]["version"])
         self.assertEqual("a" * 40, manifest["release"]["commitSha"])
         self.assertEqual("success", manifest["gates"][0]["result"])
+        self.assertIn(
+            "authenticated-vulnerability-feed",
+            {gate["name"] for gate in manifest["gates"]},
+        )
         self.assertEqual(len(REQUIRED_EVIDENCE) + 1, len(manifest["evidenceFiles"]))
         self.assertEqual(64, len(manifest["evidenceFiles"][0]["sha256"]))
         self.assertIn(

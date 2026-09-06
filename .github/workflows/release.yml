@@ -130,6 +130,11 @@ jobs:
         env:
           RELEASE_VERSION: ${{ needs.preflight.outputs.version }}
           API_BASELINE_VERSION: ${{ inputs['api-baseline-version'] || vars.GEAR4J_API_BASELINE_VERSION }}
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+          NVD_DATAFEED_URL: ${{ vars.NVD_DATAFEED_URL }}
+          NVD_DATAFEED_USER: ${{ secrets.NVD_DATAFEED_USER }}
+          NVD_DATAFEED_PASSWORD: ${{ secrets.NVD_DATAFEED_PASSWORD }}
+          NVD_DATAFEED_BEARER_TOKEN: ${{ secrets.NVD_DATAFEED_BEARER_TOKEN }}
         shell: bash
         run: |
           BASELINE_ARGS=()
@@ -187,10 +192,13 @@ jobs:
           path: |
             build/staging-deploy/**
             build/release-tools/jreleaser/**
+            build/reports/jacoco/**
             build/reports/release/**
             build/reports/dependency-check-report.*
             build/reports/japicmp/**
+            build/reports/reproducibility/**
             gear4jtest-core/build/reports/jmh/**
+            gear4jtest-jdbc/build/reports/sql-plan-qualification/**
             **/build/test-results/**/*.xml
             **/build/reports/tests/**
           if-no-files-found: ignore

@@ -18,7 +18,10 @@ tasks.withType(JavaCompile).configureEach {
     options.release.set(17)
     options.deprecation = true
     options.encoding = 'UTF-8'
-    options.compilerArgs += ['-Xlint:unchecked', '-parameters']
+    // Keep the broad compiler diagnostics enabled while excluding the two reviewed
+    // baseline categories: intentionally unnamed try-with-resources handles and
+    // legacy exception types awaiting serialVersionUID cleanup.
+    options.compilerArgs += ['-Xlint:all,-try,-serial', '-parameters']
 }
 
 tasks.withType(Test).configureEach {

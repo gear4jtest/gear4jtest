@@ -4,9 +4,9 @@
 
 | Field | Value |
 | --- | --- |
-| Status | Partially implemented — phases 1 to 3 code complete; connected Gradle gate pending |
+| Status | Implemented — phases 1 to 4 code complete; connected release gate pending |
 | Owner | Gear4J maintainers |
-| Last reviewed | 2026-09-04 |
+| Last reviewed | 2026-09-05 |
 | Target version | Pre-1.0 stabilization |
 
 This roadmap converts the 29 August 2026 source audit into incremental, independently reviewable changes. Product
@@ -19,7 +19,7 @@ naming and any project-wide module, package or artifact rename are outside this 
 | 1 — correctness and immediate security | P1 | Class-unloading-safe introspection cache; accurate persistence shutdown report; inherited and validated field injection; removal of the unused public checked exception; pgJDBC security update | Focused tests, `check`, integration dependency guard and documentation links pass | Implemented; Gradle gate pending |
 | 2 — runtime and persistence hardening | P2 | Define lifecycle for process-wide default executors; verify maintenance traversal and index-removal findings against existing evidence; reject overflowing JDBC timeout conversions | Lifecycle tests, timeout boundary tests, maintenance-path review and retained SQL-plan evidence pass | Implemented; Gradle gate pending |
 | 3 — API and maintainability cleanup | P2/P3 | Remove raw `Stations.MapType` usage; make `ExecutionResult` nullability explicit; remove the unused `JdbcRepositoryTransaction`; isolate and compatibility-test Eclipse JDT internal API usage | API surface review, consumer smoke tests and focused compatibility tests pass | Implemented; Gradle gate pending |
-| 4 — release qualification | P2 | Broaden compiler linting; make vulnerability-feed availability explicit in release CI; run complete build, publication staging, consumer smoke test, database matrix and reproducibility checks | All release gates produce retained evidence | Planned |
+| 4 — release qualification | P2 | Broaden compiler linting; make vulnerability-feed availability explicit in release CI; run complete build, publication staging, consumer smoke test, database matrix and reproducibility checks | All release gates produce retained evidence | Implemented; connected release gate pending |
 
 Dependency locking and verification metadata remain deferred until after 1.0. The existing dependency catalog, SCA and
 release checks remain mandatory in the meantime.
@@ -99,6 +99,23 @@ deferred because it would change fallback availability and published dependency 
 source-level coupling further. See the
 [phase 3 evidence record](../audit/remediation-2026-09-04-phase-3-api-maintainability.md).
 
+## Phase 4 implementation
+
+Java compilation now enables `-Xlint:all,-try,-serial` instead of only `unchecked`. The two exclusions retain the
+reviewed baseline for intentionally unnamed try-with-resources handles and legacy serializable exceptions; warnings are
+not made fatal in this incremental phase. The release configuration guard verifies that every Java compile task keeps
+the broader lint contract.
+
+`releaseCheck` now rejects anonymous NVD access. It accepts an authenticated public NVD API or an explicit mirrored NVD
+datafeed, validates mirror credential consistency and records only the selected source/authentication mode. The GitHub
+release job supplies the key/mirror contract at step scope. Ad-hoc Dependency-Check runs may remain anonymous.
+
+The release gate now produces and retains stronger evidence: aggregate JaCoCo XML, a non-secret NVD-source report and
+PostgreSQL/MySQL/MariaDB/Oracle SQL-plan reports join the Dependency-Check, JMH, staging and reproducibility evidence.
+Missing database reports fail qualification, including when Testcontainers silently disables Docker tests. Raw
+reproducibility, coverage and SQL-plan reports are included in the workflow artifact. See the
+[phase 4 evidence record](../audit/remediation-2026-09-05-phase-4-release-qualification.md).
+
 ## Required connected-environment validation
 
 ```bash
@@ -120,8 +137,8 @@ source-level coupling further. See the
 ./gradlew stageMavenCentral consumerSmokeTest
 ```
 
-The complete release qualification should additionally execute the database matrix and reproducible-artifact checks
-documented in [Releasing](../releasing.md).
+The complete release qualification requires `NVD_API_KEY` or `NVD_DATAFEED_URL` and must additionally execute the
+database matrix and reproducible-artifact checks documented in [Releasing](../releasing.md).
 
 ## Validation in the audit environment
 
@@ -133,6 +150,8 @@ documented in [Releasing](../releasing.md).
 - Phase 3 core changes compile with Java 17 and `-Xlint:all`; the safe-accessor/nullability harness, Java source parser,
   public API boundary analyzer and JDT-import confinement check pass. The real JDT adapter test requires Gradle and its
   pinned dependency, which are unavailable in this environment.
+- Phase 4 release-tool tests, workflow/build contract checks and archive-preservation paths pass static validation. The
+  connected SCA, Testcontainers database evidence and staged-artifact gates remain intentionally unclaimed.
 - All 158 repository-local Markdown files considered by the documentation-link gate have valid local links.
 - The nine Python release-tool tests pass and all shell scripts pass `bash -n`.
 - Gradle/JUnit, Spotless, Checkstyle, integration, SCA and publication tasks could not start because the wrapper needs

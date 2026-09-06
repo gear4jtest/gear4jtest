@@ -326,9 +326,12 @@ tasks.register('verifyReleaseWorkflowContract') {
                 'preflight:',
                 'needs: [preflight, database-matrix]',
                 'RELEASE_VERSION: ${{ needs.preflight.outputs.version }}',
+                'NVD_API_KEY: ${{ secrets.NVD_API_KEY }}',
+                'NVD_DATAFEED_URL: ${{ vars.NVD_DATAFEED_URL }}',
                 '-PprojectVersion="${RELEASE_VERSION}"',
                 'python3 scripts/validate_release_invocation.py',
                 'python3 scripts/write_release_evidence.py',
+                'build/reports/reproducibility/**',
                 'build/reports/release/**'
             ]
         ]
@@ -548,6 +551,8 @@ tasks.register('verifyDependencyCheckSuppressions') {
 }
 
 dependencyCheck {
+    autoUpdate = true
+    failOnError = true
     failBuildOnCVSS = 7.0
     suppressionFiles = [layout.projectDirectory.file('config/dependency-check-suppressions.xml').asFile.absolutePath]
     formats = ['HTML', 'JSON']
@@ -564,9 +569,25 @@ dependencyCheck {
         // an additional external account/token.
         ossIndex.enabled = false
     }
-    if (System.getenv('NVD_API_KEY')) {
-        nvd {
-            apiKey = System.getenv('NVD_API_KEY')
+    def nvdApiKey = System.getenv('NVD_API_KEY')?.trim()
+    def nvdDatafeedUrl = System.getenv('NVD_DATAFEED_URL')?.trim()
+    def nvdDatafeedUser = System.getenv('NVD_DATAFEED_USER')?.trim()
+    def nvdDatafeedPassword = System.getenv('NVD_DATAFEED_PASSWORD')?.trim()
+    def nvdDatafeedBearerToken = System.getenv('NVD_DATAFEED_BEARER_TOKEN')?.trim()
+    nvd {
+        if (nvdDatafeedUrl) {
+            datafeedUrl = nvdDatafeedUrl
+            if (nvdDatafeedUser) {
+                datafeedUser = nvdDatafeedUser
+            }
+            if (nvdDatafeedPassword) {
+                datafeedPassword = nvdDatafeedPassword
+            }
+            if (nvdDatafeedBearerToken) {
+                datafeedBearerToken = nvdDatafeedBearerToken
+            }
+        } else if (nvdApiKey) {
+            apiKey = nvdApiKey
         }
     }
 }

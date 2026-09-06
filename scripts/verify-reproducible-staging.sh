@@ -32,7 +32,10 @@ preserve_release_evidence() {
     \( -path './gear4jtest-*/build/test-results/*.xml' \
        -o -path './gear4jtest-*/build/reports/tests/*' \
        -o -path './build/reports/dependency-check-report.*' \
+       -o -path './build/reports/jacoco/*' \
        -o -path './build/reports/japicmp/*.xml' \
+       -o -path './build/reports/release/vulnerability-feed.txt' \
+       -o -path './gear4jtest-jdbc/build/reports/sql-plan-qualification/*' \
        -o -path './gear4jtest-core/build/reports/jmh/*' \) \
     -print0)
 }

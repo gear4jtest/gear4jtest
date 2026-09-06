@@ -50,7 +50,7 @@ tasks.register('verifyConventionModel') {
         assert compileJava.options.release.get() == 17
         assert compileJava.options.encoding == 'UTF-8'
         assert compileJava.options.deprecation
-        assert compileJava.options.compilerArgs.containsAll(['-Xlint:unchecked', '-parameters'])
+        assert compileJava.options.compilerArgs.containsAll(['-Xlint:all,-try,-serial', '-parameters'])
 
         def testTask = tasks.named('test', Test).get()
         assert testTask.javaLauncher.get().metadata.languageVersion.asInt() == 17
@@ -270,7 +270,7 @@ group = 'io.github.gear4jtest'
 version = findProperty('projectVersion') ?: '1.0.0'
 
 ['verifyDocumentationLinks', 'verifyDecisionIdentifiers', 'verifyLivingDocumentationMetadata',
- 'dependencyCheckAggregate',
+ 'coverageReport', 'dependencyCheckAggregate', 'integrationCheck',
  'verifyDependencyCheckSuppressions', 'verifyPerformanceBudgets'].each { taskName ->
     tasks.register(taskName)
 }
@@ -319,7 +319,8 @@ tasks.register('verifyReleaseConventionModel') {
 
         ['verifyReleaseAssets', 'verifyReleaseVersion', 'jreleaserConfig', 'jreleaserDeploy', 'releaseMetadataCheck',
          'stageMavenCentral', 'verifyStagedReleaseArtifacts', 'consumerSmokeTest',
-         'verifyReleaseDatabaseMatrixSelection', 'verifyJava17AndArchiveConfiguration',
+         'verifyReleaseDatabaseEvidence', 'verifyReleaseDatabaseMatrixSelection',
+         'verifyReleaseVulnerabilityFeed', 'verifyJava17AndArchiveConfiguration',
          'verifyApiCompatibilityConfiguration', 'apiCompatibilityCheck', 'releaseCheck'].each {
             assert rootTasks.findByName(it) != null
         }
@@ -338,18 +339,27 @@ tasks.register('verifyReleaseConventionModel') {
         assert releaseDependencies.contains(rootTasks.named('consumerSmokeTest').get())
         assert releaseDependencies.contains(rootTasks.named('verifyStagedReleaseArtifacts').get())
         assert releaseDependencies.contains(rootTasks.named('apiCompatibilityCheck').get())
+        assert releaseDependencies.contains(rootTasks.named('coverageReport').get())
         assert releaseDependencies.contains(rootTasks.named('releaseMetadataCheck').get())
+        assert releaseDependencies.contains(rootTasks.named('verifyReleaseDatabaseEvidence').get())
         assert releaseDependencies.contains(rootTasks.named('verifyReleaseVersion').get())
+        assert releaseDependencies.contains(rootTasks.named('verifyReleaseVulnerabilityFeed').get())
     }
 }
 '''.stripIndent())
+        ['postgresql', 'mysql', 'mariadb', 'oracle'].each { dialect ->
+            write("gear4jtest-jdbc/build/reports/sql-plan-qualification/${dialect}.md",
+                "qualified ${dialect}\n")
+        }
 
         BuildResult result = GradleRunner.create()
             .withProjectDir(projectDirectory.toFile())
             .withArguments('verifyReleaseConventionModel', 'verifyStagedReleaseArtifacts',
-                'verifyJava17AndArchiveConfiguration', 'verifyReleaseVersion',
+                'verifyJava17AndArchiveConfiguration', 'verifyReleaseDatabaseEvidence', 'verifyReleaseVersion',
+                'verifyReleaseVulnerabilityFeed',
                 '--stacktrace', '--warning-mode=all')
             .withPluginClasspath()
+            .withEnvironment(dependencyFeedEnvironment(['NVD_API_KEY': 'fixture-key']))
             .build()
 
         assertThat(result.task(':verifyReleaseConventionModel').outcome)
@@ -358,11 +368,18 @@ tasks.register('verifyReleaseConventionModel') {
             .isEqualTo(TaskOutcome.SUCCESS)
         assertThat(result.task(':verifyJava17AndArchiveConfiguration').outcome)
             .isEqualTo(TaskOutcome.SUCCESS)
+        assertThat(result.task(':verifyReleaseDatabaseEvidence').outcome)
+            .isEqualTo(TaskOutcome.SUCCESS)
         assertThat(result.task(':verifyReleaseVersion').outcome)
+            .isEqualTo(TaskOutcome.SUCCESS)
+        assertThat(result.task(':verifyReleaseVulnerabilityFeed').outcome)
             .isEqualTo(TaskOutcome.SUCCESS)
         assertThat(Files.readString(projectDirectory.resolve(
             'build/reports/release/staged-artifacts.txt')))
             .isEqualTo('Verified 3 JARs and 1 POMs.\n')
+        assertThat(Files.readString(projectDirectory.resolve(
+            'build/reports/release/vulnerability-feed.txt')))
+            .isEqualTo('source=authenticated-nvd-api\nauthentication=token\n')
 
         def stagedPom = new groovy.xml.XmlSlurper(false, false).parse(projectDirectory.resolve(
             'build/staging-deploy/io/github/gear4jtest/sample-library/1.0.0/'
@@ -393,6 +410,39 @@ tasks.register('verifyReleaseConventionModel') {
             .isEqualTo(TaskOutcome.FAILED)
         assertThat(rejectedSnapshot.output)
             .contains('releaseCheck requires a SemVer-like non-snapshot project version')
+
+        BuildResult rejectedAnonymousFeed = GradleRunner.create()
+            .withProjectDir(projectDirectory.toFile())
+            .withArguments('verifyReleaseVulnerabilityFeed', '--stacktrace', '--warning-mode=all')
+            .withPluginClasspath()
+            .withEnvironment(dependencyFeedEnvironment([:]))
+            .buildAndFail()
+        assertThat(rejectedAnonymousFeed.task(':verifyReleaseVulnerabilityFeed').outcome)
+            .isEqualTo(TaskOutcome.FAILED)
+        assertThat(rejectedAnonymousFeed.output)
+            .contains('set NVD_API_KEY or NVD_DATAFEED_URL')
+
+        BuildResult mirroredFeed = GradleRunner.create()
+            .withProjectDir(projectDirectory.toFile())
+            .withArguments('verifyReleaseVulnerabilityFeed', '--stacktrace', '--warning-mode=all')
+            .withPluginClasspath()
+            .withEnvironment(dependencyFeedEnvironment([
+                'NVD_DATAFEED_URL': 'https://nvd.example.test/nvdcve-{0}.json.gz'
+            ]))
+            .build()
+        assertThat(mirroredFeed.task(':verifyReleaseVulnerabilityFeed').outcome)
+            .isEqualTo(TaskOutcome.SUCCESS)
+        assertThat(Files.readString(projectDirectory.resolve(
+            'build/reports/release/vulnerability-feed.txt')))
+            .isEqualTo('source=nvd-datafeed-mirror\nauthentication=network-or-none\n')
+    }
+
+    private static Map<String, String> dependencyFeedEnvironment(Map<String, String> overrides) {
+        def environment = new HashMap<String, String>(System.getenv())
+        ['NVD_API_KEY', 'NVD_DATAFEED_URL', 'NVD_DATAFEED_USER', 'NVD_DATAFEED_PASSWORD',
+         'NVD_DATAFEED_BEARER_TOKEN'].each { environment.remove(it) }
+        environment.putAll(overrides)
+        return environment
     }
 
     private void write(String relativePath, String content) {

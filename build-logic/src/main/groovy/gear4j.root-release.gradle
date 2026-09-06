@@ -222,6 +222,56 @@ def selectedDatabaseDialect = providers.gradleProperty('gear4jDatabaseDialect')
     .orElse('all')
 String configuredReleaseVersion = version.toString()
 
+def nonBlankEnvironmentVariable = { String name ->
+    String value = System.getenv(name)
+    value == null || value.trim().isEmpty() ? null : value.trim()
+}
+def nvdApiKey = nonBlankEnvironmentVariable('NVD_API_KEY')
+def nvdDatafeedUrl = nonBlankEnvironmentVariable('NVD_DATAFEED_URL')
+def nvdDatafeedUser = nonBlankEnvironmentVariable('NVD_DATAFEED_USER')
+def nvdDatafeedPassword = nonBlankEnvironmentVariable('NVD_DATAFEED_PASSWORD')
+def nvdDatafeedBearerToken = nonBlankEnvironmentVariable('NVD_DATAFEED_BEARER_TOKEN')
+
+tasks.register('verifyReleaseVulnerabilityFeed') {
+    group = 'verification'
+    description = 'Requires an authenticated NVD API or an explicit NVD datafeed mirror for release validation.'
+    def reportFile = layout.buildDirectory.file('reports/release/vulnerability-feed.txt')
+    outputs.file(reportFile)
+    outputs.upToDateWhen { false }
+
+    doLast {
+        def failures = []
+        boolean hasBasicMirrorCredentials = nvdDatafeedUser != null || nvdDatafeedPassword != null
+        if (nvdApiKey == null && nvdDatafeedUrl == null) {
+            failures << 'set NVD_API_KEY or NVD_DATAFEED_URL'
+        }
+        if (nvdDatafeedUrl == null
+                && (hasBasicMirrorCredentials || nvdDatafeedBearerToken != null)) {
+            failures << 'NVD datafeed credentials require NVD_DATAFEED_URL'
+        }
+        if ((nvdDatafeedUser == null) != (nvdDatafeedPassword == null)) {
+            failures << 'NVD_DATAFEED_USER and NVD_DATAFEED_PASSWORD must be configured together'
+        }
+        if (hasBasicMirrorCredentials && nvdDatafeedBearerToken != null) {
+            failures << 'configure either basic or bearer datafeed authentication, not both'
+        }
+        if (nvdDatafeedUrl != null && !(nvdDatafeedUrl ==~ /(?i)^https?:\/\/[^\s]+$/)) {
+            failures << 'NVD_DATAFEED_URL must be an absolute HTTP(S) URL template'
+        }
+        if (!failures.isEmpty()) {
+            throw new GradleException('Invalid release vulnerability-feed configuration:\n - '
+                + failures.join('\n - ') + '\nAnonymous NVD access remains available for ad-hoc scans only.')
+        }
+
+        String source = nvdDatafeedUrl == null ? 'authenticated-nvd-api' : 'nvd-datafeed-mirror'
+        String authentication = nvdDatafeedUrl == null || nvdDatafeedBearerToken != null
+            ? 'token' : hasBasicMirrorCredentials ? 'basic' : 'network-or-none'
+        def output = reportFile.get().asFile
+        output.parentFile.mkdirs()
+        output.setText("source=${source}\nauthentication=${authentication}\n", 'UTF-8')
+    }
+}
+
 tasks.register('verifyReleaseVersion') {
     group = 'verification'
     description = 'Requires a non-snapshot SemVer-like version for release validation.'
@@ -252,6 +302,30 @@ tasks.register('verifyReleaseDatabaseMatrixSelection') {
     }
 }
 
+def requiredDatabaseEvidence = ['postgresql', 'mysql', 'mariadb', 'oracle'].collect { dialect ->
+    layout.projectDirectory.file(
+        "gear4jtest-jdbc/build/reports/sql-plan-qualification/${dialect}.md")
+}
+
+tasks.register('verifyReleaseDatabaseEvidence') {
+    group = 'verification'
+    description = 'Requires retained SQL-plan evidence for every supported release database dialect.'
+    dependsOn 'integrationCheck'
+    inputs.files(requiredDatabaseEvidence)
+
+    doLast {
+        def missingOrEmpty = requiredDatabaseEvidence.findAll { evidence ->
+            !evidence.asFile.isFile() || evidence.asFile.length() == 0L
+        }.collect { evidence ->
+            layout.projectDirectory.asFile.toPath().relativize(evidence.asFile.toPath())
+        }
+        if (!missingOrEmpty.isEmpty()) {
+            throw new GradleException('Release database evidence is missing or empty:\n - '
+                + missingOrEmpty.join('\n - '))
+        }
+    }
+}
+
 tasks.register('verifyJava17AndArchiveConfiguration') {
     group = 'verification'
     description = 'Verifies Java 17, module names and reproducible archives for every published module.'
@@ -263,6 +337,9 @@ tasks.register('verifyJava17AndArchiveConfiguration') {
             candidate.tasks.withType(JavaCompile).each { compileTask ->
                 if (compileTask.options.release.orNull != 17) {
                     failures << "${compileTask.path} must compile with --release 17"
+                }
+                if (!compileTask.options.compilerArgs.contains('-Xlint:all,-try,-serial')) {
+                    failures << "${compileTask.path} must enable -Xlint:all,-try,-serial"
                 }
             }
             candidate.tasks.withType(AbstractArchiveTask).each { archiveTask ->
@@ -403,11 +480,16 @@ if (gradlePluginProject != null) {
     }
 }
 
+tasks.matching { it.name == 'dependencyCheckAggregate' }.configureEach {
+    mustRunAfter tasks.named('verifyReleaseVulnerabilityFeed')
+}
+
 tasks.register('releaseCheck') {
     group = 'verification'
     description = 'Runs the checks expected before staging a Maven Central release.'
-    dependsOn 'check', 'consumerSmokeTest', 'dependencyCheckAggregate', 'releaseMetadataCheck',
+    dependsOn 'check', 'consumerSmokeTest', 'coverageReport', 'dependencyCheckAggregate', 'releaseMetadataCheck',
         'verifyReleaseAssets', 'verifyReleaseVersion',
         'verifyStagedReleaseArtifacts', 'verifyDependencyCheckSuppressions',
-        'verifyPerformanceBudgets', 'verifyReleaseDatabaseMatrixSelection', 'apiCompatibilityCheck'
+        'verifyPerformanceBudgets', 'verifyReleaseDatabaseEvidence', 'verifyReleaseDatabaseMatrixSelection',
+        'verifyReleaseVulnerabilityFeed', 'apiCompatibilityCheck'
 }

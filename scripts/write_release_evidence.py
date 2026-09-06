@@ -16,10 +16,16 @@ from validate_release_invocation import RELEASE_VERSION, parse_boolean
 
 REQUIRED_EVIDENCE = (
     Path("build/reports/release/staged-artifacts.txt"),
+    Path("build/reports/release/vulnerability-feed.txt"),
     Path("build/reports/reproducibility/first.sha256"),
     Path("build/reports/reproducibility/second.sha256"),
     Path("build/reports/dependency-check-report.json"),
+    Path("build/reports/jacoco/report.xml"),
     Path("gear4jtest-core/build/reports/jmh/results.json"),
+    Path("gear4jtest-jdbc/build/reports/sql-plan-qualification/postgresql.md"),
+    Path("gear4jtest-jdbc/build/reports/sql-plan-qualification/mysql.md"),
+    Path("gear4jtest-jdbc/build/reports/sql-plan-qualification/mariadb.md"),
+    Path("gear4jtest-jdbc/build/reports/sql-plan-qualification/oracle.md"),
     Path("config/module-coverage-thresholds.json"),
     Path("config/critical-coverage-thresholds.json"),
     Path("config/performance-budgets.json"),
@@ -134,6 +140,8 @@ def write_release_evidence(
         },
         "gates": [
             {"name": "database-matrix", "result": database_matrix_result},
+            {"name": "authenticated-vulnerability-feed", "result": "success"},
+            {"name": "coverage-report", "result": "success"},
             {"name": "releaseCheck", "result": "success"},
             {"name": "reproducible-staging", "result": "success"},
             {
