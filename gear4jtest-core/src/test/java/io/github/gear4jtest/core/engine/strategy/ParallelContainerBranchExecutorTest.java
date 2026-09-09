@@ -7,11 +7,13 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -33,6 +35,7 @@ import org.slf4j.MDC;
 
 import static io.github.gear4jtest.core.api.config.FlowConfig.DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 class ParallelContainerBranchExecutorTest {
     @Test
@@ -238,6 +241,242 @@ class ParallelContainerBranchExecutorTest {
                     .isEqualTo(StationLogStatus.SUCCEEDED);
         } finally {
             executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void execute_shouldCancelRunningSiblingWhenLaterPredicateFails() throws Exception {
+        // Given
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch finished = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean();
+        IllegalArgumentException failure = new IllegalArgumentException("predicate failed");
+        ContainerBaseStation<String, Void> station = new ContainerBaseStation.Builder<String, Void>(executor)
+                .id("container")
+                .withBranch("running", new TestStation("running"))
+                .withBranch("predicate", new TestStation("predicate"), (input, context) -> {
+                    awaitStarted(started);
+                    throw failure;
+                })
+                .build();
+        try {
+            // When
+            Throwable actual = catchThrowable(() -> new ParallelContainerBranchExecutor().execute(station, "input",
+                                                                                                  (input,
+                                                                                                   child,
+                                                                                                   context) -> {
+                                                                                                      started.countDown();
+                                                                                                      try {
+                                                                                                          release.await();
+                                                                                                      } catch (InterruptedException exception) {
+                                                                                                          interrupted
+                                                                                                                  .set(true);
+                                                                                                          Thread.currentThread()
+                                                                                                                  .interrupt();
+                                                                                                      } finally {
+                                                                                                          finished.countDown();
+                                                                                                      }
+                                                                                                      return successfulRunner()
+                                                                                                              .run(input,
+                                                                                                                   child,
+                                                                                                                   context);
+                                                                                                  },
+                                                                                                  stationContext("container"),
+                                                                                                  DEFAULT,
+                                                                                                  Duration.ofSeconds(5)));
+
+            // Then
+            assertThat(actual).isSameAs(failure);
+            assertThat(finished.await(5, TimeUnit.SECONDS)).isTrue();
+            assertThat(interrupted).isTrue();
+            assertThat(executor.isShutdown()).isFalse();
+            assertThat(executor.submit(() -> "still usable").get(5, TimeUnit.SECONDS)).isEqualTo("still usable");
+        } finally {
+            release.countDown();
+            executor.shutdownNow();
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+        }
+    }
+
+    @Test
+    void execute_shouldCancelRunningSiblingAndPreserveFatalBranchError() throws Exception {
+        // Given
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch finished = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean();
+        AssertionError failure = new AssertionError("fatal branch");
+        ContainerBaseStation<String, Void> station = new ContainerBaseStation.Builder<String, Void>(executor)
+                .id("container")
+                .withBranch("running", new TestStation("running"))
+                .withBranch("fatal", new TestStation("fatal"))
+                .build();
+        try {
+            // When
+            Throwable actual = catchThrowable(() -> new ParallelContainerBranchExecutor().execute(station, "input",
+                                                                                                  (input,
+                                                                                                   child,
+                                                                                                   context) -> {
+                                                                                                      if ("fatal"
+                                                                                                              .equals(child
+                                                                                                                      .getId())) {
+                                                                                                          awaitStarted(started);
+                                                                                                          throw failure;
+                                                                                                      }
+                                                                                                      started.countDown();
+                                                                                                      try {
+                                                                                                          release.await();
+                                                                                                      } catch (InterruptedException exception) {
+                                                                                                          interrupted
+                                                                                                                  .set(true);
+                                                                                                          Thread.currentThread()
+                                                                                                                  .interrupt();
+                                                                                                      } finally {
+                                                                                                          finished.countDown();
+                                                                                                      }
+                                                                                                      return successfulRunner()
+                                                                                                              .run(input,
+                                                                                                                   child,
+                                                                                                                   context);
+                                                                                                  },
+                                                                                                  stationContext("container"),
+                                                                                                  DEFAULT,
+                                                                                                  Duration.ofSeconds(5)));
+
+            // Then
+            assertThat(actual).isSameAs(failure);
+            assertThat(finished.await(5, TimeUnit.SECONDS)).isTrue();
+            assertThat(interrupted).isTrue();
+            assertThat(executor.isShutdown()).isFalse();
+        } finally {
+            release.countDown();
+            executor.shutdownNow();
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+        }
+    }
+
+    @Test
+    void execute_shouldCancelEverySiblingEvenWhenOneCancellationFails() throws Exception {
+        // Given
+        IllegalStateException cleanupFailure = new IllegalStateException("cancel failed");
+        CancellationFailingExecutor executor = new CancellationFailingExecutor(cleanupFailure);
+        CountDownLatch started = new CountDownLatch(2);
+        CountDownLatch finished = new CountDownLatch(2);
+        CountDownLatch release = new CountDownLatch(1);
+        AtomicInteger interruptions = new AtomicInteger();
+        IllegalArgumentException failure = new IllegalArgumentException("predicate failed");
+        ContainerBaseStation<String, Void> station = new ContainerBaseStation.Builder<String, Void>(executor)
+                .id("container")
+                .withBranch("first", new TestStation("first"))
+                .withBranch("second", new TestStation("second"))
+                .withBranch("predicate", new TestStation("predicate"), (input, context) -> {
+                    awaitStarted(started);
+                    throw failure;
+                })
+                .build();
+        try {
+            // When
+            Throwable actual = catchThrowable(() -> new ParallelContainerBranchExecutor().execute(station, "input",
+                                                                                                  (input,
+                                                                                                   child,
+                                                                                                   context) -> {
+                                                                                                      started.countDown();
+                                                                                                      try {
+                                                                                                          release.await();
+                                                                                                      } catch (InterruptedException exception) {
+                                                                                                          interruptions
+                                                                                                                  .incrementAndGet();
+                                                                                                          Thread.currentThread()
+                                                                                                                  .interrupt();
+                                                                                                      } finally {
+                                                                                                          finished.countDown();
+                                                                                                      }
+                                                                                                      return successfulRunner()
+                                                                                                              .run(input,
+                                                                                                                   child,
+                                                                                                                   context);
+                                                                                                  },
+                                                                                                  stationContext("container"),
+                                                                                                  DEFAULT,
+                                                                                                  Duration.ofSeconds(5)));
+
+            // Then
+            assertThat(actual).isSameAs(failure);
+            assertThat(actual.getSuppressed()).containsExactly(cleanupFailure);
+            assertThat(finished.await(5, TimeUnit.SECONDS)).isTrue();
+            assertThat(interruptions).hasValue(2);
+            assertThat(executor.isShutdown()).isFalse();
+        } finally {
+            release.countDown();
+            executor.shutdownNow();
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+        }
+    }
+
+    private static void awaitStarted(CountDownLatch started) {
+        try {
+            assertThat(started.await(5, TimeUnit.SECONDS)).isTrue();
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("Interrupted while coordinating branches", exception);
+        }
+    }
+
+    private static final class CancellationFailingExecutor extends AbstractExecutorService {
+        private final ExecutorService delegate = Executors.newFixedThreadPool(2);
+        private final AtomicInteger createdTasks = new AtomicInteger();
+        private final RuntimeException failure;
+
+        private CancellationFailingExecutor(RuntimeException failure) {
+            this.failure = failure;
+        }
+
+        @Override
+        protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
+            boolean failCancellation = createdTasks.getAndIncrement() == 0;
+            return new FutureTask<>(callable) {
+                @Override
+                public boolean cancel(boolean mayInterruptIfRunning) {
+                    boolean cancelled = super.cancel(mayInterruptIfRunning);
+                    if (failCancellation) {
+                        throw failure;
+                    }
+                    return cancelled;
+                }
+            };
+        }
+
+        @Override
+        public void execute(Runnable command) {
+            delegate.execute(command);
+        }
+
+        @Override
+        public void shutdown() {
+            delegate.shutdown();
+        }
+
+        @Override
+        public List<Runnable> shutdownNow() {
+            return delegate.shutdownNow();
+        }
+
+        @Override
+        public boolean isShutdown() {
+            return delegate.isShutdown();
+        }
+
+        @Override
+        public boolean isTerminated() {
+            return delegate.isTerminated();
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+            return delegate.awaitTermination(timeout, unit);
         }
     }
 

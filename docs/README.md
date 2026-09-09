@@ -35,6 +35,8 @@ Do not describe future-direction ideas as current behavior.
 - [Build and run a first Gear4J pipeline](tutorial/getting-started.md)
 - [Migrate a pre-1.0 application to the Gear4J 1.0 surface](migration/to-1.0.md)
 - [Technical-audit remediation roadmap](roadmap/audit-remediation-2026-09-04.md)
+- [7 September audit: remediation plan and phase commits](roadmap/audit-remediation-2026-09-07.md)
+- [7 September audit, phase 1: changes and validation evidence](audit/remediation-2026-09-07-phase-1-resource-lifecycle.md)
 - [Audit remediation phase 2: runtime and persistence hardening](audit/remediation-2026-09-04-phase-2-runtime-persistence-hardening.md)
 - [Audit remediation phase 3: API and maintainability](audit/remediation-2026-09-04-phase-3-api-maintainability.md)
 

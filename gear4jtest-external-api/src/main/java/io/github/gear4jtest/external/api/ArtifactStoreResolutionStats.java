@@ -13,11 +13,13 @@ package io.github.gear4jtest.external.api;
  *                               configuration
  * @param evictedEntries         entries removed by the capacity bound
  * @param invalidatedEntries     entries removed explicitly
- * @param releasedStoreLeases    final resolver references released to the
- *                               configured provider
+ * @param releasedStoreLeases    acquired cache-entry leases returned to the
+ *                               provider after cache and borrowers release them
  * @param cachedAssemblyLines    assembly-line entries currently cached
  * @param maxCachedAssemblyLines configured cache capacity
- * @param distinctStores         distinct store identities currently retained
+ * @param distinctStores         store identities retained by cache or
+ *                               borrowers, including evicted entries still in
+ *                               use
  * @param shutdown               whether the resolver is closed
  */
 public record ArtifactStoreResolutionStats(long resolutions,

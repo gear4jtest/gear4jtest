@@ -48,14 +48,11 @@ final class AssemblyLineStoreResolver implements AutoCloseable {
         this.maxCacheEntries = maxCacheEntries;
     }
 
-    ArtifactStore resolve(String alId) {
-        return resolveForPublication(alId).store();
-    }
-
-    ResolvedStore resolveForPublication(String alId) {
+    StoreLease acquire(String alId) {
         var config = configRepository.findByAssemblyLineId(alId)
                 .orElseThrow(() -> new OperationChainNotFoundException("Config not found for alId=" + alId));
         StoreFingerprint fingerprint = StoreFingerprint.from(config);
+        String configurationFingerprint = ArtifactStoreConfigurationFingerprint.from(config);
         synchronized (this) {
             requireOpen();
             resolutions++;
@@ -65,20 +62,20 @@ final class AssemblyLineStoreResolver implements AutoCloseable {
                 ArtifactStore replacement = requireNonNull(storeProvider.forConfig(config),
                                                            "storeProvider returned null");
                 StoreCacheEntry previous = storeCacheByAl.put(alId, new StoreCacheEntry(fingerprint, replacement));
+                retain(replacement);
                 installedEntries++;
                 if (previous != null) {
                     replacedEntries++;
                 }
-                if (previous == null || previous.store() != replacement) {
-                    retain(replacement);
-                    release(previous);
-                }
+                release(previous);
                 resolved = storeCacheByAl.get(alId);
                 evictEldestEntries();
             } else {
                 cacheHits++;
             }
-            return new ResolvedStore(resolved.store(), ArtifactStoreConfigurationFingerprint.from(config));
+            StoreLease lease = new StoreLease(resolved, configurationFingerprint);
+            resolved.references++;
+            return lease;
         }
     }
 
@@ -104,8 +101,23 @@ final class AssemblyLineStoreResolver implements AutoCloseable {
         closed = true;
         List<StoreCacheEntry> entries = new ArrayList<>(storeCacheByAl.values());
         storeCacheByAl.clear();
+        Throwable failure = null;
         for (StoreCacheEntry entry : entries) {
-            release(entry);
+            try {
+                release(entry);
+            } catch (RuntimeException | Error cleanupFailure) {
+                if (failure == null) {
+                    failure = cleanupFailure;
+                } else if (failure != cleanupFailure) {
+                    failure.addSuppressed(cleanupFailure);
+                }
+            }
+        }
+        if (failure instanceof Error error) {
+            throw error;
+        }
+        if (failure instanceof RuntimeException exception) {
+            throw exception;
         }
     }
 
@@ -127,15 +139,18 @@ final class AssemblyLineStoreResolver implements AutoCloseable {
         if (entry == null) {
             return;
         }
+        if (--entry.references > 0) {
+            return;
+        }
         ArtifactStore store = entry.store();
         Integer references = storeReferences.get(store);
         if (references == null || references <= 1) {
             storeReferences.remove(store);
-            storeProvider.release(store);
-            releasedStoreLeases++;
         } else {
             storeReferences.put(store, references - 1);
         }
+        storeProvider.release(store);
+        releasedStoreLeases++;
     }
 
     private void requireOpen() {
@@ -144,9 +159,63 @@ final class AssemblyLineStoreResolver implements AutoCloseable {
         }
     }
 
-    record ResolvedStore(ArtifactStore store, String configurationFingerprint) {}
+    /**
+     * Keeps an entry's provider lease alive through one complete operation,
+     * including any streams it opens. Closing the resolver only removes cache
+     * ownership; a borrower returns the provider lease after its final use.
+     */
+    final class StoreLease implements AutoCloseable {
+        private final StoreCacheEntry entry;
+        private final String configurationFingerprint;
+        private boolean released;
 
-    private record StoreCacheEntry(StoreFingerprint fingerprint, ArtifactStore store) {}
+        private StoreLease(StoreCacheEntry entry, String configurationFingerprint) {
+            this.entry = entry;
+            this.configurationFingerprint = configurationFingerprint;
+        }
+
+        ArtifactStore store() {
+            synchronized (AssemblyLineStoreResolver.this) {
+                if (released) {
+                    throw new IllegalStateException("Artifact-store lease is closed");
+                }
+                return entry.store();
+            }
+        }
+
+        String configurationFingerprint() {
+            return configurationFingerprint;
+        }
+
+        @Override
+        public void close() {
+            synchronized (AssemblyLineStoreResolver.this) {
+                if (!released) {
+                    released = true;
+                    release(entry);
+                }
+            }
+        }
+    }
+
+    private static final class StoreCacheEntry {
+        private final StoreFingerprint fingerprint;
+        private final ArtifactStore store;
+        private int references = 1;
+
+        private StoreCacheEntry(StoreFingerprint fingerprint, ArtifactStore store) {
+            this.fingerprint = fingerprint;
+            this.store = store;
+        }
+
+        private StoreFingerprint fingerprint() {
+            return fingerprint;
+        }
+
+        private ArtifactStore store() {
+            return store;
+        }
+    }
 
     private record StoreFingerprint(StoreType storeType, Map<String, String> storeProps) {
         private static StoreFingerprint from(OperationChainConfig config) {

@@ -48,118 +48,146 @@ final class ParallelContainerBranchExecutor {
         List<SubmittedBranch> submittedBranches = new ArrayList<>();
         Map<Future<BranchExecution>, SubmittedBranch> submittedByFuture = new IdentityHashMap<>();
 
-        for (int index = 0; index < branches.size(); index++) {
-            ContainerBaseStation.Branch<?> branch = branches.get(index);
-            if (!ContainerBranchExecutionSupport.isBranchConditionSatisfied(branch, input, context)) {
-                recordOutcome(outcomes, index, ParallelBranchOutcome.State.SKIPPED,
-                              ContainerBranchExecutionSupport.conditionSkippedLog(branch, input, context,
-                                                                                  StationSkipReason.CONDITION_NOT_SATISFIED));
-                continue;
-            }
-            if (context.getGlobalContext().getCancellationToken().isCancellationRequested()) {
-                StationLogTrace cancellation = ContainerBranchExecutionSupport.cooperativeCancellationLog(branch,
-                                                                                                          input,
-                                                                                                          context);
-                recordOutcome(outcomes, index, ParallelBranchOutcome.State.CANCELLED, cancellation);
-                cancelPendingForCancellation(submittedBranches, outcomes, input, context);
-                cancelRemainingBeforeSubmission(branches, index + 1, outcomes, input, context);
-                return ContainerExecutionAggregation.interrupted(
-                                                                 asOrderedList(branches, outcomes, input, context),
-                                                                 collectedErrors, cancellation);
-            }
-
-            Callable<StationLogTrace> task = EngineStationContexts.support(context).getTaskFactory()
-                    .createTask(() -> ContainerBranchExecutionSupport.clonePayload(input, context),
-                                branch.getStation(), runner, context, currentItemId, branch.getId());
-            int finalIndex = index;
-            try {
-                Future<BranchExecution> future = completionService
-                        .submit(() -> new BranchExecution(finalIndex, branch, task.call()));
-                SubmittedBranch submitted = new SubmittedBranch(index, branch, future);
-                submittedBranches.add(submitted);
-                submittedByFuture.put(future, submitted);
-                outcomes[index] = ParallelBranchOutcome.submitted();
-            } catch (RejectedExecutionException rejected) {
-                StationLogTrace rejectedLog = ContainerBranchExecutionSupport.unexpectedFailureLog(branch, input,
-                                                                                                   context,
-                                                                                                   rejected);
-                recordOutcome(outcomes, index, ParallelBranchOutcome.State.REJECTED, rejectedLog);
-                FlowDecision decision = FlowDecider.decide(rejectedLog, flowConfig);
-                if (decision == FlowDecision.MARK_AND_PROCEED) {
-                    collectedErrors.add(rejected);
-                } else if (decision == FlowDecision.INTERRUPT) {
-                    cancelPendingAfterInterrupt(submittedBranches, outcomes, input, context, rejectedLog);
-                    interruptRemainingBeforeSubmission(branches, index + 1, outcomes, input, context, rejectedLog);
+        try {
+            for (int index = 0; index < branches.size(); index++) {
+                ContainerBaseStation.Branch<?> branch = branches.get(index);
+                if (!ContainerBranchExecutionSupport.isBranchConditionSatisfied(branch, input, context)) {
+                    recordOutcome(outcomes, index, ParallelBranchOutcome.State.SKIPPED,
+                                  ContainerBranchExecutionSupport.conditionSkippedLog(branch, input, context,
+                                                                                      StationSkipReason.CONDITION_NOT_SATISFIED));
+                    continue;
+                }
+                if (context.getGlobalContext().getCancellationToken().isCancellationRequested()) {
+                    StationLogTrace cancellation = ContainerBranchExecutionSupport.cooperativeCancellationLog(branch,
+                                                                                                              input,
+                                                                                                              context);
+                    recordOutcome(outcomes, index, ParallelBranchOutcome.State.CANCELLED, cancellation);
+                    cancelPendingForCancellation(submittedBranches, outcomes, input, context);
+                    cancelRemainingBeforeSubmission(branches, index + 1, outcomes, input, context);
                     return ContainerExecutionAggregation.interrupted(
                                                                      asOrderedList(branches, outcomes, input, context),
-                                                                     collectedErrors, rejectedLog);
-                }
-            }
-        }
-
-        if (submittedBranches.isEmpty()) {
-            return ContainerExecutionAggregation.completed(asOrderedList(branches, outcomes, input, context),
-                                                           collectedErrors);
-        }
-
-        MonotonicDeadline deadline = MonotonicDeadline.start(awaitTimeout);
-        int completedCount = 0;
-        try {
-            while (completedCount < submittedBranches.size()) {
-                if (context.getGlobalContext().getCancellationToken().isCancellationRequested()) {
-                    Optional<StationLogTrace> cancellation = cancelPendingForCancellation(submittedBranches, outcomes,
-                                                                                          input, context);
-                    return aggregate(branches, outcomes, input, context, collectedErrors, cancellation);
+                                                                     collectedErrors, cancellation);
                 }
 
-                Optional<Future<BranchExecution>> completedFuture = waitForNextCompletion(completionService, deadline);
-                if (completedFuture.isEmpty()) {
-                    Optional<StationLogTrace> timeoutChild = timeoutPendingBranches(submittedBranches, outcomes, input,
-                                                                                    context, awaitTimeout);
-                    if (timeoutChild.isPresent()
-                            && FlowDecider.decide(timeoutChild.orElseThrow(), flowConfig) == FlowDecision.INTERRUPT) {
+                Callable<StationLogTrace> task = EngineStationContexts.support(context).getTaskFactory()
+                        .createTask(() -> ContainerBranchExecutionSupport.clonePayload(input, context),
+                                    branch.getStation(), runner, context, currentItemId, branch.getId());
+                int finalIndex = index;
+                try {
+                    Future<BranchExecution> future = completionService
+                            .submit(() -> new BranchExecution(finalIndex, branch, task.call()));
+                    SubmittedBranch submitted = new SubmittedBranch(index, branch, future);
+                    submittedBranches.add(submitted);
+                    submittedByFuture.put(future, submitted);
+                    outcomes[index] = ParallelBranchOutcome.submitted();
+                } catch (RejectedExecutionException rejected) {
+                    StationLogTrace rejectedLog = ContainerBranchExecutionSupport.unexpectedFailureLog(branch, input,
+                                                                                                       context,
+                                                                                                       rejected);
+                    recordOutcome(outcomes, index, ParallelBranchOutcome.State.REJECTED, rejectedLog);
+                    FlowDecision decision = FlowDecider.decide(rejectedLog, flowConfig);
+                    if (decision == FlowDecision.MARK_AND_PROCEED) {
+                        collectedErrors.add(rejected);
+                    } else if (decision == FlowDecision.INTERRUPT) {
+                        cancelPendingAfterInterrupt(submittedBranches, outcomes, input, context, rejectedLog);
+                        interruptRemainingBeforeSubmission(branches, index + 1, outcomes, input, context, rejectedLog);
                         return ContainerExecutionAggregation.interrupted(
                                                                          asOrderedList(branches, outcomes, input,
                                                                                        context),
-                                                                         collectedErrors,
-                                                                         timeoutChild.orElseThrow());
-                    }
-                    return ContainerExecutionAggregation.completed(asOrderedList(branches, outcomes, input, context),
-                                                                   collectedErrors);
-                }
-
-                Future<BranchExecution> completedBranchFuture = completedFuture.orElseThrow();
-                SubmittedBranch submitted = submittedByFuture.get(completedBranchFuture);
-                BranchExecution execution = readCompletedExecution(completedBranchFuture, submitted, input, context);
-                completedCount++;
-                StationLogTrace childLog = ContainerBranchExecutionSupport.normalizeCompletedLog(execution.branch,
-                                                                                                 execution.log, input,
-                                                                                                 context);
-                recordOutcome(outcomes, execution.index, ParallelBranchOutcome.State.COMPLETED, childLog);
-                FlowDecision decision = FlowDecider.decide(childLog, flowConfig);
-                switch (decision) {
-                    case PROCEED -> {
-                        // Continue waiting.
-                    }
-                    case MARK_AND_PROCEED -> collectedErrors.add(FlowStrategySupport.representativeThrowable(childLog,
-                                                                                                             "Container branch failed without exception: "
-                                                                                                                     + childLog
-                                                                                                                             .getOperationId()));
-                    case INTERRUPT -> {
-                        cancelPendingAfterInterrupt(submittedBranches, outcomes, input, context, childLog);
-                        return ContainerExecutionAggregation.interrupted(
-                                                                         asOrderedList(branches, outcomes, input,
-                                                                                       context),
-                                                                         collectedErrors, childLog);
+                                                                         collectedErrors, rejectedLog);
                     }
                 }
             }
-            return ContainerExecutionAggregation.completed(asOrderedList(branches, outcomes, input, context),
-                                                           collectedErrors);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            cancelPendingAfterUnexpectedInterruption(submittedBranches, outcomes, input, context);
-            throw new RuntimeException("Interrupted while waiting for container branches", e);
+
+            if (submittedBranches.isEmpty()) {
+                return ContainerExecutionAggregation.completed(asOrderedList(branches, outcomes, input, context),
+                                                               collectedErrors);
+            }
+
+            MonotonicDeadline deadline = MonotonicDeadline.start(awaitTimeout);
+            int completedCount = 0;
+            try {
+                while (completedCount < submittedBranches.size()) {
+                    if (context.getGlobalContext().getCancellationToken().isCancellationRequested()) {
+                        Optional<StationLogTrace> cancellation = cancelPendingForCancellation(submittedBranches,
+                                                                                              outcomes,
+                                                                                              input, context);
+                        return aggregate(branches, outcomes, input, context, collectedErrors, cancellation);
+                    }
+
+                    Optional<Future<BranchExecution>> completedFuture = waitForNextCompletion(completionService,
+                                                                                              deadline);
+                    if (completedFuture.isEmpty()) {
+                        Optional<StationLogTrace> timeoutChild = timeoutPendingBranches(submittedBranches, outcomes,
+                                                                                        input,
+                                                                                        context, awaitTimeout);
+                        if (timeoutChild.isPresent()
+                                && FlowDecider.decide(timeoutChild.orElseThrow(),
+                                                      flowConfig) == FlowDecision.INTERRUPT) {
+                            return ContainerExecutionAggregation.interrupted(
+                                                                             asOrderedList(branches, outcomes, input,
+                                                                                           context),
+                                                                             collectedErrors,
+                                                                             timeoutChild.orElseThrow());
+                        }
+                        return ContainerExecutionAggregation
+                                .completed(asOrderedList(branches, outcomes, input, context),
+                                           collectedErrors);
+                    }
+
+                    Future<BranchExecution> completedBranchFuture = completedFuture.orElseThrow();
+                    SubmittedBranch submitted = submittedByFuture.get(completedBranchFuture);
+                    BranchExecution execution = readCompletedExecution(completedBranchFuture, submitted, input,
+                                                                       context);
+                    completedCount++;
+                    StationLogTrace childLog = ContainerBranchExecutionSupport.normalizeCompletedLog(execution.branch,
+                                                                                                     execution.log,
+                                                                                                     input,
+                                                                                                     context);
+                    recordOutcome(outcomes, execution.index, ParallelBranchOutcome.State.COMPLETED, childLog);
+                    FlowDecision decision = FlowDecider.decide(childLog, flowConfig);
+                    switch (decision) {
+                        case PROCEED -> {
+                            // Continue waiting.
+                        }
+                        case MARK_AND_PROCEED -> collectedErrors.add(FlowStrategySupport
+                                .representativeThrowable(childLog,
+                                                         "Container branch failed without exception: "
+                                                                 + childLog
+                                                                         .getOperationId()));
+                        case INTERRUPT -> {
+                            cancelPendingAfterInterrupt(submittedBranches, outcomes, input, context, childLog);
+                            return ContainerExecutionAggregation.interrupted(
+                                                                             asOrderedList(branches, outcomes, input,
+                                                                                           context),
+                                                                             collectedErrors, childLog);
+                        }
+                    }
+                }
+                return ContainerExecutionAggregation.completed(asOrderedList(branches, outcomes, input, context),
+                                                               collectedErrors);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                cancelPendingAfterUnexpectedInterruption(submittedBranches, outcomes, input, context);
+                throw new RuntimeException("Interrupted while waiting for container branches", e);
+            }
+        } catch (RuntimeException | Error failure) {
+            cancelOutstandingAfterFailure(submittedBranches, failure);
+            throw failure;
+        }
+    }
+
+    private static void cancelOutstandingAfterFailure(List<SubmittedBranch> submissions, Throwable failure) {
+        for (SubmittedBranch submitted : submissions) {
+            try {
+                if (!submitted.future.isDone()) {
+                    submitted.future.cancel(true);
+                }
+            } catch (RuntimeException | Error cleanupFailure) {
+                if (cleanupFailure != failure) {
+                    failure.addSuppressed(cleanupFailure);
+                }
+            }
         }
     }
 

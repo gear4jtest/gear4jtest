@@ -41,9 +41,9 @@ class AssemblyLineStoreResolverTest {
         AssemblyLineStoreResolver resolver = new AssemblyLineStoreResolver(configRepository, storeProvider);
 
         // When
-        ArtifactStore first = resolver.resolve("line");
-        ArtifactStore second = resolver.resolve("line");
-        ArtifactStore cachedSecond = resolver.resolve("line");
+        ArtifactStore first = cachedStore(resolver, "line");
+        ArtifactStore second = cachedStore(resolver, "line");
+        ArtifactStore cachedSecond = cachedStore(resolver, "line");
 
         // Then
         assertThat(second).isNotSameAs(first);
@@ -79,7 +79,7 @@ class AssemblyLineStoreResolverTest {
                 results.add(callers.submit(() -> {
                     ready.countDown();
                     assertThat(start.await(5, TimeUnit.SECONDS)).isTrue();
-                    return resolver.resolve("line");
+                    return cachedStore(resolver, "line");
                 }));
             }
             assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
@@ -106,7 +106,7 @@ class AssemblyLineStoreResolverTest {
     }
 
     @Test
-    void resolver_shouldBoundTheCacheAndReleaseStoresAfterTheirFinalReference() {
+    void resolver_shouldBoundTheCacheAndReleaseEveryProviderAcquisition() {
         // Given
         OperationChainConfigRepository configRepository = mock(OperationChainConfigRepository.class);
         when(configRepository.findByAssemblyLineId("first"))
@@ -132,32 +132,39 @@ class AssemblyLineStoreResolverTest {
         AssemblyLineStoreResolver resolver = new AssemblyLineStoreResolver(configRepository, provider, 2);
 
         // When
-        resolver.resolve("first");
-        resolver.resolve("second");
-        resolver.resolve("third");
+        cachedStore(resolver, "first");
+        cachedStore(resolver, "second");
+        cachedStore(resolver, "third");
 
-        // Then: evicting first does not release the store still referenced by second.
-        assertThat(released).isEmpty();
+        // Then: first returns its own lease; the provider retains the lease held by
+        // second.
+        assertThat(released).containsExactly(shared);
         assertThat(resolver.snapshotStats())
                 .extracting(ArtifactStoreResolutionStats::cachedAssemblyLines,
                             ArtifactStoreResolutionStats::maxCachedAssemblyLines,
                             ArtifactStoreResolutionStats::distinctStores,
                             ArtifactStoreResolutionStats::evictedEntries,
                             ArtifactStoreResolutionStats::releasedStoreLeases)
-                .containsExactly(2, 2, 2, 1L, 0L);
+                .containsExactly(2, 2, 2, 1L, 1L);
 
         // When
         resolver.invalidate("second");
         resolver.close();
 
         // Then
-        assertThat(released).containsExactlyInAnyOrder(shared, third);
+        assertThat(released).containsExactlyInAnyOrder(shared, shared, third);
         assertThat(resolver.snapshotStats())
                 .extracting(ArtifactStoreResolutionStats::cachedAssemblyLines,
                             ArtifactStoreResolutionStats::distinctStores,
                             ArtifactStoreResolutionStats::invalidatedEntries,
                             ArtifactStoreResolutionStats::releasedStoreLeases,
                             ArtifactStoreResolutionStats::shutdown)
-                .containsExactly(0, 0, 1L, 2L, true);
+                .containsExactly(0, 0, 1L, 3L, true);
+    }
+
+    private static ArtifactStore cachedStore(AssemblyLineStoreResolver resolver, String alId) {
+        try (AssemblyLineStoreResolver.StoreLease lease = resolver.acquire(alId)) {
+            return lease.store();
+        }
     }
 }

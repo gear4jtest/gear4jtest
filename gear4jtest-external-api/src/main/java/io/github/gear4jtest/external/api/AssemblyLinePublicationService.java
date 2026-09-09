@@ -64,16 +64,15 @@ final class AssemblyLinePublicationService {
                                                            "Assembly line artifact");
         publicationValidator.validatePublicationCandidate(alId, object, content);
 
-        AssemblyLineStoreResolver.ResolvedStore resolvedStore = storeResolver.resolveForPublication(alId);
-        OperationChainPublicationStage stage = stage(object, publicationTags,
-                                                     resolvedStore.configurationFingerprint());
-        ArtifactStore store = resolvedStore.store();
-        String storedHash = store.put(content);
-        if (!hash.equals(storedHash)) {
-            throw new IOException("Artifact store returned hash=" + storedHash + " but expected hash=" + hash);
+        try (AssemblyLineStoreResolver.StoreLease lease = storeResolver.acquire(alId)) {
+            OperationChainPublicationStage stage = stage(object, publicationTags, lease.configurationFingerprint());
+            ArtifactStore store = lease.store();
+            String storedHash = store.put(content);
+            if (!hash.equals(storedHash)) {
+                throw new IOException("Artifact store returned hash=" + storedHash + " but expected hash=" + hash);
+            }
+            commit(stage);
         }
-
-        commit(stage);
         if (mode == ExecutionMode.RUN) {
             aliasService.invalidateLatestRun(alId);
         }
@@ -98,9 +97,10 @@ final class AssemblyLinePublicationService {
         Instant now = Instant.now();
         var runObj = new OperationChainObject(null, alId, version, ExecutionMode.RUN, testObj.contentHash(),
                 testObj.sizeBytes(), testObj.mimeType(), now, promotedBy, now);
-        AssemblyLineStoreResolver.ResolvedStore resolvedStore = storeResolver.resolveForPublication(alId);
-        publicationValidator.validateRunCandidate(alId, runObj, resolvedStore.store());
-        commit(stage(runObj, List.of(), resolvedStore.configurationFingerprint()));
+        try (AssemblyLineStoreResolver.StoreLease lease = storeResolver.acquire(alId)) {
+            publicationValidator.validateRunCandidate(alId, runObj, lease.store());
+            commit(stage(runObj, List.of(), lease.configurationFingerprint()));
+        }
         aliasService.invalidateLatestRun(alId);
     }
 

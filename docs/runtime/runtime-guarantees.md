@@ -178,6 +178,13 @@ deprecated legacy policy exists only for a bounded migration period and emits wa
 
 Status: Partially implemented.
 
+If parallel container execution exits with an unexpected unchecked exception or
+an `Error`, it attempts `cancel(true)` on every outstanding submitted future.
+The original failure is rethrown and cancellation failures are suppressed on it;
+one cancellation failure does not prevent attempts on the remaining futures.
+The caller-owned executor remains running. Cancellation is cooperative: the
+exceptional return does not guarantee that every branch body has already exited.
+
 Timeouts bound waiting behavior in the Gear4J runtime. They do not magically stop arbitrary user code that ignores
 interruption or keeps blocking on external resources.
 

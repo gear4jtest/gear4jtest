@@ -29,9 +29,15 @@ same residues.
   property maps while leases remain active. It closes the store after the final
   release. The manager, checker and reconciler balance every acquisition.
 - The manager resolver uses a 256-entry access-ordered cache. Replacement,
-  explicit invalidation, LRU eviction and manager shutdown release provider
-  leases. Identity reference counting prevents a shared store from being
-  released while another assembly line still references it.
+  explicit invalidation, LRU eviction and resolver shutdown release cache
+  ownership. Each installed cache entry owns exactly one provider acquisition,
+  even if another entry refers to the same store instance. The provider controls
+  sharing between acquisitions; resolver identity counts are occupancy metrics.
+- Loading and publication borrow a closeable internal store lease. An entry
+  returns its provider acquisition only after both the cache and its final
+  borrower release it. The loading lease encloses stream reading and closure;
+  publication retains its lease through validation, staging, upload and commit
+  wherever those steps access the selected store. Lease closure is idempotent.
 - The in-memory store rejects new distinct content after a finite 5 MiB
   per-artifact, 64 MiB total or 10,000-entry default limit. Duplicate content is
   idempotent and consumes no additional capacity. Explicit constructor and
@@ -47,9 +53,22 @@ same residues.
 
 Applications using `DefaultArtifactStoreProvider` directly must pair every
 `forConfig(...)` call with `release(...)`, or close the provider after all of its
-consumers have stopped. `AssemblyLineManager.close()` now performs this cleanup
-for manager-held leases. Manager invalidation and close must not race with
-application calls using the same manager.
+consumers have stopped. `AssemblyLineManager.close()` releases manager cache
+ownership; already acquired store leases defer provider release until their
+operation finishes. This protects artifact I/O against resolver eviction,
+invalidation and shutdown. It does not make the entire manager shutdown a
+general concurrent-use contract: applications must still stop admission and
+coordinate their loading/execution work before shutting down shared providers.
+
+The resolver's `distinctStores` statistic includes evicted entries with active
+borrowers, so it may exceed cache occupancy or remain non-zero after resolver
+shutdown. `releasedStoreLeases` counts successful provider release calls, one per
+acquired cache entry. A cleanup failure is propagated; resolver shutdown attempts
+the remaining releases and preserves subsequent failures as suppressed causes.
+
+The lease clarification above was implemented on 2026-09-07 for audit findings
+F01 and F02. Backend construction and final release still run under the resolver
+monitor; reducing that contention is separate work (F08).
 
 The spool directory contains a private `.gear4j-spool.lock` marker. Operators
 must configure a dedicated directory per process or container; accidental

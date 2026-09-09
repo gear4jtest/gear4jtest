@@ -1,0 +1,75 @@
+{
+  "date": "2026-09-07",
+  "baseline": "gear4jtest-20260906-213514.zip",
+  "baseline_sha256": "699e8f346539217117ec4343161537b130534f4bb7c54142bcf5589abf169a65",
+  "qualification": "partial; Gradle blocked before build startup",
+  "new_junit_tests": 17,
+  "junit_tests_executed": false,
+  "local_probe_pass_count": 15,
+  "local_verification": [
+    {
+      "label": "Compile 283 core sources with JDK17 and logging/annotation stand-ins",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "label": "Compile external lifecycle sources and transitive source dependencies",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "label": "Compile local regression probes",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "label": "io.github.gear4jtest.core.engine.strategy.ParallelPhase1Probe",
+      "exit_code": 0,
+      "output": "PASS parallel predicate: exact cause, all siblings interrupted, caller executor usable\nPASS parallel fatal Error: exact cause, all siblings interrupted, caller executor usable\nPASS parallel predicate with failing cancel: exact cause, all siblings interrupted, caller executor usable\n"
+    },
+    {
+      "label": "io.github.gear4jtest.external.api.StorePhase1Probe",
+      "exit_code": 0,
+      "output": "PASS two cache entries + real DefaultArtifactStoreProvider: backend closed exactly once\nPASS cross-thread eviction during borrowed stream: read succeeds, stream closes first\nPASS replacement + invalidation + resolver shutdown: active borrowers retained, idempotent close\nPASS same-identity replacement: 2 acquisitions, 2 releases\nPASS cleanup errors: all entries attempted, initial failure preserved, secondary failures suppressed\nPASS default no-op provider release preserves caller-owned store\nPASS 16 concurrent initial acquisitions: one provider acquisition, 15 cache hits\nPASS publication success: eviction during operation, release after last use\nPASS publication stage failure: eviction during operation, release after last use\nPASS publication promotion: eviction during operation, release after last use\nPASS loading success with real Java compiler: stream closed before evicted store\nPASS loading read failure: stream closed before evicted store\n"
+    }
+  ],
+  "gradle_attempts": [
+    {
+      "command": [
+        "bash",
+        "gradlew",
+        "--no-daemon",
+        ":gear4jtest-core:test",
+        "--tests",
+        "*ParallelContainerBranchExecutorTest",
+        ":gear4jtest-external-api:test",
+        "--tests",
+        "*AssemblyLineStore*Test",
+        "--tests",
+        "*GeneratedAssemblyLineLoaderTest"
+      ],
+      "exit_code": 1,
+      "output": "Fetching distribution.\nDownloading https://services.gradle.org/distributions/gradle-9.6.1-bin.zip\n\nAttempt 1/1 failed. Reason: Network is unreachable\nException in thread \"main\" java.net.SocketException: Network is unreachable\n\tat java.base/sun.nio.ch.Net.connect0(Native Method)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:591)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:580)\n\tat java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)\n\tat java.base/java.net.Socket.connect(Socket.java:633)\n\tat java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:533)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:592)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:590)\n\tat java.base/java.security.AccessController.doPrivileged(AccessController.java:569)\n\tat java.base/sun.net.www.http.HttpClient.privilegedOpenServer(HttpClient.java:589)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:633)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:267)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:381)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:205)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1283)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1148)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1077)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:181)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1717)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1641)\n\tat java.base/java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:529)\n\tat java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:308)\n\tat org.gradle.wrapper.Download.download(SourceFile:1)\n\tat org.gradle.wrapper.Install.forceFetch(SourceFile)\n\tat org.gradle.wrapper.Install.lambda$createDist$0(SourceFile:9)\n\tat org.gradle.wrapper.Install.createDist(SourceFile:24)\n\tat org.gradle.wrapper.GradleWrapperMain.lambda$prepareWrapper$0(SourceFile:2)\n\tat org.gradle.wrapper.GradleWrapperMain.main(SourceFile:2)\n"
+    },
+    {
+      "command": [
+        "bash",
+        "gradlew",
+        "--no-daemon",
+        "spotlessApply"
+      ],
+      "exit_code": 1,
+      "output": "Fetching distribution.\nDownloading https://services.gradle.org/distributions/gradle-9.6.1-bin.zip\n\nAttempt 1/1 failed. Reason: Network is unreachable\nException in thread \"main\" java.net.SocketException: Network is unreachable\n\tat java.base/sun.nio.ch.Net.connect0(Native Method)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:591)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:580)\n\tat java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)\n\tat java.base/java.net.Socket.connect(Socket.java:633)\n\tat java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:533)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:592)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:590)\n\tat java.base/java.security.AccessController.doPrivileged(AccessController.java:569)\n\tat java.base/sun.net.www.http.HttpClient.privilegedOpenServer(HttpClient.java:589)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:633)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:267)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:381)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:205)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1283)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1148)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1077)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:181)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1717)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1641)\n\tat java.base/java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:529)\n\tat java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:308)\n\tat org.gradle.wrapper.Download.download(SourceFile:1)\n\tat org.gradle.wrapper.Install.forceFetch(SourceFile)\n\tat org.gradle.wrapper.Install.lambda$createDist$0(SourceFile:9)\n\tat org.gradle.wrapper.Install.createDist(SourceFile:24)\n\tat org.gradle.wrapper.GradleWrapperMain.lambda$prepareWrapper$0(SourceFile:2)\n\tat org.gradle.wrapper.GradleWrapperMain.main(SourceFile:2)\n"
+    },
+    {
+      "command": [
+        "bash",
+        "gradlew",
+        "--no-daemon",
+        "check"
+      ],
+      "exit_code": 1,
+      "output": "Fetching distribution.\nDownloading https://services.gradle.org/distributions/gradle-9.6.1-bin.zip\n\nAttempt 1/1 failed. Reason: Network is unreachable\nException in thread \"main\" java.net.SocketException: Network is unreachable\n\tat java.base/sun.nio.ch.Net.connect0(Native Method)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:591)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:580)\n\tat java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)\n\tat java.base/java.net.Socket.connect(Socket.java:633)\n\tat java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:533)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:592)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:590)\n\tat java.base/java.security.AccessController.doPrivileged(AccessController.java:569)\n\tat java.base/sun.net.www.http.HttpClient.privilegedOpenServer(HttpClient.java:589)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:633)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:267)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:381)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:205)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1283)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1148)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1077)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:181)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1717)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1641)\n\tat java.base/java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:529)\n\tat java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:308)\n\tat org.gradle.wrapper.Download.download(SourceFile:1)\n\tat org.gradle.wrapper.Install.forceFetch(SourceFile)\n\tat org.gradle.wrapper.Install.lambda$createDist$0(SourceFile:9)\n\tat org.gradle.wrapper.Install.createDist(SourceFile:24)\n\tat org.gradle.wrapper.GradleWrapperMain.lambda$prepareWrapper$0(SourceFile:2)\n\tat org.gradle.wrapper.GradleWrapperMain.main(SourceFile:2)\n"
+    }
+  ]
+}

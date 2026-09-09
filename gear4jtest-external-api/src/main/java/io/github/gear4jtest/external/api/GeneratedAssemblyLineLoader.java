@@ -168,21 +168,23 @@ final class GeneratedAssemblyLineLoader implements AutoCloseable {
     }
 
     private byte[] readArtifact(String alId, OperationChainObject obj) throws IOException {
-        ArtifactStore store = storeResolver.resolve(alId);
-        Artifact artifact = store.get(obj.contentHash())
-                .orElseThrow(() -> new IOException("Artifact not found for hash=" + obj.contentHash()));
-        String description = "Assembly line artifact " + obj.contentHash();
-        ArtifactHashes.requireSha256Match(obj.contentHash(), artifact.hashHex(), description + " metadata");
-        if (artifact.size() != obj.sizeBytes()) {
-            throw new ArtifactIntegrityException(description + " metadata size mismatch: expected "
-                    + obj.sizeBytes() + " but found " + artifact.size());
-        }
-        AssemblyLineIdentifiers.requireAllowedArtifactSize(artifact.size(), maxArtifactSizeBytes,
-                                                           description);
-        try (InputStream in = artifact.openStreamChecked()) {
-            byte[] bytes = ArtifactStore.readAllBytes(in, maxArtifactSizeBytes);
-            ArtifactHashes.requireContentIdentity(bytes, obj.contentHash(), obj.sizeBytes(), description);
-            return bytes;
+        try (AssemblyLineStoreResolver.StoreLease lease = storeResolver.acquire(alId)) {
+            ArtifactStore store = lease.store();
+            Artifact artifact = store.get(obj.contentHash())
+                    .orElseThrow(() -> new IOException("Artifact not found for hash=" + obj.contentHash()));
+            String description = "Assembly line artifact " + obj.contentHash();
+            ArtifactHashes.requireSha256Match(obj.contentHash(), artifact.hashHex(), description + " metadata");
+            if (artifact.size() != obj.sizeBytes()) {
+                throw new ArtifactIntegrityException(description + " metadata size mismatch: expected "
+                        + obj.sizeBytes() + " but found " + artifact.size());
+            }
+            AssemblyLineIdentifiers.requireAllowedArtifactSize(artifact.size(), maxArtifactSizeBytes,
+                                                               description);
+            try (InputStream in = artifact.openStreamChecked()) {
+                byte[] bytes = ArtifactStore.readAllBytes(in, maxArtifactSizeBytes);
+                ArtifactHashes.requireContentIdentity(bytes, obj.contentHash(), obj.sizeBytes(), description);
+                return bytes;
+            }
         }
     }
 

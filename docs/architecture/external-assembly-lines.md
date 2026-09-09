@@ -37,6 +37,11 @@ follows a durable three-step protocol:
 2. write the content-addressed artifact;
 3. atomically commit the stage so object metadata and tags become visible together.
 
+The selected store is borrowed through an internal closeable lease until commit
+finishes or the operation fails. Promotion retains the lease while reading and
+validating the TEST artifact and committing RUN metadata. Cache eviction or
+invalidation releases cache ownership without closing a store still in use.
+
 JDBC stage-tag and committed-tag persistence uses one dialect-specific idempotent batch per tag set. A retry locks its
 existing stage before merging tags, preserving the persisted 64-tag limit under concurrent retry attempts.
 
@@ -68,6 +73,11 @@ The runtime external loading path is coordinated by `AssemblyLineManager`:
 7. instantiate the generated class;
 8. inject dependencies allowed for the requested `ExecutionMode`;
 9. cache the loaded generated assembly line.
+
+Artifact reading retains a store lease until the input stream is closed,
+including failure paths. Translation and compilation consume the already read
+bytes and do not keep that lease alive. See [ADR 0043](../decisions/0043-artifact-stores-use-provider-leases-and-directory-scoped-spool-quotas.md)
+for provider acquisition, cache ownership and shutdown rules.
 
 The cache-miss path is single-flight per immutable loader id. Concurrent requests for one artifact therefore share the
 same compilation, classloader and generated instance; an unsuccessful flight is evicted to allow a later retry.
