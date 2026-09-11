@@ -20,8 +20,10 @@ final class OperationChainTagJdbcOperations {
         this.statementOptions = Objects.requireNonNull(statementOptions, "statementOptions must not be null");
     }
 
-    List<String> findStageTags(Connection connection, String stageId) throws SQLException {
-        String sql = "SELECT tag FROM operation_chain_publication_stage_tag WHERE stage_id=? ORDER BY tag";
+    List<String> findStageTagsForUpdate(Connection connection, String stageId) throws SQLException {
+        // The caller holds the parent stage row first. A locking read also avoids
+        // reading an older tag snapshot after waiting for a concurrent renewal.
+        String sql = "SELECT tag FROM operation_chain_publication_stage_tag WHERE stage_id=? ORDER BY tag FOR UPDATE";
         try (PreparedStatement statement = prepare(connection, sql)) {
             statement.setString(1, stageId);
             try (var resultSet = statement.executeQuery()) {
@@ -61,14 +63,6 @@ final class OperationChainTagJdbcOperations {
                 statement.addBatch();
             }
             statement.executeBatch();
-        }
-    }
-
-    void deleteStageTags(Connection connection, String stageId) throws SQLException {
-        String sql = "DELETE FROM operation_chain_publication_stage_tag WHERE stage_id=?";
-        try (PreparedStatement statement = prepare(connection, sql)) {
-            statement.setString(1, stageId);
-            statement.executeUpdate();
         }
     }
 

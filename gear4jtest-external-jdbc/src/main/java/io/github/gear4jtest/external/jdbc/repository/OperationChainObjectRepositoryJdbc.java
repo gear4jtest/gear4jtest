@@ -2,6 +2,7 @@ package io.github.gear4jtest.external.jdbc.repository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLTransactionRollbackException;
 import java.sql.Savepoint;
 import java.time.Duration;
 import java.time.Instant;
@@ -150,14 +151,14 @@ public final class OperationChainObjectRepositoryJdbc
                 StageInsertResult stageResult = insertStageIdempotently(connection, stageId, object,
                                                                         requiredStoreFingerprint);
                 if (!stageResult.inserted()) {
-                    stageOperations.lockForUpdate(connection, stageId);
-                    OperationChainPublicationTags.merge(tagOperations.findStageTags(connection, stageId), requiredTags);
+                    OperationChainPublicationTags.merge(tagOperations.findStageTagsForUpdate(connection, stageId),
+                                                        requiredTags);
                 }
                 tagOperations.insertStageTags(connection, stageId, requiredTags);
                 if (!stageResult.inserted()) {
                     stageOperations.renew(connection, stageId, Instant.now());
                 }
-                return stageOperations.find(connection, stageId).orElseThrow();
+                return stageOperations.findForUpdate(connection, stageId).orElseThrow();
             });
         } catch (OperationChainRepositoryException exception) {
             throw exception;
@@ -171,7 +172,8 @@ public final class OperationChainObjectRepositoryJdbc
         String requiredStageId = requireStageId(stageId);
         try {
             transactionOperations.execute(connection -> {
-                OperationChainPublicationStage stage = stageOperations.find(connection, requiredStageId).orElse(null);
+                OperationChainPublicationStage stage = stageOperations.findForUpdate(connection, requiredStageId)
+                        .orElse(null);
                 if (stage != null) {
                     insertIdempotently(connection, stage.object());
                     tagOperations.insertObjectTags(connection, stage.object().alId(), stage.tags());
@@ -246,24 +248,35 @@ public final class OperationChainObjectRepositoryJdbc
                                                       OperationChainObject object,
                                                       String storeFingerprint)
             throws SQLException {
-        Savepoint savepoint = connection.setSavepoint();
-        try {
-            stageOperations.insertStage(connection, stageId, object, storeFingerprint, Instant.now());
-            return new StageInsertResult(true);
-        } catch (SQLException exception) {
-            if (!ExternalRepositorySqlDialect.isUniqueViolation(databaseDialect, exception)) {
-                throw exception;
+        // A concurrent commit/abort can consume a stage between a duplicate insert
+        // and the locking read. Retry only that race, with a finite bound.
+        SQLException lastConflict = null;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            Savepoint savepoint = connection.setSavepoint();
+            try {
+                stageOperations.insertStage(connection, stageId, object, storeFingerprint, Instant.now());
+                return new StageInsertResult(true);
+            } catch (SQLException exception) {
+                if (!ExternalRepositorySqlDialect.isUniqueViolation(databaseDialect, exception)) {
+                    throw exception;
+                }
+                connection.rollback(savepoint);
+                lastConflict = exception;
+                Optional<OperationChainPublicationStage> existing = stageOperations.findForUpdate(connection, stageId);
+                if (existing.isEmpty()) {
+                    verifyCommittedPublicationCompatible(connection, object);
+                    continue;
+                }
+                OperationChainPublicationStage locked = existing.orElseThrow();
+                if (!locked.object().contentIdentity().equals(object.contentIdentity())
+                        || !Objects.equals(locked.storeFingerprint(), storeFingerprint)) {
+                    throw conflict(object, exception);
+                }
+                return new StageInsertResult(false);
             }
-            connection.rollback(savepoint);
-            OperationChainPublicationStage existing = stageOperations.find(connection, stageId)
-                    .orElseThrow(() -> repositoryFailure("resolve concurrent stage " + publicationDescription(object),
-                                                         exception));
-            if (!existing.object().contentIdentity().equals(object.contentIdentity())
-                    || !Objects.equals(existing.storeFingerprint(), storeFingerprint)) {
-                throw conflict(object, exception);
-            }
-            return new StageInsertResult(false);
         }
+        throw new SQLTransactionRollbackException("Publication stage kept changing concurrently; retry publication "
+                + publicationDescription(object), "40001", lastConflict);
     }
 
     private void verifyCommittedPublicationCompatible(Connection connection, OperationChainObject candidate)

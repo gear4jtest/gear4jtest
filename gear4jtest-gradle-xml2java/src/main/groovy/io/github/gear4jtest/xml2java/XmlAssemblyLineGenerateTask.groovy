@@ -15,6 +15,7 @@ import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
+import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
@@ -31,6 +32,7 @@ import javax.inject.Inject
 @CacheableTask
 abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
     private final ConfigurableFileCollection xmlFiles
+    private final ConfigurableFileCollection operatorClasspath
     private final DirectoryProperty outputDir
     private final Property<String> mediaType
     private final Property<Boolean> trustedXml
@@ -44,6 +46,7 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
     @Inject
     XmlAssemblyLineGenerateTask(ObjectFactory objects) {
         this.xmlFiles = objects.fileCollection()
+        this.operatorClasspath = objects.fileCollection()
         this.outputDir = objects.directoryProperty()
         this.mediaType = objects.property(String)
         this.trustedXml = objects.property(Boolean).convention(false)
@@ -68,6 +71,11 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
     @OutputDirectory
     DirectoryProperty getOutputDir() {
         return outputDir
+    }
+
+    @Classpath
+    ConfigurableFileCollection getOperatorClasspath() {
+        return operatorClasspath
     }
 
     @Input
@@ -120,18 +128,7 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
             maxGeneratedSourceBytes.get()
         )
         long inputLimit = maxXmlBytes.get()
-        XmlOperationChainTranslator translator = trustedXml.get()
-            ? XmlOperationChainTranslator.trusted(limits, inputLimit)
-            : XmlOperationChainTranslator.gelOnly(restrictedCapabilities(), limits, inputLimit)
-
-        def generatedSources = xmlFiles.files
-            .findAll { File file -> file.isFile() && file.name.endsWith('.xml') }
-            .sort { File file -> file.path }
-            .collect { File file ->
-                byte[] xml = BoundedXmlInput.read(file, inputLimit)
-                def result = translator.translate(xml, mediaType.get(), ExecutionMode.RUN)
-                new GeneratedSource(file, result.className(), result.formattedSource())
-            }
+        def generatedSources = translateSources(limits, inputLimit)
 
         rejectDuplicateClassNames(generatedSources)
 
@@ -140,6 +137,36 @@ abstract class XmlAssemblyLineGenerateTask extends DefaultTask {
         generatedSources.each { GeneratedSource generated ->
             XmlAssemblyLineGenerateTask.writeJavaSource(destination, generated.className, generated.formattedSource)
             logger.info('Generated Gear4J Java source {} from XML {}', generated.className, generated.sourceFile)
+        }
+    }
+
+    private List<GeneratedSource> translateSources(XmlTranslationLimits limits, long inputLimit) {
+        boolean trusted = trustedXml.get()
+        // Invoke the private helper outside the closure: Gradle decorates this task,
+        // and closure dispatch would try to resolve it on that decorated subclass.
+        XmlOperatorCapabilityPolicy capabilities = trusted ? null : restrictedCapabilities()
+        URL[] urls = operatorClasspath.files.collect { File entry -> entry.toURI().toURL() } as URL[]
+        // The translator captures the context loader when its generator is built.
+        // A plugin parent preserves the Operator API's class identity.
+        new URLClassLoader(urls, XmlOperationChainTranslator.class.classLoader).withCloseable { loader ->
+            Thread thread = Thread.currentThread()
+            ClassLoader previous = thread.contextClassLoader
+            try {
+                thread.contextClassLoader = loader
+                XmlOperationChainTranslator translator = trusted
+                    ? XmlOperationChainTranslator.trusted(limits, inputLimit)
+                    : XmlOperationChainTranslator.gelOnly(capabilities, limits, inputLimit)
+                return xmlFiles.files
+                    .findAll { File file -> file.isFile() && file.name.endsWith('.xml') }
+                    .sort { File file -> file.path }
+                    .collect { File file ->
+                        byte[] xml = BoundedXmlInput.read(file, inputLimit)
+                        def result = translator.translate(xml, mediaType.get(), ExecutionMode.RUN)
+                        new GeneratedSource(file, result.className(), result.formattedSource())
+                    }
+            } finally {
+                thread.contextClassLoader = previous
+            }
         }
     }
 

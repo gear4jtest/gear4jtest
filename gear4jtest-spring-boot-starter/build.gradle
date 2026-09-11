@@ -18,6 +18,7 @@ dependencies {
     testImplementation libs.spring.boot.test
     testImplementation libs.spring.test
     testImplementation libs.spring.boot.actuator
+    testImplementation libs.spring.boot.actuator.autoconfigure
     testImplementation libs.h2
     testImplementation project(':gear4jtest-external-jdbc')
 }

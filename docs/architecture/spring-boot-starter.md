@@ -33,6 +33,23 @@ gear4j:
 Persistence is opt-in. When enabled, `gear4j.persistence.dialect` is mandatory.
 Gear4J never auto-detects the database dialect.
 
+## Auto-configuration ordering
+
+Gear4jAutoConfiguration runs after Boot's DataSourceAutoConfiguration and
+DataSourceTransactionManagerAutoConfiguration. Its bean conditions therefore
+see the datasource and JDBC transaction manager created by Boot, as well as
+application-defined beans.
+
+It also runs after CompositeMeterRegistryAutoConfiguration and
+SimpleMetricsExportAutoConfiguration. The latter is Boot's fallback after other
+registry exporters. Ordering only after MetricsAutoConfiguration would not
+ensure that a MeterRegistry bean definition exists when Gear4J conditions run.
+The order uses class names to keep Actuator optional at runtime.
+
+Gear4jBootConsumerTest covers real Boot-created JDBC and simple-registry beans,
+disabled Gear4J integrations and startup without Actuator classes. Those tests
+must pass in the normal Gradle build; source review is not startup qualification.
+
 ## Datasource selection
 
 With one `DataSource`, the starter uses it automatically. With several

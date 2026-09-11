@@ -1,18 +1,17 @@
 # 2026-09-07 audit remediation plan
 
-Source baseline: gear4jtest-20260906-213514.zip.
-Audit reference: audit-technique-gear4j-2026-09-07.pdf, findings F01–F15.
-
-This plan refines the audit's three broad horizons into four independently
-reviewable implementation phases. Only phase 1 is implemented in this delivery.
-An implemented change is not a completed release qualification.
-
 | Field | Value |
 | --- | --- |
 | Status | Partially implemented — phases 1–2 code complete; Gradle qualification pending |
 | Owner | Gear4J maintainers |
-| Last reviewed | 2026-09-08 |
+| Last reviewed | 2026-09-10 |
 
+Source baseline: gear4jtest-20260906-213514.zip.
+Audit reference: audit-technique-gear4j-2026-09-07.pdf, findings F01–F15.
+
+This plan refines the audit's three broad horizons into four independently
+reviewable implementation phases. Phases 1 and 2 are implemented in this delivery.
+An implemented change is not a completed release qualification.
 
 ## Constraints
 
@@ -122,7 +121,7 @@ Commit:
 | Phase | Implementation | Connected validation |
 | --- | --- | --- |
 | 1 | Implemented; 17 new JUnit regressions | Gradle blocked before build startup; 15 local probe scenarios pass |
-| 2 | Planned | Pending |
+| 2 | Implemented; publication locks, Boot ordering and operator classpath | Gradle qualification pending; see phase 2 evidence |
 | 3 | Planned | Pending |
 | 4 | Planned | Pending |
 
@@ -131,3 +130,10 @@ Finding identifiers in this document refer exclusively to the 7 September audit.
 
 See [phase 1 evidence](../audit/remediation-2026-09-07-phase-1-resource-lifecycle.md)
 for exact changes, commands, observed results and remaining qualification gates.
+
+See [phase 2 evidence](../audit/remediation-2026-09-08-phase-2-consumer-integrations.md)
+for F09/F12/F13 changes and the living-documentation metadata correction.
+
+The [10 September phase 2 hotfix](../audit/remediation-2026-09-10-phase-2-gradle-closure.md)
+addresses the reported restricted-mode Gradle task dispatch failure. Connected
+Gradle qualification remains pending; phases 3 and 4 are unchanged.

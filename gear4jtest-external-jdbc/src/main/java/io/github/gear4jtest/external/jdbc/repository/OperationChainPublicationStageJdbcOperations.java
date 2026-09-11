@@ -119,18 +119,6 @@ final class OperationChainPublicationStageJdbcOperations {
         }
     }
 
-    void lockForUpdate(Connection connection, String stageId) throws SQLException {
-        String sql = "SELECT stage_id FROM operation_chain_publication_stage WHERE stage_id=? FOR UPDATE";
-        try (PreparedStatement statement = prepare(connection, sql)) {
-            statement.setString(1, stageId);
-            try (var resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) {
-                    throw new SQLException("Publication stage disappeared while it was being locked: " + stageId);
-                }
-            }
-        }
-    }
-
     void renew(Connection connection, String stageId, Instant stagedAt) throws SQLException {
         String sql = "UPDATE operation_chain_publication_stage SET staged_at=?, "
                 + "stage_revision=stage_revision+1 WHERE stage_id=?";
@@ -143,8 +131,10 @@ final class OperationChainPublicationStageJdbcOperations {
         }
     }
 
-    Optional<OperationChainPublicationStage> find(Connection connection, String stageId) throws SQLException {
-        String sql = "SELECT " + STAGE_COLUMNS + " FROM operation_chain_publication_stage WHERE stage_id=?";
+    Optional<OperationChainPublicationStage> findForUpdate(Connection connection, String stageId) throws SQLException {
+        // Hold the stage row until the surrounding transaction finishes; read tags
+        // only after this lock, so renewal and consumption use one ordering.
+        String sql = "SELECT " + STAGE_COLUMNS + " FROM operation_chain_publication_stage WHERE stage_id=? FOR UPDATE";
         try (PreparedStatement statement = prepare(connection, sql)) {
             statement.setString(1, stageId);
             OperationChainPublicationStage stage;
@@ -154,13 +144,14 @@ final class OperationChainPublicationStageJdbcOperations {
                 }
                 stage = rowMapper.mapStage(resultSet);
             }
-            List<String> tags = tagOperations.findStageTags(connection, stage.stageId());
+            List<String> tags = tagOperations.findStageTagsForUpdate(connection, stage.stageId());
             return Optional.of(OperationChainObjectRowMapper.copyStageWithTags(stage, tags));
         }
     }
 
     void delete(Connection connection, String stageId) throws SQLException {
-        tagOperations.deleteStageTags(connection, stageId);
+        // Delete the parent first; every supported V1 schema cascades to stage tags.
+        // This uses the same parent-before-tags lock order as renewal and commit.
         try (PreparedStatement statement = prepare(connection,
                                                    "DELETE FROM operation_chain_publication_stage WHERE stage_id=?")) {
             statement.setString(1, stageId);

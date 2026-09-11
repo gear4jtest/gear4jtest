@@ -37,6 +37,7 @@ Do not describe future-direction ideas as current behavior.
 - [Technical-audit remediation roadmap](roadmap/audit-remediation-2026-09-04.md)
 - [7 September audit: remediation plan and phase commits](roadmap/audit-remediation-2026-09-07.md)
 - [7 September audit, phase 1: changes and validation evidence](audit/remediation-2026-09-07-phase-1-resource-lifecycle.md)
+- [7 September audit, phase 2: publication and consumer integrations](audit/remediation-2026-09-08-phase-2-consumer-integrations.md)
 - [Audit remediation phase 2: runtime and persistence hardening](audit/remediation-2026-09-04-phase-2-runtime-persistence-hardening.md)
 - [Audit remediation phase 3: API and maintainability](audit/remediation-2026-09-04-phase-3-api-maintainability.md)
 

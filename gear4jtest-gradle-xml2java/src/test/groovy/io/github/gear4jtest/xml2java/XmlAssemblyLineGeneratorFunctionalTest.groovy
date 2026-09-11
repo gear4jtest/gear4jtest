@@ -18,7 +18,7 @@ class XmlAssemblyLineGeneratorFunctionalTest {
     @Test
     void generation_shouldReuseConfigurationCacheAndRestoreOutputsFromBuildCache() {
         // Given
-        writeBuild()
+        writeBuild() // Exercise restricted mode; trustedXml() would hide the private-helper regression.
         writePipeline('simple_line')
         def arguments = generationArguments()
 
@@ -63,6 +63,32 @@ class XmlAssemblyLineGeneratorFunctionalTest {
         assertThat(oldGenerated).doesNotExist()
         assertThat(generatedSourceRoot()
             .resolve('io/github/gear4jtest/xml/generated/Changed_lineLine.java')).exists()
+    }
+
+    @Test
+    void generation_shouldKeepRestrictedPolicyWhenReusingConfigurationCache() {
+        // Given: generate valid XML with the default deny-by-default capability policy.
+        writeBuild()
+        Path pipeline = writePipeline('restricted_line')
+        def arguments = generationArguments()
+        BuildResult first = runner(arguments).build()
+        assertThat(first.task(':xmlGenerateAssemblyLine').outcome).isEqualTo(TaskOutcome.SUCCESS)
+        Path previous = generatedSourceRoot()
+            .resolve('io/github/gear4jtest/xml/generated/Restricted_lineLine.java')
+        String previousContent = Files.readString(previous)
+
+        // When: reuse configuration but force translation of an unregistered operator.
+        Files.writeString(pipeline, pipelineXml('restricted_line').replace(
+            '<signal id="stop" type="STOP" inputType="java.lang.String"/>',
+            '<processingOperation id="step" type="unregistered.operator"/>'))
+        BuildResult result = runner(arguments).buildAndFail()
+
+        // Then: reach capability validation, retaining the last successful output.
+        assertThat(result.task(':xmlGenerateAssemblyLine').outcome).isEqualTo(TaskOutcome.FAILED)
+        assertThat(result.output)
+            .contains('Reusing configuration cache.')
+            .contains("XML operator capability 'unregistered.operator' is not allowed for execution mode RUN")
+        assertThat(previous).exists().hasContent(previousContent)
     }
 
     @Test

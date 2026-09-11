@@ -43,7 +43,12 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
 /** Spring Boot auto-configuration for Gear4J. */
-@AutoConfiguration
+@AutoConfiguration(afterName = {
+        "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration",
+        "org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration",
+        "org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration",
+        "org.springframework.boot.actuate.autoconfigure.metrics.export.simple.SimpleMetricsExportAutoConfiguration"
+})
 @EnableConfigurationProperties(Gear4jProperties.class)
 @Import(Gear4jSpringConfiguration.class)
 public class Gear4jAutoConfiguration {

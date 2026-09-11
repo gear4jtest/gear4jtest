@@ -53,6 +53,13 @@ class OperationChainPublicationRepositoryJdbcIT {
     Path tempDirectory;
 
     @Test
+    void publication_shouldSerializeCommitRenewalAndAbort() throws Exception {
+        DataSource dataSource = h2DataSource();
+        ExternalJdbcSchemaMigrator.forDialect(Gear4jDatabaseDialect.H2).migrate(dataSource);
+        PublicationConcurrencyChecks.verify(dataSource, Gear4jDatabaseDialect.H2);
+    }
+
+    @Test
     void publish_shouldCommitObjectAndTagsAndMakeIdenticalRetriesIdempotent() throws Exception {
         // Given
         DataSource dataSource = h2DataSource();

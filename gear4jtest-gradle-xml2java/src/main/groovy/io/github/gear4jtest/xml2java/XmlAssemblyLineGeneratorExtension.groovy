@@ -19,6 +19,13 @@ abstract class XmlAssemblyLineGeneratorExtension {
     /** XML files to translate. Defaults to every XML file under src/main/gear4j. */
     final ConfigurableFileCollection xmlFiles
 
+    /**
+     * Compiled operators and their dependencies used for generic type resolution.
+     * With the Java plugin, includes the main compile classpath and the independent
+     * gear4jOperators source set. Never add main output: it depends on generation.
+     */
+    final ConfigurableFileCollection operatorClasspath
+
     /** Directory where generated Java sources are written. */
     final DirectoryProperty outputDir
 
@@ -44,6 +51,7 @@ abstract class XmlAssemblyLineGeneratorExtension {
     XmlAssemblyLineGeneratorExtension(Project project) {
         this.project = project
         this.xmlFiles = project.objects.fileCollection()
+        this.operatorClasspath = project.objects.fileCollection()
         this.outputDir = project.objects.directoryProperty()
         this.mediaType = project.objects.property(String)
         this.trustedXml = project.objects.property(Boolean)

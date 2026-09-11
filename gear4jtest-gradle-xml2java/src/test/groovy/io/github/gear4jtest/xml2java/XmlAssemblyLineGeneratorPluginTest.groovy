@@ -113,9 +113,11 @@ class XmlAssemblyLineGeneratorPluginTest {
         extension.trustedXml()
 
         // When
+        ClassLoader previous = Thread.currentThread().contextClassLoader
         project.tasks.getByName(XmlAssemblyLineGeneratorPlugin.TASK_NAME).generate()
 
         // Then
+        assertThat(Thread.currentThread().contextClassLoader).isSameAs(previous)
         def generated = new File(outputDir, 'io/github/gear4jtest/xml/generated/Simple_lineLine.java')
         assertThat(generated)
             .as('generated Java source must be written under the package path')
@@ -123,6 +125,30 @@ class XmlAssemblyLineGeneratorPluginTest {
         assertThat(generated.text)
             .contains('public final class Simple_lineLine')
             .contains('implements GeneratedAssemblyLine')
+    }
+
+    @Test
+    void should_restore_the_context_loader_when_operator_resolution_fails() {
+        // Given
+        def project = ProjectBuilder.builder().build()
+        project.plugins.apply(XmlAssemblyLineGeneratorPlugin)
+        def extension = project.extensions.getByType(XmlAssemblyLineGeneratorExtension)
+        extension.operatorCapability('missing', 'fixture.MissingOperator')
+        def xmlDir = new File(project.projectDir, 'src/main/gear4j')
+        xmlDir.mkdirs()
+        new File(xmlDir, 'pipeline.xml').text = '''<?xml version="1.0" encoding="UTF-8"?>
+<assemblyLine xmlns="http://github.com/gear4jtest/core/model"
+              id="missing" inputType="java.lang.String" outputType="java.lang.String">
+  <operations><processingOperation id="step" type="missing"/></operations>
+</assemblyLine>
+'''
+        ClassLoader previous = Thread.currentThread().contextClassLoader
+
+        // When / Then
+        assertThatThrownBy {
+            project.tasks.getByName(XmlAssemblyLineGeneratorPlugin.TASK_NAME).generate()
+        }.isInstanceOf(IllegalArgumentException).hasMessageContaining('fixture.MissingOperator')
+        assertThat(Thread.currentThread().contextClassLoader).isSameAs(previous)
     }
 
     @Test

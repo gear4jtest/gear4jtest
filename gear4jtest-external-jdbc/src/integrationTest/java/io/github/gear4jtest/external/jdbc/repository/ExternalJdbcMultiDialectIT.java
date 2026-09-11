@@ -90,6 +90,7 @@ class ExternalJdbcMultiDialectIT {
         verifyManagedTransactionRollback(dataSource, scenario, assemblyLineId + "-managed-rollback");
         verifyConfigurationRoundTrip(dataSource, scenario.dialect(), assemblyLineId);
         verifyAtomicPublicationTagsAndPagination(dataSource, scenario.dialect(), assemblyLineId);
+        PublicationConcurrencyChecks.verify(dataSource, scenario.dialect());
         verifyCrashWindowReconciliation(dataSource, scenario, assemblyLineId + "-crash-recovery");
         verifyArtifactBlobStreaming(dataSource, scenario, assemblyLineId);
     }

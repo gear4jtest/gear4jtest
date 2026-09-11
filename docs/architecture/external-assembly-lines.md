@@ -45,6 +45,22 @@ invalidation releases cache ownership without closing a store still in use.
 JDBC stage-tag and committed-tag persistence uses one dialect-specific idempotent batch per tag set. A retry locks its
 existing stage before merging tags, preserving the persisted 64-tag limit under concurrent retry attempts.
 
+JDBC commit locks the stage row before reading its metadata and tags. Renewal
+validates the existing identity under the same lock; tag reads use locking reads
+as well, avoiding an older transaction snapshot after a wait. The row lock lasts
+through object/tag publication and stage deletion. An already absent stage is an
+idempotent commit no-op.
+
+Abort deletes the parent stage first and relies on the existing V1 foreign key's
+ON DELETE CASCADE for its tags. Commit, renewal and abort thus acquire the parent
+before its tags. Conditional abort keeps its atomic revision predicate.
+
+If a concurrent commit/abort consumes a stage between a duplicate insert and its
+locking lookup, staging retries that insertion race up to three attempts. Further
+churn fails the transaction with a SQLTransactionRollbackException (SQLState
+40001) retained as the repository exception's cause. Database deadlock or
+serialization failures are still propagated; this is not a general retry policy.
+
 A stage is durable but invisible to normal object and tag repositories. A storage or commit failure therefore cannot leave
 a newly written artifact completely unknown to the metadata system. `ArtifactPublicationReconciler` processes stages older
 than an operator-selected grace period: it commits a stage when the expected hash exists, conditionally aborts it when the
