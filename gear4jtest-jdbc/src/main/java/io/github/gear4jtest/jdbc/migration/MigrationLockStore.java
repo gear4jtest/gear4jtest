@@ -116,8 +116,6 @@ final class MigrationLockStore {
     }
 
     private Statement createStatement(Connection connection) throws SQLException {
-        Statement statement = connection.createStatement();
-        statementOptions.apply(statement);
-        return statement;
+        return statementOptions.configureNewStatement(connection.createStatement());
     }
 }

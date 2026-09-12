@@ -52,8 +52,7 @@ final class AssemblyLineExecutionResultMapper {
                 yield ExecutionResult.stopped(typedResult, execution);
             }
             case CANCELLED -> {
-                Exception cancellation = rootLog.getErrorMessage() != null
-                        ? new RuntimeException(rootLog.getErrorMessage()) : null;
+                Exception cancellation = rootFailure(rootLog, null);
                 execution.setStatus(rootStatus);
                 execution.setResult(result);
                 if (cancellation != null) {
@@ -62,8 +61,7 @@ final class AssemblyLineExecutionResultMapper {
                 yield ExecutionResult.cancelled(typedResult, execution, cancellation);
             }
             case FAILED -> {
-                Exception failure = new RuntimeException(
-                        rootLog.getErrorMessage() != null ? rootLog.getErrorMessage() : "AssemblyLine failed");
+                Exception failure = rootFailure(rootLog, "AssemblyLine failed");
                 execution.setStatus(rootStatus);
                 execution.setError(failure);
                 yield ExecutionResult.failure(failure, execution);
@@ -80,6 +78,24 @@ final class AssemblyLineExecutionResultMapper {
             case PENDING, INITIALIZING, PAUSED -> throw new IllegalStateException(
                     "Root station returned unsupported active status " + rootStatus);
         };
+    }
+
+    private static Exception rootFailure(StationLogTrace trace, String fallbackMessage) {
+        var causes = trace.getThrowables();
+        for (Throwable cause : causes) {
+            if (cause instanceof Error fatal) {
+                throw fatal;
+            }
+        }
+        String message = trace.getErrorMessage() != null ? trace.getErrorMessage() : fallbackMessage;
+        if (message == null && causes.isEmpty()) {
+            return null;
+        }
+        // Keep the terminal message: earlier, ignored processor failures may also
+        // be present in the trace. Preserve all recorded causes without replacing it.
+        RuntimeException failure = new RuntimeException(message, causes.isEmpty() ? null : causes.get(0));
+        causes.stream().skip(1).distinct().filter(cause -> cause != failure.getCause()).forEach(failure::addSuppressed);
+        return failure;
     }
 
     @SuppressWarnings("unchecked")

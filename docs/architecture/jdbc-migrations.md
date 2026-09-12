@@ -196,16 +196,37 @@ state transitions, `MigrationLockStore` owns the portable lock table and row acq
 `MigrationResourceLoader` owns list parsing, resource loading and checksums. These components are package-private and do
 not expand the public migration API.
 
-When the migrator obtains a connection from a `DataSource`, it owns the migration
-transaction: it disables auto-commit, creates/updates the schema infrastructure,
-applies pending migrations and commits. If a caller passes a connection that is
-already inside a transaction, Gear4J does not commit or roll back the caller's
-transaction; the caller remains responsible for the transaction boundary.
+Transaction ownership depends on the connection's initial auto-commit state.
+When it is true, the migrator disables auto-commit, applies the operation and
+commits its transaction. When it is already false, Gear4J neither commits nor
+rolls back nor changes that flag: the surrounding transaction remains the
+caller's responsibility. This rule applies to both `migrate` and `prepareRetry`.
+The `DataSource` overload closes the connection it acquires; an explicitly
+supplied `Connection` remains open.
 
-DDL transaction semantics still depend on the database. PostgreSQL and H2 can
-usually keep DDL transactional. MySQL/MariaDB and Oracle may auto-commit DDL in
-some cases, so the lock/history mechanism should be considered a robustness
-guardrail rather than a full Flyway/Liquibase replacement.
+Owned transactions are rolled back on ordinary exceptions and fatal `Error`
+values. Cleanup failures remain attached to the initial failure; a fatal cleanup
+failure takes precedence over an ordinary exception while retaining that
+exception as suppressed. Auto-commit is restored only after transaction
+resolution succeeds. If rollback fails, Gear4J skips both failure-marker writes
+and auto-commit restoration. Re-enabling it could commit pending work, as
+specified by the [JDBC connection contract](https://docs.oracle.com/en/java/javase/17/docs/api/java.sql/java/sql/Connection.html#setAutoCommit(boolean)).
+An explicit connection left uncertain by cleanup failure must be discarded by
+its owner instead of being reused or switched back to auto-commit blindly.
+Fatal failure does not guarantee a durable `FAILED` migration marker.
+
+Newly created statements are closed if statement-timeout configuration fails.
+`JdbcStatementOptions.configureNewStatement(...)` takes that cleanup
+responsibility until configuration succeeds; `apply(...)` alone continues to
+leave ownership with the caller.
+
+DDL transaction semantics still depend on the database. The PostgreSQL rollback
+regression covers transactional `CREATE TABLE`. H2 `CREATE TABLE` can commit an
+open transaction; it must not be treated as equivalent evidence for PostgreSQL
+rollback behavior. See the [H2 command reference](https://h2database.com/html/commands.html#create_table).
+MySQL/MariaDB and Oracle also have DDL implicit-commit behavior. The lock/history
+mechanism therefore cannot guarantee atomic migration across all dialects and
+does not replace a full Flyway/Liquibase migration process.
 
 ## Partial-migration recovery runbook
 
@@ -219,7 +240,7 @@ Gear4J records every managed migration with one of three durable states in
 
 Existing history rows created by an earlier Gear4J version are upgraded with an
 `APPLIED` default. A new startup never retries `STARTED` or `FAILED`
-automatically. This is deliberate: MySQL, MariaDB and Oracle may have committed
+automatically. This is deliberate: H2, MySQL, MariaDB and Oracle may have committed
 only part of the DDL even though the surrounding JDBC transaction was rolled
 back.
 

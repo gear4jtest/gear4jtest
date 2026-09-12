@@ -155,7 +155,6 @@ final class OperationChainObjectJdbcOperations {
         PreparedStatement statement = ExternalRepositorySqlDialect.prepareGeneratedKeyInsert(databaseDialect,
                                                                                              connection,
                                                                                              sql);
-        statementOptions.apply(statement);
-        return statement;
+        return statementOptions.configureNewStatement(statement);
     }
 }

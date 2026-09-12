@@ -218,9 +218,7 @@ final class MigrationHistoryStore {
     }
 
     private Statement createStatement(Connection connection) throws SQLException {
-        Statement statement = connection.createStatement();
-        statementOptions.apply(statement);
-        return statement;
+        return statementOptions.configureNewStatement(connection.createStatement());
     }
 
     private SchemaMigrationState parseState(String value) {

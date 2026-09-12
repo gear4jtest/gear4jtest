@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import io.github.gear4jtest.core.api.context.CancellationToken;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.exception.SideComputeExecutionException;
@@ -18,6 +19,23 @@ import static org.mockito.Mockito.when;
 
 class SideComputeWaitProcessorTest {
     @Test
+    void beforeExecution_shouldPropagateFatalFutureFailure() {
+        // Given
+        ExecutionContext execCtx = mock(ExecutionContext.class);
+        StationExecutionContext opCtx = mock(StationExecutionContext.class);
+        SideComputeContext sideContext = new SideComputeContext();
+        var fatal = new AssertionError("fatal side compute");
+        sideContext.getOrCreateFuture("fatal").completeExceptionally(fatal);
+        when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getCancellationToken()).thenReturn(new CancellationToken());
+        when(execCtx.getSideComputeContext()).thenReturn(sideContext);
+
+        // When / Then
+        assertThatThrownBy(() -> SideComputeWaitProcessor.builder("fatal").build().beforeExecution("input", opCtx))
+                .isSameAs(fatal);
+    }
+
+    @Test
     void beforeExecution_shouldWaitAndStoreResolvedValue() {
         // arrange
         ExecutionContext execCtx = mock(ExecutionContext.class);
@@ -27,6 +45,7 @@ class SideComputeWaitProcessorTest {
         Map<String, Object> globalMap = new HashMap<>();
 
         when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getCancellationToken()).thenReturn(new CancellationToken());
         when(execCtx.getSideComputeContext()).thenReturn(scCtx);
         when(execCtx.getContext()).thenReturn(globalMap);
 
@@ -54,6 +73,7 @@ class SideComputeWaitProcessorTest {
         Map<String, Object> globalMap = new HashMap<>();
 
         when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getCancellationToken()).thenReturn(new CancellationToken());
         when(execCtx.getSideComputeContext()).thenReturn(scCtx);
         when(execCtx.getContext()).thenReturn(globalMap);
 
@@ -76,6 +96,7 @@ class SideComputeWaitProcessorTest {
         Map<String, Object> globalMap = new HashMap<>();
 
         when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getCancellationToken()).thenReturn(new CancellationToken());
         when(execCtx.getSideComputeContext()).thenReturn(scCtx);
         when(execCtx.getContext()).thenReturn(globalMap);
 
@@ -104,6 +125,7 @@ class SideComputeWaitProcessorTest {
         Map<String, Object> globalMap = new HashMap<>();
 
         when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getCancellationToken()).thenReturn(new CancellationToken());
         when(execCtx.getSideComputeContext()).thenReturn(scCtx);
         when(execCtx.getContext()).thenReturn(globalMap);
 
@@ -127,6 +149,7 @@ class SideComputeWaitProcessorTest {
         Map<String, Object> globalMap = new HashMap<>();
 
         when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getCancellationToken()).thenReturn(new CancellationToken());
         when(execCtx.getSideComputeContext()).thenReturn(scCtx);
         when(execCtx.getContext()).thenReturn(globalMap);
 
@@ -155,6 +178,7 @@ class SideComputeWaitProcessorTest {
         Map<String, Object> globalMap = new HashMap<>();
 
         when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getCancellationToken()).thenReturn(new CancellationToken());
         when(execCtx.getSideComputeContext()).thenReturn(scCtx);
         when(execCtx.getContext()).thenReturn(globalMap);
 
@@ -186,6 +210,7 @@ class SideComputeWaitProcessorTest {
         SideComputeContext sideComputeContext = new SideComputeContext();
         Map<String, Object> globalMap = new HashMap<>();
         when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getCancellationToken()).thenReturn(new CancellationToken());
         when(execCtx.getSideComputeContext()).thenReturn(sideComputeContext);
         when(execCtx.getContext()).thenReturn(globalMap);
         sideComputeContext.getOrCreateFuture("null-result").complete(null);
@@ -205,6 +230,7 @@ class SideComputeWaitProcessorTest {
         StationExecutionContext opCtx = mock(StationExecutionContext.class);
         SideComputeContext sideComputeContext = new SideComputeContext();
         when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getCancellationToken()).thenReturn(new CancellationToken());
         when(execCtx.getSideComputeContext()).thenReturn(sideComputeContext);
         when(execCtx.getContext()).thenReturn(new HashMap<>());
         SideComputeWaitProcessor processor = SideComputeWaitProcessor.builder("null-fallback")
@@ -243,6 +269,7 @@ class SideComputeWaitProcessorTest {
         SideComputeContext sideComputeContext = new SideComputeContext();
         Map<String, Object> globalMap = new HashMap<>();
         when(opCtx.getGlobalContext()).thenReturn(execCtx);
+        when(execCtx.getCancellationToken()).thenReturn(new CancellationToken());
         when(execCtx.getSideComputeContext()).thenReturn(sideComputeContext);
         when(execCtx.getContext()).thenReturn(globalMap);
         sideComputeContext.getOrCreateFuture("extreme-timeout").complete("resolved");

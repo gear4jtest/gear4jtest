@@ -172,36 +172,12 @@ public final class JdbcSchemaMigrator {
 
     public void migrate(Connection connection) {
         Objects.requireNonNull(connection, "connection must not be null");
-        boolean previousAutoCommit;
         try {
-            previousAutoCommit = connection.getAutoCommit();
-            boolean ownsTransaction = previousAutoCommit;
-            if (ownsTransaction) {
-                connection.setAutoCommit(false);
-            }
-            try {
+            inMigrationTransaction(connection, () -> {
                 ensureInfrastructureTables(connection);
                 migrationLock.acquire(connection);
                 runMigrations(connection);
-                if (ownsTransaction) {
-                    connection.commit();
-                }
-            } catch (MigrationExecutionException e) {
-                if (ownsTransaction) {
-                    rollback(connection, e);
-                    persistFailedMigration(connection, e);
-                }
-                throw migrationFailure(e);
-            } catch (SQLException | IOException | RuntimeException e) {
-                if (ownsTransaction) {
-                    rollback(connection, e);
-                }
-                throw e;
-            } finally {
-                if (ownsTransaction) {
-                    connection.setAutoCommit(previousAutoCommit);
-                }
-            }
+            });
         } catch (SQLException | IOException e) {
             throw new SchemaMigrationException("Failed to migrate Gear4J schema for module " + moduleId, e);
         }
@@ -261,40 +237,67 @@ public final class JdbcSchemaMigrator {
     public void prepareRetry(Connection connection, String version) {
         Objects.requireNonNull(connection, "connection must not be null");
         String requiredVersion = requireNonBlank(version, "version");
-        boolean previousAutoCommit;
         try {
-            previousAutoCommit = connection.getAutoCommit();
-            boolean ownsTransaction = previousAutoCommit;
-            if (ownsTransaction) {
-                connection.setAutoCommit(false);
-            }
-            try {
+            inMigrationTransaction(connection, () -> {
                 ensureInfrastructureTables(connection);
                 migrationLock.acquire(connection);
                 prepareRetryLocked(connection, requiredVersion);
-                if (ownsTransaction) {
-                    connection.commit();
-                }
-            } catch (SQLException | IOException | RuntimeException e) {
-                if (ownsTransaction) {
-                    rollback(connection, e);
-                }
-                throw e;
-            } finally {
-                if (ownsTransaction) {
-                    connection.setAutoCommit(previousAutoCommit);
-                }
-            }
+            });
         } catch (SQLException | IOException e) {
             throw new SchemaMigrationException("Failed to prepare Gear4J schema migration retry for module "
                     + moduleId + ":" + requiredVersion, e);
         }
     }
 
+    private void inMigrationTransaction(Connection connection, MigrationWork work) throws SQLException, IOException {
+        boolean ownsTransaction = connection.getAutoCommit();
+        if (ownsTransaction) {
+            connection.setAutoCommit(false);
+        }
+        boolean transactionResolved = false;
+        Throwable primaryFailure = null;
+        try {
+            work.run();
+            if (ownsTransaction) {
+                connection.commit();
+            }
+            transactionResolved = true;
+        } catch (MigrationExecutionException failure) {
+            SchemaMigrationException reported = migrationFailure(failure);
+            primaryFailure = reported;
+            if (ownsTransaction && rollback(connection, reported)) {
+                transactionResolved = persistFailedMigration(connection, failure, reported);
+            }
+            throw reported;
+        } catch (SQLException | IOException | RuntimeException | Error failure) {
+            primaryFailure = failure;
+            if (ownsTransaction) {
+                transactionResolved = rollback(connection, failure);
+            }
+            throw failure;
+        } finally {
+            // setAutoCommit(true) can commit an open transaction. Only restore after
+            // a confirmed commit or rollback; an uncertain connection must be discarded.
+            if (ownsTransaction && transactionResolved) {
+                try {
+                    connection.setAutoCommit(true);
+                } catch (SQLException | RuntimeException | Error restoreFailure) {
+                    if (primaryFailure == null) {
+                        throw restoreFailure;
+                    }
+                    retainCleanupFailure(primaryFailure, restoreFailure);
+                }
+            }
+        }
+    }
+
+    @FunctionalInterface
+    private interface MigrationWork {
+        void run() throws SQLException, IOException;
+    }
+
     private Statement createStatement(Connection connection) throws SQLException {
-        Statement statement = connection.createStatement();
-        statementOptions.apply(statement);
-        return statement;
+        return statementOptions.configureNewStatement(connection.createStatement());
     }
 
     private void ensureInfrastructureTables(Connection connection) throws SQLException {
@@ -357,7 +360,9 @@ public final class JdbcSchemaMigrator {
         }
     }
 
-    private void persistFailedMigration(Connection connection, MigrationExecutionException failure) {
+    private boolean persistFailedMigration(Connection connection,
+                                           MigrationExecutionException failure,
+                                           Throwable primaryFailure) {
         try {
             ensureInfrastructureTables(connection);
             migrationLock.acquire(connection);
@@ -371,9 +376,14 @@ public final class JdbcSchemaMigrator {
                                              SchemaMigrationState.FAILED);
             }
             connection.commit();
+            return true;
         } catch (SQLException | RuntimeException persistenceFailure) {
-            failure.addSuppressed(persistenceFailure);
-            rollback(connection, failure);
+            retainCleanupFailure(primaryFailure, persistenceFailure);
+            return rollback(connection, primaryFailure);
+        } catch (Error fatal) {
+            fatal.addSuppressed(primaryFailure);
+            rollback(connection, fatal);
+            throw fatal;
         }
     }
 
@@ -430,12 +440,25 @@ public final class JdbcSchemaMigrator {
         return SqlScriptSplitter.split(scriptContent);
     }
 
-    private static void rollback(Connection connection, Throwable failure) {
+    private static boolean rollback(Connection connection, Throwable failure) {
         try {
             connection.rollback();
-        } catch (SQLException rollbackFailure) {
-            failure.addSuppressed(rollbackFailure);
+            return true;
+        } catch (SQLException | RuntimeException | Error rollbackFailure) {
+            retainCleanupFailure(failure, rollbackFailure);
+            return false;
         }
+    }
+
+    private static void retainCleanupFailure(Throwable primary, Throwable cleanup) {
+        if (primary == cleanup) {
+            return;
+        }
+        if (cleanup instanceof Error fatal && !(primary instanceof Error)) {
+            fatal.addSuppressed(primary);
+            throw fatal;
+        }
+        primary.addSuppressed(cleanup);
     }
 
     private static String requireNonBlank(String value, String name) {

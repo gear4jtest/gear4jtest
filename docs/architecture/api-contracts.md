@@ -55,6 +55,25 @@ artifact is an API dependency and the staged consumer probe compiles a direct an
 remain preferable when absence is ordinary control flow; annotations primarily protect legacy-compatible nullable
 getters and Java/Kotlin tooling.
 
+### Pre-1.0 nullable operator result correction
+
+`StationContextUtils.applyTransformer(Object, StationExecutionContext)` now
+returns `@Nullable Object` instead of `Optional<Object>`. A present operator
+that returns null has succeeded; `Optional.map` must not collapse that result
+into the same state as a missing operator. Missing bindings throw
+`IllegalStateException` before invocation. `getTransformer(...)` continues to
+return an `Optional` for checking whether a binding exists.
+
+External callers of this helper must recompile and remove Optional chaining:
+
+```java
+Object output = StationContextUtils.applyTransformer(input, context);
+// A null output is a successful value and may be passed to the next operator.
+```
+
+This is an intentional source and binary signature change before the first
+stable release. The public executor entry points retain their signatures.
+
 ## SPI
 
 SPI is intended for framework/integration authors. Implementations may be

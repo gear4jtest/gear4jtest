@@ -33,9 +33,34 @@ public final class JdbcStatementOptions {
     }
 
     public PreparedStatement prepare(Connection connection, String sql) throws SQLException {
-        PreparedStatement statement = connection.prepareStatement(sql);
-        apply(statement);
-        return statement;
+        return configureNewStatement(connection.prepareStatement(sql));
+    }
+
+    /**
+     * Configures a newly created statement, closing it if configuration fails. On
+     * success, ownership is transferred to the caller. Use
+     * {@link #apply(Statement)} when configuring a borrowed statement whose
+     * lifetime belongs to someone else.
+     */
+    public <S extends Statement> S configureNewStatement(S statement) throws SQLException {
+        Objects.requireNonNull(statement, "statement must not be null");
+        try {
+            apply(statement);
+            return statement;
+        } catch (SQLException | RuntimeException | Error failure) {
+            try {
+                statement.close();
+            } catch (SQLException | RuntimeException | Error cleanupFailure) {
+                if (cleanupFailure != failure) {
+                    if (cleanupFailure instanceof Error fatal && !(failure instanceof Error)) {
+                        fatal.addSuppressed(failure);
+                        throw fatal;
+                    }
+                    failure.addSuppressed(cleanupFailure);
+                }
+            }
+            throw failure;
+        }
     }
 
     public void apply(Statement statement) throws SQLException {

@@ -22,6 +22,8 @@ final class AssemblyLineRunLifecycleInvoker {
             Exception failure = invokeRunStartedSafely(lifecycleExtensions.get(index), context, execution);
             if (firstCriticalFailure == null && failure != null) {
                 firstCriticalFailure = failure;
+            } else if (failure != null && failure != firstCriticalFailure) {
+                firstCriticalFailure.addSuppressed(failure);
             }
         }
         if (firstCriticalFailure != null) {
@@ -34,15 +36,26 @@ final class AssemblyLineRunLifecycleInvoker {
                                  ExecutionContext context,
                                  AssemblyRunTrace execution) {
         Exception firstCriticalFailure = null;
+        Exception originalFailure = execution.getError();
         for (RunLifecycleExtension lifecycleExtension : lifecycleExtensions) {
-            Exception failure = invokeRunCompletedSafely(lifecycleExtension, context, execution);
+            Exception failure;
+            try {
+                failure = invokeRunCompletedSafely(lifecycleExtension, context, execution);
+            } catch (Error fatal) {
+                Exception priorFailure = firstCriticalFailure != null ? firstCriticalFailure : originalFailure;
+                if (priorFailure != null) {
+                    fatal.addSuppressed(priorFailure);
+                }
+                throw fatal;
+            }
             if (failure != null) {
                 if (firstCriticalFailure == null) {
-                    firstCriticalFailure = failure;
+                    firstCriticalFailure = originalFailure != null ? originalFailure : failure;
                     execution.setEndTime(Instant.now());
                     execution.setStatus(ExecutionStatus.FAILED);
-                    execution.setError(failure);
-                } else {
+                    execution.setError(firstCriticalFailure);
+                }
+                if (failure != firstCriticalFailure) {
                     firstCriticalFailure.addSuppressed(failure);
                 }
             }

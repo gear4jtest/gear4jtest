@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import io.github.gear4jtest.core.api.behavior.Operator;
 import io.github.gear4jtest.core.api.station.StationKind;
+import org.jspecify.annotations.Nullable;
 
 public final class StationContextUtils {
     private StationContextUtils() {
@@ -32,16 +33,22 @@ public final class StationContextUtils {
     }
 
     /**
-     * Invokes the bound {@link Operator} on {@code input} if one is present.
+     * Invokes the bound {@link Operator} on {@code input}, allowing a successful
+     * {@code null} result (including {@code Void} operators).
      *
      * <p>
      * Captures the operator's {@code <IN, OUT>} type variables locally so the
      * necessary unchecked cast on {@code input} stays in this single helper instead
      * of leaking into every caller.
      * </p>
+     *
+     * @return the operator result, possibly {@code null}
+     * @throws IllegalStateException when no operator is bound
      */
-    public static Optional<Object> applyTransformer(Object input, StationExecutionContext ctx) {
-        return getTransformer(ctx).map(op -> invokeTransformer(op, input, ctx));
+    public static @Nullable Object applyTransformer(Object input, StationExecutionContext ctx) {
+        Operator<?, ?> operator = getTransformer(ctx)
+                .orElseThrow(() -> new IllegalStateException("No operator bound to station execution context"));
+        return invokeTransformer(operator, input, ctx);
     }
 
     @SuppressWarnings("unchecked")

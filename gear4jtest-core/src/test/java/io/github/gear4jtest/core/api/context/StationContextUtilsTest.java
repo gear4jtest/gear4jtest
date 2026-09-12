@@ -12,6 +12,7 @@ import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class StationContextUtilsTest {
     @Test
@@ -21,7 +22,8 @@ class StationContextUtilsTest {
 
         // When / Then
         assertThat(StationContextUtils.getTransformer(context)).isEmpty();
-        assertThat(StationContextUtils.applyTransformer("input", context)).isEmpty();
+        assertThatThrownBy(() -> StationContextUtils.applyTransformer("input", context))
+                .isInstanceOf(IllegalStateException.class).hasMessage("No operator bound to station execution context");
     }
 
     @Test
@@ -33,7 +35,7 @@ class StationContextUtilsTest {
 
         // When / Then
         assertThat(StationContextUtils.getTransformer(context)).contains(operator);
-        assertThat(StationContextUtils.applyTransformer("gear4j", context)).contains("GEAR4J");
+        assertThat(StationContextUtils.applyTransformer("gear4j", context)).isEqualTo("GEAR4J");
     }
 
     @Test

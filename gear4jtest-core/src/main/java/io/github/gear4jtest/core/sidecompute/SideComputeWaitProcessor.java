@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -11,6 +12,7 @@ import java.util.function.Supplier;
 import io.github.gear4jtest.core.api.behavior.Processor;
 import io.github.gear4jtest.core.api.context.ExecutionContext;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
+import io.github.gear4jtest.core.exception.AssemblyLineCancellationException;
 import io.github.gear4jtest.core.exception.SideComputeExecutionException;
 import io.github.gear4jtest.core.exception.SideComputeTimeoutException;
 import io.github.gear4jtest.core.util.MonotonicDeadline;
@@ -27,6 +29,8 @@ import io.github.gear4jtest.core.util.MonotonicDeadline;
  * </p>
  */
 public final class SideComputeWaitProcessor implements Processor {
+    private static final long CANCELLATION_POLL_NANOS = TimeUnit.MILLISECONDS.toNanos(50);
+
     /**
      * Safety net used when callers do not provide an explicit timeout.
      *
@@ -67,10 +71,11 @@ public final class SideComputeWaitProcessor implements Processor {
         Duration effectiveTimeout = timeout != null ? timeout : safetyTimeout;
 
         try {
-            Object result = future.get(MonotonicDeadline.toNanosSaturated(effectiveTimeout), TimeUnit.NANOSECONDS);
+            Object result = awaitValue(future, execCtx, MonotonicDeadline.start(effectiveTimeout));
             storeResolvedValue(execCtx, result);
 
         } catch (TimeoutException te) {
+            execCtx.getCancellationToken().throwIfCancellationRequested();
             switch (onTimeout) {
                 case FAIL_ASSEMBLY_LINE -> {
                     future.completeExceptionally(te);
@@ -87,11 +92,34 @@ public final class SideComputeWaitProcessor implements Processor {
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new SideComputeExecutionException(key, ex);
-        } catch (SideComputeExecutionException ex) {
+        } catch (AssemblyLineCancellationException | SideComputeExecutionException ex) {
             throw ex;
+        } catch (ExecutionException ex) {
+            if (ex.getCause() instanceof Error error) {
+                throw error;
+            }
+            throw new SideComputeExecutionException(key, ex);
         } catch (Exception ex) {
             // Other future failures are wrapped as side-compute execution failures.
             throw new SideComputeExecutionException(key, ex);
+        }
+    }
+
+    private Object awaitValue(CompletableFuture<Object> future,
+                              ExecutionContext context,
+                              MonotonicDeadline deadline)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        while (true) {
+            context.getCancellationToken().throwIfCancellationRequested();
+            try {
+                return future.get(Math.min(deadline.remainingNanos(), CANCELLATION_POLL_NANOS),
+                                  TimeUnit.NANOSECONDS);
+            } catch (TimeoutException timeoutFailure) {
+                context.getCancellationToken().throwIfCancellationRequested();
+                if (deadline.reached()) {
+                    throw timeoutFailure;
+                }
+            }
         }
     }
 

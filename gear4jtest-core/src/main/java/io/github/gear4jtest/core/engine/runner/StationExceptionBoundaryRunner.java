@@ -5,6 +5,7 @@ import java.util.Objects;
 import io.github.gear4jtest.core.api.context.StationExecutionContext;
 import io.github.gear4jtest.core.api.station.AbstractStation;
 import io.github.gear4jtest.core.engine.context.EngineStationContexts;
+import io.github.gear4jtest.core.exception.AssemblyLineCancellationException;
 import io.github.gear4jtest.core.exception.StationExecutionException;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
@@ -28,6 +29,11 @@ public class StationExceptionBoundaryRunner implements StationRunner {
             return EngineStationContexts.mutableTrace(delegate.run(input, station, ctx));
         } catch (Exception throwable) {
             Exception effectiveException = StationExecutionException.unwrap(throwable);
+            if (effectiveException instanceof AssemblyLineCancellationException cancellation) {
+                StationLogTrace stationLog = EngineStationContexts.trace(ctx);
+                stationLog.markCancelled(cancellation);
+                return stationLog;
+            }
             try {
                 return errorPolicyExecutor.apply(station, input, ctx, effectiveException);
             } catch (Exception policyFailure) {

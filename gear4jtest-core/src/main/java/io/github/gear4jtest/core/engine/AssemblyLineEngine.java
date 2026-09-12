@@ -129,21 +129,40 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
                                                                 AssemblyLineCallStack callStack) {
         ResolvedExtensions resolvedExtensions = extensionResolver.resolve(pipeline, request);
         EventHandlingDefinition eventHandlingDefinition = OptionalEventHandlingDefinition.from(pipeline);
-        EventManager eventManager = new EventManager(eventHandlingDefinition, executionContextRegistry);
-        ExecutionSupport support = AssemblyLineRunSupportFactory.create(resolvedExtensions, taskFactory, payloadCloner);
-        AssemblyLineRunContext runContext = executionContextFactory.create(pipeline, request, callStack,
-                                                                           eventHandlingDefinition, eventManager,
-                                                                           initialRunContextPolicy);
-        ExecutionContext context = runContext.context();
-
-        try (MdcScope ignored = MdcScope.open(context)) {
+        try (RunResources resources = new RunResources(eventHandlingDefinition)) {
+            ExecutionSupport support = AssemblyLineRunSupportFactory.create(resolvedExtensions, taskFactory,
+                                                                            payloadCloner);
+            AssemblyLineRunContext runContext = executionContextFactory.create(pipeline, request, callStack,
+                                                                               eventHandlingDefinition,
+                                                                               resources.eventManager,
+                                                                               initialRunContextPolicy);
+            ExecutionContext context = runContext.context();
+            resources.context = context;
+            resources.mdcScope = MdcScope.open(context);
             logStart(pipeline, request);
-            try {
-                runContext.execution().setStartTime(Instant.now());
-                runContext.execution().setStatus(ExecutionStatus.RUNNING);
-                return executeRegisteredContext(pipeline, request, resolvedExtensions, support, runContext);
-            } finally {
-                shutdownEventRuntimeAndCleanup(eventManager, context);
+            runContext.execution().setStartTime(Instant.now());
+            runContext.execution().setStatus(ExecutionStatus.RUNNING);
+            return executeRegisteredContext(pipeline, request, resolvedExtensions, support, runContext);
+        }
+    }
+
+    private final class RunResources implements AutoCloseable {
+        private final EventManager eventManager;
+        private ExecutionContext context;
+        private MdcScope mdcScope;
+
+        private RunResources(EventHandlingDefinition definition) {
+            eventManager = new EventManager(definition, executionContextRegistry);
+        }
+
+        @Override
+        public void close() {
+            try (MdcScope ignored = mdcScope) {
+                if (context == null) {
+                    eventManager.shutdown();
+                } else {
+                    shutdownEventRuntimeAndCleanup(eventManager, context);
+                }
             }
         }
     }

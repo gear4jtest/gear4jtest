@@ -32,6 +32,8 @@ import io.github.gear4jtest.core.util.MonotonicDeadline;
  * ordering.
  */
 final class ParallelContainerBranchExecutor {
+    private static final long CANCELLATION_POLL_NANOS = TimeUnit.MILLISECONDS.toNanos(50);
+
     ContainerExecutionAggregation execute(ContainerBaseStation<?, ?> station,
                                           Object input,
                                           StationRunner runner,
@@ -118,6 +120,12 @@ final class ParallelContainerBranchExecutor {
                     Optional<Future<BranchExecution>> completedFuture = waitForNextCompletion(completionService,
                                                                                               deadline);
                     if (completedFuture.isEmpty()) {
+                        // A polling slice is not the overall timeout. Recheck cancellation
+                        // before classifying an expired wait as TIMEOUT.
+                        if (context.getGlobalContext().getCancellationToken().isCancellationRequested()
+                                || !deadline.reached()) {
+                            continue;
+                        }
                         Optional<StationLogTrace> timeoutChild = timeoutPendingBranches(submittedBranches, outcomes,
                                                                                         input,
                                                                                         context, awaitTimeout);
@@ -196,7 +204,8 @@ final class ParallelContainerBranchExecutor {
             throws InterruptedException {
         long remainingNanos = deadline.remainingNanos();
         return remainingNanos <= 0L ? Optional.empty()
-                : Optional.ofNullable(completionService.poll(remainingNanos, TimeUnit.NANOSECONDS));
+                : Optional.ofNullable(completionService.poll(Math.min(remainingNanos, CANCELLATION_POLL_NANOS),
+                                                             TimeUnit.NANOSECONDS));
     }
 
     private BranchExecution readCompletedExecution(Future<BranchExecution> future,

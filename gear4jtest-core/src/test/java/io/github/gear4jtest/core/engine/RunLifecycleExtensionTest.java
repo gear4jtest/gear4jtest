@@ -25,8 +25,136 @@ import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RunLifecycleExtensionTest {
+    @Test
+    void operatorFailureWithoutMessage_shouldRemainReachableAfterCompletionFailure() {
+        // Given
+        var original = new IllegalStateException();
+        var completion = new IllegalArgumentException("completion failed");
+        var operator = new FailingOperator(original);
+        var extension = new RunLifecycleExtension() {
+            @Override
+            public LifecycleFailureMode failureMode() {
+                return LifecycleFailureMode.CRITICAL;
+            }
+
+            @Override
+            public void onRunCompleted(ExecutionContext context, RunTrace trace) {
+                throw completion;
+            }
+        };
+        var pipeline = AssemblyLines.<String>createAssemblyLine("operator-failure")
+                .then(Stations.processingOperation("fail", FailingOperator.class).build()).build();
+        var engine = AssemblyLineEngine.builder().resourceFactory(new ResourceFactory() {
+            @Override
+            public <T> T getResource(Class<T> type) {
+                return type.cast(operator);
+            }
+        }).extensionResolver(new RuntimeExtensionResolver(List.of(extension)))
+                .executionContextRegistry(new ExecutionContextRegistry()).build();
+
+        // When
+        var result = engine.execute(pipeline, RunRequest.builder().input("input").build());
+
+        // Then
+        assertThat(result.getError()).hasCause(original);
+        assertThat(result.getError().getSuppressed()).contains(completion);
+        assertThat(result.getExecution().getError()).isSameAs(result.getError());
+    }
+
+    private static final class FailingOperator implements Operator<String, String> {
+        private final RuntimeException failure;
+
+        private FailingOperator(RuntimeException failure) {
+            this.failure = failure;
+        }
+
+        @Override
+        public String transform(String input, StationExecutionContext context) {
+            throw failure;
+        }
+    }
+
+    @Test
+    void completionFailure_shouldPreserveTheOriginalRunFailureAndTrace() {
+        // Given
+        var original = new IllegalStateException("original run failure");
+        var completion = new IllegalStateException("completion failed");
+        var extension = failingLifecycle(original, completion);
+
+        // When
+        var result = engine(extension).execute(pipeline(), RunRequest.builder().input("input").build());
+
+        // Then
+        assertThat(result.getOutcome()).isEqualTo(ExecutionOutcome.FAILED);
+        assertThat(result.getError()).isSameAs(original);
+        assertThat(result.getError().getSuppressed()).containsExactly(completion);
+        assertThat(result.getExecution().getError()).isSameAs(original);
+    }
+
+    @Test
+    void reusedLifecycleException_shouldNotCauseSelfSuppression() {
+        // Given
+        var original = new IllegalStateException("shared failure");
+
+        // When
+        var result = engine(failingLifecycle(original, original))
+                .execute(pipeline(), RunRequest.builder().input("input").build());
+
+        // Then
+        assertThat(result.getError()).isSameAs(original);
+        assertThat(original.getSuppressed()).isEmpty();
+    }
+
+    @Test
+    void fatalCompletionFailure_shouldEscapeWithTheOriginalFailure() {
+        // Given
+        var original = new IllegalStateException("original failure");
+        var fatal = new AssertionError("fatal completion");
+        var extension = new RunLifecycleExtension() {
+            @Override
+            public LifecycleFailureMode failureMode() {
+                return LifecycleFailureMode.CRITICAL;
+            }
+
+            @Override
+            public void onRunStarted(ExecutionContext context, RunTrace trace) {
+                throw original;
+            }
+
+            @Override
+            public void onRunCompleted(ExecutionContext context, RunTrace trace) {
+                throw fatal;
+            }
+        };
+
+        // When / Then
+        assertThatThrownBy(() -> engine(extension).execute(pipeline(), RunRequest.builder().input("input").build()))
+                .isSameAs(fatal);
+        assertThat(fatal.getSuppressed()).containsExactly(original);
+    }
+
+    private static RunLifecycleExtension failingLifecycle(RuntimeException start, RuntimeException completion) {
+        return new RunLifecycleExtension() {
+            @Override
+            public LifecycleFailureMode failureMode() {
+                return LifecycleFailureMode.CRITICAL;
+            }
+
+            @Override
+            public void onRunStarted(ExecutionContext context, RunTrace trace) {
+                throw start;
+            }
+
+            @Override
+            public void onRunCompleted(ExecutionContext context, RunTrace trace) {
+                throw completion;
+            }
+        };
+    }
+
     @Test
     void onRunStarted_shouldObserveStartedTrace() {
         // Given

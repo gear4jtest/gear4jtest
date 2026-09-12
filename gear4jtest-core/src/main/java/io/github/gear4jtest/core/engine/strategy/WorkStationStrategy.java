@@ -125,9 +125,7 @@ public class WorkStationStrategy extends AbstractStationStrategy<WorkStation<?, 
                             Object input,
                             StationRunner runner,
                             StationExecutionContext operationExecution) {
-        return StationContextUtils.applyTransformer(input, operationExecution)
-                .orElseThrow(() -> new IllegalStateException(
-                        "No transformer present found in operation execution context"));
+        return StationContextUtils.applyTransformer(input, operationExecution);
     }
 
     @Override

@@ -39,6 +39,72 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 
 class ParallelContainerBranchExecutorTest {
     @Test
+    void execute_shouldObserveCancellationDuringWaitBeforeTheOverallTimeout() throws Exception {
+        // Given
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        AtomicReference<Thread> callerThread = new AtomicReference<>();
+        ExecutorService caller = Executors.newSingleThreadExecutor(task -> {
+            Thread thread = new Thread(task, "parallel-cancellation-test");
+            callerThread.set(thread);
+            return thread;
+        });
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        CountDownLatch interrupted = new CountDownLatch(1);
+        CancellationToken token = new CancellationToken();
+        var context = stationContext("container", token);
+        var station = new ContainerBaseStation.Builder<String, Void>(executor).id("container")
+                .withBranch("waiting", new TestStation("waiting")).build();
+        try {
+            var execution = caller.submit(() -> new ParallelContainerBranchExecutor().execute(
+                                                                                              station, "input",
+                                                                                              (input,
+                                                                                               child,
+                                                                                               childContext) -> {
+                                                                                                  started.countDown();
+                                                                                                  try {
+                                                                                                      release.await();
+                                                                                                  } catch (InterruptedException failure) {
+                                                                                                      interrupted
+                                                                                                              .countDown();
+                                                                                                      Thread.currentThread()
+                                                                                                              .interrupt();
+                                                                                                  }
+                                                                                                  return successfulRunner()
+                                                                                                          .run(input,
+                                                                                                               child,
+                                                                                                               childContext);
+                                                                                              }, context, DEFAULT,
+                                                                                              Duration.ofSeconds(30)));
+            assertThat(started.await(5, TimeUnit.SECONDS)).isTrue();
+
+            long waitDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+            while (callerThread.get().getState() != Thread.State.TIMED_WAITING && System.nanoTime() < waitDeadline) {
+                Thread.sleep(1);
+            }
+            assertThat(callerThread.get().getState()).isEqualTo(Thread.State.TIMED_WAITING);
+
+            // When: the caller is waiting for completion, not still submitting branches.
+            token.cancel("user cancellation");
+            var aggregation = execution.get(5, TimeUnit.SECONDS);
+
+            // Then
+            assertThat(aggregation.results()).hasSize(1);
+            assertThat(aggregation.results().get(0).getStatus()).isEqualTo(StationLogStatus.CANCELLED);
+            assertThat(aggregation.results().get(0).getContext()).containsEntry("synthetic.reason",
+                                                                                "COOPERATIVE_CANCELLATION");
+            assertThat(interrupted.await(5, TimeUnit.SECONDS)).isTrue();
+            assertThat(executor.isShutdown()).isFalse();
+        } finally {
+            release.countDown();
+            caller.shutdownNow();
+            executor.shutdownNow();
+            assertThat(caller.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+        }
+    }
+
+    @Test
     void execute_shouldRecordRejectedBranchSubmissionsAsFailures() {
         // Given
         ExecutorService rejectedExecutor = Executors.newSingleThreadExecutor();

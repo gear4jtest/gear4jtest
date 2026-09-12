@@ -48,6 +48,13 @@ Side-compute waits are synchronous from the station's perspective. A station wai
 event reaction executor having enough capacity to complete the corresponding side-compute reaction before the configured
 timeout.
 
+The engine owns a newly acquired event runtime before it creates the run context
+or opens its MDC scope. A context-policy or ID-generator failure therefore also
+shuts down that runtime. Cleanup preserves the initial exception and attaches
+secondary failures as suppressed exceptions. Once context initialization has
+succeeded, the configured drain/detach policy and caller-executor ownership
+rules still apply; the caller's previous MDC is restored on exit.
+
 ## Persistence runtime
 
 Status: Implemented with bounded in-memory buffering.
@@ -176,7 +183,20 @@ deprecated legacy policy exists only for a bounded migration period and emits wa
 
 ## Cancellation and timeouts
 
-Status: Partially implemented.
+Status: Implemented at cooperative runtime boundaries.
+
+Parallel completion and side-compute waits recheck the cancellation token at
+most every 50 ms of framework waiting. Each wait retains one monotonic deadline;
+the polling slices do not renew its timeout. Cancellation observed before
+timeout classification remains cancellation, including when a side-compute wait
+uses a fallback or ignore timeout policy. That policy is not executed merely
+because the token was cancelled. A completed parallel branch retains the
+existing completed-result race semantics. An explicit parallel `CancelPolicy`
+may still map a cancelled child to a failed parent.
+
+The 50 ms interval is not an end-to-end latency guarantee: thread scheduling,
+user callbacks and configured event shutdown can extend the time until
+`execute(...)` returns. The runtime cannot forcibly stop user code.
 
 If parallel container execution exits with an unexpected unchecked exception or
 an `Error`, it attempts `cancel(true)` on every outstanding submitted future.
@@ -207,6 +227,28 @@ or item resolver, external I/O call or custom retry sequence.
 A `CancellationToken` is one-shot state. Sharing one token between unrelated top-level runs couples their lifecycle:
 cancelling one run cancels every run that reused the same token. `RunRequest.toBuilder()` preserves the token;
 `RunRequest.toIndependentBuilder()` intentionally drops it so the engine can allocate a fresh token for the copied run.
+
+## Results and failure causes
+
+Status: Implemented.
+
+An operator may successfully return `null`, including a `Void` operator. Its
+station succeeds and the next operator receives that null value; an absent
+operator is a separate configuration error. Side-compute values still require
+non-null completion values.
+
+If a critical run-completion hook fails after the run has already failed, the
+existing run failure remains primary and the hook failure is suppressed on it.
+Later completion hooks see that same failure in the trace. Reusing an exception
+instance does not attempt self-suppression. Fatal `Error` values propagate to
+the caller instead of becoming recoverable run results; a fatal completion
+failure retains the earlier ordinary run failure as a suppressed exception.
+
+Station failures are exposed through a normalized run exception whose message
+describes the terminal trace. Recorded causes remain reachable through its
+cause and suppressed exceptions, including exceptions with no message. The
+normalized result is not guaranteed to be the original operator exception
+instance.
 
 ## AssemblyLine graph immutability
 

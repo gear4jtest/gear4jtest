@@ -102,11 +102,11 @@ public abstract class AbstractStationLogState<T extends AbstractStationLogState<
         if (e == null) {
             return;
         }
+        this.throwables.add(e);
         String msg = e.getMessage();
         if (msg == null) {
             return;
         }
-        this.throwables.add(e);
         if (this.errorHandlerMessages == null || this.errorHandlerMessages.isBlank()) {
             this.errorHandlerMessages = msg;
         } else {

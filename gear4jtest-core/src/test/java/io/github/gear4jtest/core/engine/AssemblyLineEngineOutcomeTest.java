@@ -24,6 +24,59 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class AssemblyLineEngineOutcomeTest {
     @Test
+    void voidOperator_shouldSucceedWithNoValue() {
+        // Given
+        AssemblyLine<String, Void> pipeline = AssemblyLines.<String>createAssemblyLine("void-result")
+                .then(Stations.processingOperation("void", VoidOperator.class).build()).build();
+        AssemblyLineEngine engine = AssemblyLineEngine.builder().resourceFactory(reflectiveResourceFactory())
+                .extensionResolver(new RuntimeExtensionResolver(null))
+                .executionContextRegistry(new ExecutionContextRegistry()).build();
+
+        // When
+        var result = engine.execute(pipeline, RunRequest.builder().input("input").build());
+
+        // Then
+        assertThat(result.getOutcome()).isEqualTo(ExecutionOutcome.SUCCEEDED);
+        assertThat(result.getResult()).isNull();
+        assertThat(result.resultOptional()).isEmpty();
+        assertThat(result.getError()).isNull();
+        assertThat(result.getExecution().getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
+    }
+
+    @Test
+    void successfulNull_shouldBePassedToTheNextOperator() {
+        // Given
+        AssemblyLine<String, String> pipeline = AssemblyLines.<String>createAssemblyLine("null-chain")
+                .then(Stations.processingOperation("void", VoidOperator.class).build())
+                .then(Stations.processingOperation("next", AfterVoidOperator.class).build()).build();
+        AssemblyLineEngine engine = AssemblyLineEngine.builder().resourceFactory(reflectiveResourceFactory())
+                .extensionResolver(new RuntimeExtensionResolver(null))
+                .executionContextRegistry(new ExecutionContextRegistry()).build();
+
+        // When
+        var result = engine.execute(pipeline, RunRequest.builder().input("input").build());
+
+        // Then
+        assertThat(result.getOutcome()).isEqualTo(ExecutionOutcome.SUCCEEDED);
+        assertThat(result.getResult()).isEqualTo("after-null");
+    }
+
+    public static final class VoidOperator implements Operator<String, Void> {
+        @Override
+        public Void transform(String input, StationExecutionContext context) {
+            return null;
+        }
+    }
+
+    public static final class AfterVoidOperator implements Operator<Void, String> {
+        @Override
+        public String transform(Void input, StationExecutionContext context) {
+            assertThat(input).isNull();
+            return "after-null";
+        }
+    }
+
+    @Test
     void skippedProcessingOperationWithFallback_shouldExposeSkippedOutcomeAndFallbackOutput() {
         // Given
         AssemblyLine<String, String> pipeline = AssemblyLines.<String>createAssemblyLine("skip-root")

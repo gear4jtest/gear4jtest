@@ -1,0 +1,255 @@
+{
+  "phase": 3,
+  "reviewed_at": "2026-09-12",
+  "status": "implementation complete; connected qualification pending",
+  "baseline": {
+    "archive": "gear4jtest-20260908-phase-2.zip",
+    "sha256": "900e10fa3c23366da28d0ff5a1d4127f0995ee4758148c981f73c423fdf0a4c7",
+    "includes_phase_2_gradle_closure_hotfix": true
+  },
+  "findings": [
+    "F04",
+    "F05",
+    "F06",
+    "F10",
+    "F11",
+    "F14"
+  ],
+  "local_compilation": {
+    "java_release": 17,
+    "core_production_sources": 283,
+    "temporary_dependency_stand_ins": 5,
+    "core": {
+      "sources": 288,
+      "exit_code": 0,
+      "output": ""
+    },
+    "jdbc_source_closure": {
+      "exit_code": 0,
+      "output": ""
+    },
+    "limitation": "Uses temporary SLF4J/JSpecify stand-ins and local compiled dependencies; not the real Gradle dependency graph. JUnit sources were not compiled or run."
+  },
+  "standalone_probes": {
+    "passed_scenarios": 29,
+    "uses_real_database": false,
+    "is_junit_execution": false,
+    "results": [
+      {
+        "probe": "audit.Phase3RuntimeProbe",
+        "exit_code": 0,
+        "output": "PASS Void success and trace\nPASS null output passed downstream\nPASS start and completion failure retained\nPASS same failure identity\nPASS operator and completion failure retained\nPASS fatal hook escapes\nPASS context policy cleanup\nPASS ID Error cleanup\nPASS side cancellation FAIL_ASSEMBLY_LINE latency_ms=57\nPASS side cancellation USE_FALLBACK latency_ms=50\nPASS side cancellation IGNORE latency_ms=52\n"
+      },
+      {
+        "probe": "audit.Phase3JdbcProbe",
+        "exit_code": 0,
+        "output": "PASS migrate cleanup scenario 0\nPASS migrate cleanup scenario 1\nPASS migrate cleanup scenario 2\nPASS migrate cleanup scenario 3\nPASS migrate cleanup scenario 4\nPASS retry cleanup scenario 0\nPASS retry cleanup scenario 1\nPASS retry cleanup scenario 2\nPASS retry cleanup scenario 3\nPASS retry cleanup scenario 4\nPASS prepared statement closes on configuration failure\nPASS failed migration marker scenario 0\nPASS failed migration marker scenario 1\nPASS failed migration marker scenario 2\nPASS failed migration marker scenario 3\n"
+      },
+      {
+        "probe": "io.github.gear4jtest.core.engine.strategy.Phase3ParallelProbe",
+        "exit_code": 0,
+        "output": "PASS parallel cancellation during wait latency_ms=53\nPASS completion after several polling slices\nPASS uncancelled parallel timeout elapsed_ms=203\n"
+      }
+    ]
+  },
+  "regression_sources": {
+    "new_methods": 21,
+    "declared_invocations": 28,
+    "executed": false,
+    "inventory": [
+      {
+        "file": "gear4jtest-jdbc/src/integrationTest/java/io/github/gear4jtest/jdbc/migration/JdbcSchemaMigratorFatalRollbackIT.java",
+        "new_tests": [
+          {
+            "method": "fatalFailureAfterDdl_shouldRollbackTheOwnedPostgresqlTransaction",
+            "parameterized": false
+          }
+        ]
+      },
+      {
+        "file": "gear4jtest-jdbc/src/test/java/io/github/gear4jtest/jdbc/migration/JdbcSchemaMigratorFailureCleanupTest.java",
+        "new_tests": [
+          {
+            "method": "fatalFailure_shouldRollbackBeforeRestoringAutoCommit",
+            "parameterized": true
+          },
+          {
+            "method": "failedRollback_shouldRetainCauseAndNeverEnableAutoCommit",
+            "parameterized": true
+          },
+          {
+            "method": "failedRestoration_shouldRetainTheOriginalFailure",
+            "parameterized": true
+          },
+          {
+            "method": "fatalFailure_shouldLeaveCallerTransactionUntouched",
+            "parameterized": true
+          },
+          {
+            "method": "fatalRestoration_shouldEscapeWithTheOriginalSqlFailure",
+            "parameterized": true
+          },
+          {
+            "method": "dataSourceVariant_shouldCloseItsConnectionWhenMigrationFailsFatally",
+            "parameterized": false
+          }
+        ]
+      },
+      {
+        "file": "gear4jtest-jdbc/src/test/java/io/github/gear4jtest/jdbc/persistence/JdbcStatementOptionsTest.java",
+        "new_tests": [
+          {
+            "method": "prepare_shouldCloseOnConfigurationFailureAndPreserveCleanupFailure",
+            "parameterized": false
+          },
+          {
+            "method": "configureNewStatement_shouldCloseOnFatalConfigurationFailure",
+            "parameterized": false
+          },
+          {
+            "method": "prepare_shouldLeaveSuccessfulStatementOpenForTheCaller",
+            "parameterized": false
+          }
+        ]
+      },
+      {
+        "file": "gear4jtest-core/src/test/java/io/github/gear4jtest/core/engine/AssemblyLineEngineOutcomeTest.java",
+        "new_tests": [
+          {
+            "method": "voidOperator_shouldSucceedWithNoValue",
+            "parameterized": false
+          },
+          {
+            "method": "successfulNull_shouldBePassedToTheNextOperator",
+            "parameterized": false
+          }
+        ]
+      },
+      {
+        "file": "gear4jtest-core/src/test/java/io/github/gear4jtest/core/engine/AssemblyLineEngineInitializationCleanupTest.java",
+        "new_tests": [
+          {
+            "method": "contextPolicyFailure_shouldReleaseTheAcquiredEventRuntime",
+            "parameterized": false
+          },
+          {
+            "method": "idGeneratorError_shouldEscapeAndReleaseTheEventRuntime",
+            "parameterized": false
+          }
+        ]
+      },
+      {
+        "file": "gear4jtest-core/src/test/java/io/github/gear4jtest/core/engine/RunLifecycleExtensionTest.java",
+        "new_tests": [
+          {
+            "method": "operatorFailureWithoutMessage_shouldRemainReachableAfterCompletionFailure",
+            "parameterized": false
+          },
+          {
+            "method": "completionFailure_shouldPreserveTheOriginalRunFailureAndTrace",
+            "parameterized": false
+          },
+          {
+            "method": "reusedLifecycleException_shouldNotCauseSelfSuppression",
+            "parameterized": false
+          },
+          {
+            "method": "fatalCompletionFailure_shouldEscapeWithTheOriginalFailure",
+            "parameterized": false
+          }
+        ]
+      },
+      {
+        "file": "gear4jtest-core/src/test/java/io/github/gear4jtest/core/sidecompute/SideComputeWaitProcessorTest.java",
+        "new_tests": [
+          {
+            "method": "beforeExecution_shouldPropagateFatalFutureFailure",
+            "parameterized": false
+          }
+        ]
+      },
+      {
+        "file": "gear4jtest-core/src/test/java/io/github/gear4jtest/core/sidecompute/SideComputeFlowIntegrationTest.java",
+        "new_tests": [
+          {
+            "method": "cancellationDuringWait_shouldCancelWithoutFallbackOrOperatorInvocation",
+            "parameterized": true
+          }
+        ]
+      },
+      {
+        "file": "gear4jtest-core/src/test/java/io/github/gear4jtest/core/engine/strategy/ParallelContainerBranchExecutorTest.java",
+        "new_tests": [
+          {
+            "method": "execute_shouldObserveCancellationDuringWaitBeforeTheOverallTimeout",
+            "parameterized": false
+          }
+        ]
+      }
+    ]
+  },
+  "gradle_attempts": [
+    {
+      "command": [
+        "bash",
+        "gradlew",
+        "--no-daemon",
+        ":gear4jtest-core:test",
+        ":gear4jtest-jdbc:test",
+        ":gear4jtest-jdbc:integrationTest",
+        "--tests",
+        "*JdbcSchemaMigrator*IT",
+        ":gear4jtest-external-jdbc:test"
+      ],
+      "exit_code": 1,
+      "output": "Fetching distribution.\nDownloading https://services.gradle.org/distributions/gradle-9.6.1-bin.zip\n\nAttempt 1/1 failed. Reason: Network is unreachable\nException in thread \"main\" java.net.SocketException: Network is unreachable\n\tat java.base/sun.nio.ch.Net.connect0(Native Method)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:591)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:580)\n\tat java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)\n\tat java.base/java.net.Socket.connect(Socket.java:633)\n\tat java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:533)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:592)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:590)\n\tat java.base/java.security.AccessController.doPrivileged(AccessController.java:569)\n\tat java.base/sun.net.www.http.HttpClient.privilegedOpenServer(HttpClient.java:589)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:633)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:267)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:381)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:205)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1283)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1148)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1077)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:181)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1717)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1641)\n\tat java.base/java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:529)\n\tat java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:308)\n\tat org.gradle.wrapper.Download.download(SourceFile:1)\n\tat org.gradle.wrapper.Install.forceFetch(SourceFile)\n\tat org.gradle.wrapper.Install.lambda$createDist$0(SourceFile:9)\n\tat org.gradle.wrapper.Install.createDist(SourceFile:24)\n\tat org.gradle.wrapper.GradleWrapperMain.lambda$prepareWrapper$0(SourceFile:2)\n\tat org.gradle.wrapper.GradleWrapperMain.main(SourceFile:2)\n"
+    },
+    {
+      "command": [
+        "bash",
+        "gradlew",
+        "--no-daemon",
+        "spotlessApply"
+      ],
+      "exit_code": 1,
+      "output": "Fetching distribution.\nDownloading https://services.gradle.org/distributions/gradle-9.6.1-bin.zip\n\nAttempt 1/1 failed. Reason: Network is unreachable\nException in thread \"main\" java.net.SocketException: Network is unreachable\n\tat java.base/sun.nio.ch.Net.connect0(Native Method)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:591)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:580)\n\tat java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)\n\tat java.base/java.net.Socket.connect(Socket.java:633)\n\tat java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:533)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:592)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:590)\n\tat java.base/java.security.AccessController.doPrivileged(AccessController.java:569)\n\tat java.base/sun.net.www.http.HttpClient.privilegedOpenServer(HttpClient.java:589)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:633)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:267)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:381)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:205)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1283)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1148)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1077)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:181)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1717)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1641)\n\tat java.base/java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:529)\n\tat java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:308)\n\tat org.gradle.wrapper.Download.download(SourceFile:1)\n\tat org.gradle.wrapper.Install.forceFetch(SourceFile)\n\tat org.gradle.wrapper.Install.lambda$createDist$0(SourceFile:9)\n\tat org.gradle.wrapper.Install.createDist(SourceFile:24)\n\tat org.gradle.wrapper.GradleWrapperMain.lambda$prepareWrapper$0(SourceFile:2)\n\tat org.gradle.wrapper.GradleWrapperMain.main(SourceFile:2)\n"
+    },
+    {
+      "command": [
+        "bash",
+        "gradlew",
+        "--no-daemon",
+        "check"
+      ],
+      "exit_code": 1,
+      "output": "Fetching distribution.\nDownloading https://services.gradle.org/distributions/gradle-9.6.1-bin.zip\n\nAttempt 1/1 failed. Reason: Network is unreachable\nException in thread \"main\" java.net.SocketException: Network is unreachable\n\tat java.base/sun.nio.ch.Net.connect0(Native Method)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:591)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:580)\n\tat java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)\n\tat java.base/java.net.Socket.connect(Socket.java:633)\n\tat java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:533)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:592)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:590)\n\tat java.base/java.security.AccessController.doPrivileged(AccessController.java:569)\n\tat java.base/sun.net.www.http.HttpClient.privilegedOpenServer(HttpClient.java:589)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:633)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:267)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:381)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:205)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1283)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1148)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1077)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:181)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1717)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1641)\n\tat java.base/java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:529)\n\tat java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:308)\n\tat org.gradle.wrapper.Download.download(SourceFile:1)\n\tat org.gradle.wrapper.Install.forceFetch(SourceFile)\n\tat org.gradle.wrapper.Install.lambda$createDist$0(SourceFile:9)\n\tat org.gradle.wrapper.Install.createDist(SourceFile:24)\n\tat org.gradle.wrapper.GradleWrapperMain.lambda$prepareWrapper$0(SourceFile:2)\n\tat org.gradle.wrapper.GradleWrapperMain.main(SourceFile:2)\n"
+    }
+  ],
+  "unqualified_gates": [
+    "Gradle compilation with actual dependencies",
+    "JUnit regressions",
+    "PostgreSQL Testcontainers integration tests",
+    "Spotless",
+    "Full check and living-documentation Gradle task",
+    "JaCoCo coverage"
+  ],
+  "commit_message": "fix(core): preserve cancellation, nullable results and failure causes",
+  "next_phase": {
+    "number": 4,
+    "findings": [
+      "F07",
+      "F08",
+      "F15"
+    ],
+    "status": "planned"
+  },
+  "local_documentation_checks": {
+    "metadata_files": 10,
+    "local_markdown_links": 24,
+    "errors": []
+  },
+  "git_diff_check": {
+    "exit_code": 0,
+    "output": ""
+  }
+}

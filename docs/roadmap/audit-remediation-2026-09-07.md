@@ -2,15 +2,15 @@
 
 | Field | Value |
 | --- | --- |
-| Status | Partially implemented — phases 1–2 code complete; Gradle qualification pending |
+| Status | Partially implemented — phases 1–3 code complete; Gradle qualification pending |
 | Owner | Gear4J maintainers |
-| Last reviewed | 2026-09-10 |
+| Last reviewed | 2026-09-12 |
 
 Source baseline: gear4jtest-20260906-213514.zip.
 Audit reference: audit-technique-gear4j-2026-09-07.pdf, findings F01–F15.
 
 This plan refines the audit's three broad horizons into four independently
-reviewable implementation phases. Phases 1 and 2 are implemented in this delivery.
+reviewable implementation phases. Phases 1, 2 and 3 are implemented in this delivery.
 An implemented change is not a completed release qualification.
 
 ## Constraints
@@ -122,7 +122,7 @@ Commit:
 | --- | --- | --- |
 | 1 | Implemented; 17 new JUnit regressions | Gradle blocked before build startup; 15 local probe scenarios pass |
 | 2 | Implemented; publication locks, Boot ordering and operator classpath | Gradle qualification pending; see phase 2 evidence |
-| 3 | Planned | Pending |
+| 3 | Implemented; cancellation, nullable results and failure cleanup | 29 local probe scenarios pass; JUnit, PostgreSQL and Gradle qualification pending |
 | 4 | Planned | Pending |
 
 The earlier remediation roadmap remains historical evidence for its own audit.
@@ -136,4 +136,9 @@ for F09/F12/F13 changes and the living-documentation metadata correction.
 
 The [10 September phase 2 hotfix](../audit/remediation-2026-09-10-phase-2-gradle-closure.md)
 addresses the reported restricted-mode Gradle task dispatch failure. Connected
-Gradle qualification remains pending; phases 3 and 4 are unchanged.
+Gradle qualification remains pending.
+
+See [phase 3 evidence](../audit/remediation-2026-09-12-phase-3-cancellation-failures.md)
+for F04/F05/F06/F10/F11/F14 changes, the pre-1.0 helper signature change,
+regression sources and the exact limits of local validation. Phase 4 remains
+planned; it has not been included in this delivery.
