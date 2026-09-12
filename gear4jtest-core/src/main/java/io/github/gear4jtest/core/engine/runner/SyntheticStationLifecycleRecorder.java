@@ -21,6 +21,7 @@ import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
 import io.github.gear4jtest.core.spi.extension.LifecycleFailureMode;
 import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -257,7 +258,7 @@ public final class SyntheticStationLifecycleRecorder {
                                         String lifecycleCallback,
                                         Exception exception) {
         LOGGER.error("StationLifecycleExtension failed during {}. extension={}, stationId={}", lifecycleCallback,
-                     extension.getClass().getName(), operationId, exception);
+                     extension.getClass().getName(), operationId, ExceptionDiagnostics.forLogging(exception));
         if (extension.failureMode() != LifecycleFailureMode.CRITICAL) {
             return;
         }

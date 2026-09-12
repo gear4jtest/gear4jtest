@@ -18,6 +18,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import io.github.gear4jtest.external.api.exception.GeneratedAssemblyLineLoadTimeoutException;
 import io.github.gear4jtest.external.api.loader.ClassLoaderRegistry;
 import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
@@ -239,7 +240,7 @@ final class GeneratedLoadingRuntime implements AutoCloseable {
         }
         if (cleanupFailure != null) {
             LOGGER.warn("Generated classloader registration cleanup failed; the single-flight slot was released. "
-                    + "internalLoaderId={}", internalLoaderId, cleanupFailure);
+                    + "internalLoaderId={}", internalLoaderId, ExceptionDiagnostics.forLogging(cleanupFailure));
         }
     }
 

@@ -1,0 +1,70 @@
+diff --git a/gear4jtest-core/src/main/java/io/github/gear4jtest/core/exception/AssemblyLineException.java b/gear4jtest-core/src/main/java/io/github/gear4jtest/core/exception/AssemblyLineException.java
+deleted file mode 100644
+index 938369e..0000000
+--- a/gear4jtest-core/src/main/java/io/github/gear4jtest/core/exception/AssemblyLineException.java
++++ /dev/null
+@@ -1,16 +0,0 @@
+-package io.github.gear4jtest.core.exception;
+-
+-import java.util.List;
+-
+-public class AssemblyLineException extends Exception {
+-    private static final long serialVersionUID = 1855070000094708059L;
+-    private final List<Throwable> throwables;
+-
+-    public AssemblyLineException(List<Throwable> throwables) {
+-        this.throwables = throwables;
+-    }
+-
+-    public List<Throwable> getThrowables() {
+-        return throwables;
+-    }
+-}
+diff --git a/gear4jtest-jdbc/src/main/java/io/github/gear4jtest/jdbc/persistence/JdbcRepositoryTransaction.java b/gear4jtest-jdbc/src/main/java/io/github/gear4jtest/jdbc/persistence/JdbcRepositoryTransaction.java
+deleted file mode 100644
+index f7e2c46..0000000
+--- a/gear4jtest-jdbc/src/main/java/io/github/gear4jtest/jdbc/persistence/JdbcRepositoryTransaction.java
++++ /dev/null
+@@ -1,42 +0,0 @@
+-package io.github.gear4jtest.jdbc.persistence;
+-
+-import java.sql.Connection;
+-import java.sql.SQLException;
+-import javax.sql.DataSource;
+-
+-final class JdbcRepositoryTransaction {
+-    private JdbcRepositoryTransaction() {
+-    }
+-
+-    static void run(DataSource dataSource, TransactionalWork work) throws SQLException {
+-        try (Connection conn = dataSource.getConnection()) {
+-            boolean previousAutoCommit = conn.getAutoCommit();
+-            conn.setAutoCommit(false);
+-            try {
+-                work.execute(conn);
+-                conn.commit();
+-            } catch (SQLException e) {
+-                rollback(conn, e);
+-                throw e;
+-            } catch (RuntimeException e) {
+-                rollback(conn, e);
+-                throw e;
+-            } finally {
+-                conn.setAutoCommit(previousAutoCommit);
+-            }
+-        }
+-    }
+-
+-    static void rollback(Connection conn, Exception original) {
+-        try {
+-            conn.rollback();
+-        } catch (SQLException rollbackFailure) {
+-            original.addSuppressed(rollbackFailure);
+-        }
+-    }
+-
+-    @FunctionalInterface
+-    interface TransactionalWork {
+-        void execute(Connection conn) throws SQLException;
+-    }
+-}

@@ -22,6 +22,44 @@ shutdown reports retain the complete operational state where those contracts exi
 Normal station completion, skip and business failure are represented by `ExecutionResult`, traces and metrics rather
 than one framework log per station. Gear4J production code does not write directly to `System.out` or `System.err`.
 
+## Exception confidentiality
+
+Framework exception logs use a protected default, independently from persistence
+capture redaction. Before passing a failure to SLF4J, `ExceptionDiagnostics`
+replaces it with a diagnostic containing only the original exception class name
+and an indication that details were withheld. The replacement has no original
+message, cause, suppressed exceptions or stack frames, and retains no reference
+to the original exception graph. It does not call a user exception's `getMessage`
+or `toString` methods.
+
+This policy covers runtime/lifecycle/event failures, JDBC flush diagnostics,
+external loading/store cleanup, experimental cache failures and XML formatter
+failures. Existing run/station identifiers, callback names, levels, rate limits
+and counters remain available. Original exceptions stay in the returned result,
+trace or propagated failure according to their normal execution contract.
+
+Raw exception diagnostics require this explicit JVM property:
+
+```text
+-Dgear4j.logging.includeExceptionDetails=true
+```
+
+Only `true`, ignoring case, enables details. The absent property, unrecognized
+values and denied property access retain protection. The setting is process-wide
+and evaluated at each exception-log call; it is a JVM system property, not a
+Spring Boot configuration property. Enable it only for a reviewed diagnostic
+window with appropriate log access and retention. It exposes original messages,
+stack frames, causes and suppressed exceptions. Enabling `DEBUG` alone does not
+disable protection. An application may alternatively log an authorized result's
+exception through its own diagnostic channel.
+
+`SensitiveDataRedactor` and `gear4j.persistence.redaction-mode` affect persistence
+capture, not this setting. Event payload policies form another independent
+boundary. This is not a general log scrubber: application logs, dependency-owned
+logs, user-supplied MDC values and identifiers passed as structured arguments
+remain the application's responsibility. Do not put secrets in identifiers or
+MDC. See [ADR 0046](../decisions/0046-exception-logs-require-explicit-detail-opt-in.md).
+
 ## Repeated event-runtime signals
 
 The in-memory event runtime can reject or fail many events in a short saturation window. Logging every occurrence would
@@ -58,5 +96,6 @@ bounded shutdown interval.
 - Keep `INFO` as the normal production threshold for Gear4J packages.
 - Alert on bounded metrics and health state; use logs to investigate a representative occurrence.
 - Enable `DEBUG` temporarily for a focused execution/cache diagnosis, not as permanent high-volume telemetry.
-- Preserve the application logging framework's exception rendering and retention policy; Gear4J depends only on SLF4J.
+- Configure the logging framework's retention policy; protected exception summaries are the default even with a
+  renderer that normally prints full exceptions. Gear4J depends only on SLF4J.
 - Never rely on Gear4J logs as a durable audit trail or guaranteed event-delivery record.

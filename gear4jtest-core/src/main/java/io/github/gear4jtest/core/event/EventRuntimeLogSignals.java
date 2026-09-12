@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.event;
 
 import java.time.Duration;
 
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import io.github.gear4jtest.core.util.PeriodicLogLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +43,8 @@ final class EventRuntimeLogSignals {
         if (emission.permitted()) {
             LOGGER.warn("Dropping event reaction because the reaction executor rejected the submission. "
                     + "eventType={}, subscriptionType={}, suppressedSincePreviousEmission={}", eventType,
-                        subscriptionType, emission.suppressedSincePreviousEmission(), failure);
+                        subscriptionType, emission.suppressedSincePreviousEmission(),
+                        ExceptionDiagnostics.forLogging(failure));
         }
     }
 
@@ -51,7 +53,8 @@ final class EventRuntimeLogSignals {
         if (emission.permitted()) {
             LOGGER.error("Dropping event reaction because submitting it to the reaction executor failed unexpectedly. "
                     + "eventType={}, subscriptionType={}, suppressedSincePreviousEmission={}", eventType,
-                         subscriptionType, emission.suppressedSincePreviousEmission(), failure);
+                         subscriptionType, emission.suppressedSincePreviousEmission(),
+                         ExceptionDiagnostics.forLogging(failure));
         }
     }
 
@@ -60,7 +63,7 @@ final class EventRuntimeLogSignals {
         if (emission.permitted()) {
             LOGGER.error("Asynchronous event reaction failed. eventType={}, subscriptionType={}, "
                     + "suppressedSincePreviousEmission={}", eventType, subscriptionType,
-                         emission.suppressedSincePreviousEmission(), failure);
+                         emission.suppressedSincePreviousEmission(), ExceptionDiagnostics.forLogging(failure));
         }
     }
 
@@ -69,7 +72,7 @@ final class EventRuntimeLogSignals {
         if (emission.permitted()) {
             LOGGER.error("Asynchronous event predicate failed. eventType={}, subscriptionType={}, "
                     + "suppressedSincePreviousEmission={}", eventType, subscriptionType,
-                         emission.suppressedSincePreviousEmission(), failure);
+                         emission.suppressedSincePreviousEmission(), ExceptionDiagnostics.forLogging(failure));
         }
     }
 

@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import io.github.gear4jtest.core.util.MonotonicDeadline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,7 @@ final class DetachedEventRuntimeCleanupScheduler {
             }
         } catch (RejectedExecutionException rejected) {
             LOGGER.warn("Detached event cleanup timeout scheduling was rejected; cleaning up immediately. timeout={}",
-                        detachCleanupTimeout, rejected);
+                        detachCleanupTimeout, ExceptionDiagnostics.forLogging(rejected));
             runCleanupOnce(pendingCleanup);
         }
     }
@@ -93,7 +94,7 @@ final class DetachedEventRuntimeCleanupScheduler {
         try {
             cleanup.run();
         } catch (RuntimeException failure) {
-            LOGGER.warn("Detached event runtime cleanup failed.", failure);
+            LOGGER.warn("Detached event runtime cleanup failed.", ExceptionDiagnostics.forLogging(failure));
         }
     }
 }

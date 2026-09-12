@@ -32,6 +32,7 @@ import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.spi.factory.IdGenerator;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -182,7 +183,7 @@ public class AssemblyLineEngine implements AssemblyLineExecutor {
             recoverablePath = true;
         } catch (Exception e) {
             recoverablePath = true;
-            LOGGER.error("Error while executing pipeline", e);
+            LOGGER.error("Error while executing pipeline", ExceptionDiagnostics.forLogging(e));
             runContext.execution().setStatus(ExecutionStatus.FAILED);
             runContext.execution().setError(AssemblyLineExecutionResultMapper.asException(e));
             result = ExecutionResult.failure(AssemblyLineExecutionResultMapper.asException(e), runContext.execution());

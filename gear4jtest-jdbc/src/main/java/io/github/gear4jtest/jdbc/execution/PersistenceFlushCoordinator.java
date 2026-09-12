@@ -23,6 +23,7 @@ import io.github.gear4jtest.core.persistence.PersistenceFlushObserver;
 import io.github.gear4jtest.core.persistence.PersistenceFlushSubscription;
 import io.github.gear4jtest.core.persistence.PersistenceRuntimeStats;
 import io.github.gear4jtest.core.persistence.StationLogRecord;
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,7 +149,8 @@ final class PersistenceFlushCoordinator {
                     counters.recordCompletedFlush();
                 } catch (Exception e) {
                     counters.recordFailedFlush();
-                    LOGGER.error("Asynchronous station log flush failed. runId={}", buffer.runId(), e);
+                    LOGGER.error("Asynchronous station log flush failed. runId={}", buffer.runId(),
+                                 ExceptionDiagnostics.forLogging(e));
                 }
             });
         } catch (RejectedExecutionException e) {
@@ -469,7 +471,7 @@ final class PersistenceFlushCoordinator {
         }
         LOGGER.warn("JDBC persistence shutdown flush failed. runId={}, attempt={}, retryable={}, "
                 + "remainingStationLogs={}", state.buffer().runId(), state.attempts(), outcome.retryable(),
-                    state.buffer().pendingCount(), outcome.failure());
+                    state.buffer().pendingCount(), ExceptionDiagnostics.forLogging(outcome.failure()));
     }
 
     private boolean sleepUntilNextRetry(Map<UUID, PersistenceShutdownRunState> runStates,
@@ -532,7 +534,8 @@ final class PersistenceFlushCoordinator {
             failures.add(new PersistenceShutdownReport.RunFailure(state.buffer().runId(), state.attempts(), remaining,
                     failure.getClass().getName(), failure.getMessage()));
             LOGGER.error("Persistence shutdown left run data or finalization incomplete. runId={}, attempts={}, "
-                    + "remainingStationLogs={}", state.buffer().runId(), state.attempts(), remaining, failure);
+                    + "remainingStationLogs={}", state.buffer().runId(), state.attempts(), remaining,
+                         ExceptionDiagnostics.forLogging(failure));
         }
         return failures;
     }
@@ -573,7 +576,8 @@ final class PersistenceFlushCoordinator {
                 observer.onFlush(observation);
             } catch (RuntimeException exception) {
                 LOGGER.warn("Persistence flush observer failed. observer={}, trigger={}, outcome={}",
-                            observer.getClass().getName(), trigger, outcome, exception);
+                            observer.getClass().getName(), trigger, outcome,
+                            ExceptionDiagnostics.forLogging(exception));
             }
         }
     }
@@ -588,7 +592,7 @@ final class PersistenceFlushCoordinator {
                     scheduleAsyncFlush(buffer, false);
                 } catch (ExecutionPersistenceException exception) {
                     LOGGER.error("Periodic station log flush scheduling failed. Future maintenance passes remain "
-                            + "active. runId={}", buffer.runId(), exception);
+                            + "active. runId={}", buffer.runId(), ExceptionDiagnostics.forLogging(exception));
                 }
             }
         }

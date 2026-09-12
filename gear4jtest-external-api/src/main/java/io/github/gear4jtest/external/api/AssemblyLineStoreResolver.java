@@ -1,10 +1,13 @@
 package io.github.gear4jtest.external.api;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import io.github.gear4jtest.external.api.artifact.ArtifactStore;
 import io.github.gear4jtest.external.api.model.OperationChainConfig;
@@ -23,6 +26,7 @@ final class AssemblyLineStoreResolver implements AutoCloseable {
     private final int maxCacheEntries;
     private final Map<String, StoreCacheEntry> storeCacheByAl = new LinkedHashMap<>(16, 0.75f, true);
     private final IdentityHashMap<ArtifactStore, Integer> storeReferences = new IdentityHashMap<>();
+    private final Map<String, PendingStore> pendingStores = new HashMap<>();
     private long resolutions;
     private long cacheHits;
     private long cacheMisses;
@@ -49,42 +53,142 @@ final class AssemblyLineStoreResolver implements AutoCloseable {
     }
 
     StoreLease acquire(String alId) {
-        var config = configRepository.findByAssemblyLineId(alId)
-                .orElseThrow(() -> new OperationChainNotFoundException("Config not found for alId=" + alId));
-        StoreFingerprint fingerprint = StoreFingerprint.from(config);
-        String configurationFingerprint = ArtifactStoreConfigurationFingerprint.from(config);
+        OperationChainConfig config = findConfig(alId);
         synchronized (this) {
             requireOpen();
             resolutions++;
-            StoreCacheEntry resolved = storeCacheByAl.get(alId);
-            if (resolved == null || !resolved.fingerprint().equals(fingerprint)) {
-                cacheMisses++;
-                ArtifactStore replacement = requireNonNull(storeProvider.forConfig(config),
-                                                           "storeProvider returned null");
-                StoreCacheEntry previous = storeCacheByAl.put(alId, new StoreCacheEntry(fingerprint, replacement));
-                retain(replacement);
-                installedEntries++;
-                if (previous != null) {
-                    replacedEntries++;
+        }
+        while (true) {
+            StoreFingerprint fingerprint = StoreFingerprint.from(config);
+            String configurationFingerprint = ArtifactStoreConfigurationFingerprint.from(config);
+            PendingStore pending;
+            boolean creator;
+            synchronized (this) {
+                requireOpen();
+                StoreCacheEntry cached = storeCacheByAl.get(alId);
+                if (cached != null && cached.fingerprint().equals(fingerprint)) {
+                    cacheHits++;
+                    cached.references++;
+                    return new StoreLease(cached, configurationFingerprint);
                 }
-                release(previous);
-                resolved = storeCacheByAl.get(alId);
-                evictEldestEntries();
-            } else {
-                cacheHits++;
+                pending = pendingStores.get(alId);
+                creator = pending == null;
+                if (creator) {
+                    pending = new PendingStore();
+                    pendingStores.put(alId, pending);
+                    cacheMisses++;
+                }
             }
-            StoreLease lease = new StoreLease(resolved, configurationFingerprint);
-            resolved.references++;
-            return lease;
+            if (creator) {
+                return createStore(alId, config, fingerprint, configurationFingerprint, pending);
+            }
+            pending.await();
+            // Invalidation or a configuration change may have happened during construction.
+            config = findConfig(alId);
         }
     }
 
-    synchronized void invalidate(String alId) {
-        StoreCacheEntry removed = storeCacheByAl.remove(alId);
-        if (removed != null) {
-            invalidatedEntries++;
-            release(removed);
+    private OperationChainConfig findConfig(String alId) {
+        return configRepository.findByAssemblyLineId(alId)
+                .orElseThrow(() -> new OperationChainNotFoundException("Config not found for alId=" + alId));
+    }
+
+    private StoreLease createStore(String alId,
+                                   OperationChainConfig config,
+                                   StoreFingerprint fingerprint,
+                                   String configurationFingerprint,
+                                   PendingStore pending) {
+        ArtifactStore created;
+        try {
+            created = requireNonNull(storeProvider.forConfig(config), "storeProvider returned null");
+        } catch (RuntimeException | Error failure) {
+            finishCreation(alId, pending, failure);
+            throw failure;
         }
+        List<ArtifactStore> retired = new ArrayList<>();
+        StoreLease lease;
+        synchronized (this) {
+            if (closed) {
+                lease = null;
+            } else {
+                StoreCacheEntry entry = new StoreCacheEntry(fingerprint, created);
+                storeReferences.merge(created, 1, Integer::sum);
+                // The initial reference belongs to this borrower until the entry is cached.
+                lease = new StoreLease(entry, configurationFingerprint);
+                if (!pending.invalidated) {
+                    entry.references++;
+                    StoreCacheEntry previous = storeCacheByAl.put(alId, entry);
+                    installedEntries++;
+                    if (previous != null) {
+                        replacedEntries++;
+                        retire(previous, retired);
+                    }
+                    evictEldestEntries(retired);
+                }
+            }
+        }
+        if (lease == null) {
+            var failure = new IllegalStateException("Assembly-line store resolver is closed");
+            try {
+                releaseStores(List.of(created));
+            } catch (RuntimeException | Error cleanupFailure) {
+                if (cleanupFailure instanceof Error fatal) {
+                    fatal.addSuppressed(failure);
+                    throw fatal;
+                }
+                failure.addSuppressed(cleanupFailure);
+            } finally {
+                finishCreation(alId, pending, failure);
+            }
+            throw failure;
+        }
+        // Publish before potentially slow backend cleanup so other keys and waiters can
+        // progress.
+        finishCreation(alId, pending, null);
+        try {
+            releaseStores(retired);
+            return lease;
+        } catch (RuntimeException | Error failure) {
+            try {
+                lease.close();
+            } catch (RuntimeException | Error cleanupFailure) {
+                if (cleanupFailure != failure) {
+                    if (cleanupFailure instanceof Error fatal && !(failure instanceof Error)) {
+                        fatal.addSuppressed(failure);
+                        throw fatal;
+                    }
+                    failure.addSuppressed(cleanupFailure);
+                }
+            }
+            throw failure;
+        }
+    }
+
+    private void finishCreation(String alId, PendingStore pending, Throwable failure) {
+        synchronized (this) {
+            pendingStores.remove(alId, pending);
+        }
+        if (failure == null) {
+            pending.completed.complete(null);
+        } else {
+            pending.completed.completeExceptionally(failure);
+        }
+    }
+
+    void invalidate(String alId) {
+        List<ArtifactStore> retired = new ArrayList<>();
+        synchronized (this) {
+            PendingStore pending = pendingStores.get(alId);
+            if (pending != null) {
+                pending.invalidated = true;
+            }
+            StoreCacheEntry removed = storeCacheByAl.remove(alId);
+            if (removed != null) {
+                invalidatedEntries++;
+                retire(removed, retired);
+            }
+        }
+        releaseStores(retired);
     }
 
     synchronized ArtifactStoreResolutionStats snapshotStats() {
@@ -94,22 +198,71 @@ final class AssemblyLineStoreResolver implements AutoCloseable {
     }
 
     @Override
-    public synchronized void close() {
-        if (closed) {
+    public void close() {
+        List<ArtifactStore> retired = new ArrayList<>();
+        List<PendingStore> pending;
+        synchronized (this) {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            for (StoreCacheEntry entry : storeCacheByAl.values()) {
+                retire(entry, retired);
+            }
+            storeCacheByAl.clear();
+            pending = new ArrayList<>(pendingStores.values());
+        }
+        for (PendingStore creation : pending) {
+            creation.completed
+                    .completeExceptionally(new IllegalStateException("Assembly-line store resolver is closed"));
+        }
+        releaseStores(retired);
+    }
+
+    private void evictEldestEntries(List<ArtifactStore> retired) {
+        while (storeCacheByAl.size() > maxCacheEntries) {
+            var iterator = storeCacheByAl.entrySet().iterator();
+            StoreCacheEntry eldest = iterator.next().getValue();
+            iterator.remove();
+            evictedEntries++;
+            retire(eldest, retired);
+        }
+    }
+
+    // Metadata only: called under this monitor. Provider callbacks run in
+    // releaseStores.
+    private void retire(StoreCacheEntry entry, List<ArtifactStore> retired) {
+        if (--entry.references > 0) {
             return;
         }
-        closed = true;
-        List<StoreCacheEntry> entries = new ArrayList<>(storeCacheByAl.values());
-        storeCacheByAl.clear();
+        ArtifactStore store = entry.store();
+        Integer references = storeReferences.get(store);
+        if (references == null || references <= 1) {
+            storeReferences.remove(store);
+        } else {
+            storeReferences.put(store, references - 1);
+        }
+        retired.add(store);
+    }
+
+    private void releaseStores(List<ArtifactStore> stores) {
         Throwable failure = null;
-        for (StoreCacheEntry entry : entries) {
+        for (ArtifactStore store : stores) {
             try {
-                release(entry);
+                storeProvider.release(store);
+                synchronized (this) {
+                    releasedStoreLeases++;
+                }
             } catch (RuntimeException | Error cleanupFailure) {
                 if (failure == null) {
                     failure = cleanupFailure;
                 } else if (failure != cleanupFailure) {
-                    failure.addSuppressed(cleanupFailure);
+                    if (cleanupFailure instanceof Error && !(failure instanceof Error)) {
+                        cleanupFailure.addSuppressed(failure);
+                        failure = cleanupFailure;
+                    } else {
+                        failure.addSuppressed(cleanupFailure);
+                    }
                 }
             }
         }
@@ -121,36 +274,30 @@ final class AssemblyLineStoreResolver implements AutoCloseable {
         }
     }
 
-    private void evictEldestEntries() {
-        while (storeCacheByAl.size() > maxCacheEntries) {
-            var iterator = storeCacheByAl.entrySet().iterator();
-            StoreCacheEntry eldest = iterator.next().getValue();
-            iterator.remove();
-            evictedEntries++;
-            release(eldest);
-        }
-    }
+    private static final class PendingStore {
+        private final Thread owner = Thread.currentThread();
+        private final CompletableFuture<Void> completed = new CompletableFuture<>();
+        private boolean invalidated;
 
-    private void retain(ArtifactStore store) {
-        storeReferences.merge(store, 1, Integer::sum);
-    }
-
-    private void release(StoreCacheEntry entry) {
-        if (entry == null) {
-            return;
+        private void await() {
+            if (owner == Thread.currentThread()) {
+                throw new IllegalStateException("Recursive resolution of the same assembly-line store");
+            }
+            try {
+                completed.get();
+            } catch (InterruptedException failure) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while resolving an assembly-line store", failure);
+            } catch (ExecutionException failure) {
+                if (failure.getCause() instanceof Error error) {
+                    throw error;
+                }
+                if (failure.getCause() instanceof RuntimeException exception) {
+                    throw exception;
+                }
+                throw new IllegalStateException("Assembly-line store construction failed", failure.getCause());
+            }
         }
-        if (--entry.references > 0) {
-            return;
-        }
-        ArtifactStore store = entry.store();
-        Integer references = storeReferences.get(store);
-        if (references == null || references <= 1) {
-            storeReferences.remove(store);
-        } else {
-            storeReferences.put(store, references - 1);
-        }
-        storeProvider.release(store);
-        releasedStoreLeases++;
     }
 
     private void requireOpen() {
@@ -189,12 +336,14 @@ final class AssemblyLineStoreResolver implements AutoCloseable {
 
         @Override
         public void close() {
+            List<ArtifactStore> retired = new ArrayList<>();
             synchronized (AssemblyLineStoreResolver.this) {
                 if (!released) {
                     released = true;
-                    release(entry);
+                    retire(entry, retired);
                 }
             }
+            releaseStores(retired);
         }
     }
 

@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Objects;
 
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +53,7 @@ public final class ManagedArtifactSpool implements AutoCloseable {
             lease.shared().delete(file);
         } catch (IOException | RuntimeException exception) {
             lease.shared().recordCleanupFailure();
-            LOGGER.warn("Unable to delete an artifact spool file.", exception);
+            LOGGER.warn("Unable to delete an artifact spool file.", ExceptionDiagnostics.forLogging(exception));
         } finally {
             ArtifactSpoolDirectoryRegistry.retireIfUnused(lease.shared());
         }

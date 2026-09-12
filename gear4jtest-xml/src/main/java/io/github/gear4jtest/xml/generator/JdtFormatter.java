@@ -8,6 +8,7 @@ import java.util.Objects;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.ToolFactory;
 import org.eclipse.jdt.core.formatter.CodeFormatter;
@@ -53,7 +54,8 @@ public final class JdtFormatter {
             edit.apply(doc);
             return doc.get();
         } catch (Exception e) {
-            LOGGER.warn("Could not format generated Java source. Generated Java source will be left unformatted.", e);
+            LOGGER.warn("Could not format generated Java source. Generated Java source will be left unformatted.",
+                        ExceptionDiagnostics.forLogging(e));
             return src;
         }
     }

@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -217,7 +218,7 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
         try {
             asyncCopy = copyTempFile(sourceFile);
         } catch (IOException | RuntimeException e) {
-            LOGGER.warn("Unable to prepare artifact self-healing copy.", e);
+            LOGGER.warn("Unable to prepare artifact self-healing copy.", ExceptionDiagnostics.forLogging(e));
             return;
         }
         executeBestEffort(() -> {
@@ -226,7 +227,7 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
                     primary.put(content, ArtifactStore.UNLIMITED_SIZE);
                 }
             } catch (IOException | RuntimeException e) {
-                LOGGER.warn("Asynchronous artifact self-healing write failed.", e);
+                LOGGER.warn("Asynchronous artifact self-healing write failed.", ExceptionDiagnostics.forLogging(e));
             } finally {
                 spool.delete(asyncCopy);
             }
@@ -241,7 +242,8 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
         try {
             asyncCopy = copyToTempFile(new ByteArrayInputStream(source));
         } catch (IOException | RuntimeException e) {
-            LOGGER.warn("Unable to prepare asynchronous artifact copy after primary success.", e);
+            LOGGER.warn("Unable to prepare asynchronous artifact copy after primary success.",
+                        ExceptionDiagnostics.forLogging(e));
             return;
         }
         schedulePreparedAsyncWrites(stores, asyncCopy, "Asynchronous fallback artifact write failed.");
@@ -255,7 +257,7 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
         try {
             asyncCopy = copyTempFile(sourceFile);
         } catch (IOException | RuntimeException e) {
-            LOGGER.warn("Unable to prepare asynchronous artifact copy.", e);
+            LOGGER.warn("Unable to prepare asynchronous artifact copy.", ExceptionDiagnostics.forLogging(e));
             return;
         }
         schedulePreparedAsyncWrites(stores, asyncCopy, failureMessage);
@@ -270,7 +272,8 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
                     try (InputStream content = Files.newInputStream(asyncCopy)) {
                         store.put(content, ArtifactStore.UNLIMITED_SIZE);
                     } catch (IOException | RuntimeException e) {
-                        LOGGER.warn("{} fallbackStore={}", failureMessage, store.getClass().getName(), e);
+                        LOGGER.warn("{} fallbackStore={}", failureMessage, store.getClass().getName(),
+                                    ExceptionDiagnostics.forLogging(e));
                     }
                 }
             } finally {
@@ -297,7 +300,7 @@ public final class CompositeArtifactStore implements ArtifactStore, ArtifactSpoo
         } catch (RuntimeException rejected) {
             completeAsyncTask();
             rejectionCleanup.run();
-            LOGGER.warn(rejectionMessage, rejected);
+            LOGGER.warn(rejectionMessage, ExceptionDiagnostics.forLogging(rejected));
         } catch (Error error) {
             completeAsyncTask();
             rejectionCleanup.run();

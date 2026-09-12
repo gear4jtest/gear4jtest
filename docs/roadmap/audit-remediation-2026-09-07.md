@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | Partially implemented — phases 1–3 code complete; Gradle qualification pending |
+| Status | Implemented — phases 1–4 code complete; connected release qualification pending |
 | Owner | Gear4J maintainers |
 | Last reviewed | 2026-09-12 |
 
@@ -10,7 +10,7 @@ Source baseline: gear4jtest-20260906-213514.zip.
 Audit reference: audit-technique-gear4j-2026-09-07.pdf, findings F01–F15.
 
 This plan refines the audit's three broad horizons into four independently
-reviewable implementation phases. Phases 1, 2 and 3 are implemented in this delivery.
+reviewable implementation phases. All four implementation phases are included in this delivery.
 An implemented change is not a completed release qualification.
 
 ## Constraints
@@ -114,7 +114,10 @@ pass with retained evidence. No release-ready claim based only on source review.
 
 Commit:
 
-    chore(release): harden diagnostics and complete audit qualification
+    fix(runtime): protect exception logs and reduce store contention
+
+The commit message describes the implemented changes. It does not claim that
+the connected qualification steps below have passed.
 
 ## Status
 
@@ -123,7 +126,7 @@ Commit:
 | 1 | Implemented; 17 new JUnit regressions | Gradle blocked before build startup; 15 local probe scenarios pass |
 | 2 | Implemented; publication locks, Boot ordering and operator classpath | Gradle qualification pending; see phase 2 evidence |
 | 3 | Implemented; cancellation, nullable results and failure cleanup | 29 local probe scenarios pass; JUnit, PostgreSQL and Gradle qualification pending |
-| 4 | Planned | Pending |
+| 4 | Implemented; protected logs, per-key store coordination and source inventory | 39 local probe scenarios and 9 release-tool Python tests pass; actual Gradle/JUnit, Logback and release qualification pending |
 
 The earlier remediation roadmap remains historical evidence for its own audit.
 Finding identifiers in this document refer exclusively to the 7 September audit.
@@ -140,5 +143,9 @@ Gradle qualification remains pending.
 
 See [phase 3 evidence](../audit/remediation-2026-09-12-phase-3-cancellation-failures.md)
 for F04/F05/F06/F10/F11/F14 changes, the pre-1.0 helper signature change,
-regression sources and the exact limits of local validation. Phase 4 remains
-planned; it has not been included in this delivery.
+regression sources and the exact limits of local validation.
+
+See [phase 4 evidence](../audit/remediation-2026-09-12-phase-4-diagnostics-contention.md)
+for F07/F08/F15, the deletion-only overlay patch and the qualification matrix.
+All F01–F15 implementation work is represented by the cumulative deliveries;
+the audit's release exit criteria remain open until the connected gates pass.

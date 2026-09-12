@@ -6,7 +6,7 @@
 | --- | --- |
 | Status | Implemented — phases 1 to 4 code complete; connected release gate pending |
 | Owner | Gear4J maintainers |
-| Last reviewed | 2026-09-05 |
+| Last reviewed | 2026-09-12 |
 | Target version | Pre-1.0 stabilization |
 
 This roadmap converts the 29 August 2026 source audit into incremental, independently reviewable changes. Product
@@ -49,8 +49,10 @@ final fields and wraps reflective access failures in `InjectionException` with t
 
 ### Public API cleanup
 
-The unused, mutable checked `AssemblyLineException` has been removed before 1.0. No source, test or documentation
-referenced it.
+The unused, mutable checked `AssemblyLineException` was intended to be removed
+before 1.0. The 6 September archive still contained its declaration. Its actual
+removal is completed and inventory-guarded in the 12 September phase 4 delivery;
+no production or test Java references were found outside that declaration.
 
 ### Integration dependency
 
@@ -92,7 +94,10 @@ The unused raw `MapType` tokens are replaced by a generic no-token fatal-signal 
 JSpecify nullness metadata plus `resultOptional()`, `executionOptional()` and `errorOptional()` while preserving its
 existing getters. The public outcome/field matrix and the pre-1.0 `MapType` migration are documented.
 
-The unreferenced, weaker `JdbcRepositoryTransaction` duplicate is removed. The JDT internal imports were already
+The unreferenced, weaker `JdbcRepositoryTransaction` duplicate is removed in the
+12 September phase 4 delivery; its earlier announced removal was not reflected
+in the 6 September source archive. See the [overlay migration instructions](../migration/audit-phase-4.md).
+The JDT internal imports were already
 confined to the `@Internal` adapter by an architecture guard; phase 3 adds an executable compatibility test covering Java
 17 records, sealed types, class-file target, class loading and error diagnostics. A separate optional JDT module remains
 deferred because it would change fallback availability and published dependency behavior without reducing the contained

@@ -2,6 +2,7 @@ package io.github.gear4jtest.core.engine.runner;
 
 import java.time.Duration;
 
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import io.github.gear4jtest.core.util.PeriodicLogLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,7 @@ final class BestEffortStationEventPublisher {
             if (emission.permitted()) {
                 LOGGER.warn("Dropping built-in station event after payload mapping or publication failure. "
                         + "eventType={}, operationId={}, suppressedSincePreviousEmission={}", eventType, operationId,
-                            emission.suppressedSincePreviousEmission(), failure);
+                            emission.suppressedSincePreviousEmission(), ExceptionDiagnostics.forLogging(failure));
             }
         }
     }

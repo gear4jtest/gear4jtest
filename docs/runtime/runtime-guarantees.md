@@ -96,6 +96,12 @@ or Spring Boot `redaction-mode=DISABLED` are explicit opt-ins to raw capture.
 `REQUIRE` fails startup without an effective redactor. The deprecated Spring
 Boot `WARN` mode retains the former raw-capture behavior and emits a warning.
 
+Framework exception logs independently withhold messages, stack frames, causes
+and suppressed exceptions by default. Full exception details require the JVM
+property `gear4j.logging.includeExceptionDetails=true`; a persistence redactor
+does not control it. Original errors remain available through the execution
+contracts. See [logging confidentiality](../architecture/logging.md).
+
 Identifier validation is performed before JDBC execution and uses Unicode code
 points. Assembly-line, operation, branch and item identifiers are limited to
 255 code points, matching the bundled V1 schemas. Because this source version

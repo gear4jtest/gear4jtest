@@ -142,15 +142,13 @@ sequence and run with `auto-create-tables=false`.
 
 ## Existing schemas
 
-If a known initial table already exists and no Gear4J history is present, the
-first Gear4J migration can be recorded as already applied instead of re-applied.
-This keeps the migrator compatible with users upgrading from the previous
-`tableExists => skip initialization` behavior.
-
-This compatibility behavior is not a schema validator. It does not prove that an
-existing table exactly matches the shipped SQL. Applications with strict DB
-requirements should manage the SQL through their own migration process and review
-it explicitly.
+If a known initial table already exists and no Gear4J history is present, startup
+rejects it by default. `baselineOnMigrate=true` explicitly enables baseline
+recording after `BaselineSchemaValidator` verifies expected tables and the
+configured required column/index names. This is a minimum-presence check, not
+a full comparison of column types, constraints or index definitions. Review the
+actual schema before enabling it. Earlier unreleased V1 development schemas
+should normally be recreated.
 
 ## Execution-history indexes
 
@@ -161,8 +159,10 @@ repository order, including the `id` tie-breaker. Assembly-run history uses
 `(assembly_line_execution_id, parent_log_id, start_time, id)`; all logs for one
 run use `(assembly_line_execution_id, start_time, id)`.
 
-These definitions are qualified against PostgreSQL, MySQL, MariaDB and Oracle
-at representative library-level cardinalities. Because Gear4J remains pre-1.0
+Integration-plan fixtures cover PostgreSQL, MySQL, MariaDB and Oracle at
+representative library-level cardinalities. A release candidate must retain
+fresh reports for all four dialects; fixture presence alone is not qualification.
+Because Gear4J remains pre-1.0
 with no production adopters, the index corrections stay in V1 rather than
 adding a compatibility migration. Existing development schemas created from an
 older V1 must be recreated before running this version.

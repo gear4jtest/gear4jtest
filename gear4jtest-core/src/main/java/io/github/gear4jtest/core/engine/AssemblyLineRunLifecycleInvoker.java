@@ -8,6 +8,7 @@ import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.spi.extension.LifecycleFailureMode;
 import io.github.gear4jtest.core.spi.extension.RunLifecycleExtension;
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,12 +73,12 @@ final class AssemblyLineRunLifecycleInvoker {
         } catch (Exception e) {
             if (lifecycleExtension.failureMode() == LifecycleFailureMode.CRITICAL) {
                 LOGGER.error("A critical RunLifecycleExtension failed during onRunStarted. extension={}",
-                             lifecycleExtension.getClass().getName(), e);
+                             lifecycleExtension.getClass().getName(), ExceptionDiagnostics.forLogging(e));
                 return e;
             }
 
             LOGGER.error("A RunLifecycleExtension failed during onRunStarted. Ignoring. extension={}",
-                         lifecycleExtension.getClass().getName(), e);
+                         lifecycleExtension.getClass().getName(), ExceptionDiagnostics.forLogging(e));
             return null;
         }
     }
@@ -91,12 +92,12 @@ final class AssemblyLineRunLifecycleInvoker {
         } catch (Exception e) {
             if (lifecycleExtension.failureMode() == LifecycleFailureMode.CRITICAL) {
                 LOGGER.error("A critical RunLifecycleExtension failed during onRunCompleted. extension={}",
-                             lifecycleExtension.getClass().getName(), e);
+                             lifecycleExtension.getClass().getName(), ExceptionDiagnostics.forLogging(e));
                 return e;
             }
 
             LOGGER.error("A RunLifecycleExtension failed during onRunCompleted. Ignoring. extension={}",
-                         lifecycleExtension.getClass().getName(), e);
+                         lifecycleExtension.getClass().getName(), ExceptionDiagnostics.forLogging(e));
             return null;
         }
     }

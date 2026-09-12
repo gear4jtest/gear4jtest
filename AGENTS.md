@@ -13,13 +13,18 @@ modules add external pipeline loading, XML translation, Gradle XML generation, J
 
 - `gear4jtest-core`: runtime engine, public Java API, stations, execution context, flow, events, persistence traces and
   extension SPI.
+- `gear4jtest-experimental-cache`: optional in-process result cache and dependency-expiry tracking.
 - `gear4jtest-external-api`: external pipeline artifacts, translators, in-memory compilation, classloading and
   dependency injection.
+- `gear4jtest-external-jdbc`: JDBC repositories and artifact-store adapter for external pipelines and publication.
 - `gear4jtest-xml`: XML validation, parsing and Java source generation.
 - `gear4jtest-gradle-xml2java`: Gradle plugin for XML-to-Java generation.
 - `gear4jtest-jackson`: optional Jackson-backed `PayloadCloner` implementation.
 - `gear4jtest-jdbc`: optional JDBC execution persistence, dialects and schema migrations.
+- `gear4jtest-micrometer`: optional runtime, persistence, event and artifact-store metric binders.
 - `gear4jtest-spring`: lightweight Spring integration.
+- `gear4jtest-spring-boot-starter`: Boot auto-configuration, properties and health integration.
+- `build-logic` and `release-tools`: included Gradle builds for conventions and release tooling.
 
 ## Build and validation commands
 

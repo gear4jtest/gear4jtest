@@ -205,6 +205,31 @@ tasks.named('check') {
     dependsOn tasks.named('verifyLivingDocumentationMetadata')
 }
 
+// Source ZIP overlays do not delete obsolete files. Keep these completed removals explicit.
+def retiredAuditSourceFiles = files(
+    layout.projectDirectory.file('gear4jtest-core/src/main/java/io/github/gear4jtest/core/exception/AssemblyLineException.java'),
+    layout.projectDirectory.file('gear4jtest-jdbc/src/main/java/io/github/gear4jtest/jdbc/persistence/JdbcRepositoryTransaction.java'))
+
+tasks.register('verifyRetiredAuditSources') {
+    group = 'verification'
+    description = 'Rejects obsolete audit source files reintroduced by an archive overlay.'
+    inputs.files(retiredAuditSourceFiles)
+
+    doLast {
+        def remaining = retiredAuditSourceFiles.files.findAll { it.exists() }.collect {
+            repositoryRootDirectory.toPath().relativize(it.toPath()).toString()
+        }.sort()
+        if (!remaining.isEmpty()) {
+            throw new GradleException('Retired audit sources are still present:\n - ' + remaining.join('\n - ')
+                + '\nSee docs/migration/audit-phase-4.md for archive-overlay removal instructions.')
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyRetiredAuditSources')
+}
+
 def workflowFiles = fileTree(layout.projectDirectory.dir('.github/workflows')) {
     include '*.yml', '*.yaml'
 }
@@ -651,3 +676,7 @@ tasks.named('check') {
 }
 
 apply plugin: 'gear4j.root-release'
+
+tasks.named('releaseMetadataCheck') {
+    dependsOn tasks.named('verifyRetiredAuditSources')
+}

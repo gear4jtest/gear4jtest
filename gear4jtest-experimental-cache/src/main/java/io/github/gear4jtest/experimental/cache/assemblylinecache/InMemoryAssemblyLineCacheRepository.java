@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 import io.github.gear4jtest.core.api.context.PayloadCloner;
 import io.github.gear4jtest.core.api.context.PayloadCloners;
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,7 +110,7 @@ public final class InMemoryAssemblyLineCacheRepository implements AssemblyLineCa
             rejectedWrites.increment();
             misses.increment();
             LOGGER.warn("Evicting cache entry because its output could not be isolated. assemblyLineId={}, version={}",
-                        key.assemblyLineId(), key.pipelineVersion(), isolationFailure);
+                        key.assemblyLineId(), key.pipelineVersion(), ExceptionDiagnostics.forLogging(isolationFailure));
             return Optional.empty();
         }
 
@@ -133,7 +134,8 @@ public final class InMemoryAssemblyLineCacheRepository implements AssemblyLineCa
         } catch (RuntimeException validationFailure) {
             rejectedWrites.increment();
             LOGGER.debug("Skipping cache entry because its output could not be isolated or weighed. assemblyLineId={}, version={}",
-                         entry.key().assemblyLineId(), entry.key().pipelineVersion(), validationFailure);
+                         entry.key().assemblyLineId(), entry.key().pipelineVersion(),
+                         ExceptionDiagnostics.forLogging(validationFailure));
             return;
         }
 

@@ -1,0 +1,276 @@
+{
+  "schema_version": 1,
+  "phase": 4,
+  "reviewed_on": "2026-09-12",
+  "status": "Implementation complete; actual Gradle and connected release qualification pending",
+  "baseline": {
+    "file": "gear4jtest-20260912-phase-3.zip",
+    "sha256": "c8ab2e5c0a2042c6e33a8f7890fef3a5a202265e532191966f04197020f6cd9d"
+  },
+  "findings": [
+    "F07",
+    "F08",
+    "F15"
+  ],
+  "constraints": {
+    "java": 17,
+    "gradle": "9.6.1",
+    "sql_migrations_changed": false,
+    "dependencies_changed": false,
+    "package_or_artifact_rename": false,
+    "git_metadata_in_delivery": false
+  },
+  "production_logger_argument_inventory": {
+    "gear4jtest-jdbc/src/main/java/io/github/gear4jtest/jdbc/execution/PersistenceFlushCoordinator.java": 5,
+    "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/DetachedEventRuntimeCleanupScheduler.java": 2,
+    "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/AssemblyLineExecutionResultMapper.java": 1,
+    "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/AssemblyLineRunLifecycleInvoker.java": 4,
+    "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/AssemblyLineEngine.java": 1,
+    "gear4jtest-core/src/main/java/io/github/gear4jtest/core/event/EventRuntimeShutdown.java": 1,
+    "gear4jtest-core/src/main/java/io/github/gear4jtest/core/event/EventRuntimeLogSignals.java": 4,
+    "gear4jtest-core/src/main/java/io/github/gear4jtest/core/event/EventDispatcher.java": 1,
+    "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/runner/SyntheticStationLifecycleRecorder.java": 1,
+    "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/runner/BestEffortStationEventPublisher.java": 1,
+    "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/runner/StationExceptionBoundaryRunner.java": 1,
+    "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/runner/StationLifecycleRunner.java": 1,
+    "gear4jtest-experimental-cache/src/main/java/io/github/gear4jtest/experimental/cache/assemblylinecache/InMemoryAssemblyLineCacheRepository.java": 2,
+    "gear4jtest-xml/src/main/java/io/github/gear4jtest/xml/generator/JdtFormatter.java": 1,
+    "gear4jtest-external-api/src/main/java/io/github/gear4jtest/external/api/GeneratedLoadingRuntime.java": 1,
+    "gear4jtest-external-api/src/main/java/io/github/gear4jtest/external/api/artifact/FilesystemArtifactStore.java": 1,
+    "gear4jtest-external-api/src/main/java/io/github/gear4jtest/external/api/artifact/ManagedArtifactSpool.java": 1,
+    "gear4jtest-external-api/src/main/java/io/github/gear4jtest/external/api/artifact/CompositeArtifactStore.java": 6
+  },
+  "removed_sources": [
+    "gear4jtest-core/src/main/java/io/github/gear4jtest/core/exception/AssemblyLineException.java",
+    "gear4jtest-jdbc/src/main/java/io/github/gear4jtest/jdbc/persistence/JdbcRepositoryTransaction.java"
+  ],
+  "added_junit_sources": [
+    {
+      "file": "gear4jtest-core/src/test/java/io/github/gear4jtest/core/engine/ExceptionLoggingPolicyTest.java",
+      "methods": 3,
+      "declared_invocations": 9,
+      "execution_status": "Not compiled or executed with actual dependencies"
+    },
+    {
+      "file": "gear4jtest-external-api/src/test/java/io/github/gear4jtest/external/api/AssemblyLineStoreResolverConcurrencyTest.java",
+      "methods": 6,
+      "declared_invocations": 7,
+      "execution_status": "Not compiled or executed with actual dependencies"
+    },
+    {
+      "file": "gear4jtest-external-api/src/test/java/io/github/gear4jtest/external/api/spi/DefaultArtifactStoreProviderConcurrencyTest.java",
+      "methods": 8,
+      "declared_invocations": 9,
+      "execution_status": "Not compiled or executed with actual dependencies"
+    }
+  ],
+  "validation_summary": {
+    "standalone_java_probe_scenarios_passed": 39,
+    "python_release_tool_tests_passed": 9,
+    "new_junit_methods": 17,
+    "new_junit_declared_invocations": 25
+  },
+  "local_validation_observations": [
+    {
+      "step": "Core Java 17 compilation: 283 production sources and 5 stand-ins",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "step": "External store and loading source closure compilation",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "step": "Store probes compilation",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "step": "io.github.gear4jtest.external.api.Phase4StoreProbe",
+      "exit_code": 0,
+      "output": "PASS resolver independent hit during construction elapsed_us=21784\nPASS resolver independent hit during release elapsed_us=805\nPASS resolver invalidation during build: uncached borrow, balanced reacquisition\nPASS resolver close during build: wakes waiters, late cleanup balanced\nPASS resolver close during build: wakes waiters, late cleanup Error retained\nPASS resolver fatal creation fan-out and retry\nPASS resolver interrupted waiter leaves shared creation owned\nPASS provider independent hit during build elapsed_us=1185\nPASS provider independent hit during close elapsed_us=318\nPASS provider close wakes waiter and disposes late construction once\nPASS provider overlapping shared identity after release rejected without second close\nPASS provider overlapping shared identity after shutdown rejected without second close\nPASS provider fatal construction fan-out and retry\nPASS provider interrupted waiter leaves shared creation owned\nPASS provider close attempts all stores and retains fatal precedence\nPASS partial store build retains primary failure and every cleanup failure\nPASS same-key recursive resolver/provider acquisition fails instead of deadlocking\n"
+    },
+    {
+      "step": "io.github.gear4jtest.external.api.StorePhase1Probe",
+      "exit_code": 0,
+      "output": "PASS two cache entries + real DefaultArtifactStoreProvider: backend closed exactly once\nPASS cross-thread eviction during borrowed stream: read succeeds, stream closes first\nPASS replacement + invalidation + resolver shutdown: active borrowers retained, idempotent close\nPASS same-identity replacement: 2 acquisitions, 2 releases\nPASS cleanup errors: all entries attempted, initial failure preserved, secondary failures suppressed\nPASS default no-op provider release preserves caller-owned store\nPASS 16 concurrent initial acquisitions: one provider acquisition, 15 cache hits\nPASS publication success: eviction during operation, release after last use\nPASS publication stage failure: eviction during operation, release after last use\nPASS publication promotion: eviction during operation, release after last use\nPASS loading success with real Java compiler: stream closed before evicted store\nPASS loading read failure: stream closed before evicted store\n"
+    },
+    {
+      "step": "Logging capture probe compilation",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "step": "Logging capture probe with temporary SLF4J stand-in",
+      "exit_code": 0,
+      "output": "PASS protected production logging callback=0; original result preserved\nPASS protected production logging callback=1; original result preserved\nPASS protected production logging callback=2; original result preserved\nPASS explicit logging opt-in returns original Throwable to logger\nPASS logging fails closed without inspecting hostile failure: property=null\nPASS logging fails closed without inspecting hostile failure: property=false\nPASS logging fails closed without inspecting hostile failure: property=yes\nPASS logging fails closed without inspecting hostile failure: property=\nPASS logging fails closed without inspecting hostile failure: property= true \nPASS nullable failure logging\n"
+    },
+    {
+      "step": "Release tools Python tests",
+      "exit_code": 0,
+      "output": ".........\n----------------------------------------------------------------------\nRan 9 tests in 0.010s\n\nOK\n"
+    },
+    {
+      "step": "Release shell script syntax",
+      "exit_code": 0,
+      "output": ""
+    }
+  ],
+  "gradle_attempts": [
+    {
+      "command": [
+        "bash",
+        "gradlew",
+        "--no-daemon",
+        ":gear4jtest-core:test",
+        ":gear4jtest-external-api:test",
+        ":gear4jtest-jdbc:test",
+        ":gear4jtest-experimental-cache:test",
+        ":gear4jtest-xml:test"
+      ],
+      "exit_code": 1,
+      "output": "Fetching distribution.\nDownloading https://services.gradle.org/distributions/gradle-9.6.1-bin.zip\n\nAttempt 1/1 failed. Reason: Network is unreachable\nException in thread \"main\" java.net.SocketException: Network is unreachable\n\tat java.base/sun.nio.ch.Net.connect0(Native Method)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:591)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:580)\n\tat java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)\n\tat java.base/java.net.Socket.connect(Socket.java:633)\n\tat java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:533)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:592)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:590)\n\tat java.base/java.security.AccessController.doPrivileged(AccessController.java:569)\n\tat java.base/sun.net.www.http.HttpClient.privilegedOpenServer(HttpClient.java:589)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:633)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:267)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:381)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:205)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1283)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1148)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1077)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:181)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1717)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1641)\n\tat java.base/java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:529)\n\tat java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:308)\n\tat org.gradle.wrapper.Download.download(SourceFile:1)\n\tat org.gradle.wrapper.Install.forceFetch(SourceFile)\n\tat org.gradle.wrapper.Install.lambda$createDist$0(SourceFile:9)\n\tat org.gradle.wrapper.Install.createDist(SourceFile:24)\n\tat org.gradle.wrapper.GradleWrapperMain.lambda$prepareWrapper$0(SourceFile:2)\n\tat org.gradle.wrapper.GradleWrapperMain.main(SourceFile:2)\n"
+    },
+    {
+      "command": [
+        "bash",
+        "gradlew",
+        "--no-daemon",
+        "spotlessApply"
+      ],
+      "exit_code": 1,
+      "output": "Fetching distribution.\nDownloading https://services.gradle.org/distributions/gradle-9.6.1-bin.zip\n\nAttempt 1/1 failed. Reason: Network is unreachable\nException in thread \"main\" java.net.SocketException: Network is unreachable\n\tat java.base/sun.nio.ch.Net.connect0(Native Method)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:591)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:580)\n\tat java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)\n\tat java.base/java.net.Socket.connect(Socket.java:633)\n\tat java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:533)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:592)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:590)\n\tat java.base/java.security.AccessController.doPrivileged(AccessController.java:569)\n\tat java.base/sun.net.www.http.HttpClient.privilegedOpenServer(HttpClient.java:589)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:633)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:267)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:381)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:205)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1283)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1148)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1077)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:181)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1717)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1641)\n\tat java.base/java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:529)\n\tat java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:308)\n\tat org.gradle.wrapper.Download.download(SourceFile:1)\n\tat org.gradle.wrapper.Install.forceFetch(SourceFile)\n\tat org.gradle.wrapper.Install.lambda$createDist$0(SourceFile:9)\n\tat org.gradle.wrapper.Install.createDist(SourceFile:24)\n\tat org.gradle.wrapper.GradleWrapperMain.lambda$prepareWrapper$0(SourceFile:2)\n\tat org.gradle.wrapper.GradleWrapperMain.main(SourceFile:2)\n"
+    },
+    {
+      "command": [
+        "bash",
+        "gradlew",
+        "--no-daemon",
+        "check",
+        "releaseMetadataCheck"
+      ],
+      "exit_code": 1,
+      "output": "Fetching distribution.\nDownloading https://services.gradle.org/distributions/gradle-9.6.1-bin.zip\n\nAttempt 1/1 failed. Reason: Network is unreachable\nException in thread \"main\" java.net.SocketException: Network is unreachable\n\tat java.base/sun.nio.ch.Net.connect0(Native Method)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:591)\n\tat java.base/sun.nio.ch.Net.connect(Net.java:580)\n\tat java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)\n\tat java.base/java.net.Socket.connect(Socket.java:633)\n\tat java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:533)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:592)\n\tat java.base/sun.net.www.http.HttpClient$1.run(HttpClient.java:590)\n\tat java.base/java.security.AccessController.doPrivileged(AccessController.java:569)\n\tat java.base/sun.net.www.http.HttpClient.privilegedOpenServer(HttpClient.java:589)\n\tat java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:633)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:267)\n\tat java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:381)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:205)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1283)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1148)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1077)\n\tat java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:181)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1717)\n\tat java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1641)\n\tat java.base/java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:529)\n\tat java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:308)\n\tat org.gradle.wrapper.Download.download(SourceFile:1)\n\tat org.gradle.wrapper.Install.forceFetch(SourceFile)\n\tat org.gradle.wrapper.Install.lambda$createDist$0(SourceFile:9)\n\tat org.gradle.wrapper.Install.createDist(SourceFile:24)\n\tat org.gradle.wrapper.GradleWrapperMain.lambda$prepareWrapper$0(SourceFile:2)\n\tat org.gradle.wrapper.GradleWrapperMain.main(SourceFile:2)\n"
+    }
+  ],
+  "limitations": [
+    "Core Java 17 production compilation used five temporary SLF4J/JSpecify stand-ins; external compilation covered only the selected store/loading source closure.",
+    "Standalone logging probes used an SLF4J argument-capture stand-in, not actual Logback rendering.",
+    "Temporary standalone probes and stand-ins are validation scaffolding, not production dependencies or JUnit results.",
+    "Barrier-based independent-hit samples establish progress only; no production latency or throughput budget is established.",
+    "No actual JUnit, Logback, Testcontainers, complete Gradle compilation, Spotless, coverage, JMH, SCA, consumer compatibility, staging or reproducibility gate passed in this phase.",
+    "Local structural replays do not execute Gradle task wiring or replace the required connected gates."
+  ],
+  "commit_message": "fix(runtime): protect exception logs and reduce store contention",
+  "structural_checks": [
+    {
+      "check": "Local replay of living-documentation metadata rule",
+      "status": "passed",
+      "files": 10
+    },
+    {
+      "check": "Local replay of Markdown file-link rule",
+      "status": "passed",
+      "files": 167,
+      "local_links": 128,
+      "anchor_validation": false
+    },
+    {
+      "check": "ADR identifier uniqueness",
+      "status": "passed",
+      "numbered_adrs": 46
+    },
+    {
+      "check": "Retired source absence and no Java references",
+      "status": "passed",
+      "paths": [
+        "gear4jtest-core/src/main/java/io/github/gear4jtest/core/exception/AssemblyLineException.java",
+        "gear4jtest-jdbc/src/main/java/io/github/gear4jtest/jdbc/persistence/JdbcRepositoryTransaction.java"
+      ]
+    },
+    {
+      "check": "Deletion patch checked and applied to exact baseline copies in temporary directory",
+      "status": "passed",
+      "deleted_files": 2
+    },
+    {
+      "check": "Source inspection of releaseMetadataCheck hook after plugin application",
+      "status": "passed",
+      "gradle_task_execution": false
+    },
+    {
+      "check": "git diff --check including added files",
+      "status": "passed"
+    }
+  ],
+  "archive_checks": {
+    "status": "passed; final archive rechecked after embedding this record",
+    "baseline_files": 1188,
+    "delivery_files": 1195,
+    "added_files": [
+      "docs/audit/evidence/remediation-2026-09-12-phase-4-removals.patch",
+      "docs/audit/evidence/remediation-2026-09-12-phase-4-validation.json",
+      "docs/audit/remediation-2026-09-12-phase-4-diagnostics-contention.md",
+      "docs/decisions/0046-exception-logs-require-explicit-detail-opt-in.md",
+      "docs/migration/audit-phase-4.md",
+      "gear4jtest-core/src/main/java/io/github/gear4jtest/core/util/ExceptionDiagnostics.java",
+      "gear4jtest-core/src/test/java/io/github/gear4jtest/core/engine/ExceptionLoggingPolicyTest.java",
+      "gear4jtest-external-api/src/test/java/io/github/gear4jtest/external/api/AssemblyLineStoreResolverConcurrencyTest.java",
+      "gear4jtest-external-api/src/test/java/io/github/gear4jtest/external/api/spi/DefaultArtifactStoreProviderConcurrencyTest.java"
+    ],
+    "changed_files": [
+      "AGENTS.md",
+      "build.gradle",
+      "docs/README.md",
+      "docs/architecture/jdbc-migrations.md",
+      "docs/architecture/logging.md",
+      "docs/audit/remediation-2026-09-04-phase-3-api-maintainability.md",
+      "docs/decisions/0043-artifact-stores-use-provider-leases-and-directory-scoped-spool-quotas.md",
+      "docs/roadmap/audit-remediation-2026-09-04.md",
+      "docs/roadmap/audit-remediation-2026-09-07.md",
+      "docs/runtime/runtime-guarantees.md",
+      "gear4jtest-core/AGENTS.md",
+      "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/AssemblyLineEngine.java",
+      "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/AssemblyLineExecutionResultMapper.java",
+      "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/AssemblyLineRunLifecycleInvoker.java",
+      "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/DetachedEventRuntimeCleanupScheduler.java",
+      "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/runner/BestEffortStationEventPublisher.java",
+      "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/runner/StationExceptionBoundaryRunner.java",
+      "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/runner/StationLifecycleRunner.java",
+      "gear4jtest-core/src/main/java/io/github/gear4jtest/core/engine/runner/SyntheticStationLifecycleRecorder.java",
+      "gear4jtest-core/src/main/java/io/github/gear4jtest/core/event/EventDispatcher.java",
+      "gear4jtest-core/src/main/java/io/github/gear4jtest/core/event/EventRuntimeLogSignals.java",
+      "gear4jtest-core/src/main/java/io/github/gear4jtest/core/event/EventRuntimeShutdown.java",
+      "gear4jtest-experimental-cache/src/main/java/io/github/gear4jtest/experimental/cache/assemblylinecache/InMemoryAssemblyLineCacheRepository.java",
+      "gear4jtest-external-api/src/main/java/io/github/gear4jtest/external/api/AssemblyLineStoreResolver.java",
+      "gear4jtest-external-api/src/main/java/io/github/gear4jtest/external/api/GeneratedLoadingRuntime.java",
+      "gear4jtest-external-api/src/main/java/io/github/gear4jtest/external/api/artifact/CompositeArtifactStore.java",
+      "gear4jtest-external-api/src/main/java/io/github/gear4jtest/external/api/artifact/FilesystemArtifactStore.java",
+      "gear4jtest-external-api/src/main/java/io/github/gear4jtest/external/api/artifact/ManagedArtifactSpool.java",
+      "gear4jtest-external-api/src/main/java/io/github/gear4jtest/external/api/spi/ArtifactStorePlugin.java",
+      "gear4jtest-external-api/src/main/java/io/github/gear4jtest/external/api/storage/DefaultArtifactStoreProvider.java",
+      "gear4jtest-jdbc/src/main/java/io/github/gear4jtest/jdbc/execution/PersistenceFlushCoordinator.java",
+      "gear4jtest-spring-boot-starter/README.md",
+      "gear4jtest-xml/src/main/java/io/github/gear4jtest/xml/generator/JdtFormatter.java"
+    ],
+    "removed_files": [
+      "gear4jtest-core/src/main/java/io/github/gear4jtest/core/exception/AssemblyLineException.java",
+      "gear4jtest-jdbc/src/main/java/io/github/gear4jtest/jdbc/persistence/JdbcRepositoryTransaction.java"
+    ],
+    "protected_configuration_and_sql_files_unchanged": 29,
+    "source_delta_matches_reviewed_diff": true,
+    "crc_integrity": true,
+    "executable_gradle_wrapper_preserved": true,
+    "excluded_path_components": [
+      ".git",
+      ".gradle",
+      "__pycache__",
+      "build"
+    ],
+    "excluded_suffixes": [
+      ".pyc"
+    ],
+    "archive_sha256": "Recorded externally to avoid a self-referential digest."
+  }
+}

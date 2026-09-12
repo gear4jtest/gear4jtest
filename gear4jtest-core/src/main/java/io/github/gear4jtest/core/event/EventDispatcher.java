@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
 import io.github.gear4jtest.core.api.annotation.Internal;
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +86,8 @@ final class EventDispatcher {
                 completedTasks.increment();
             } catch (RuntimeException runtimeException) {
                 failedTasks.increment();
-                LOGGER.error("Shared event dispatcher task failed unexpectedly.", runtimeException);
+                LOGGER.error("Shared event dispatcher task failed unexpectedly.",
+                             ExceptionDiagnostics.forLogging(runtimeException));
             }
         }
     }

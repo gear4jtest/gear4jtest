@@ -63,12 +63,40 @@ coordinate their loading/execution work before shutting down shared providers.
 The resolver's `distinctStores` statistic includes evicted entries with active
 borrowers, so it may exceed cache occupancy or remain non-zero after resolver
 shutdown. `releasedStoreLeases` counts successful provider release calls, one per
-acquired cache entry. A cleanup failure is propagated; resolver shutdown attempts
+provider acquisition, including a late uncached construction. A cleanup failure is propagated; resolver shutdown attempts
 the remaining releases and preserves subsequent failures as suppressed causes.
 
 The lease clarification above was implemented on 2026-09-07 for audit findings
-F01 and F02. Backend construction and final release still run under the resolver
-monitor; reducing that contention is separate work (F08).
+F01 and F02. The 12 September F08 correction limits resolver and provider
+monitors to cache/lease metadata. Backend constructors, provider releases and
+store closes execute outside those monitors. An in-flight operation is shared
+by assembly-line id in the resolver and by store type/property map in the
+provider. Unrelated cache hits can progress while a backend constructor or
+close is blocked. The same provider key waits for its last close before being
+constructed again.
+
+Waiters observe a construction failure and can retry on a later invocation.
+Interrupted waiters retain interruption without cancelling a shared construction.
+Recursive acquisition of the same pending key on its owner thread fails rather
+than waiting on itself. Constructors must not create cyclic dependencies across
+different keys or threads; this is not a general deadlock detector.
+
+Invalidating a resolver key while it is being constructed prevents that late
+result from repopulating the cache; its original caller may still borrow it.
+Resolver/provider close rejects new admission and wakes construction waiters.
+It does not wait for plugin constructors to return: a late constructor releases
+or closes its result instead of installing it. A synchronous close/release may
+still wait for the backend it is currently cleaning up. Plugin I/O must supply
+its own timeouts; this change does not forcibly terminate it.
+
+Plugins may return the same live store identity for different configurations.
+Reference counts still span all acquired leases. An instance retired during an
+overlapping construction is rejected if that constructor returns it, and is not
+closed twice. Weak identity markers last only for overlapping pending builds;
+they do not keep closed backend objects alive behind an indefinitely blocked
+constructor. Plugins must return usable resources and must not recycle a store
+that has already completed its lifecycle. Provider shutdown still requires all
+active consumers to stop; it is not a revocable lease protocol.
 
 The spool directory contains a private `.gear4j-spool.lock` marker. Operators
 must configure a dedicated directory per process or container; accidental

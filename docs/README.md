@@ -39,6 +39,8 @@ Do not describe future-direction ideas as current behavior.
 - [7 September audit, phase 1: changes and validation evidence](audit/remediation-2026-09-07-phase-1-resource-lifecycle.md)
 - [7 September audit, phase 2: publication and consumer integrations](audit/remediation-2026-09-08-phase-2-consumer-integrations.md)
 - [7 September audit, phase 3: cancellation, results and failure cleanup](audit/remediation-2026-09-12-phase-3-cancellation-failures.md)
+- [7 September audit, phase 4: diagnostics, contention and qualification status](audit/remediation-2026-09-12-phase-4-diagnostics-contention.md)
+- [Apply the phase 4 source removals and logging contract](migration/audit-phase-4.md)
 - [Audit remediation phase 2: runtime and persistence hardening](audit/remediation-2026-09-04-phase-2-runtime-persistence-hardening.md)
 - [Audit remediation phase 3: API and maintainability](audit/remediation-2026-09-04-phase-3-api-maintainability.md)
 

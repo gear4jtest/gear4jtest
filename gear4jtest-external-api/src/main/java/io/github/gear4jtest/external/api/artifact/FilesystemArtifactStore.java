@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -297,7 +298,7 @@ public final class FilesystemArtifactStore implements ArtifactStore, ArtifactSto
             long failures = metrics.recordCleanupFailure();
             if (failures == 1L || Long.bitCount(failures) == 1) {
                 LOGGER.warn("Unable to delete a filesystem artifact temp file. cleanupFailures={}", failures,
-                            exception);
+                            ExceptionDiagnostics.forLogging(exception));
             }
         }
     }

@@ -13,6 +13,7 @@ import io.github.gear4jtest.core.execution.trace.AssemblyRunTrace;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.persistence.ExecutionStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,7 +124,7 @@ final class AssemblyLineExecutionResultMapper {
             execution.setContext(context.snapshotContext());
         } catch (RuntimeException runtimeException) {
             LOGGER.warn("Failed to capture execution context for run {}. The run trace will keep its previous context.",
-                        execution.getId(), runtimeException);
+                        execution.getId(), ExceptionDiagnostics.forLogging(runtimeException));
         }
 
         if (fatalError != null) {

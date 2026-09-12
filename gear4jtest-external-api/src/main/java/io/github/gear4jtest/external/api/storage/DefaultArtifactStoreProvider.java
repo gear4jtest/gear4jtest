@@ -1,10 +1,13 @@
 package io.github.gear4jtest.external.api.storage;
 
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -12,6 +15,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
@@ -39,6 +44,14 @@ import io.github.gear4jtest.external.api.spi.ArtifactStoreResolver;
  * Callers must balance it with {@link #release(ArtifactStore)}, or close the
  * provider only after every consumer has stopped.
  * </p>
+ *
+ * <p>
+ * Construction is shared per configuration. Backend creation and closure run
+ * outside the provider metadata monitor, so callbacks for different
+ * configurations may execute concurrently. Closing rejects new acquisition and
+ * wakes waiters; still-running constructors dispose their late results when
+ * they return.
+ * </p>
  */
 public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider, AutoCloseable {
     private static final Set<String> PROVIDER_PROPERTIES = Set.of(
@@ -52,6 +65,8 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
     private final Executor asyncExec;
     private final Map<StoreConfiguration, StoreLease> storesByConfiguration = new HashMap<>();
     private final IdentityHashMap<ArtifactStore, Integer> leasesByStore = new IdentityHashMap<>();
+    private final Map<StoreConfiguration, PendingStore> pendingStores = new HashMap<>();
+    private final IdentityHashMap<ArtifactStore, Boolean> retiringStores = new IdentityHashMap<>();
     private boolean closed;
 
     /**
@@ -150,66 +165,271 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
     }
 
     @Override
-    public synchronized ArtifactStore forConfig(OperationChainConfig cfg) {
+    public ArtifactStore forConfig(OperationChainConfig cfg) {
         Objects.requireNonNull(cfg, "cfg");
-        if (closed) {
-            throw new IllegalStateException("Artifact-store provider is closed");
-        }
         StoreConfiguration configuration = StoreConfiguration.from(cfg);
-        StoreLease existing = storesByConfiguration.get(configuration);
-        if (existing != null) {
-            existing.retain();
-            leasesByStore.merge(existing.store(), 1, Integer::sum);
-            return existing.store();
+        while (true) {
+            PendingStore pending;
+            boolean creator;
+            synchronized (this) {
+                requireOpen();
+                StoreLease existing = storesByConfiguration.get(configuration);
+                if (existing != null) {
+                    existing.retain();
+                    leasesByStore.merge(existing.store(), 1, Integer::sum);
+                    return existing.store();
+                }
+                pending = pendingStores.get(configuration);
+                creator = pending == null;
+                if (creator) {
+                    pending = new PendingStore(true);
+                    pendingStores.put(configuration, pending);
+                }
+            }
+            if (creator) {
+                return createStore(cfg, configuration, pending);
+            }
+            pending.await();
         }
+    }
 
-        ArtifactStore store = buildStore(cfg);
-        storesByConfiguration.put(configuration, new StoreLease(store));
-        leasesByStore.merge(store, 1, Integer::sum);
+    private ArtifactStore createStore(OperationChainConfig cfg,
+                                      StoreConfiguration configuration,
+                                      PendingStore pending) {
+        ArtifactStore store;
+        try {
+            store = Objects.requireNonNull(buildStore(cfg), "artifact-store plugin returned null");
+        } catch (RuntimeException | Error failure) {
+            finishPending(configuration, pending, failure);
+            throw failure;
+        }
+        Throwable rejection = null;
+        boolean dispose = false;
+        synchronized (this) {
+            if (pending.wasRetired(store) || retiringStores.containsKey(store)) {
+                // A plugin may share an instance across configurations, but a retired
+                // instance cannot be installed or closed a second time by this construction.
+                rejection = new IllegalStateException(
+                        "Artifact-store plugin returned an instance retired during construction");
+            } else if (closed) {
+                rejection = new IllegalStateException("Artifact-store provider is closed");
+                dispose = !leasesByStore.containsKey(store);
+                if (dispose) {
+                    beginRetirement(store);
+                }
+            } else {
+                storesByConfiguration.put(configuration, new StoreLease(store));
+                leasesByStore.merge(store, 1, Integer::sum);
+            }
+        }
+        if (rejection != null) {
+            if (dispose) {
+                try {
+                    closeRetired(store);
+                } catch (RuntimeException | Error cleanupFailure) {
+                    rejection = combineFailures(rejection, cleanupFailure);
+                }
+            }
+            finishPending(configuration, pending, rejection);
+            rethrow(rejection);
+        }
+        finishPending(configuration, pending, null);
         return store;
     }
 
     @Override
-    public synchronized void release(ArtifactStore store) {
+    public void release(ArtifactStore store) {
         if (store == null) {
             return;
         }
         StoreConfiguration releasedConfiguration = null;
-        StoreLease releasedLease = null;
-        for (var entry : storesByConfiguration.entrySet()) {
-            if (entry.getValue().store() == store && entry.getValue().references() > 0) {
-                releasedConfiguration = entry.getKey();
-                releasedLease = entry.getValue();
-                break;
+        PendingStore retirement;
+        synchronized (this) {
+            StoreLease releasedLease = null;
+            for (var entry : storesByConfiguration.entrySet()) {
+                if (entry.getValue().store() == store && entry.getValue().references() > 0) {
+                    releasedConfiguration = entry.getKey();
+                    releasedLease = entry.getValue();
+                    break;
+                }
             }
-        }
-        if (releasedLease == null) {
-            return;
-        }
-
-        if (releasedLease.release() == 0) {
-            storesByConfiguration.remove(releasedConfiguration);
-        }
-        Integer totalReferences = leasesByStore.get(store);
-        if (totalReferences == null || totalReferences <= 1) {
+            if (releasedLease == null) {
+                return;
+            }
+            if (releasedLease.release() == 0) {
+                storesByConfiguration.remove(releasedConfiguration);
+            }
+            Integer totalReferences = leasesByStore.get(store);
+            if (totalReferences != null && totalReferences > 1) {
+                leasesByStore.put(store, totalReferences - 1);
+                return;
+            }
             leasesByStore.remove(store);
-            store.close();
-        } else {
-            leasesByStore.put(store, totalReferences - 1);
+            retirement = new PendingStore(false);
+            pendingStores.put(releasedConfiguration, retirement);
+            beginRetirement(store);
+        }
+        Throwable failure = null;
+        try {
+            closeRetired(store);
+        } catch (RuntimeException | Error cleanupFailure) {
+            failure = cleanupFailure;
+            throw cleanupFailure;
+        } finally {
+            finishPending(releasedConfiguration, retirement, failure);
         }
     }
 
     @Override
-    public synchronized void close() {
-        if (closed) {
-            return;
+    public void close() {
+        List<ArtifactStore> stores;
+        List<PendingStore> pending;
+        synchronized (this) {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            stores = new ArrayList<>(leasesByStore.keySet());
+            for (ArtifactStore store : stores) {
+                beginRetirement(store);
+            }
+            storesByConfiguration.clear();
+            leasesByStore.clear();
+            pending = new ArrayList<>(pendingStores.values());
         }
-        closed = true;
-        List<ArtifactStore> stores = new ArrayList<>(leasesByStore.keySet());
-        storesByConfiguration.clear();
-        leasesByStore.clear();
+        // Do not wait for plugin constructors. Their owners dispose late results.
+        for (PendingStore operation : pending) {
+            operation.completed.completeExceptionally(new IllegalStateException("Artifact-store provider is closed"));
+        }
+        Throwable failure = null;
         for (ArtifactStore store : stores) {
+            try {
+                closeRetired(store);
+            } catch (RuntimeException | Error cleanupFailure) {
+                failure = combineFailures(failure, cleanupFailure);
+            }
+        }
+        rethrow(failure);
+    }
+
+    private void requireOpen() {
+        if (closed) {
+            throw new IllegalStateException("Artifact-store provider is closed");
+        }
+    }
+
+    // Called under the metadata monitor; no plugin callbacks run here.
+    private void beginRetirement(ArtifactStore store) {
+        retiringStores.put(store, Boolean.TRUE);
+        for (PendingStore pending : pendingStores.values()) {
+            if (pending.creating) {
+                // Weak identity markers protect aliases without keeping unrelated closed
+                // backends alive if a plugin constructor remains blocked indefinitely.
+                pending.markRetired(store);
+            }
+        }
+    }
+
+    private void closeRetired(ArtifactStore store) {
+        try {
             store.close();
+        } finally {
+            synchronized (this) {
+                retiringStores.remove(store);
+            }
+        }
+    }
+
+    private void finishPending(StoreConfiguration configuration, PendingStore pending, Throwable failure) {
+        synchronized (this) {
+            pendingStores.remove(configuration, pending);
+        }
+        if (failure == null) {
+            pending.completed.complete(null);
+        } else {
+            pending.completed.completeExceptionally(failure);
+        }
+    }
+
+    private static Throwable combineFailures(Throwable primary, Throwable secondary) {
+        if (primary == null) {
+            return secondary;
+        }
+        if (primary != secondary) {
+            if (secondary instanceof Error && !(primary instanceof Error)) {
+                secondary.addSuppressed(primary);
+                return secondary;
+            }
+            primary.addSuppressed(secondary);
+        }
+        return primary;
+    }
+
+    private static void rethrow(Throwable failure) {
+        if (failure instanceof Error error) {
+            throw error;
+        }
+        if (failure instanceof RuntimeException exception) {
+            throw exception;
+        }
+    }
+
+    private static final class PendingStore {
+        private final Thread owner = Thread.currentThread();
+        private final CompletableFuture<Void> completed = new CompletableFuture<>();
+        private final ReferenceQueue<ArtifactStore> collectedStores = new ReferenceQueue<>();
+        private final Set<RetiredStore> retiredDuringBuild = new HashSet<>();
+        private final boolean creating;
+
+        private PendingStore(boolean creating) {
+            this.creating = creating;
+        }
+
+        private void markRetired(ArtifactStore store) {
+            for (var reference = collectedStores.poll(); reference != null; reference = collectedStores.poll()) {
+                retiredDuringBuild.remove(reference);
+            }
+            retiredDuringBuild.add(new RetiredStore(store, collectedStores));
+        }
+
+        private boolean wasRetired(ArtifactStore store) {
+            return retiredDuringBuild.contains(new RetiredStore(store, null));
+        }
+
+        private void await() {
+            if (owner == Thread.currentThread()) {
+                throw new IllegalStateException("Recursive acquisition of the same artifact-store configuration");
+            }
+            try {
+                completed.get();
+            } catch (InterruptedException failure) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while acquiring an artifact store", failure);
+            } catch (ExecutionException failure) {
+                rethrow(failure.getCause());
+                throw new IllegalStateException("Artifact-store acquisition failed", failure.getCause());
+            }
+        }
+    }
+
+    private static final class RetiredStore extends WeakReference<ArtifactStore> {
+        private final int identityHash;
+
+        private RetiredStore(ArtifactStore store, ReferenceQueue<ArtifactStore> queue) {
+            super(store, queue);
+            identityHash = System.identityHashCode(store);
+        }
+
+        @Override
+        public int hashCode() {
+            return identityHash;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            ArtifactStore store = get();
+            return this == other
+                    || store != null && other instanceof RetiredStore reference && store == reference.get();
         }
     }
 
@@ -268,22 +488,32 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
             return new CompositeArtifactStore(primary, fallbacks, writeMode, readMode, verifyOnRead, selfHealing,
                     verificationMaxArtifactSizeBytes, spoolPolicy, asyncExec);
         } catch (RuntimeException | Error exception) {
-            closeStores(primary, fallbacks);
+            try {
+                closeStores(primary, fallbacks);
+            } catch (RuntimeException | Error cleanupFailure) {
+                rethrow(combineFailures(exception, cleanupFailure));
+            }
             throw exception;
         }
     }
 
     private static void closeStores(ArtifactStore primary, List<ArtifactStore> fallbacks) {
-        IdentityHashMap<ArtifactStore, Boolean> closed = new IdentityHashMap<>();
+        IdentityHashMap<ArtifactStore, Boolean> unique = new IdentityHashMap<>();
         if (primary != null) {
-            closed.put(primary, Boolean.TRUE);
-            primary.close();
+            unique.put(primary, Boolean.TRUE);
         }
         for (ArtifactStore fallback : fallbacks) {
-            if (closed.put(fallback, Boolean.TRUE) == null) {
-                fallback.close();
+            unique.put(fallback, Boolean.TRUE);
+        }
+        Throwable failure = null;
+        for (ArtifactStore store : unique.keySet()) {
+            try {
+                store.close();
+            } catch (RuntimeException | Error cleanupFailure) {
+                failure = combineFailures(failure, cleanupFailure);
             }
         }
+        rethrow(failure);
     }
 
     private void validateTopLevelProperties(String storeType, Map<String, String> properties) {
@@ -417,7 +647,11 @@ public final class DefaultArtifactStoreProvider implements ArtifactStoreProvider
             }
             return out;
         } catch (RuntimeException | Error exception) {
-            closeStores(null, out);
+            try {
+                closeStores(null, out);
+            } catch (RuntimeException | Error cleanupFailure) {
+                rethrow(combineFailures(exception, cleanupFailure));
+            }
             throw exception;
         }
     }

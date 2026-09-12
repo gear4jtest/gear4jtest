@@ -10,6 +10,7 @@ import io.github.gear4jtest.core.exception.StationExecutionException;
 import io.github.gear4jtest.core.execution.trace.StationLogTrace;
 import io.github.gear4jtest.core.model.StationLogStatus;
 import io.github.gear4jtest.core.spi.runner.StationRunner;
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,7 @@ public class StationExceptionBoundaryRunner implements StationRunner {
                 return errorPolicyExecutor.apply(station, input, ctx, effectiveException);
             } catch (Exception policyFailure) {
                 LOGGER.error("Station error policy failed. Falling back to markFailed. stationId={}", station.getId(),
-                             policyFailure);
+                             ExceptionDiagnostics.forLogging(policyFailure));
 
                 StationLogTrace stationLog = EngineStationContexts.trace(ctx);
                 if (stationLog.getStatus() == StationLogStatus.RUNNING) {

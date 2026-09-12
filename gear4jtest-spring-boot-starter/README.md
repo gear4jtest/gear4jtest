@@ -32,7 +32,7 @@ also contributes separate persistence liveness and readiness indicators.
 | `gear4j.persistence.readiness-max-buffered-station-logs` | `int` | `5000` | Readiness becomes `DOWN` above this current backlog size. |
 | `gear4j.persistence.readiness-max-backlog-age` | `Duration` | `30s` | Readiness becomes `DOWN` when the oldest buffered log exceeds this age. |
 | `gear4j.persistence.connectivity-probe-timeout` | `Duration` | `2s` | Timeout for the provider-specific readiness connectivity query. |
-| `gear4j.persistence.redaction-mode` | `DISCARD` / `REQUIRE` / `DISABLED` / `WARN` | `DISCARD` | Controls sensitive-value handling when persistence is enabled without a `SensitiveDataRedactor` bean. `WARN` is deprecated compatibility behavior. |
+| `gear4j.persistence.redaction-mode` | `DISCARD` / `REQUIRE` / `DISABLED` / `WARN` | `DISCARD` | Controls sensitive-value handling when persistence is enabled without a `SensitiveDataRedactor` bean. `WARN` is deprecated compatibility behavior. This does not control framework exception logs. |
 | `gear4j.metrics.enabled` | `boolean` | `true` | Enables Micrometer integration when a `MeterRegistry` bean is available. |
 
 ## JDBC persistence examples
@@ -53,7 +53,7 @@ gear4j.persistence.baseline-on-migrate=true
 ```
 
 For production deployments that manage DDL outside the application, keep
-auto-creation disabled and apply the SQL migrations from the core module for the
+auto-creation disabled and apply the SQL migrations from `gear4jtest-jdbc` for the
 selected dialect. The default `DISCARD` mode stores only metadata: contexts are
 empty and payloads, results and error messages are removed. Applications that
 need selected persisted values should provide a `SensitiveDataRedactor` bean.
@@ -66,6 +66,10 @@ gear4j.persistence.dialect=POSTGRESQL
 gear4j.persistence.auto-create-tables=false
 gear4j.persistence.redaction-mode=REQUIRE
 ```
+
+Framework exception logs independently withhold details by default. Full stacks
+require the JVM property `-Dgear4j.logging.includeExceptionDetails=true`, not a
+Boot persistence property. See the [logging policy](../docs/architecture/logging.md).
 
 When an application `ObjectMapper` bean is available, the starter reuses it for
 JDBC persistence so registered Java time modules, custom serializers and

@@ -30,6 +30,13 @@ public interface ArtifactStorePlugin {
     /**
      * Builds a store from string properties without exposing backend-specific types
      * in the SPI signature.
+     *
+     * <p>
+     * Different configurations may be built concurrently. Return a usable store; do
+     * not recycle an instance whose lifecycle has already ended. Avoid cyclic
+     * provider acquisition from this callback, including recursive acquisition of
+     * the same configuration.
+     * </p>
      */
     ArtifactStore build(Map<String, String> props, Context ctx) throws Exception;
 

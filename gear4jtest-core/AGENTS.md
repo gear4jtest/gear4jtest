@@ -4,8 +4,9 @@ This module owns the runtime engine and public Java API.
 
 ## Do not
 
-- Do not add Spring, XML, new Jackson-specific behavior, external transport or new storage-specific dependencies to this module.
-  The current in-core JDBC persistence and its Jackson JSON codec are a pre-1.0 legacy exception; keep them isolated and do not broaden that surface.
+- Do not add Spring, XML, Jackson-specific behavior, external transport or storage-specific dependencies to this module.
+  Persistence contracts and traces belong in core; JDBC implementations and their JSON serialization belong in
+  `gear4jtest-jdbc`. There is no current in-core JDBC/Jackson implementation exception.
 - Do not make flow decisions from station logs, persistence records or database snapshots.
 - Do not turn `EventManager` into a durable broker abstraction.
 - Do not catch JVM `Error` as an ordinary recoverable pipeline failure.

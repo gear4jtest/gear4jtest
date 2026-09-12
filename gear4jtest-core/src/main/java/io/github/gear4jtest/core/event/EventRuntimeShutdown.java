@@ -10,6 +10,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.gear4jtest.core.api.config.EventHandlingDefinition;
+import io.github.gear4jtest.core.util.ExceptionDiagnostics;
 import io.github.gear4jtest.core.util.MonotonicDeadline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +85,8 @@ final class EventRuntimeShutdown {
             Thread.currentThread().interrupt();
             cancelAndForceShutdown(deadline, cancelPendingReactions);
         } catch (ExecutionException executionException) {
-            LOGGER.warn("Asynchronous event runtime terminated with an error.", executionException.getCause());
+            LOGGER.warn("Asynchronous event runtime terminated with an error.",
+                        ExceptionDiagnostics.forLogging(executionException.getCause()));
             cancelAndForceShutdown(deadline, cancelPendingReactions);
         }
     }

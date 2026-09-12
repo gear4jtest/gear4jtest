@@ -6,6 +6,12 @@
 
 Product naming and project-wide package, module or artifact renaming remain explicitly out of scope.
 
+12 September correction: the source archive supplied on 6 September still
+contained `JdbcRepositoryTransaction`, despite the removal announced below.
+The F15 phase 4 correction removes it and adds an inventory guard. Historical
+validation statements below describe the earlier working tree, not proof that
+every later archive reflected its deletions. See [phase 4 migration](../migration/audit-phase-4.md).
+
 ## Outcome by audit finding
 
 | Finding | Outcome | Evidence |
