@@ -13,3 +13,11 @@ include 'gear4jtest-micrometer'
 include 'gear4jtest-spring'
 include 'gear4jtest-spring-boot-starter'
 include 'gear4jtest-xml'
+
+include 'gear4jtest-studio'
+
+include 'gear4jtest-studio-runtime'
+
+include 'gear4jtest-studio-demo'
+
+include 'gear4jtest-studio-spring-demo'

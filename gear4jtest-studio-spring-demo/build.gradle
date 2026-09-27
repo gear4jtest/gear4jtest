@@ -1,0 +1,19 @@
+ext.moduleName = 'io.github.gear4jtest.studio.spring.demo'
+description = 'Gear4J Studio P0 studio-spring-demo (experimental).'
+dependencies {
+    implementation project(':gear4jtest-studio-demo')
+    implementation project(':gear4jtest-studio-runtime')
+    implementation project(':gear4jtest-spring')
+    implementation libs.slf4j
+    runtimeOnly libs.logback
+}
+
+tasks.register('runStudio', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'io.github.gear4jtest.studio.springdemo.SpringStudioApplication'
+}
+
+// Demonstration applications are distributed in source, not published.
+tasks.withType(org.gradle.api.publish.maven.tasks.AbstractPublishToMaven).configureEach {
+    enabled = false
+}

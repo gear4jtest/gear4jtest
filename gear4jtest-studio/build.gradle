@@ -1,0 +1,5 @@
+ext.moduleName = 'io.github.gear4jtest.studio'
+description = 'Gear4J Studio P0 studio (experimental).'
+dependencies {
+    api project(':gear4jtest-core')
+}

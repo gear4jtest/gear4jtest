@@ -36,6 +36,11 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Set up Node for Studio component tests
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.19.0'
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
 
@@ -116,6 +121,11 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Set up Node for Studio component tests
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.19.0'
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
 
@@ -153,6 +163,11 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Set up Node for Studio component tests
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.19.0'
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
 
@@ -178,6 +193,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Set up Node for Studio component tests
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.19.0'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
@@ -207,6 +227,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Set up Node for Studio component tests
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.19.0'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6

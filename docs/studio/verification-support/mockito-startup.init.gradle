@@ -1,0 +1,14 @@
+// Optional local verification aid for environments where dynamic JVM attach is unavailable.
+// It uses the exact Mockito dependency already resolved by each test task.
+allprojects {
+    tasks.withType(Test).configureEach {
+        doFirst {
+            def mockito = classpath.files.find {
+                it.name.startsWith('mockito-core-') && it.name.endsWith('.jar')
+            }
+            if (mockito != null) {
+                jvmArgs "-javaagent:${mockito.absolutePath}"
+            }
+        }
+    }
+}

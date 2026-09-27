@@ -1,0 +1,15 @@
+{
+  "name": "gear4j-studio-p0-demo",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+  },
+  "scripts": {
+    "test": "node --test src/test/js/*.test.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "30.1.1",
+    "playwright": "1.62.1"
+  }
+}

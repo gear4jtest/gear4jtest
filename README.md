@@ -188,3 +188,5 @@ The project is in active design and implementation. Prefer small, well-tested ch
 simple and move optional integrations to dedicated modules.
 
 See `docs/production-readiness.md` before using Gear4J operationally.
+
+Le prototype optionnel [Gear4J Studio P0](docs/studio/p0.md) couvre catalogue, draft, validation et test contrôlé.

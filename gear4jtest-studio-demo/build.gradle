@@ -1,0 +1,37 @@
+ext.moduleName = 'io.github.gear4jtest.studio.demo'
+description = 'Gear4J Studio P0 studio-demo (experimental).'
+dependencies {
+    implementation project(':gear4jtest-studio-runtime')
+    implementation libs.jackson
+    implementation libs.jackson.datatype.jsr310
+    implementation libs.slf4j
+    runtimeOnly libs.logback
+}
+
+tasks.register('runStudio', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'io.github.gear4jtest.studio.demo.PlainStudioApplication'
+}
+
+// Demonstration applications are distributed in source, not published.
+tasks.withType(org.gradle.api.publish.maven.tasks.AbstractPublishToMaven).configureEach {
+    enabled = false
+}
+
+tasks.register('studioFrontendInstall', Exec) {
+    group = 'build setup'
+    description = 'Installs locked development-only DOM test dependencies.'
+    inputs.files('package.json', 'package-lock.json')
+    outputs.dir('node_modules')
+    commandLine 'npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund'
+}
+
+tasks.register('studioComponentTest', Exec) {
+    group = 'verification'
+    dependsOn 'studioFrontendInstall'
+    commandLine 'npm', 'test'
+}
+
+tasks.named('check') {
+    dependsOn 'studioComponentTest'
+}

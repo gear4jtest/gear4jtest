@@ -12,11 +12,11 @@
     },
     {
       "projectPath": ":gear4jtest-external-api",
-      "minimumLineRatio": 0.80
+      "minimumLineRatio": 0.8
     },
     {
       "projectPath": ":gear4jtest-external-jdbc",
-      "minimumLineRatio": 0.80
+      "minimumLineRatio": 0.8
     },
     {
       "projectPath": ":gear4jtest-gradle-xml2java",
@@ -45,6 +45,22 @@
     {
       "projectPath": ":gear4jtest-xml",
       "minimumLineRatio": 0.85
+    },
+    {
+      "projectPath": ":gear4jtest-studio",
+      "minimumLineRatio": 0.5
+    },
+    {
+      "projectPath": ":gear4jtest-studio-runtime",
+      "minimumLineRatio": 0.75
+    },
+    {
+      "projectPath": ":gear4jtest-studio-demo",
+      "minimumLineRatio": 0.65
+    },
+    {
+      "projectPath": ":gear4jtest-studio-spring-demo",
+      "minimumLineRatio": 0.4
     }
   ]
 }
