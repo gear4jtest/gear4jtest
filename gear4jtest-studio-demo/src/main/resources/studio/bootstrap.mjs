@@ -1,12 +1,12 @@
-import { StudioClient } from './studio-client.mjs';
-import './studio-element.mjs';
+import { ManagementClient } from './management-client.mjs';
+import './studio-workspace.mjs';
 const form = document.querySelector('#connect');
 form.addEventListener('submit', async event => {
   event.preventDefault(); const token = form.querySelector('input').value; const message = document.querySelector('#connection-state');
   form.querySelector('button').disabled = true; message.textContent = 'Connexion…';
   try {
-    const context = await document.querySelector('gear4j-studio').configure({ client: new StudioClient({ tokenProvider: () => token }) });
-    form.querySelector('input').value = ''; form.hidden = true; message.textContent = `${context.context.id} · ${context.actions.includes('EDIT') ? 'Édition autorisée' : 'Consultation'}`;
+    const context = await document.querySelector('gear4j-workspace').configure({ client: new ManagementClient({ tokenProvider: () => token }) });
+    form.querySelector('input').value = ''; form.hidden = true; message.textContent = `${context.context.id} · ${context.identity.subject}`;
   } catch { message.textContent = 'Connexion refusée. Vérifiez le token configuré au démarrage.'; }
   finally { form.querySelector('button').disabled = false; }
 });

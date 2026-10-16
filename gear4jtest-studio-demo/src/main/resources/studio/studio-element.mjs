@@ -11,10 +11,10 @@ function field(label, value, onInput, { multiline = false, disabled = false, cla
 /** Public reusable component. configure({client}), studio:revision and studio:run are the integration surface. */
 export class Gear4jStudio extends HTMLElement {
   constructor() { super(); this.attachShadow({ mode: 'open' }); this.status = ''; this.xmlSource = ''; this.testInput = '  electric  '; }
-  async configure({ client }) {
+  async configure({ client, revision = null }) {
     const [context, catalog] = await Promise.all([client.context(), client.catalog()]);
     this.client = client; this.context = context; this.catalog = catalog; this.definition = structuredClone(context.sample);
-    this.revision = null; this.dirty = true; this.report = null; this.submission = null; this.pendingTest = null; this.xmlSource = ''; this.status = 'Catalogue de l’application connecté.'; this.error = false; this.render(); return context;
+    this.revision = null; this.dirty = true; this.report = null; this.submission = null; this.pendingTest = null; this.xmlSource = ''; this.status = 'Catalogue de l’application connecté.'; this.error = false; if (revision) this.acceptRevision(revision); this.render(); return context;
   }
   allowed(action) { return this.context.actions.includes(action) && !this.busy; }
   touch() { this.dirty = true; this.report = null; this.xmlSource = ''; this.error = false; this.status = 'Modifications locales — enregistrez une révision avant de tester.'; this.updateToolbar();
@@ -30,12 +30,13 @@ export class Gear4jStudio extends HTMLElement {
   async perform(action) {
     if (this.busy) return; this.busy = true; this.error = false; this.status = 'Opération en cours…'; this.render();
     try { await action(); } catch (error) {
-      this.error = true; this.status = ({ CONFLICT: 'Conflit : rechargez le draft avant de sauvegarder.', ACTION_DENIED: 'Action ou configuration non autorisée.', UNSUPPORTED_FORMAT: 'XML hors du sous-ensemble P0 : import refusé sans modification.', NOT_FOUND: 'Élément introuvable ou inaccessible.', CAPACITY_EXCEEDED: 'Capacité P0 atteinte ou runtime occupé.' })[error.code] || 'L’opération n’a pas pu être confirmée. Consultez son état avant de relancer un test.';
+      this.error = true; this.status = ({ CONFLICT: 'Conflit : rechargez le draft avant de sauvegarder.', ACTION_DENIED: 'Action ou configuration non autorisée.', FORBIDDEN: 'Vos droits ne permettent pas cette action. Rechargez les droits du draft.', UNAUTHENTICATED: 'La session n’est plus authentifiée.', STORAGE_UNAVAILABLE: 'Le stockage est indisponible. Rechargez avant de réessayer.', UNSUPPORTED_FORMAT: 'Ce XML contient une construction non prise en charge.', NOT_FOUND: 'Élément introuvable ou inaccessible.', CAPACITY_EXCEEDED: 'Capacité de test atteinte ou service occupé.' })[error.code] || 'L’opération n’a pas pu être confirmée. Consultez son état avant de relancer un test.';
     } finally { this.busy = false; this.render(); }
   }
   acceptRevision(revision) {
+    if (revision.actions) this.context.actions = [...revision.actions, ...(this.context.actions.includes('IMPORT') ? ['IMPORT'] : [])];
     this.revision = revision; this.definition = structuredClone(revision.definition); this.dirty = false; this.report = null; this.xmlSource = '';
-    this.status = `Révision ${revision.number} enregistrée (mémoire du serveur).`;
+    this.status = `Révision ${revision.number} enregistrée${this.context.persistent ? '' : ' (mémoire du serveur)'}.`;
     this.dispatchEvent(new CustomEvent('studio:revision', { detail: { draftId: revision.draftId, revisionId: revision.revisionId, number: revision.number }, bubbles: true, composed: true }));
   }
   acceptSubmission(value) {
@@ -49,11 +50,11 @@ export class Gear4jStudio extends HTMLElement {
     const revisionLabel = el('small'); revisionLabel.dataset.revision = ''; title.append(revisionLabel);
     const actions = el('div', undefined, 'actions');
     actions.append(button('Valider', () => this.perform(async () => { this.report = await this.client.validate(this.definition); this.status = this.report.valid ? 'Définition valide pour ce catalogue.' : 'La validation a détecté des problèmes.'; }), !this.allowed('VALIDATE')),
-      button('Enregistrer le draft', () => this.perform(async () => this.acceptRevision(this.revision ? await this.client.save(this.revision.draftId, this.revision.number, this.definition) : await this.client.create(this.definition))), !this.allowed('EDIT'), 'primary'));
+      button('Enregistrer le draft', () => this.perform(async () => this.acceptRevision(this.revision ? await this.client.save(this.revision.draftId, this.revision.draftVersion ?? this.revision.number, this.definition) : await this.client.create(this.definition))), !this.allowed('EDIT'), 'primary'));
     toolbar.append(title, actions); root.append(toolbar, el('div', this.status, `status${this.error ? ' error' : ''}`)); root.querySelector('.status').setAttribute('role', 'status');
     const grid = el('div', undefined, 'grid'); grid.append(this.catalogPanel(), this.chainPanel(), this.testPanel()); root.append(grid);
     const lower = el('div', undefined, 'lower'); lower.append(this.validationPanel(), this.xmlPanel()); root.append(lower);
-    root.append(el('p', 'P0 · Stockage temporaire en mémoire · Séquences et conditions GEL · Contrats String · Les tests exécutent réellement les opérations autorisées.', 'notice'));
+    root.append(el('p', this.context.persistent ? 'Draft durable · Séquences et conditions GEL · Contrats String · Les tests exécutent réellement les opérations autorisées.' : 'P0 · Stockage temporaire en mémoire · Séquences et conditions GEL · Contrats String · Les tests exécutent réellement les opérations autorisées.', 'notice'));
     this.updateToolbar();
   }
   panel(title, badge, className = '') { const panel = el('section', undefined, `panel ${className}`); const header = el('div', undefined, 'heading'); header.append(el('h2', title)); if (badge) header.append(el('span', badge, 'tag')); panel.append(header); return panel; }
@@ -88,7 +89,7 @@ export class Gear4jStudio extends HTMLElement {
     const resume = el('details'); resume.className = 'pad'; resume.append(el('summary', 'Identité et reprise d’un draft'));
     const body = el('div', undefined, 'pad'); if (this.revision) body.append(el('code', this.revision.draftId));
     body.append(field('Identifiant du draft à charger', this.resumeId || '', value => this.resumeId = value), button('Charger le draft', () => this.perform(async () => this.acceptRevision(await this.client.draft(this.resumeId))), this.busy));
-    resume.append(body); panel.append(resume); return panel;
+    resume.append(body); if (!this.context.persistent) panel.append(resume); return panel;
   }
   operationCard(node) {
     const descriptor = this.catalog.find(d => d.id === node.operationId); const card = el('article', undefined, 'node'); const top = el('div', undefined, 'node-top'); const title = el('div', undefined, 'title'); title.append(el('h3', descriptor?.name || node.operationId), el('code', node.id)); top.append(title); card.append(top);
@@ -140,7 +141,7 @@ export class Gear4jStudio extends HTMLElement {
   }
   xmlPanel() {
     const panel = this.panel('Vue XML', 'Adaptateur'); const body = el('div', undefined, 'pad'); const actions = el('div', undefined, 'actions');
-    actions.append(button('Générer le XML', () => this.perform(async () => { this.xmlSource = (await this.client.exportXml(this.definition)).source; this.status = 'XML canonique généré.'; }), this.busy), button('Importer en nouveau draft', () => this.perform(async () => this.acceptRevision(await this.client.importXml(this.xmlSource))), !this.allowed('EDIT')));
+    actions.append(button('Générer le XML', () => this.perform(async () => { this.xmlSource = (await this.client.exportXml(this.definition)).source; this.status = 'XML canonique généré.'; }), this.busy), button('Importer en nouveau draft', () => this.perform(async () => this.acceptRevision(await this.client.importXml(this.xmlSource))), !this.allowed(this.context.persistent ? 'IMPORT' : 'EDIT')));
     body.append(actions, field('Définition XML', this.xmlSource, value => this.xmlSource = value, { multiline: true, disabled: this.busy, className: 'xml' }), el('small', 'Normalisation sémantique : commentaires et mise en forme non conservés. Les constructions non prises en charge sont refusées.')); panel.append(body); return panel;
   }
 }

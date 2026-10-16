@@ -12,16 +12,26 @@ const assert = require('node:assert/strict');
     await page.goto(`http://127.0.0.1:${port}${path}`);
     await page.getByLabel('Token d’accès local').fill('synthetic-editor-token-0123456789');
     await page.getByRole('button',{name:'Ouvrir le Studio'}).click();
+    await page.getByRole('heading',{name:'Espace de travail',exact:true}).waitFor();
+    for (const [kind, title] of [['domain','un domaine'],['chain','une chaîne'],['draft','un draft']]) {
+     const summary = page.locator('summary').filter({hasText:new RegExp(`^Créer ${title}$`)});
+     await summary.click(); const form = summary.locator('..').locator('form');
+     if(kind !== 'draft') await form.getByLabel('Clé (minuscules et tirets)',{exact:true}).fill(`sample-${Date.now()}`);
+     await form.getByLabel('Nom',{exact:true}).fill(`Exemple ${kind}`);
+     await form.getByRole('button',{name:`Créer ${title}`,exact:true}).click();
+     if(kind === 'domain') await page.locator('summary').filter({hasText:'Créer une chaîne'}).waitFor();
+     if(kind === 'chain') await page.locator('summary').filter({hasText:'Créer un draft'}).waitFor();
+    }
     await page.getByRole('heading',{name:'Composer une chaîne'}).waitFor();
     await page.getByRole('button',{name:'Valider',exact:true}).click();
     await page.getByText('Aucune incohérence détectée pour ce catalogue.').waitFor();
     await page.getByRole('button',{name:'Enregistrer le draft'}).click();
-    await page.getByText('Révision 1 · enregistrée').waitFor();
+    await page.getByText('Révision 2 · enregistrée').waitFor();
     await page.getByRole('button',{name:'Exécuter le test'}).click();
     await page.getByText('SUCCEEDED',{exact:true}).waitFor();
     assert.equal(await page.locator('.capture pre').last().innerText(),'ELECTRIC');
     await page.getByRole('button',{name:'Générer le XML'}).click();
-    await page.waitForFunction(()=>document.querySelector('gear4j-studio').shadowRoot.querySelector('textarea.xml')?.value.includes('<assemblyLine'));
+    await page.waitForFunction(()=>document.querySelector('gear4j-workspace').shadowRoot.querySelector('gear4j-studio').shadowRoot.querySelector('textarea.xml')?.value.includes('<assemblyLine'));
     assert.match(await page.getByLabel('Définition XML').inputValue(),/text.uppercase/);
     if(path==='/embedded') await page.getByText('Portail hôte : test COMPLETED.').waitFor();
     await page.setViewportSize({width:390,height:844});

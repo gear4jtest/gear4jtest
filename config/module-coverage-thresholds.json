@@ -61,6 +61,14 @@
     {
       "projectPath": ":gear4jtest-studio-spring-demo",
       "minimumLineRatio": 0.4
+    },
+    {
+      "projectPath": ":gear4jtest-studio-json",
+      "minimumLineRatio": 0.7
+    },
+    {
+      "projectPath": ":gear4jtest-studio-jdbc",
+      "minimumLineRatio": 0.7
     }
   ]
 }

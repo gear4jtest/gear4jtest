@@ -1,10 +1,13 @@
 package io.github.gear4jtest.studio.springdemo;
 
 import java.io.IOException;
+import javax.sql.DataSource;
 
+import io.github.gear4jtest.studio.demo.DemoDatabase;
 import io.github.gear4jtest.studio.demo.DemoWiring;
+import io.github.gear4jtest.studio.demo.RequestActorContext;
 import io.github.gear4jtest.studio.demo.StudioHttpServer;
-import io.github.gear4jtest.studio.service.InMemoryStudioService;
+import io.github.gear4jtest.studio.management.StudioManagementService;
 import io.github.gear4jtest.studio.spi.DataCapturePolicy;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -20,7 +23,8 @@ public final class SpringStudioApplication implements AutoCloseable {
     }
 
     /** Starts a local host; port zero selects an available ephemeral port. */
-    public static SpringStudioApplication start(int port,
+    public static SpringStudioApplication start(DataSource dataSource,
+                                                int port,
                                                 String editorToken,
                                                 String viewerToken,
                                                 DataCapturePolicy capturePolicy)
@@ -30,9 +34,11 @@ public final class SpringStudioApplication implements AutoCloseable {
         boolean started = false;
         try {
             context.registerBean(DataCapturePolicy.class, () -> capturePolicy);
+            context.registerBean(DataSource.class, () -> dataSource, bean -> bean.setDestroyMethodName(""));
             context.register(StudioSpringConfiguration.class);
             context.refresh();
-            server = new StudioHttpServer(context.getBean(InMemoryStudioService.class), port, editorToken,
+            server = new StudioHttpServer(context.getBean(StudioManagementService.class),
+                    context.getBean(RequestActorContext.class), port, editorToken,
                     viewerToken);
             var application = new SpringStudioApplication(context, server);
             server.start();
@@ -64,11 +70,12 @@ public final class SpringStudioApplication implements AutoCloseable {
     }
 
     public static void main(String[] args) throws IOException {
-        var application = start(args.length == 0 ? 8788 : Integer.parseInt(args[0]),
+        var application = start(DemoDatabase.fromEnvironment("spring"),
+                                args.length == 0 ? 8788 : Integer.parseInt(args[0]),
                                 System.getenv("GEAR4J_STUDIO_TOKEN"), System.getenv("GEAR4J_STUDIO_VIEWER_TOKEN"),
                                 DemoWiring.capturePolicy(System.getenv("GEAR4J_STUDIO_CAPTURE")));
         Runtime.getRuntime().addShutdownHook(new Thread(application::close));
-        LoggerFactory.getLogger(SpringStudioApplication.class).info("Gear4J Studio P0 (Spring): http://127.0.0.1:{}",
+        LoggerFactory.getLogger(SpringStudioApplication.class).info("Gear4J Studio P1 (Spring): http://127.0.0.1:{}",
                                                                     application.port());
     }
 }

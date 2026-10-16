@@ -1,7 +1,10 @@
 ext.moduleName = 'io.github.gear4jtest.studio.demo'
-description = 'Gear4J Studio P0 studio-demo (experimental).'
+description = 'Gear4J Studio P1 studio-demo (experimental).'
 dependencies {
     implementation project(':gear4jtest-studio-runtime')
+    implementation project(':gear4jtest-studio-json')
+    implementation project(':gear4jtest-studio-jdbc')
+    implementation libs.h2
     implementation libs.jackson
     implementation libs.jackson.datatype.jsr310
     implementation libs.slf4j

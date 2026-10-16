@@ -1,0 +1,11 @@
+ext.moduleName = 'io.github.gear4jtest.studio.jdbc'
+description = 'Gear4J Studio jdbc adapter (experimental).'
+dependencies {
+    api project(':gear4jtest-studio')
+    api project(':gear4jtest-jdbc')
+    implementation project(':gear4jtest-studio-json')
+    testImplementation libs.h2
+    integrationTestImplementation libs.testcontainers.junit.jupiter
+    integrationTestImplementation libs.testcontainers.postgresql
+    integrationTestImplementation libs.postgresql
+}

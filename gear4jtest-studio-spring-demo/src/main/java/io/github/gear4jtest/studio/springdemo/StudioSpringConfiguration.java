@@ -1,16 +1,20 @@
 package io.github.gear4jtest.studio.springdemo;
 
+import javax.sql.DataSource;
+
 import io.github.gear4jtest.core.api.AssemblyLineExecutor;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.spring.Gear4jSpringConfiguration;
+import io.github.gear4jtest.studio.demo.DemoDatabase;
 import io.github.gear4jtest.studio.demo.DemoWiring;
 import io.github.gear4jtest.studio.demo.PrefixOperation;
 import io.github.gear4jtest.studio.demo.ProductionOnlyOperation;
+import io.github.gear4jtest.studio.demo.RequestActorContext;
 import io.github.gear4jtest.studio.demo.ResourceSuffixOperation;
 import io.github.gear4jtest.studio.demo.TrimOperation;
 import io.github.gear4jtest.studio.demo.UppercaseOperation;
+import io.github.gear4jtest.studio.management.StudioManagementService;
 import io.github.gear4jtest.studio.runtime.LocalGear4jRuntime;
-import io.github.gear4jtest.studio.service.InMemoryStudioService;
 import io.github.gear4jtest.studio.spi.DataCapturePolicy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,8 +32,15 @@ public class StudioSpringConfiguration {
     }
 
     @Bean
-    InMemoryStudioService studioService(LocalGear4jRuntime runtime) {
-        return DemoWiring.service(runtime);
+    StudioManagementService studioService(LocalGear4jRuntime runtime,
+                                          DataSource dataSource,
+                                          RequestActorContext actors) {
+        return DemoDatabase.service(dataSource, runtime, actors);
+    }
+
+    @Bean
+    RequestActorContext studioActors() {
+        return new RequestActorContext();
     }
 
     @Bean

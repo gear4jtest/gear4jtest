@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gear4jtest-external-api/gear4jtest.gear4jtest-external-api.main.iml" filepath="$PROJECT_DIR$/.idea/modules/gear4jtest-external-api/gear4jtest.gear4jtest-external-api.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gear4jtest-gradle-xml2java/gear4jtest.gear4jtest-gradle-xml2java.main.iml" filepath="$PROJECT_DIR$/.idea/modules/gear4jtest-gradle-xml2java/gear4jtest.gear4jtest-gradle-xml2java.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gear4jtest-gradle-xml2java/gear4jtest.gear4jtest-gradle-xml2java.test.iml" filepath="$PROJECT_DIR$/.idea/modules/gear4jtest-gradle-xml2java/gear4jtest.gear4jtest-gradle-xml2java.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gear4jtest-spring-boot-starter/gear4jtest.gear4jtest-spring-boot-starter.main.iml" filepath="$PROJECT_DIR$/.idea/modules/gear4jtest-spring-boot-starter/gear4jtest.gear4jtest-spring-boot-starter.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gear4jtest-spring/gear4jtest.gear4jtest-spring.main.iml" filepath="$PROJECT_DIR$/.idea/modules/gear4jtest-spring/gear4jtest.gear4jtest-spring.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gear4jtest-xml/gear4jtest.gear4jtest-xml.main.iml" filepath="$PROJECT_DIR$/.idea/modules/gear4jtest-xml/gear4jtest.gear4jtest-xml.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gear4jtest-xml/gear4jtest.gear4jtest-xml.test.iml" filepath="$PROJECT_DIR$/.idea/modules/gear4jtest-xml/gear4jtest.gear4jtest-xml.test.iml" />
+    </modules>
+  </component>
+</project>

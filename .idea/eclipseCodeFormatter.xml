@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="EclipseCodeFormatterProjectSettings">
+    <option name="projectSpecificProfile">
+      <ProjectSpecificProfile>
+        <option name="formatOtherFileTypesWithIntelliJ" value="false" />
+        <option name="formatter" value="ECLIPSE" />
+        <option name="importOrder" value="java|javax;" />
+        <option name="importOrderConfigFilePath" value="$PROJECT_DIR$/config/ide/eclipse/gear4j.importorder" />
+        <option name="importOrderFromFile" value="true" />
+        <option name="pathToConfigFileJava" value="$PROJECT_DIR$/config/formatter/eclipse-java-formatter.xml" />
+        <option name="selectedJavaProfile" value="Gear4J" />
+      </ProjectSpecificProfile>
+    </option>
+  </component>
+</project>

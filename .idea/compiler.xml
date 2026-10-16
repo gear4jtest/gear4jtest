@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.springframework.boot/spring-boot-configuration-processor/3.5.16/fa1259e353a03c0e70c7b8017fbd05fbc738296f/spring-boot-configuration-processor-3.5.16.jar" />
+        </processorPath>
+        <module name="gear4jtest.gear4jtest-spring-boot-starter.main" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel target="17" />
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="gear4jtest.gear4jtest-core" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-core.integrationTest" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-core.jmh" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-core.main" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-core.test" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-experimental-cache" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-experimental-cache.integrationTest" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-experimental-cache.jmh" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-experimental-cache.main" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-experimental-cache.test" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-external-api" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-external-api.integrationTest" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-external-api.jmh" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-external-api.main" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-external-api.test" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-external-jdbc" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-external-jdbc.integrationTest" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-external-jdbc.main" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-external-jdbc.test" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-gradle-xml2java" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-gradle-xml2java.compatibilityTest" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-gradle-xml2java.integrationTest" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-gradle-xml2java.main" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-gradle-xml2java.test" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-jackson" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-jackson.integrationTest" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-jackson.jmh" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-jackson.main" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-jackson.test" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-jdbc" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-jdbc.integrationTest" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-jdbc.jmh" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-jdbc.main" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-jdbc.test" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-micrometer" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-micrometer.integrationTest" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-micrometer.jmh" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-micrometer.main" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-micrometer.test" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-spring" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-spring-boot-starter" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-spring-boot-starter.integrationTest" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-spring-boot-starter.jmh" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-spring-boot-starter.main" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-spring-boot-starter.test" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-spring.integrationTest" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-spring.jmh" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-spring.main" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-spring.test" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-xml" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-xml.integrationTest" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-xml.jmh" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-xml.main" options="-Xlint:unchecked -parameters" />
+      <module name="gear4jtest.gear4jtest-xml.test" options="-Xlint:unchecked -parameters" />
+    </option>
+  </component>
+</project>

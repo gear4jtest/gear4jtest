@@ -475,7 +475,8 @@ tasks.register('verifyDatabaseTestDependencyScope') {
     description = 'Prevents database drivers and Testcontainers dependencies from leaking into unrelated modules.'
 
     doLast {
-        def allowedProjects = [project(':gear4jtest-jdbc'), project(':gear4jtest-external-jdbc')] as Set
+        def allowedProjects = [project(':gear4jtest-jdbc'), project(':gear4jtest-external-jdbc'),
+                               project(':gear4jtest-studio-jdbc')] as Set
         def springBootStarter = project(':gear4jtest-spring-boot-starter')
         def databaseGroups = [
             'org.testcontainers',
@@ -495,7 +496,15 @@ tasks.register('verifyDatabaseTestDependencyScope') {
                             && configuration.name == 'testImplementation'
                             && dependency.group == 'com.h2database'
                             && dependency.name == 'h2'
-                    isDatabaseDependency && !isSpringTransactionTestDependency
+                    // P1 management acceptance tests use H2 only in test scope. The non-published
+                    // Java demo also owns a local H2 DataSource; no driver enters the neutral API.
+                    def isStudioH2Dependency = dependency.group == 'com.h2database'
+                            && dependency.name == 'h2'
+                            && ((candidate.name in ['gear4jtest-studio', 'gear4jtest-studio-spring-demo']
+                                    && configuration.name == 'testImplementation')
+                                || (candidate.name == 'gear4jtest-studio-demo'
+                                    && configuration.name == 'implementation'))
+                    isDatabaseDependency && !isSpringTransactionTestDependency && !isStudioH2Dependency
                 }.each { dependency ->
                     def coordinate = [dependency.group, dependency.name, dependency.version].join(':')
                     violations << "${candidate.path}:${configuration.name} -> ${coordinate}"

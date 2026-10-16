@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <compositeConfiguration>
+          <compositeBuild compositeDefinitionSource="SCRIPT">
+            <builds>
+              <build path="$PROJECT_DIR$/build-logic" name="build-logic">
+                <projects>
+                  <project path="$PROJECT_DIR$/build-logic" />
+                </projects>
+              </build>
+              <build path="$PROJECT_DIR$/release-tools" name="gear4jtest-release-tools">
+                <projects>
+                  <project path="$PROJECT_DIR$/release-tools" />
+                </projects>
+              </build>
+            </builds>
+          </compositeBuild>
+        </compositeConfiguration>
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="gradleJvm" value="17" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/build-logic" />
+            <option value="$PROJECT_DIR$/gear4jtest-core" />
+            <option value="$PROJECT_DIR$/gear4jtest-experimental-cache" />
+            <option value="$PROJECT_DIR$/gear4jtest-external-api" />
+            <option value="$PROJECT_DIR$/gear4jtest-external-jdbc" />
+            <option value="$PROJECT_DIR$/gear4jtest-gradle-xml2java" />
+            <option value="$PROJECT_DIR$/gear4jtest-jackson" />
+            <option value="$PROJECT_DIR$/gear4jtest-jdbc" />
+            <option value="$PROJECT_DIR$/gear4jtest-micrometer" />
+            <option value="$PROJECT_DIR$/gear4jtest-spring" />
+            <option value="$PROJECT_DIR$/gear4jtest-spring-boot-starter" />
+            <option value="$PROJECT_DIR$/gear4jtest-xml" />
+            <option value="$PROJECT_DIR$/release-tools" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+    </option>
+  </component>
+</project>

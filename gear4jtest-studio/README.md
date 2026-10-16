@@ -1,5 +1,5 @@
 # gear4jtest-studio
 
-Contrats de management neutres et service en mémoire.
+Modèle déclaratif, contrats et service de management indépendants des frameworks.
 
-Prototype expérimental. Voir le [guide P0](../docs/studio/p0.md) et le [bilan de vérification](../docs/studio/verification.md). Les drafts et reçus disparaissent au redémarrage.
+Module expérimental. Voir le [guide P1](../docs/studio/p1.md) et le [bilan de vérification](../docs/studio/verification-p1.md). Les hôtes P1 conservent domaines, chaînes, drafts, révisions, ACL et audit après redémarrage ; les reçus de tests restent temporaires.
