@@ -1,6 +1,14 @@
 import { StudioTransport } from './studio-client.mjs';
 /** Public management client. Identities/groups are never accepted as request options. */
 export class ManagementClient extends StudioTransport {
+  versions(chainId, after) { return this.request(`/chains/${encodeURIComponent(chainId)}/versions?limit=25${after ? `&after=${encodeURIComponent(after)}` : ''}`); }
+  version(id) { return this.request(`/versions/${encodeURIComponent(id)}`); }
+  createVersion(id, revision, label) { return this.request(`/drafts/${encodeURIComponent(id)}/versions`, 'POST', { revision, label }); }
+  publishTest(id) { return this.request(`/versions/${encodeURIComponent(id)}/publish`, 'POST', {}); }
+  promoteRun(id) { return this.request(`/versions/${encodeURIComponent(id)}/promote`, 'POST', {}); }
+  refreshVersion(id) { return this.request(`/versions/${encodeURIComponent(id)}/refresh`, 'POST', {}); }
+  compareVersions(id, otherVersionId) { return this.request(`/versions/${encodeURIComponent(id)}/compare`, 'POST', { otherVersionId }); }
+  testVersion(id, request) { return this.request(`/versions/${encodeURIComponent(id)}/tests`, 'POST', request); }
   context() { return this.request('/context'); }
   catalog() { return this.request('/catalog'); }
   draft(id) { return this.request(`/drafts/${encodeURIComponent(id)}`); }
@@ -14,6 +22,7 @@ export class ManagementClient extends StudioTransport {
   createChain(domainId, key, name, description = '', runtimeAssemblyLineId = `chain_${crypto.randomUUID().replaceAll('-', '')}`) { return this.request('/chains', 'POST', { domainId, key, name, description, runtimeAssemblyLineId }); }
   createDraft(chainId, name, definition) { return this.request('/drafts', 'POST', { chainId, name, definition }); }
   save(id, expectedVersion, definition) { return this.request(`/drafts/${encodeURIComponent(id)}`, 'PUT', { expectedVersion, definition }); }
+  saveSource(id, expectedVersion, source) { return this.request(`/drafts/${encodeURIComponent(id)}/source`, 'PUT', { expectedVersion, mediaType: 'application/xml', source }); }
   metadata(id, expectedVersion, name, description = '') { return this.request(`/resources/${encodeURIComponent(id)}`, 'PUT', { expectedVersion, name, description }); }
   access(id) { return this.request(`/resources/${encodeURIComponent(id)}/access`); }
   setAccess(id, expectedVersion, policy) { return this.request(`/resources/${encodeURIComponent(id)}/access`, 'PUT', { expectedVersion, policy }); }
@@ -46,6 +55,7 @@ export class ScopedAuthoringClient {
   catalog() { return this.client.catalog(); }
   async draft(id) { return this.adopt(await this.client.draft(id)); }
   async save(id, expectedVersion, definition) { return this.adopt(await this.client.save(id, expectedVersion, definition)); }
+  async saveSource(id, expectedVersion, source) { return this.adopt(await this.client.saveSource(id, expectedVersion, source)); }
   async create(definition) { return this.adopt(await this.client.createDraft(this.state.draft.chainId, 'Nouveau draft', definition)); }
   validate(definition) { return this.client.validate(definition, this.state.draft.id); }
   diagnose(definition) { return this.client.diagnose(definition, this.state.draft.id); }

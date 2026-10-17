@@ -68,7 +68,7 @@ public final class DemoWiring {
         return RegisteredOperation.inferred(id, name, description,
                                             testAllowed ? "Calcul local sur données synthétiques" : "Interdite en TEST",
                                             type,
-                                            testAllowed, parameters, getters);
+                                            testAllowed, true, parameters, getters);
     }
 
     public static ResourceFactory plainResources() {
@@ -98,7 +98,7 @@ public final class DemoWiring {
                                              AssemblyLineExecutor executor,
                                              ResourceFactory resources,
                                              DataCapturePolicy capture) {
-        return new LocalGear4jRuntime("studio-local." + host, "studio-p2-20261002", catalog(), executor, resources,
+        return new LocalGear4jRuntime("studio-local." + host, "studio-p3-20261003", catalog(), executor, resources,
                 capture, Duration.ofSeconds(10));
     }
 

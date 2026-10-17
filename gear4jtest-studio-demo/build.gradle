@@ -1,9 +1,11 @@
 ext.moduleName = 'io.github.gear4jtest.studio.demo'
-description = 'Gear4J Studio P2 studio-demo (experimental).'
+description = 'Gear4J Studio P3 studio-demo (experimental).'
 dependencies {
     implementation project(':gear4jtest-studio-runtime')
     implementation project(':gear4jtest-studio-json')
     implementation project(':gear4jtest-studio-jdbc')
+    implementation project(':gear4jtest-external-jdbc')
+    implementation project(':gear4jtest-external-api')
     implementation libs.h2
     implementation libs.jackson
     implementation libs.jackson.datatype.jsr310
@@ -42,9 +44,6 @@ tasks.named('check') {
     dependsOn 'studioComponentTest'
 }
 
-// Use the published Studio Web sources for shared ESM modules.
-// Demo-specific HTML, bootstrap and CSS stay in src/main/resources/studio.
-// Do not duplicate the shared .mjs files there: Gradle must fail on collisions.
 tasks.named('processResources') {
     from(rootProject.file('gear4jtest-studio-web/src')) { into 'studio' }
 }

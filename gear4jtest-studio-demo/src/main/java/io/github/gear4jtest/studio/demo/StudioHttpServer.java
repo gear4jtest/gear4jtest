@@ -180,7 +180,7 @@ public final class StudioHttpServer implements AutoCloseable {
                                            "/studio-client.mjs", "studio-client.mjs", "/studio-element.mjs",
                                            "studio-element.mjs", "/bootstrap.mjs", "bootstrap.mjs",
                                            "/management-client.mjs", "management-client.mjs", "/studio-workspace.mjs",
-                                           "studio-workspace.mjs");
+                                           "studio-workspace.mjs", "/studio-versions.mjs", "studio-versions.mjs");
         String file = files.get(exchange.getRequestURI().getPath());
         if (!exchange.getRequestMethod().equals("GET") || file == null) {
             json(exchange, 404, Map.of("code", "NOT_FOUND"));

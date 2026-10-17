@@ -86,7 +86,8 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
         checks = new DefinitionChecks(catalog);
         xml = new StudioXmlAdapter(catalog);
         context = new RuntimeContext(id, applicationBuild, catalog.fingerprint(),
-                Set.of("DRAFT", "VALIDATE", "CONTROLLED_TEST", "CONTROLLED_TEST_STRING", "XML_SUBSET"));
+                Set.of("DRAFT", "VALIDATE", "CONTROLLED_TEST", "CONTROLLED_TEST_STRING", "CONTROLLED_TEST_VERSION",
+                       "XML_SUBSET"));
     }
 
     @Override
@@ -102,6 +103,12 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
     @Override
     public void assertSafeToStore(ChainDefinition definition) {
         checks.safeToStore(definition);
+    }
+
+    @Override
+    public void assertSafeSourceToStore(DraftRevision.Source source) {
+        format(source.mediaType());
+        new XmlSourceStoragePolicy(catalog).check(source.text());
     }
 
     @Override
@@ -144,7 +151,10 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
     }
 
     private Compiled compile(ChainDefinition definition) {
-        String source = xml.write(definition);
+        return compileSource(xml.write(definition));
+    }
+
+    private Compiled compileSource(String source) {
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
         new AssemblyLineValidator(StudioXmlAdapter.MAX_BYTES).validate(bytes);
         var parsed = new XmlAssemblyLineParser(StudioXmlAdapter.MAX_BYTES).parse(new ByteArrayInputStream(bytes));
@@ -159,6 +169,32 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
 
     @Override
     public ControlledRun execute(DraftRevision revision, String input, UUID requestId, String actor) {
+        return executeSource(revision, input, requestId, actor, null);
+    }
+
+    @Override
+    public ControlledRun executeVersion(io.github.gear4jtest.studio.model.StudioVersion version,
+                                        String input,
+                                        UUID requestId,
+                                        String actor) {
+        format(version.mediaType());
+        if (!version.runtimeContextId().equals(context.id())
+                || !OperationCatalog.hash(version.source()).equals(version.artifactHash()))
+            throw new StudioProblem(StudioProblem.Code.INVALID_DEFINITION);
+        var definition = xml.read(version.source());
+        if (!definition.id().equals(version.runtimeAssemblyLineId()))
+            throw new StudioProblem(StudioProblem.Code.INVALID_DEFINITION);
+        var revision = new DraftRevision(version.draftId(), version.revisionId(), version.revision(),
+                version.author(), version.createdAt(), DraftRevision.Origin.STUDIO, definition);
+        return executeSource(revision, input, requestId, actor, version.source()).withVersion(version);
+    }
+
+    private ControlledRun executeSource(DraftRevision revision,
+                                        String input,
+                                        UUID requestId,
+                                        String actor,
+                                        String source) {
+        revision.requireDefinition();
         if (!revision.definition().inputType().equals("java.lang.String")
                 || !revision.definition().outputType().equals("java.lang.String"))
             throw new StudioProblem(StudioProblem.Code.UNSUPPORTED_CONTRACT);
@@ -169,7 +205,7 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
             Compiled compiled;
             AssemblyLine<String, String> line;
             try {
-                compiled = compile(revision.definition());
+                compiled = source == null ? compile(revision.definition()) : compileSource(source);
                 line = instantiate(compiled);
             } catch (Exception e) {
                 throw new StudioProblem(StudioProblem.Code.INVALID_DEFINITION);

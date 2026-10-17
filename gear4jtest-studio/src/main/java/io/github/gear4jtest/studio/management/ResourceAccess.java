@@ -50,7 +50,8 @@ final class ResourceAccess {
                 || resource instanceof StudioDraft d && (d.abandoned() || chain(tx, d).archived());
         if (frozen)
             result.removeAll(EnumSet.of(Permission.EDIT, Permission.CREATE_CHAIN, Permission.CREATE_DRAFT,
-                                        Permission.TEST, Permission.VALIDATE, Permission.ARCHIVE));
+                                        Permission.TEST, Permission.VALIDATE, Permission.ARCHIVE, Permission.PUBLISH,
+                                        Permission.PROMOTE));
         return Set.copyOf(result);
     }
 

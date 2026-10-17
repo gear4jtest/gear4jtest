@@ -15,6 +15,8 @@ import io.github.gear4jtest.studio.management.StudioDomain;
 import io.github.gear4jtest.studio.management.StudioDraft;
 import io.github.gear4jtest.studio.model.ChainDefinition;
 import io.github.gear4jtest.studio.model.DraftRevision;
+import io.github.gear4jtest.studio.model.StudioPublication;
+import io.github.gear4jtest.studio.model.StudioVersion;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
@@ -33,7 +35,7 @@ class PostgreSqlStudioStoreIT {
     private static final PostgreSQLContainer<?> DATABASE = new PostgreSQLContainer<>("postgres:17-alpine");
 
     @Test
-    void migrationsAtomicWritesAclHistoryAndOptimisticConflictsWorkOnPostgreSql() {
+    void migrationsAtomicWritesAclHistoryAndOptimisticConflictsWorkOnPostgreSql() throws Exception {
         // Given
         var source = new PGSimpleDataSource();
         source.setURL(DATABASE.getJdbcUrl());
@@ -52,6 +54,17 @@ class PostgreSqlStudioStoreIT {
         var revision = new DraftRevision(draft.id(), UUID.randomUUID(), 1, "alice", time, DraftRevision.Origin.STUDIO,
                 new ChainDefinition(1, "sample", "java.lang.String", "java.lang.String", List.of()));
         var grants = List.of(new AccessGrant(AccessGrant.SubjectType.GROUP, "reviewers", Set.of(Permission.READ)));
+        String xml = "<assemblyLine>é\r\n";
+        var raw = new DraftRevision(draft.id(), UUID.randomUUID(), 2, "alice", time, DraftRevision.Origin.STUDIO,
+                DraftRevision.Kind.SOURCE, null, new DraftRevision.Source("application/xml", xml));
+        String hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                .digest(xml.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        var version = new StudioVersion(UUID.randomUUID(), chain.id(), draft.id(), revision.revisionId(), 1,
+                chain.runtimeAssemblyLineId(), "1", "alice", time, "context", "build", "catalog", "application/xml",
+                hash, xml);
+        var publication = new StudioPublication(version.id(), StudioPublication.Mode.TEST,
+                StudioPublication.State.REQUESTED,
+                "alice", time, null, null, null, null);
         // When
         store.write(tx -> {
             tx.insert(domain);
@@ -59,6 +72,9 @@ class PostgreSqlStudioStoreIT {
             tx.insert(chain);
             tx.insert(draft);
             tx.appendRevision(revision);
+            tx.appendRevision(raw);
+            tx.insertVersion(version);
+            tx.savePublication(publication);
             tx.replaceGrants(draft.id(), grants);
             tx.appendAudit(new AuditEvent(0, UUID.randomUUID(), domain.id(), chain.id(), draft.id(), ResourceKind.DRAFT,
                     draft.id(), 1, "alice", AuditEvent.Action.DRAFT_CREATED, time, revision.revisionId(), null, null,
@@ -69,7 +85,9 @@ class PostgreSqlStudioStoreIT {
         // queries.
         new JdbcStudioStore(source).read(tx -> {
             assertThat(tx.resource(draft.id())).isEqualTo(draft);
-            assertThat(tx.revisions(draft.id(), 0, 10)).containsExactly(revision);
+            assertThat(tx.revisions(draft.id(), 0, 10)).containsExactly(revision, raw);
+            assertThat(tx.version(version.id())).isEqualTo(version);
+            assertThat(tx.publication(version.id(), StudioPublication.Mode.TEST)).isEqualTo(publication);
             assertThat(tx.grants(draft.id())).containsExactlyElementsOf(grants);
             assertThat(tx.audit(domain.id(), chain.id(), draft.id(), 0, 10)).hasSize(1);
             assertThat(tx.chains(domain.id(), null, 10)).containsExactly(chain);

@@ -32,7 +32,7 @@ final class ControlledTests {
         }
     }
 
-    synchronized UUID draftId(String actor, UUID requestId) {
+    synchronized UUID resourceId(String actor, UUID requestId) {
         return receipt(actor, requestId).draftId;
     }
 
@@ -53,11 +53,22 @@ final class ControlledTests {
                            String input,
                            StudioRuntime runtime,
                            Runnable admission) {
+        return execute(actor, revision.draftId(), revision.revisionId(), requestId, input,
+                       () -> runtime.execute(revision, input, requestId, actor.subject()), admission);
+    }
+
+    TestSubmission execute(StudioIdentity actor,
+                           UUID resourceId,
+                           UUID contentId,
+                           UUID requestId,
+                           String input,
+                           java.util.function.Supplier<io.github.gear4jtest.studio.model.ControlledRun> execution,
+                           Runnable admission) {
         if (requestId == null || input == null || input.length() > 8192)
             throw new StudioProblem(INVALID_REQUEST);
         Receipt receipt;
         synchronized (this) {
-            byte[] digest = fingerprint(actor.subject(), revision.revisionId(), input);
+            byte[] digest = fingerprint(actor.subject(), contentId, input);
             receipt = receipts.get(requestId);
             if (receipt != null) {
                 if (!actor.subject().equals(receipt.actor) || !MessageDigest.isEqual(digest, receipt.fingerprint))
@@ -66,7 +77,7 @@ final class ControlledTests {
             }
             if (receipts.size() >= 128)
                 throw new StudioProblem(CAPACITY_EXCEEDED);
-            receipt = new Receipt(actor.subject(), revision.draftId(), digest,
+            receipt = new Receipt(actor.subject(), resourceId, digest,
                     new TestSubmission(requestId, TestSubmission.State.RUNNING, null, null));
             receipts.put(requestId, receipt);
         }
@@ -74,7 +85,7 @@ final class ControlledTests {
         try {
             admission.run();
             result = new TestSubmission(requestId, TestSubmission.State.COMPLETED,
-                    runtime.execute(revision, input, requestId, actor.subject()), null);
+                    execution.get(), null);
         } catch (StudioProblem e) {
             result = new TestSubmission(requestId, TestSubmission.State.PREPARATION_FAILED, null,
                     e.code() == UNSUPPORTED_CONTRACT ? "UNSUPPORTED_CONTRACT" : "TEST_NOT_ADMITTED");

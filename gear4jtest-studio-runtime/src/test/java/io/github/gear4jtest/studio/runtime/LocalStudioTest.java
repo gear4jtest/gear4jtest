@@ -38,6 +38,42 @@ class LocalStudioTest {
     }
 
     @Test
+    void rawSourceAdmissionChecksTheWholeTextAndResourceReferencesWithoutRepairingXml() {
+        // Given
+        try (var runtime = runtime(DataCapturePolicy.none())) {
+            var definition = line(op("resource", "text.resource", "resource",
+                                     new ParameterValue(ParameterValue.Kind.RESOURCE_REFERENCE, "demo/suffix")));
+            String xml = runtime.exportDefinition(definition, "application/xml");
+            var broken = new io.github.gear4jtest.studio.model.DraftRevision.Source("application/xml",
+                    xml.replace("</assemblyLine>", ""));
+            // When / Then: syntax and data admission are distinct.
+            assertThatCode(() -> runtime.assertSafeSourceToStore(broken)).doesNotThrowAnyException();
+            assertThatThrownBy(() -> runtime.importDefinition(broken.text(), broken.mediaType()))
+                    .hasMessage("UNSUPPORTED_FORMAT");
+            for (String unsafe : List.of(
+                                         broken.text().replace("demo/suffix", "literal-credential"),
+                                         broken.text().replace("demo/suffix", "literal&#45;credential"),
+                                         "<broken>" + xml.replace("demo/suffix", "literal-credential"),
+                                         xml + "<!-- synthetic-credential -->",
+                                         xml + "<![CDATA[synthetic-credential]]>",
+                                         "<!DOCTYPE assemblyLine [<!ENTITY x SYSTEM 'file:///unused'>]>" + xml,
+                                         xml.replace("demo/suffix", "unterminated").replace("unterminated\"",
+                                                                                            "unterminated"),
+                                         "<assemblyLine unknown=\"synthetic-credential\">")) {
+                assertThatThrownBy(() -> runtime.assertSafeSourceToStore(
+                                                                         new io.github.gear4jtest.studio.model.DraftRevision.Source(
+                                                                                 "application/xml", unsafe)))
+                        .hasMessage("SOURCE_NOT_ADMITTED");
+            }
+            String encodedReference = broken.text().replace("demo/suffix", "demo&#47;suffix");
+            assertThatCode(() -> runtime.assertSafeSourceToStore(
+                                                                 new io.github.gear4jtest.studio.model.DraftRevision.Source(
+                                                                         "application/xml", encodedReference)))
+                    .doesNotThrowAnyException();
+        }
+    }
+
+    @Test
     void catalogDraftValidationAndRealRunKeepExactProvenance() {
         // Given
         try (var runtime = runtime(DataCapturePolicy.allowed())) {

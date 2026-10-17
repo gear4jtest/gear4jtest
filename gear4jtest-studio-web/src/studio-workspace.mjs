@@ -1,3 +1,4 @@
+import './studio-versions.mjs';
 import { comparisonPanel } from './studio-element.mjs';
 import { ScopedAuthoringClient } from './management-client.mjs';
 const css = `table{table-layout:fixed;width:100%;border-collapse:collapse;font-size:12px}td,th{text-align:left;vertical-align:top;padding:7px;border-bottom:1px solid #d9e3df;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}:host{display:block;color:#203f3b;font:14px/1.5 system-ui,sans-serif}*{box-sizing:border-box}button,input,select,textarea{font:inherit}button{cursor:pointer;padding:7px 11px;border:1px solid #c6d8ce;background:white;border-radius:6px;color:#205044}button:hover:enabled{background:#edf6f2}button:disabled{opacity:.45;cursor:default}input,select,textarea{width:100%;padding:7px;border:1px solid #b8ccc4;border-radius:5px}label{display:grid;gap:4px;color:#526d62;font-size:12px}h2,h3,p{margin:0}small{color:#667c77}code{font-size:11px;overflow-wrap:anywhere}.layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;margin:18px 0}.box{background:white;border:1px solid #d9e3df;border-radius:10px;padding:15px;display:grid;gap:12px;align-content:start}.bar{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.list{display:grid;gap:7px}.list button{text-align:left}.list small{display:block}.message{min-height:28px;margin:10px 0}.error{color:#a63728}.forms{display:grid;grid-template-columns:1fr 1fr;gap:9px}.wide{grid-column:1/-1}details{border-top:1px solid #e2eae5;padding-top:10px}summary{cursor:pointer;font-weight:600;margin-bottom:9px}.grants{display:grid;gap:12px}.grant{padding:10px;background:#f5f8f6;display:grid;gap:9px;border:1px solid #d9e3df;border-radius:6px}.checks{display:flex;gap:9px;flex-wrap:wrap}.checks label{display:flex;align-items:center}.checks input{width:auto}.audit{font-size:12px;border-bottom:1px solid #e2eae5;padding:8px 0;overflow-wrap:anywhere}.audit pre{white-space:pre-wrap;font-size:11px}.selected{border-color:#006b60;background:#edf6f2}.intro{display:grid;gap:6px}.muted{color:#667c77}a{color:#006b60}@media(max-width:800px){.layout{grid-template-columns:1fr}.forms{grid-template-columns:1fr}.wide{grid-column:auto}}`;
@@ -9,7 +10,7 @@ const labels = { domains: 'Domaines', chains: 'Chaînes', drafts: 'Drafts' };
 export class Gear4jWorkspace extends HTMLElement {
   constructor() { super(); this.attachShadow({ mode: 'open' }); this.kind = 'domains'; this.items = []; this.message = ''; this.editor = null; this.formValues = new Map(); }
   async configure({ client }) {
-    this.client = client; this.context = await client.context(); this.selected = null; this.editor = null; this.kind = 'domains'; this.parent = null; this.cursor = null; this.formValues.clear();
+    this.client = client; this.context = await client.context(); this.selected = null; this.editor = null; this.kind = 'domains'; this.parent = null; this.cursor = null; this.formValues.clear(); this.versions = null;
     await this.reload(); return this.context;
   }
   async reload(after = null) {
@@ -26,7 +27,7 @@ export class Gear4jWorkspace extends HTMLElement {
   async browse(kind, parent = null) { this.kind = kind; this.parent = parent; await this.reload(); }
   async choose(item, discard = false) {
     if (this.editor?.hasUnsavedChanges && !discard) { this.pending = item; this.message = 'Le draft contient des modifications locales. Enregistrez-les ou confirmez leur abandon pour changer de sélection.'; this.render(); return; }
-    let selected, editor = null;
+    let selected, editor = null, versions = null;
     if (item.kind === 'DRAFT') {
       const state = await this.client.draft(item.id); selected = { resource: state.draft, kind: 'DRAFT', permissions: state.permissions };
       const scoped = new ScopedAuthoringClient(this.client, state, this.context, saved => {
@@ -35,6 +36,19 @@ export class Gear4jWorkspace extends HTMLElement {
       editor = document.createElement('gear4j-studio'); await editor.configure({ client: scoped, revision: scoped.flat(state) });
       this.canFork = editor.context.actions.includes('IMPORT');
     } else selected = await this.client.resource(item.id);
+    if (this.client.versions && this.context.context.capabilities?.includes('PUBLISH_TEST')) {
+      let chain = selected.kind === 'CHAIN' ? selected : null;
+      if (selected.kind === 'DRAFT') { try { chain = await this.client.resource(selected.resource.chainId); } catch { /* Draft access need not grant parent access. */ } }
+      if (chain?.permissions.includes('READ')) {
+        versions = document.createElement('gear4j-versions');
+        await versions.configure({ client: this.client, chainId: chain.resource.id,
+          canFreeze: chain.permissions.includes('PUBLISH'),
+          getDraft: () => editor ? { revision: editor.revision, dirty: editor.hasUnsavedChanges } : null });
+        versions.contextFingerprint = this.context.context.catalogFingerprint;
+        editor?.addEventListener('studio:revision', () => versions.render());
+      }
+    }
+    this.versions = versions;
     this.pending = null; this.accessState = null; this.auditPage = null; this.history = null; this.comparison = null;
     this.selected = selected; this.editor = editor; this.message = ''; this.render();
   }
@@ -46,6 +60,7 @@ export class Gear4jWorkspace extends HTMLElement {
     if (this.pending) { const warning = el('div', undefined, 'bar'); warning.append(btn('Abandonner les modifications locales et ouvrir', () => this.perform(() => this.choose(this.pending, true))), btn('Rester sur le draft', () => { this.pending = null; this.message = ''; this.render(); })); root.append(warning); }
     const layout = el('div', undefined, 'layout'); layout.append(this.navigation(), this.details()); root.append(layout);
     if (this.editor) root.append(this.editor);
+    if (this.versions) root.append(this.versions);
   }
   navigation() {
     const box = el('section', undefined, 'box'); const tabs = el('div', undefined, 'bar');
@@ -130,20 +145,21 @@ export class Gear4jWorkspace extends HTMLElement {
     box.append(btn('Ajouter un bénéficiaire', () => { policy.grants.push({ subjectType: 'USER', subject: '', permissions: ['READ'] }); this.render(); }, this.busy || policy.grants.length >= 64));
     box.append(btn('Enregistrer les accès', () => this.perform(async () => {
       const version = this.accessState.version; const updated = await this.client.setAccess(resource.id, version, structuredClone(policy)); this.selected = updated; this.accessState = null;
-      if (!updated.permissions.includes('READ')) { this.selected = null; this.editor = null; this.message = 'Accès modifiés. Vous ne pouvez plus consulter cette ressource.'; }
+      if (!updated.permissions.includes('READ')) { this.selected = null; this.editor = null; this.versions = null; this.message = 'Accès modifiés. Vous ne pouvez plus consulter cette ressource.'; }
       else { this.accessState = await this.client.access(resource.id).catch(() => null); this.message = 'Accès enregistrés. Les prochaines actions seront réévaluées par le serveur.'; }
       await this.reload(this.cursor);
     }), this.busy)); return box;
   }
   historyPanel() {
     const box = el('div', undefined, 'box'); box.append(el('h3', 'Révisions immuables')); const from = field('Révision de départ', '1'); const to = field('Révision à comparer', String(this.selected.resource.head)); from.input.type = to.input.type = 'number'; from.input.min = to.input.min = '1'; box.append(from.label, to.label, btn('Comparer les révisions', () => this.perform(async () => { this.comparison = await this.client.compare(this.selected.resource.id, Number(from.input.value), Number(to.input.value)); }), this.busy)); if (this.comparison) box.append(comparisonPanel(this.comparison));
-    for (const revision of this.history.items) { const row = el('div', undefined, 'audit'); row.append(el('strong', `Révision ${revision.number}`), el('p', `${revision.author} · ${revision.savedAt}`), el('code', revision.revisionId));
+    for (const revision of this.history.items) { const row = el('div', undefined, 'audit'); row.append(el('strong', `Révision ${revision.number} · ${revision.kind || "STRUCTURED"}`), el('p', `${revision.author} · ${revision.savedAt}`), el('code', revision.revisionId));
       row.append(btn('Repartir de cette révision', () => this.perform(async () => { if (this.editor?.hasUnsavedChanges) { this.message = 'Enregistrez ou rechargez le draft courant avant de créer une variante.'; return; } const state = await this.client.fork(revision.draftId, revision.number, `Reprise révision ${revision.number}`); await this.choose({ id: state.draft.id, kind: 'DRAFT' }); }), this.busy || !this.canFork)); box.append(row); }
     if (this.history.nextCursor) box.append(btn('Révisions suivantes', () => this.perform(async () => { this.history = await this.client.revisions(this.selected.resource.id, this.history.nextCursor); }), this.busy)); return box;
   }
   auditPanel() {
     const box = el('div', undefined, 'box'); box.append(el('h3', 'Audit du périmètre accessible'));
     for (const event of this.auditPage.items) { const row = el('div', undefined, 'audit'); row.append(el('strong', event.action), el('p', `${event.actor} · ${event.occurredAt}`), el('code', `${event.resourceKind} ${event.resourceId} · état ${event.resourceVersion}`));
+      if (event.versionId) row.append(el('code', ` · version ${event.versionId}`));
       if (event.accessAfter) { const details = el('details'); details.append(el('summary', 'Changement des accès'), el('pre', JSON.stringify({ before: event.accessBefore, after: event.accessAfter }, null, 2))); row.append(details); } box.append(row); }
     if (!this.auditPage.items.length) box.append(el('p', 'Aucun événement accessible.'));
     if (this.auditPage.nextCursor) box.append(btn('Événements suivants', () => this.perform(async () => { this.auditPage = await this.client.audit(this.selected.resource.id, this.auditPage.nextCursor); }), this.busy)); return box;

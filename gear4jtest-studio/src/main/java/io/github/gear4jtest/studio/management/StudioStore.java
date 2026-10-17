@@ -5,6 +5,8 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import io.github.gear4jtest.studio.model.DraftRevision;
+import io.github.gear4jtest.studio.model.StudioPublication;
+import io.github.gear4jtest.studio.model.StudioVersion;
 
 /**
  * Trusted persistence boundary. Reads provide a consistent snapshot; writes
@@ -47,6 +49,19 @@ public interface StudioStore {
         List<DraftRevision> revisions(UUID draftId, long after, int limit);
 
         void appendRevision(DraftRevision revision);
+
+        void insertVersion(StudioVersion version);
+
+        StudioVersion version(UUID versionId);
+
+        List<StudioVersion> versions(UUID chainId, String after, int limit);
+
+        StudioPublication publication(UUID versionId, StudioPublication.Mode mode);
+
+        /**
+         * Domain lock required; replaces only the lifecycle result, never the version.
+         */
+        void savePublication(StudioPublication publication);
 
         void appendAudit(AuditEvent event);
 

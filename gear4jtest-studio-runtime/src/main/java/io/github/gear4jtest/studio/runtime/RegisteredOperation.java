@@ -38,7 +38,7 @@ public record RegisteredOperation(OperationDescriptor descriptor,
         descriptor = new OperationDescriptor(descriptor.id(), descriptor.name(), descriptor.description(),
                 descriptor.effects(),
                 evidence(descriptor.input(), signature.input()), evidence(descriptor.output(), signature.output()),
-                descriptor.testAllowed(), descriptor.parameters());
+                descriptor.testAllowed(), descriptor.runAllowed(), descriptor.parameters());
         for (String getter : parameterGetters.values()) {
             try {
                 var method = type.getMethod(getter);
@@ -73,9 +73,21 @@ public record RegisteredOperation(OperationDescriptor descriptor,
                                                boolean testAllowed,
                                                Map<String, OperationDescriptor.Parameter> parameters,
                                                Map<String, String> getters) {
+        return inferred(id, name, description, effects, type, testAllowed, false, parameters, getters);
+    }
+
+    public static RegisteredOperation inferred(String id,
+                                               String name,
+                                               String description,
+                                               String effects,
+                                               Class<? extends Operator<?, ?>> type,
+                                               boolean testAllowed,
+                                               boolean runAllowed,
+                                               Map<String, OperationDescriptor.Parameter> parameters,
+                                               Map<String, String> getters) {
         var signature = OperatorContracts.resolve(type);
         return new RegisteredOperation(new OperationDescriptor(id, name, description, effects,
-                signature.input().contract(), signature.output().contract(), testAllowed, parameters),
+                signature.input().contract(), signature.output().contract(), testAllowed, runAllowed, parameters),
                 type, signature.input().rawType(), signature.output().rawType(), getters);
     }
 

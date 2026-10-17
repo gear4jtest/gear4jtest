@@ -72,6 +72,29 @@ final class ManagementRoutes {
         }
         if (parts.length >= 2) {
             UUID id = UUID.fromString(parts[1]);
+            if (parts[0].equals("chains") && parts.length == 3 && parts[2].equals("versions") && method.equals("GET"))
+                return ok(service.versions(id, after, size));
+            if (parts[0].equals("versions")) {
+                if (parts.length == 2 && method.equals("GET"))
+                    return ok(service.version(id));
+                if (parts.length == 3 && method.equals("POST")) {
+                    if (parts[2].equals("compare")) {
+                        fields(body, Set.of("otherVersionId"));
+                        return ok(service.compareVersions(id, id(body, "otherVersionId")));
+                    }
+                    if (parts[2].equals("tests")) {
+                        fields(body, Set.of("requestId", "input"));
+                        return ok(service.testVersion(id, id(body, "requestId"), text(body, "input")));
+                    }
+                    fields(body, Set.of());
+                    return switch (parts[2]) {
+                        case "publish" -> ok(service.publishTest(id));
+                        case "promote" -> ok(service.promoteRun(id));
+                        case "refresh" -> ok(service.refreshVersion(id));
+                        default -> throw new StudioProblem(StudioProblem.Code.NOT_FOUND);
+                    };
+                }
+            }
             if (parts[0].equals("resources")) {
                 if (parts.length == 2 && method.equals("GET"))
                     return ok(view(service.resource(id)));
@@ -122,6 +145,16 @@ final class ManagementRoutes {
                                                       DefinitionJson.read(body.path("definition")))));
                 }
                 if (parts.length == 3) {
+                    if (method.equals("POST") && parts[2].equals("versions")) {
+                        fields(body, Set.of("revision", "label"));
+                        return created(service.createVersion(id, number(body, "revision"), text(body, "label")));
+                    }
+                    if (method.equals("PUT") && parts[2].equals("source")) {
+                        fields(body, Set.of("expectedVersion", "mediaType", "source"));
+                        return ok(draft(service.saveSource(id, number(body, "expectedVersion"),
+                                                           new DraftRevision.Source(text(body, "mediaType"),
+                                                                   text(body, "source")))));
+                    }
                     if (method.equals("POST") && parts[2].equals("diff")) {
                         fields(body, Set.of("revision", "definition"));
                         return ok(service.compare(id, number(body, "revision"),
@@ -190,10 +223,17 @@ final class ManagementRoutes {
     }
 
     private static Map<String, Object> revision(DraftRevision revision) {
-        return Map.of("draftId", revision.draftId(), "revisionId", revision.revisionId(), "number", revision.number(),
-                      "author", revision.author(),
-                      "savedAt", revision.savedAt(), "origin", revision.origin(), "definition",
-                      DefinitionJson.write(revision.definition()));
+        var result = new java.util.LinkedHashMap<String, Object>();
+        result.put("draftId", revision.draftId());
+        result.put("revisionId", revision.revisionId());
+        result.put("number", revision.number());
+        result.put("author", revision.author());
+        result.put("savedAt", revision.savedAt());
+        result.put("origin", revision.origin());
+        result.put("kind", revision.kind());
+        result.put("definition", revision.definition() == null ? null : DefinitionJson.write(revision.definition()));
+        result.put("source", revision.source());
+        return result;
     }
 
     private static Response ok(Object value) {

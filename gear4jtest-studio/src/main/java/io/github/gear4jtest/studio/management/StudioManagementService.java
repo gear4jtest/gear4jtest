@@ -15,9 +15,12 @@ import io.github.gear4jtest.studio.model.Diagnostic;
 import io.github.gear4jtest.studio.model.DraftRevision;
 import io.github.gear4jtest.studio.model.OperationDescriptor;
 import io.github.gear4jtest.studio.model.RuntimeContext;
+import io.github.gear4jtest.studio.model.StudioPublication;
 import io.github.gear4jtest.studio.model.TestSubmission;
 import io.github.gear4jtest.studio.model.ValidationReport;
+import io.github.gear4jtest.studio.model.VersionState;
 import io.github.gear4jtest.studio.service.StudioProblem;
+import io.github.gear4jtest.studio.spi.StudioPublisher;
 import io.github.gear4jtest.studio.spi.StudioRuntime;
 
 import static io.github.gear4jtest.studio.management.ResourceAccess.*;
@@ -33,6 +36,8 @@ public final class StudioManagementService {
     private final CurrentActorProvider actors;
     private final Predicate<StudioIdentity> domainCreation;
     private final Clock clock;
+    private final StudioPublisher publisher;
+    private final StudioPublications publications;
     private final PageCursors cursors;
     private static final int SCAN_BUDGET = 500;
     private final ControlledTests tests = new ControlledTests();
@@ -49,6 +54,25 @@ public final class StudioManagementService {
                                    CurrentActorProvider actors,
                                    Predicate<StudioIdentity> domainCreation,
                                    Clock clock) {
+        this(store, runtime, actors, domainCreation, clock, null);
+    }
+
+    public StudioManagementService(StudioStore store,
+                                   StudioRuntime runtime,
+                                   CurrentActorProvider actors,
+                                   Predicate<StudioIdentity> domainCreation,
+                                   StudioPublisher publisher) {
+        this(store, runtime, actors, domainCreation, Clock.systemUTC(), publisher);
+    }
+
+    public StudioManagementService(StudioStore store,
+                                   StudioRuntime runtime,
+                                   CurrentActorProvider actors,
+                                   Predicate<StudioIdentity> domainCreation,
+                                   Clock clock,
+                                   StudioPublisher publisher) {
+        this.publisher = publisher;
+        this.publications = new StudioPublications(store, runtime, publisher, clock);
         this.store = Objects.requireNonNull(store);
         this.runtime = Objects.requireNonNull(runtime);
         this.actors = Objects.requireNonNull(actors);
@@ -67,7 +91,39 @@ public final class StudioManagementService {
 
     public RuntimeContext context() {
         identity();
-        return runtime.context();
+        var context = runtime.context();
+        var capabilities = new java.util.HashSet<>(context.capabilities());
+        if (publisher != null)
+            capabilities.addAll(publisher.capabilities());
+        return new RuntimeContext(context.id(), context.applicationBuild(), context.catalogFingerprint(), capabilities);
+    }
+
+    public VersionState createVersion(UUID draftId, long revision, String label) {
+        return publications.freeze(identity(), draftId, revision, label);
+    }
+
+    public VersionState version(UUID id) {
+        return publications.get(identity(), id);
+    }
+
+    public StudioPage<VersionState> versions(UUID chainId, String after, int size) {
+        return publications.list(identity(), chainId, after, size);
+    }
+
+    public VersionState publishTest(UUID id) {
+        return publications.publish(identity(), id, StudioPublication.Mode.TEST);
+    }
+
+    public VersionState promoteRun(UUID id) {
+        return publications.publish(identity(), id, StudioPublication.Mode.RUN);
+    }
+
+    public VersionState refreshVersion(UUID id) {
+        return publications.refresh(identity(), id);
+    }
+
+    public DefinitionComparison compareVersions(UUID first, UUID second) {
+        return publications.compare(identity(), first, second);
     }
 
     public List<OperationDescriptor> catalog() {
@@ -183,7 +239,7 @@ public final class StudioManagementService {
             requireRead(tx, actor, parent, Permission.CREATE_DRAFT);
             runtime.assertSafeToStore(definition);
             matchingIdentity(parent, definition);
-            return insertDraft(tx, actor, parent, name, definition, origin, base);
+            return insertDraft(tx, actor, parent, name, definition, null, origin, base);
         });
     }
 
@@ -192,12 +248,14 @@ public final class StudioManagementService {
                                    StudioChain chain,
                                    String name,
                                    ChainDefinition definition,
+                                   DraftRevision.Source source,
                                    DraftRevision.Origin origin,
                                    UUID base) {
         var time = now();
         var draft = new StudioDraft(UUID.randomUUID(), chain.id(), name, actor.subject(), 1, false, false, 1, origin,
                 base, time, time);
-        var revision = new DraftRevision(draft.id(), UUID.randomUUID(), 1, actor.subject(), time, origin, definition);
+        var revision = new DraftRevision(draft.id(), UUID.randomUUID(), 1, actor.subject(), time, origin,
+                source == null ? DraftRevision.Kind.STRUCTURED : DraftRevision.Kind.SOURCE, definition, source);
         tx.insert(draft);
         tx.appendRevision(revision);
         audit(tx, actor, draft, AuditEvent.Action.DRAFT_CREATED, revision.revisionId(), null, null, null);
@@ -213,26 +271,46 @@ public final class StudioManagementService {
             var parent = chain(tx, source);
             requireRead(tx, actor, parent, Permission.CREATE_DRAFT);
             var revision = revision(tx, source.id(), number);
-            runtime.assertSafeToStore(revision.definition());
-            return insertDraft(tx, actor, parent, name, revision.definition(), revision.origin(),
+            if (revision.kind() == DraftRevision.Kind.SOURCE)
+                runtime.assertSafeSourceToStore(revision.source());
+            else
+                runtime.assertSafeToStore(revision.definition());
+            return insertDraft(tx, actor, parent, name, revision.definition(), revision.source(), revision.origin(),
                                revision.revisionId());
         });
     }
 
     public DraftState saveDraft(UUID id, long expectedVersion, ChainDefinition definition) {
+        Objects.requireNonNull(definition);
+        return saveRevision(id, expectedVersion, definition, null);
+    }
+
+    public DraftState saveSource(UUID id, long expectedVersion, DraftRevision.Source source) {
+        Objects.requireNonNull(source);
+        return saveRevision(id, expectedVersion, null, source);
+    }
+
+    private DraftState saveRevision(UUID id,
+                                    long expectedVersion,
+                                    ChainDefinition definition,
+                                    DraftRevision.Source source) {
         var actor = identity();
         return store.write(tx -> {
             var old = typed(locked(tx, id), StudioDraft.class);
             requireRead(tx, actor, old, Permission.EDIT);
             expected(old, expectedVersion);
-            runtime.assertSafeToStore(definition);
-            matchingIdentity(chain(tx, old), definition);
+            if (source == null) {
+                runtime.assertSafeToStore(definition);
+                matchingIdentity(chain(tx, old), definition);
+            } else {
+                runtime.assertSafeSourceToStore(source);
+            }
             var time = now();
             var draft = new StudioDraft(old.id(), old.chainId(), old.name(), old.owner(), old.version() + 1,
                     old.inheritAccess(), false, old.head() + 1, old.origin(), old.baseRevisionId(), old.createdAt(),
                     time);
             var revision = new DraftRevision(id, UUID.randomUUID(), draft.head(), actor.subject(), time, old.origin(),
-                    definition);
+                    source == null ? DraftRevision.Kind.STRUCTURED : DraftRevision.Kind.SOURCE, definition, source);
             tx.update(draft, expectedVersion);
             tx.appendRevision(revision);
             audit(tx, actor, draft, AuditEvent.Action.REVISION_SAVED, revision.revisionId(), null, null, null);
@@ -464,8 +542,8 @@ public final class StudioManagementService {
             matchingIdentity(chain(tx, draft), proposed);
             return revision(tx, draftId, baseNumber);
         });
-        return new DefinitionComparison(base.revisionId(), DefinitionDiff.between(base.definition(), proposed),
-                optionalXml(base.definition()), optionalXml(proposed));
+        return new DefinitionComparison(base.revisionId(), base.kind() == DraftRevision.Kind.SOURCE ? null
+                : DefinitionDiff.between(base.definition(), proposed), revisionXml(base), optionalXml(proposed));
     }
 
     public DefinitionComparison compareRevisions(UUID draftId, long fromNumber, long toNumber) {
@@ -476,8 +554,14 @@ public final class StudioManagementService {
             return List.of(revision(tx, draftId, fromNumber), revision(tx, draftId, toNumber));
         });
         return new DefinitionComparison(pair.get(0).revisionId(),
-                DefinitionDiff.between(pair.get(0).definition(), pair.get(1).definition()),
-                optionalXml(pair.get(0).definition()), optionalXml(pair.get(1).definition()));
+                pair.stream().anyMatch(r -> r.kind() == DraftRevision.Kind.SOURCE) ? null
+                        : DefinitionDiff.between(pair.get(0).definition(), pair.get(1).definition()),
+                revisionXml(pair.get(0)), revisionXml(pair.get(1)));
+    }
+
+    private String revisionXml(DraftRevision revision) {
+        return revision.kind() == DraftRevision.Kind.SOURCE ? revision.source().text()
+                : optionalXml(revision.definition());
     }
 
     private String optionalXml(ChainDefinition definition) {
@@ -514,7 +598,9 @@ public final class StudioManagementService {
         var revision = store.read(tx -> {
             var draft = typed(ResourceAccess.resource(tx, id), StudioDraft.class);
             requireRead(tx, actor, draft, Permission.TEST);
-            return revision(tx, id, number);
+            var selected = revision(tx, id, number);
+            selected.requireDefinition();
+            return selected;
         });
         return tests.execute(actor, revision, requestId, input, runtime, () -> store.write(tx -> {
             var draft = typed(locked(tx, id), StudioDraft.class);
@@ -524,9 +610,31 @@ public final class StudioManagementService {
         }));
     }
 
+    /**
+     * A version test uses chain TEST permission and never modifies publication
+     * state.
+     */
+    public TestSubmission testVersion(UUID versionId, UUID requestId, String input) {
+        var actor = identity();
+        capability("CONTROLLED_TEST_VERSION");
+        var version = publications.get(actor, versionId).version();
+        authorize(version.chainId(), Permission.TEST);
+        return tests.execute(actor, version.chainId(), version.id(), requestId, input,
+                             () -> runtime.executeVersion(version, input, requestId, actor.subject()),
+                             () -> store.write(tx -> {
+                                 var chain = typed(locked(tx, version.chainId()), StudioChain.class);
+                                 requireRead(tx, actor, chain, Permission.TEST);
+                                 tx.appendAudit(new AuditEvent(0, UUID.randomUUID(), chain.domainId(), chain.id(), null,
+                                         ResourceKind.CHAIN, chain.id(), chain.version(), actor.subject(),
+                                         AuditEvent.Action.TEST_REQUESTED,
+                                         now(), version.revisionId(), requestId, null, null, version.id()));
+                                 return null;
+                             }));
+    }
+
     public TestSubmission testRequest(UUID requestId) {
         var actor = identity();
-        var id = tests.draftId(actor.subject(), requestId);
+        var id = tests.resourceId(actor.subject(), requestId);
         store.read(tx -> {
             requireRead(tx, actor, ResourceAccess.resource(tx, id), Permission.READ);
             return null;

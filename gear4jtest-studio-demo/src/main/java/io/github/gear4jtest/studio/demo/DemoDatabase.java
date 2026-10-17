@@ -7,6 +7,7 @@ import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
 import io.github.gear4jtest.studio.jdbc.JdbcStudioStore;
 import io.github.gear4jtest.studio.jdbc.StudioJdbcSchema;
 import io.github.gear4jtest.studio.management.StudioManagementService;
+import io.github.gear4jtest.studio.spi.StudioPublisher;
 import io.github.gear4jtest.studio.spi.StudioRuntime;
 import org.h2.jdbcx.JdbcDataSource;
 
@@ -35,8 +36,15 @@ public final class DemoDatabase {
     public static StudioManagementService service(javax.sql.DataSource source,
                                                   StudioRuntime runtime,
                                                   RequestActorContext actors) {
+        return service(source, runtime, actors, null);
+    }
+
+    public static StudioManagementService service(DataSource source,
+                                                  StudioRuntime runtime,
+                                                  RequestActorContext actors,
+                                                  StudioPublisher publisher) {
         StudioJdbcSchema.migrate(source, Gear4jDatabaseDialect.H2);
         return new StudioManagementService(new JdbcStudioStore(source), runtime, actors,
-                a -> a.groups().contains("domain-creators"));
+                a -> a.groups().contains("domain-creators"), publisher);
     }
 }

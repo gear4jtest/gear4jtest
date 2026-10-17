@@ -91,3 +91,35 @@ test('an obsolete diagnostic response cannot replace analysis of newer local wor
  await Promise.resolve(); await Promise.resolve();
  assert.equal(element.report, null); clearTimeout(element.diagnosticsTimer);
 });
+
+
+test('SOURCE reload preserves exact invalid XML, rejects stale writes and converts only explicitly', async () => {
+ const { element, client, calls } = fixture(); let sourceState;
+ client.saveSource = async (id, version, text) => {
+  calls.push(['source', version, text]);
+  if (text.includes('conflict')) throw { code: 'CONFLICT' };
+  sourceState = { draftId: id, revisionId: 'source-2', number: 2, draftVersion: 7, kind: 'SOURCE', definition: null, source: { mediaType: 'application/xml', text } };
+  return sourceState;
+ };
+ client.previewXml = async text => {
+  if (text.includes('broken')) throw { code: 'UNSUPPORTED_FORMAT' };
+  return { definition: structuredClone(sample), source: '<canonical />' };
+ };
+ await element.configure({ client }); button(element, 'Enregistrer le draft').click(); await settled(element);
+ const edit = value => { const area = element.shadowRoot.querySelector('textarea.xml'); area.value = value; area.dispatchEvent(new dom.window.Event('input')); };
+ edit('<broken>\n'); assert.equal(button(element, 'Enregistrer le draft').disabled, false);
+ button(element, 'Enregistrer le draft').click(); await settled(element);
+ assert.equal(element.hasUnsavedChanges, false); assert.equal(element.definition, null);
+ await element.configure({ client, revision: sourceState });
+ assert.equal(element.shadowRoot.querySelector('textarea.xml').value, '<broken>\n');
+ assert.equal(button(element, 'Valider').disabled, true); assert.equal(element.shadowRoot.querySelector('.grid'), null);
+ button(element, 'Prévisualiser le XML').click(); await settled(element);
+ assert.equal(element.xmlSource, '<broken>\n'); assert.equal(element.definition, null);
+ edit('<conflict>'); button(element, 'Enregistrer le draft').click(); await settled(element);
+ assert.equal(element.xmlSource, '<conflict>'); assert.equal(element.hasUnsavedChanges, true);
+ edit('<repaired/>'); button(element, 'Prévisualiser le XML').click(); await settled(element);
+ assert.equal(element.definition, null); button(element, 'Appliquer au draft courant').click();
+ assert.deepEqual(element.definition, sample); assert.equal(element.hasUnsavedChanges, true);
+ button(element, 'Enregistrer le draft').click(); await settled(element);
+ assert.deepEqual(calls.at(-1), ['save', 7]); assert.equal(element.sourceMode, false);
+});

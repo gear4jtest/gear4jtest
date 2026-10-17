@@ -10,7 +10,23 @@ public record OperationDescriptor(String id,
                                   DataContract input,
                                   DataContract output,
                                   boolean testAllowed,
+                                  boolean runAllowed,
                                   Map<String, Parameter> parameters) {
+    /**
+     * Legacy registrations stay TEST-only until RUN is explicitly granted by the
+     * host.
+     */
+    public OperationDescriptor(String id,
+                               String name,
+                               String description,
+                               String effects,
+                               DataContract input,
+                               DataContract output,
+                               boolean testAllowed,
+                               Map<String, Parameter> parameters) {
+        this(id, name, description, effects, input, output, testAllowed, false, parameters);
+    }
+
     public OperationDescriptor {
         parameters = Map.copyOf(parameters);
     }

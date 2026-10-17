@@ -12,13 +12,13 @@ function field(label, value, onInput, { multiline = false, disabled = false, cla
 export class Gear4jStudio extends HTMLElement {
   constructor() { super(); this.attachShadow({ mode: 'open' }); this.status = ''; this.xmlSource = ''; this.testInput = '  electric  '; }
   async configure({ client, revision = null }) {
-    clearTimeout(this.diagnosticsTimer); this.diagnosticsGeneration = (this.diagnosticsGeneration || 0) + 1; this.xmlEdited = false; this.xmlPreview = null; this.xmlOriginal = null; this.comparison = null;
+    clearTimeout(this.diagnosticsTimer); this.diagnosticsGeneration = (this.diagnosticsGeneration || 0) + 1; this.xmlEdited = false; this.sourceMode = false; this.xmlPreview = null; this.xmlOriginal = null; this.comparison = null;
     const [context, catalog] = await Promise.all([client.context(), client.catalog()]);
     this.client = client; this.context = context; this.catalog = catalog; this.definition = structuredClone(context.sample);
     this.revision = null; this.dirty = true; this.report = null; this.submission = null; this.pendingTest = null; this.xmlSource = ''; this.status = 'Catalogue de l’application connecté.'; this.error = false; if (revision) this.acceptRevision(revision); this.render(); return context;
   }
-  allowed(action) { return this.context.actions.includes(action) && !this.busy && !(action === 'TEST' && (this.xmlEdited || !this.testPayloadSupported())); }
-  testPayloadSupported() { return !this.context.context.capabilities?.includes('CONTROLLED_TEST_STRING') || this.definition.inputType === 'java.lang.String' && this.definition.outputType === 'java.lang.String'; }
+  allowed(action) { return this.context.actions.includes(action) && !this.busy && !(action === 'TEST' && (this.sourceMode || this.xmlEdited || !this.testPayloadSupported())); }
+  testPayloadSupported() { return !this.context.context.capabilities?.includes('CONTROLLED_TEST_STRING') || this.definition?.inputType === 'java.lang.String' && this.definition?.outputType === 'java.lang.String'; }
   get hasUnsavedChanges() { return this.dirty || this.xmlEdited; }
   touch() { this.diagnosticsGeneration = (this.diagnosticsGeneration || 0) + 1; clearTimeout(this.diagnosticsTimer); this.comparison = null; this.xmlPreview = null; this.dirty = true; this.report = null; this.xmlSource = ''; this.error = false; this.status = 'Modifications locales — enregistrez une révision avant de tester.'; this.updateToolbar();
     this.shadowRoot.querySelector('[data-validation]')?.replaceWith(this.validationPanel());
@@ -28,21 +28,22 @@ export class Gear4jStudio extends HTMLElement {
   }
   updateToolbar() {
     const grid = this.shadowRoot.querySelector('.grid'); if (grid) grid.inert = Boolean(this.xmlEdited);
-    const validate = [...this.shadowRoot.querySelectorAll('button')].find(b => b.textContent === 'Valider'); if (validate) validate.disabled = !this.allowed('VALIDATE') || Boolean(this.xmlEdited);
-    const save = [...this.shadowRoot.querySelectorAll('button')].find(b => b.textContent === 'Enregistrer le draft'); if (save) save.disabled = !this.allowed('EDIT') || Boolean(this.xmlEdited);
+    const validate = [...this.shadowRoot.querySelectorAll('button')].find(b => b.textContent === 'Valider'); if (validate) validate.disabled = !this.allowed('VALIDATE') || Boolean(this.xmlEdited) || this.sourceMode;
+    const save = [...this.shadowRoot.querySelectorAll('button')].find(b => b.textContent === 'Enregistrer le draft'); if (save) save.disabled = !this.allowed('EDIT') || Boolean((this.xmlEdited || this.sourceMode) && !this.client.saveSource);
     const status = this.shadowRoot.querySelector('.status'); if (status) status.textContent = this.status;
     const test = this.shadowRoot.querySelector('[data-action="test"]'); if (test) test.disabled = !this.allowed('TEST') || this.dirty || !this.revision;
-    const badge = this.shadowRoot.querySelector('[data-revision]'); if (badge) badge.textContent = this.revision ? `Révision ${this.revision.number}${this.dirty ? ' · modifiée' : ' · enregistrée'}` : 'Nouveau draft';
+    const badge = this.shadowRoot.querySelector('[data-revision]'); if (badge) badge.textContent = this.revision ? `Révision ${this.revision.number}${this.revision.kind === 'SOURCE' ? ' · SOURCE' : ''}${this.hasUnsavedChanges ? ' · modifiée' : ' · enregistrée'}` : 'Nouveau draft';
   }
   async perform(action) {
     if (this.busy) return; this.busy = true; this.error = false; this.status = 'Opération en cours…'; this.render();
     try { await action(); } catch (error) {
-      this.error = true; this.status = ({ INVALID_DEFINITION: 'Définition refusée : vérifiez notamment son identifiant Gear4J immuable.', CONFLICT: 'Conflit : rechargez le draft avant de sauvegarder.', ACTION_DENIED: 'Action ou configuration non autorisée.', FORBIDDEN: 'Vos droits ne permettent pas cette action. Rechargez les droits du draft.', UNAUTHENTICATED: 'La session n’est plus authentifiée.', STORAGE_UNAVAILABLE: 'Le stockage est indisponible. Rechargez avant de réessayer.', UNSUPPORTED_FORMAT: 'Ce XML contient une construction non prise en charge.', NOT_FOUND: 'Élément introuvable ou inaccessible.', CAPACITY_EXCEEDED: 'Capacité de test atteinte ou service occupé.' })[error.code] || 'L’opération n’a pas pu être confirmée. Consultez son état avant de relancer un test.';
+      this.error = true; this.status = ({ SOURCE_NOT_ADMITTED: 'Sauvegarde refusée : certaines données XML ne peuvent pas être classifiées. Vérifiez les paramètres, leurs guillemets et les références de ressources ; le texte reste disponible ici.', SOURCE_REQUIRES_ANALYSIS: 'Analysez le XML et enregistrez une définition structurée avant de tester ou publier.', INVALID_DEFINITION: 'Définition refusée : vérifiez notamment son identifiant Gear4J immuable.', CONFLICT: 'Conflit : rechargez le draft avant de sauvegarder.', ACTION_DENIED: 'Action ou configuration non autorisée.', FORBIDDEN: 'Vos droits ne permettent pas cette action. Rechargez les droits du draft.', UNAUTHENTICATED: 'La session n’est plus authentifiée.', STORAGE_UNAVAILABLE: 'Le stockage est indisponible. Rechargez avant de réessayer.', UNSUPPORTED_FORMAT: 'Ce XML contient une construction non prise en charge.', NOT_FOUND: 'Élément introuvable ou inaccessible.', CAPACITY_EXCEEDED: 'Capacité de test atteinte ou service occupé.' })[error.code] || 'L’opération n’a pas pu être confirmée. Consultez son état avant de relancer un test.';
     } finally { this.busy = false; this.render(); }
   }
   acceptRevision(revision) {
     if (revision.actions) this.context.actions = [...revision.actions, ...(this.context.actions.includes('IMPORT') ? ['IMPORT'] : [])];
-    this.revision = revision; this.definition = structuredClone(revision.definition); this.dirty = false; this.report = null; this.xmlSource = ''; this.xmlEdited = false; this.xmlPreview = null; this.comparison = null;
+    clearTimeout(this.diagnosticsTimer); this.diagnosticsGeneration = (this.diagnosticsGeneration || 0) + 1;
+    this.revision = revision; this.sourceMode = revision.kind === 'SOURCE'; this.definition = this.sourceMode ? null : structuredClone(revision.definition); this.dirty = false; this.report = null; this.xmlSource = this.sourceMode ? revision.source.text : ''; this.xmlEdited = false; this.xmlPreview = null; this.comparison = null;
     this.status = `Révision ${revision.number} enregistrée${this.context.persistent ? '' : ' (mémoire du serveur)'}.`;
     this.dispatchEvent(new CustomEvent('studio:revision', { detail: { draftId: revision.draftId, revisionId: revision.revisionId, number: revision.number }, bubbles: true, composed: true }));
   }
@@ -57,11 +58,12 @@ export class Gear4jStudio extends HTMLElement {
     const revisionLabel = el('small'); revisionLabel.dataset.revision = ''; title.append(revisionLabel);
     const actions = el('div', undefined, 'actions');
     actions.append(button('Valider', () => this.perform(async () => { clearTimeout(this.diagnosticsTimer); this.diagnosticsGeneration = (this.diagnosticsGeneration || 0) + 1; this.report = { ...await this.client.validate(this.definition), compiled: true }; this.status = this.report.valid ? this.report.diagnostics.length ? 'Validation avec avertissements : vérifiez les incertitudes.' : 'Définition valide pour ce catalogue.' : 'La validation a détecté des problèmes.'; }), !this.allowed('VALIDATE')),
-      button('Enregistrer le draft', () => this.perform(async () => this.acceptRevision(this.xmlEdited ? (() => { throw { code: 'INVALID_DEFINITION' }; })() : this.revision ? await this.client.save(this.revision.draftId, this.revision.draftVersion ?? this.revision.number, this.definition) : await this.client.create(this.definition))), !this.allowed('EDIT'), 'primary'));
+      button('Enregistrer le draft', () => this.perform(async () => this.acceptRevision(this.xmlEdited || this.sourceMode ? await this.client.saveSource(this.revision.draftId, this.revision.draftVersion ?? this.revision.number, this.xmlSource) : this.revision ? await this.client.save(this.revision.draftId, this.revision.draftVersion ?? this.revision.number, this.definition) : await this.client.create(this.definition))), !this.allowed('EDIT'), 'primary'));
     toolbar.append(title, actions); root.append(toolbar, el('div', this.status, `status${this.error ? ' error' : ''}`)); root.querySelector('.status').setAttribute('role', 'status');
-    const grid = el('div', undefined, 'grid'); grid.append(this.catalogPanel(), this.chainPanel(), this.testPanel()); root.append(grid);
+    if (this.sourceMode) root.append(el('p', 'Révision SOURCE : le texte exact est enregistré. Corrigez-le puis prévisualisez et appliquez son analyse pour reprendre l’édition structurée. Tests et publication sont indisponibles.'));
+    else { const grid = el('div', undefined, 'grid'); grid.append(this.catalogPanel(), this.chainPanel(), this.testPanel()); root.append(grid); }
     const lower = el('div', undefined, 'lower'); lower.append(this.validationPanel(), this.xmlPanel()); root.append(lower);
-    if (this.revision) root.append(button('Comparer avec la révision enregistrée', () => this.perform(async () => { this.comparison = await this.client.diff(this.definition); }), this.busy || !this.client.diff)); if (this.comparison) root.append(comparisonPanel(this.comparison));
+    if (this.revision && !this.sourceMode && !this.xmlEdited) root.append(button('Comparer avec la révision enregistrée', () => this.perform(async () => { this.comparison = await this.client.diff(this.definition); }), this.busy || !this.client.diff)); if (this.comparison) root.append(comparisonPanel(this.comparison));
     root.append(el('p', 'Séquences et choix GEL · Contrats du catalogue · Les tests exécutent réellement les opérations autorisées.', 'notice'));
     this.updateToolbar();
   }
@@ -153,13 +155,13 @@ export class Gear4jStudio extends HTMLElement {
   }
   xmlPanel() {
     const panel = this.panel('Vue XML', 'Adaptateur'); const body = el('div', undefined, 'pad'); const actions = el('div', undefined, 'actions');
-    actions.append(button('Générer le XML', () => this.perform(async () => { if (this.xmlEdited) { this.status = 'Appliquez ou abandonnez le XML saisi avant de régénérer.'; return; } this.xmlSource = (await this.client.exportXml(this.definition)).source; this.status = 'XML canonique généré.'; }), this.busy),
+    actions.append(button('Générer le XML', () => this.perform(async () => { if (this.xmlEdited) { this.status = 'Appliquez ou abandonnez le XML saisi avant de régénérer.'; return; } this.xmlSource = (await this.client.exportXml(this.definition)).source; this.status = 'XML canonique généré.'; }), this.busy || this.sourceMode),
       button('Prévisualiser le XML', () => this.perform(async () => { this.xmlPreview = await this.client.previewXml(this.xmlSource); this.status = 'Prévisualisation prête : appliquez-la pour remplacer le modèle local.'; }), !this.allowed('EDIT') || !this.client.previewXml));
     if (this.xmlPreview) actions.append(button('Appliquer au draft courant', () => {
-      const preview = this.xmlPreview; if (!preview) return; this.xmlOriginal = this.xmlSource; this.definition = structuredClone(preview.definition); this.xmlEdited = false; this.touch(); this.xmlSource = preview.source; this.status = 'XML normalisé appliqué localement ; enregistrez pour créer une révision.'; this.render();
+      const preview = this.xmlPreview; if (!preview) return; this.xmlOriginal = this.xmlSource; this.definition = structuredClone(preview.definition); this.sourceMode = false; this.xmlEdited = false; this.touch(); this.xmlSource = preview.source; this.status = 'XML normalisé appliqué localement ; enregistrez pour créer une révision.'; this.render();
     }, !this.allowed('EDIT')));
-    if (this.xmlEdited) actions.append(button('Abandonner la saisie XML', () => { this.xmlEdited = false; this.xmlSource = ''; this.xmlPreview = null; this.render(); }, this.busy));
-    body.append(actions, field('Définition XML', this.xmlSource, value => { this.xmlSource = value; this.xmlEdited = true; this.xmlPreview = null; const apply = [...this.shadowRoot.querySelectorAll('button')].find(b => b.textContent === 'Appliquer au draft courant'); if (apply) apply.disabled = true; this.shadowRoot.querySelector('[data-xml-preview]')?.remove(); this.updateToolbar(); }, { multiline: true, disabled: !this.allowed('EDIT'), className: 'xml' }), el('small', 'Round-trip sémantique : commentaires et mise en forme normalisés. Les constructions non prises en charge sont refusées.'));
+    if (this.xmlEdited) actions.append(button('Abandonner la saisie XML', () => { this.xmlEdited = false; this.xmlSource = this.sourceMode ? this.revision.source.text : ''; this.xmlPreview = null; this.render(); }, this.busy));
+    body.append(actions, field('Définition XML', this.xmlSource, value => { this.xmlSource = value; this.xmlEdited = !this.sourceMode || value !== this.revision.source.text; this.xmlPreview = null; clearTimeout(this.diagnosticsTimer); this.diagnosticsGeneration = (this.diagnosticsGeneration || 0) + 1; const apply = [...this.shadowRoot.querySelectorAll('button')].find(b => b.textContent === 'Appliquer au draft courant'); if (apply) apply.disabled = true; this.shadowRoot.querySelector('[data-xml-preview]')?.remove(); this.updateToolbar(); }, { multiline: true, disabled: !this.allowed('EDIT'), className: 'xml' }), el('small', 'Enregistrer conserve le XML saisi à l’identique comme révision SOURCE, même invalide, sous réserve de la politique de données. Prévisualiser puis appliquer effectue une conversion explicite vers le modèle ; la sauvegarde structurée suivante conserve cette analyse.'));
     if (this.xmlPreview) { const preview = el('details'); preview.dataset.xmlPreview = ''; preview.append(el('summary', 'XML après normalisation'), el('pre', this.xmlPreview.source)); body.append(preview); }
     if (this.xmlOriginal) { const original = el('details'); original.append(el('summary', 'Source XML avant normalisation (locale)'), el('pre', this.xmlOriginal)); body.append(original); }
     panel.append(body); return panel;
@@ -171,9 +173,10 @@ if (!customElements.get('gear4j-studio')) customElements.define('gear4j-studio',
 /** Public render helper used by both workspace history and the standalone editor. */
 export function comparisonPanel(comparison) {
   const panel = el('section', undefined, 'panel'); panel.append(el('h3', 'Comparaison des définitions'));
-  if (comparison.diff.ambiguousIdentity) panel.append(el('p', 'Identifiants dupliqués : comparaison par position, correspondances ambiguës.'));
-  if (!comparison.diff.changes.length) panel.append(el('p', 'Aucun changement sémantique.'));
+  if (!comparison.diff) panel.append(el('p', 'Comparaison textuelle : une révision SOURCE ne possède pas encore de modèle analysé.'));
+  if (comparison.diff?.ambiguousIdentity) panel.append(el('p', 'Identifiants dupliqués : comparaison par position, correspondances ambiguës.'));
+  if (comparison.diff && !comparison.diff.changes.length) panel.append(el('p', 'Aucun changement sémantique.'));
   const table = el('table'); const head = el('tr'); for (const label of ['Changement', 'Élément', 'Avant', 'Après']) head.append(el('th', label)); table.append(head);
-  for (const change of comparison.diff.changes) { const row = el('tr'); for (const value of [change.kind, `${change.nodeId || ''} ${change.path}`, change.before ?? '—', change.after ?? '—']) row.append(el('td', value)); table.append(row); } panel.append(table);
-  const xml = el('details'); xml.append(el('summary', 'Comparer les XML canoniques'), el('h4', 'Avant'), el('pre', comparison.baseXml ?? 'XML indisponible pour cette définition.'), el('h4', 'Après'), el('pre', comparison.proposedXml ?? 'XML indisponible pour cette définition.')); panel.append(xml); return panel;
+  for (const change of comparison.diff?.changes || []) { const row = el('tr'); for (const value of [change.kind, `${change.nodeId || ''} ${change.path}`, change.before ?? '—', change.after ?? '—']) row.append(el('td', value)); table.append(row); } panel.append(table);
+  const xml = el('details'); xml.append(el('summary', comparison.diff ? 'Comparer les XML canoniques' : 'Comparer les sources XML'), el('h4', 'Avant'), el('pre', comparison.baseXml ?? 'XML indisponible pour cette définition.'), el('h4', 'Après'), el('pre', comparison.proposedXml ?? 'XML indisponible pour cette définition.')); panel.append(xml); return panel;
 }

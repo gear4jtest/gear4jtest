@@ -24,7 +24,38 @@ public record ControlledRun(UUID requestId,
                             CapturedValue input,
                             CapturedValue output,
                             String errorCode,
-                            List<Step> steps) {
+                            List<Step> steps,
+                            UUID versionId,
+                            String versionLabel) {
+    public ControlledRun(UUID requestId,
+                         UUID runId,
+                         UUID draftId,
+                         UUID revisionId,
+                         long revision,
+                         String actor,
+                         String runtimeContext,
+                         String applicationBuild,
+                         String mode,
+                         String catalogFingerprint,
+                         String artifactHash,
+                         String outcome,
+                         Instant startedAt,
+                         Instant endedAt,
+                         CapturedValue input,
+                         CapturedValue output,
+                         String errorCode,
+                         List<Step> steps) {
+        this(requestId, runId, draftId, revisionId, revision, actor, runtimeContext, applicationBuild, mode,
+                catalogFingerprint, artifactHash, outcome, startedAt, endedAt, input, output, errorCode, steps, null,
+                null);
+    }
+
+    public ControlledRun withVersion(StudioVersion version) {
+        return new ControlledRun(requestId, runId, draftId, revisionId, revision, actor, runtimeContext,
+                applicationBuild, mode, catalogFingerprint, artifactHash, outcome, startedAt, endedAt,
+                input, output, errorCode, steps, version.id(), version.label());
+    }
+
     public ControlledRun {
         steps = List.copyOf(steps);
     }

@@ -189,4 +189,4 @@ simple and move optional integrations to dedicated modules.
 
 See `docs/production-readiness.md` before using Gear4J operationally.
 
-Le module optionnel [Gear4J Studio P2](docs/studio/p2.md) ajoute contrats inférés, édition structurée/XML, diagnostics et comparaison au management durable P1. Ses composants sont distribuables via [@gear4j/studio-web](gear4jtest-studio-web/README.md).
+Le module optionnel [Gear4J Studio P3](docs/studio/p3.md) ajoute versions immuables, tests contrôlés, publication TEST et promotion RUN au management et à l’authoring P1/P2. Ses composants sont distribuables via [@gear4j/studio-web](gear4jtest-studio-web/README.md).

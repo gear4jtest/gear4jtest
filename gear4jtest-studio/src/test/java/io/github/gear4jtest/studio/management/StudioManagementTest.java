@@ -58,6 +58,30 @@ class StudioManagementTest {
     }
 
     @Test
+    void sourceRevisionsUseTheSameAclOptimisticVersionAndAtomicAuditBoundary() {
+        // Given
+        var alice = as("alice");
+        var bob = as("bob");
+        var initial = draft(alice);
+        var id = initial.draft().id();
+        var raw = new DraftRevision.Source("application/xml", "<assemblyLine>\r\n <operations>");
+        // When / Then
+        assertThatThrownBy(() -> bob.saveSource(id, 1, raw)).hasMessage("NOT_FOUND");
+        var saved = alice.saveSource(id, 1, raw);
+        assertThat(saved.revision().kind()).isEqualTo(DraftRevision.Kind.SOURCE);
+        assertThat(as("alice").draft(id).revision().source()).isEqualTo(raw);
+        assertThatThrownBy(() -> alice.test(id, 2, UUID.randomUUID(), "x")).hasMessage("SOURCE_REQUIRES_ANALYSIS");
+        assertThat(runtime.executions).hasValue(0);
+        assertThatThrownBy(() -> alice.saveSource(id, 1, raw)).hasMessage("CONFLICT");
+        assertThatThrownBy(() -> alice.saveSource(id, 2, new DraftRevision.Source("application/xml", "secret")))
+                .hasMessage("SOURCE_NOT_ADMITTED");
+        assertThat(alice.draft(id).draft().head()).isEqualTo(2);
+        assertThat(alice.audit(id, null, 100).items()).extracting(AuditEvent::action)
+                .containsExactly(AuditEvent.Action.DRAFT_CREATED, AuditEvent.Action.REVISION_SAVED);
+        assertThat(alice.forkDraft(id, 2, "Source alternative").revision().source()).isEqualTo(raw);
+    }
+
+    @Test
     void privateDraftsDiscoveryAndExplicitSharingAreDistinct() {
         // Given
         var alice = as("alice");
@@ -395,6 +419,11 @@ class StudioManagementTest {
         public void assertSafeToStore(ChainDefinition definition) {
             if (definition.id().equals("unsafe"))
                 throw new StudioProblem(StudioProblem.Code.INVALID_DEFINITION);
+        }
+
+        public void assertSafeSourceToStore(DraftRevision.Source source) {
+            if (!source.mediaType().equals("application/xml") || source.text().contains("secret"))
+                throw new StudioProblem(StudioProblem.Code.SOURCE_NOT_ADMITTED);
         }
 
         public ValidationReport validate(ChainDefinition definition) {

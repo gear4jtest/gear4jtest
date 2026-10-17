@@ -21,6 +21,16 @@ public interface StudioRuntime {
 
     void assertSafeToStore(ChainDefinition definition);
 
+    /**
+     * Admission of the entire unmodified source, including malformed input. Fail
+     * closed when the adapter cannot classify all persisted values. This is a data
+     * policy check, not a syntax or execution validation.
+     */
+    default void assertSafeSourceToStore(DraftRevision.Source source) {
+        throw new io.github.gear4jtest.studio.service.StudioProblem(
+                io.github.gear4jtest.studio.service.StudioProblem.Code.SOURCE_NOT_ADMITTED);
+    }
+
     /** Cheap structural analysis; adapters may override to avoid compilation. */
     default ValidationReport analyze(ChainDefinition definition) {
         return validate(definition);
@@ -33,4 +43,13 @@ public interface StudioRuntime {
     ChainDefinition importDefinition(String source, String mediaType);
 
     ControlledRun execute(DraftRevision revision, String input, UUID requestId, String actor);
+
+    /** Test the exact pinned artifact; never silently reserialize it. */
+    default ControlledRun executeVersion(io.github.gear4jtest.studio.model.StudioVersion version,
+                                         String input,
+                                         UUID requestId,
+                                         String actor) {
+        throw new io.github.gear4jtest.studio.service.StudioProblem(
+                io.github.gear4jtest.studio.service.StudioProblem.Code.FORBIDDEN);
+    }
 }

@@ -80,6 +80,14 @@ class SpringStudioTest {
                 var report = service.validate(draft.draft().id(), draft.revision().definition());
                 var result = service.test(draft.draft().id(), 1, UUID.randomUUID(), "  electric  ");
                 // Then
+                var version = service.createVersion(draft.draft().id(), 1, "1.0.0");
+                assertThat(service.publishTest(version.version().id()).publications()).singleElement()
+                        .satisfies(p -> assertThat(p.state().name()).isEqualTo("CONFIRMED"));
+                assertThat(service.promoteRun(version.version().id()).publications()).hasSize(2)
+                        .allSatisfy(p -> assertThat(p.state().name()).isEqualTo("CONFIRMED"));
+                var versionRun = service.testVersion(version.version().id(), UUID.randomUUID(), " electric ").run();
+                assertThat(versionRun.artifactHash()).isEqualTo(version.version().artifactHash());
+                assertThat(versionRun.versionId()).isEqualTo(version.version().id());
                 assertThat(report.diagnostics()).isEmpty();
                 assertThat(result.state()).isEqualTo(TestSubmission.State.COMPLETED);
                 assertThat(result.run().outcome()).isEqualTo("SUCCEEDED");

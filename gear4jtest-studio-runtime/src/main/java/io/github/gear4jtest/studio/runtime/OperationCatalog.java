@@ -28,7 +28,8 @@ public final class OperationCatalog {
         var text = new StringBuilder();
         map.forEach((id, value) -> {
             append(text, id, value.type().getName(), value.inputType().getName(), value.outputType().getName(),
-                   String.valueOf(value.descriptor().testAllowed()), value.descriptor().effects(),
+                   String.valueOf(value.descriptor().testAllowed()), String.valueOf(value.descriptor().runAllowed()),
+                   value.descriptor().effects(),
                    value.descriptor().input().toString(), value.descriptor().output().toString(),
                    classHash(value.type()),
                    String.valueOf(value.descriptor().parameters().size()));
@@ -69,6 +70,8 @@ public final class OperationCatalog {
         registrations.forEach((id, value) -> {
             if (value.descriptor().testAllowed())
                 builder.allow(id, value.type(), ExecutionMode.TEST);
+            if (value.descriptor().runAllowed())
+                builder.allow(id, value.type(), ExecutionMode.RUN);
         });
         return builder.build();
     }

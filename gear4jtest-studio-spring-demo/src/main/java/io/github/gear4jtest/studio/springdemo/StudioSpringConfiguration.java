@@ -6,6 +6,7 @@ import io.github.gear4jtest.core.api.AssemblyLineExecutor;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.spring.Gear4jSpringConfiguration;
 import io.github.gear4jtest.studio.demo.DemoDatabase;
+import io.github.gear4jtest.studio.demo.DemoPublicationHost;
 import io.github.gear4jtest.studio.demo.DemoWiring;
 import io.github.gear4jtest.studio.demo.FormatNumberOperation;
 import io.github.gear4jtest.studio.demo.LengthOperation;
@@ -36,8 +37,14 @@ public class StudioSpringConfiguration {
     @Bean
     StudioManagementService studioService(LocalGear4jRuntime runtime,
                                           DataSource dataSource,
+                                          DemoPublicationHost publicationHost,
                                           RequestActorContext actors) {
-        return DemoDatabase.service(dataSource, runtime, actors);
+        return DemoDatabase.service(dataSource, runtime, actors, publicationHost.publisher());
+    }
+
+    @Bean(destroyMethod = "close")
+    DemoPublicationHost studioPublicationHost(DataSource dataSource) {
+        return new DemoPublicationHost(dataSource, DemoWiring.catalog());
     }
 
     @Bean

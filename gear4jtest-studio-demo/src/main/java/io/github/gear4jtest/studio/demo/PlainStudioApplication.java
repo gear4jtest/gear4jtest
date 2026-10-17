@@ -11,23 +11,31 @@ public final class PlainStudioApplication {
         var runtime = DemoWiring.runtime("java", DemoWiring.plainExecutor(resources), resources,
                                          DemoWiring.capturePolicy(System.getenv("GEAR4J_STUDIO_CAPTURE")));
         StudioHttpServer server = null;
+        DemoPublicationHost publications = null;
         boolean started = false;
         try {
             var actors = new RequestActorContext();
-            var service = DemoDatabase.service(DemoDatabase.fromEnvironment("java"), runtime, actors);
+            var dataSource = DemoDatabase.fromEnvironment("java");
+            publications = new DemoPublicationHost(dataSource, DemoWiring.catalog());
+            var service = DemoDatabase.service(dataSource, runtime, actors, publications.publisher());
             server = new StudioHttpServer(service, actors, args.length == 0 ? 8787 : Integer.parseInt(args[0]),
                     System.getenv("GEAR4J_STUDIO_TOKEN"), System.getenv("GEAR4J_STUDIO_VIEWER_TOKEN"));
             var running = server;
+            var publicationHost = publications;
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {
                     running.close();
                 } finally {
-                    runtime.close();
+                    try {
+                        publicationHost.close();
+                    } finally {
+                        runtime.close();
+                    }
                 }
             }));
             server.start();
             started = true;
-            LoggerFactory.getLogger(PlainStudioApplication.class).info("Gear4J Studio P1: http://127.0.0.1:{}",
+            LoggerFactory.getLogger(PlainStudioApplication.class).info("Gear4J Studio P3: http://127.0.0.1:{}",
                                                                        server.port());
         } finally {
             if (!started) {
@@ -35,7 +43,12 @@ public final class PlainStudioApplication {
                     if (server != null)
                         server.close();
                 } finally {
-                    runtime.close();
+                    try {
+                        if (publications != null)
+                            publications.close();
+                    } finally {
+                        runtime.close();
+                    }
                 }
             }
         }

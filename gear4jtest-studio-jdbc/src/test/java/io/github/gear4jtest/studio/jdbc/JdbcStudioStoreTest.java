@@ -62,14 +62,40 @@ class JdbcStudioStoreTest {
                     policy));
             return null;
         });
+        var raw = new DraftRevision(draft.id(), UUID.randomUUID(), 2, "alice", time, DraftRevision.Origin.STUDIO,
+                DraftRevision.Kind.SOURCE, null,
+                new DraftRevision.Source("application/xml", "<assemblyLine>\r\n  <operations>\n"));
+        store.write(tx -> {
+            tx.lockDomain(domain.id());
+            tx.appendRevision(raw);
+            return null;
+        });
+        String artifact = "<assemblyLine>é\r\n</assemblyLine>";
+        String hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                .digest(artifact.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        var version = new StudioVersion(UUID.randomUUID(), chain.id(), draft.id(), revision.revisionId(), 1,
+                chain.runtimeAssemblyLineId(), "1.0", "alice", time, "context", "build", "catalog", "application/xml",
+                hash, artifact);
+        var publication = new StudioPublication(version.id(), StudioPublication.Mode.TEST,
+                StudioPublication.State.CONFIRMED,
+                "alice", time, time, "alice", time, null);
+        store.write(tx -> {
+            tx.lockDomain(domain.id());
+            tx.insertVersion(version);
+            tx.savePublication(publication);
+            return null;
+        });
         var reopened = new JdbcStudioStore(source());
         // Then
         reopened.read(tx -> {
+            assertThat(tx.version(version.id())).isEqualTo(version);
+            assertThat(tx.publication(version.id(), StudioPublication.Mode.TEST)).isEqualTo(publication);
+            assertThat(tx.versions(chain.id(), null, 10)).containsExactly(version);
             assertThat(tx.resource(domain.id())).isEqualTo(domain);
             assertThat(tx.resource(chain.id())).isEqualTo(chain);
             assertThat(tx.resource(draft.id())).isEqualTo(draft);
             assertThat(tx.revision(draft.id(), 1)).isEqualTo(revision);
-            assertThat(tx.revision(draft.id(), 2)).isNull();
+            assertThat(tx.revision(draft.id(), 2)).isEqualTo(raw);
             assertThat(tx.grants(chain.id())).containsExactlyElementsOf(policy.grants());
             assertThat(tx.domains(null, 10)).containsExactly(domain);
             assertThat(tx.chains(domain.id(), null, 10)).containsExactly(chain);
@@ -105,6 +131,13 @@ class JdbcStudioStoreTest {
             statement.executeUpdate();
         }
         assertThatThrownBy(() -> reopened.read(tx -> tx.revision(draft.id(), 1))).hasMessage("STORAGE_UNAVAILABLE");
+        try (var connection = source().getConnection();
+                var statement = connection.prepareStatement("UPDATE g4js_version SET source_text=? WHERE id=?")) {
+            statement.setString(1, "<different/>");
+            statement.setString(2, version.id().toString());
+            statement.executeUpdate();
+        }
+        assertThatThrownBy(() -> reopened.read(tx -> tx.version(version.id()))).hasMessage("STORAGE_UNAVAILABLE");
 
     }
 

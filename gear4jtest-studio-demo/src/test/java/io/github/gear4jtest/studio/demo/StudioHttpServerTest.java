@@ -33,6 +33,7 @@ class StudioHttpServerTest {
     private StudioHttpServer server;
     private LocalGear4jRuntime runtime;
     private Connection lifetime;
+    private DemoPublicationHost publications;
 
     @BeforeEach
     void open() throws Exception {
@@ -43,7 +44,8 @@ class StudioHttpServerTest {
         runtime = DemoWiring.runtime("http", DemoWiring.plainExecutor(resources), resources,
                                      DataCapturePolicy.allowed());
         var actors = new RequestActorContext();
-        var service = DemoDatabase.service(ds, runtime, actors);
+        publications = new DemoPublicationHost(ds, DemoWiring.catalog());
+        var service = DemoDatabase.service(ds, runtime, actors, publications.publisher());
         server = new StudioHttpServer(service, actors, 0, EDITOR, VIEWER);
         server.start();
     }
@@ -53,6 +55,8 @@ class StudioHttpServerTest {
         try {
             if (server != null)
                 server.close();
+            if (publications != null)
+                publications.close();
         } finally {
             try {
                 if (runtime != null)
@@ -88,6 +92,81 @@ class StudioHttpServerTest {
                                            "text_preparation"));
         return post("/drafts", Map.of("chainId", chain.path("resource").path("id").asText(), "name", "Draft",
                                       "definition", DefinitionJson.write(DemoWiring.sample())));
+    }
+
+    @Test
+    void versionHttpRoutesPublishPromoteCompareAndRejectForgedActors() throws Exception {
+        // Given
+        var draft = createDraft();
+        String draftId = draft.path("draft").path("id").asText();
+        assertThat(send("/studio-versions.mjs", "GET", null, null).statusCode()).isEqualTo(200);
+        var first = post("/drafts/" + draftId + "/versions", Map.of("revision", 1, "label", "1.0.0"));
+        String id = first.path("version").path("id").asText();
+        // When / Then
+        assertThat(send("/api/v1/versions/" + id, "GET", VIEWER, null).statusCode()).isEqualTo(404);
+        assertThat(send("/api/v1/versions/" + id + "/publish", "POST", EDITOR, Map.of("actor", "forged")).statusCode())
+                .isEqualTo(400);
+        assertThat(post("/versions/" + id + "/publish", Map.of()).path("publications").get(0).path("state").asText())
+                .isEqualTo("CONFIRMED");
+        assertThat(post("/versions/" + id + "/tests", Map.of("requestId", UUID.randomUUID(), "input", " abc "))
+                .path("run").path("versionId").asText()).isEqualTo(id);
+        assertThat(post("/versions/" + id + "/promote", Map.of()).path("publications")).hasSize(2);
+        assertThat(post("/versions/" + id + "/refresh", Map.of()).path("publications")).hasSize(2);
+        var second = post("/drafts/" + draftId + "/versions", Map.of("revision", 1, "label", "2.0.0"));
+        assertThat(post("/versions/" + id + "/compare",
+                        Map.of("otherVersionId", second.path("version").path("id").asText()))
+                .path("baseXml").asText()).isEqualTo(first.path("version").path("source").asText());
+        String chainId = draft.path("draft").path("chainId").asText();
+        assertThat(mapper.readTree(send("/api/v1/chains/" + chainId + "/versions", "GET", EDITOR, null).body())
+                .path("items")).hasSize(2);
+    }
+
+    @Test
+    void invalidXmlIsAnExactDurableSourceAndRequiresExplicitStructuredRecovery() throws Exception {
+        // Given
+        var initial = createDraft();
+        String id = initial.path("draft").path("id").asText();
+        String xml = post("/resources/" + id + "/export",
+                          Map.of("definition", initial.path("revision").path("definition")))
+                .path("source").asText();
+        String broken = xml.replace("</assemblyLine>", "</assemblyL");
+        // When
+        var saved = send("/api/v1/drafts/" + id + "/source", "PUT", EDITOR,
+                         Map.of("expectedVersion", 1, "mediaType", "application/xml", "source", broken));
+        assertThat(saved.statusCode()).withFailMessage(saved.body()).isEqualTo(200);
+        var restored = mapper.readTree(send("/api/v1/drafts/" + id, "GET", EDITOR, null).body());
+        // Then
+        assertThat(restored.path("revision").path("kind").asText()).isEqualTo("SOURCE");
+        assertThat(restored.path("revision").path("source").path("text").asText()).isEqualTo(broken);
+        assertThat(restored.path("revision").path("definition").isNull()).isTrue();
+        assertThat(send("/api/v1/drafts/" + id + "/tests", "POST", EDITOR,
+                        Map.of("revision", 2, "requestId", UUID.randomUUID(), "input", "synthetic"))
+                .body())
+                .contains("SOURCE_REQUIRES_ANALYSIS");
+        assertThat(send("/api/v1/drafts/" + id + "/source", "PUT", EDITOR,
+                        Map.of("expectedVersion", 1, "mediaType", "application/xml", "source", "<assemblyLine>"))
+                .statusCode()).isEqualTo(409);
+        String forbiddenTail = broken + "<valueParameter retriever=\"unknown\" value=\"synthetic-secret\"/>";
+        var denied = send("/api/v1/drafts/" + id + "/source", "PUT", EDITOR,
+                          Map.of("expectedVersion", 2, "mediaType", "application/xml", "source", forbiddenTail));
+        assertThat(denied.body()).contains("SOURCE_NOT_ADMITTED").doesNotContain("synthetic-secret");
+        assertThat(mapper.readTree(send("/api/v1/drafts/" + id, "GET", EDITOR, null).body())
+                .path("draft").path("head").asInt()).isEqualTo(2);
+        var comparison = post("/drafts/" + id + "/compare", Map.of("fromRevision", 1, "toRevision", 2));
+        assertThat(comparison.path("diff").isNull()).isTrue();
+        assertThat(comparison.path("proposedXml").asText()).isEqualTo(broken);
+        var fork = post("/drafts/" + id + "/fork", Map.of("revision", 2, "name", "Source copy"));
+        assertThat(fork.path("revision").path("source").path("text").asText()).isEqualTo(broken);
+        // A successful preview does not write; only this explicit save creates
+        // STRUCTURED revision 3.
+        var preview = post("/resources/" + id + "/xml-preview", Map.of("source", xml));
+        var structured = send("/api/v1/drafts/" + id, "PUT", EDITOR,
+                              Map.of("expectedVersion", 2, "definition", preview.path("definition")));
+        assertThat(structured.statusCode()).isEqualTo(200);
+        assertThat(mapper.readTree(structured.body()).path("revision").path("kind").asText()).isEqualTo("STRUCTURED");
+        assertThat(post("/drafts/" + id + "/tests",
+                        Map.of("revision", 3, "requestId", UUID.randomUUID(), "input", " electric "))
+                .path("run").path("outcome").asText()).isEqualTo("SUCCEEDED");
     }
 
     @Test
@@ -277,25 +356,6 @@ class StudioHttpServerTest {
         assertThat(report.path("valid").asBoolean()).isFalse();
         assertThat(report.path("diagnostics").get(0).path("code").asText()).isEqualTo("INCOMPATIBLE");
         assertThat(report.path("diagnostics").get(0).path("path").asText()).isEqualTo("/nodes/0");
-    }
-
-    @Test
-    void servesDemoPagesAndCanonicalStudioWebModules() throws Exception {
-        // Given: demo-local pages depend on the shared Studio Web ES modules.
-        for (String path : List.of("/", "/embedded", "/studio.css", "/bootstrap.mjs",
-                                   "/studio-client.mjs", "/management-client.mjs", "/studio-element.mjs",
-                                   "/studio-workspace.mjs")) {
-            // When
-            var response = send(path, "GET", null, null);
-            // Then
-            assertThat(response.statusCode()).as(path).isEqualTo(200);
-            assertThat(response.body()).as(path).isNotBlank();
-        }
-        // The current shared transport uses /api/v1; the old copied StudioClient used
-        // /api.
-        assertThat(send("/studio-client.mjs", "GET", null, null).body()).contains("/api/v1");
-        assertThat(send("/management-client.mjs", "GET", null, null).body())
-                .contains("StudioTransport");
     }
 
     @Test

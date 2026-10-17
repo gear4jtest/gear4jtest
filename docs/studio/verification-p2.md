@@ -130,3 +130,17 @@ Les mesures de charge ACL, les codecs de données métier, les autres conteneurs
 Gear4J et la migration explicite de bases P1 existantes restent les chantiers
 identifiés dans le [guide P2](p2.md). La livraison est un incrément expérimental
 vérifié dans ce périmètre, pas une qualification de déploiement en production.
+
+
+## Correctif SOURCE — 3 octobre 2026
+
+Ajout de trois scénarios Java (service management, admission XML et parcours HTTP),
+extension du scénario H2 avec une source mal formée et un test frontend de reprise.
+Les quatre suites Java modifiées passent, ainsi que les 18 tests frontend. Le
+parcours vérifie le texte exact après réouverture, les droits, les conflits, le refus
+de test, le fork, la comparaison textuelle et la conversion explicite.
+Le paquet frontend du correctif est versionné 0.2.1. Les limites Docker, navigateur
+et couverture globale mentionnées plus haut restent applicables.
+
+Les quatre checks et seuils de couverture des modules modifiés, les liens de documentation
+et le contrôle du paquet npm passent également après le correctif SOURCE.
