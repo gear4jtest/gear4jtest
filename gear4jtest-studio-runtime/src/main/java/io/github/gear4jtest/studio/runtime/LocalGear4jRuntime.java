@@ -49,7 +49,7 @@ import io.github.gear4jtest.xml.parser.XmlAssemblyLineParser;
 import io.github.gear4jtest.xml.validator.AssemblyLineValidator;
 
 /**
- * Local P0 adapter: compile, then execute a pinned draft without publishing it.
+ * Local adapter: compile, then execute a pinned draft without publishing it.
  * The deadline is cooperative.
  */
 public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
@@ -77,7 +77,7 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
                               DataCapturePolicy capture,
                               Duration deadline) {
         if (deadline.isZero() || deadline.isNegative() || deadline.compareTo(Duration.ofSeconds(30)) > 0)
-            throw new IllegalArgumentException("Deadline outside P0 limits");
+            throw new IllegalArgumentException("Deadline outside adapter limits");
         this.catalog = catalog;
         this.executor = executor;
         this.resources = resources;
@@ -86,7 +86,7 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
         checks = new DefinitionChecks(catalog);
         xml = new StudioXmlAdapter(catalog);
         context = new RuntimeContext(id, applicationBuild, catalog.fingerprint(),
-                Set.of("DRAFT", "VALIDATE", "CONTROLLED_TEST", "XML_SUBSET"));
+                Set.of("DRAFT", "VALIDATE", "CONTROLLED_TEST", "CONTROLLED_TEST_STRING", "XML_SUBSET"));
     }
 
     @Override
@@ -122,6 +122,11 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
     }
 
     @Override
+    public ValidationReport analyze(ChainDefinition definition) {
+        return new ValidationReport(catalog.fingerprint(), checks.validate(definition));
+    }
+
+    @Override
     public ValidationReport validate(ChainDefinition definition) {
         var diagnostics = new ArrayList<>(checks.validate(definition));
         if (diagnostics.stream().noneMatch(d -> d.severity() == Diagnostic.Severity.ERROR)) {
@@ -154,6 +159,9 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
 
     @Override
     public ControlledRun execute(DraftRevision revision, String input, UUID requestId, String actor) {
+        if (!revision.definition().inputType().equals("java.lang.String")
+                || !revision.definition().outputType().equals("java.lang.String"))
+            throw new StudioProblem(StudioProblem.Code.UNSUPPORTED_CONTRACT);
         if (!new ValidationReport(catalog.fingerprint(), checks.validate(revision.definition())).valid())
             throw new StudioProblem(StudioProblem.Code.INVALID_DEFINITION);
         acquire();

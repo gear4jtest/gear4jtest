@@ -2,4 +2,4 @@
 
 Catalogue explicite, adaptateur XML, compilation et test contrôlé.
 
-Prototype expérimental. Voir le [guide P0](../docs/studio/p0.md) et le [bilan de vérification](../docs/studio/verification.md). Les drafts et reçus disparaissent au redémarrage.
+Module expérimental. Voir le [guide P2](../docs/studio/p2.md) et le [bilan de vérification](../docs/studio/verification-p2.md). P2 ajoute l’authoring, les contrats et les composants distribuables au management P1.

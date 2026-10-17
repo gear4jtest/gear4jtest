@@ -21,6 +21,11 @@ public interface StudioRuntime {
 
     void assertSafeToStore(ChainDefinition definition);
 
+    /** Cheap structural analysis; adapters may override to avoid compilation. */
+    default ValidationReport analyze(ChainDefinition definition) {
+        return validate(definition);
+    }
+
     ValidationReport validate(ChainDefinition definition);
 
     String exportDefinition(ChainDefinition definition, String mediaType);

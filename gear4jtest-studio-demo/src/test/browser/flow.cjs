@@ -1,6 +1,6 @@
 // Start both demos with GEAR4J_STUDIO_TOKEN=synthetic-editor-token-0123456789
 // and GEAR4J_STUDIO_CAPTURE=synthetic. This scenario runs real, local test operations.
-const { chromium } = require('playwright');
+const { chromium } = require('../../../../gear4jtest-studio-web/node_modules/playwright');
 const assert = require('node:assert/strict');
 (async () => {
  const browser = await chromium.launch();

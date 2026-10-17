@@ -33,11 +33,11 @@ final class ManagementRoutes {
         if (parts.length == 1) {
             String kind = parts[0];
             if (method.equals("GET") && kind.equals("context"))
-                return ok(Map.of("context", service.runtime().context(), "identity", service.identity(),
+                return ok(Map.of("context", service.context(), "identity", service.identity(),
                                  "canCreateDomain", service.canCreateDomain(), "permissions", Permission.values(),
                                  "sample", DefinitionJson.write(DemoWiring.sample())));
             if (method.equals("GET") && kind.equals("catalog"))
-                return ok(service.runtime().catalog());
+                return ok(service.catalog());
             if (method.equals("GET") && Set.of("domains", "chains", "drafts").contains(kind)) {
                 ResourceKind resourceKind = switch (kind) {
                     case "domains" -> ResourceKind.DOMAIN;
@@ -54,9 +54,10 @@ final class ManagementRoutes {
                                                          text(body, "description"))));
             }
             if (method.equals("POST") && kind.equals("chains")) {
-                fields(body, Set.of("domainId", "key", "name", "description"));
+                fields(body, Set.of("domainId", "key", "name", "description", "runtimeAssemblyLineId"));
                 return created(view(service.createChain(id(body, "domainId"), text(body, "key"), text(body, "name"),
-                                                        text(body, "description"))));
+                                                        text(body, "description"),
+                                                        text(body, "runtimeAssemblyLineId"))));
             }
             if (method.equals("POST") && kind.equals("drafts")) {
                 fields(body, Set.of("chainId", "name", "definition"));
@@ -81,6 +82,12 @@ final class ManagementRoutes {
                 }
                 if (parts.length == 3) {
                     String action = parts[2];
+                    if (method.equals("POST") && action.equals("xml-preview")) {
+                        fields(body, Set.of("source"));
+                        var definition = service.previewXml(id, text(body, "source"));
+                        return ok(Map.of("definition", DefinitionJson.write(definition),
+                                         "source", service.export(id, definition)));
+                    }
                     if (method.equals("GET") && action.equals("access"))
                         return ok(service.access(id));
                     if (method.equals("PUT") && action.equals("access")) {
@@ -89,17 +96,18 @@ final class ManagementRoutes {
                                                          policy(body.path("policy")))));
                     }
                     if (method.equals("GET") && action.equals("audit"))
-                        return ok(service.audit(id, after == null ? 0 : Long.parseLong(after), size));
+                        return ok(service.audit(id, after, size));
                     if (method.equals("POST") && action.equals("archive")) {
                         fields(body, Set.of("expectedVersion"));
                         return ok(view(service.archive(id, number(body, "expectedVersion"))));
                     }
-                    if (method.equals("POST") && Set.of("validate", "export").contains(action)) {
+                    if (method.equals("POST") && Set.of("validate", "export", "diagnostics").contains(action)) {
                         fields(body, Set.of("definition"));
                         var definition = DefinitionJson.read(body.path("definition"));
                         if (action.equals("export"))
                             return ok(Map.of("source", service.export(id, definition), "mediaType", "application/xml"));
-                        var report = service.validate(id, definition);
+                        var report = action.equals("diagnostics") ? service.analyze(id, definition)
+                                : service.validate(id, definition);
                         return ok(Map.of("valid", report.valid(), "diagnostics", report.diagnostics(),
                                          "catalogFingerprint", report.catalogFingerprint()));
                     }
@@ -114,6 +122,16 @@ final class ManagementRoutes {
                                                       DefinitionJson.read(body.path("definition")))));
                 }
                 if (parts.length == 3) {
+                    if (method.equals("POST") && parts[2].equals("diff")) {
+                        fields(body, Set.of("revision", "definition"));
+                        return ok(service.compare(id, number(body, "revision"),
+                                                  DefinitionJson.read(body.path("definition"))));
+                    }
+                    if (method.equals("POST") && parts[2].equals("compare")) {
+                        fields(body, Set.of("fromRevision", "toRevision"));
+                        return ok(service.compareRevisions(id, number(body, "fromRevision"),
+                                                           number(body, "toRevision")));
+                    }
                     if (method.equals("GET") && parts[2].equals("revisions")) {
                         var page = service.revisions(id, after == null ? 0 : Long.parseLong(after), size);
                         return ok(new StudioPage<>(page.items().stream().map(ManagementRoutes::revision).toList(),

@@ -13,6 +13,12 @@ import io.github.gear4jtest.studio.model.DraftRevision;
  * descendants must first lockDomain on that domain.
  */
 public interface StudioStore {
+    /**
+     * Atomically binds an empty store, or rejects a different stable runtime
+     * identity.
+     */
+    void bindContext(String runtimeContextId);
+
     <T> T read(Function<Session, T> work);
 
     <T> T write(Function<Session, T> work);

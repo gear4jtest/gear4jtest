@@ -9,7 +9,12 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 import io.github.gear4jtest.studio.model.ChainDefinition;
+import io.github.gear4jtest.studio.model.DefinitionComparison;
+import io.github.gear4jtest.studio.model.DefinitionDiff;
+import io.github.gear4jtest.studio.model.Diagnostic;
 import io.github.gear4jtest.studio.model.DraftRevision;
+import io.github.gear4jtest.studio.model.OperationDescriptor;
+import io.github.gear4jtest.studio.model.RuntimeContext;
 import io.github.gear4jtest.studio.model.TestSubmission;
 import io.github.gear4jtest.studio.model.ValidationReport;
 import io.github.gear4jtest.studio.service.StudioProblem;
@@ -28,6 +33,8 @@ public final class StudioManagementService {
     private final CurrentActorProvider actors;
     private final Predicate<StudioIdentity> domainCreation;
     private final Clock clock;
+    private final PageCursors cursors;
+    private static final int SCAN_BUDGET = 500;
     private final ControlledTests tests = new ControlledTests();
 
     public StudioManagementService(StudioStore store,
@@ -47,6 +54,8 @@ public final class StudioManagementService {
         this.actors = Objects.requireNonNull(actors);
         this.domainCreation = Objects.requireNonNull(domainCreation);
         this.clock = Objects.requireNonNull(clock);
+        this.cursors = new PageCursors(clock);
+        store.bindContext(runtime.context().id());
     }
 
     public StudioIdentity identity() {
@@ -56,9 +65,14 @@ public final class StudioManagementService {
         return actor;
     }
 
-    public StudioRuntime runtime() {
+    public RuntimeContext context() {
         identity();
-        return runtime;
+        return runtime.context();
+    }
+
+    public List<OperationDescriptor> catalog() {
+        identity();
+        return runtime.catalog();
     }
 
     public boolean canCreateDomain() {
@@ -118,15 +132,27 @@ public final class StudioManagementService {
     }
 
     public ResourceView<StudioChain> createChain(UUID domainId, String key, String name, String description) {
+        return createChain(domainId, key, name, description, "chain_" + UUID.randomUUID().toString().replace("-", ""));
+    }
+
+    public ResourceView<StudioChain> createChain(UUID domainId,
+                                                 String key,
+                                                 String name,
+                                                 String description,
+                                                 String runtimeAssemblyLineId) {
         var actor = identity();
         key(key);
         text(name, 160, true);
         text(description, 2048, false);
+        if (runtimeAssemblyLineId == null || !runtimeAssemblyLineId.matches("[a-zA-Z_][a-zA-Z0-9_]{0,63}")
+                || javax.lang.model.SourceVersion.isKeyword(runtimeAssemblyLineId))
+            throw new StudioProblem(INVALID_REQUEST);
         return store.write(tx -> {
             var parent = typed(locked(tx, domainId), StudioDomain.class);
             requireRead(tx, actor, parent, Permission.CREATE_CHAIN);
             var time = now();
-            var value = new StudioChain(UUID.randomUUID(), domainId, key, name, description, actor.subject(), 1, true,
+            var value = new StudioChain(UUID.randomUUID(), domainId, key, runtimeAssemblyLineId, name, description,
+                    actor.subject(), 1, true,
                     false, time, time);
             tx.insert(value);
             audit(tx, actor, value, AuditEvent.Action.CHAIN_CREATED, null, null, null, null);
@@ -156,6 +182,7 @@ public final class StudioManagementService {
             var parent = typed(locked(tx, chainId), StudioChain.class);
             requireRead(tx, actor, parent, Permission.CREATE_DRAFT);
             runtime.assertSafeToStore(definition);
+            matchingIdentity(parent, definition);
             return insertDraft(tx, actor, parent, name, definition, origin, base);
         });
     }
@@ -199,6 +226,7 @@ public final class StudioManagementService {
             requireRead(tx, actor, old, Permission.EDIT);
             expected(old, expectedVersion);
             runtime.assertSafeToStore(definition);
+            matchingIdentity(chain(tx, old), definition);
             var time = now();
             var draft = new StudioDraft(old.id(), old.chainId(), old.name(), old.owner(), old.version() + 1,
                     old.inheritAccess(), false, old.head() + 1, old.origin(), old.baseRevisionId(), old.createdAt(),
@@ -247,17 +275,14 @@ public final class StudioManagementService {
     public StudioPage<DiscoveryItem> list(ResourceKind kind, UUID parent, String after, int size) {
         var actor = identity();
         limit(size);
-        if (after != null) {
-            try {
-                UUID.fromString(after);
-            } catch (IllegalArgumentException e) {
-                throw new StudioProblem(INVALID_REQUEST);
-            }
-        }
+        String scope = kind + ":" + parent;
+        String position = cursors.decode(after, actor, scope);
         return store.read(tx -> {
             var result = new ArrayList<DiscoveryItem>();
-            String cursor = after;
-            while (result.size() <= size) {
+            String cursor = position;
+            int scanned = 0;
+            boolean exhausted = false;
+            while (result.size() <= size && scanned < SCAN_BUDGET) {
                 List<? extends ManagedResource> batch = switch (kind) {
                     case DOMAIN -> tx.domains(cursor, 100);
                     case CHAIN -> tx.chains(parent, cursor, 100);
@@ -265,6 +290,7 @@ public final class StudioManagementService {
                 };
                 for (var value : batch) {
                     cursor = value.id().toString();
+                    scanned++;
                     var allowed = permissions(tx, actor, value);
                     if (allowed.contains(Permission.DISCOVER)) {
                         UUID parentId = value instanceof StudioChain c ? c.domainId()
@@ -275,12 +301,15 @@ public final class StudioManagementService {
                             break;
                     }
                 }
-                if (batch.size() < 100)
+                if (batch.size() < 100) {
+                    exhausted = true;
                     break;
+                }
             }
-            boolean more = result.size() > size;
-            var page = more ? result.subList(0, size) : result;
-            return new StudioPage<>(page, more ? page.get(page.size() - 1).id().toString() : null);
+            boolean lookahead = result.size() > size;
+            var page = lookahead ? result.subList(0, size) : result;
+            String next = lookahead ? page.get(page.size() - 1).id().toString() : !exhausted ? cursor : null;
+            return new StudioPage<>(page, next == null ? null : cursors.encode(next, actor, scope));
         });
     }
 
@@ -290,7 +319,8 @@ public final class StudioManagementService {
             var value = ResourceAccess.resource(tx, id);
             requireRead(tx, actor, value, Permission.MANAGE_ACCESS);
             return new AccessState(value.version(), new AccessPolicy(value.inheritAccess(), tx.grants(id)),
-                    permissions(tx, actor, value));
+                    permissions(tx, actor, value), AccessDelegation.administrator(tx, actor, value),
+                    AccessDelegation.grantable(tx, actor, value));
         });
     }
 
@@ -304,6 +334,7 @@ public final class StudioManagementService {
             if (old instanceof StudioDomain && policy.inheritAccess())
                 throw new StudioProblem(INVALID_REQUEST);
             var before = new AccessPolicy(old.inheritAccess(), tx.grants(id));
+            AccessDelegation.check(tx, actor, old, before, policy);
             var value = updated(old, old.name(), description(old), policy.inheritAccess(), false);
             tx.update(value, expectedVersion);
             tx.replaceGrants(id, policy.grants());
@@ -365,21 +396,102 @@ public final class StudioManagementService {
             return new StudioDomain(d.id(), d.key(), name, description, d.owner(), d.version() + 1,
                     archive || d.archived(), d.createdAt(), time);
         if (old instanceof StudioChain c)
-            return new StudioChain(c.id(), c.domainId(), c.key(), name, description, c.owner(), c.version() + 1,
+            return new StudioChain(c.id(), c.domainId(), c.key(), c.runtimeAssemblyLineId(), name, description,
+                    c.owner(), c.version() + 1,
                     inherit, archive || c.archived(), c.createdAt(), time);
         var d = (StudioDraft) old;
         return new StudioDraft(d.id(), d.chainId(), name, d.owner(), d.version() + 1, inherit, archive || d.abandoned(),
                 d.head(), d.origin(), d.baseRevisionId(), d.createdAt(), time);
     }
 
+    public ValidationReport analyze(UUID scope, ChainDefinition definition) {
+        authorize(scope, Permission.VALIDATE);
+        capability("VALIDATE");
+        if (!definition.id().equals(runtimeId(scope)))
+            return new ValidationReport(runtime.context().catalogFingerprint(), List.of(Diagnostic.error(
+                                                                                                         "CHAIN_ID_MISMATCH",
+                                                                                                         "/id",
+                                                                                                         "L’identifiant Gear4J est immuable pour cette chaîne.")));
+        return runtime.analyze(definition);
+    }
+
     public ValidationReport validate(UUID scope, ChainDefinition definition) {
         authorize(scope, Permission.VALIDATE);
         capability("VALIDATE");
+        if (!definition.id().equals(runtimeId(scope)))
+            return new ValidationReport(runtime.context().catalogFingerprint(), List.of(Diagnostic.error(
+                                                                                                         "CHAIN_ID_MISMATCH",
+                                                                                                         "/id",
+                                                                                                         "L’identifiant Gear4J doit correspondre à celui de la chaîne Studio.")));
         return runtime.validate(definition);
+    }
+
+    private static void matchingIdentity(StudioChain chain, ChainDefinition definition) {
+        if (!chain.runtimeAssemblyLineId().equals(definition.id()))
+            throw new StudioProblem(INVALID_DEFINITION);
+    }
+
+    private String runtimeId(UUID scope) {
+        return store.read(tx -> {
+            var resource = ResourceAccess.resource(tx, scope);
+            var chain = resource instanceof StudioDraft draft ? chain(tx, draft) : typed(resource, StudioChain.class);
+            return chain.runtimeAssemblyLineId();
+        });
+    }
+
+    /**
+     * Parses without persisting; applying and saving are separate explicit
+     * authoring actions.
+     */
+    public ChainDefinition previewXml(UUID scope, String source) {
+        authorize(scope, Permission.EDIT);
+        var definition = runtime.importDefinition(source, "application/xml");
+        if (!definition.id().equals(runtimeId(scope)))
+            throw new StudioProblem(INVALID_DEFINITION);
+        runtime.assertSafeToStore(definition);
+        return definition;
+    }
+
+    /**
+     * Compares local work with an immutable revision, under the draft's current
+     * read permissions.
+     */
+    public DefinitionComparison compare(UUID draftId, long baseNumber, ChainDefinition proposed) {
+        var actor = identity();
+        var base = store.read(tx -> {
+            var draft = typed(ResourceAccess.resource(tx, draftId), StudioDraft.class);
+            requireRead(tx, actor, draft, Permission.READ);
+            matchingIdentity(chain(tx, draft), proposed);
+            return revision(tx, draftId, baseNumber);
+        });
+        return new DefinitionComparison(base.revisionId(), DefinitionDiff.between(base.definition(), proposed),
+                optionalXml(base.definition()), optionalXml(proposed));
+    }
+
+    public DefinitionComparison compareRevisions(UUID draftId, long fromNumber, long toNumber) {
+        var actor = identity();
+        var pair = store.read(tx -> {
+            var draft = typed(ResourceAccess.resource(tx, draftId), StudioDraft.class);
+            requireRead(tx, actor, draft, Permission.READ);
+            return List.of(revision(tx, draftId, fromNumber), revision(tx, draftId, toNumber));
+        });
+        return new DefinitionComparison(pair.get(0).revisionId(),
+                DefinitionDiff.between(pair.get(0).definition(), pair.get(1).definition()),
+                optionalXml(pair.get(0).definition()), optionalXml(pair.get(1).definition()));
+    }
+
+    private String optionalXml(ChainDefinition definition) {
+        try {
+            return runtime.exportDefinition(definition, "application/xml");
+        } catch (StudioProblem | SecurityException unavailable) {
+            return null;
+        }
     }
 
     public String export(UUID scope, ChainDefinition definition) {
         authorize(scope, Permission.READ);
+        if (!definition.id().equals(runtimeId(scope)))
+            throw new StudioProblem(INVALID_DEFINITION);
         return runtime.exportDefinition(definition, "application/xml");
     }
 
@@ -422,11 +534,11 @@ public final class StudioManagementService {
         return tests.status(actor.subject(), requestId);
     }
 
-    public StudioPage<AuditEvent> audit(UUID scope, long after, int size) {
+    public StudioPage<AuditEvent> audit(UUID scope, String after, int size) {
         var actor = identity();
         limit(size);
-        if (after < 0)
-            throw new StudioProblem(INVALID_REQUEST);
+        String cursorScope = "audit:" + scope;
+        String position = cursors.decode(after, actor, cursorScope);
         return store.read(tx -> {
             var target = ResourceAccess.resource(tx, scope);
             require(tx, actor, target, Permission.READ_AUDIT);
@@ -435,11 +547,14 @@ public final class StudioManagementService {
                     : target instanceof StudioDraft d ? d.chainId() : null;
             UUID draftId = target instanceof StudioDraft d ? d.id() : null;
             var result = new ArrayList<AuditEvent>();
-            long cursor = after;
-            while (result.size() <= size) {
+            long cursor = position == null ? 0 : Long.parseLong(position);
+            int scanned = 0;
+            boolean exhausted = false;
+            while (result.size() <= size && scanned < SCAN_BUDGET) {
                 var batch = tx.audit(domain.id(), chainId, draftId, cursor, 100);
                 for (var event : batch) {
                     cursor = event.sequence();
+                    scanned++;
                     var value = ResourceAccess.resource(tx, event.resourceId());
                     var rights = permissions(tx, actor, value);
                     if (rights.contains(Permission.DISCOVER) && rights.contains(Permission.READ_AUDIT))
@@ -447,12 +562,16 @@ public final class StudioManagementService {
                     if (result.size() > size)
                         break;
                 }
-                if (batch.size() < 100)
+                if (batch.size() < 100) {
+                    exhausted = true;
                     break;
+                }
             }
-            boolean more = result.size() > size;
-            var page = more ? result.subList(0, size) : result;
-            return new StudioPage<>(page, more ? Long.toString(page.get(page.size() - 1).sequence()) : null);
+            boolean lookahead = result.size() > size;
+            var page = lookahead ? result.subList(0, size) : result;
+            String next = lookahead ? Long.toString(page.get(page.size() - 1).sequence())
+                    : !exhausted ? Long.toString(cursor) : null;
+            return new StudioPage<>(page, next == null ? null : cursors.encode(next, actor, cursorScope));
         });
     }
 

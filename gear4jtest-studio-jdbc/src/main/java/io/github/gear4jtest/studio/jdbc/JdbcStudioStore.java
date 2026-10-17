@@ -21,6 +21,16 @@ public final class JdbcStudioStore implements StudioStore {
     }
 
     @Override
+    public void bindContext(String runtimeContextId) {
+        if (runtimeContextId == null || runtimeContextId.isBlank() || runtimeContextId.length() > 255)
+            throw new IllegalArgumentException("Invalid runtime context identity");
+        transaction(tx -> {
+            ((JdbcStudioSession) tx).bindContext(runtimeContextId);
+            return null;
+        }, false);
+    }
+
+    @Override
     public <T> T read(Function<Session, T> work) {
         return transaction(work, true);
     }

@@ -21,8 +21,8 @@ import org.xml.sax.SAXParseException;
 import org.xml.sax.helpers.DefaultHandler;
 
 /**
- * Canonical semantic round-trip for the declared P0 subset. Unknown constructs
- * fail closed.
+ * Canonical semantic round-trip for the declared authoring subset. Unknown
+ * constructs fail closed.
  */
 public final class StudioXmlAdapter {
     public static final int MAX_BYTES = 65536;

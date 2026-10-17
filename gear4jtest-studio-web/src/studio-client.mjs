@@ -2,13 +2,13 @@
 export class StudioError extends Error {
   constructor(code, status) { super(code); this.code = code; this.status = status; }
 }
-export class StudioClient {
+export class StudioTransport {
   constructor({ baseUrl = '', tokenProvider = () => '', fetchImpl = globalThis.fetch } = {}) {
     this.baseUrl = baseUrl.replace(/\/$/, ''); this.tokenProvider = tokenProvider; this.fetch = fetchImpl;
   }
   async request(path, method = 'GET', body) {
     const token = await this.tokenProvider();
-    const response = await this.fetch(`${this.baseUrl}/api${path}`, {
+    const response = await this.fetch(`${this.baseUrl}/api/v1${path}`, {
       method, cache: 'no-store', credentials: 'omit',
       headers: { Authorization: `Bearer ${token}`, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) })
@@ -17,15 +17,6 @@ export class StudioClient {
     if (!response.ok) throw new StudioError(value.code || 'REQUEST_FAILED', response.status);
     return value;
   }
-  context() { return this.request('/context'); }
-  catalog() { return this.request('/catalog'); }
-  draft(id) { return this.request(`/drafts/${encodeURIComponent(id)}`); }
-  revisions(id) { return this.request(`/drafts/${encodeURIComponent(id)}/revisions`); }
-  create(definition) { return this.request('/drafts', 'POST', { definition }); }
-  save(id, expectedRevision, definition) { return this.request(`/drafts/${encodeURIComponent(id)}`, 'PUT', { expectedRevision, definition }); }
-  validate(definition) { return this.request('/validate', 'POST', { definition }); }
-  exportXml(definition) { return this.request('/export', 'POST', { definition }); }
-  importXml(source) { return this.request('/import', 'POST', { source }); }
   test(id, { requestId, revision, input }) {
     if (!requestId) throw new TypeError('requestId required');
     return this.request(`/drafts/${encodeURIComponent(id)}/tests`, 'POST', { requestId, revision, input });

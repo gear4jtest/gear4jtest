@@ -189,4 +189,4 @@ simple and move optional integrations to dedicated modules.
 
 See `docs/production-readiness.md` before using Gear4J operationally.
 
-Le module optionnel [Gear4J Studio P1](docs/studio/p1.md) ajoute domaines, chaînes, drafts durables, ACL et audit au catalogue, à la validation et aux tests contrôlés P0.
+Le module optionnel [Gear4J Studio P2](docs/studio/p2.md) ajoute contrats inférés, édition structurée/XML, diagnostics et comparaison au management durable P1. Ses composants sont distribuables via [@gear4j/studio-web](gear4jtest-studio-web/README.md).

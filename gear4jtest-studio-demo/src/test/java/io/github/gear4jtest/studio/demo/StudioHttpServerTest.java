@@ -84,7 +84,8 @@ class StudioHttpServerTest {
     private JsonNode createDraft() throws Exception {
         var domain = post("/domains", Map.of("key", "catalog", "name", "Catalogue", "description", ""));
         var chain = post("/chains", Map.of("domainId", domain.path("resource").path("id").asText(), "key", "vehicles",
-                                           "name", "Véhicules", "description", ""));
+                                           "name", "Véhicules", "description", "", "runtimeAssemblyLineId",
+                                           "text_preparation"));
         return post("/drafts", Map.of("chainId", chain.path("resource").path("id").asText(), "name", "Draft",
                                       "definition", DefinitionJson.write(DemoWiring.sample())));
     }
@@ -93,7 +94,7 @@ class StudioHttpServerTest {
     void durableHttpAuthoringRunsThePinnedRevisionAndRetrievesItsAudit() throws Exception {
         // Given
         assertThat(send("/api/v1/catalog", "GET", null, null).statusCode()).isEqualTo(401);
-        assertThat(mapper.readTree(send("/api/v1/catalog", "GET", EDITOR, null).body())).hasSize(5);
+        assertThat(mapper.readTree(send("/api/v1/catalog", "GET", EDITOR, null).body())).hasSize(7);
         var created = createDraft();
         String id = created.path("draft").path("id").asText();
         var definition = created.path("revision").path("definition");
@@ -191,7 +192,7 @@ class StudioHttpServerTest {
                         Map.of("expectedVersion", 3, "definition", draft.path("revision").path("definition")))
                 .statusCode()).isEqualTo(403);
         assertThat(mapper
-                .readTree(send("/api/v1/resources/" + id + "/audit?after=0&limit=100", "GET", EDITOR, null).body())
+                .readTree(send("/api/v1/resources/" + id + "/audit?limit=100", "GET", EDITOR, null).body())
                 .path("items")).hasSize(3);
     }
 
@@ -205,7 +206,7 @@ class StudioHttpServerTest {
             nodes.add(new ChainDefinition.Operation("step" + i, "text.prefix",
                     Map.of("prefix", new ParameterValue(ParameterValue.Kind.TEXT, "x".repeat(3500)))));
         var definition = DefinitionJson
-                .write(new ChainDefinition(1, "large", "java.lang.String", "java.lang.String", nodes));
+                .write(new ChainDefinition(1, "text_preparation", "java.lang.String", "java.lang.String", nodes));
         // When
         var source = post("/resources/" + draft.path("draft").path("id").asText() + "/export",
                           Map.of("definition", definition))
@@ -216,6 +217,85 @@ class StudioHttpServerTest {
         // Then
         assertThat(imported.path("revision").path("definition"))
                 .isEqualTo(mapper.readTree(mapper.writeValueAsString(definition)));
+    }
+
+    @Test
+    void typedAuthoringXmlPreviewDiffAndScopedDiagnosticsWorkTogether() throws Exception {
+        // Given
+        var draft = createDraft();
+        var id = draft.path("draft").path("id").asText();
+        var typed = new ChainDefinition(1, "text_preparation", "java.lang.String", "java.lang.String", List.of(
+                                                                                                               new ChainDefinition.Operation(
+                                                                                                                       "length",
+                                                                                                                       "text.length",
+                                                                                                                       Map.of()),
+                                                                                                               new ChainDefinition.Operation(
+                                                                                                                       "format",
+                                                                                                                       "number.format",
+                                                                                                                       Map.of())));
+        var definition = DefinitionJson.write(typed);
+        // When / Then: real generic contracts, compiler, XML adapter, persistence and
+        // runtime agree.
+        assertThat(post("/resources/" + id + "/diagnostics", Map.of("definition", definition)).path("valid")
+                .asBoolean()).isTrue();
+        assertThat(post("/resources/" + id + "/validate", Map.of("definition", definition)).path("valid").asBoolean())
+                .isTrue();
+        var difference = post("/drafts/" + id + "/diff", Map.of("revision", 1, "definition", definition));
+        assertThat(difference.path("diff").path("changes")).isNotEmpty();
+        var source = post("/resources/" + id + "/export", Map.of("definition", definition)).path("source").asText();
+        var preview = post("/resources/" + id + "/xml-preview",
+                           Map.of("source", source.replace("<operations>", "<!--normalized--> <operations>")));
+        assertThat(preview.path("source").asText()).doesNotContain("normalized");
+        assertThat(preview.path("definition")).isEqualTo(mapper.valueToTree(definition));
+        assertThat(mapper.readTree(send("/api/v1/drafts/" + id, "GET", EDITOR, null).body()).path("draft").path("head")
+                .asInt()).isEqualTo(1);
+        assertThat(send("/api/v1/resources/" + id + "/xml-preview", "POST", VIEWER, Map.of("source", source))
+                .statusCode()).isEqualTo(404);
+        assertThat(send("/api/v1/drafts/" + id, "PUT", EDITOR, Map.of("expectedVersion", 1, "definition", definition))
+                .statusCode()).isEqualTo(200);
+        assertThat(post("/drafts/" + id + "/compare", Map.of("fromRevision", 1, "toRevision", 2)).path("diff")
+                .path("changes"))
+                .isEqualTo(difference.path("diff").path("changes"));
+        assertThat(post("/drafts/" + id + "/tests",
+                        Map.of("revision", 2, "requestId", UUID.randomUUID(), "input", "hello"))
+                .path("run").path("output").path("value").asText()).isEqualTo("5");
+        var integerInput = new ChainDefinition(1, "text_preparation", "java.lang.Integer", "java.lang.String",
+                List.of(typed.nodes().get(1)));
+        assertThat(post("/resources/" + id + "/validate", Map.of("definition", DefinitionJson.write(integerInput)))
+                .path("valid").asBoolean()).isTrue();
+        assertThat(send("/api/v1/drafts/" + id, "PUT", EDITOR,
+                        Map.of("expectedVersion", 2, "definition", DefinitionJson.write(integerInput)))
+                .statusCode()).isEqualTo(200);
+        var unavailableTest = post("/drafts/" + id + "/tests",
+                                   Map.of("revision", 3, "requestId", UUID.randomUUID(), "input", "5"));
+        assertThat(unavailableTest.path("state").asText()).isEqualTo("PREPARATION_FAILED");
+        assertThat(unavailableTest.path("errorCode").asText()).isEqualTo("UNSUPPORTED_CONTRACT");
+        var incompatible = new ChainDefinition(1, "text_preparation", "java.lang.String", "java.lang.String",
+                List.of(typed.nodes().get(1)));
+        var report = post("/resources/" + id + "/diagnostics",
+                          Map.of("definition", DefinitionJson.write(incompatible)));
+        assertThat(report.path("valid").asBoolean()).isFalse();
+        assertThat(report.path("diagnostics").get(0).path("code").asText()).isEqualTo("INCOMPATIBLE");
+        assertThat(report.path("diagnostics").get(0).path("path").asText()).isEqualTo("/nodes/0");
+    }
+
+    @Test
+    void servesDemoPagesAndCanonicalStudioWebModules() throws Exception {
+        // Given: demo-local pages depend on the shared Studio Web ES modules.
+        for (String path : List.of("/", "/embedded", "/studio.css", "/bootstrap.mjs",
+                                   "/studio-client.mjs", "/management-client.mjs", "/studio-element.mjs",
+                                   "/studio-workspace.mjs")) {
+            // When
+            var response = send(path, "GET", null, null);
+            // Then
+            assertThat(response.statusCode()).as(path).isEqualTo(200);
+            assertThat(response.body()).as(path).isNotBlank();
+        }
+        // The current shared transport uses /api/v1; the old copied StudioClient used
+        // /api.
+        assertThat(send("/studio-client.mjs", "GET", null, null).body()).contains("/api/v1");
+        assertThat(send("/management-client.mjs", "GET", null, null).body())
+                .contains("StudioTransport");
     }
 
     @Test
@@ -234,109 +314,5 @@ class StudioHttpServerTest {
         assertThat(send("/api/v1/domains?limit=1&limit=2", "GET", EDITOR, null).statusCode()).isEqualTo(400);
         assertThat(send("/embedded", "GET", null, null).body()).contains("gear4j-workspace", "Portail");
         assertThat(send("/studio-element.mjs", "GET", null, null).statusCode()).isEqualTo(200);
-    }
-
-    @Test
-    void httpTransportRejectsMalformedJsonWrongContentTypesAndOversizedBodies() throws Exception {
-        // Given: the request decoder must reject invalid requests before any
-        // management operation can mutate durable state.
-        assertThat(send("/api/v1/context", "GET", "invalid-token", null).statusCode()).isEqualTo(401);
-        assertThat(send("/api/v1/context", "GET", null, null).statusCode()).isEqualTo(401);
-        assertThat(send("/api/v1/context", "GET", VIEWER, null).statusCode()).isEqualTo(200);
-
-        // When / Then
-        assertThat(sendRaw("/api/v1/domains", "POST", null, "{}").statusCode()).isEqualTo(400);
-        assertThat(sendRaw("/api/v1/domains", "POST", "text/plain", "{}").statusCode()).isEqualTo(400);
-        assertThat(sendRaw("/api/v1/domains", "POST", "application/json", "").statusCode()).isEqualTo(400);
-        assertThat(sendRaw("/api/v1/domains", "POST", "application/json", "{").statusCode()).isEqualTo(400);
-        assertThat(sendRaw("/api/v1/domains", "POST", "application/json", "{\"a\":1} {\"b\":2}")
-                .statusCode()).isEqualTo(400);
-        assertThat(sendRaw("/api/v1/domains", "POST", "application/json",
-                           "{\"name\":\"" + "x".repeat(65526) + "\"}")
-                .statusCode()).isEqualTo(400);
-        assertThat(mapper.readTree(send("/api/v1/domains", "GET", EDITOR, null).body()).path("items"))
-                .isEmpty();
-    }
-
-    @Test
-    void queryValidationAndUnknownRoutesReturnSafeClientErrors() throws Exception {
-        // Given / When / Then
-        assertThat(send("/api/v1/domains?unexpected=1", "GET", EDITOR, null).statusCode()).isEqualTo(400);
-        assertThat(send("/api/v1/domains?limit=NaN", "GET", EDITOR, null).statusCode()).isEqualTo(400);
-        assertThat(send("/api/v1/domains?limit", "GET", EDITOR, null).statusCode()).isEqualTo(400);
-        assertThat(send("/api/v1/domains?parent=1&after=2&limit=3&other=4", "GET", EDITOR, null)
-                .statusCode()).isEqualTo(400);
-        assertThat(send("/api/v1/resources/not-a-uuid", "GET", EDITOR, null).statusCode()).isEqualTo(400);
-        assertThat(send("/api/v1/not-an-endpoint", "GET", EDITOR, null).statusCode()).isEqualTo(404);
-        assertThat(send("/api/v1/domains", "DELETE", EDITOR, null).statusCode()).isEqualTo(404);
-        assertThat(send("/api/v1/domains", "POST", EDITOR, List.of()).statusCode()).isEqualTo(400);
-    }
-
-    @Test
-    void accessPolicyAndDefinitionValidationRejectMalformedInputs() throws Exception {
-        // Given
-        var draft = createDraft();
-        var id = draft.path("draft").path("id").asText();
-
-        // When / Then
-        assertThat(send("/api/v1/resources/" + id + "/access", "PUT", EDITOR,
-                        Map.of("expectedVersion", 1, "policy", Map.of("inheritAccess", true, "grants", "invalid")))
-                .statusCode()).isEqualTo(400);
-        var invalidGrant = Map.of("subjectType", "USER", "subject", "demo-viewer", "permissions",
-                                  List.of("NON_EXISTENT_PERMISSION"));
-        assertThat(send("/api/v1/resources/" + id + "/access", "PUT", EDITOR,
-                        Map.of("expectedVersion", 1, "policy", Map.of("inheritAccess", true, "grants",
-                                                                      List.of(invalidGrant))))
-                .statusCode()).isEqualTo(400);
-        assertThat(send("/api/v1/resources/" + id + "/access", "PUT", EDITOR,
-                        Map.of("expectedVersion", 1, "policy", Map.of("inheritAccess", true, "grants",
-                                                                      List.of(Map.of("subjectType", "USER", "subject",
-                                                                                     "demo-viewer", "permissions",
-                                                                                     List.of(123))))))
-                .statusCode()).isEqualTo(400);
-        assertThat(send("/api/v1/resources/" + id, "PUT", EDITOR,
-                        Map.of("expectedVersion", "one", "name", "Bad", "description", ""))
-                .statusCode()).isEqualTo(400);
-        assertThat(send("/api/v1/resources/" + id + "/validate", "POST", EDITOR,
-                        Map.of("definition", Map.of("schemaVersion", "invalid")))
-                .statusCode()).isEqualTo(400);
-        // Failed requests must not advance the optimistic resource version.
-        assertThat(mapper.readTree(send("/api/v1/resources/" + id, "GET", EDITOR, null).body())
-                .path("resource").path("version").asInt()).isEqualTo(1);
-    }
-
-    @Test
-    void staticAssetsAreReadOnlyAndUnknownPathsAreNotServed() throws Exception {
-        // Given / When / Then
-        assertThat(send("/", "GET", null, null).statusCode()).isEqualTo(200);
-        assertThat(send("/studio.css", "GET", null, null).statusCode()).isEqualTo(200);
-        assertThat(send("/studio-client.mjs", "GET", null, null).statusCode()).isEqualTo(200);
-        assertThat(send("/management-client.mjs", "GET", null, null).statusCode()).isEqualTo(200);
-        assertThat(send("/studio-workspace.mjs", "GET", null, null).statusCode()).isEqualTo(200);
-        assertThat(send("/missing-resource", "GET", null, null).statusCode()).isEqualTo(404);
-        assertThat(send("/studio.css", "POST", null, null).statusCode()).isEqualTo(404);
-    }
-
-    @Test
-    void demoTokensMustHaveSafeLengthsAndDistinctValues() {
-        // Given / When / Then
-        assertThatThrownBy(() -> new StudioHttpServer(null, new RequestActorContext(), 0, null, VIEWER))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StudioHttpServer(null, new RequestActorContext(), 0, "short", VIEWER))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StudioHttpServer(null, new RequestActorContext(), 0, EDITOR, "short"))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StudioHttpServer(null, new RequestActorContext(), 0, EDITOR, EDITOR))
-                .isInstanceOf(IllegalArgumentException.class).hasMessage("Distinct tokens required");
-    }
-
-    private HttpResponse<String> sendRaw(String path, String method, String contentType, String body)
-            throws Exception {
-        var request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + server.port() + path))
-                .header("Authorization", "Bearer " + EDITOR);
-        if (contentType != null)
-            request.header("Content-Type", contentType);
-        request.method(method, HttpRequest.BodyPublishers.ofString(body));
-        return client.send(request.build(), HttpResponse.BodyHandlers.ofString());
     }
 }

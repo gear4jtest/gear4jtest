@@ -98,6 +98,17 @@ final class JdbcStudioSession implements StudioStore.Session {
         }
     }
 
+    void bindContext(String id) {
+        var bound = one("SELECT context_id FROM g4js_context WHERE singleton=? FOR UPDATE", 1,
+                        r -> java.util.Optional.ofNullable(r.getString("context_id")));
+        if (bound == null)
+            throw new IllegalStateException("Missing Studio context binding row");
+        if (bound.isEmpty())
+            update("UPDATE g4js_context SET context_id=? WHERE singleton=1", id);
+        else if (!bound.get().equals(id))
+            throw new IllegalStateException("Studio store belongs to a different runtime context");
+    }
+
     @Override
     public ManagedResource resource(UUID id) {
         try (var query = statement("SELECT kind FROM g4js_resource WHERE id=?", id); var rows = query.executeQuery()) {
@@ -150,6 +161,7 @@ final class JdbcStudioSession implements StudioStore.Session {
 
     private StudioChain chain(ResultSet r) throws SQLException {
         return new StudioChain(uuid(r, "id"), uuid(r, "domain_id"), r.getString("resource_key"),
+                r.getString("runtime_assembly_line_id"),
                 r.getString("display_name"), r.getString("description"),
                 r.getString("owner_subject"), r.getLong("entity_version"), r.getBoolean("inherit_access"),
                 r.getBoolean("archived"), instant(r, "created_at"), instant(r, "updated_at"));
@@ -172,8 +184,8 @@ final class JdbcStudioSession implements StudioStore.Session {
             update("INSERT INTO g4js_domain(resource_id,resource_key,display_name,description,archived) VALUES(?,?,?,?,?)",
                    d.id(), d.key(), d.name(), d.description(), d.archived());
         else if (value instanceof StudioChain c)
-            update("INSERT INTO g4js_chain(resource_id,domain_id,resource_key,display_name,description,archived) VALUES(?,?,?,?,?,?)",
-                   c.id(), c.domainId(), c.key(), c.name(), c.description(), c.archived());
+            update("INSERT INTO g4js_chain(resource_id,domain_id,resource_key,runtime_assembly_line_id,display_name,description,archived) VALUES(?,?,?,?,?,?,?)",
+                   c.id(), c.domainId(), c.key(), c.runtimeAssemblyLineId(), c.name(), c.description(), c.archived());
         else {
             var d = (StudioDraft) value;
             update("INSERT INTO g4js_draft(resource_id,chain_id,display_name,abandoned,head_number,origin,base_revision_id) VALUES(?,?,?,?,?,?,?)",

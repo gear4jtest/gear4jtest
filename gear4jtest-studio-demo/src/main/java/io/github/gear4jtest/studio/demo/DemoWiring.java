@@ -12,15 +12,12 @@ import io.github.gear4jtest.core.engine.RuntimeExtensionResolver;
 import io.github.gear4jtest.core.execution.ExecutionContextRegistry;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.studio.model.ChainDefinition;
-import io.github.gear4jtest.studio.model.DataContract;
 import io.github.gear4jtest.studio.model.OperationDescriptor;
 import io.github.gear4jtest.studio.model.ParameterValue;
 import io.github.gear4jtest.studio.runtime.LocalGear4jRuntime;
 import io.github.gear4jtest.studio.runtime.OperationCatalog;
 import io.github.gear4jtest.studio.runtime.RegisteredOperation;
-import io.github.gear4jtest.studio.service.InMemoryStudioService;
 import io.github.gear4jtest.studio.spi.DataCapturePolicy;
-import io.github.gear4jtest.studio.spi.StudioAuthorization;
 
 public final class DemoWiring {
     public static final Map<String, String> SYNTHETIC_RESOURCES = Map.of("demo/suffix", " [synthetic resource]");
@@ -30,6 +27,12 @@ public final class DemoWiring {
 
     public static OperationCatalog catalog() {
         return new OperationCatalog(List.of(
+                                            operation("text.length", "Mesurer le texte",
+                                                      "Produit un Integer à partir d’un String.",
+                                                      LengthOperation.class, Map.of(), Map.of(), true),
+                                            operation("number.format", "Formater un nombre",
+                                                      "Produit un String à partir d’un Integer.",
+                                                      FormatNumberOperation.class, Map.of(), Map.of(), true),
                                             operation("text.trim", "Nettoyer les espaces",
                                                       "Retire les espaces aux extrémités.", TrimOperation.class,
                                                       Map.of(), Map.of(), true),
@@ -62,15 +65,16 @@ public final class DemoWiring {
                                                  Map<String, OperationDescriptor.Parameter> parameters,
                                                  Map<String, String> getters,
                                                  boolean testAllowed) {
-        return new RegisteredOperation(
-                new OperationDescriptor(id, name, description,
-                        testAllowed ? "Calcul local sur données synthétiques" : "Interdite en TEST",
-                        DataContract.text(), DataContract.text(), testAllowed, parameters),
-                type, String.class, String.class, getters);
+        return RegisteredOperation.inferred(id, name, description,
+                                            testAllowed ? "Calcul local sur données synthétiques" : "Interdite en TEST",
+                                            type,
+                                            testAllowed, parameters, getters);
     }
 
     public static ResourceFactory plainResources() {
-        Map<Class<?>, Supplier<?>> factories = Map.of(TrimOperation.class, TrimOperation::new, UppercaseOperation.class,
+        Map<Class<?>, Supplier<?>> factories = Map.of(LengthOperation.class, LengthOperation::new,
+                                                      FormatNumberOperation.class, FormatNumberOperation::new,
+                                                      TrimOperation.class, TrimOperation::new, UppercaseOperation.class,
                                                       UppercaseOperation::new, PrefixOperation.class,
                                                       PrefixOperation::new, ResourceSuffixOperation.class,
                                                       () -> new ResourceSuffixOperation(SYNTHETIC_RESOURCES),
@@ -94,20 +98,8 @@ public final class DemoWiring {
                                              AssemblyLineExecutor executor,
                                              ResourceFactory resources,
                                              DataCapturePolicy capture) {
-        return new LocalGear4jRuntime("studio-local." + host, "studio-p1-20260928", catalog(), executor, resources,
+        return new LocalGear4jRuntime("studio-local." + host, "studio-p2-20261002", catalog(), executor, resources,
                 capture, Duration.ofSeconds(10));
-    }
-
-    public static StudioAuthorization authorization() {
-        return (actor, action) -> {
-            if (!"demo-editor".equals(actor)
-                    && !("demo-viewer".equals(actor) && action == StudioAuthorization.Action.READ))
-                throw new SecurityException("Action denied");
-        };
-    }
-
-    public static InMemoryStudioService service(LocalGear4jRuntime runtime) {
-        return new InMemoryStudioService(runtime, authorization());
     }
 
     public static ChainDefinition sample() {

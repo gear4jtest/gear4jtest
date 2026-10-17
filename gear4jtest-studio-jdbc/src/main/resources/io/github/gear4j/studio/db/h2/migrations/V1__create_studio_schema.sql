@@ -1,3 +1,8 @@
+CREATE TABLE g4js_context (
+    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+    context_id VARCHAR(255)
+);
+INSERT INTO g4js_context(singleton,context_id) VALUES(1,NULL);
 CREATE TABLE g4js_resource (
     id VARCHAR(36) PRIMARY KEY,
     kind VARCHAR(16) NOT NULL CHECK (CASE kind WHEN 'DOMAIN' THEN TRUE WHEN 'CHAIN' THEN TRUE WHEN 'DRAFT' THEN TRUE ELSE FALSE END),
@@ -17,6 +22,7 @@ CREATE TABLE g4js_domain (
 CREATE TABLE g4js_chain (
     resource_id VARCHAR(36) PRIMARY KEY REFERENCES g4js_resource(id),
     domain_id VARCHAR(36) NOT NULL REFERENCES g4js_domain(resource_id),
+    runtime_assembly_line_id VARCHAR(64) NOT NULL UNIQUE,
     resource_key VARCHAR(64) NOT NULL,
     display_name VARCHAR(160) NOT NULL,
     description VARCHAR(2048) NOT NULL,

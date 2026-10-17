@@ -41,7 +41,7 @@ class LocalStudioTest {
     void catalogDraftValidationAndRealRunKeepExactProvenance() {
         // Given
         try (var runtime = runtime(DataCapturePolicy.allowed())) {
-            var service = DemoWiring.service(runtime);
+            var service = LegacyStudioFixture.service(runtime);
             var draft = service.create(ACTOR, DemoWiring.sample());
             // When
             var report = service.validate(ACTOR, draft.definition());
@@ -74,7 +74,7 @@ class LocalStudioTest {
     void invalidDraftCanBeSavedButNotExecutedAndRevisionWritesAreConditional() {
         try (var runtime = runtime(DataCapturePolicy.none())) {
             // Given
-            var service = DemoWiring.service(runtime);
+            var service = LegacyStudioFixture.service(runtime);
             var invalid = line(op("missing", "unknown", null, null));
             // When
             var draft = service.create(ACTOR, invalid);
@@ -109,7 +109,7 @@ class LocalStudioTest {
                                               DataCapturePolicy.none())) {
             assertThat(runtime.validate(DemoWiring.sample()).valid()).isTrue();
             assertThat(calls).hasValue(0);
-            var service = DemoWiring.service(runtime);
+            var service = LegacyStudioFixture.service(runtime);
             var draft = service.create(ACTOR, DemoWiring.sample());
             service.test(ACTOR, draft.draftId(), 1, UUID.randomUUID(), "x");
             assertThat(calls.get()).isPositive();
@@ -131,7 +131,7 @@ class LocalStudioTest {
             // Then
             assertThat(imported).isEqualTo(definition);
             assertThat(runtime.exportDefinition(imported, "application/xml")).isEqualTo(xml);
-            var service = DemoWiring.service(runtime);
+            var service = LegacyStudioFixture.service(runtime);
             var draft = service.create(ACTOR, imported);
             assertThat(service.validate(ACTOR, imported).diagnostics()).isEmpty();
             var yes = service.test(ACTOR, draft.draftId(), 1, UUID.randomUUID(), "electric");
@@ -167,7 +167,7 @@ class LocalStudioTest {
     @Test
     void userPermissionAndRuntimeCapabilityAreIndependentAndEnforcedServerSide() {
         try (var runtime = runtime(DataCapturePolicy.none())) {
-            var service = DemoWiring.service(runtime);
+            var service = LegacyStudioFixture.service(runtime);
             assertThatThrownBy(() -> service.create("demo-viewer", DemoWiring.sample()))
                     .isInstanceOf(SecurityException.class);
             var draft = service.create(ACTOR, line(op("production", "production.only", null, null)));
@@ -182,7 +182,7 @@ class LocalStudioTest {
     @Test
     void resourceReferencesAreAuthorizedAndForbidRuntimeCaptureEvenWithAllowedPolicy() {
         try (var runtime = runtime(DataCapturePolicy.allowed())) {
-            var service = DemoWiring.service(runtime);
+            var service = LegacyStudioFixture.service(runtime);
             assertThatThrownBy(() -> service
                     .create(ACTOR, line(op("resource", "text.resource", "resource", text("literal-secret")))))
                     .isInstanceOf(SecurityException.class);
@@ -209,7 +209,7 @@ class LocalStudioTest {
             throw new IllegalStateException("secret-value");
         })) {
             try (var runtime = runtime(policy)) {
-                var service = DemoWiring.service(runtime);
+                var service = LegacyStudioFixture.service(runtime);
                 var draft = service.create(ACTOR, DemoWiring.sample());
                 var run = service.test(ACTOR, draft.draftId(), 1, UUID.randomUUID(), "secret-value").run();
                 assertThat(run.input()).isEqualTo(CapturedValue.none());
@@ -218,7 +218,7 @@ class LocalStudioTest {
             }
         }
         try (var runtime = runtime(DataCapturePolicy.masked(value -> "[masked]"))) {
-            var service = DemoWiring.service(runtime);
+            var service = LegacyStudioFixture.service(runtime);
             var draft = service.create(ACTOR, DemoWiring.sample());
             var run = service.test(ACTOR, draft.draftId(), 1, UUID.randomUUID(), "secret-value").run();
             assertThat(run.output().state()).isEqualTo(CapturedValue.State.REDACTED);

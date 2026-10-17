@@ -1,5 +1,5 @@
 ext.moduleName = 'io.github.gear4jtest.studio.demo'
-description = 'Gear4J Studio P1 studio-demo (experimental).'
+description = 'Gear4J Studio P2 studio-demo (experimental).'
 dependencies {
     implementation project(':gear4jtest-studio-runtime')
     implementation project(':gear4jtest-studio-json')
@@ -24,17 +24,35 @@ tasks.withType(org.gradle.api.publish.maven.tasks.AbstractPublishToMaven).config
 tasks.register('studioFrontendInstall', Exec) {
     group = 'build setup'
     description = 'Installs locked development-only DOM test dependencies.'
-    inputs.files('package.json', 'package-lock.json')
-    outputs.dir('node_modules')
+    workingDir rootProject.file('gear4jtest-studio-web')
+    environment 'npm_config_cache', rootProject.file('gear4jtest-studio-web/.npm-cache').absolutePath
+    inputs.files('../gear4jtest-studio-web/package.json', '../gear4jtest-studio-web/package-lock.json')
+    outputs.dir('../gear4jtest-studio-web/node_modules')
     commandLine 'npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund'
 }
 
 tasks.register('studioComponentTest', Exec) {
     group = 'verification'
     dependsOn 'studioFrontendInstall'
+    workingDir rootProject.file('gear4jtest-studio-web')
     commandLine 'npm', 'test'
 }
 
 tasks.named('check') {
     dependsOn 'studioComponentTest'
 }
+
+// Use the published Studio Web sources for shared ESM modules.
+// Demo-specific HTML, bootstrap and CSS stay in src/main/resources/studio.
+// Do not duplicate the shared .mjs files there: Gradle must fail on collisions.
+tasks.named('processResources') {
+    from(rootProject.file('gear4jtest-studio-web/src')) { into 'studio' }
+}
+tasks.register('studioPackageCheck', Exec) {
+    group = 'verification'
+    dependsOn 'studioFrontendInstall'
+    workingDir rootProject.file('gear4jtest-studio-web')
+    environment 'npm_config_cache', rootProject.file('gear4jtest-studio-web/.npm-cache').absolutePath
+    commandLine 'npm', 'run', 'pack:check'
+}
+tasks.named('check') { dependsOn 'studioPackageCheck' }

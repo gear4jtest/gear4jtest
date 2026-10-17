@@ -44,7 +44,8 @@ class PostgreSqlStudioStoreIT {
         var store = new JdbcStudioStore(source);
         var time = Instant.ofEpochMilli(1234);
         var domain = new StudioDomain(UUID.randomUUID(), "catalog", "Catalogue", "", "alice", 1, false, time, time);
-        var chain = new StudioChain(UUID.randomUUID(), domain.id(), "vehicles", "Véhicules", "", "alice", 1, true,
+        var chain = new StudioChain(UUID.randomUUID(), domain.id(), "vehicles", "runtime_vehicles", "Véhicules", "",
+                "alice", 1, true,
                 false, time, time);
         var draft = new StudioDraft(UUID.randomUUID(), chain.id(), "Draft", "alice", 1, false, false, 1,
                 DraftRevision.Origin.STUDIO, null, time, time);

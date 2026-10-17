@@ -37,7 +37,8 @@ class JdbcStudioStoreTest {
         var time = Instant.ofEpochMilli(123456);
         var domain = new StudioDomain(UUID.randomUUID(), "domain", "Domaine", "Description", "alice", 1, false, time,
                 time);
-        var chain = new StudioChain(UUID.randomUUID(), domain.id(), "chain", "Chaîne", "Description", "alice", 1, true,
+        var chain = new StudioChain(UUID.randomUUID(), domain.id(), "chain", "runtime_chain", "Chaîne", "Description",
+                "alice", 1, true,
                 false, time, time);
         var draft = new StudioDraft(UUID.randomUUID(), chain.id(), "Draft", "alice", 1, false, false, 1,
                 DraftRevision.Origin.STUDIO, null, time, time);
@@ -79,7 +80,8 @@ class JdbcStudioStoreTest {
         });
         store.write(tx -> {
             tx.lockDomain(domain.id());
-            tx.update(new StudioChain(chain.id(), domain.id(), chain.key(), "Updated", chain.description(),
+            tx.update(new StudioChain(chain.id(), domain.id(), chain.key(), chain.runtimeAssemblyLineId(), "Updated",
+                    chain.description(),
                     chain.owner(), 2, false, true, time, time), 1);
             tx.replaceGrants(chain.id(), List.of());
             return null;

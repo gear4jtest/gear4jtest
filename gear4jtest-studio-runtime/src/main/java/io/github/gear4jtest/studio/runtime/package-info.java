@@ -1,4 +1,4 @@
-/** Experimental Studio P0 contracts; see docs/studio/p0.md. */
+/** Experimental Studio contracts; see docs/studio/p2.md. */
 @Experimental
 package io.github.gear4jtest.studio.runtime;
 

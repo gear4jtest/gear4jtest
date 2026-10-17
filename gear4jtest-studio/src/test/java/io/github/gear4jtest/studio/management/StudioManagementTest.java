@@ -53,7 +53,7 @@ class StudioManagementTest {
 
     private DraftState draft(StudioManagementService alice) {
         var domain = alice.createDomain("catalog", "Catalogue", "Domaine").resource();
-        var chain = alice.createChain(domain.id(), "vehicles", "Véhicules", "Chaîne").resource();
+        var chain = alice.createChain(domain.id(), "vehicles", "Véhicules", "Chaîne", "sample").resource();
         return alice.createDraft(chain.id(), "En cours", EMPTY);
     }
 
@@ -95,7 +95,7 @@ class StudioManagementTest {
         // When
         assertThat(alice.validate(id, EMPTY).valid()).isFalse();
         var saved = alice
-                .saveDraft(id, 1, new ChainDefinition(1, "changed", "java.lang.String", "java.lang.String", List.of()));
+                .saveDraft(id, 1, new ChainDefinition(1, "sample", "java.lang.String", "java.lang.String", List.of()));
         var fork = alice.forkDraft(id, 1, "Alternative");
         var renamed = alice.updateMetadata(id, saved.draft().version(), "Revue", "");
         alice.archive(id, renamed.resource().version());
@@ -108,7 +108,7 @@ class StudioManagementTest {
         assertThat(alice.draft(id).draft().abandoned()).isTrue();
         assertThatThrownBy(() -> alice.saveDraft(id, 4, EMPTY)).hasMessage("FORBIDDEN");
         assertThatThrownBy(() -> alice.test(id, 1, UUID.randomUUID(), "x")).hasMessage("FORBIDDEN");
-        assertThat(alice.audit(id, 0, 100).items()).extracting(AuditEvent::action)
+        assertThat(alice.audit(id, null, 100).items()).extracting(AuditEvent::action)
                 .containsExactly(AuditEvent.Action.DRAFT_CREATED, AuditEvent.Action.REVISION_SAVED,
                                  AuditEvent.Action.METADATA_UPDATED, AuditEvent.Action.DRAFT_ABANDONED);
     }
@@ -138,7 +138,7 @@ class StudioManagementTest {
             assertThat(List.of(first.get(10, TimeUnit.SECONDS), second.get(10, TimeUnit.SECONDS)))
                     .containsExactlyInAnyOrder("saved", "CONFLICT");
             assertThat(alice.revisions(draft.draft().id(), 0, 100).items()).hasSize(2);
-            assertThat(alice.audit(draft.draft().id(), 0, 100).items())
+            assertThat(alice.audit(draft.draft().id(), null, 100).items())
                     .filteredOn(e -> e.action() == AuditEvent.Action.REVISION_SAVED).hasSize(1);
         } finally {
             gate.countDown();
@@ -159,7 +159,7 @@ class StudioManagementTest {
         // Then
         assertThat(alice.draft(original.draft().id())).isEqualTo(original);
         assertThat(alice.revisions(original.draft().id(), 0, 100).items()).hasSize(1);
-        assertThat(alice.audit(original.draft().id(), 0, 100).items()).hasSize(1);
+        assertThat(alice.audit(original.draft().id(), null, 100).items()).hasSize(1);
     }
 
     @Test
@@ -175,13 +175,13 @@ class StudioManagementTest {
         // When / Then
         assertThat(bob.resource(chain.id()).permissions()).contains(READ, CREATE_DRAFT);
         assertThatThrownBy(() -> bob.draft(draft.draft().id())).hasMessage("NOT_FOUND");
-        assertThat(bob.audit(domain.id(), 0, 100).items()).noneMatch(e -> draft.draft().id().equals(e.draftId()));
+        assertThat(bob.audit(domain.id(), null, 100).items()).noneMatch(e -> draft.draft().id().equals(e.draftId()));
         alice.setAccess(draft.draft().id(), 1, new AccessPolicy(true, List.of()));
         assertThat(bob.draft(draft.draft().id()).permissions()).contains(READ).doesNotContain(EDIT, TEST);
-        var page = bob.audit(domain.id(), 0, 1);
+        var page = bob.audit(domain.id(), null, 1);
         assertThat(page.items()).hasSize(1);
         assertThat(page.nextCursor()).isNotNull();
-        assertThat(bob.audit(domain.id(), Long.parseLong(page.nextCursor()), 100).items())
+        assertThat(bob.audit(domain.id(), page.nextCursor(), 100).items())
                 .noneMatch(e -> e.sequence() == page.items().get(0).sequence());
         alice.archive(domain.id(), 2);
         assertThat(bob.resource(chain.id()).permissions()).doesNotContain(CREATE_DRAFT, TEST, EDIT);
@@ -229,7 +229,7 @@ class StudioManagementTest {
                 .isNotEqualTo(changed.revision().revisionId());
         assertThat(runtime.executions).hasValue(1);
         assertThatThrownBy(() -> alice.test(draft.draft().id(), 1, id, "other")).hasMessage("CONFLICT");
-        var audit = alice.audit(draft.draft().id(), 0, 100).items();
+        var audit = alice.audit(draft.draft().id(), null, 100).items();
         assertThat(audit.toString()).doesNotContain("SENSITIVE-RUNTIME-INPUT");
         assertThat(audit).filteredOn(e -> e.action() == AuditEvent.Action.TEST_REQUESTED).singleElement()
                 .satisfies(e -> assertThat(e.requestId()).isEqualTo(id));
@@ -258,6 +258,127 @@ class StudioManagementTest {
         var imported = alice.importDraft(draft.draft().chainId(), "Import", "synthetic-xml");
         assertThat(imported.revision().origin()).isEqualTo(DraftRevision.Origin.XML_IMPORT);
         assertThat(alice.export(imported.draft().id(), EMPTY)).isEqualTo("synthetic-xml");
+    }
+
+    @Test
+    void delegationCannotEscalateRewriteInheritanceOrRemoveProtectedRights() {
+        // Given
+        var alice = as("alice");
+        var bob = as("bob");
+        var draft = draft(alice);
+        var id = draft.draft().id();
+        var bobGrant = grant(AccessGrant.SubjectType.USER, "bob", READ, EDIT, MANAGE_ACCESS);
+        var protectedGrant = grant(AccessGrant.SubjectType.USER, "reviewer", READ, TEST);
+        alice.setAccess(id, 1, new AccessPolicy(false, List.of(bobGrant, protectedGrant)));
+        // When / Then
+        assertThat(bob.access(id).fullAdministration()).isFalse();
+        assertThat(bob.access(id).delegablePermissions()).contains(READ, EDIT).doesNotContain(TEST, MANAGE_ACCESS,
+                                                                                              CREATE_DRAFT);
+        assertThatThrownBy(() -> bob.setAccess(id, 2, new AccessPolicy(false,
+                List.of(grant(AccessGrant.SubjectType.USER, "bob", READ, EDIT, MANAGE_ACCESS, TEST), protectedGrant))))
+                .hasMessage("FORBIDDEN");
+        assertThatThrownBy(() -> bob.setAccess(id, 2, new AccessPolicy(true, List.of(bobGrant, protectedGrant))))
+                .hasMessage("FORBIDDEN");
+        assertThatThrownBy(() -> bob.setAccess(id, 2, new AccessPolicy(false, List.of(bobGrant))))
+                .hasMessage("FORBIDDEN");
+        assertThatThrownBy(() -> bob.setAccess(id, 2, new AccessPolicy(false, List.of(bobGrant, protectedGrant,
+                                                                                      grant(AccessGrant.SubjectType.USER,
+                                                                                            "carol", READ,
+                                                                                            MANAGE_ACCESS)))))
+                .hasMessage("FORBIDDEN");
+        bob.setAccess(id, 2, new AccessPolicy(false, List.of(bobGrant, protectedGrant,
+                                                             grant(AccessGrant.SubjectType.USER, "carol", READ,
+                                                                   EDIT))));
+        assertThat(as("carol").draft(id).permissions()).contains(READ, EDIT).doesNotContain(TEST, MANAGE_ACCESS);
+        assertThat(alice.audit(id, null, 100).items()).filteredOn(e -> e.action() == AuditEvent.Action.ACCESS_CHANGED)
+                .hasSize(2);
+    }
+
+    @Test
+    void runtimeIdentityIsImmutableUniqueAndPreviewDoesNotWrite() {
+        // Given
+        var alice = as("alice");
+        var draft = draft(alice);
+        var id = draft.draft().id();
+        var chain = (StudioChain) alice.resource(draft.draft().chainId()).resource();
+        var other = new ChainDefinition(1, "different", "java.lang.String", "java.lang.String", List.of());
+        // When / Then
+        assertThat(chain.runtimeAssemblyLineId()).isEqualTo("sample");
+        assertThatThrownBy(() -> alice.saveDraft(id, 1, other)).hasMessage("INVALID_DEFINITION");
+        assertThatThrownBy(() -> alice.createDraft(chain.id(), "Wrong identity", other))
+                .hasMessage("INVALID_DEFINITION");
+        assertThat(alice.validate(id, other).diagnostics()).extracting(Diagnostic::code).contains("CHAIN_ID_MISMATCH");
+        assertThatThrownBy(() -> alice.createChain(chain.domainId(), "other", "Other", "", "sample"))
+                .hasMessage("CONFLICT");
+        assertThat(alice.previewXml(id, "synthetic-xml")).isEqualTo(EMPTY);
+        assertThat(alice.revisions(id, 0, 100).items()).hasSize(1);
+        assertThat(as("bob").list(ResourceKind.DRAFT, null, null, 10).items()).isEmpty();
+        assertThatThrownBy(() -> as("bob").previewXml(id, "synthetic-xml")).hasMessage("NOT_FOUND");
+        assertThatThrownBy(() -> as("bob").compare(id, 1, EMPTY)).hasMessage("NOT_FOUND");
+        assertThat(alice.compareRevisions(id, 1, 1).diff().changes()).isEmpty();
+        assertThat(alice.context().id()).isEqualTo("test");
+        assertThat(alice.catalog()).isEmpty();
+        assertThat(java.util.Arrays.stream(StudioManagementService.class.getMethods())
+                .map(java.lang.reflect.Method::getReturnType))
+                .doesNotContain(StudioRuntime.class);
+    }
+
+    @Test
+    void storeRejectsAnotherContextButAllowsCatalogueAndBuildEvolution() {
+        // Given
+        var alice = as("alice");
+        var draft = draft(alice);
+        // When / Then
+        var evolved = new StubRuntime() {
+            @Override
+            public RuntimeContext context() {
+                return new RuntimeContext("test", "next-build", "next-catalog", Set.of());
+            }
+        };
+        var resumed = new StudioManagementService(new JdbcStudioStore(source), evolved,
+                () -> new StudioIdentity("alice", Set.of(), false), a -> true);
+        assertThat(resumed.draft(draft.draft().id())).isEqualTo(draft);
+        var different = new StubRuntime() {
+            @Override
+            public RuntimeContext context() {
+                return new RuntimeContext("other", "build", "catalog", Set.of());
+            }
+        };
+        assertThatThrownBy(() -> new StudioManagementService(new JdbcStudioStore(source), different,
+                () -> new StudioIdentity("alice", Set.of(), false), a -> true))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("different runtime context");
+    }
+
+    @Test
+    void sparseAclPagesStopAtBudgetAndOpaqueContinuationIsScopedToActorAndQuery() {
+        // Given: a deterministic order with five hundred hidden rows before a visible
+        // one.
+        var alice = as("alice");
+        var bob = as("bob");
+        store.write(tx -> {
+            for (int i = 1; i <= 501; i++) {
+                var id = UUID.fromString("00000000-0000-0000-0000-" + String.format("%012d", i));
+                tx.insert(new StudioDomain(id, "scope-" + i, "Scope", "", "alice", 1, false, Instant.now(),
+                        Instant.now()));
+                if (i == 501)
+                    tx.replaceGrants(id, List.of(grant(AccessGrant.SubjectType.USER, "bob", DISCOVER)));
+            }
+            return null;
+        });
+        // When
+        var first = bob.list(ResourceKind.DOMAIN, null, null, 10);
+        // Then: empty is not exhausted; nextCursor is authoritative.
+        assertThat(first.items()).isEmpty();
+        assertThat(first.nextCursor()).isNotNull();
+        assertThatThrownBy(() -> alice.list(ResourceKind.DOMAIN, null, first.nextCursor(), 10))
+                .hasMessage("INVALID_REQUEST");
+        assertThatThrownBy(() -> bob.list(ResourceKind.CHAIN, null, first.nextCursor(), 10))
+                .hasMessage("INVALID_REQUEST");
+        assertThatThrownBy(() -> bob.list(ResourceKind.DOMAIN, null, "x" + first.nextCursor(), 10))
+                .hasMessage("INVALID_REQUEST");
+        var second = bob.list(ResourceKind.DOMAIN, null, first.nextCursor(), 10);
+        assertThat(second.items()).singleElement().satisfies(item -> assertThat(item.readable()).isFalse());
+        assertThat(second.nextCursor()).isNull();
     }
 
     private static class StubRuntime implements StudioRuntime {

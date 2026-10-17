@@ -6,6 +6,7 @@ import java.util.UUID;
 public record StudioChain(UUID id,
                           UUID domainId,
                           String key,
+                          String runtimeAssemblyLineId,
                           String name,
                           String description,
                           String owner,

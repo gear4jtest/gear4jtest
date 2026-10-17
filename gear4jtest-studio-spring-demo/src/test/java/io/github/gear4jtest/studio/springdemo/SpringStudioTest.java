@@ -75,7 +75,7 @@ class SpringStudioTest {
             try (var actor = context.getBean(RequestActorContext.class)
                     .bind(new StudioIdentity("demo-editor", Set.of("domain-creators"), false))) {
                 var domain = service.createDomain("spring", "Spring", "").resource();
-                var chain = service.createChain(domain.id(), "sample", "Sample", "").resource();
+                var chain = service.createChain(domain.id(), "sample", "Sample", "", "text_preparation").resource();
                 var draft = service.createDraft(chain.id(), "Draft", DemoWiring.sample());
                 var report = service.validate(draft.draft().id(), draft.revision().definition());
                 var result = service.test(draft.draft().id(), 1, UUID.randomUUID(), "  electric  ");

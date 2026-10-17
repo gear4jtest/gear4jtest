@@ -4,3 +4,6 @@
 studio-data/
 *.mv.db
 *.trace.db
+
+# Frontend build-time cache
+.npm-cache/

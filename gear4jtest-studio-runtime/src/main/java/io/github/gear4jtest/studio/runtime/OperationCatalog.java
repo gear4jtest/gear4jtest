@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import io.github.gear4jtest.external.api.ExecutionMode;
+import io.github.gear4jtest.studio.model.DataContract;
 import io.github.gear4jtest.studio.model.OperationDescriptor;
 import io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicy;
 import io.github.gear4jtest.xml.generator.XmlJavaSourcePolicy;
@@ -28,7 +29,7 @@ public final class OperationCatalog {
         map.forEach((id, value) -> {
             append(text, id, value.type().getName(), value.inputType().getName(), value.outputType().getName(),
                    String.valueOf(value.descriptor().testAllowed()), value.descriptor().effects(),
-                   value.descriptor().input().schemaId(), value.descriptor().output().schemaId(),
+                   value.descriptor().input().toString(), value.descriptor().output().toString(),
                    classHash(value.type()),
                    String.valueOf(value.descriptor().parameters().size()));
             new TreeMap<>(value.descriptor().parameters()).forEach((name, parameter) -> {
@@ -42,6 +43,17 @@ public final class OperationCatalog {
 
     public RegisteredOperation find(String id) {
         return registrations.get(id);
+    }
+
+    DataContract boundaryContract(String name) {
+        for (var registration : registrations.values()) {
+            for (var contract : List.of(registration.descriptor().input(), registration.descriptor().output())) {
+                if (name.equals(contract.javaType()))
+                    return new DataContract(name, null, DataContract.Origin.DECLARED, contract.complete(),
+                            contract.assignableTo(), null);
+            }
+        }
+        return null;
     }
 
     public List<OperationDescriptor> descriptors() {

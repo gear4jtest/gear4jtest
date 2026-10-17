@@ -76,7 +76,8 @@ final class ControlledTests {
             result = new TestSubmission(requestId, TestSubmission.State.COMPLETED,
                     runtime.execute(revision, input, requestId, actor.subject()), null);
         } catch (StudioProblem e) {
-            result = new TestSubmission(requestId, TestSubmission.State.PREPARATION_FAILED, null, "TEST_NOT_ADMITTED");
+            result = new TestSubmission(requestId, TestSubmission.State.PREPARATION_FAILED, null,
+                    e.code() == UNSUPPORTED_CONTRACT ? "UNSUPPORTED_CONTRACT" : "TEST_NOT_ADMITTED");
         } catch (RuntimeException e) {
             result = new TestSubmission(requestId, TestSubmission.State.OUTCOME_UNKNOWN, null, "TEST_OUTCOME_UNKNOWN");
         }

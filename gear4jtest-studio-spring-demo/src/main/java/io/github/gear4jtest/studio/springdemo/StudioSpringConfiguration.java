@@ -7,6 +7,8 @@ import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.spring.Gear4jSpringConfiguration;
 import io.github.gear4jtest.studio.demo.DemoDatabase;
 import io.github.gear4jtest.studio.demo.DemoWiring;
+import io.github.gear4jtest.studio.demo.FormatNumberOperation;
+import io.github.gear4jtest.studio.demo.LengthOperation;
 import io.github.gear4jtest.studio.demo.PrefixOperation;
 import io.github.gear4jtest.studio.demo.ProductionOnlyOperation;
 import io.github.gear4jtest.studio.demo.RequestActorContext;
@@ -41,6 +43,18 @@ public class StudioSpringConfiguration {
     @Bean
     RequestActorContext studioActors() {
         return new RequestActorContext();
+    }
+
+    @Bean
+    @Scope("prototype")
+    LengthOperation length() {
+        return new LengthOperation();
+    }
+
+    @Bean
+    @Scope("prototype")
+    FormatNumberOperation formatNumber() {
+        return new FormatNumberOperation();
     }
 
     @Bean

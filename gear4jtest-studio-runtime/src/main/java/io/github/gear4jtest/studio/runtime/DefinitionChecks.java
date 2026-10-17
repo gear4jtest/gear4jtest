@@ -8,6 +8,7 @@ import java.util.Set;
 import io.github.gear4jtest.studio.model.ChainDefinition;
 import io.github.gear4jtest.studio.model.ChainDefinition.Choice;
 import io.github.gear4jtest.studio.model.ChainDefinition.Operation;
+import io.github.gear4jtest.studio.model.DataContract;
 import io.github.gear4jtest.studio.model.Diagnostic;
 import io.github.gear4jtest.studio.model.ParameterValue;
 import io.github.gear4jtest.xml.expression.GearExpressionParser;
@@ -78,13 +79,14 @@ final class DefinitionChecks {
         }
         var ids = new HashSet<String>();
         id(definition.id(), "/id", ids, diagnostics);
-        if (definition.schemaVersion() != 1 || !definition.inputType().equals("java.lang.String")
-                || !definition.outputType().equals("java.lang.String"))
-            diagnostics.add(Diagnostic.error("UNSUPPORTED_CONTRACT", "/",
-                                             "P0 attend une définition v1 avec entrée et sortie String."));
+        if (definition.schemaVersion() != 1)
+            diagnostics.add(Diagnostic.error("UNSUPPORTED_SCHEMA_VERSION", "/schemaVersion",
+                                             "Version du modèle non prise en charge."));
+        var inputContract = boundary(definition.inputType(), "/inputType", diagnostics);
+        var outputContract = boundary(definition.outputType(), "/outputType", diagnostics);
         if (definition.nodes().isEmpty())
             diagnostics.add(Diagnostic.error("EMPTY_CHAIN", "/nodes", "Ajoutez une opération."));
-        Class<?> previous = String.class;
+        DataContract previous = inputContract;
         for (int i = 0; i < definition.nodes().size(); i++) {
             var node = definition.nodes().get(i);
             String path = "/nodes/" + i;
@@ -99,23 +101,23 @@ final class DefinitionChecks {
                     diagnostics.add(Diagnostic.error("INVALID_EXPRESSION", path + "/condition",
                                                      "Expression GEL invalide."));
                 }
-                compatible(previous, String.class, path, diagnostics);
-                compatible(operation(choice.whenTrue(), String.class, path + "/whenTrue", ids, diagnostics),
-                           String.class, path + "/whenTrue", diagnostics);
-                compatible(operation(choice.whenFalse(), String.class, path + "/whenFalse", ids, diagnostics),
-                           String.class, path + "/whenFalse", diagnostics);
-                previous = String.class;
+                compatible(previous, textContract(), path, diagnostics);
+                compatible(operation(choice.whenTrue(), textContract(), path + "/whenTrue", ids, diagnostics),
+                           textContract(), path + "/whenTrue", diagnostics);
+                compatible(operation(choice.whenFalse(), textContract(), path + "/whenFalse", ids, diagnostics),
+                           textContract(), path + "/whenFalse", diagnostics);
+                previous = textContract();
             }
         }
-        compatible(previous, String.class, "/outputType", diagnostics);
+        compatible(previous, outputContract, "/outputType", diagnostics);
         return diagnostics;
     }
 
-    private Class<?> operation(Operation operation,
-                               Class<?> previous,
-                               String path,
-                               Set<String> ids,
-                               List<Diagnostic> diagnostics) {
+    private DataContract operation(Operation operation,
+                                   DataContract previous,
+                                   String path,
+                                   Set<String> ids,
+                                   List<Diagnostic> diagnostics) {
         id(operation.id(), path + "/id", ids, diagnostics);
         var binding = catalog.find(operation.operationId());
         if (binding == null) {
@@ -125,30 +127,43 @@ final class DefinitionChecks {
         }
         if (!binding.descriptor().testAllowed())
             diagnostics.add(Diagnostic.error("TEST_DENIED", path, "Opération non autorisée en test."));
-        compatible(previous, binding.inputType(), path, diagnostics);
-        if (binding.descriptor().input().schemaId() != null || binding.descriptor().output().schemaId() != null) {
-            diagnostics.add(new Diagnostic(Diagnostic.Severity.WARNING, "UNKNOWN_SCHEMA", path,
-                    "P0 ne démontre pas la compatibilité des schémas métier."));
-        }
+        compatible(previous, binding.descriptor().input(), path, diagnostics);
         binding.descriptor().parameters().forEach((name, parameter) -> {
             var value = operation.parameters().get(name);
             if (parameter.required() && (value == null || value.value().isBlank()))
                 diagnostics.add(Diagnostic.error("REQUIRED_PARAMETER", path + "/parameters/" + name,
                                                  "Paramètre obligatoire manquant."));
         });
-        return binding.outputType();
+        return binding.descriptor().output();
     }
 
     private void id(String value, String path, Set<String> ids, List<Diagnostic> diagnostics) {
         if (!value.matches("[a-zA-Z_][a-zA-Z0-9_]{0,63}") || !ids.add(value))
-            diagnostics.add(Diagnostic.error("INVALID_ID", path, "Identifiant Java simple et unique requis dans P0."));
+            diagnostics.add(Diagnostic.error("INVALID_ID", path, "Identifiant Java simple et unique requis."));
     }
 
-    private void compatible(Class<?> output, Class<?> input, String path, List<Diagnostic> diagnostics) {
-        if (output == null || input == null)
-            diagnostics
-                    .add(new Diagnostic(Diagnostic.Severity.WARNING, "UNKNOWN", path, "Compatibilité non démontrée."));
-        else if (!input.isAssignableFrom(output))
-            diagnostics.add(Diagnostic.error("INCOMPATIBLE", path, "Contrats Java incompatibles."));
+    private DataContract boundary(String name, String path, List<Diagnostic> diagnostics) {
+        if (name.equals("java.lang.String"))
+            return textContract();
+        var contract = catalog.boundaryContract(name);
+        if (contract == null)
+            diagnostics.add(Diagnostic.error("UNSUPPORTED_CONTRACT", path,
+                                             "Type absent du catalogue explicite de l’application."));
+        return contract;
+    }
+
+    private static DataContract textContract() {
+        return new DataContract("java.lang.String", null, DataContract.Origin.DECLARED, true,
+                Set.of("java.lang.String", "java.lang.Object", "java.lang.CharSequence", "java.io.Serializable"), null);
+    }
+
+    private void compatible(DataContract output, DataContract input, String path, List<Diagnostic> diagnostics) {
+        var compatibility = output == null || input == null ? DataContract.Compatibility.UNKNOWN
+                : output.compatibilityWith(input);
+        if (compatibility == DataContract.Compatibility.UNKNOWN)
+            diagnostics.add(new Diagnostic(Diagnostic.Severity.WARNING, "UNKNOWN", path,
+                    "Compatibilité non démontrée : type effacé, générique ou schéma insuffisamment décrit."));
+        else if (compatibility == DataContract.Compatibility.INCOMPATIBLE)
+            diagnostics.add(Diagnostic.error("INCOMPATIBLE", path, "Contrats Java ou structurels incompatibles."));
     }
 }
