@@ -2,7 +2,9 @@ package io.github.gear4jtest.studio.management;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.HashMap;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import javax.crypto.KeyGenerator;
@@ -21,10 +23,18 @@ import static io.github.gear4jtest.studio.service.StudioProblem.Code.*;
  * transactions.
  */
 final class ControlledTests {
-    private final Map<UUID, Receipt> receipts = new HashMap<>();
+    private final Map<UUID, Receipt> receipts = new LinkedHashMap<>();
     private final SecretKey key;
+    private final Clock clock;
+    private final TestReceiptPolicy policy;
 
     ControlledTests() {
+        this(Clock.systemUTC(), TestReceiptPolicy.defaults());
+    }
+
+    ControlledTests(Clock clock, TestReceiptPolicy policy) {
+        this.clock = java.util.Objects.requireNonNull(clock);
+        this.policy = java.util.Objects.requireNonNull(policy);
         try {
             key = KeyGenerator.getInstance("HmacSHA256").generateKey();
         } catch (java.security.GeneralSecurityException e) {
@@ -41,10 +51,35 @@ final class ControlledTests {
     }
 
     private Receipt receipt(String actor, UUID requestId) {
+        expire();
         var value = receipts.get(requestId);
         if (value == null || !actor.equals(value.actor))
             throw new StudioProblem(NOT_FOUND);
+        touch(requestId, value);
         return value;
+    }
+
+    private void expire() {
+        var now = clock.instant();
+        receipts.values().removeIf(r -> r.expiresAt != null && !now.isBefore(r.expiresAt));
+    }
+
+    private void touch(UUID requestId, Receipt receipt) {
+        receipts.remove(requestId);
+        receipts.put(requestId, receipt);
+    }
+
+    private void makeRoom() {
+        if (receipts.size() < policy.capacity())
+            return;
+        var oldest = receipts.entrySet().iterator();
+        while (oldest.hasNext()) {
+            if (oldest.next().getValue().submission.state() != TestSubmission.State.RUNNING) {
+                oldest.remove();
+                return;
+            }
+        }
+        throw new StudioProblem(CAPACITY_EXCEEDED);
     }
 
     TestSubmission execute(StudioIdentity actor,
@@ -68,15 +103,16 @@ final class ControlledTests {
             throw new StudioProblem(INVALID_REQUEST);
         Receipt receipt;
         synchronized (this) {
+            expire();
             byte[] digest = fingerprint(actor.subject(), contentId, input);
             receipt = receipts.get(requestId);
             if (receipt != null) {
                 if (!actor.subject().equals(receipt.actor) || !MessageDigest.isEqual(digest, receipt.fingerprint))
                     throw new StudioProblem(CONFLICT);
+                touch(requestId, receipt);
                 return receipt.submission;
             }
-            if (receipts.size() >= 128)
-                throw new StudioProblem(CAPACITY_EXCEEDED);
+            makeRoom();
             receipt = new Receipt(actor.subject(), resourceId, digest,
                     new TestSubmission(requestId, TestSubmission.State.RUNNING, null, null));
             receipts.put(requestId, receipt);
@@ -87,13 +123,18 @@ final class ControlledTests {
             result = new TestSubmission(requestId, TestSubmission.State.COMPLETED,
                     execution.get(), null);
         } catch (StudioProblem e) {
-            result = new TestSubmission(requestId, TestSubmission.State.PREPARATION_FAILED, null,
-                    e.code() == UNSUPPORTED_CONTRACT ? "UNSUPPORTED_CONTRACT" : "TEST_NOT_ADMITTED");
+            boolean uncertain = e.code() == STORAGE_UNAVAILABLE;
+            result = new TestSubmission(requestId,
+                    uncertain ? TestSubmission.State.OUTCOME_UNKNOWN : TestSubmission.State.PREPARATION_FAILED, null,
+                    uncertain ? "TEST_OUTCOME_UNKNOWN"
+                            : e.code() == UNSUPPORTED_CONTRACT ? "UNSUPPORTED_CONTRACT" : "TEST_NOT_ADMITTED");
         } catch (RuntimeException e) {
             result = new TestSubmission(requestId, TestSubmission.State.OUTCOME_UNKNOWN, null, "TEST_OUTCOME_UNKNOWN");
         }
         synchronized (this) {
             receipt.submission = result;
+            receipt.expiresAt = clock.instant().plus(policy.terminalTtl());
+            touch(requestId, receipt);
             return result;
         }
     }
@@ -114,6 +155,7 @@ final class ControlledTests {
         private final UUID draftId;
         private final byte[] fingerprint;
         private TestSubmission submission;
+        private Instant expiresAt;
 
         private Receipt(String actor, UUID draftId, byte[] fingerprint, TestSubmission submission) {
             this.actor = actor;

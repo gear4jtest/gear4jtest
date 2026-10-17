@@ -5,6 +5,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.sql.Connection;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -12,10 +14,13 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.gear4jtest.studio.jdbc.JdbcStudioStore;
 import io.github.gear4jtest.studio.json.DefinitionJson;
 import io.github.gear4jtest.studio.json.StudioJson;
+import io.github.gear4jtest.studio.management.StudioRunRecorder;
 import io.github.gear4jtest.studio.model.ChainDefinition;
 import io.github.gear4jtest.studio.model.ParameterValue;
+import io.github.gear4jtest.studio.model.StudioRun;
 import io.github.gear4jtest.studio.runtime.LocalGear4jRuntime;
 import io.github.gear4jtest.studio.spi.DataCapturePolicy;
 import org.h2.jdbcx.JdbcDataSource;
@@ -34,10 +39,12 @@ class StudioHttpServerTest {
     private LocalGear4jRuntime runtime;
     private Connection lifetime;
     private DemoPublicationHost publications;
+    private JdbcDataSource source;
 
     @BeforeEach
     void open() throws Exception {
         var ds = new JdbcDataSource();
+        source = ds;
         ds.setURL("jdbc:h2:mem:" + UUID.randomUUID());
         lifetime = ds.getConnection();
         var resources = DemoWiring.plainResources();
@@ -92,6 +99,89 @@ class StudioHttpServerTest {
                                            "text_preparation"));
         return post("/drafts", Map.of("chainId", chain.path("resource").path("id").asText(), "name", "Draft",
                                       "definition", DefinitionJson.write(DemoWiring.sample())));
+    }
+
+    @Test
+    void runRoutesFilterDurableSnapshotsAndNeverExposePayloadsWithoutObservabilityPermission() throws Exception {
+        // Given
+        var draft = createDraft();
+        String scope = draft.path("draft").path("id").asText();
+        post("/drafts/" + scope + "/tests",
+             Map.of("revision", 1, "requestId", UUID.randomUUID(), "input", "synthetic-input"));
+        String window = "?from=" + Instant.now().minusSeconds(60) + "&until=" + Instant.now().plusSeconds(60);
+        String path = "/api/v1/resources/" + scope;
+        // When / Then
+        assertThat(send("/studio-runs.mjs", "GET", null, null).statusCode()).isEqualTo(200);
+        assertThat(send(path + "/runs", "GET", EDITOR, null).statusCode()).isEqualTo(400);
+        assertThat(send(path + "/runs" + window + "&actor=forged", "GET", EDITOR, null).statusCode()).isEqualTo(400);
+        assertThat(send(path + "/runs" + window + "&mode=INVALID", "GET", EDITOR, null).statusCode()).isEqualTo(400);
+        assertThat(send(path + "/runs?from=2026-01-01T00:00:00Z&until=2026-03-01T00:00:00Z", "GET", EDITOR, null)
+                .statusCode()).isEqualTo(400);
+        var listing = send(path + "/runs" + window + "&status=SUCCEEDED&mode=TEST", "GET", EDITOR, null);
+        assertThat(listing.statusCode()).isEqualTo(200);
+        assertThat(listing.body()).doesNotContain("synthetic-input", "SYNTHETIC-INPUT");
+        String id = mapper.readTree(listing.body()).path("items").get(0).path("id").asText();
+        assertThat(send("/api/v1/runs/" + id, "GET", VIEWER, null).statusCode()).isEqualTo(404);
+        assertThat(send(path + "/access", "PUT", EDITOR, Map.of("expectedVersion", 1, "policy",
+                                                                Map.of("inheritAccess", false, "grants",
+                                                                       List.of(Map.of("subjectType", "USER", "subject",
+                                                                                      "demo-viewer", "permissions",
+                                                                                      List.of("READ", "READ_RUNS"))))))
+                .statusCode()).isEqualTo(200);
+        var metadata = send("/api/v1/runs/" + id, "GET", VIEWER, null);
+        assertThat(metadata.statusCode()).isEqualTo(200);
+        assertThat(mapper.readTree(metadata.body()).path("observation").isNull()).isTrue();
+        assertThat(send(path + "/metrics" + window, "GET", VIEWER, null).statusCode()).isEqualTo(403);
+        assertThat(mapper.readTree(send(path + "/metrics" + window, "GET", EDITOR, null).body()).path("total").asInt())
+                .isEqualTo(1);
+        var stream = send("/api/v1/runs/" + id + "/events", "GET", EDITOR, null);
+        assertThat(stream.statusCode()).isEqualTo(200);
+        assertThat(stream.headers().firstValue("content-type")).contains("text/event-stream; charset=utf-8");
+        assertThat(stream.body()).contains("event: snapshot", "SYNTHETIC-INPUT").doesNotContain("\nid:");
+        assertThat(send("/api/v1/runs/" + id + "/events?token=synthetic", "GET", EDITOR, null).statusCode())
+                .isEqualTo(400);
+    }
+
+    @Test
+    void ongoingSnapshotStreamRechecksAclAndClosesWhenAccessIsRevoked() throws Exception {
+        // Given: a host run still in preparation, with a viewer explicitly authorized.
+        var draft = createDraft();
+        String chain = draft.path("draft").path("chainId").asText();
+        var recorder = new StudioRunRecorder(new JdbcStudioStore(source), runtime.context().id(), Clock.systemUTC());
+        var id = recorder.beginHostRun(UUID
+                .fromString(chain), new StudioRun.Provenance(runtime.context().id(), "text_preparation",
+                        "build", runtime.context().catalogFingerprint(), null, "application", "RUN", null, null, null,
+                        0, null, null));
+        String access = "/api/v1/resources/" + chain + "/access";
+        assertThat(send(access, "PUT", EDITOR, Map.of("expectedVersion", 1, "policy",
+                                                      Map.of("inheritAccess", true, "grants",
+                                                             List.of(Map.of("subjectType", "USER", "subject",
+                                                                            "demo-viewer",
+                                                                            "permissions",
+                                                                            List.of("READ", "READ_RUNS",
+                                                                                    "READ_OBSERVABILITY"))))))
+                .statusCode()).isEqualTo(200);
+        var request = HttpRequest
+                .newBuilder(URI.create("http://127.0.0.1:" + server.port() + "/api/v1/runs/" + id + "/events"))
+                .header("Authorization", "Bearer " + VIEWER).build();
+        var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        try (var reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(response.body(), java.nio.charset.StandardCharsets.UTF_8))) {
+            assertThat(response.statusCode()).isEqualTo(200);
+            String line;
+            do {
+                line = reader.readLine();
+            } while (line != null && !line.startsWith("data: "));
+            assertThat(line).contains("PREPARING");
+            // When
+            assertThat(send(access, "PUT", EDITOR, Map.of("expectedVersion", 2,
+                                                          "policy", Map.of("inheritAccess", true, "grants", List.of())))
+                    .statusCode()).isEqualTo(200);
+            // Then: at most one heartbeat interval, no further snapshot or provenance.
+            String remainder = reader.lines().collect(java.util.stream.Collectors.joining("\n"));
+            assertThat(remainder).contains("event: unavailable").doesNotContain("event: snapshot", "text_preparation");
+        }
+        assertThat(send("/api/v1/runs/" + id, "GET", VIEWER, null).statusCode()).isEqualTo(404);
     }
 
     @Test

@@ -38,9 +38,10 @@ public final class StudioManagementService {
     private final Clock clock;
     private final StudioPublisher publisher;
     private final StudioPublications publications;
+    private final StudioRuns runs;
     private final PageCursors cursors;
     private static final int SCAN_BUDGET = 500;
-    private final ControlledTests tests = new ControlledTests();
+    private final ControlledTests tests;
 
     public StudioManagementService(StudioStore store,
                                    StudioRuntime runtime,
@@ -71,6 +72,17 @@ public final class StudioManagementService {
                                    Predicate<StudioIdentity> domainCreation,
                                    Clock clock,
                                    StudioPublisher publisher) {
+        this(store, runtime, actors, domainCreation, clock, publisher, TestReceiptPolicy.defaults());
+    }
+
+    public StudioManagementService(StudioStore store,
+                                   StudioRuntime runtime,
+                                   CurrentActorProvider actors,
+                                   Predicate<StudioIdentity> domainCreation,
+                                   Clock clock,
+                                   StudioPublisher publisher,
+                                   TestReceiptPolicy receiptPolicy) {
+        this.tests = new ControlledTests(clock, receiptPolicy);
         this.publisher = publisher;
         this.publications = new StudioPublications(store, runtime, publisher, clock);
         this.store = Objects.requireNonNull(store);
@@ -80,6 +92,7 @@ public final class StudioManagementService {
         this.clock = Objects.requireNonNull(clock);
         this.cursors = new PageCursors(clock);
         store.bindContext(runtime.context().id());
+        this.runs = new StudioRuns(store, runtime, clock);
     }
 
     public StudioIdentity identity() {
@@ -95,6 +108,8 @@ public final class StudioManagementService {
         var capabilities = new java.util.HashSet<>(context.capabilities());
         if (publisher != null)
             capabilities.addAll(publisher.capabilities());
+        capabilities.add("RUN_HISTORY");
+        capabilities.add("RUN_METRICS");
         return new RuntimeContext(context.id(), context.applicationBuild(), context.catalogFingerprint(), capabilities);
     }
 
@@ -602,12 +617,19 @@ public final class StudioManagementService {
             selected.requireDefinition();
             return selected;
         });
-        return tests.execute(actor, revision, requestId, input, runtime, () -> store.write(tx -> {
-            var draft = typed(locked(tx, id), StudioDraft.class);
-            requireRead(tx, actor, draft, Permission.TEST);
-            audit(tx, actor, draft, AuditEvent.Action.TEST_REQUESTED, revision.revisionId(), requestId, null, null);
-            return null;
-        }));
+        UUID observationId = UUID.randomUUID();
+        return tests.execute(actor, revision.draftId(), revision.revisionId(), requestId, input,
+                             () -> runs.execute(observationId,
+                                                observer -> runtime.executeObserved(revision, input, requestId,
+                                                                                    actor.subject(), observer)),
+                             () -> store.write(tx -> {
+                                 var draft = typed(locked(tx, id), StudioDraft.class);
+                                 requireRead(tx, actor, draft, Permission.TEST);
+                                 audit(tx, actor, draft, AuditEvent.Action.TEST_REQUESTED, revision.revisionId(),
+                                       requestId, null, null);
+                                 runs.begin(tx, observationId, actor, revision, null, requestId);
+                                 return null;
+                             }));
     }
 
     /**
@@ -619,8 +641,11 @@ public final class StudioManagementService {
         capability("CONTROLLED_TEST_VERSION");
         var version = publications.get(actor, versionId).version();
         authorize(version.chainId(), Permission.TEST);
+        UUID observationId = UUID.randomUUID();
         return tests.execute(actor, version.chainId(), version.id(), requestId, input,
-                             () -> runtime.executeVersion(version, input, requestId, actor.subject()),
+                             () -> runs.execute(observationId,
+                                                observer -> runtime.executeVersionObserved(version, input, requestId,
+                                                                                           actor.subject(), observer)),
                              () -> store.write(tx -> {
                                  var chain = typed(locked(tx, version.chainId()), StudioChain.class);
                                  requireRead(tx, actor, chain, Permission.TEST);
@@ -628,6 +653,8 @@ public final class StudioManagementService {
                                          ResourceKind.CHAIN, chain.id(), chain.version(), actor.subject(),
                                          AuditEvent.Action.TEST_REQUESTED,
                                          now(), version.revisionId(), requestId, null, null, version.id()));
+                                 runs.begin(tx, observationId, actor,
+                                            tx.revision(version.draftId(), version.revision()), version, requestId);
                                  return null;
                              }));
     }
@@ -640,6 +667,22 @@ public final class StudioManagementService {
             return null;
         });
         return tests.status(actor.subject(), requestId);
+    }
+
+    public io.github.gear4jtest.studio.model.StudioRun run(UUID id) {
+        return runs.get(identity(), id);
+    }
+
+    public StudioPage<io.github.gear4jtest.studio.model.StudioRun> runs(UUID scope,
+                                                                        io.github.gear4jtest.studio.model.RunFilter filter,
+                                                                        String after,
+                                                                        int size) {
+        return runs.list(identity(), scope, filter, after, size);
+    }
+
+    public io.github.gear4jtest.studio.model.RunMetrics metrics(UUID scope,
+                                                                io.github.gear4jtest.studio.model.RunFilter filter) {
+        return runs.metrics(identity(), scope, filter);
     }
 
     public StudioPage<AuditEvent> audit(UUID scope, String after, int size) {

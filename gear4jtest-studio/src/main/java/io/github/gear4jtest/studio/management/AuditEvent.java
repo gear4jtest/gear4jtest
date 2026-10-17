@@ -22,7 +22,28 @@ public record AuditEvent(long sequence,
                          UUID requestId,
                          AccessPolicy accessBefore,
                          AccessPolicy accessAfter,
-                         UUID versionId) {
+                         UUID versionId,
+                         UUID attemptId) {
+    public AuditEvent(long sequence,
+                      UUID eventId,
+                      UUID domainId,
+                      UUID chainId,
+                      UUID draftId,
+                      ResourceKind resourceKind,
+                      UUID resourceId,
+                      long resourceVersion,
+                      String actor,
+                      Action action,
+                      Instant occurredAt,
+                      UUID revisionId,
+                      UUID requestId,
+                      AccessPolicy accessBefore,
+                      AccessPolicy accessAfter,
+                      UUID versionId) {
+        this(sequence, eventId, domainId, chainId, draftId, resourceKind, resourceId, resourceVersion, actor,
+                action, occurredAt, revisionId, requestId, accessBefore, accessAfter, versionId, null);
+    }
+
     public AuditEvent(long sequence,
                       UUID eventId,
                       UUID domainId,

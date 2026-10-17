@@ -94,6 +94,13 @@ class SpringStudioTest {
                 assertThat(result.run().output().value()).isEqualTo("ELECTRIC");
                 assertThat(result.run().runtimeContext()).isEqualTo("studio-local.spring");
                 assertThat(result.run().revisionId()).isEqualTo(draft.revision().revisionId());
+                var filter = new io.github.gear4jtest.studio.model.RunFilter(java.time.Instant.now().minusSeconds(60),
+                        java.time.Instant.now().plusSeconds(60), null, "TEST", null, null, null);
+                var history = service.runs(chain.id(), filter, null, 10);
+                assertThat(history.items()).hasSize(2);
+                assertThat(service.run(history.items().get(0).id()).observation().output().value())
+                        .isEqualTo("ELECTRIC");
+                assertThat(service.metrics(chain.id(), filter).total()).isEqualTo(2);
             }
         }
     }

@@ -1,5 +1,5 @@
 ext.moduleName = 'io.github.gear4jtest.studio.demo'
-description = 'Gear4J Studio P3 studio-demo (experimental).'
+description = 'Gear4J Studio P4 studio-demo (experimental).'
 dependencies {
     implementation project(':gear4jtest-studio-runtime')
     implementation project(':gear4jtest-studio-json')

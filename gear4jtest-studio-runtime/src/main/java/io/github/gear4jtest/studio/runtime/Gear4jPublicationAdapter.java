@@ -108,7 +108,7 @@ public final class Gear4jPublicationAdapter implements StudioPublisher {
         return new OperationChainTranslator() {
             @Override
             public String id() {
-                return "gear4j-studio-declarative-v1";
+                return "gear4j-studio-declarative-v2";
             }
 
             @Override
@@ -130,8 +130,9 @@ public final class Gear4jPublicationAdapter implements StudioPublisher {
                         .parse(new ByteArrayInputStream(content));
                 var generated = XmlToJavaGenerator.builder("io.github.gear4jtest.studio.generated")
                         .classLoader(Gear4jPublicationAdapter.class.getClassLoader())
-                        .sourcePolicy(catalog.sourcePolicy())
-                        .operatorCapabilityPolicy(catalog.capabilityPolicy()).build().generate(definition, mode);
+                        .sourcePolicy(catalog.sourcePolicy(mode))
+                        .operatorCapabilityPolicy(catalog.capabilityPolicy()).build()
+                        .generate(ModeBindings.bind(definition, catalog, mode), mode);
                 return new GenerationResult(generated.className(), generated.formattedSource());
             }
         };

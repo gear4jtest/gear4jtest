@@ -27,12 +27,18 @@ public final class OperationCatalog {
         registrations = java.util.Collections.unmodifiableMap(map);
         var text = new StringBuilder();
         map.forEach((id, value) -> {
-            append(text, id, value.type().getName(), value.inputType().getName(), value.outputType().getName(),
+            append(text, id, value.inputType().getName(), value.outputType().getName(),
                    String.valueOf(value.descriptor().testAllowed()), String.valueOf(value.descriptor().runAllowed()),
                    value.descriptor().effects(),
                    value.descriptor().input().toString(), value.descriptor().output().toString(),
-                   classHash(value.type()),
                    String.valueOf(value.descriptor().parameters().size()));
+            for (var mode : ExecutionMode.values()) {
+                var binding = value.bindings().get(mode);
+                if (binding != null) {
+                    append(text, mode.name(), binding.type().getName(), classHash(binding.type()));
+                    new TreeMap<>(binding.parameterGetters()).forEach((name, getter) -> append(text, name, getter));
+                }
+            }
             new TreeMap<>(value.descriptor().parameters()).forEach((name, parameter) -> {
                 append(text, name, parameter.kind().name(), String.valueOf(parameter.required()), value.retriever(name),
                        String.valueOf(parameter.allowedReferences().size()));
@@ -68,17 +74,15 @@ public final class OperationCatalog {
     XmlOperatorCapabilityPolicy capabilityPolicy() {
         var builder = XmlOperatorCapabilityPolicy.builder();
         registrations.forEach((id, value) -> {
-            if (value.descriptor().testAllowed())
-                builder.allow(id, value.type(), ExecutionMode.TEST);
-            if (value.descriptor().runAllowed())
-                builder.allow(id, value.type(), ExecutionMode.RUN);
+            value.bindings().forEach((mode, binding) -> builder.allow(id, binding.type(), mode));
         });
         return builder.build();
     }
 
-    XmlJavaSourcePolicy sourcePolicy() {
+    XmlJavaSourcePolicy sourcePolicy(ExecutionMode mode) {
         var allowed = registrations.values().stream()
-                .flatMap(value -> value.parameterGetters().keySet().stream().map(value::retriever))
+                .map(value -> value.bindings().get(mode)).filter(java.util.Objects::nonNull)
+                .flatMap(binding -> binding.parameterGetters().keySet().stream().map(binding::retriever))
                 .collect(java.util.stream.Collectors.toSet());
         return expression -> {
             if (!allowed.contains(expression))

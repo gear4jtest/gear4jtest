@@ -59,6 +59,7 @@ final class StudioPublications {
         if (!validation.valid())
             throw new StudioProblem(INVALID_DEFINITION);
         String source = runtime.exportDefinition(definition, "application/xml");
+        var format = runtime.formatAdapter("application/xml");
         var context = runtime.context();
         if (!context.catalogFingerprint().equals(validation.catalogFingerprint()))
             throw new StudioProblem(CONFLICT);
@@ -73,9 +74,10 @@ final class StudioPublications {
             requireRead(tx, actor, chain, Permission.PUBLISH);
             var version = new StudioVersion(UUID.randomUUID(), chain.id(), draftId, selected.revisionId(),
                     selected.number(), chain.runtimeAssemblyLineId(), label, actor.subject(), now(), context.id(),
-                    context.applicationBuild(), context.catalogFingerprint(), "application/xml", hash(source), source);
+                    context.applicationBuild(), context.catalogFingerprint(), "application/xml", hash(source), source,
+                    definition.schemaVersion(), format.id(), format.version());
             tx.insertVersion(version);
-            audit(tx, actor.subject(), chain, version, AuditEvent.Action.VERSION_CREATED);
+            audit(tx, actor.subject(), chain, version, AuditEvent.Action.VERSION_CREATED, null);
             return view(tx, actor, version);
         });
     }
@@ -140,11 +142,12 @@ final class StudioPublications {
                     throw new StudioProblem(TEST_PUBLICATION_REQUIRED);
             }
             var requested = new StudioPublication(id, mode, REQUESTED,
-                    old == null ? actor.subject() : old.requestedBy(), old == null ? now() : old.requestedAt(),
+                    actor.subject(), now(),
                     null, null, null, null);
             tx.savePublication(requested);
             audit(tx, actor.subject(), chain, version, mode == StudioPublication.Mode.TEST
-                    ? AuditEvent.Action.PUBLICATION_REQUESTED : AuditEvent.Action.PROMOTION_REQUESTED);
+                    ? AuditEvent.Action.PUBLICATION_REQUESTED : AuditEvent.Action.PROMOTION_REQUESTED,
+                  requested.attemptId());
             return new Attempt(version, requested, true);
         });
         if (!attempt.execute())
@@ -163,7 +166,7 @@ final class StudioPublications {
         } catch (RuntimeException e) {
             // Never forward provider exception text or assume that a write failed.
         }
-        completeFromObservation(actor, attempt.version(), mode, failure, false);
+        completeFromObservation(actor, attempt.version(), attempt.publication(), failure, false);
         return get(actor, id);
     }
 
@@ -172,15 +175,16 @@ final class StudioPublications {
             throw new StudioProblem(FORBIDDEN);
         var state = get(actor, id);
         for (var publication : state.publications())
-            completeFromObservation(actor, state.version(), publication.mode(), null, true);
+            completeFromObservation(actor, state.version(), publication, null, true);
         return get(actor, id);
     }
 
     private void completeFromObservation(StudioIdentity actor,
                                          StudioVersion version,
-                                         StudioPublication.Mode mode,
+                                         StudioPublication expected,
                                          StudioProblem.Code failure,
                                          boolean refresh) {
+        var mode = expected.mode();
         PublishedArtifact observation = null;
         try {
             observation = observed(version, mode);
@@ -200,6 +204,9 @@ final class StudioPublications {
             var current = tx.publication(version.id(), mode);
             if (current == null)
                 throw new StudioProblem(STORAGE_UNAVAILABLE);
+            // Both completions and observations belong to the attempt they started from.
+            if (!current.attemptId().equals(expected.attemptId()) || refresh && !current.equals(expected))
+                return null;
             // An older in-flight failure must never overwrite a confirmed result.
             if (!refresh && current.state() == CONFIRMED && state != CONFIRMED)
                 return null;
@@ -207,8 +214,8 @@ final class StudioPublications {
                 return null;
             tx.savePublication(new StudioPublication(version.id(), mode, state, current.requestedBy(),
                     current.requestedAt(), now(), result == null ? null : result.publishedBy(),
-                    result == null ? null : result.publishedAt(), error));
-            audit(tx, actor.subject(), chain, version, outcomeAction(mode, state));
+                    result == null ? null : result.publishedAt(), error, current.attemptId()));
+            audit(tx, actor.subject(), chain, version, outcomeAction(mode, state), current.attemptId());
             return null;
         });
     }
@@ -289,10 +296,11 @@ final class StudioPublications {
                        String actor,
                        StudioChain chain,
                        StudioVersion version,
-                       AuditEvent.Action action) {
+                       AuditEvent.Action action,
+                       UUID attemptId) {
         tx.appendAudit(new AuditEvent(0, UUID.randomUUID(), chain.domainId(), chain.id(), null, ResourceKind.CHAIN,
                 chain.id(), chain.version(), actor, action, now(), version.revisionId(), null, null, null,
-                version.id()));
+                version.id(), attemptId));
     }
 
     private Instant now() {

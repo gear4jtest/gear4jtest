@@ -196,7 +196,8 @@ class LocalStudioTest {
         assertThatThrownBy(() -> adapter.read(adapter.write(choice).replace("language=\"gel\"", "language=\"java\"")))
                 .hasMessage("UNSUPPORTED_FORMAT");
         var configured = line(op("prefix", "text.prefix", "prefix", text("hello")));
-        assertThatThrownBy(() -> adapter.read(adapter.write(configured).replace("::getPrefix", "::getClass")))
+        assertThatThrownBy(() -> adapter
+                .read(adapter.write(configured).replace("parameter:prefix", "java.lang.Runtime::getRuntime")))
                 .hasMessage("UNSUPPORTED_FORMAT");
     }
 

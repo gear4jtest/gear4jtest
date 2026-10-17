@@ -157,9 +157,7 @@ public final class StudioXmlAdapter {
                 require(parameter, "valueParameter", Set.of("retriever", "value", "valueType"), Set.of());
                 if (parameter.hasAttribute("valueType") && !attr(parameter, "valueType").equals("java.lang.String"))
                     throw unsupported();
-                String name = binding.parameterGetters().keySet().stream()
-                        .filter(key -> binding.retriever(key).equals(attr(parameter, "retriever"))).findFirst()
-                        .orElseThrow(StudioXmlAdapter::unsupported);
+                String name = binding.parameter(attr(parameter, "retriever"));
                 if (values.putIfAbsent(name, new ParameterValue(binding.descriptor().parameters().get(name).kind(),
                         attr(parameter, "value"))) != null)
                     throw unsupported();

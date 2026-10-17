@@ -40,9 +40,43 @@ public interface StudioRuntime {
 
     String exportDefinition(ChainDefinition definition, String mediaType);
 
+    /** Producer semantics, separate from the immutable bytes and host build. */
+    default FormatAdapter formatAdapter(String mediaType) {
+        return new FormatAdapter("unknown", "unknown");
+    }
+
+    record FormatAdapter(String id, String version) {
+        public FormatAdapter {
+            if (id == null || version == null || !id.matches("[A-Za-z0-9._-]{1,128}")
+                    || !version.matches("[A-Za-z0-9._-]{1,64}"))
+                throw new IllegalArgumentException("Invalid format adapter identity");
+        }
+    }
+
     ChainDefinition importDefinition(String source, String mediaType);
 
     ControlledRun execute(DraftRevision revision, String input, UUID requestId, String actor);
+
+    /** Optional progress snapshots; adapters may emit only the final result. */
+    default ControlledRun executeObserved(DraftRevision revision,
+                                          String input,
+                                          UUID requestId,
+                                          String actor,
+                                          java.util.function.Consumer<io.github.gear4jtest.studio.model.RunObservation> observer) {
+        var run = execute(revision, input, requestId, actor);
+        observer.accept(io.github.gear4jtest.studio.model.RunObservation.completed(run));
+        return run;
+    }
+
+    default ControlledRun executeVersionObserved(io.github.gear4jtest.studio.model.StudioVersion version,
+                                                 String input,
+                                                 UUID requestId,
+                                                 String actor,
+                                                 java.util.function.Consumer<io.github.gear4jtest.studio.model.RunObservation> observer) {
+        var run = executeVersion(version, input, requestId, actor);
+        observer.accept(io.github.gear4jtest.studio.model.RunObservation.completed(run));
+        return run;
+    }
 
     /** Test the exact pinned artifact; never silently reserialize it. */
     default ControlledRun executeVersion(io.github.gear4jtest.studio.model.StudioVersion version,

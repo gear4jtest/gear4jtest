@@ -98,7 +98,7 @@ public final class DemoWiring {
                                              AssemblyLineExecutor executor,
                                              ResourceFactory resources,
                                              DataCapturePolicy capture) {
-        return new LocalGear4jRuntime("studio-local." + host, "studio-p3-20261003", catalog(), executor, resources,
+        return new LocalGear4jRuntime("studio-local." + host, "studio-p4-20261004", catalog(), executor, resources,
                 capture, Duration.ofSeconds(10));
     }
 

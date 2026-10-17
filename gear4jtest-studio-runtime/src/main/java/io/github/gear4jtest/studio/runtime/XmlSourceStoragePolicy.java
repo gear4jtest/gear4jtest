@@ -217,9 +217,12 @@ final class XmlSourceStoragePolicy {
 
     private static void parameter(RegisteredOperation operation, Map<String, String> values) {
         String retriever = values.get("retriever");
-        String name = operation.parameterGetters().keySet().stream()
-                .filter(key -> operation.retriever(key).equals(retriever)).findFirst()
-                .orElseThrow(XmlSourceStoragePolicy::denied);
+        String name;
+        try {
+            name = operation.parameter(retriever);
+        } catch (IllegalArgumentException invalid) {
+            throw denied();
+        }
         var descriptor = operation.descriptor().parameters().get(name);
         if (descriptor.kind() == ParameterValue.Kind.RESOURCE_REFERENCE
                 && !descriptor.allowedReferences().contains(values.get("value")))

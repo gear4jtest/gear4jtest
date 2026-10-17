@@ -35,7 +35,7 @@ public final class PlainStudioApplication {
             }));
             server.start();
             started = true;
-            LoggerFactory.getLogger(PlainStudioApplication.class).info("Gear4J Studio P3: http://127.0.0.1:{}",
+            LoggerFactory.getLogger(PlainStudioApplication.class).info("Gear4J Studio P4: http://127.0.0.1:{}",
                                                                        server.port());
         } finally {
             if (!started) {

@@ -1,6 +1,43 @@
-import { StudioTransport } from './studio-client.mjs';
+import { StudioTransport, StudioError } from './studio-client.mjs';
 /** Public management client. Identities/groups are never accepted as request options. */
 export class ManagementClient extends StudioTransport {
+  runs(scope, filter, after, limit = 25) {
+    const query = new URLSearchParams(Object.entries(filter).filter(([, v]) => v !== '' && v != null));
+    query.set('limit', String(limit)); if (after) query.set('after', after);
+    return this.request(`/resources/${encodeURIComponent(scope)}/runs?${query}`);
+  }
+  metrics(scope, filter) {
+    const query = new URLSearchParams(Object.entries(filter).filter(([, v]) => v !== '' && v != null));
+    return this.request(`/resources/${encodeURIComponent(scope)}/metrics?${query}`);
+  }
+  run(id) { return this.request(`/runs/${encodeURIComponent(id)}`); }
+  /** One best-effort SSE connection. Caller reloads a snapshot on reconnect or uses polling. */
+  async watchRun(id, onSnapshot, { signal } = {}) {
+    const token = await this.tokenProvider();
+    const response = await this.fetch(`${this.baseUrl}/api/v1/runs/${encodeURIComponent(id)}/events`, {
+      method: 'GET', cache: 'no-store', credentials: 'omit', signal,
+      headers: { Authorization: `Bearer ${token}`, Accept: 'text/event-stream' }
+    });
+    if (!response.ok) throw new StudioError('STREAM_UNAVAILABLE', response.status);
+    if (!response.headers.get('content-type')?.startsWith('text/event-stream') || !response.body?.getReader)
+      throw new StudioError('STREAM_UNAVAILABLE', 503);
+    const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = '';
+    try {
+      while (!signal?.aborted) {
+        const { value, done } = await reader.read(); if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        if (buffer.length > 524288) throw new StudioError('STREAM_INVALID', 503);
+        let end;
+        while ((end = buffer.indexOf('\n\n')) >= 0) {
+          const frame = buffer.slice(0, end); buffer = buffer.slice(end + 2);
+          if (frame.startsWith('event: unavailable')) throw new StudioError('STREAM_UNAVAILABLE', 403);
+          if (!frame.startsWith('event: snapshot\n')) continue;
+          const payload = frame.split('\n').filter(line => line.startsWith('data: ')).map(line => line.slice(6)).join('\n');
+          onSnapshot(JSON.parse(payload));
+        }
+      }
+    } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
+  }
   versions(chainId, after) { return this.request(`/chains/${encodeURIComponent(chainId)}/versions?limit=25${after ? `&after=${encodeURIComponent(after)}` : ''}`); }
   version(id) { return this.request(`/versions/${encodeURIComponent(id)}`); }
   createVersion(id, revision, label) { return this.request(`/drafts/${encodeURIComponent(id)}/versions`, 'POST', { revision, label }); }

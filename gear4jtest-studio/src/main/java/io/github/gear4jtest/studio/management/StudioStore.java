@@ -63,8 +63,32 @@ public interface StudioStore {
          */
         void savePublication(StudioPublication publication);
 
+        io.github.gear4jtest.studio.model.StudioRun run(UUID id);
+
+        /** Scope is one chain or draft; SQL filters precede bounded ACL scanning. */
+        List<io.github.gear4jtest.studio.model.StudioRun> runs(UUID chainId,
+                                                               UUID draftId,
+                                                               io.github.gear4jtest.studio.model.RunFilter filter,
+                                                               String after,
+                                                               int limit);
+
+        /** Domain lock required. Provenance and scope are immutable. */
+        void saveRun(io.github.gear4jtest.studio.model.StudioRun run);
+
+        /**
+         * Trusted host maintenance: only terminal rows older than the retention cutoff.
+         */
+        int purgeRuns(InstantCutoff cutoff);
+
         void appendAudit(AuditEvent event);
 
         List<AuditEvent> audit(UUID domainId, UUID chainId, UUID draftId, long after, int limit);
+    }
+
+    record InstantCutoff(java.time.Instant before, int limit) {
+        public InstantCutoff {
+            if (before == null || limit < 1 || limit > 100)
+                throw new IllegalArgumentException("Invalid purge limit");
+        }
     }
 }

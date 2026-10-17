@@ -14,7 +14,25 @@ public record StudioPublication(UUID versionId,
                                 Instant completedAt,
                                 String publishedBy,
                                 Instant publishedAt,
-                                String errorCode) {
+                                String errorCode,
+                                UUID attemptId) {
+    public StudioPublication {
+        java.util.Objects.requireNonNull(attemptId);
+    }
+
+    public StudioPublication(UUID versionId,
+                             Mode mode,
+                             State state,
+                             String requestedBy,
+                             Instant requestedAt,
+                             Instant completedAt,
+                             String publishedBy,
+                             Instant publishedAt,
+                             String errorCode) {
+        this(versionId, mode, state, requestedBy, requestedAt, completedAt, publishedBy, publishedAt, errorCode,
+                UUID.randomUUID());
+    }
+
     public enum Mode {
         TEST, RUN
     }

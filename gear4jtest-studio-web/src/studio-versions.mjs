@@ -44,9 +44,10 @@ export class Gear4jVersions extends HTMLElement {
     if (!this.selected) { box.append(el('small', 'Sélectionnez une version pour consulter son artefact, la tester, la publier en TEST ou la promouvoir en RUN.')); return; }
     const { version, publications, actions } = this.selected;
     box.append(el('strong', `${version.runtimeAssemblyLineId} · ${version.label}`), el('small', `${version.author} · ${version.createdAt} · révision ${version.revision}`), el('code', `SHA-256 ${version.artifactHash}`));
+    box.append(el('small', `Modèle ${version.definitionSchemaVersion ?? 'inconnu'} · adaptateur ${version.formatAdapterId ?? 'inconnu'} / ${version.formatAdapterVersion ?? 'inconnue'}`));
     if (this.contextFingerprint && this.contextFingerprint !== version.catalogFingerprint) box.append(el('p', 'Le catalogue a changé depuis la création de cette version.'));
     const table = el('table'); const headings = el('tr'); for (const text of ['Mode', 'État', 'Demande', 'Publication observée']) headings.append(el('th', text)); table.append(headings);
-    for (const mode of ['TEST', 'RUN']) { const p = publications.find(p => p.mode === mode); const row = el('tr'); for (const text of [mode, p ? `${p.state}${p.errorCode ? ` · ${p.errorCode}` : ''}` : 'Non demandée', p ? `${p.requestedBy} · ${p.requestedAt}` : '—', p?.publishedAt ? `${p.publishedBy} · ${p.publishedAt}` : '—']) row.append(el('td', text)); table.append(row); } box.append(table);
+    for (const mode of ['TEST', 'RUN']) { const p = publications.find(p => p.mode === mode); const row = el('tr'); for (const text of [mode, p ? `${p.state}${p.errorCode ? ` · ${p.errorCode}` : ''}` : 'Non demandée', p ? `${p.requestedBy} · ${p.requestedAt} · tentative ${p.attemptId ?? 'inconnue'}` : '—', p?.publishedAt ? `${p.publishedBy} · ${p.publishedAt}` : '—']) row.append(el('td', text)); table.append(row); } box.append(table);
     const controls = el('div'); controls.className = 'bar';
     const blocked = mode => this.busy || ['REQUESTED', 'CONFIRMED'].includes(publications.find(p => p.mode === mode)?.state);
     controls.append(button('Actualiser les publications', () => this.perform(async () => { this.selected = await this.client.refreshVersion(version.id); await this.reload(this.cursor); this.message = 'État relu dans Gear4J.'; }), this.busy));

@@ -32,6 +32,8 @@ public final class StudioHttpServer implements AutoCloseable {
     private final ThreadPoolExecutor workers = new ThreadPoolExecutor(4, 4, 0, TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(32));
     private final ManagementRoutes routes;
+    private final StudioManagementService service;
+    private final java.util.concurrent.Semaphore streams = new java.util.concurrent.Semaphore(1);
     private final RequestActorContext actors;
     private final Function<HttpExchange, StudioIdentity> authenticate;
     private final ObjectMapper mapper = StudioJson.mapper();
@@ -50,7 +52,8 @@ public final class StudioHttpServer implements AutoCloseable {
                             int port,
                             Function<HttpExchange, StudioIdentity> authenticate)
             throws IOException {
-        this.routes = new ManagementRoutes(java.util.Objects.requireNonNull(service));
+        this.service = java.util.Objects.requireNonNull(service);
+        this.routes = new ManagementRoutes(service);
         this.actors = java.util.Objects.requireNonNull(actors);
         this.authenticate = java.util.Objects.requireNonNull(authenticate);
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 16);
@@ -113,8 +116,13 @@ public final class StudioHttpServer implements AutoCloseable {
                         json(exchange, 401, Map.of("code", "UNAUTHENTICATED"));
                         return;
                     }
+                    String method = exchange.getRequestMethod();
+                    if (method.equals("GET")
+                            && exchange.getRequestURI().getPath().matches("/api/v1/runs/[a-fA-F0-9-]{36}/events")) {
+                        stream(exchange, identity);
+                        return;
+                    }
                     try (var scope = actors.bind(identity)) {
-                        String method = exchange.getRequestMethod();
                         JsonNode body = Set.of("POST", "PUT").contains(method) ? body(exchange) : null;
                         var response = routes.handle(method, exchange.getRequestURI().getPath(),
                                                      query(exchange.getRequestURI().getRawQuery()), body);
@@ -150,7 +158,7 @@ public final class StudioHttpServer implements AutoCloseable {
             return result;
         for (String pair : raw.split("&")) {
             String[] parts = pair.split("=", 2);
-            if (parts.length != 2 || result.size() >= 3)
+            if (parts.length != 2 || result.size() >= 12)
                 throw new IllegalArgumentException("Invalid query");
             String key = URLDecoder.decode(parts[0], StandardCharsets.UTF_8);
             if (result.putIfAbsent(key, URLDecoder.decode(parts[1], StandardCharsets.UTF_8)) != null)
@@ -171,6 +179,60 @@ public final class StudioHttpServer implements AutoCloseable {
         return value;
     }
 
+    /**
+     * Best-effort snapshots. No replay log; reconnect always starts with the
+     * durable snapshot.
+     */
+    private void stream(HttpExchange exchange, StudioIdentity initialActor) throws IOException {
+        if (exchange.getRequestURI().getRawQuery() != null)
+            throw new IllegalArgumentException("No stream query parameters");
+        var id = java.util.UUID.fromString(exchange.getRequestURI().getPath().split("/")[4]);
+        io.github.gear4jtest.studio.model.StudioRun current;
+        try (var scope = actors.bind(initialActor)) {
+            current = service.run(id);
+        }
+        if (!streams.tryAcquire())
+            throw new StudioProblem(StudioProblem.Code.CAPACITY_EXCEEDED);
+        try {
+            exchange.getResponseHeaders().set("Content-Type", "text/event-stream; charset=utf-8");
+            exchange.getResponseHeaders().set("X-Accel-Buffering", "no");
+            exchange.sendResponseHeaders(200, 0);
+            var output = exchange.getResponseBody();
+            output.write("retry: 2000\n\n".getBytes(StandardCharsets.UTF_8));
+            io.github.gear4jtest.studio.model.StudioRun previous = null;
+            for (int tick = 0; tick < 15; tick++) {
+                try {
+                    var actor = authenticate.apply(exchange);
+                    if (actor == null || !actor.subject().equals(initialActor.subject()))
+                        throw new StudioProblem(StudioProblem.Code.UNAUTHENTICATED);
+                    try (var scope = actors.bind(actor)) {
+                        current = service.run(id);
+                    }
+                    if (!current.equals(previous)) {
+                        output.write(("event: snapshot\ndata: " + mapper.writeValueAsString(current) + "\n\n")
+                                .getBytes(StandardCharsets.UTF_8));
+                        previous = current;
+                    } else
+                        output.write(": heartbeat\n\n".getBytes(StandardCharsets.UTF_8));
+                    output.flush();
+                    if (!Set.of("PREPARING", "RUNNING").contains(current.status()))
+                        break;
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (RuntimeException revoked) {
+                    output.write("event: unavailable\ndata: {\"code\":\"ACCESS_OR_STORAGE_UNAVAILABLE\"}\n\n"
+                            .getBytes(StandardCharsets.UTF_8));
+                    output.flush();
+                    break;
+                } catch (InterruptedException stopped) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        } finally {
+            streams.release();
+        }
+    }
+
     private void json(HttpExchange exchange, int status, Object value) throws IOException {
         bytes(exchange, status, "application/json; charset=utf-8", mapper.writeValueAsBytes(value));
     }
@@ -180,7 +242,8 @@ public final class StudioHttpServer implements AutoCloseable {
                                            "/studio-client.mjs", "studio-client.mjs", "/studio-element.mjs",
                                            "studio-element.mjs", "/bootstrap.mjs", "bootstrap.mjs",
                                            "/management-client.mjs", "management-client.mjs", "/studio-workspace.mjs",
-                                           "studio-workspace.mjs", "/studio-versions.mjs", "studio-versions.mjs");
+                                           "studio-workspace.mjs", "/studio-versions.mjs", "studio-versions.mjs",
+                                           "/studio-runs.mjs", "studio-runs.mjs");
         String file = files.get(exchange.getRequestURI().getPath());
         if (!exchange.getRequestMethod().equals("GET") || file == null) {
             json(exchange, 404, Map.of("code", "NOT_FOUND"));

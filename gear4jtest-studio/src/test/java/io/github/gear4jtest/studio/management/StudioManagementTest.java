@@ -442,7 +442,7 @@ class StudioManagementTest {
             executions.incrementAndGet();
             return new ControlledRun(requestId, UUID.randomUUID(), revision.draftId(), revision.revisionId(),
                     revision.number(), actor,
-                    "test", "build", "TEST", "catalog", "hash", "SUCCEEDED", Instant.now(), Instant.now(),
+                    "test", "build", "TEST", "catalog", "0".repeat(64), "SUCCEEDED", Instant.now(), Instant.now(),
                     CapturedValue.none(), CapturedValue.none(), null, List.of());
         }
     }

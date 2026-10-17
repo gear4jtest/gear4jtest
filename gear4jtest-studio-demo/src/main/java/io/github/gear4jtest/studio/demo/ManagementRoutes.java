@@ -28,7 +28,13 @@ final class ManagementRoutes {
         String[] parts = path.substring(8).split("/", -1);
         int size = query.containsKey("limit") ? Integer.parseInt(query.get("limit")) : 25;
         String after = query.get("after");
-        if (query.keySet().stream().anyMatch(k -> !Set.of("parent", "after", "limit").contains(k)))
+        boolean runQuery = parts.length == 3 && parts[0].equals("resources")
+                && Set.of("runs", "metrics").contains(parts[2]);
+        var queryFields = runQuery
+                ? Set.of("after", "limit", "from", "until", "status", "mode", "versionId", "runId",
+                         "minimumDurationMillis")
+                : Set.of("parent", "after", "limit");
+        if (query.keySet().stream().anyMatch(k -> !queryFields.contains(k)))
             throw new IllegalArgumentException("Unknown query field");
         if (parts.length == 1) {
             String kind = parts[0];
@@ -72,6 +78,19 @@ final class ManagementRoutes {
         }
         if (parts.length >= 2) {
             UUID id = UUID.fromString(parts[1]);
+            if (parts[0].equals("runs") && parts.length == 2 && method.equals("GET"))
+                return ok(service.run(id));
+            if (runQuery && method.equals("GET")) {
+                var filter = new io.github.gear4jtest.studio.model.RunFilter(
+                        instant(query, "from"), instant(query, "until"),
+                        query.get("status"), query.get("mode"),
+                        query.containsKey("versionId") ? UUID.fromString(query.get("versionId")) : null,
+                        query.containsKey("runId") ? UUID.fromString(query.get("runId")) : null,
+                        query.containsKey("minimumDurationMillis") ? Long.valueOf(query.get("minimumDurationMillis"))
+                                : null);
+                return ok(parts[2].equals("runs") ? service.runs(id, filter, after, size)
+                        : service.metrics(id, filter));
+            }
             if (parts[0].equals("chains") && parts.length == 3 && parts[2].equals("versions") && method.equals("GET"))
                 return ok(service.versions(id, after, size));
             if (parts[0].equals("versions")) {
@@ -211,6 +230,17 @@ final class ManagementRoutes {
 
     private static UUID id(JsonNode value, String key) {
         return UUID.fromString(text(value, key));
+    }
+
+    private static java.time.Instant instant(Map<String, String> query, String key) {
+        String value = query.get(key);
+        if (value == null)
+            throw new IllegalArgumentException("Time window required");
+        try {
+            return java.time.Instant.parse(value);
+        } catch (java.time.DateTimeException invalid) {
+            throw new IllegalArgumentException("Invalid time window", invalid);
+        }
     }
 
     private static Map<String, Object> view(ResourceView<? extends ManagedResource> view) {

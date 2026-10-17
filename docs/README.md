@@ -48,3 +48,4 @@ Do not describe future-direction ideas as current behavior.
 - [Runtime logging strategy](architecture/logging.md)
 - [Final 1.0 runtime contract review](audit/final-runtime-contract-review-phase-20-2026-08-13.md)
 - [Runtime guarantees and non-guarantees](runtime/runtime-guarantees.md)
+- [Gear4J Studio P4 — exploitation, revue P3 et suite de la roadmap](studio/p4.md)

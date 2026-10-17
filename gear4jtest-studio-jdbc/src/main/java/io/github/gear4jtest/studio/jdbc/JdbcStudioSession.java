@@ -292,11 +292,12 @@ final class JdbcStudioSession implements StudioStore.Session {
 
     @Override
     public void insertVersion(StudioVersion version) {
-        update("INSERT INTO g4js_version(id,chain_id,draft_id,revision_id,revision_number,runtime_assembly_line_id,version_label,author,created_at,runtime_context_id,application_build,catalog_fingerprint,media_type,artifact_hash,source_text) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        update("INSERT INTO g4js_version(id,chain_id,draft_id,revision_id,revision_number,runtime_assembly_line_id,version_label,author,created_at,runtime_context_id,application_build,catalog_fingerprint,media_type,artifact_hash,source_text,definition_schema_version,format_adapter_id,format_adapter_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                version.id(), version.chainId(), version.draftId(), version.revisionId(), version.revision(),
                version.runtimeAssemblyLineId(), version.label(), version.author(), version.createdAt(),
                version.runtimeContextId(), version.applicationBuild(), version.catalogFingerprint(),
-               version.mediaType(), version.artifactHash(), version.source());
+               version.mediaType(), version.artifactHash(), version.source(), version.definitionSchemaVersion(),
+               version.formatAdapterId(), version.formatAdapterVersion());
     }
 
     @Override
@@ -325,7 +326,8 @@ final class JdbcStudioSession implements StudioStore.Session {
                 r.getLong("revision_number"), r.getString("runtime_assembly_line_id"), r.getString("version_label"),
                 r.getString("author"), instant(r, "created_at"), r.getString("runtime_context_id"),
                 r.getString("application_build"), r.getString("catalog_fingerprint"), r.getString("media_type"),
-                r.getString("artifact_hash"), source);
+                r.getString("artifact_hash"), source, r.getInt("definition_schema_version"),
+                r.getString("format_adapter_id"), r.getString("format_adapter_version"));
     }
 
     @Override
@@ -337,7 +339,8 @@ final class JdbcStudioSession implements StudioStore.Session {
                                    r.getString("requested_by"),
                                    instant(r, "requested_at"), nullableInstant(r, "completed_at"),
                                    r.getString("published_by"),
-                                   nullableInstant(r, "published_at"), r.getString("error_code")),
+                                   nullableInstant(r, "published_at"), r.getString("error_code"),
+                                   uuid(r, "attempt_id")),
                            versionId, mode);
         return values.isEmpty() ? null : values.get(0);
     }
@@ -351,23 +354,115 @@ final class JdbcStudioSession implements StudioStore.Session {
     public void savePublication(StudioPublication value) {
         // Callers hold the domain lock, including across service instances.
         if (publication(value.versionId(), value.mode()) == null)
-            update("INSERT INTO g4js_publication(version_id,execution_mode,result_state,requested_by,requested_at,completed_at,published_by,published_at,error_code) VALUES(?,?,?,?,?,?,?,?,?)",
+            update("INSERT INTO g4js_publication(version_id,execution_mode,result_state,requested_by,requested_at,completed_at,published_by,published_at,error_code,attempt_id) VALUES(?,?,?,?,?,?,?,?,?,?)",
                    value.versionId(), value.mode(), value.state(), value.requestedBy(), value.requestedAt(),
-                   value.completedAt(), value.publishedBy(), value.publishedAt(), value.errorCode());
+                   value.completedAt(), value.publishedBy(), value.publishedAt(), value.errorCode(), value.attemptId());
         else
-            update("UPDATE g4js_publication SET result_state=?,completed_at=?,published_by=?,published_at=?,error_code=? WHERE version_id=? AND execution_mode=?",
+            update("UPDATE g4js_publication SET result_state=?,completed_at=?,published_by=?,published_at=?,error_code=?,attempt_id=?,requested_by=?,requested_at=? WHERE version_id=? AND execution_mode=?",
                    value.state(), value.completedAt(), value.publishedBy(), value.publishedAt(), value.errorCode(),
-                   value.versionId(), value.mode());
+                   value.attemptId(), value.requestedBy(), value.requestedAt(), value.versionId(), value.mode());
     }
 
     @Override
     public void appendAudit(AuditEvent event) {
-        update("INSERT INTO g4js_audit(event_id,domain_id,chain_id,draft_id,resource_kind,resource_id,resource_version,actor,action,occurred_at,revision_id,request_id,access_before,access_after,version_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        update("INSERT INTO g4js_audit(event_id,domain_id,chain_id,draft_id,resource_kind,resource_id,resource_version,actor,action,occurred_at,revision_id,request_id,access_before,access_after,version_id,attempt_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                event.eventId(), event.domainId(), event.chainId(), event.draftId(), event.resourceKind(),
                event.resourceId(), event.resourceVersion(), event.actor(), event.action(),
                event.occurredAt(), event.revisionId(), event.requestId(),
                event.accessBefore() == null ? null : json(event.accessBefore()),
-               event.accessAfter() == null ? null : json(event.accessAfter()), event.versionId());
+               event.accessAfter() == null ? null : json(event.accessAfter()), event.versionId(), event.attemptId());
+    }
+
+    @Override
+    public io.github.gear4jtest.studio.model.StudioRun run(UUID id) {
+        return one("SELECT snapshot_json FROM g4js_run WHERE id=?", id, this::run);
+    }
+
+    private io.github.gear4jtest.studio.model.StudioRun run(ResultSet row) throws SQLException {
+        String source = row.getString("snapshot_json");
+        if (source == null || source.length() > 262144)
+            throw new StudioProblem(STORAGE_UNAVAILABLE);
+        try {
+            return JSON.readValue(source, io.github.gear4jtest.studio.model.StudioRun.class);
+        } catch (JsonProcessingException invalid) {
+            throw new StudioProblem(STORAGE_UNAVAILABLE);
+        }
+    }
+
+    @Override
+    public List<io.github.gear4jtest.studio.model.StudioRun> runs(UUID chainId,
+                                                                  UUID draftId,
+                                                                  io.github.gear4jtest.studio.model.RunFilter filter,
+                                                                  String after,
+                                                                  int limit) {
+        var sql = new StringBuilder(
+                "SELECT snapshot_json FROM g4js_run WHERE chain_id=? AND created_at>=? AND created_at<?");
+        var values = new ArrayList<Object>(List.of(chainId, filter.from(), filter.until()));
+        if (draftId != null) {
+            sql.append(" AND resource_id=?");
+            values.add(draftId);
+        }
+        if (filter.status() != null) {
+            sql.append(" AND result_state=?");
+            values.add(filter.status());
+        }
+        if (filter.mode() != null) {
+            sql.append(" AND execution_mode=?");
+            values.add(filter.mode());
+        }
+        if (filter.versionId() != null) {
+            sql.append(" AND version_id=?");
+            values.add(filter.versionId());
+        }
+        if (filter.engineRunId() != null) {
+            sql.append(" AND engine_run_id=?");
+            values.add(filter.engineRunId());
+        }
+        if (filter.minimumDurationMillis() != null) {
+            sql.append(" AND ended_at-started_at>=?");
+            values.add(filter.minimumDurationMillis());
+        }
+        if (after != null) {
+            String[] cursor = after.split(":", -1);
+            if (cursor.length != 2)
+                throw new StudioProblem(INVALID_REQUEST);
+            long created = Long.parseLong(cursor[0]);
+            UUID id = UUID.fromString(cursor[1]);
+            sql.append(" AND (created_at<? OR (created_at=? AND id<?))");
+            values.add(created);
+            values.add(created);
+            values.add(id);
+        }
+        sql.append(" ORDER BY created_at DESC,id DESC");
+        return query(sql.toString(), limit, this::run, values.toArray());
+    }
+
+    @Override
+    public void saveRun(io.github.gear4jtest.studio.model.StudioRun value) {
+        var observation = value.observation();
+        UUID engineId = observation == null ? null : observation.runId();
+        String snapshot = json(value);
+        if (snapshot.length() > 262144)
+            throw new StudioProblem(INVALID_REQUEST);
+        if (run(value.id()) == null)
+            update("INSERT INTO g4js_run(id,resource_id,chain_id,version_id,engine_run_id,execution_mode,result_state,created_at,started_at,ended_at,snapshot_json) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                   value.id(), value.resourceId(), value.chainId(), value.provenance().versionId(), engineId,
+                   value.provenance().mode(), value.status(), value.createdAt(), value.startedAt(), value.endedAt(),
+                   snapshot);
+        else
+            update("UPDATE g4js_run SET engine_run_id=?,result_state=?,started_at=?,ended_at=?,snapshot_json=? WHERE id=?",
+                   engineId, value.status(), value.startedAt(), value.endedAt(), snapshot, value.id());
+    }
+
+    @Override
+    public int purgeRuns(StudioStore.InstantCutoff cutoff) {
+        var ids = query("SELECT id FROM g4js_run WHERE ended_at<? AND result_state NOT IN ('RUNNING','PREPARING') ORDER BY ended_at,id",
+                        cutoff.limit(), row -> uuid(row, "id"), cutoff.before());
+        int deleted = 0;
+        for (var id : ids)
+            deleted += update("DELETE FROM g4js_run WHERE id=? AND ended_at<? AND result_state NOT IN ('RUNNING','PREPARING')",
+                              id, cutoff.before());
+        return deleted;
     }
 
     @Override
@@ -387,7 +482,8 @@ final class JdbcStudioSession implements StudioStore.Session {
                 r.getLong("resource_version"), r.getString("actor"),
                 AuditEvent.Action.valueOf(r.getString("action")), instant(r, "occurred_at"), uuid(r, "revision_id"),
                 uuid(r, "request_id"),
-                policy(r.getString("access_before")), policy(r.getString("access_after")), uuid(r, "version_id"));
+                policy(r.getString("access_before")), policy(r.getString("access_after")), uuid(r, "version_id"),
+                uuid(r, "attempt_id"));
     }
 
     private static String json(Object value) {

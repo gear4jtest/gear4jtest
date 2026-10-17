@@ -75,7 +75,7 @@ public final class SpringStudioApplication implements AutoCloseable {
                                 System.getenv("GEAR4J_STUDIO_TOKEN"), System.getenv("GEAR4J_STUDIO_VIEWER_TOKEN"),
                                 DemoWiring.capturePolicy(System.getenv("GEAR4J_STUDIO_CAPTURE")));
         Runtime.getRuntime().addShutdownHook(new Thread(application::close));
-        LoggerFactory.getLogger(SpringStudioApplication.class).info("Gear4J Studio P3 (Spring): http://127.0.0.1:{}",
+        LoggerFactory.getLogger(SpringStudioApplication.class).info("Gear4J Studio P4 (Spring): http://127.0.0.1:{}",
                                                                     application.port());
     }
 }

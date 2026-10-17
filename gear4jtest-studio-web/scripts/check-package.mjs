@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 const dir = mkdtempSync(join(tmpdir(), 'gear4j-web-package-'));
 try {
   const [packed] = JSON.parse(execFileSync('npm', ['pack', '--json', '--pack-destination', dir], { encoding: 'utf8' }));
-  for (const file of ['src/index.mjs','src/management-client.mjs','src/studio-element.mjs','src/studio-workspace.mjs','src/studio-versions.mjs','README.md'])
+  for (const file of ['src/index.mjs','src/management-client.mjs','src/studio-element.mjs','src/studio-workspace.mjs','src/studio-versions.mjs','src/studio-runs.mjs','README.md'])
     assert.ok(packed.files.some(f => f.path === file), file);
   assert.ok(!packed.files.some(f => /node_modules|bootstrap|test\//.test(f.path)));
   execFileSync('tar', ['-xzf', join(dir, packed.filename), '-C', dir]);

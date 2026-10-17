@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,20 +18,12 @@ import io.github.gear4jtest.core.api.AssemblyLine;
 import io.github.gear4jtest.core.api.AssemblyLineExecutor;
 import io.github.gear4jtest.core.api.RunRequest;
 import io.github.gear4jtest.core.api.context.CancellationToken;
-import io.github.gear4jtest.core.api.context.ExecutionContext;
-import io.github.gear4jtest.core.api.context.StationExecutionContext;
-import io.github.gear4jtest.core.event.StationCancellationReason;
-import io.github.gear4jtest.core.event.StationInterruptionReason;
-import io.github.gear4jtest.core.event.StationSkipReason;
-import io.github.gear4jtest.core.persistence.StationLogRecord;
-import io.github.gear4jtest.core.spi.extension.StationLifecycleExtension;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.external.api.ExecutionMode;
 import io.github.gear4jtest.external.api.compiler.JavaxToolsGeneratedSourceCompiler;
 import io.github.gear4jtest.external.api.loader.GeneratedAssemblyLine;
 import io.github.gear4jtest.external.api.loader.InMemoryClassLoader;
 import io.github.gear4jtest.external.api.loader.SimpleDependencyInjector;
-import io.github.gear4jtest.studio.model.CapturedValue;
 import io.github.gear4jtest.studio.model.ChainDefinition;
 import io.github.gear4jtest.studio.model.ControlledRun;
 import io.github.gear4jtest.studio.model.Diagnostic;
@@ -123,6 +114,12 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
         return xml.read(source);
     }
 
+    @Override
+    public FormatAdapter formatAdapter(String mediaType) {
+        format(mediaType);
+        return new FormatAdapter("gear4j-studio-xml", "2");
+    }
+
     private void format(String mediaType) {
         if (!"application/xml".equals(mediaType))
             throw new StudioProblem(StudioProblem.Code.UNSUPPORTED_FORMAT);
@@ -160,8 +157,9 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
         var parsed = new XmlAssemblyLineParser(StudioXmlAdapter.MAX_BYTES).parse(new ByteArrayInputStream(bytes));
         ClassLoader loader = getClass().getClassLoader();
         var generated = XmlToJavaGenerator.builder("io.github.gear4jtest.studio.generated").classLoader(loader)
-                .sourcePolicy(catalog.sourcePolicy()).operatorCapabilityPolicy(catalog.capabilityPolicy()).build()
-                .generate(parsed, ExecutionMode.TEST);
+                .sourcePolicy(catalog.sourcePolicy(ExecutionMode.TEST))
+                .operatorCapabilityPolicy(catalog.capabilityPolicy()).build()
+                .generate(ModeBindings.bind(parsed, catalog, ExecutionMode.TEST), ExecutionMode.TEST);
         var classes = new JavaxToolsGeneratedSourceCompiler(loader)
                 .compile(generated.className(), generated.formattedSource().getBytes(StandardCharsets.UTF_8));
         return new Compiled(generated.className(), classes, OperationCatalog.hash(source));
@@ -169,7 +167,17 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
 
     @Override
     public ControlledRun execute(DraftRevision revision, String input, UUID requestId, String actor) {
-        return executeSource(revision, input, requestId, actor, null);
+        return executeObserved(revision, input, requestId, actor, ignored -> {
+        });
+    }
+
+    @Override
+    public ControlledRun executeObserved(DraftRevision revision,
+                                         String input,
+                                         UUID requestId,
+                                         String actor,
+                                         java.util.function.Consumer<io.github.gear4jtest.studio.model.RunObservation> observer) {
+        return executeSource(revision, input, requestId, actor, null, observer);
     }
 
     @Override
@@ -177,6 +185,16 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
                                         String input,
                                         UUID requestId,
                                         String actor) {
+        return executeVersionObserved(version, input, requestId, actor, ignored -> {
+        });
+    }
+
+    @Override
+    public ControlledRun executeVersionObserved(io.github.gear4jtest.studio.model.StudioVersion version,
+                                                String input,
+                                                UUID requestId,
+                                                String actor,
+                                                java.util.function.Consumer<io.github.gear4jtest.studio.model.RunObservation> observer) {
         format(version.mediaType());
         if (!version.runtimeContextId().equals(context.id())
                 || !OperationCatalog.hash(version.source()).equals(version.artifactHash()))
@@ -186,14 +204,15 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
             throw new StudioProblem(StudioProblem.Code.INVALID_DEFINITION);
         var revision = new DraftRevision(version.draftId(), version.revisionId(), version.revision(),
                 version.author(), version.createdAt(), DraftRevision.Origin.STUDIO, definition);
-        return executeSource(revision, input, requestId, actor, version.source()).withVersion(version);
+        return executeSource(revision, input, requestId, actor, version.source(), observer).withVersion(version);
     }
 
     private ControlledRun executeSource(DraftRevision revision,
                                         String input,
                                         UUID requestId,
                                         String actor,
-                                        String source) {
+                                        String source,
+                                        java.util.function.Consumer<io.github.gear4jtest.studio.model.RunObservation> progress) {
         revision.requireDefinition();
         if (!revision.definition().inputType().equals("java.lang.String")
                 || !revision.definition().outputType().equals("java.lang.String"))
@@ -210,7 +229,9 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
             } catch (Exception e) {
                 throw new StudioProblem(StudioProblem.Code.INVALID_DEFINITION);
             }
-            var observer = new StepObserver();
+            boolean forbidden = revision.definition().nodes().stream().anyMatch(this::containsReference);
+            var observer = new Gear4jRunObserver(progress, forbidden ? DataCapturePolicy.none() : capture,
+                    compiled.hash(), input);
             var token = new CancellationToken();
             Instant started = Instant.now();
             var timer = deadlines.schedule(() -> token.cancel("Studio test deadline"), deadline.toMillis(),
@@ -218,15 +239,14 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
             try {
                 var result = executor.execute(line, RunRequest.builder().input(input).resourceFactory(resources)
                         .cancellationToken(token).with(observer).build());
-                boolean forbidden = revision.definition().nodes().stream().anyMatch(this::containsReference);
+                var observed = observer.finish(result);
                 return new ControlledRun(requestId,
                         result.getExecution() == null ? null : result.getExecution().getId(), revision.draftId(),
                         revision.revisionId(), revision.number(), actor, context.id(), context.applicationBuild(),
-                        "TEST", catalog.fingerprint(), compiled.hash(), result.getOutcome().name(), started,
-                        Instant.now(),
-                        forbidden ? CapturedValue.none() : capture(DataCapturePolicy.Target.INPUT, input),
-                        forbidden ? CapturedValue.none() : capture(DataCapturePolicy.Target.OUTPUT, result.getResult()),
-                        result.getError() == null ? null : "EXECUTION_ERROR", observer.snapshot());
+                        "TEST", catalog.fingerprint(), compiled.hash(), result.getOutcome().name(),
+                        observed.startedAt() == null ? started : observed.startedAt(), observed.endedAt(),
+                        observed.input(), observed.output(), observed.errorCode(), observed.steps(), null, null,
+                        observed.stepsTruncated());
             } finally {
                 timer.cancel(false);
             }
@@ -254,16 +274,6 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
         return containsReference(choice.whenTrue()) || containsReference(choice.whenFalse());
     }
 
-    private CapturedValue capture(DataCapturePolicy.Target target, String value) {
-        try {
-            var captured = capture.capture(target, value);
-            return captured == null || captured.value() != null && captured.value().length() > 8192
-                    ? CapturedValue.none() : captured;
-        } catch (RuntimeException e) {
-            return CapturedValue.none();
-        }
-    }
-
     private void acquire() {
         if (closed || !slot.tryAcquire())
             throw new StudioProblem(StudioProblem.Code.CAPACITY_EXCEEDED);
@@ -277,58 +287,4 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
 
     private record Compiled(String className, Map<String, byte[]> classes, String hash) {}
 
-    private static final class StepObserver implements StationLifecycleExtension {
-        private final List<ControlledRun.Step> steps = Collections.synchronizedList(new ArrayList<>());
-
-        private void add(StationLogRecord record) {
-            steps.add(new ControlledRun.Step(record.id(), record.operationId(), record.status().name(),
-                    record.startedAt(), record.endedAt()));
-        }
-
-        private List<ControlledRun.Step> snapshot() {
-            synchronized (steps) {
-                return List.copyOf(steps);
-            }
-        }
-
-        @Override
-        public void onStationCompleted(ExecutionContext run, StationExecutionContext station, StationLogRecord record) {
-            add(record);
-        }
-
-        @Override
-        public void onStationSkipped(ExecutionContext run,
-                                     StationExecutionContext station,
-                                     StationLogRecord record,
-                                     StationSkipReason reason) {
-            add(record);
-        }
-
-        @Override
-        public void onStationCancelled(ExecutionContext run,
-                                       StationExecutionContext station,
-                                       StationLogRecord record,
-                                       StationCancellationReason reason,
-                                       Exception error) {
-            add(record);
-        }
-
-        @Override
-        public void onStationInterrupted(ExecutionContext run,
-                                         StationExecutionContext station,
-                                         StationLogRecord record,
-                                         StationInterruptionReason reason,
-                                         String by,
-                                         Exception error) {
-            add(record);
-        }
-
-        @Override
-        public void onStationFailedBeforeStart(ExecutionContext run,
-                                               StationExecutionContext station,
-                                               StationLogRecord record,
-                                               Exception error) {
-            add(record);
-        }
-    }
 }
