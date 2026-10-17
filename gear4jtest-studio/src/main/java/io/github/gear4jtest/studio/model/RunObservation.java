@@ -21,7 +21,23 @@ public record RunObservation(UUID runId,
                              String errorCode,
                              List<ControlledRun.Step> steps,
                              boolean stepsTruncated,
-                             String artifactHash) {
+                             String artifactHash,
+                             ScenarioCheck scenarioCheck) {
+    public RunObservation(UUID runId,
+                          UUID parentRunId,
+                          UUID rootRunId,
+                          String status,
+                          Instant startedAt,
+                          Instant endedAt,
+                          CapturedValue input,
+                          CapturedValue output,
+                          String errorCode,
+                          List<ControlledRun.Step> steps,
+                          boolean stepsTruncated,
+                          String artifactHash) {
+        this(runId, parentRunId, rootRunId, status, startedAt, endedAt, input, output, errorCode, steps, stepsTruncated,
+                artifactHash, null);
+    }
 
     public static final int MAX_STEPS = 256;
     public static final Set<String> STATUSES = Set.of("PREPARING", "RUNNING", "SUCCEEDED", "FAILED", "CANCELLED",
@@ -63,7 +79,7 @@ public record RunObservation(UUID runId,
     public static RunObservation completed(ControlledRun run) {
         return new RunObservation(run.runId(), null, run.runId(), run.outcome(), run.startedAt(), run.endedAt(),
                 run.input(), run.output(), run.errorCode(), run.steps().stream().limit(MAX_STEPS).toList(),
-                run.stepsTruncated() || run.steps().size() > MAX_STEPS, run.artifactHash());
+                run.stepsTruncated() || run.steps().size() > MAX_STEPS, run.artifactHash(), run.scenarioCheck());
     }
 
     @Override

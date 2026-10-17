@@ -142,6 +142,70 @@ class JdbcStudioStoreTest {
     }
 
     @Test
+    void scenarioHistoryIsImmutableAndCorruptFixtureDataFailsClosed() throws Exception {
+        // Given
+        var ds = source();
+        StudioJdbcSchema.migrate(ds, Gear4jDatabaseDialect.H2);
+        var store = new JdbcStudioStore(ds);
+        var time = Instant.ofEpochMilli(12345);
+        var domain = new StudioDomain(UUID.randomUUID(), "d", "D", "", "alice", 1, false, time, time);
+        var chain = new StudioChain(UUID.randomUUID(), domain.id(), "c", "sample", "C", "", "alice", 1, true, false,
+                time, time);
+        var scenario = new StudioScenario(UUID.randomUUID(), chain.id(), chain.id(), "Greeting", "alice", 1, 1, false,
+                time, time);
+        var data = new ScenarioData(new ScenarioInput(ScenarioInput.Kind.FIXTURE_REFERENCE, "demo/greeting", "1"),
+                new ScenarioExpectation("SUCCEEDED", "HELLO"));
+        var revision = new ScenarioRevision(scenario.id(), UUID.randomUUID(), 1, "alice", time, data);
+        store.write(tx -> {
+            tx.insert(domain);
+            tx.lockDomain(domain.id());
+            tx.insert(chain);
+            tx.insertScenario(scenario);
+            tx.appendScenarioRevision(revision);
+            tx.appendAudit(new AuditEvent(0, UUID.randomUUID(), domain.id(), chain.id(), null, ResourceKind.CHAIN,
+                    chain.id(), 1, "alice", AuditEvent.Action.SCENARIO_CREATED, time, null, null, null, null, null,
+                    null, revision.reference()));
+            return null;
+        });
+        // When / Then
+        var reopened = new JdbcStudioStore(source());
+        reopened.read(tx -> {
+            assertThat(tx.scenario(scenario.id())).isEqualTo(scenario);
+            assertThat(tx.scenarioRevision(scenario.id(), 1)).isEqualTo(revision);
+            assertThat(tx.scenarioRevisions(scenario.id(), 0, 10)).containsExactly(revision);
+            assertThat(tx.scenarioRevisions(scenario.id(), 1, 10)).isEmpty();
+            assertThat(tx.scenarios(chain.id(), null, 10)).containsExactly(scenario);
+            assertThat(tx.scenarios(chain.id(), scenario.id().toString(), 10)).isEmpty();
+            assertThat(tx.audit(domain.id(), chain.id(), null, 0, 10)).singleElement()
+                    .satisfies(e -> assertThat(e.scenario()).isEqualTo(revision.reference()));
+            return null;
+        });
+        var archived = new StudioScenario(scenario.id(), chain.id(), chain.id(), "Renamed", "alice", 2, 1, true, time,
+                time);
+        store.write(tx -> {
+            tx.lockDomain(domain.id());
+            tx.updateScenario(archived, 1);
+            return null;
+        });
+        assertThatThrownBy(() -> store.write(tx -> {
+            tx.updateScenario(scenario, 1);
+            return null;
+        })).hasMessage("CONFLICT");
+        assertThatThrownBy(() -> store.write(tx -> {
+            tx.appendScenarioRevision(revision);
+            return null;
+        })).hasMessage("CONFLICT");
+        try (var c = ds.getConnection();
+                var statement = c.prepareStatement("UPDATE g4js_scenario_revision SET data_json=? WHERE id=?")) {
+            statement.setString(1, "{}");
+            statement.setString(2, revision.id().toString());
+            statement.executeUpdate();
+        }
+        assertThatThrownBy(() -> reopened.read(tx -> tx.scenarioRevision(scenario.id(), 1)))
+                .hasMessage("STORAGE_UNAVAILABLE");
+    }
+
+    @Test
     void fatalFailuresRollBackAndSessionHandlesCannotEscapeTheirTransaction() {
         // Given
         var ds = source();

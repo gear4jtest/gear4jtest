@@ -57,6 +57,30 @@ public interface StudioRuntime {
 
     ControlledRun execute(DraftRevision revision, String input, UUID requestId, String actor);
 
+    /**
+     * Optional assertions must be evaluated against the real output, never against
+     * a redacted capture.
+     */
+    default ControlledRun executeScenario(DraftRevision revision,
+                                          String input,
+                                          UUID requestId,
+                                          String actor,
+                                          io.github.gear4jtest.studio.model.ScenarioData data,
+                                          java.util.function.Consumer<io.github.gear4jtest.studio.model.RunObservation> observer) {
+        throw new io.github.gear4jtest.studio.service.StudioProblem(
+                io.github.gear4jtest.studio.service.StudioProblem.Code.UNSUPPORTED_CONTRACT);
+    }
+
+    default ControlledRun executeVersionScenario(io.github.gear4jtest.studio.model.StudioVersion version,
+                                                 String input,
+                                                 UUID requestId,
+                                                 String actor,
+                                                 io.github.gear4jtest.studio.model.ScenarioData data,
+                                                 java.util.function.Consumer<io.github.gear4jtest.studio.model.RunObservation> observer) {
+        throw new io.github.gear4jtest.studio.service.StudioProblem(
+                io.github.gear4jtest.studio.service.StudioProblem.Code.UNSUPPORTED_CONTRACT);
+    }
+
     /** Optional progress snapshots; adapters may emit only the final result. */
     default ControlledRun executeObserved(DraftRevision revision,
                                           String input,

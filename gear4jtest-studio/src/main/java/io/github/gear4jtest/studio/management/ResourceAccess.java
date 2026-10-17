@@ -51,7 +51,7 @@ final class ResourceAccess {
         if (frozen)
             result.removeAll(EnumSet.of(Permission.EDIT, Permission.CREATE_CHAIN, Permission.CREATE_DRAFT,
                                         Permission.TEST, Permission.VALIDATE, Permission.ARCHIVE, Permission.PUBLISH,
-                                        Permission.PROMOTE));
+                                        Permission.PROMOTE, Permission.MANAGE_SCENARIOS));
         return Set.copyOf(result);
     }
 

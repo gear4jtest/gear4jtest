@@ -93,6 +93,30 @@ class PostgreSqlStudioStoreIT {
             assertThat(tx.chains(domain.id(), null, 10)).containsExactly(chain);
             return null;
         });
+        var scenario = new io.github.gear4jtest.studio.model.StudioScenario(UUID.randomUUID(), chain.id(), chain.id(),
+                "Fixture", "alice", 1, 1, false, time, time);
+        var fixture = new io.github.gear4jtest.studio.model.ScenarioRevision(scenario.id(), UUID.randomUUID(), 1,
+                "alice", time,
+                new io.github.gear4jtest.studio.model.ScenarioData(new io.github.gear4jtest.studio.model.ScenarioInput(
+                        io.github.gear4jtest.studio.model.ScenarioInput.Kind.FIXTURE_REFERENCE, "greeting", "1"),
+                        null));
+        store.write(tx -> {
+            tx.lockDomain(domain.id());
+            tx.insertScenario(scenario);
+            tx.appendScenarioRevision(fixture);
+            tx.appendAudit(new AuditEvent(0, UUID.randomUUID(), domain.id(), chain.id(), null, ResourceKind.CHAIN,
+                    chain.id(), 1, "alice",
+                    AuditEvent.Action.SCENARIO_CREATED, time, null, null, null, null, null, null, fixture.reference()));
+            return null;
+        });
+        new JdbcStudioStore(source).read(tx -> {
+            assertThat(tx.scenarios(chain.id(), null, 10)).containsExactly(scenario);
+            assertThat(tx.scenarios(chain.id(), scenario.id().toString(), 10)).isEmpty();
+            assertThat(tx.scenarioRevision(scenario.id(), 1)).isEqualTo(fixture);
+            assertThat(tx.audit(domain.id(), chain.id(), null, 0, 10))
+                    .anySatisfy(e -> assertThat(e.scenario()).isEqualTo(fixture.reference()));
+            return null;
+        });
         var recorder = new io.github.gear4jtest.studio.management.StudioRunRecorder(store, "context",
                 java.time.Clock.systemUTC());
         var runId = recorder.beginHostRun(chain.id(), new io.github.gear4jtest.studio.model.StudioRun.Provenance(
@@ -111,6 +135,21 @@ class PostgreSqlStudioStoreIT {
             return null;
         });
         assertThat(recorder.purgeTerminalBefore(time.plusMillis(11), 100)).isEqualTo(1);
+        var orphan = recorder.beginHostRun(chain.id(), new io.github.gear4jtest.studio.model.StudioRun.Provenance(
+                "context", chain.runtimeAssemblyLineId(), "build", "catalog", null, "host", "RUN", null, null, null, 0,
+                null, null));
+        var laterTime = Instant.now().plusSeconds(10);
+        var maintenance = new io.github.gear4jtest.studio.management.StudioRunRecorder(store, "context",
+                java.time.Clock.fixed(laterTime, java.time.ZoneOffset.UTC));
+        assertThat(maintenance.markStaleBefore(laterTime.minusSeconds(1), 100)).isEqualTo(1);
+        store.read(tx -> {
+            assertThat(tx.run(orphan).status()).isEqualTo("PREPARING");
+            assertThat(tx.run(orphan).staleAt()).isEqualTo(Instant.ofEpochMilli(laterTime.toEpochMilli()));
+            return null;
+        });
+        var retention = new io.github.gear4jtest.studio.management.StudioRunRecorder(store, "context",
+                java.time.Clock.fixed(laterTime.plusSeconds(2), java.time.ZoneOffset.UTC));
+        assertThat(retention.purgeStaleBefore(laterTime.plusSeconds(1), 100)).isEqualTo(1);
         var changed = new StudioDomain(domain.id(), domain.key(), "Changed", "", "alice", 2, false, time, time);
         store.write(tx -> {
             tx.lockDomain(domain.id());

@@ -98,9 +98,21 @@ class SpringStudioTest {
                         java.time.Instant.now().plusSeconds(60), null, "TEST", null, null, null);
                 var history = service.runs(chain.id(), filter, null, 10);
                 assertThat(history.items()).hasSize(2);
+                var scenario = service.createScenario(chain
+                        .id(), "Greeting", new io.github.gear4jtest.studio.model.ScenarioData(
+                                new io.github.gear4jtest.studio.model.ScenarioInput(
+                                        io.github.gear4jtest.studio.model.ScenarioInput.Kind.FIXTURE_REFERENCE,
+                                        "demo/greeting", "1"),
+                                new io.github.gear4jtest.studio.model.ScenarioExpectation("SUCCEEDED", "HELLO")));
+                var scenarioResult = service.testScenario(scenario.scenario().id(), 1,
+                                                          new io.github.gear4jtest.studio.model.ScenarioTarget(null,
+                                                                  null, version.version().id()),
+                                                          UUID.randomUUID());
+                assertThat(scenarioResult.run().scenarioCheck().status().name()).isEqualTo("PASSED");
+                assertThat(scenarioResult.run().scenario()).isEqualTo(scenario.revision().reference());
                 assertThat(service.run(history.items().get(0).id()).observation().output().value())
                         .isEqualTo("ELECTRIC");
-                assertThat(service.metrics(chain.id(), filter).total()).isEqualTo(2);
+                assertThat(service.metrics(chain.id(), filter).total()).isEqualTo(3);
             }
         }
     }

@@ -8,6 +8,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.github.gear4jtest.studio.json.DefinitionJson;
 import io.github.gear4jtest.studio.management.*;
 import io.github.gear4jtest.studio.model.DraftRevision;
+import io.github.gear4jtest.studio.model.ScenarioData;
+import io.github.gear4jtest.studio.model.ScenarioExpectation;
+import io.github.gear4jtest.studio.model.ScenarioInput;
+import io.github.gear4jtest.studio.model.ScenarioTarget;
 import io.github.gear4jtest.studio.service.StudioProblem;
 
 import static io.github.gear4jtest.studio.json.DefinitionJson.*;
@@ -78,6 +82,33 @@ final class ManagementRoutes {
         }
         if (parts.length >= 2) {
             UUID id = UUID.fromString(parts[1]);
+            if (parts[0].equals("scenarios")) {
+                if (parts.length == 2 && method.equals("GET"))
+                    return ok(service.scenario(id));
+                if (parts.length == 2 && method.equals("PUT")) {
+                    fields(body, Set.of("expectedVersion", "name", "data"));
+                    return ok(service.saveScenario(id, number(body, "expectedVersion"), text(body, "name"),
+                                                   scenarioData(body.path("data"))));
+                }
+                if (parts.length == 3) {
+                    if (parts[2].equals("revisions") && method.equals("GET"))
+                        return ok(service.scenarioRevisions(id, after, size));
+                    if (parts[2].equals("archive") && method.equals("POST")) {
+                        fields(body, Set.of("expectedVersion"));
+                        return ok(service.archiveScenario(id, number(body, "expectedVersion")));
+                    }
+                    if (parts[2].equals("tests") && method.equals("POST")) {
+                        fields(body, Set.of("revision", "target", "requestId"));
+                        var target = body.path("target");
+                        fields(target, Set.of("draftId", "revision", "versionId"));
+                        var pinned = new ScenarioTarget(
+                                optional(target, "draftId") == null ? null : id(target, "draftId"),
+                                target.hasNonNull("revision") ? number(target, "revision") : null,
+                                optional(target, "versionId") == null ? null : id(target, "versionId"));
+                        return ok(service.testScenario(id, number(body, "revision"), pinned, id(body, "requestId")));
+                    }
+                }
+            }
             if (parts[0].equals("runs") && parts.length == 2 && method.equals("GET"))
                 return ok(service.run(id));
             if (runQuery && method.equals("GET")) {
@@ -124,6 +155,15 @@ final class ManagementRoutes {
                 }
                 if (parts.length == 3) {
                     String action = parts[2];
+                    if (action.equals("scenarios")) {
+                        if (method.equals("GET"))
+                            return ok(service.scenarios(id, after, size));
+                        if (method.equals("POST")) {
+                            fields(body, Set.of("name", "data"));
+                            return created(service.createScenario(id, text(body, "name"),
+                                                                  scenarioData(body.path("data"))));
+                        }
+                    }
                     if (method.equals("POST") && action.equals("xml-preview")) {
                         fields(body, Set.of("source"));
                         var definition = service.previewXml(id, text(body, "source"));
@@ -204,6 +244,25 @@ final class ManagementRoutes {
                 return ok(service.testRequest(id));
         }
         throw new StudioProblem(StudioProblem.Code.NOT_FOUND);
+    }
+
+    private static String optional(JsonNode value, String field) {
+        return value.hasNonNull(field) ? text(value, field) : null;
+    }
+
+    private static ScenarioData scenarioData(JsonNode value) {
+        fields(value, Set.of("input", "expected"));
+        var input = value.path("input");
+        fields(input, Set.of("kind", "value", "fixtureVersion"));
+        var fixture = new ScenarioInput(ScenarioInput.Kind.valueOf(text(input, "kind")), text(input, "value"),
+                optional(input, "fixtureVersion"));
+        ScenarioExpectation expected = null;
+        if (value.hasNonNull("expected")) {
+            var e = value.path("expected");
+            fields(e, Set.of("outcome", "output"));
+            expected = new ScenarioExpectation(text(e, "outcome"), optional(e, "output"));
+        }
+        return new ScenarioData(fixture, expected);
     }
 
     private static AccessPolicy policy(JsonNode value) {

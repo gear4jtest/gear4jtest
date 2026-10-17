@@ -39,6 +39,7 @@ public final class StudioManagementService {
     private final StudioPublisher publisher;
     private final StudioPublications publications;
     private final StudioRuns runs;
+    private final StudioScenarios scenarios;
     private final PageCursors cursors;
     private static final int SCAN_BUDGET = 500;
     private final ControlledTests tests;
@@ -82,6 +83,21 @@ public final class StudioManagementService {
                                    Clock clock,
                                    StudioPublisher publisher,
                                    TestReceiptPolicy receiptPolicy) {
+        this(store, runtime, actors, domainCreation, clock, publisher, receiptPolicy, null);
+    }
+
+    /**
+     * Scenario persistence/execution requires an explicit host data admission
+     * policy.
+     */
+    public StudioManagementService(StudioStore store,
+                                   StudioRuntime runtime,
+                                   CurrentActorProvider actors,
+                                   Predicate<StudioIdentity> domainCreation,
+                                   Clock clock,
+                                   StudioPublisher publisher,
+                                   TestReceiptPolicy receiptPolicy,
+                                   io.github.gear4jtest.studio.spi.ScenarioDataPolicy scenarioPolicy) {
         this.tests = new ControlledTests(clock, receiptPolicy);
         this.publisher = publisher;
         this.publications = new StudioPublications(store, runtime, publisher, clock);
@@ -93,6 +109,7 @@ public final class StudioManagementService {
         this.cursors = new PageCursors(clock);
         store.bindContext(runtime.context().id());
         this.runs = new StudioRuns(store, runtime, clock);
+        this.scenarios = new StudioScenarios(store, runtime, clock, scenarioPolicy, tests, runs);
     }
 
     public StudioIdentity identity() {
@@ -108,9 +125,49 @@ public final class StudioManagementService {
         var capabilities = new java.util.HashSet<>(context.capabilities());
         if (publisher != null)
             capabilities.addAll(publisher.capabilities());
+        if (scenarios.enabled())
+            capabilities.add("SCENARIOS");
         capabilities.add("RUN_HISTORY");
         capabilities.add("RUN_METRICS");
         return new RuntimeContext(context.id(), context.applicationBuild(), context.catalogFingerprint(), capabilities);
+    }
+
+    public io.github.gear4jtest.studio.model.ScenarioState createScenario(UUID scope,
+                                                                          String name,
+                                                                          io.github.gear4jtest.studio.model.ScenarioData data) {
+        return scenarios.create(identity(), scope, name, data);
+    }
+
+    public io.github.gear4jtest.studio.model.ScenarioState saveScenario(UUID id,
+                                                                        long expectedVersion,
+                                                                        String name,
+                                                                        io.github.gear4jtest.studio.model.ScenarioData data) {
+        return scenarios.save(identity(), id, expectedVersion, name, data);
+    }
+
+    public io.github.gear4jtest.studio.model.ScenarioState archiveScenario(UUID id, long expectedVersion) {
+        return scenarios.archive(identity(), id, expectedVersion);
+    }
+
+    public io.github.gear4jtest.studio.model.ScenarioState scenario(UUID id) {
+        return scenarios.get(identity(), id);
+    }
+
+    public StudioPage<io.github.gear4jtest.studio.model.ScenarioState> scenarios(UUID scope, String after, int size) {
+        return scenarios.list(identity(), scope, after, size);
+    }
+
+    public StudioPage<io.github.gear4jtest.studio.model.ScenarioRevision> scenarioRevisions(UUID id,
+                                                                                            String after,
+                                                                                            int size) {
+        return scenarios.revisions(identity(), id, after, size);
+    }
+
+    public TestSubmission testScenario(UUID id,
+                                       long revision,
+                                       io.github.gear4jtest.studio.model.ScenarioTarget target,
+                                       UUID requestId) {
+        return scenarios.test(identity(), id, revision, target, requestId);
     }
 
     public VersionState createVersion(UUID draftId, long revision, String label) {
@@ -662,8 +719,11 @@ public final class StudioManagementService {
     public TestSubmission testRequest(UUID requestId) {
         var actor = identity();
         var id = tests.resourceId(actor.subject(), requestId);
+        var scenarioScope = tests.scenarioResourceId(actor.subject(), requestId);
         store.read(tx -> {
             requireRead(tx, actor, ResourceAccess.resource(tx, id), Permission.READ);
+            if (scenarioScope != null)
+                requireRead(tx, actor, ResourceAccess.resource(tx, scenarioScope), Permission.READ_SCENARIOS);
             return null;
         });
         return tests.status(actor.subject(), requestId);

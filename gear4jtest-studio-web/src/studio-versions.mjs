@@ -18,7 +18,7 @@ export class Gear4jVersions extends HTMLElement {
       this.error = true; this.message = ({ SOURCE_REQUIRES_ANALYSIS: 'Analysez le XML puis enregistrez une révision structurée.', INVALID_DEFINITION: 'La validation refuse cette définition.', CONFLICT: 'Ce libellé existe déjà ou la ressource a changé. Rechargez l’historique.', FORBIDDEN: 'Action non autorisée.', NOT_FOUND: 'Version inaccessible.', INVALID_REQUEST: 'Vérifiez le libellé de version.', TEST_PUBLICATION_REQUIRED: 'Une publication TEST confirmée est nécessaire.' })[e.code] || 'Résultat non confirmé. Actualisez l’état avant toute nouvelle demande.';
     } finally { this.busy = false; this.render(); }
   }
-  choose(state) { this.selected = state; this.comparison = null; this.testResult = null; this.testRequest = null; this.message = ''; this.render(); }
+  choose(state) { this.selected = state; this.comparison = null; this.testResult = null; this.testRequest = null; this.message = ''; this.render(); this.dispatchEvent(new CustomEvent('studio:version', { detail: { versionId: state.version.id }, bubbles: true, composed: true })); }
   async freeze() {
     const draft = this.getDraft();
     if (!draft || draft.dirty || draft.revision.kind === 'SOURCE') { this.message = 'Enregistrez une révision structurée avant de figer la version.'; return; }

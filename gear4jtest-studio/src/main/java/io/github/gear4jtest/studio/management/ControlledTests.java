@@ -50,6 +50,10 @@ final class ControlledTests {
         return receipt(actor, requestId).submission;
     }
 
+    synchronized UUID scenarioResourceId(String actor, UUID requestId) {
+        return receipt(actor, requestId).scenarioResourceId;
+    }
+
     private Receipt receipt(String actor, UUID requestId) {
         expire();
         var value = receipts.get(requestId);
@@ -99,6 +103,17 @@ final class ControlledTests {
                            String input,
                            java.util.function.Supplier<io.github.gear4jtest.studio.model.ControlledRun> execution,
                            Runnable admission) {
+        return execute(actor, resourceId, contentId, requestId, input, execution, admission, null);
+    }
+
+    TestSubmission execute(StudioIdentity actor,
+                           UUID resourceId,
+                           UUID contentId,
+                           UUID requestId,
+                           String input,
+                           java.util.function.Supplier<io.github.gear4jtest.studio.model.ControlledRun> execution,
+                           Runnable admission,
+                           UUID scenarioResourceId) {
         if (requestId == null || input == null || input.length() > 8192)
             throw new StudioProblem(INVALID_REQUEST);
         Receipt receipt;
@@ -114,7 +129,7 @@ final class ControlledTests {
             }
             makeRoom();
             receipt = new Receipt(actor.subject(), resourceId, digest,
-                    new TestSubmission(requestId, TestSubmission.State.RUNNING, null, null));
+                    new TestSubmission(requestId, TestSubmission.State.RUNNING, null, null), scenarioResourceId);
             receipts.put(requestId, receipt);
         }
         TestSubmission result;
@@ -153,11 +168,17 @@ final class ControlledTests {
     private static final class Receipt {
         private final String actor;
         private final UUID draftId;
+        private final UUID scenarioResourceId;
         private final byte[] fingerprint;
         private TestSubmission submission;
         private Instant expiresAt;
 
-        private Receipt(String actor, UUID draftId, byte[] fingerprint, TestSubmission submission) {
+        private Receipt(String actor,
+                        UUID draftId,
+                        byte[] fingerprint,
+                        TestSubmission submission,
+                        UUID scenarioResourceId) {
+            this.scenarioResourceId = scenarioResourceId;
             this.actor = actor;
             this.draftId = draftId;
             this.fingerprint = fingerprint;

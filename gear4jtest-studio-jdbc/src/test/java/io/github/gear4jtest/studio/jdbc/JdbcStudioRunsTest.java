@@ -97,6 +97,81 @@ class JdbcStudioRunsTest {
     }
 
     @Test
+    void staleIsFreshnessOnlyAndLateObservationClearsItBeforeExplicitRetention() {
+        // Given
+        UUID waiting = begin();
+        UUID running = begin();
+        UUID finished = begin();
+        recorder.record(running, snapshot("RUNNING"));
+        recorder.record(finished, snapshot("SUCCEEDED"));
+        var maintenance = new StudioRunRecorder(store, "runtime", Clock.fixed(start.plusSeconds(60), ZoneOffset.UTC));
+        // When / Then: bounded maintenance does not create an outcome or an end time.
+        assertThat(maintenance.markStaleBefore(start.plusSeconds(10), 1)).isEqualTo(1);
+        assertThat(maintenance.markStaleBefore(start.plusSeconds(10), 10)).isEqualTo(1);
+        assertThat(maintenance.markStaleBefore(start.plusSeconds(10), 10)).isZero();
+        store.read(tx -> {
+            assertThat(tx.run(waiting).status()).isEqualTo("PREPARING");
+            assertThat(tx.run(running).status()).isEqualTo("RUNNING");
+            assertThat(tx.run(running).endedAt()).isNull();
+            assertThat(tx.run(running).updatedAt()).isEqualTo(start.plusSeconds(3));
+            assertThat(tx.run(running).staleAt()).isEqualTo(start.plusSeconds(60));
+            assertThat(tx.run(finished).staleAt()).isNull();
+            return null;
+        });
+        maintenance.record(running, snapshot("SUCCEEDED"));
+        var later = new StudioRunRecorder(store, "runtime", Clock.fixed(start.plusSeconds(120), ZoneOffset.UTC));
+        assertThat(later.purgeStaleBefore(start.plusSeconds(59), 10)).isZero();
+        assertThat(later.purgeStaleBefore(start.plusSeconds(61), 10)).isEqualTo(1);
+        store.read(tx -> {
+            assertThat(tx.run(waiting)).isNull();
+            assertThat(tx.run(running).staleAt()).isNull();
+            assertThat(tx.run(running).status()).isEqualTo("SUCCEEDED");
+            return null;
+        });
+        assertThatThrownBy(() -> maintenance.markStaleBefore(start.plusSeconds(61), 1))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void independentRunUpdatesDoNotWaitForDomainOrAnotherRunRowLock() throws Exception {
+        // Given
+        UUID held = begin();
+        UUID independent = begin();
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+        var locked = new java.util.concurrent.CountDownLatch(1);
+        var release = new java.util.concurrent.CountDownLatch(1);
+        var holding = pool.submit(() -> store.write(tx -> {
+            var chain = (StudioChain) tx.resource(chainId);
+            tx.lockDomain(chain.domainId());
+            tx.lockRun(held);
+            locked.countDown();
+            try {
+                if (!release.await(10, java.util.concurrent.TimeUnit.SECONDS))
+                    throw new IllegalStateException("Synthetic deadline");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+            return null;
+        }));
+        try {
+            assertThat(locked.await(5, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            // When / Then
+            pool.submit(() -> recorder.record(independent, snapshot("SUCCEEDED")))
+                    .get(3, java.util.concurrent.TimeUnit.SECONDS);
+            assertThat(release.getCount()).isEqualTo(1);
+            store.read(tx -> {
+                assertThat(tx.run(independent).status()).isEqualTo("SUCCEEDED");
+                return null;
+            });
+        } finally {
+            release.countDown();
+            holding.get(5, java.util.concurrent.TimeUnit.SECONDS);
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
     void contextGuardRollbackAndCorruptSnapshotFailClosed() throws Exception {
         // Given
         UUID id = begin();

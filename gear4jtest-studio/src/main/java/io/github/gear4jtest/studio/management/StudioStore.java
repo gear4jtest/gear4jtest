@@ -12,7 +12,8 @@ import io.github.gear4jtest.studio.model.StudioVersion;
  * Trusted persistence boundary. Reads provide a consistent snapshot; writes
  * commit all changes and audit atomically, or roll back. No caller may retain a
  * Session beyond its callback. Mutations of an existing domain or its
- * descendants must first lockDomain on that domain.
+ * descendants must first lockDomain on that domain. Independent run snapshots
+ * instead use lockRun; never acquire a domain lock while holding a run lock.
  */
 public interface StudioStore {
     /**
@@ -54,6 +55,20 @@ public interface StudioStore {
 
         StudioVersion version(UUID versionId);
 
+        io.github.gear4jtest.studio.model.StudioScenario scenario(UUID id);
+
+        List<io.github.gear4jtest.studio.model.StudioScenario> scenarios(UUID resourceId, String after, int limit);
+
+        void insertScenario(io.github.gear4jtest.studio.model.StudioScenario scenario);
+
+        void updateScenario(io.github.gear4jtest.studio.model.StudioScenario scenario, long expectedVersion);
+
+        void appendScenarioRevision(io.github.gear4jtest.studio.model.ScenarioRevision revision);
+
+        io.github.gear4jtest.studio.model.ScenarioRevision scenarioRevision(UUID id, long number);
+
+        List<io.github.gear4jtest.studio.model.ScenarioRevision> scenarioRevisions(UUID id, long after, int limit);
+
         List<StudioVersion> versions(UUID chainId, String after, int limit);
 
         StudioPublication publication(UUID versionId, StudioPublication.Mode mode);
@@ -65,6 +80,13 @@ public interface StudioStore {
 
         io.github.gear4jtest.studio.model.StudioRun run(UUID id);
 
+        /** Locks and returns one observation for update, or null when absent. */
+        io.github.gear4jtest.studio.model.StudioRun lockRun(UUID id);
+
+        List<UUID> staleCandidates(InstantCutoff cutoff);
+
+        int purgeStaleRuns(InstantCutoff cutoff);
+
         /** Scope is one chain or draft; SQL filters precede bounded ACL scanning. */
         List<io.github.gear4jtest.studio.model.StudioRun> runs(UUID chainId,
                                                                UUID draftId,
@@ -72,7 +94,10 @@ public interface StudioStore {
                                                                String after,
                                                                int limit);
 
-        /** Domain lock required. Provenance and scope are immutable. */
+        /**
+         * Domain lock on admission, run lock on update. Provenance and scope are
+         * immutable.
+         */
         void saveRun(io.github.gear4jtest.studio.model.StudioRun run);
 
         /**

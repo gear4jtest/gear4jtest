@@ -31,6 +31,9 @@ import io.github.gear4jtest.studio.model.DraftRevision;
 import io.github.gear4jtest.studio.model.OperationDescriptor;
 import io.github.gear4jtest.studio.model.ParameterValue;
 import io.github.gear4jtest.studio.model.RuntimeContext;
+import io.github.gear4jtest.studio.model.ScenarioCheck;
+import io.github.gear4jtest.studio.model.ScenarioData;
+import io.github.gear4jtest.studio.model.ScenarioInput;
 import io.github.gear4jtest.studio.model.ValidationReport;
 import io.github.gear4jtest.studio.service.StudioProblem;
 import io.github.gear4jtest.studio.spi.DataCapturePolicy;
@@ -53,6 +56,7 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
     private final DataCapturePolicy capture;
     private final Duration deadline;
     private final Semaphore slot = new Semaphore(1);
+    private final RunObservationDispatcher observations;
     private final ScheduledExecutorService deadlines = Executors.newSingleThreadScheduledExecutor(r -> {
         var thread = new Thread(r, "studio-test-deadline");
         thread.setDaemon(true);
@@ -78,7 +82,8 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
         xml = new StudioXmlAdapter(catalog);
         context = new RuntimeContext(id, applicationBuild, catalog.fingerprint(),
                 Set.of("DRAFT", "VALIDATE", "CONTROLLED_TEST", "CONTROLLED_TEST_STRING", "CONTROLLED_TEST_VERSION",
-                       "XML_SUBSET"));
+                       "XML_SUBSET", "SCENARIO_TEST"));
+        observations = new RunObservationDispatcher();
     }
 
     @Override
@@ -177,7 +182,7 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
                                          UUID requestId,
                                          String actor,
                                          java.util.function.Consumer<io.github.gear4jtest.studio.model.RunObservation> observer) {
-        return executeSource(revision, input, requestId, actor, null, observer);
+        return executeSource(revision, input, requestId, actor, null, null, observer);
     }
 
     @Override
@@ -195,6 +200,26 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
                                                 UUID requestId,
                                                 String actor,
                                                 java.util.function.Consumer<io.github.gear4jtest.studio.model.RunObservation> observer) {
+        return executeVersionScenario(version, input, requestId, actor, null, observer);
+    }
+
+    @Override
+    public ControlledRun executeScenario(DraftRevision revision,
+                                         String input,
+                                         UUID requestId,
+                                         String actor,
+                                         ScenarioData data,
+                                         java.util.function.Consumer<io.github.gear4jtest.studio.model.RunObservation> observer) {
+        return executeSource(revision, input, requestId, actor, null, data, observer);
+    }
+
+    @Override
+    public ControlledRun executeVersionScenario(io.github.gear4jtest.studio.model.StudioVersion version,
+                                                String input,
+                                                UUID requestId,
+                                                String actor,
+                                                ScenarioData data,
+                                                java.util.function.Consumer<io.github.gear4jtest.studio.model.RunObservation> observer) {
         format(version.mediaType());
         if (!version.runtimeContextId().equals(context.id())
                 || !OperationCatalog.hash(version.source()).equals(version.artifactHash()))
@@ -204,7 +229,7 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
             throw new StudioProblem(StudioProblem.Code.INVALID_DEFINITION);
         var revision = new DraftRevision(version.draftId(), version.revisionId(), version.revision(),
                 version.author(), version.createdAt(), DraftRevision.Origin.STUDIO, definition);
-        return executeSource(revision, input, requestId, actor, version.source(), observer).withVersion(version);
+        return executeSource(revision, input, requestId, actor, version.source(), data, observer).withVersion(version);
     }
 
     private ControlledRun executeSource(DraftRevision revision,
@@ -212,6 +237,7 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
                                         UUID requestId,
                                         String actor,
                                         String source,
+                                        ScenarioData scenario,
                                         java.util.function.Consumer<io.github.gear4jtest.studio.model.RunObservation> progress) {
         revision.requireDefinition();
         if (!revision.definition().inputType().equals("java.lang.String")
@@ -229,8 +255,9 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
             } catch (Exception e) {
                 throw new StudioProblem(StudioProblem.Code.INVALID_DEFINITION);
             }
-            boolean forbidden = revision.definition().nodes().stream().anyMatch(this::containsReference);
-            var observer = new Gear4jRunObserver(progress, forbidden ? DataCapturePolicy.none() : capture,
+            boolean forbidden = revision.definition().nodes().stream().anyMatch(this::containsReference)
+                    || scenario != null && scenario.input().kind() == ScenarioInput.Kind.FIXTURE_REFERENCE;
+            var observer = new Gear4jRunObserver(observations, progress, forbidden ? DataCapturePolicy.none() : capture,
                     compiled.hash(), input);
             var token = new CancellationToken();
             Instant started = Instant.now();
@@ -239,6 +266,8 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
             try {
                 var result = executor.execute(line, RunRequest.builder().input(input).resourceFactory(resources)
                         .cancellationToken(token).with(observer).build());
+                var check = scenario == null ? null
+                        : ScenarioCheck.evaluate(scenario.expected(), result.getOutcome().name(), result.getResult());
                 var observed = observer.finish(result);
                 return new ControlledRun(requestId,
                         result.getExecution() == null ? null : result.getExecution().getId(), revision.draftId(),
@@ -246,8 +275,9 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
                         "TEST", catalog.fingerprint(), compiled.hash(), result.getOutcome().name(),
                         observed.startedAt() == null ? started : observed.startedAt(), observed.endedAt(),
                         observed.input(), observed.output(), observed.errorCode(), observed.steps(), null, null,
-                        observed.stepsTruncated());
+                        observed.stepsTruncated()).withScenario(null, check);
             } finally {
+                observer.close();
                 timer.cancel(false);
             }
         } finally {
@@ -283,6 +313,7 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
     public void close() {
         closed = true;
         deadlines.shutdownNow();
+        observations.close();
     }
 
     private record Compiled(String className, Map<String, byte[]> classes, String hash) {}

@@ -163,8 +163,9 @@ class StudioObservabilityTest {
                                                      HoldOperation.class, true, true, Map.of(), Map.of())));
         var pool = Executors.newSingleThreadExecutor();
         var executor = DemoWiring.plainExecutor(resources);
-        try (var runtime = new LocalGear4jRuntime("observations", "build", catalog, executor, resources,
-                DataCapturePolicy.none(), Duration.ofSeconds(10))) {
+        try (var dispatcher = new RunObservationDispatcher();
+                var runtime = new LocalGear4jRuntime("observations", "build", catalog, executor, resources,
+                        DataCapturePolicy.none(), Duration.ofSeconds(10))) {
             var service = service(source, runtime, null, "alice");
             var initial = draft(service);
             var definition = new ChainDefinition(1, "text_preparation", "java.lang.String", "java.lang.String",
@@ -173,6 +174,11 @@ class StudioObservabilityTest {
             var pending = pool.submit(() -> service.test(saved.draft().id(), 2, UUID.randomUUID(), "private"));
             assertThat(started.await(10, TimeUnit.SECONDS)).isTrue();
             var snapshot = service.run(service.runs(saved.draft().id(), filter(), null, 10).items().get(0).id());
+            long until = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+            while (snapshot.status().equals("PREPARING") && System.nanoTime() < until) {
+                Thread.sleep(10);
+                snapshot = service.run(snapshot.id());
+            }
             // When / Then
             assertThat(snapshot.status()).isEqualTo("RUNNING");
             assertThat(snapshot.observation().steps()).anyMatch(step -> step.status().equals("RUNNING"));
@@ -188,7 +194,8 @@ class StudioObservabilityTest {
                     catalog.fingerprint(),
                     null, "application", "RUN", null, null, null, 0, null, null);
             var hostId = recorder.beginHostRun(initial.draft().chainId(), provenance);
-            var observer = new Gear4jRunObserver(value -> recorder.record(hostId, value), DataCapturePolicy.none(),
+            var observer = new Gear4jRunObserver(dispatcher, value -> recorder.record(hostId, value),
+                    DataCapturePolicy.none(),
                     null);
             var line = AssemblyLines.<String>createAssemblyLine("text_preparation")
                     .then(Stations.processingOperation("hold", HoldOperation.class).build()).build();

@@ -13,7 +13,7 @@
     "jsdom": "30.1.1",
     "playwright": "1.62.1"
   },
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Public experimental Gear4J Studio authoring and management components",
   "files": [
     "src",
@@ -26,6 +26,7 @@
     "./editor": "./src/studio-element.mjs",
     "./workspace": "./src/studio-workspace.mjs",
     "./versions": "./src/studio-versions.mjs",
-    "./runs": "./src/studio-runs.mjs"
+    "./runs": "./src/studio-runs.mjs",
+    "./scenarios": "./src/studio-scenarios.mjs"
   }
 }

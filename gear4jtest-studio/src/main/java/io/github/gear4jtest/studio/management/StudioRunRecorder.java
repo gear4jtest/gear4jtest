@@ -33,7 +33,8 @@ public final class StudioRunRecorder {
      * chain.
      */
     public UUID beginHostRun(UUID chainId, StudioRun.Provenance provenance) {
-        if (provenance.draftId() != null || provenance.revisionId() != null || provenance.requestId() != null)
+        if (provenance.draftId() != null || provenance.revisionId() != null || provenance.requestId() != null
+                || provenance.scenario() != null)
             throw new IllegalArgumentException("Host run is not a Studio test receipt");
         UUID id = UUID.randomUUID();
         store.write(tx -> {
@@ -69,17 +70,13 @@ public final class StudioRunRecorder {
     }
 
     /**
-     * Serialized by the resource's domain lock; a terminal observation cannot be
+     * Serialized by this run's row lock; a terminal observation cannot be
      * overwritten.
      */
     public void record(UUID id, RunObservation observation) {
         Objects.requireNonNull(observation);
         store.write(tx -> {
-            var first = tx.run(id);
-            if (first == null)
-                throw new StudioProblem(NOT_FOUND);
-            tx.lockDomain(ResourceAccess.domain(tx, ResourceAccess.resource(tx, first.resourceId())).id());
-            var current = tx.run(id);
+            var current = tx.lockRun(id);
             if (current == null)
                 throw new StudioProblem(NOT_FOUND);
             if (!current.status().equals("PREPARING") && !current.status().equals("RUNNING"))
@@ -109,6 +106,42 @@ public final class StudioRunRecorder {
         if (before == null || before.isAfter(clock.instant()))
             throw new IllegalArgumentException("Invalid retention cutoff");
         return store.write(tx -> tx.purgeRuns(new StudioStore.InstantCutoff(before, limit)));
+    }
+
+    /**
+     * Marks observation freshness only; never infers a business outcome or
+     * termination.
+     */
+    public int markStaleBefore(Instant before, int limit) {
+        cutoff(before);
+        return store.write(tx -> {
+            int marked = 0;
+            for (var id : tx.staleCandidates(new StudioStore.InstantCutoff(before, limit))) {
+                var run = tx.lockRun(id);
+                if (run != null && run.staleAt() == null && run.updatedAt().isBefore(before)
+                        && Set.of("PREPARING", "RUNNING").contains(run.status())) {
+                    tx.saveRun(new StudioRun(run.id(), run.resourceId(), run.chainId(), run.origin(), run.provenance(),
+                            run.status(), run.createdAt(), run.updatedAt(), run.startedAt(), run.endedAt(),
+                            run.sequence() + 1, run.observation(), now()));
+                    marked++;
+                }
+            }
+            return marked;
+        });
+    }
+
+    /**
+     * Explicit host retention of stale observations after an additional grace
+     * period.
+     */
+    public int purgeStaleBefore(Instant before, int limit) {
+        cutoff(before);
+        return store.write(tx -> tx.purgeStaleRuns(new StudioStore.InstantCutoff(before, limit)));
+    }
+
+    private void cutoff(Instant before) {
+        if (before == null || before.isAfter(clock.instant()))
+            throw new IllegalArgumentException("Invalid maintenance cutoff");
     }
 
     private Instant now() {

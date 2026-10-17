@@ -27,5 +27,20 @@ public record RunMetrics(long total,
 
     public record Bucket(Instant from, long runs, long failures) {}
 
-    public record Operation(String nodeId, long executions, long failures, Double averageMillis, Long maximumMillis) {}
+    /**
+     * Station metrics, split by definition and runtime implementation provenance.
+     */
+    public record Dimension(java.util.UUID versionId,
+                            String mode,
+                            String artifactHash,
+                            String catalogFingerprint,
+                            String applicationBuild,
+                            java.util.UUID unattestedRunId) {}
+
+    public record Operation(String nodeId,
+                            Dimension dimension,
+                            long executions,
+                            long failures,
+                            Double averageMillis,
+                            Long maximumMillis) {}
 }

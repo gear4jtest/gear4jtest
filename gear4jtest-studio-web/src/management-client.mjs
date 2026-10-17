@@ -1,6 +1,13 @@
 import { StudioTransport, StudioError } from './studio-client.mjs';
 /** Public management client. Identities/groups are never accepted as request options. */
 export class ManagementClient extends StudioTransport {
+  scenarios(scope, after) { return this.request(`/resources/${encodeURIComponent(scope)}/scenarios?limit=25${after ? `&after=${encodeURIComponent(after)}` : ''}`); }
+  scenario(id) { return this.request(`/scenarios/${encodeURIComponent(id)}`); }
+  createScenario(scope, name, data) { return this.request(`/resources/${encodeURIComponent(scope)}/scenarios`, 'POST', { name, data }); }
+  saveScenario(id, expectedVersion, name, data) { return this.request(`/scenarios/${encodeURIComponent(id)}`, 'PUT', { expectedVersion, name, data }); }
+  archiveScenario(id, expectedVersion) { return this.request(`/scenarios/${encodeURIComponent(id)}/archive`, 'POST', { expectedVersion }); }
+  scenarioRevisions(id, after) { return this.request(`/scenarios/${encodeURIComponent(id)}/revisions?limit=25${after ? `&after=${encodeURIComponent(after)}` : ''}`); }
+  testScenario(id, request) { return this.request(`/scenarios/${encodeURIComponent(id)}/tests`, 'POST', request); }
   runs(scope, filter, after, limit = 25) {
     const query = new URLSearchParams(Object.entries(filter).filter(([, v]) => v !== '' && v != null));
     query.set('limit', String(limit)); if (after) query.set('after', after);

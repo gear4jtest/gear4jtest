@@ -41,6 +41,16 @@ final class StudioRuns {
                DraftRevision revision,
                StudioVersion version,
                UUID requestId) {
+        begin(tx, id, actor, revision, version, requestId, null);
+    }
+
+    void begin(StudioStore.Session tx,
+               UUID id,
+               StudioIdentity actor,
+               DraftRevision revision,
+               StudioVersion version,
+               UUID requestId,
+               ScenarioRef scenario) {
         var draft = (StudioDraft) resource(tx, revision.draftId());
         var chain = chain(tx, draft);
         var context = runtime.context();
@@ -49,12 +59,16 @@ final class StudioRuns {
                 version == null ? null : version.artifactHash(),
                 actor.subject(), "TEST", requestId, draft.id(), revision.revisionId(), revision.number(),
                 version == null ? null : version.id(), version == null ? null : version.label());
-        recorder.begin(tx, id, version == null ? draft.id() : chain.id(), StudioRun.Origin.CONTROLLED_TEST, provenance);
+        recorder.begin(tx, id, version == null ? draft.id() : chain.id(), StudioRun.Origin.CONTROLLED_TEST,
+                       provenance.withScenario(scenario));
     }
 
     ControlledRun execute(UUID id, Function<Consumer<RunObservation>, ControlledRun> execution) {
         try {
-            var result = execution.apply(observation -> recorder.record(id, observation));
+            var result = execution.apply(observation -> {
+                if (!observation.terminal())
+                    recorder.record(id, observation);
+            });
             recorder.record(id, RunObservation.completed(result));
             return result;
         } catch (RuntimeException failure) {
@@ -71,7 +85,9 @@ final class StudioRuns {
                         preparation ? "TEST_NOT_ADMITTED" : "TEST_OUTCOME_UNKNOWN",
                         observation == null ? List.of() : observation.steps(),
                         observation != null && observation.stepsTruncated(),
-                        observation == null ? previous.provenance().artifactHash() : observation.artifactHash()));
+                        observation == null ? previous.provenance().artifactHash() : observation.artifactHash(),
+                        previous.provenance().scenario() == null ? null
+                                : new ScenarioCheck(ScenarioCheck.Status.NOT_EVALUATED, List.of())));
             }
             throw failure;
         }
@@ -143,7 +159,7 @@ final class StudioRuns {
             var statuses = new TreeMap<String, Long>();
             var durations = new ArrayList<Long>();
             var buckets = new TreeMap<Instant, long[]>();
-            var operations = new TreeMap<String, OperationValues>();
+            var operations = new java.util.LinkedHashMap<NodeKey, OperationValues>();
             long bucketMillis = Duration.between(filter.from(), filter.until()).compareTo(Duration.ofDays(2)) > 0
                     ? Duration.ofDays(1).toMillis() : Duration.ofHours(1).toMillis();
             for (var run : page.items()) {
@@ -155,9 +171,16 @@ final class StudioRuns {
                 counters[0]++;
                 if (run.status().equals("FAILED"))
                     counters[1]++;
+                var p = run.provenance();
+                var dimension = new RunMetrics.Dimension(p.versionId(), p.mode(), p.artifactHash(),
+                        p.catalogFingerprint(), p.applicationBuild(),
+                        p.artifactHash() == null || p.catalogFingerprint() == null || p.applicationBuild() == null
+                                ? run.id() : null);
                 if (run.observation() != null)
                     for (var step : run.observation().steps())
-                        operations.computeIfAbsent(step.nodeId(), ignored -> new OperationValues()).add(step);
+                        operations.computeIfAbsent(new NodeKey(step.nodeId(), dimension),
+                                                   ignored -> new OperationValues())
+                                .add(step);
             }
             durations.sort(Long::compareTo);
             var timeline = buckets.entrySet().stream()
@@ -197,10 +220,12 @@ final class StudioRuns {
                 durations.add(Math.max(0, Duration.between(step.startedAt(), step.endedAt()).toMillis()));
         }
 
-        RunMetrics.Operation result(String id) {
-            return new RunMetrics.Operation(id, count, failures,
+        RunMetrics.Operation result(NodeKey key) {
+            return new RunMetrics.Operation(key.nodeId(), key.dimension(), count, failures,
                     durations.isEmpty() ? null : durations.stream().mapToLong(Long::longValue).average().orElseThrow(),
                     durations.stream().max(Long::compareTo).orElse(null));
         }
     }
+
+    private record NodeKey(String nodeId, RunMetrics.Dimension dimension) {}
 }

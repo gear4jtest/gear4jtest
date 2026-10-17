@@ -27,7 +27,41 @@ public record ControlledRun(UUID requestId,
                             List<Step> steps,
                             UUID versionId,
                             String versionLabel,
-                            boolean stepsTruncated) {
+                            boolean stepsTruncated,
+                            ScenarioRef scenario,
+                            ScenarioCheck scenarioCheck) {
+    public ControlledRun(UUID requestId,
+                         UUID runId,
+                         UUID draftId,
+                         UUID revisionId,
+                         long revision,
+                         String actor,
+                         String runtimeContext,
+                         String applicationBuild,
+                         String mode,
+                         String catalogFingerprint,
+                         String artifactHash,
+                         String outcome,
+                         Instant startedAt,
+                         Instant endedAt,
+                         CapturedValue input,
+                         CapturedValue output,
+                         String errorCode,
+                         List<Step> steps,
+                         UUID versionId,
+                         String versionLabel,
+                         boolean stepsTruncated) {
+        this(requestId, runId, draftId, revisionId, revision, actor, runtimeContext, applicationBuild, mode,
+                catalogFingerprint, artifactHash, outcome, startedAt, endedAt, input, output, errorCode, steps,
+                versionId, versionLabel, stepsTruncated, null, null);
+    }
+
+    public ControlledRun withScenario(ScenarioRef reference, ScenarioCheck check) {
+        return new ControlledRun(requestId, runId, draftId, revisionId, revision, actor, runtimeContext,
+                applicationBuild, mode, catalogFingerprint, artifactHash, outcome, startedAt, endedAt,
+                input, output, errorCode, steps, versionId, versionLabel, stepsTruncated, reference, check);
+    }
+
     public ControlledRun(UUID requestId,
                          UUID runId,
                          UUID draftId,
@@ -79,7 +113,8 @@ public record ControlledRun(UUID requestId,
     public ControlledRun withVersion(StudioVersion version) {
         return new ControlledRun(requestId, runId, draftId, revisionId, revision, actor, runtimeContext,
                 applicationBuild, mode, catalogFingerprint, artifactHash, outcome, startedAt, endedAt,
-                input, output, errorCode, steps, version.id(), version.label(), stepsTruncated);
+                input, output, errorCode, steps, version.id(), version.label(), stepsTruncated, scenario,
+                scenarioCheck);
     }
 
     public ControlledRun {

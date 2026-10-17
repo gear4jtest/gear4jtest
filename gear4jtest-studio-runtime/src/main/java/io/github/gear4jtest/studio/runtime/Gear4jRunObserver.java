@@ -27,34 +27,43 @@ import io.github.gear4jtest.studio.spi.DataCapturePolicy;
  * calls enter the journal. Finish after execute returns to observe the final
  * outcome.
  */
-public final class Gear4jRunObserver implements StationLifecycleExtension {
+public final class Gear4jRunObserver implements StationLifecycleExtension, AutoCloseable {
     private final Map<UUID, ControlledRun.Step> steps = new LinkedHashMap<>();
-    private final Consumer<RunObservation> progress;
+    private final RunObservationDispatcher.Registration registration;
     private final DataCapturePolicy capture;
     private final String artifactHash;
     private final CapturedValue input;
     private RunTrace root;
     private boolean truncated;
+    private boolean dirty;
+    private boolean finished;
 
-    public Gear4jRunObserver(Consumer<RunObservation> progress, DataCapturePolicy capture, String artifactHash) {
-        this(progress, capture, artifactHash, null);
+    public Gear4jRunObserver(RunObservationDispatcher dispatcher,
+                             Consumer<RunObservation> progress,
+                             DataCapturePolicy capture,
+                             String artifactHash) {
+        this(dispatcher, progress, capture, artifactHash, null);
     }
 
     /**
      * Input is sanitized immediately, never retained as a raw object by this
      * observer.
      */
-    public Gear4jRunObserver(Consumer<RunObservation> progress,
+    public Gear4jRunObserver(RunObservationDispatcher dispatcher,
+                             Consumer<RunObservation> progress,
                              DataCapturePolicy capture,
                              String artifactHash,
                              Object input) {
-        this.progress = java.util.Objects.requireNonNull(progress);
+        java.util.Objects.requireNonNull(progress);
         this.capture = java.util.Objects.requireNonNull(capture);
         this.artifactHash = artifactHash;
         this.input = captured(DataCapturePolicy.Target.INPUT, input);
+        registration = dispatcher.register(this::progressSnapshot, progress);
     }
 
     private synchronized void add(ExecutionContext context, StationLogRecord record) {
+        if (finished)
+            return;
         if (root == null)
             root = context.getAssemblyLineExecution();
         var previous = steps.get(record.id());
@@ -66,17 +75,27 @@ public final class Gear4jRunObserver implements StationLifecycleExtension {
                     record.branchId(), record.status().name().equals("FAILED") ? "EXECUTION_ERROR" : null));
         else
             truncated = true;
-        try {
-            progress.accept(snapshot(root, "RUNNING", null, null));
-        } catch (RuntimeException unavailable) {
-            // Progress is best effort; the final write is performed outside engine
-            // callbacks.
-        }
+        dirty = true;
+    }
+
+    private synchronized RunObservation progressSnapshot() {
+        if (!dirty || finished)
+            return null;
+        dirty = false;
+        return snapshot(root, "RUNNING", null, null);
     }
 
     public synchronized RunObservation finish(ExecutionResult<?> result) {
+        close();
         return snapshot(result.getExecution(), result.getOutcome().name(), result.getResult(),
                         result.getError() == null ? null : "EXECUTION_ERROR");
+    }
+
+    /** Stops sampling without waiting for a possibly blocked sink. */
+    @Override
+    public synchronized void close() {
+        finished = true;
+        registration.close();
     }
 
     private RunObservation snapshot(RunTrace run, String status, Object output, String error) {

@@ -45,6 +45,7 @@ public final class DemoDatabase {
                                                   StudioPublisher publisher) {
         StudioJdbcSchema.migrate(source, Gear4jDatabaseDialect.H2);
         return new StudioManagementService(new JdbcStudioStore(source), runtime, actors,
-                a -> a.groups().contains("domain-creators"), publisher);
+                a -> a.groups().contains("domain-creators"), java.time.Clock.systemUTC(), publisher,
+                io.github.gear4jtest.studio.management.TestReceiptPolicy.defaults(), new DemoScenarioPolicy());
     }
 }

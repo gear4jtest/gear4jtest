@@ -102,6 +102,48 @@ class StudioHttpServerTest {
     }
 
     @Test
+    void scenarioRoutesPreserveRevisionsAndTestTheExactFrozenArtifact() throws Exception {
+        // Given
+        var draft = createDraft();
+        String draftId = draft.path("draft").path("id").asText();
+        String chainId = draft.path("draft").path("chainId").asText();
+        var data = Map.of("input", Map.of("kind", "FIXTURE_REFERENCE", "value", "demo/greeting", "fixtureVersion", "1"),
+                          "expected", Map.of("outcome", "SUCCEEDED", "output", "HELLO"));
+        var scenario = post("/resources/" + chainId + "/scenarios", Map.of("name", "Greeting", "data", data));
+        String id = scenario.path("scenario").path("id").asText();
+        var version = post("/drafts/" + draftId + "/versions", Map.of("revision", 1, "label", "1"));
+        String versionId = version.path("version").path("id").asText();
+        var changed = new ChainDefinition(1, "text_preparation", "java.lang.String", "java.lang.String",
+                List.of(new ChainDefinition.Operation("trim", "text.trim", Map.of())));
+        assertThat(send("/api/v1/drafts/" + draftId, "PUT", EDITOR,
+                        Map.of("expectedVersion", 1, "definition", DefinitionJson.write(changed)))
+                .statusCode()).isEqualTo(200);
+        // When / Then: assertions use the frozen artifact, and reference values are not
+        // captured.
+        var result = post("/scenarios/" + id + "/tests", Map.of("revision", 1, "target", Map.of("versionId", versionId),
+                                                                "requestId", UUID.randomUUID()));
+        assertThat(result.path("run").path("scenarioCheck").path("status").asText()).isEqualTo("PASSED");
+        assertThat(result.path("run").path("scenario").path("revisionId").asText())
+                .isEqualTo(scenario.path("revision").path("id").asText());
+        assertThat(result.path("run").path("input").path("state").asText()).isEqualTo("NOT_CAPTURED");
+        var next = send("/api/v1/scenarios/" + id, "PUT", EDITOR,
+                        Map.of("expectedVersion", 1, "name", "Next", "data", data));
+        assertThat(next.statusCode()).isEqualTo(200);
+        assertThat(mapper.readTree(next.body()).path("revision").path("number").asInt()).isEqualTo(2);
+        assertThat(send("/api/v1/scenarios/" + id + "/revisions", "GET", EDITOR, null).statusCode()).isEqualTo(200);
+        assertThat(send("/api/v1/resources/" + chainId + "/scenarios", "GET", EDITOR, null).statusCode())
+                .isEqualTo(200);
+        assertThat(send("/api/v1/scenarios/" + id, "GET", VIEWER, null).statusCode()).isEqualTo(404);
+        assertThat(send("/api/v1/scenarios/" + id + "/tests", "POST", EDITOR,
+                        Map.of("revision", 1, "target", Map.of("versionId", versionId), "requestId", UUID.randomUUID(),
+                               "input", "secret"))
+                .statusCode()).isEqualTo(400);
+        var archived = post("/scenarios/" + id + "/archive", Map.of("expectedVersion", 2));
+        assertThat(archived.path("scenario").path("archived").asBoolean()).isTrue();
+        assertThat(send("/studio-scenarios.mjs", "GET", null, null).statusCode()).isEqualTo(200);
+    }
+
+    @Test
     void runRoutesFilterDurableSnapshotsAndNeverExposePayloadsWithoutObservabilityPermission() throws Exception {
         // Given
         var draft = createDraft();

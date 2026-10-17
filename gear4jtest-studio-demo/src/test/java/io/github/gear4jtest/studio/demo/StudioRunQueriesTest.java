@@ -27,7 +27,8 @@ class StudioRunQueriesTest {
     }
 
     private static StudioRun.Provenance provenance(String context, UUID draft) {
-        return new StudioRun.Provenance(context, "text_preparation", "build", null, null, "host", "RUN", null,
+        return new StudioRun.Provenance(context, "text_preparation", "build", "catalog", "a".repeat(64), "host", "RUN",
+                null,
                 draft, null, 0, null, null);
     }
 

@@ -23,7 +23,29 @@ public record AuditEvent(long sequence,
                          AccessPolicy accessBefore,
                          AccessPolicy accessAfter,
                          UUID versionId,
-                         UUID attemptId) {
+                         UUID attemptId,
+                         io.github.gear4jtest.studio.model.ScenarioRef scenario) {
+    public AuditEvent(long sequence,
+                      UUID eventId,
+                      UUID domainId,
+                      UUID chainId,
+                      UUID draftId,
+                      ResourceKind resourceKind,
+                      UUID resourceId,
+                      long resourceVersion,
+                      String actor,
+                      Action action,
+                      Instant occurredAt,
+                      UUID revisionId,
+                      UUID requestId,
+                      AccessPolicy accessBefore,
+                      AccessPolicy accessAfter,
+                      UUID versionId,
+                      UUID attemptId) {
+        this(sequence, eventId, domainId, chainId, draftId, resourceKind, resourceId, resourceVersion, actor, action,
+                occurredAt, revisionId, requestId, accessBefore, accessAfter, versionId, attemptId, null);
+    }
+
     public AuditEvent(long sequence,
                       UUID eventId,
                       UUID domainId,
@@ -68,6 +90,6 @@ public record AuditEvent(long sequence,
         ACCESS_CHANGED, DOMAIN_ARCHIVED, CHAIN_ARCHIVED, DRAFT_ABANDONED, TEST_REQUESTED, VERSION_CREATED,
         PUBLICATION_REQUESTED, PROMOTION_REQUESTED,
         PUBLICATION_CONFIRMED, PROMOTION_CONFIRMED, PUBLICATION_REJECTED, PUBLICATION_UNKNOWN,
-        PROMOTION_REJECTED, PROMOTION_UNKNOWN
+        PROMOTION_REJECTED, PROMOTION_UNKNOWN, SCENARIO_CREATED, SCENARIO_REVISED, SCENARIO_ARCHIVED
     }
 }

@@ -238,12 +238,17 @@ public final class StudioHttpServer implements AutoCloseable {
     }
 
     private void asset(HttpExchange exchange) throws IOException {
-        Map<String, String> files = Map.of("/", "index.html", "/embedded", "embedded.html", "/studio.css", "studio.css",
-                                           "/studio-client.mjs", "studio-client.mjs", "/studio-element.mjs",
-                                           "studio-element.mjs", "/bootstrap.mjs", "bootstrap.mjs",
-                                           "/management-client.mjs", "management-client.mjs", "/studio-workspace.mjs",
-                                           "studio-workspace.mjs", "/studio-versions.mjs", "studio-versions.mjs",
-                                           "/studio-runs.mjs", "studio-runs.mjs");
+        Map<String, String> files = Map.ofEntries(
+                                                  Map.entry("/", "index.html"), Map.entry("/embedded", "embedded.html"),
+                                                  Map.entry("/studio.css", "studio.css"),
+                                                  Map.entry("/bootstrap.mjs", "bootstrap.mjs"),
+                                                  Map.entry("/studio-client.mjs", "studio-client.mjs"),
+                                                  Map.entry("/studio-element.mjs", "studio-element.mjs"),
+                                                  Map.entry("/management-client.mjs", "management-client.mjs"),
+                                                  Map.entry("/studio-workspace.mjs", "studio-workspace.mjs"),
+                                                  Map.entry("/studio-versions.mjs", "studio-versions.mjs"),
+                                                  Map.entry("/studio-runs.mjs", "studio-runs.mjs"),
+                                                  Map.entry("/studio-scenarios.mjs", "studio-scenarios.mjs"));
         String file = files.get(exchange.getRequestURI().getPath());
         if (!exchange.getRequestMethod().equals("GET") || file == null) {
             json(exchange, 404, Map.of("code", "NOT_FOUND"));

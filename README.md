@@ -189,4 +189,4 @@ simple and move optional integrations to dedicated modules.
 
 See `docs/production-readiness.md` before using Gear4J operationally.
 
-Le module optionnel [Gear4J Studio P4](docs/studio/p4.md) ajoute l’historique durable, l’inspection des runs et le monitoring au cycle de vie Draft → Revision → Version → TEST → RUN. Ses composants sont distribuables via [@gear4j/studio-web](gear4jtest-studio-web/README.md).
+Le module optionnel [Gear4J Studio P4.1](docs/studio/p41.md) ajoute les scénarios réutilisables, l’historique durable, l’inspection des runs et le monitoring au cycle de vie Draft → Revision → Version → TEST → RUN. Ses composants sont distribuables via [@gear4j/studio-web](gear4jtest-studio-web/README.md).

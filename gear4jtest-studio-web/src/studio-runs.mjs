@@ -95,17 +95,18 @@ export class Gear4jRuns extends HTMLElement {
       const stats = el('div', null, 'stats'); for (const [label,value] of [['Runs',m.total],['Succès',m.statuses.SUCCEEDED || 0],['Échecs',m.statuses.FAILED || 0],['p95',m.p95Millis == null ? '—' : `${m.p95Millis} ms`]]) { const stat = el('div',label,'stat'); stat.append(el('strong',value)); stats.append(stat); } box.append(stats);
       box.append(el('p', `Durée moyenne : ${m.averageMillis == null ? '—' : `${Math.round(m.averageMillis)} ms`}. Les résultats sans durée finale sont exclus des durées.`), table(['Statut','Nombre'],Object.entries(m.statuses)));
       if (m.timeline.length) box.append(table(['Période (UTC)','Runs','Échecs'], m.timeline.map(b => [b.from,b.runs,b.failures])));
-      if (m.operations.length) box.append(el('h4','Opérations observées'), table(['Étape','Occurrences','Échecs','Moyenne','Maximum'],m.operations.map(o=>[o.nodeId,o.executions,o.failures,o.averageMillis == null ? '—' : `${Math.round(o.averageMillis)} ms`,o.maximumMillis == null ? '—' : `${o.maximumMillis} ms`])));
+      if (m.operations.length) box.append(el('h4','Stations observées par version, mode et artefact'), table(['Étape','Contexte','Occurrences','Échecs','Moyenne','Maximum'],m.operations.map(o=>[o.nodeId,JSON.stringify(o.dimension || {}),o.executions,o.failures,o.averageMillis == null ? '—' : `${Math.round(o.averageMillis)} ms`,o.maximumMillis == null ? '—' : `${o.maximumMillis} ms`])));
       this.results.append(box);
     }
     if (!this.canReadRuns) return;
-    this.results.append(table(['Exécution','Statut','Mode / origine','Version / révision','Début / durée'], this.items.map(r => [button(r.id, () => this.select(r.id)),r.status,`${r.provenance.mode} · ${r.origin}`,r.provenance.versionLabel || (r.provenance.revisionId ? `Révision ${r.provenance.revision}` : 'Non attestée'),`${r.startedAt || r.createdAt} · ${duration(r.startedAt,r.endedAt)}`])));
+    this.results.append(table(['Exécution','Statut','Mode / origine','Version / révision','Début / durée'], this.items.map(r => [button(r.id, () => this.select(r.id)),`${r.status}${r.staleAt ? ' · observation ancienne' : ''}`,`${r.provenance.mode} · ${r.origin}`,r.provenance.versionLabel || (r.provenance.revisionId ? `Révision ${r.provenance.revision}` : 'Non attestée'),`${r.startedAt || r.createdAt} · ${duration(r.startedAt,r.endedAt)}`])));
     if (!this.items.length) this.results.append(el('p', this.next ? 'Aucun run visible dans cette portion. Continuez le parcours.' : 'Aucune observation accessible dans cette période.'));
     const pages = el('div',null,'bar'); pages.append(button('Début de l’historique',()=>this.reload(),!this.pageAfter),button('Runs suivants',()=>this.reload(this.next),!this.next)); this.results.append(pages);
   }
   renderDetail() {
     this.detail.replaceChildren(); const run = this.selected; if (!run) return;
     const box = el('section',null,'box'); box.append(el('h4',`Exécution ${run.id}`),el('p',`${run.status} · dernière observation ${run.updatedAt} · ${duration(run.startedAt,run.endedAt)}`));
+    if (run.staleAt) box.append(el('p', `Observation signalée ancienne depuis ${run.staleAt}. Le résultat métier reste inconnu.`, 'error'));
     if (active(run)) box.append(el('p','Statut observé, sans garantie de présence du processus. Une interruption peut laisser une observation sans résultat final.','muted'));
     const provenance = el('details'); provenance.append(el('summary','Provenance exacte'),el('pre',JSON.stringify(run.provenance,null,2))); box.append(provenance);
     const observation = run.observation;
@@ -113,6 +114,7 @@ export class Gear4jRuns extends HTMLElement {
     else {
       box.append(el('code',`Gear4J : ${observation.runId || 'non démarré'} · parent : ${observation.parentRunId || '—'} · racine : ${observation.rootRunId || '—'}`));
       for (const [name,value] of [['Entrée',observation.input],['Sortie',observation.output]]) { box.append(el('h4',`${name} · ${value.state}`)); if (value.state !== 'NOT_CAPTURED') box.append(el('pre',value.value ?? 'null')); }
+      if (observation.scenarioCheck) box.append(el('p', `Scénario : ${observation.scenarioCheck.status} · ${observation.scenarioCheck.differences.join(', ')}`));
       if (observation.errorCode) box.append(el('p',`Erreur : ${observation.errorCode}`,'error'));
       if (observation.stepsTruncated) box.append(el('p','Détail partiel : la limite de capture des étapes a été atteinte.','error'));
       const byId = new Map(observation.steps.map(s=>[s.id,s]));

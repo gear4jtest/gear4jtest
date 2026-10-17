@@ -1,5 +1,6 @@
 import './studio-versions.mjs';
 import './studio-runs.mjs';
+import './studio-scenarios.mjs';
 import { comparisonPanel } from './studio-element.mjs';
 import { ScopedAuthoringClient } from './management-client.mjs';
 const css = `table{table-layout:fixed;width:100%;border-collapse:collapse;font-size:12px}td,th{text-align:left;vertical-align:top;padding:7px;border-bottom:1px solid #d9e3df;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}:host{display:block;color:#203f3b;font:14px/1.5 system-ui,sans-serif}*{box-sizing:border-box}button,input,select,textarea{font:inherit}button{cursor:pointer;padding:7px 11px;border:1px solid #c6d8ce;background:white;border-radius:6px;color:#205044}button:hover:enabled{background:#edf6f2}button:disabled{opacity:.45;cursor:default}input,select,textarea{width:100%;padding:7px;border:1px solid #b8ccc4;border-radius:5px}label{display:grid;gap:4px;color:#526d62;font-size:12px}h2,h3,p{margin:0}small{color:#667c77}code{font-size:11px;overflow-wrap:anywhere}.layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;margin:18px 0}.box{background:white;border:1px solid #d9e3df;border-radius:10px;padding:15px;display:grid;gap:12px;align-content:start}.bar{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.list{display:grid;gap:7px}.list button{text-align:left}.list small{display:block}.message{min-height:28px;margin:10px 0}.error{color:#a63728}.forms{display:grid;grid-template-columns:1fr 1fr;gap:9px}.wide{grid-column:1/-1}details{border-top:1px solid #e2eae5;padding-top:10px}summary{cursor:pointer;font-weight:600;margin-bottom:9px}.grants{display:grid;gap:12px}.grant{padding:10px;background:#f5f8f6;display:grid;gap:9px;border:1px solid #d9e3df;border-radius:6px}.checks{display:flex;gap:9px;flex-wrap:wrap}.checks label{display:flex;align-items:center}.checks input{width:auto}.audit{font-size:12px;border-bottom:1px solid #e2eae5;padding:8px 0;overflow-wrap:anywhere}.audit pre{white-space:pre-wrap;font-size:11px}.selected{border-color:#006b60;background:#edf6f2}.intro{display:grid;gap:6px}.muted{color:#667c77}a{color:#006b60}@media(max-width:800px){.layout{grid-template-columns:1fr}.forms{grid-template-columns:1fr}.wide{grid-column:auto}}`;
@@ -11,7 +12,7 @@ const labels = { domains: 'Domaines', chains: 'Chaînes', drafts: 'Drafts' };
 export class Gear4jWorkspace extends HTMLElement {
   constructor() { super(); this.attachShadow({ mode: 'open' }); this.kind = 'domains'; this.items = []; this.message = ''; this.editor = null; this.formValues = new Map(); }
   async configure({ client }) {
-    this.client = client; this.context = await client.context(); this.selected = null; this.editor = null; this.kind = 'domains'; this.parent = null; this.cursor = null; this.formValues.clear(); this.versions = null; this.runsElement = null;
+    this.client = client; this.context = await client.context(); this.selected = null; this.editor = null; this.kind = 'domains'; this.parent = null; this.cursor = null; this.formValues.clear(); this.versions = null; this.runsElement = null; this.scenariosElement = null;
     await this.reload(); return this.context;
   }
   async reload(after = null) {
@@ -27,7 +28,7 @@ export class Gear4jWorkspace extends HTMLElement {
   allowed(permission) { return !this.busy && this.selected?.permissions.includes(permission); }
   async browse(kind, parent = null) { this.kind = kind; this.parent = parent; await this.reload(); }
   async choose(item, discard = false) {
-    if (this.editor?.hasUnsavedChanges && !discard) { this.pending = item; this.message = 'Le draft contient des modifications locales. Enregistrez-les ou confirmez leur abandon pour changer de sélection.'; this.render(); return; }
+    if ((this.editor?.hasUnsavedChanges || this.scenariosElement?.hasUnsavedChanges) && !discard) { this.pending = item; this.message = 'Le draft ou le scénario contient des modifications locales. Enregistrez-les ou confirmez leur abandon pour changer de sélection.'; this.render(); return; }
     let selected, editor = null, versions = null;
     if (item.kind === 'DRAFT') {
       const state = await this.client.draft(item.id); selected = { resource: state.draft, kind: 'DRAFT', permissions: state.permissions };
@@ -50,12 +51,29 @@ export class Gear4jWorkspace extends HTMLElement {
       }
     }
     this.versions = versions;
-    this.runsElement = null;
+    this.runsElement = null; this.scenariosElement = null;
     if (this.client.runs && this.context.context.capabilities?.includes('RUN_HISTORY') && ['CHAIN','DRAFT'].includes(selected.kind)
         && (selected.permissions.includes('READ_RUNS') || selected.permissions.includes('READ_OBSERVABILITY'))) {
       const runs = document.createElement('gear4j-runs');
       await runs.configure({ client: this.client, scopeId: selected.resource.id, canReadRuns: selected.permissions.includes('READ_RUNS'), canReadObservability: selected.permissions.includes('READ_OBSERVABILITY') });
       this.runsElement = runs;
+    }
+    if (this.client.scenarios && this.context.context.capabilities?.includes('SCENARIOS') && ['CHAIN','DRAFT'].includes(selected.kind)) {
+      const scopes = [];
+      if (selected.permissions.includes('READ_SCENARIOS')) scopes.push({ id: selected.resource.id, label: selected.kind === 'DRAFT' ? `Draft : ${selected.resource.name}` : `Chaîne : ${selected.resource.name}`, permissions: selected.permissions });
+      if (selected.kind === 'DRAFT') { try { const parent = await this.client.resource(selected.resource.chainId); if (parent.permissions.includes('READ_SCENARIOS')) scopes.push({ id: parent.resource.id, label: `Chaîne : ${parent.resource.name}`, permissions: parent.permissions }); } catch { /* No implicit parent access. */ } }
+      if (scopes.length) {
+        const scenarios = document.createElement('gear4j-scenarios');
+        await scenarios.configure({ client: this.client, scopes, getTargets: () => {
+          const targets = []; const r = editor?.revision;
+          if (r && r.actions.includes('TEST')) targets.push({ key: r.revisionId, label: `Draft ${selected.resource.name} · révision ${r.number}${editor.hasUnsavedChanges ? ' · modifications non enregistrées' : ''}${r.kind === 'SOURCE' ? ' · SOURCE' : ''}`, target: { draftId: r.draftId, revision: r.number }, disabled: editor.hasUnsavedChanges || r.kind === 'SOURCE' });
+          const v = versions?.selected; if (v?.actions.includes('TEST')) targets.push({ key: v.version.id, label: `Version ${v.version.label} · ${v.version.id}`, target: { versionId: v.version.id } });
+          return targets;
+        } });
+        this.scenariosElement = scenarios;
+        editor?.addEventListener('studio:revision', () => scenarios.render());
+        versions?.addEventListener('studio:version', () => scenarios.render());
+      }
     }
     this.pending = null; this.accessState = null; this.auditPage = null; this.history = null; this.comparison = null;
     this.selected = selected; this.editor = editor; this.message = ''; this.render();
@@ -69,6 +87,7 @@ export class Gear4jWorkspace extends HTMLElement {
     const layout = el('div', undefined, 'layout'); layout.append(this.navigation(), this.details()); root.append(layout);
     if (this.editor) root.append(this.editor);
     if (this.versions) root.append(this.versions);
+    if (this.scenariosElement) root.append(this.scenariosElement);
     if (this.runsElement) root.append(this.runsElement);
   }
   navigation() {
@@ -154,7 +173,7 @@ export class Gear4jWorkspace extends HTMLElement {
     box.append(btn('Ajouter un bénéficiaire', () => { policy.grants.push({ subjectType: 'USER', subject: '', permissions: ['READ'] }); this.render(); }, this.busy || policy.grants.length >= 64));
     box.append(btn('Enregistrer les accès', () => this.perform(async () => {
       const version = this.accessState.version; const updated = await this.client.setAccess(resource.id, version, structuredClone(policy)); this.selected = updated; this.accessState = null;
-      if (!updated.permissions.includes('READ')) { this.selected = null; this.editor = null; this.versions = null; this.runsElement = null; this.message = 'Accès modifiés. Vous ne pouvez plus consulter cette ressource.'; }
+      if (!updated.permissions.includes('READ')) { this.selected = null; this.editor = null; this.versions = null; this.runsElement = null; this.scenariosElement = null; this.message = 'Accès modifiés. Vous ne pouvez plus consulter cette ressource.'; }
       else { this.accessState = await this.client.access(resource.id).catch(() => null); this.message = 'Accès enregistrés. Les prochaines actions seront réévaluées par le serveur.'; }
       await this.reload(this.cursor);
     }), this.busy)); return box;
@@ -169,6 +188,7 @@ export class Gear4jWorkspace extends HTMLElement {
     const box = el('div', undefined, 'box'); box.append(el('h3', 'Audit du périmètre accessible'));
     for (const event of this.auditPage.items) { const row = el('div', undefined, 'audit'); row.append(el('strong', event.action), el('p', `${event.actor} · ${event.occurredAt}`), el('code', `${event.resourceKind} ${event.resourceId} · état ${event.resourceVersion}`));
       if (event.versionId) row.append(el('code', ` · version ${event.versionId}`));
+      if (event.scenario) row.append(el('code', ` · scénario ${event.scenario.scenarioId} · révision ${event.scenario.revision}`));
       if (event.attemptId) row.append(el('code', ` · tentative ${event.attemptId}`));
       if (event.accessAfter) { const details = el('details'); details.append(el('summary', 'Changement des accès'), el('pre', JSON.stringify({ before: event.accessBefore, after: event.accessAfter }, null, 2))); row.append(details); } box.append(row); }
     if (!this.auditPage.items.length) box.append(el('p', 'Aucun événement accessible.'));
