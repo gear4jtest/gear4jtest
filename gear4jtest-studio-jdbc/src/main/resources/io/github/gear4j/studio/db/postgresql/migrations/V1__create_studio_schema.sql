@@ -171,3 +171,13 @@ CREATE INDEX idx_g4js_run_status ON g4js_run(chain_id,result_state,created_at,id
 CREATE INDEX idx_g4js_run_engine ON g4js_run(engine_run_id);
 CREATE INDEX idx_g4js_run_retention ON g4js_run(ended_at,id);
 CREATE INDEX idx_g4js_run_stale ON g4js_run(stale_at,updated_at,id);
+
+CREATE TABLE g4js_simulation (
+    id VARCHAR(36) PRIMARY KEY,
+    scenario_id VARCHAR(36) NOT NULL REFERENCES g4js_scenario(id),
+    created_at BIGINT NOT NULL,
+    snapshot_json TEXT NOT NULL,
+    snapshot_hash VARCHAR(64) NOT NULL
+);
+CREATE INDEX idx_g4js_simulation_scenario ON g4js_simulation(scenario_id,created_at,id);
+CREATE INDEX idx_g4js_simulation_retention ON g4js_simulation(created_at,id);

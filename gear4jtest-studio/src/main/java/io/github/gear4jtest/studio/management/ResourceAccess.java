@@ -33,7 +33,8 @@ final class ResourceAccess {
     static Set<Permission> permissions(StudioStore.Session tx, StudioIdentity actor, ManagedResource resource) {
         var domain = domain(tx, resource);
         EnumSet<Permission> result = EnumSet.noneOf(Permission.class);
-        if (actor.administrator() || actor.subject().equals(domain.owner()) || actor.subject().equals(resource.owner()))
+        if (actor.administrator() || actor.principalId().equals(domain.owner())
+                || actor.principalId().equals(resource.owner()))
             result.addAll(EnumSet.allOf(Permission.class));
         else {
             if (resource.inheritAccess()) {
@@ -51,7 +52,7 @@ final class ResourceAccess {
         if (frozen)
             result.removeAll(EnumSet.of(Permission.EDIT, Permission.CREATE_CHAIN, Permission.CREATE_DRAFT,
                                         Permission.TEST, Permission.VALIDATE, Permission.ARCHIVE, Permission.PUBLISH,
-                                        Permission.PROMOTE, Permission.MANAGE_SCENARIOS));
+                                        Permission.PROMOTE, Permission.MANAGE_SCENARIOS, Permission.SIMULATE));
         return Set.copyOf(result);
     }
 

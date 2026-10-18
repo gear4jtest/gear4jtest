@@ -1,6 +1,10 @@
 import { StudioTransport, StudioError } from './studio-client.mjs';
 /** Public management client. Identities/groups are never accepted as request options. */
 export class ManagementClient extends StudioTransport {
+  planSimulation(id, request) { return this.request(`/scenarios/${encodeURIComponent(id)}/simulation-plan`, 'POST', request); }
+  simulate(id, request) { return this.request(`/scenarios/${encodeURIComponent(id)}/simulations`, 'POST', request); }
+  simulation(id) { return this.request(`/simulations/${encodeURIComponent(id)}`); }
+  simulations(id, after) { return this.request(`/scenarios/${encodeURIComponent(id)}/simulations?limit=25${after ? `&after=${encodeURIComponent(after)}` : ''}`); }
   scenarios(scope, after) { return this.request(`/resources/${encodeURIComponent(scope)}/scenarios?limit=25${after ? `&after=${encodeURIComponent(after)}` : ''}`); }
   scenario(id) { return this.request(`/scenarios/${encodeURIComponent(id)}`); }
   createScenario(scope, name, data) { return this.request(`/resources/${encodeURIComponent(scope)}/scenarios`, 'POST', { name, data }); }

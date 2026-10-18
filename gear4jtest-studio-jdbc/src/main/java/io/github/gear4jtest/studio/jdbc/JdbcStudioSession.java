@@ -366,6 +366,58 @@ final class JdbcStudioSession implements StudioStore.Session {
     }
 
     @Override
+    public void insertSimulation(io.github.gear4jtest.studio.model.StudioSimulation report) {
+        String snapshot = json(report);
+        if (snapshot.length() > 262144)
+            throw new StudioProblem(INVALID_REQUEST);
+        update("INSERT INTO g4js_simulation(id,scenario_id,created_at,snapshot_json,snapshot_hash) VALUES(?,?,?,?,?)",
+               report.id(), report.scenario().scenarioId(), report.createdAt(), snapshot, hash(snapshot));
+    }
+
+    @Override
+    public io.github.gear4jtest.studio.model.StudioSimulation simulation(UUID id) {
+        return one("SELECT * FROM g4js_simulation WHERE id=?", id, this::simulation);
+    }
+
+    private io.github.gear4jtest.studio.model.StudioSimulation simulation(ResultSet r) throws SQLException {
+        String snapshot = r.getString("snapshot_json");
+        if (snapshot == null || snapshot.length() > 262144 || !hash(snapshot).equals(r.getString("snapshot_hash")))
+            throw new StudioProblem(STORAGE_UNAVAILABLE);
+        try {
+            var report = JSON.readValue(snapshot, io.github.gear4jtest.studio.model.StudioSimulation.class);
+            if (!report.id().equals(uuid(r, "id")) || !report.scenario().scenarioId().equals(uuid(r, "scenario_id")))
+                throw new StudioProblem(STORAGE_UNAVAILABLE);
+            return report;
+        } catch (JsonProcessingException invalid) {
+            throw new StudioProblem(STORAGE_UNAVAILABLE);
+        }
+    }
+
+    @Override
+    public List<io.github.gear4jtest.studio.model.StudioSimulation> simulations(UUID scenarioId,
+                                                                                String after,
+                                                                                int limit) {
+        if (after == null)
+            return query("SELECT * FROM g4js_simulation WHERE scenario_id=? ORDER BY created_at DESC,id DESC",
+                         limit, this::simulation, scenarioId);
+        var cursor = simulation(UUID.fromString(after));
+        if (cursor == null || !cursor.scenario().scenarioId().equals(scenarioId))
+            throw new StudioProblem(INVALID_REQUEST);
+        return query("SELECT * FROM g4js_simulation WHERE scenario_id=? AND (created_at<? OR (created_at=? AND id<?)) ORDER BY created_at DESC,id DESC",
+                     limit, this::simulation, scenarioId, cursor.createdAt(), cursor.createdAt(), cursor.id());
+    }
+
+    @Override
+    public int purgeSimulations(StudioStore.InstantCutoff cutoff) {
+        var ids = query("SELECT id FROM g4js_simulation WHERE created_at<? ORDER BY created_at,id", cutoff.limit(),
+                        row -> uuid(row, "id"), cutoff.before());
+        int count = 0;
+        for (var id : ids)
+            count += update("DELETE FROM g4js_simulation WHERE id=? AND created_at<?", id, cutoff.before());
+        return count;
+    }
+
+    @Override
     public void insertVersion(StudioVersion version) {
         update("INSERT INTO g4js_version(id,chain_id,draft_id,revision_id,revision_number,runtime_assembly_line_id,version_label,author,created_at,runtime_context_id,application_build,catalog_fingerprint,media_type,artifact_hash,source_text,definition_schema_version,format_adapter_id,format_adapter_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                version.id(), version.chainId(), version.draftId(), version.revisionId(), version.revision(),

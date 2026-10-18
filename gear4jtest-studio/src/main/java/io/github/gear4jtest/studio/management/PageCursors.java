@@ -27,7 +27,7 @@ final class PageCursors {
 
     private byte[] aad(StudioIdentity actor, String scope) {
         var value = new StringBuilder();
-        frame(value, actor.subject());
+        frame(value, actor.principalId());
         frame(value, Boolean.toString(actor.administrator()));
         frame(value, scope);
         actor.groups().stream().sorted().forEach(group -> frame(value, group));

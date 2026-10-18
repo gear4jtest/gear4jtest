@@ -69,6 +69,10 @@ final class DefinitionChecks {
     }
 
     List<Diagnostic> validate(ChainDefinition definition) {
+        return validate(definition, true);
+    }
+
+    List<Diagnostic> validate(ChainDefinition definition, boolean requireTest) {
         var diagnostics = new ArrayList<Diagnostic>();
         try {
             safeToStore(definition);
@@ -91,7 +95,7 @@ final class DefinitionChecks {
             var node = definition.nodes().get(i);
             String path = "/nodes/" + i;
             if (node instanceof Operation operation)
-                previous = operation(operation, previous, path, ids, diagnostics);
+                previous = operation(operation, previous, path, ids, diagnostics, requireTest);
             else if (node instanceof Choice choice) {
                 id(choice.id(), path + "/id", ids, diagnostics);
                 id(choice.branchId(), path + "/branchId", ids, diagnostics);
@@ -102,9 +106,11 @@ final class DefinitionChecks {
                                                      "Expression GEL invalide."));
                 }
                 compatible(previous, textContract(), path, diagnostics);
-                compatible(operation(choice.whenTrue(), textContract(), path + "/whenTrue", ids, diagnostics),
+                compatible(operation(choice.whenTrue(), textContract(), path + "/whenTrue", ids, diagnostics,
+                                     requireTest),
                            textContract(), path + "/whenTrue", diagnostics);
-                compatible(operation(choice.whenFalse(), textContract(), path + "/whenFalse", ids, diagnostics),
+                compatible(operation(choice.whenFalse(), textContract(), path + "/whenFalse", ids, diagnostics,
+                                     requireTest),
                            textContract(), path + "/whenFalse", diagnostics);
                 previous = textContract();
             }
@@ -117,7 +123,8 @@ final class DefinitionChecks {
                                    DataContract previous,
                                    String path,
                                    Set<String> ids,
-                                   List<Diagnostic> diagnostics) {
+                                   List<Diagnostic> diagnostics,
+                                   boolean requireTest) {
         id(operation.id(), path + "/id", ids, diagnostics);
         var binding = catalog.find(operation.operationId());
         if (binding == null) {
@@ -125,7 +132,7 @@ final class DefinitionChecks {
                                              "Opération absente du catalogue."));
             return null;
         }
-        if (!binding.descriptor().testAllowed())
+        if (requireTest && !binding.descriptor().testAllowed())
             diagnostics.add(Diagnostic.error("TEST_DENIED", path, "Opération non autorisée en test."));
         compatible(previous, binding.descriptor().input(), path, diagnostics);
         binding.descriptor().parameters().forEach((name, parameter) -> {

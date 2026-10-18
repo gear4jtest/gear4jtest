@@ -6,7 +6,7 @@ form.addEventListener('submit', async event => {
   form.querySelector('button').disabled = true; message.textContent = 'Connexion…';
   try {
     const context = await document.querySelector('gear4j-workspace').configure({ client: new ManagementClient({ tokenProvider: () => token }) });
-    form.querySelector('input').value = ''; form.hidden = true; message.textContent = `${context.context.id} · ${context.identity.subject}`;
+    form.querySelector('input').value = ''; form.hidden = true; message.textContent = `${context.context.id} · ${context.identity.principalId}`;
   } catch { message.textContent = 'Connexion refusée. Vérifiez le token configuré au démarrage.'; }
   finally { form.querySelector('button').disabled = false; }
 });

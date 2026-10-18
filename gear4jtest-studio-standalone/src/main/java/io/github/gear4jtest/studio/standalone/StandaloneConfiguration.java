@@ -64,8 +64,8 @@ public final class StandaloneConfiguration {
         var users = new HashMap<String, User>();
         for (String id : identifiers(value.apply("users"))) {
             String prefix = "user." + id + ".";
-            String subject = value.apply(prefix + "subject");
-            var identity = new StudioIdentity(subject, Set.of(), false);
+            String principalId = value.apply(prefix + "principalId");
+            var identity = new StudioIdentity(principalId, Set.of(), false);
             var allowed = Set.copyOf(identifiers(value.apply(prefix + "targets")));
             if (!knownTargets.containsAll(allowed))
                 throw new IllegalArgumentException("Unknown user target");
@@ -75,13 +75,13 @@ public final class StandaloneConfiguration {
                 remote.put(target, secret(environment, value.apply(prefix + "remoteTokenEnvironment." + target)));
             var user = new User(identity, token.getBytes(StandardCharsets.UTF_8), Map.copyOf(remote));
             if (users.values().stream().anyMatch(u -> MessageDigest.isEqual(u.token, user.token))
-                    || users.putIfAbsent(subject, user) != null)
+                    || users.putIfAbsent(principalId, user) != null)
                 throw new IllegalArgumentException("Ambiguous user credentials");
         }
         if (!consumed.equals(properties.stringPropertyNames()))
             throw new IllegalArgumentException("Unknown configuration setting");
         var directory = new TargetDirectory(applications, targets, (actor, target) -> {
-            var user = users.get(actor.subject());
+            var user = users.get(actor.principalId());
             return user != null && user.remote.containsKey(target.id());
         });
         return new StandaloneConfiguration(directory, users, port);
@@ -118,7 +118,7 @@ public final class StandaloneConfiguration {
 
     public TargetCredentials credentials() {
         return (actor, target, incoming) -> {
-            var user = users.get(actor.subject());
+            var user = users.get(actor.principalId());
             return user == null ? null : user.remote.get(target.id());
         };
     }

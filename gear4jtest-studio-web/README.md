@@ -1,4 +1,4 @@
-# @gear4j/studio-web — expérimental 0.5.0
+# @gear4j/studio-web — expérimental 0.6.1
 
 Composants publics ESM et Web Components, sans dépendance au module de démonstration.
 Le serveur Java et la démo Spring consomment ces mêmes sources via processResources.
@@ -10,7 +10,7 @@ npm run pack:check
 npm pack
 ```
 
-Installer le .tgz produit dans un portail (`npm install /chemin/gear4j-studio-web-0.5.0.tgz`).
+Installer le .tgz produit dans un portail (`npm install /chemin/gear4j-studio-web-0.6.1.tgz`).
 Importer `ManagementClient` depuis `@gear4j/studio-web/client`, `Gear4jStudio` depuis
 `@gear4j/studio-web/editor`, ou `Gear4jWorkspace` depuis `@gear4j/studio-web/workspace`.
 L’entrée principale enregistre les Web Components ; l’entrée client fonctionne sans DOM.
@@ -29,7 +29,7 @@ L’hôte fournit l’authentification. Aucun stockage du token, aucune relance 
 Pour l’éditeur seul : récupérer le draft avec ManagementClient, construire ScopedAuthoringClient,
 puis appeler configure({client: scoped, revision: scoped.flat(state)}).
 Les événements studio:revision / studio:run contiennent uniquement les identifiants et statuts.
-Consulter ../docs/studio/p5.md pour les contrats, limites et changements d’API.
+Consulter ../docs/studio/p6.md pour les contrats, limites et changements d’API.
 
 
 Le composant de cycle de vie est également consommable séparément :
@@ -121,3 +121,34 @@ signale à l’hôte qu’il doit vider sa session ; le composant vide son affic
 Le launcher P5 conserve son token en mémoire uniquement. Une réponse perdue
 après mutation reste `REMOTE_OUTCOME_UNKNOWN`, sans retry automatique. Le suivi
 des runs passe par le polling existant si la passerelle ne relaie pas SSE.
+
+La simulation est intégrée aux scénarios avec `simulationEnabled: true` obtenu
+des capabilities du contexte et `getTargets(action)` filtré selon TEST ou SIMULATE.
+Fournir `definition` dans une cible de draft pour préparer automatiquement ses
+nœuds ; les substitutions commencent en FAIL, puis sont configurées explicitement.
+Les mocks sont sauvegardés dans `ScenarioData.simulation`, avec la révision.
+
+Le composant peut aussi être intégré directement :
+
+```js
+import '@gear4j/studio-web/simulation';
+document.querySelector('gear4j-simulation').configure({
+  client, scenarioId, revision, profile, editable,
+  getTargets: () => simulationTargets,
+  unsaved: () => scenarioHasLocalChanges,
+  onChange: profile => updateScenarioForm(profile)
+});
+```
+
+Le portail doit enregistrer le profil via les APIs de scénario avant simulation.
+`busy` bloque sa navigation pendant une requête. `studio:simulation` émet
+uniquement `{ id }`, sans payload. Le rapport porte des résultats synthétiques
+et ne remplace pas un test contrôlé. Après réponse perdue, relire GET simulation
+avec le requestId conservé ; aucun retry automatique du POST. `onUnavailable`
+permet au portail d’effacer son état privé après un refus d’accès.
+
+Les rapports de simulation se consultent avec `READ_SIMULATIONS` sur leur cible
+et `READ_SCENARIOS` sur le scénario ; `READ_RUNS` ne les autorise pas. Les captures
+restent conditionnées à `READ_OBSERVABILITY`. Le composant affiche les diagnostics
+`HISTORICAL_CONTEXT_DIFFERS` du plan et du rapport, y compris après relecture :
+une ancienne version utilise le simulateur et le catalogue actuels.

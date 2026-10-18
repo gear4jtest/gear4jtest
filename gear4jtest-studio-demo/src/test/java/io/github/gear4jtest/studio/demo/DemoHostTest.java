@@ -46,9 +46,9 @@ class DemoHostTest {
                 for (String token : new String[] { EDITOR, VIEWER }) {
                     var response = get(client, base + "/api/v1/context", token);
                     assertThat(response.statusCode()).isEqualTo(200);
-                    assertThat(response.headers().firstValue(StudioManagementHttpHandler.PROTOCOL)).contains("1");
+                    assertThat(response.headers().firstValue(StudioManagementHttpHandler.PROTOCOL)).contains("2");
                     var body = StudioJson.mapper().readTree(response.body());
-                    assertThat(body.path("identity").path("subject").asText())
+                    assertThat(body.path("identity").path("principalId").asText())
                             .isEqualTo(token.equals(EDITOR) ? "demo-editor" : "demo-viewer");
                     assertThat(body.path("canCreateDomain").asBoolean()).isEqualTo(token.equals(EDITOR));
                 }
@@ -102,6 +102,37 @@ class DemoHostTest {
                                                                   ScenarioInput.Kind.FIXTURE_REFERENCE, "demo/greeting",
                                                                   "2"), null)))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void simulationOptInAdmitsOnlyKnownCapabilitiesAndSyntheticMockValues() {
+        // Given: the demo policy is intentionally narrower than arbitrary text.
+        var actor = new StudioIdentity("demo-editor", Set.of(), false);
+        var scope = UUID.randomUUID();
+        var policy = new DemoScenarioPolicy();
+        assertThat(policy.simulationEnabled()).isTrue();
+        // When / Then
+        for (String value : java.util.List.of("", "hello", "  hello  ", "HELLO", "5", "true")) {
+            var mock = new io.github.gear4jtest.studio.model.SimulationProfile.Mock("text.trim",
+                    io.github.gear4jtest.studio.model.SimulationProfile.Behavior.RETURN,
+                    io.github.gear4jtest.studio.model.SimulationProfile.Scalar.STRING, value);
+            assertThatCode(() -> policy.assertSafeSimulationToStore(actor, scope,
+                                                                    new io.github.gear4jtest.studio.model.SimulationProfile(
+                                                                            1, java.util.Map.of("trim", mock))))
+                    .doesNotThrowAnyException();
+        }
+        for (String capability : java.util.List.of("text.trim", "unapproved")) {
+            var mock = new io.github.gear4jtest.studio.model.SimulationProfile.Mock(capability,
+                    io.github.gear4jtest.studio.model.SimulationProfile.Behavior.RETURN,
+                    io.github.gear4jtest.studio.model.SimulationProfile.Scalar.STRING, "unapproved-value");
+            assertThatThrownBy(() -> policy.assertSafeSimulationToStore(actor, scope,
+                                                                        new io.github.gear4jtest.studio.model.SimulationProfile(
+                                                                                1, java.util.Map.of("trim", mock))))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+        policy.assertSafeSimulationToStore(actor, scope, new io.github.gear4jtest.studio.model.SimulationProfile(1,
+                java.util.Map.of("trim", new io.github.gear4jtest.studio.model.SimulationProfile.Mock("text.trim",
+                        io.github.gear4jtest.studio.model.SimulationProfile.Behavior.FAIL, null, null))));
     }
 
     private HttpResponse<String> get(HttpClient client, String url, String token) throws Exception {

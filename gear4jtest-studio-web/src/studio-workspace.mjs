@@ -11,7 +11,7 @@ const labels = { domains: 'Domaines', chains: 'Chaînes', drafts: 'Drafts' };
 /** Public workspace component. Uses the public management client and the public authoring component. */
 export class Gear4jWorkspace extends HTMLElement {
   get hasUnsavedChanges() { return !!(this.editor?.hasUnsavedChanges || this.scenariosElement?.hasUnsavedChanges || this.formValues.size || this.accessDirty); }
-  get hasPendingActions() { return !!(this.busy || this.editor?.busy || this.versions?.busy || this.scenariosElement?.busy); }
+  get hasPendingActions() { return !!(this.busy || this.editor?.busy || this.versions?.busy || this.scenariosElement?.busy || this.scenariosElement?.simulationElement?.busy); }
   constructor() { super(); this.attachShadow({ mode: 'open' }); this.kind = 'domains'; this.items = []; this.message = ''; this.editor = null; this.formValues = new Map(); }
   async configure({ client }) {
     this.client = client; this.context = await client.context(); this.selected = null; this.editor = null; this.kind = 'domains'; this.parent = null; this.cursor = null; this.formValues.clear(); this.versions = null; this.runsElement = null; this.scenariosElement = null;
@@ -30,6 +30,7 @@ export class Gear4jWorkspace extends HTMLElement {
   allowed(permission) { return !this.busy && this.selected?.permissions.includes(permission); }
   async browse(kind, parent = null) { this.kind = kind; this.parent = parent; await this.reload(); }
   async choose(item, discard = false) {
+    if (this.scenariosElement?.simulationElement?.busy) { this.message = 'Attendez le résultat de la simulation avant de changer de ressource.'; this.render(); return; }
     if ((this.editor?.hasUnsavedChanges || this.scenariosElement?.hasUnsavedChanges) && !discard) { this.pending = item; this.message = 'Le draft ou le scénario contient des modifications locales. Enregistrez-les ou confirmez leur abandon pour changer de sélection.'; this.render(); return; }
     let selected, editor = null, versions = null;
     if (item.kind === 'DRAFT') {
@@ -66,10 +67,10 @@ export class Gear4jWorkspace extends HTMLElement {
       if (selected.kind === 'DRAFT') { try { const parent = await this.client.resource(selected.resource.chainId); if (parent.permissions.includes('READ_SCENARIOS')) scopes.push({ id: parent.resource.id, label: `Chaîne : ${parent.resource.name}`, permissions: parent.permissions }); } catch { /* No implicit parent access. */ } }
       if (scopes.length) {
         const scenarios = document.createElement('gear4j-scenarios');
-        await scenarios.configure({ client: this.client, scopes, getTargets: () => {
+        await scenarios.configure({ client: this.client, scopes, simulationEnabled: this.context.context.capabilities?.includes('SIMULATION'), getTargets: (action = 'TEST') => {
           const targets = []; const r = editor?.revision;
-          if (r && r.actions.includes('TEST')) targets.push({ key: r.revisionId, label: `Draft ${selected.resource.name} · révision ${r.number}${editor.hasUnsavedChanges ? ' · modifications non enregistrées' : ''}${r.kind === 'SOURCE' ? ' · SOURCE' : ''}`, target: { draftId: r.draftId, revision: r.number }, disabled: editor.hasUnsavedChanges || r.kind === 'SOURCE' });
-          const v = versions?.selected; if (v?.actions.includes('TEST')) targets.push({ key: v.version.id, label: `Version ${v.version.label} · ${v.version.id}`, target: { versionId: v.version.id } });
+          if (r && r.actions.includes(action)) targets.push({ key: r.revisionId, label: `Draft ${selected.resource.name} · révision ${r.number}${editor.hasUnsavedChanges ? ' · modifications non enregistrées' : ''}${r.kind === 'SOURCE' ? ' · SOURCE' : ''}`, target: { draftId: r.draftId, revision: r.number }, definition: r.definition, disabled: editor.hasUnsavedChanges || r.kind === 'SOURCE' });
+          const v = versions?.selected; if (v?.actions.includes(action)) targets.push({ key: v.version.id, label: `Version ${v.version.label} · ${v.version.id}`, target: { versionId: v.version.id } });
           return targets;
         } });
         this.scenariosElement = scenarios;
@@ -83,7 +84,7 @@ export class Gear4jWorkspace extends HTMLElement {
   render() {
     if (!this.context) return;
     const root = this.shadowRoot; root.replaceChildren(el('style', css));
-    const intro = el('div', undefined, 'intro'); intro.append(el('h2', 'Espace de travail'), el('small', `${this.context.identity.subject} · ${this.context.context.id} · stockage durable`)); root.append(intro);
+    const intro = el('div', undefined, 'intro'); intro.append(el('h2', 'Espace de travail'), el('small', `${this.context.identity.principalId} · ${this.context.context.id} · stockage durable`)); root.append(intro);
     const message = el('div', this.message, `message${this.error ? ' error' : ''}`); message.setAttribute('role', 'status'); root.append(message);
     if (this.pending) { const warning = el('div', undefined, 'bar'); warning.append(btn('Abandonner les modifications locales et ouvrir', () => this.perform(() => this.choose(this.pending, true))), btn('Rester sur le draft', () => { this.pending = null; this.message = ''; this.render(); })); root.append(warning); }
     const layout = el('div', undefined, 'layout'); layout.append(this.navigation(), this.details()); root.append(layout);

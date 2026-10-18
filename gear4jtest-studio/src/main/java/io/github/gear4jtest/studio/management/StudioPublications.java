@@ -73,11 +73,11 @@ final class StudioPublications {
             var chain = ResourceAccess.chain(tx, draft);
             requireRead(tx, actor, chain, Permission.PUBLISH);
             var version = new StudioVersion(UUID.randomUUID(), chain.id(), draftId, selected.revisionId(),
-                    selected.number(), chain.runtimeAssemblyLineId(), label, actor.subject(), now(), context.id(),
+                    selected.number(), chain.runtimeAssemblyLineId(), label, actor.principalId(), now(), context.id(),
                     context.applicationBuild(), context.catalogFingerprint(), "application/xml", hash(source), source,
                     definition.schemaVersion(), format.id(), format.version());
             tx.insertVersion(version);
-            audit(tx, actor.subject(), chain, version, AuditEvent.Action.VERSION_CREATED, null);
+            audit(tx, actor.principalId(), chain, version, AuditEvent.Action.VERSION_CREATED, null);
             return view(tx, actor, version);
         });
     }
@@ -142,10 +142,10 @@ final class StudioPublications {
                     throw new StudioProblem(TEST_PUBLICATION_REQUIRED);
             }
             var requested = new StudioPublication(id, mode, REQUESTED,
-                    actor.subject(), now(),
+                    actor.principalId(), now(),
                     null, null, null, null);
             tx.savePublication(requested);
-            audit(tx, actor.subject(), chain, version, mode == StudioPublication.Mode.TEST
+            audit(tx, actor.principalId(), chain, version, mode == StudioPublication.Mode.TEST
                     ? AuditEvent.Action.PUBLICATION_REQUESTED : AuditEvent.Action.PROMOTION_REQUESTED,
                   requested.attemptId());
             return new Attempt(version, requested, true);
@@ -155,11 +155,11 @@ final class StudioPublications {
         StudioProblem.Code failure = null;
         try {
             if (mode == StudioPublication.Mode.TEST)
-                publisher.publishTest(attempt.version(), actor.subject());
+                publisher.publishTest(attempt.version(), actor.principalId());
             else {
                 if (observed(attempt.version(), StudioPublication.Mode.TEST) == null)
                     throw new StudioProblem(TEST_PUBLICATION_REQUIRED);
-                publisher.promoteToRun(attempt.version(), actor.subject());
+                publisher.promoteToRun(attempt.version(), actor.principalId());
             }
         } catch (StudioProblem e) {
             failure = e.code();
@@ -215,7 +215,7 @@ final class StudioPublications {
             tx.savePublication(new StudioPublication(version.id(), mode, state, current.requestedBy(),
                     current.requestedAt(), now(), result == null ? null : result.publishedBy(),
                     result == null ? null : result.publishedAt(), error, current.attemptId()));
-            audit(tx, actor.subject(), chain, version, outcomeAction(mode, state), current.attemptId());
+            audit(tx, actor.principalId(), chain, version, outcomeAction(mode, state), current.attemptId());
             return null;
         });
     }
@@ -252,6 +252,8 @@ final class StudioPublications {
         var actions = new HashSet<String>();
         if (rights.contains(Permission.TEST) && runtime.context().capabilities().contains("CONTROLLED_TEST_VERSION"))
             actions.add("TEST");
+        if (rights.contains(Permission.SIMULATE) && runtime.context().capabilities().contains("SIMULATION"))
+            actions.add("SIMULATE");
         if (publisher != null) {
             if (rights.contains(Permission.PUBLISH) && publisher.capabilities().contains("PUBLISH_TEST"))
                 actions.add("PUBLISH");

@@ -3,7 +3,10 @@ package io.github.gear4jtest.studio.management;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -101,6 +104,11 @@ final class StudioScenarios {
             throw new StudioProblem(INVALID_REQUEST);
         try {
             policy.assertSafeToStore(actor, scope, data);
+            if (data.simulation() != null) {
+                if (!policy.simulationEnabled())
+                    throw new SecurityException("Simulation disabled");
+                policy.assertSafeSimulationToStore(actor, scope, data.simulation());
+            }
         } catch (RuntimeException denied) {
             throw new StudioProblem(SCENARIO_DATA_NOT_ADMITTED);
         }
@@ -114,6 +122,8 @@ final class StudioScenarios {
                 actions.addAll(Set.of("EDIT", "ARCHIVE"));
             if (runtime.context().capabilities().contains("SCENARIO_TEST"))
                 actions.add("SELECT_TARGET");
+            if (simulationEnabled())
+                actions.add("SIMULATE_TARGET");
         }
         return new ScenarioState(s, revision(tx, s, s.head()), actions);
     }
@@ -126,9 +136,10 @@ final class StudioScenarios {
             var scope = lock(tx, actor, scopeId);
             var chainId = scope instanceof StudioChain c ? c.id() : ((StudioDraft) scope).chainId();
             var time = now();
-            var s = new StudioScenario(UUID.randomUUID(), scopeId, chainId, name, actor.subject(), 1, 1, false, time,
+            var s = new StudioScenario(UUID.randomUUID(), scopeId, chainId, name, actor.principalId(), 1, 1, false,
+                    time,
                     time);
-            var r = new ScenarioRevision(s.id(), UUID.randomUUID(), 1, actor.subject(), time, data);
+            var r = new ScenarioRevision(s.id(), UUID.randomUUID(), 1, actor.principalId(), time, data);
             tx.insertScenario(s);
             tx.appendScenarioRevision(r);
             audit(tx, actor, scope, AuditEvent.Action.SCENARIO_CREATED, r.reference(), null, null, null);
@@ -150,7 +161,7 @@ final class StudioScenarios {
             mutable(old, expected);
             var s = new StudioScenario(id, old.resourceId(), old.chainId(), name, old.owner(), old.version() + 1,
                     old.head() + 1, false, old.createdAt(), now());
-            var r = new ScenarioRevision(id, UUID.randomUUID(), s.head(), actor.subject(), now(), data);
+            var r = new ScenarioRevision(id, UUID.randomUUID(), s.head(), actor.principalId(), now(), data);
             tx.updateScenario(s, expected);
             tx.appendScenarioRevision(r);
             audit(tx, actor, scope, AuditEvent.Action.SCENARIO_REVISED, r.reference(), null, null, null);
@@ -223,7 +234,7 @@ final class StudioScenarios {
             throw new StudioProblem(FORBIDDEN);
         if (target == null || requestId == null)
             throw new StudioProblem(INVALID_REQUEST);
-        var selected = store.read(tx -> selection(tx, actor, id, number, target));
+        var selected = store.read(tx -> selection(tx, actor, id, number, target, Permission.TEST));
         admit(actor, selected.scenario().resourceId(), selected.revision().data());
         String input;
         ResolvedFixture fixture;
@@ -251,17 +262,18 @@ final class StudioScenarios {
                              () -> runs.execute(runId, observer -> {
                                  var data = selected.revision().data();
                                  var result = selected.version() == null
-                                         ? runtime.executeScenario(selected.draft(), input, requestId, actor.subject(),
+                                         ? runtime.executeScenario(selected.draft(), input, requestId,
+                                                                   actor.principalId(),
                                                                    data, observer)
                                          : runtime.executeVersionScenario(selected.version(), input, requestId,
-                                                                          actor.subject(), data, observer);
+                                                                          actor.principalId(), data, observer);
                                  var check = result.scenarioCheck() == null
                                          ? new ScenarioCheck(ScenarioCheck.Status.NOT_EVALUATED, java.util.List.of())
                                          : result.scenarioCheck();
                                  return result.withScenario(reference, check).withFixture(fixture);
                              }), () -> store.write(tx -> {
                                  tx.lockDomain(domain(tx, resource(tx, selected.scenario().resourceId())).id());
-                                 var current = selection(tx, actor, id, number, target);
+                                 var current = selection(tx, actor, id, number, target, Permission.TEST);
                                  audit(tx, actor, current.targetScope(), AuditEvent.Action.TEST_REQUESTED, reference,
                                        current.draft().revisionId(), requestId,
                                        current.version() == null ? null : current.version().id());
@@ -271,11 +283,146 @@ final class StudioScenarios {
                              }), selected.scenario().resourceId());
     }
 
+    boolean simulationEnabled() {
+        return policy != null && policy.simulationEnabled() && runtime.context().capabilities().contains("SIMULATION");
+    }
+
+    private Selection simulationSelection(StudioIdentity actor, UUID id, long number, ScenarioTarget target) {
+        if (!simulationEnabled())
+            throw new StudioProblem(FORBIDDEN);
+        if (target == null)
+            throw new StudioProblem(INVALID_REQUEST);
+        var selected = store.read(tx -> selection(tx, actor, id, number, target, Permission.SIMULATE));
+        admit(actor, selected.scenario().resourceId(), selected.revision().data());
+        return selected;
+    }
+
+    SimulationPlan plan(StudioIdentity actor, UUID id, long number, ScenarioTarget target) {
+        var selected = simulationSelection(actor, id, number, target);
+        var plan = runtime.planSimulation(selected.draft().requireDefinition(), selected.revision().data());
+        var diagnostics = new ArrayList<>(plan.diagnostics());
+        diagnostics.addAll(historicalDiagnostics(selected, runtime.context(), plan.catalogFingerprint()));
+        return new SimulationPlan(plan.engineVersion(), plan.catalogFingerprint(), diagnostics, plan.substitutions());
+    }
+
+    private static List<Diagnostic> historicalDiagnostics(Selection selected,
+                                                          RuntimeContext context,
+                                                          String catalogFingerprint) {
+        var version = selected.version();
+        if (version == null)
+            return List.of();
+        var diagnostics = new ArrayList<Diagnostic>();
+        if (!Objects.equals(version.runtimeContextId(), context.id()))
+            drift(diagnostics, "runtimeContextId", "Le contexte runtime historique diffère du contexte simulé.");
+        if (!Objects.equals(version.applicationBuild(), context.applicationBuild()))
+            drift(diagnostics, "applicationBuild", "Le build historique diffère du build utilisé pour la simulation.");
+        if (!Objects.equals(version.catalogFingerprint(), catalogFingerprint))
+            drift(diagnostics, "catalogFingerprint",
+                  "Le catalogue historique diffère du catalogue simulé (contrats, bindings ou configuration).");
+        if (version.definitionSchemaVersion() != selected.draft().requireDefinition().schemaVersion())
+            drift(diagnostics, "definitionSchemaVersion", "Le schéma historique diffère du modèle interprété.");
+        return List.copyOf(diagnostics);
+    }
+
+    private static void drift(List<Diagnostic> diagnostics, String field, String message) {
+        diagnostics.add(new Diagnostic(Diagnostic.Severity.WARNING, "HISTORICAL_CONTEXT_DIFFERS",
+                "/context/" + field, message + " Ce résultat ne reproduit pas l’exécution historique."));
+    }
+
+    StudioSimulation simulate(StudioIdentity actor, UUID id, long number, ScenarioTarget target, UUID requestId) {
+        if (requestId == null)
+            throw new StudioProblem(INVALID_REQUEST);
+        var selected = simulationSelection(actor, id, number, target);
+        var previous = store.read(tx -> replay(tx, actor, requestId, selected, target));
+        if (previous != null)
+            return previous;
+        // Pure, bounded substitutions run outside JDBC and domain locks. No Run is
+        // admitted.
+        var context = runtime.context();
+        var result = runtime.simulate(selected.draft().requireDefinition(), selected.revision().data());
+        var diagnostics = historicalDiagnostics(selected, context, result.catalogFingerprint());
+        return store.write(tx -> {
+            tx.lockDomain(domain(tx, resource(tx, selected.scenario().resourceId())).id());
+            var current = selection(tx, actor, id, number, target, Permission.SIMULATE);
+            var duplicate = replay(tx, actor, requestId, current, target);
+            if (duplicate != null)
+                return duplicate;
+            var report = new StudioSimulation(requestId, current.scenario().resourceId(), current.targetScope().id(),
+                    actor.principalId(), now(), context.id(), context.applicationBuild(),
+                    current.revision().reference(),
+                    target, current.draft().revisionId(), current.draft().definition().schemaVersion(),
+                    current.version() == null ? null : current.version().artifactHash(), result, diagnostics);
+            tx.insertSimulation(report);
+            audit(tx, actor, current.targetScope(), AuditEvent.Action.SIMULATION_COMPLETED, report.scenario(),
+                  report.definitionRevisionId(), requestId, target.versionId());
+            return simulationView(tx, actor, report);
+        });
+    }
+
+    private StudioSimulation replay(StudioStore.Session tx,
+                                    StudioIdentity actor,
+                                    UUID id,
+                                    Selection selected,
+                                    ScenarioTarget target) {
+        var report = tx.simulation(id);
+        if (report == null)
+            return null;
+        if (!report.actor().equals(actor.principalId()) || !report.scenario().equals(selected.revision().reference())
+                || !report.target().equals(target))
+            throw new StudioProblem(CONFLICT);
+        return simulationView(tx, actor, report);
+    }
+
+    private StudioSimulation simulationView(StudioStore.Session tx, StudioIdentity actor, StudioSimulation report) {
+        return permissions(tx, actor, resource(tx, report.targetScopeId())).contains(Permission.READ_OBSERVABILITY)
+                ? report : report.withoutCaptures();
+    }
+
+    StudioSimulation simulation(StudioIdentity actor, UUID id) {
+        return store.read(tx -> {
+            var report = tx.simulation(id);
+            if (report == null)
+                throw new StudioProblem(NOT_FOUND);
+            scope(tx, actor, report.scenarioScopeId(), Permission.READ_SCENARIOS);
+            requireRead(tx, actor, resource(tx, report.targetScopeId()), Permission.READ_SIMULATIONS);
+            return simulationView(tx, actor, report);
+        });
+    }
+
+    StudioPage<StudioSimulation> simulations(StudioIdentity actor, UUID scenarioId, String after, int size) {
+        limit(size);
+        String key = "simulations:" + scenarioId;
+        String position = cursors.decode(after, actor, key);
+        return store.read(tx -> {
+            var scenario = found(tx, scenarioId);
+            scope(tx, actor, scenario.resourceId(), Permission.READ_SCENARIOS);
+            var items = new java.util.ArrayList<StudioSimulation>();
+            String cursor = position;
+            int scanned = 0;
+            while (scanned < 500) {
+                var rows = tx.simulations(scenarioId, cursor, Math.min(100, 500 - scanned));
+                if (rows.isEmpty())
+                    return new StudioPage<>(items, null);
+                for (var report : rows) {
+                    scanned++;
+                    cursor = report.id().toString();
+                    var rights = permissions(tx, actor, resource(tx, report.targetScopeId()));
+                    if (rights.contains(Permission.READ) && rights.contains(Permission.READ_SIMULATIONS))
+                        items.add(simulationView(tx, actor, report));
+                    if (items.size() == size)
+                        return new StudioPage<>(items, cursors.encode(cursor, actor, key));
+                }
+            }
+            return new StudioPage<>(items, cursors.encode(cursor, actor, key));
+        });
+    }
+
     private Selection selection(StudioStore.Session tx,
                                 StudioIdentity actor,
                                 UUID id,
                                 long number,
-                                ScenarioTarget target) {
+                                ScenarioTarget target,
+                                Permission permission) {
         var s = found(tx, id);
         var fixtureScope = scope(tx, actor, s.resourceId(), Permission.READ_SCENARIOS);
         if (s.archived())
@@ -285,7 +432,7 @@ final class StudioScenarios {
         if (target.versionId() != null && version == null)
             throw new StudioProblem(NOT_FOUND);
         var targetScope = resource(tx, version == null ? target.draftId() : version.chainId());
-        requireRead(tx, actor, targetScope, Permission.TEST);
+        requireRead(tx, actor, targetScope, permission);
         if (version == null && !(targetScope instanceof StudioDraft))
             throw new StudioProblem(NOT_FOUND);
         UUID chainId = version == null ? ((StudioDraft) targetScope).chainId() : version.chainId();
@@ -311,7 +458,7 @@ final class StudioScenarios {
         var chainId = scope instanceof StudioChain c ? c.id() : ((StudioDraft) scope).chainId();
         tx.appendAudit(new AuditEvent(0, UUID.randomUUID(), domain(tx, scope).id(), chainId,
                 scope instanceof StudioDraft ? scope.id() : null, scope.kind(), scope.id(), scope.version(),
-                actor.subject(), action,
+                actor.principalId(), action,
                 now(), revisionId, requestId, null, null, versionId, null, reference));
     }
 

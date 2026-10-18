@@ -1,17 +1,30 @@
-# Dry-run and mock configuration
+# Runtime dry-run and controlled mock configuration
 
 ## Document control
 
 | Field | Value |
 | --- | --- |
-| Status | Future direction; not implemented |
+| Status | DEFERRED — runtime dry-run and advanced isolation not implemented |
 | Owner | Gear4J maintainers |
-| Last reviewed | 2026-08-12 |
+| Last reviewed | 2026-10-08 |
 | Target version | Post-1.0; unscheduled |
 
 This note keeps the intent behind the former commented dry-run/mock-configuration experiments. The old code should not be
 kept as dead code, but the feature remains important for Gear4J, especially for external pipeline authoring and future BO
 workflows.
+
+## Delivered simulation versus deferred runtime work
+
+| Scope | Status | Guarantee |
+| --- | --- | --- |
+| [Studio P6 declarative simulation](../studio/p6.md) | DELIVERED, experimental | Full per-node substitutions, scalar scenarios, GEL choices and durable reports. No business operator, compiler, executor or external fixture provider is invoked by the simulator. |
+| Gear4J engine dry-run / advanced isolation | DEFERRED | Would execute the real engine with controlled substitutions and explicit treatment of effects, events, persistence, nested calls and resource isolation. No delivered guarantee yet. |
+
+The test-only differential conformity suite executes pure operators through the
+real engine to check P6 semantics. It does not add a runtime dry-run product API,
+prove arbitrary business code isolation or implement the design below.
+The next proposed step is [Studio release-readiness](../studio/release-readiness.md),
+not automatic implementation of this deferred work.
 
 ## Why this matters
 

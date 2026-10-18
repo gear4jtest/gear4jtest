@@ -18,7 +18,7 @@ public record AccessGrant(SubjectType subjectType, String subject, Set<Permissio
 
     public boolean matches(StudioIdentity actor) {
         return switch (subjectType) {
-            case USER -> subject.equals(actor.subject());
+            case USER -> subject.equals(actor.principalId());
             case GROUP -> actor.groups().contains(subject);
             case AUTHENTICATED -> true;
         };

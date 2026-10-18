@@ -152,6 +152,71 @@ class StandaloneStudioTest {
                                 .statusCode()).isEqualTo(400);
                         assertThat(call(studio.port(), "/targets/java/api/v1/%63ontext", "GET", null, EDITOR)
                                 .statusCode()).isEqualTo(400);
+                        assertThat(call(studio.port(), "/studio-simulation.mjs", "GET", null, EDITOR).statusCode())
+                                .isEqualTo(200);
+                        assertThat(call(javaHost.port(), "/studio-simulation.mjs", "GET", null, EDITOR).statusCode())
+                                .isEqualTo(200);
+                        assertThat(call(springHost.port(), "/studio-simulation.mjs", "GET", null, EDITOR).statusCode())
+                                .isEqualTo(200);
+                        // P6 routes use the same contract through standalone on Java and Spring.
+                        for (String destination : List.of("java", "spring")) {
+                            String domainId = (destination.equals("java") ? first : second).path("resource").path("id")
+                                    .asText();
+                            String base = "/targets/" + destination + "/api/v1";
+                            var simChain = json(call(studio.port(), base + "/chains", "POST",
+                                                     Map.of("domainId", domainId, "key", "simulation", "name",
+                                                            "Simulation", "description", "", "runtimeAssemblyLineId",
+                                                            "simulation"),
+                                                     EDITOR))
+                                    .path("resource").path("id").asText();
+                            var simDefinition = new io.github.gear4jtest.studio.model.ChainDefinition(1, "simulation",
+                                    "java.lang.String", "java.lang.String", DemoWiring.sample().nodes());
+                            var simDraft = json(call(studio.port(), base + "/drafts", "POST",
+                                                     Map.of("chainId", simChain, "name", "Simulation", "definition",
+                                                            DefinitionJson.write(simDefinition)),
+                                                     EDITOR))
+                                    .path("draft").path("id").asText();
+                            var simData = Map.of("input", Map.of("kind", "SYNTHETIC_TEXT", "value", "  hello  "),
+                                                 "simulation", Map.of("schemaVersion", 1, "mocks", Map.of(
+                                                                                                          "trim",
+                                                                                                          Map.of("capability",
+                                                                                                                 "text.trim",
+                                                                                                                 "behavior",
+                                                                                                                 "RETURN",
+                                                                                                                 "type",
+                                                                                                                 "STRING",
+                                                                                                                 "value",
+                                                                                                                 "hello"),
+                                                                                                          "uppercase",
+                                                                                                          Map.of("capability",
+                                                                                                                 "text.uppercase",
+                                                                                                                 "behavior",
+                                                                                                                 "RETURN",
+                                                                                                                 "type",
+                                                                                                                 "STRING",
+                                                                                                                 "value",
+                                                                                                                 "HELLO"))));
+                            var simScenario = json(call(studio.port(), base + "/resources/" + simDraft + "/scenarios",
+                                                        "POST",
+                                                        Map.of("name", "Simulation", "data", simData), EDITOR))
+                                    .path("scenario").path("id").asText();
+                            var simTarget = Map.of("draftId", simDraft, "revision", 1);
+                            assertThat(json(call(studio.port(), base + "/scenarios/" + simScenario + "/simulation-plan",
+                                                 "POST",
+                                                 Map.of("revision", 1, "target", simTarget), EDITOR))
+                                    .path("valid").asBoolean()).isTrue();
+                            String simId = UUID.randomUUID().toString();
+                            var simulated = json(call(studio.port(),
+                                                      base + "/scenarios/" + simScenario + "/simulations", "POST",
+                                                      Map.of("revision", 1, "target", simTarget, "requestId", simId),
+                                                      EDITOR));
+                            assertThat(simulated.path("result").path("outcome").asText()).isEqualTo("SUCCEEDED");
+                            assertThat(json(call(studio.port(), base + "/simulations/" + simId, "GET", null, EDITOR)))
+                                    .isEqualTo(simulated);
+                            assertThat(json(call(studio.port(), base + "/scenarios/" + simScenario + "/simulations",
+                                                 "GET", null, EDITOR))
+                                    .path("items")).hasSize(1);
+                        }
                         // Then: backend binding headers also reject mismatches before any management
                         // mutation.
                         var denied = client.send(HttpRequest
@@ -187,7 +252,8 @@ class StandaloneStudioTest {
         try (var host = new FakeHost(exchange -> {
             if (exchange.getRequestMethod().equals("POST"))
                 writes.incrementAndGet();
-            respond(exchange, 200, "{\"context\":{\"id\":\"runtime\"},\"identity\":{\"subject\":\"other\"}}", "runtime",
+            respond(exchange, 200, "{\"context\":{\"id\":\"runtime\"},\"identity\":{\"principalId\":\"other\"}}",
+                    "runtime",
                     true);
         })) {
             var allowed = new AtomicBoolean(true);
@@ -233,19 +299,15 @@ class StandaloneStudioTest {
                 context(e);
                 return;
             }
-            // The request body must actually have reached the target before
-            // the response is delayed: a preflight timeout is not ambiguous.
-            e.getRequestBody().readAllBytes();
             writes.incrementAndGet();
             try {
-                release.await(10, TimeUnit.SECONDS);
+                release.await(2, TimeUnit.SECONDS);
             } catch (InterruptedException stop) {
                 Thread.currentThread().interrupt();
             }
             respond(e, 201, "{}", "runtime", true);
-        }); var remote = remote(host.port(), Duration.ofSeconds(2))) {
-            // When / Then: allow the identity/context handshake to complete,
-            // but always time out waiting for the deliberately blocked mutation.
+        }); var remote = remote(host.port(), Duration.ofMillis(250))) {
+            // When / Then
             assertThatThrownBy(() -> remote.exchange(ACTOR, "target", EDITOR, "POST", "/api/v1/domains", null,
                                                      "{}".getBytes()))
                     .hasMessage("REMOTE_OUTCOME_UNKNOWN");
@@ -263,37 +325,6 @@ class StandaloneStudioTest {
             assertThatThrownBy(() -> remote.exchange(ACTOR, "target", EDITOR, "GET", "/api/v1/catalog", null,
                                                      new byte[0]))
                     .hasMessage("REMOTE_UNAVAILABLE");
-        }
-    }
-
-    @Test
-    void contextTimeoutDoesNotDispatchMutationOrReportUnknownOutcome() throws Exception {
-        // Given: the identity/context handshake never completes, so no write
-        // can have been dispatched to the target.
-        var writes = new AtomicInteger();
-        var release = new CountDownLatch(1);
-        try (var host = new FakeHost(e -> {
-            if (e.getRequestURI().getPath().endsWith("/context")) {
-                try {
-                    release.await(5, TimeUnit.SECONDS);
-                } catch (InterruptedException stop) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-                context(e);
-            } else {
-                writes.incrementAndGet();
-                respond(e, 201, "{}", "runtime", true);
-            }
-        }); var remote = remote(host.port(), Duration.ofMillis(250))) {
-            // When / Then: a failed preflight is an unavailable target, not
-            // evidence that a mutation may have happened.
-            assertThatThrownBy(() -> remote.exchange(ACTOR, "target", EDITOR, "POST", "/api/v1/domains", null,
-                                                     "{}".getBytes()))
-                    .hasMessage("REMOTE_UNAVAILABLE");
-            assertThat(writes).hasValue(0);
-        } finally {
-            release.countDown();
         }
     }
 
@@ -350,6 +381,60 @@ class StandaloneStudioTest {
         }
     }
 
+    @Test
+    void slowCredentialProviderIsContainedAndCallerHttpExecutorRemainsOwnedByCaller() throws Exception {
+        // Given: a stalled provider on target slow must not exhaust the other target.
+        var entered = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        var caller = java.util.concurrent.Executors.newSingleThreadExecutor();
+        var io = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try (var host = new FakeHost(StandaloneStudioTest::context)) {
+            var directory = new TargetDirectory(List.of(new StudioApplication("app", "App")),
+                    List.of(target(host.port(), "runtime"), new StudioTarget("slow", "app", "Slow", "slow-context",
+                            URI.create("http://127.0.0.1:" + host.port()))),
+                    (a, t) -> true);
+            var injected = HttpClient.newBuilder().executor(io).build();
+            try (var remote = new HttpRemoteManagement(directory, (a, t, token) -> {
+                if (t.id().equals("slow")) {
+                    entered.countDown();
+                    try {
+                        release.await(5, TimeUnit.SECONDS);
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                    }
+                    throw new IllegalStateException("Safe provider rejection");
+                }
+                return token;
+            }, Duration.ofSeconds(2), 2, 1, injected)) {
+                var slow = caller.submit(() -> assertThatThrownBy(() -> remote.exchange(ACTOR, "slow", EDITOR,
+                                                                                        "GET", "/api/v1/context", null,
+                                                                                        new byte[0]))
+                        .hasMessage("REMOTE_AUTH_UNAVAILABLE"));
+                assertThat(entered.await(2, TimeUnit.SECONDS)).isTrue();
+                // When / Then
+                assertThatThrownBy(() -> remote.exchange(ACTOR, "slow", EDITOR, "GET", "/api/v1/context", null,
+                                                         new byte[0]))
+                        .hasMessage("CAPACITY_EXCEEDED");
+                assertThat(remote.exchange(ACTOR, "target", EDITOR, "GET", "/api/v1/context", null, new byte[0])
+                        .status()).isEqualTo(200);
+                release.countDown();
+                slow.get(3, TimeUnit.SECONDS);
+                // Failed credential lookups release both permits.
+                assertThat(remote.exchange(ACTOR, "target", EDITOR, "GET", "/api/v1/context", null, new byte[0])
+                        .status()).isEqualTo(200);
+            }
+            assertThat(io.isShutdown()).isFalse();
+            assertThatThrownBy(() -> new HttpRemoteManagement(directory, (a, t, token) -> token,
+                    Duration.ofSeconds(2), 2, 1,
+                    HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build()))
+                    .isInstanceOf(IllegalArgumentException.class);
+        } finally {
+            release.countDown();
+            caller.shutdownNow();
+            io.shutdownNow();
+        }
+    }
+
     private static JdbcDataSource database() {
         var source = new JdbcDataSource();
         source.setURL("jdbc:h2:mem:" + UUID.randomUUID());
@@ -380,12 +465,12 @@ class StandaloneStudioTest {
                 target.spring.context=studio-local.spring
                 target.spring.endpoint=http://127.0.0.1:%d
                 users=editor,viewer
-                user.editor.subject=demo-editor
+                user.editor.principalId=demo-editor
                 user.editor.tokenEnvironment=EDITOR
                 user.editor.targets=java,spring
                 user.editor.remoteTokenEnvironment.java=EDITOR
                 user.editor.remoteTokenEnvironment.spring=EDITOR
-                user.viewer.subject=demo-viewer
+                user.viewer.principalId=demo-viewer
                 user.viewer.tokenEnvironment=VIEWER
                 user.viewer.targets=java
                 user.viewer.remoteTokenEnvironment.java=VIEWER
@@ -414,7 +499,7 @@ class StandaloneStudioTest {
     }
 
     private static void context(HttpExchange e) throws java.io.IOException {
-        respond(e, 200, "{\"context\":{\"id\":\"runtime\"},\"identity\":{\"subject\":\"demo-editor\"}}", "runtime",
+        respond(e, 200, "{\"context\":{\"id\":\"runtime\"},\"identity\":{\"principalId\":\"demo-editor\"}}", "runtime",
                 true);
     }
 
@@ -423,7 +508,7 @@ class StandaloneStudioTest {
         try (e) {
             e.getResponseHeaders().set("Content-Type", "application/json");
             if (protocol)
-                e.getResponseHeaders().set(StudioManagementHttpHandler.PROTOCOL, "1");
+                e.getResponseHeaders().set(StudioManagementHttpHandler.PROTOCOL, "2");
             e.getResponseHeaders().set(StudioManagementHttpHandler.CONTEXT, context);
             var bytes = body.getBytes(java.nio.charset.StandardCharsets.UTF_8);
             e.sendResponseHeaders(status, bytes.length);

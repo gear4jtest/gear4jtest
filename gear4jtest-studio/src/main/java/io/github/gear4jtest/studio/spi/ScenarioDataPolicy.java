@@ -17,6 +17,24 @@ public interface ScenarioDataPolicy {
     void assertSafeToStore(StudioIdentity actor, UUID scope, ScenarioData data);
 
     /**
+     * Explicit opt-in: existing fixture policies do not implicitly admit mock
+     * payloads.
+     */
+    default boolean simulationEnabled() {
+        return false;
+    }
+
+    /**
+     * Admission only, never rewrite synthetic mock values. Called on save and
+     * simulation.
+     */
+    default void assertSafeSimulationToStore(StudioIdentity actor,
+                                             UUID scope,
+                                             io.github.gear4jtest.studio.model.SimulationProfile profile) {
+        throw new SecurityException("Simulation data is not admitted");
+    }
+
+    /**
      * Resolve a FIXTURE_REFERENCE only, outside management transactions. Studio
      * never calls this for SYNTHETIC_TEXT: admission may refuse that text, but the
      * persisted value is replayed verbatim. The returned fingerprint is bound to

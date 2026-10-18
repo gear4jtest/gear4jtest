@@ -193,4 +193,9 @@ simple and move optional integrations to dedicated modules.
 
 See `docs/production-readiness.md` before using Gear4J operationally.
 
-Le module optionnel [Gear4J Studio P5](docs/studio/p5.md) propose maintenant un Studio autonome fédérant plusieurs applications Java/Spring. Chaque cible conserve son management, ses scénarios et son cycle Draft → Revision → Version → TEST → RUN. Le mode embarqué reste indépendant. Les composants sont distribuables via [@gear4j/studio-web 0.5.0](gear4jtest-studio-web/README.md).
+Le module optionnel [Gear4J Studio P6](docs/studio/p6.md) ajoute la simulation par substitutions explicites, ses scénarios versionnés et rapports durables au Studio embarqué ou fédéré Java/Spring. Chaque cible conserve son management et son cycle Draft → Revision → Version → TEST → RUN. Les composants sont distribuables via [@gear4j/studio-web 0.6.1](gear4jtest-studio-web/README.md).
+
+P6 est clôturée par la [revue de conformité et des contrats](docs/studio/p6-closure.md).
+La [phase proposée de préparation à la release](docs/studio/release-readiness.md)
+qualifiera migrations, PostgreSQL, navigateur, distribution et APIs avant un nouvel axe produit.
+Le dry-run du moteur Gear4J avec isolation avancée reste différé.

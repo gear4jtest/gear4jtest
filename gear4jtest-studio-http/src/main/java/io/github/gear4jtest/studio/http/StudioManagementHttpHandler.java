@@ -23,13 +23,14 @@ import io.github.gear4jtest.studio.service.StudioProblem;
 /**
  * Public optional JDK HTTP adapter. Host owns server, bounded executor, TLS,
  * origin/CSRF policy and authentication. No identity is accepted from DTOs.
- * Expected-context/subject headers constrain an authenticated call; they never
- * authenticate or grant any permission.
+ * Expected-context/principal headers constrain an authenticated call; they
+ * never authenticate or grant any permission.
  */
 public final class StudioManagementHttpHandler implements HttpHandler {
+    public static final String PROTOCOL_VERSION = "2";
     public static final String PROTOCOL = "X-Gear4J-Management-Protocol";
     public static final String EXPECTED_CONTEXT = "X-Gear4J-Expected-Context";
-    public static final String EXPECTED_SUBJECT = "X-Gear4J-Expected-Subject";
+    public static final String EXPECTED_PRINCIPAL = "X-Gear4J-Expected-Principal";
     public static final String CONTEXT = "X-Gear4J-Runtime-Context";
     private final ManagementRoutes routes;
     private final StudioManagementService service;
@@ -66,20 +67,20 @@ public final class StudioManagementHttpHandler implements HttpHandler {
                 try (var scope = actors.bind(identity)) {
                     context = service.context().id();
                 }
-                exchange.getResponseHeaders().set(PROTOCOL, "1");
+                exchange.getResponseHeaders().set(PROTOCOL, PROTOCOL_VERSION);
                 exchange.getResponseHeaders().set(CONTEXT, context);
                 String expected = exchange.getRequestHeaders().getFirst(EXPECTED_CONTEXT);
-                String subject = exchange.getRequestHeaders().getFirst(EXPECTED_SUBJECT);
-                String encodedSubject = java.util.Base64.getUrlEncoder().withoutPadding()
-                        .encodeToString(identity.subject().getBytes(StandardCharsets.UTF_8));
+                String principal = exchange.getRequestHeaders().getFirst(EXPECTED_PRINCIPAL);
+                String encodedPrincipal = java.util.Base64.getUrlEncoder().withoutPadding()
+                        .encodeToString(identity.principalId().getBytes(StandardCharsets.UTF_8));
                 if (expected != null && !expected.equals(context)
-                        || subject != null && !subject.equals(encodedSubject)) {
+                        || principal != null && !principal.equals(encodedPrincipal)) {
                     json(exchange, 409, Map.of("code", "REMOTE_BINDING_MISMATCH"));
                     return;
                 }
                 String method = exchange.getRequestMethod();
-                if (method.equals("GET")
-                        && exchange.getRequestURI().getPath().matches("/api/v1/runs/[a-fA-F0-9-]{36}/events")) {
+                if (ManagementEndpoint.match(method, exchange.getRequestURI().getPath())
+                        .orElse(null) == ManagementEndpoint.RUN_EVENTS) {
                     stream(exchange, identity);
                     return;
                 }
@@ -162,7 +163,7 @@ public final class StudioManagementHttpHandler implements HttpHandler {
             for (int tick = 0; tick < 15; tick++) {
                 try {
                     var actor = authenticate.apply(exchange);
-                    if (actor == null || !actor.subject().equals(initialActor.subject()))
+                    if (actor == null || !actor.principalId().equals(initialActor.principalId()))
                         throw new StudioProblem(StudioProblem.Code.UNAUTHENTICATED);
                     try (var scope = actors.bind(actor)) {
                         current = service.run(id);

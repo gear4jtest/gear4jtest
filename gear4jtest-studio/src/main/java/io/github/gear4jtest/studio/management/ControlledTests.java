@@ -93,7 +93,7 @@ final class ControlledTests {
                            StudioRuntime runtime,
                            Runnable admission) {
         return execute(actor, revision.draftId(), revision.revisionId(), requestId, input,
-                       () -> runtime.execute(revision, input, requestId, actor.subject()), admission);
+                       () -> runtime.execute(revision, input, requestId, actor.principalId()), admission);
     }
 
     TestSubmission execute(StudioIdentity actor,
@@ -119,16 +119,16 @@ final class ControlledTests {
         Receipt receipt;
         synchronized (this) {
             expire();
-            byte[] digest = fingerprint(actor.subject(), contentId, input);
+            byte[] digest = fingerprint(actor.principalId(), contentId, input);
             receipt = receipts.get(requestId);
             if (receipt != null) {
-                if (!actor.subject().equals(receipt.actor) || !MessageDigest.isEqual(digest, receipt.fingerprint))
+                if (!actor.principalId().equals(receipt.actor) || !MessageDigest.isEqual(digest, receipt.fingerprint))
                     throw new StudioProblem(CONFLICT);
                 touch(requestId, receipt);
                 return receipt.submission;
             }
             makeRoom();
-            receipt = new Receipt(actor.subject(), resourceId, digest,
+            receipt = new Receipt(actor.principalId(), resourceId, digest,
                     new TestSubmission(requestId, TestSubmission.State.RUNNING, null, null), scenarioResourceId);
             receipts.put(requestId, receipt);
         }

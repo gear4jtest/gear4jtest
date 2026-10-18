@@ -15,8 +15,8 @@ final class AccessDelegation {
     }
 
     static boolean administrator(StudioStore.Session tx, StudioIdentity actor, ManagedResource resource) {
-        return actor.administrator() || actor.subject().equals(resource.owner())
-                || actor.subject().equals(ResourceAccess.domain(tx, resource).owner());
+        return actor.administrator() || actor.principalId().equals(resource.owner())
+                || actor.principalId().equals(ResourceAccess.domain(tx, resource).owner());
     }
 
     static Set<Permission> grantable(StudioStore.Session tx, StudioIdentity actor, ManagedResource resource) {

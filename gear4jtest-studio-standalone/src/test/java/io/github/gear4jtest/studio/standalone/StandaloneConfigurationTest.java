@@ -20,7 +20,7 @@ class StandaloneConfigurationTest {
             target.target.context=runtime
             target.target.endpoint=https://example.invalid/management
             users=user
-            user.user.subject=alice
+            user.user.principalId=alice
             user.user.tokenEnvironment=STUDIO_TOKEN
             user.user.targets=target
             user.user.remoteTokenEnvironment.target=REMOTE_TOKEN

@@ -82,7 +82,7 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
         xml = new StudioXmlAdapter(catalog);
         context = new RuntimeContext(id, applicationBuild, catalog.fingerprint(),
                 Set.of("DRAFT", "VALIDATE", "CONTROLLED_TEST", "CONTROLLED_TEST_STRING", "CONTROLLED_TEST_VERSION",
-                       "XML_SUBSET", "SCENARIO_TEST"));
+                       "XML_SUBSET", "SCENARIO_TEST", "SIMULATION"));
         observations = new RunObservationDispatcher();
     }
 
@@ -128,6 +128,19 @@ public final class LocalGear4jRuntime implements StudioRuntime, AutoCloseable {
     private void format(String mediaType) {
         if (!"application/xml".equals(mediaType))
             throw new StudioProblem(StudioProblem.Code.UNSUPPORTED_FORMAT);
+    }
+
+    @Override
+    public io.github.gear4jtest.studio.model.SimulationPlan planSimulation(ChainDefinition definition,
+                                                                           ScenarioData data) {
+        return new DeclarativeSimulator(catalog, capture).plan(definition, data);
+    }
+
+    @Override
+    public io.github.gear4jtest.studio.model.SimulationResult simulate(ChainDefinition definition, ScenarioData data) {
+        if (closed)
+            throw new StudioProblem(StudioProblem.Code.CAPACITY_EXCEEDED);
+        return new DeclarativeSimulator(catalog, capture).simulate(definition, data);
     }
 
     @Override

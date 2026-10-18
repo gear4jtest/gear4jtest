@@ -29,7 +29,7 @@ public final class StandaloneStudioServer implements AutoCloseable {
                                                      "studio-client.mjs", "management-client.mjs",
                                                      "studio-workspace.mjs", "studio-element.mjs",
                                                      "studio-runs.mjs", "studio-versions.mjs", "studio-scenarios.mjs",
-                                                     "studio-targets.mjs");
+                                                     "studio-targets.mjs", "studio-simulation.mjs");
 
     public StandaloneStudioServer(int port,
                                   TargetDirectory directory,
@@ -79,7 +79,7 @@ public final class StandaloneStudioServer implements AutoCloseable {
                     throw new RemoteProblem("UNAUTHENTICATED", 401);
                 if (path.equals("/studio/api/v1/targets") && exchange.getRequestMethod().equals("GET")
                         && uri.getRawQuery() == null) {
-                    json(exchange, 200, Map.of("identity", actor.subject(), "targets", directory.visible(actor)));
+                    json(exchange, 200, Map.of("identity", actor.principalId(), "targets", directory.visible(actor)));
                     return;
                 }
                 String[] parts = path.split("/", 4);

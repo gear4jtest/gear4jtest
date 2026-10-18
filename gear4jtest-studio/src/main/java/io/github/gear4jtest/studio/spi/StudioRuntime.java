@@ -81,6 +81,19 @@ public interface StudioRuntime {
                 io.github.gear4jtest.studio.service.StudioProblem.Code.UNSUPPORTED_CONTRACT);
     }
 
+    /** Full substitution only; unsupported adapters fail closed. */
+    default io.github.gear4jtest.studio.model.SimulationPlan planSimulation(ChainDefinition definition,
+                                                                            io.github.gear4jtest.studio.model.ScenarioData data) {
+        throw new io.github.gear4jtest.studio.service.StudioProblem(
+                io.github.gear4jtest.studio.service.StudioProblem.Code.UNSUPPORTED_CONTRACT);
+    }
+
+    default io.github.gear4jtest.studio.model.SimulationResult simulate(ChainDefinition definition,
+                                                                        io.github.gear4jtest.studio.model.ScenarioData data) {
+        throw new io.github.gear4jtest.studio.service.StudioProblem(
+                io.github.gear4jtest.studio.service.StudioProblem.Code.UNSUPPORTED_CONTRACT);
+    }
+
     /** Optional progress snapshots; adapters may emit only the final result. */
     default ControlledRun executeObserved(DraftRevision revision,
                                           String input,

@@ -10,7 +10,9 @@ import io.github.gear4jtest.studio.management.StudioIdentity;
 
 /**
  * Immutable host allowlist. Visibility does not grant any remote resource
- * permission.
+ * permission. Context IDs are globally scoped store identities, not labels such
+ * as prod. A target/context binding must not be reassigned to another
+ * application; shared replicas sit behind one target.
  */
 public final class TargetDirectory {
     private final Map<String, StudioApplication> applications;
@@ -34,6 +36,10 @@ public final class TargetDirectory {
                     || this.targets.putIfAbsent(target.id(), target) != null
                     || !contexts.add(target.runtimeContextId()))
                 throw new IllegalArgumentException("Ambiguous target binding");
+    }
+
+    int targetCount() {
+        return targets.size();
     }
 
     public List<TargetView> visible(StudioIdentity actor) {

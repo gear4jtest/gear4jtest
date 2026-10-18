@@ -18,21 +18,19 @@ import io.github.gear4jtest.studio.management.StudioIdentity;
 
 /**
  * Bounded, no-redirect adapter. Never retries an application request. Every
- * operation checks protocol/context/subject; the remote endpoint repeats the
+ * operation checks protocol/context/principal; the remote endpoint repeats the
  * binding check on the actual call before invoking management. Remote services
  * remain authoritative for ACL, persistence, idempotency and audit.
  */
 public final class HttpRemoteManagement implements AutoCloseable {
-    private final java.util.concurrent.ExecutorService io = Executors.newFixedThreadPool(4, task -> {
-        var thread = new Thread(task, "studio-remote-http");
-        thread.setDaemon(true);
-        return thread;
-    });
+    private final java.util.concurrent.ExecutorService ownedIo;
     private final HttpClient client;
     private final TargetDirectory directory;
     private final TargetCredentials credentials;
     private final Duration timeout;
     private final Semaphore capacity;
+    private final int perTargetCapacity;
+    private final java.util.Map<String, Semaphore> targets = new ConcurrentHashMap<>();
     private final Set<CompletableFuture<?>> pending = ConcurrentHashMap.newKeySet();
     private volatile boolean closed;
 
@@ -44,15 +42,47 @@ public final class HttpRemoteManagement implements AutoCloseable {
                                 TargetCredentials credentials,
                                 Duration timeout,
                                 int capacity) {
+        this(directory, credentials, timeout, capacity, Math.min(2, capacity), null);
+    }
+
+    /**
+     * Optional caller-owned HTTP client, e.g. with mTLS, trust store or proxy.
+     * Redirects, cookie state and authenticators are forbidden: only explicit
+     * per-request delegated credentials may cross the target boundary. Caller
+     * executors are never closed. Per-call deadline and response bounds still
+     * apply.
+     */
+    public HttpRemoteManagement(TargetDirectory directory,
+                                TargetCredentials credentials,
+                                Duration timeout,
+                                int capacity,
+                                int perTargetCapacity,
+                                HttpClient client) {
         if (timeout == null || timeout.toMillis() < 50 || timeout.compareTo(Duration.ofMinutes(2)) > 0
-                || capacity < 1 || capacity > 32)
+                || capacity < 1 || capacity > 32 || perTargetCapacity < 1 || perTargetCapacity > capacity)
             throw new IllegalArgumentException("Invalid remote limits");
+        if (client != null && (client.followRedirects() != HttpClient.Redirect.NEVER
+                || client.cookieHandler().isPresent() || client.authenticator().isPresent()))
+            throw new IllegalArgumentException("Remote client must not redirect or carry implicit credentials");
         this.directory = java.util.Objects.requireNonNull(directory);
+        if (directory.targetCount() > 1 && perTargetCapacity >= capacity)
+            throw new IllegalArgumentException("Multi-target capacity must reserve space for other targets");
         this.credentials = java.util.Objects.requireNonNull(credentials);
         this.timeout = timeout;
         this.capacity = new Semaphore(capacity);
-        client = HttpClient.newBuilder().executor(io).connectTimeout(timeout)
-                .followRedirects(HttpClient.Redirect.NEVER).version(HttpClient.Version.HTTP_1_1).build();
+        this.perTargetCapacity = perTargetCapacity;
+        if (client == null) {
+            ownedIo = Executors.newFixedThreadPool(4, task -> {
+                var thread = new Thread(task, "studio-remote-http");
+                thread.setDaemon(true);
+                return thread;
+            });
+            this.client = HttpClient.newBuilder().executor(ownedIo).connectTimeout(timeout)
+                    .followRedirects(HttpClient.Redirect.NEVER).version(HttpClient.Version.HTTP_1_1).build();
+        } else {
+            ownedIo = null;
+            this.client = client;
+        }
     }
 
     public Response exchange(StudioIdentity actor,
@@ -67,8 +97,14 @@ public final class HttpRemoteManagement implements AutoCloseable {
                 || query.contains("#") || query.chars().anyMatch(Character::isISOControl))
                 || body == null || body.length > 65536 || method.equals("GET") && body.length != 0)
             throw new RemoteProblem("INVALID_REQUEST", 400);
-        if (closed || !capacity.tryAcquire())
+        // Directory is immutable and bounded; unregistered keys never enter this map.
+        var targetCapacity = targets.computeIfAbsent(targetId, ignored -> new Semaphore(perTargetCapacity));
+        if (closed || !targetCapacity.tryAcquire())
             throw new RemoteProblem("CAPACITY_EXCEEDED", 429);
+        if (!capacity.tryAcquire()) {
+            targetCapacity.release();
+            throw new RemoteProblem("CAPACITY_EXCEEDED", 429);
+        }
         boolean mutation = !method.equals("GET");
         boolean dispatched = false;
         try {
@@ -90,7 +126,7 @@ public final class HttpRemoteManagement implements AutoCloseable {
             var info = StudioJson.mapper().readTree(context.body());
             if (!target.runtimeContextId().equals(info.path("context").path("id").asText()))
                 throw new RemoteProblem("REMOTE_CONTEXT_MISMATCH", 409);
-            if (!actor.subject().equals(info.path("identity").path("subject").asText()))
+            if (!actor.principalId().equals(info.path("identity").path("principalId").asText()))
                 throw new RemoteProblem("REMOTE_IDENTITY_MISMATCH", 409);
             if (method.equals("GET") && path.equals("/api/v1/context") && query == null)
                 return new Response(200, context.body());
@@ -116,6 +152,7 @@ public final class HttpRemoteManagement implements AutoCloseable {
             throw new RemoteProblem("REMOTE_UNAVAILABLE", 502);
         } finally {
             capacity.release();
+            targetCapacity.release();
         }
     }
 
@@ -131,8 +168,9 @@ public final class HttpRemoteManagement implements AutoCloseable {
                 .newBuilder(URI.create(target.endpoint().toASCIIString() + path + (query == null ? "" : "?" + query)))
                 .timeout(timeout).header("Authorization", "Bearer " + token).header("Accept", "application/json")
                 .header(StudioManagementHttpHandler.EXPECTED_CONTEXT, target.runtimeContextId())
-                .header(StudioManagementHttpHandler.EXPECTED_SUBJECT, java.util.Base64.getUrlEncoder().withoutPadding()
-                        .encodeToString(actor.subject().getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+                .header(StudioManagementHttpHandler.EXPECTED_PRINCIPAL,
+                        java.util.Base64.getUrlEncoder().withoutPadding()
+                                .encodeToString(actor.principalId().getBytes(java.nio.charset.StandardCharsets.UTF_8)))
                 .method(method, method.equals("GET") ? HttpRequest.BodyPublishers.noBody() : new OnceBody(body));
         if (!method.equals("GET"))
             request.header("Content-Type", "application/json");
@@ -150,7 +188,8 @@ public final class HttpRemoteManagement implements AutoCloseable {
     }
 
     private static void verify(StudioTarget target, HttpResponse<byte[]> response) {
-        if (!response.headers().firstValue(StudioManagementHttpHandler.PROTOCOL).orElse("").equals("1"))
+        if (!response.headers().firstValue(StudioManagementHttpHandler.PROTOCOL).orElse("")
+                .equals(StudioManagementHttpHandler.PROTOCOL_VERSION))
             throw new RemoteProblem("REMOTE_PROTOCOL_MISMATCH", 409);
         if (!response.headers().firstValue(StudioManagementHttpHandler.CONTEXT).orElse("")
                 .equals(target.runtimeContextId()))
@@ -164,7 +203,8 @@ public final class HttpRemoteManagement implements AutoCloseable {
     public void close() {
         closed = true;
         pending.forEach(future -> future.cancel(true));
-        io.shutdownNow();
+        if (ownedIo != null)
+            ownedIo.shutdownNow();
     }
 
     public record Response(int status, byte[] body) {}

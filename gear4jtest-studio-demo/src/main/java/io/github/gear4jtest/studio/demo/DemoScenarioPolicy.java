@@ -40,6 +40,25 @@ public final class DemoScenarioPolicy implements ScenarioDataPolicy {
     }
 
     @Override
+    public boolean simulationEnabled() {
+        return true;
+    }
+
+    @Override
+    public void assertSafeSimulationToStore(StudioIdentity actor,
+                                            UUID scope,
+                                            io.github.gear4jtest.studio.model.SimulationProfile profile) {
+        for (var mock : profile.mocks().values()) {
+            if (DemoWiring.catalog().find(mock.capability()) == null)
+                throw new IllegalArgumentException("Mock capability not admitted");
+            if (mock.value() != null
+                    && !Set.of("", "hello", "  hello  ", "HELLO", "world", "WORLD", "5", "10", "true", "false")
+                            .contains(mock.value()))
+                throw new IllegalArgumentException("Mock not admitted");
+        }
+    }
+
+    @Override
     public ResolvedScenarioInput resolveFixture(StudioIdentity actor, UUID scope, ScenarioInput input) {
         if (input.kind() == ScenarioInput.Kind.FIXTURE_REFERENCE && input.value().equals("demo/greeting")
                 && input.fixtureVersion().equals("1"))

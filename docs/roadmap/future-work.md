@@ -6,7 +6,7 @@
 | --- | --- |
 | Status | Living backlog |
 | Owner | Gear4J maintainers |
-| Last reviewed | 2026-08-13 |
+| Last reviewed | 2026-10-08 |
 | Review trigger | Before each release candidate and whenever a linked ADR changes status |
 
 This file distinguishes delivered foundations, contract reviews and unscheduled backlog. A backlog entry is not a release
@@ -77,7 +77,8 @@ Status values are `DELIVERED`, `REVIEW`, `BACKLOG` and `DEFERRED`.
 
 | Work item | Status | Target version | ADR / reference | Last verified |
 | --- | --- | --- | --- | --- |
-| Dry-run execution and mock scenarios for BO validation | `BACKLOG` | Post-1.0 | [Dry-run and mock configuration](dry-run-and-mock-configuration.md) | 2026-08-12 |
+| Studio P6 declarative simulation, complete substitutions, no business code execution | `DELIVERED` | Studio P6 (experimental) | [P6](../studio/p6.md), [closure](../studio/p6-closure.md) | 2026-10-08 |
+| Real Gear4J runtime dry-run with controlled mocks and advanced effect isolation | `DEFERRED` | Unscheduled; separate product decision | [Dry-run and mock configuration](dry-run-and-mock-configuration.md) | 2026-10-08 |
 | JSON map codec SPI for external persistence repositories | `BACKLOG` | Post-1.0 | — | 2026-08-12 |
 | JSON translator module | `BACKLOG` | Post-1.0 | — | 2026-08-12 |
 | Pipeline-reference dependency tracking | `BACKLOG` | Post-1.0 | — | 2026-08-12 |

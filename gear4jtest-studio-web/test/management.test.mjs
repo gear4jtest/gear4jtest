@@ -8,7 +8,7 @@ await import('../src/studio-workspace.mjs');
 const definition = { schemaVersion: 1, id: 'sample', inputType: 'java.lang.String', outputType: 'java.lang.String', nodes: [] };
 const permissions = ['READ','EDIT','TEST','VALIDATE','MANAGE_ACCESS','READ_AUDIT','ARCHIVE'];
 const state = { draft: { id: 'draft', chainId: 'chain', name: 'Mon draft', owner: 'alice', version: 7 }, permissions, revision: { draftId: 'draft', revisionId: 'revision', number: 2, definition } };
-const info = { identity: { subject: 'alice' }, context: { id: 'local', capabilities: ['VALIDATE','CONTROLLED_TEST'] }, canCreateDomain: true, permissions, sample: definition };
+const info = { identity: { principalId: 'alice' }, context: { id: 'local', capabilities: ['VALIDATE','CONTROLLED_TEST'] }, canCreateDomain: true, permissions, sample: definition };
 const find = (root, selector, text) => [...root.querySelectorAll(selector)].find(e => e.textContent === text);
 async function settled(element) { for (let i = 0; element.busy && i < 200; i++) await new Promise(r => setTimeout(r, 1)); assert.equal(element.busy, false); }
 function fixture() {

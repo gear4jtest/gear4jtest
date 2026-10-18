@@ -69,6 +69,19 @@ public interface StudioStore {
 
         List<io.github.gear4jtest.studio.model.ScenarioRevision> scenarioRevisions(UUID id, long after, int limit);
 
+        /**
+         * Immutable simulation reports, separate from real run journals. Domain lock
+         * required on insert.
+         */
+        void insertSimulation(io.github.gear4jtest.studio.model.StudioSimulation report);
+
+        io.github.gear4jtest.studio.model.StudioSimulation simulation(UUID id);
+
+        List<io.github.gear4jtest.studio.model.StudioSimulation> simulations(UUID scenarioId, String after, int limit);
+
+        /** Trusted host maintenance, bounded and independent from run retention. */
+        int purgeSimulations(InstantCutoff cutoff);
+
         List<StudioVersion> versions(UUID chainId, String after, int limit);
 
         StudioPublication publication(UUID versionId, StudioPublication.Mode mode);

@@ -6,3 +6,4 @@ export { Gear4jVersions } from './studio-versions.mjs';
 export { Gear4jRuns } from './studio-runs.mjs';
 export { Gear4jScenarios } from './studio-scenarios.mjs';
 export { FederationClient, Gear4jTargets } from './studio-targets.mjs';
+export { Gear4jSimulation } from './studio-simulation.mjs';

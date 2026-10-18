@@ -5,7 +5,7 @@ const dom = new JSDOM('<!doctype html><body></body>', { url: 'http://localhost/'
 for (const name of ['window', 'document', 'HTMLElement', 'customElements', 'CustomEvent']) globalThis[name] = dom.window[name];
 const { FederationClient } = await import('../src/studio-targets.mjs');
 const targets = ['java','spring'].map(id => ({ id, applicationId:id, applicationName:`App ${id}`, name:id === 'java' ? '<img src=x>' : 'Spring', runtimeContextId:`runtime.${id}` }));
-const context = id => ({context:{id:`runtime.${id}`,capabilities:[]},identity:{subject:'alice'},permissions:[],canCreateDomain:false});
+const context = id => ({context:{id:`runtime.${id}`,capabilities:[]},identity:{principalId:'alice'},permissions:[],canCreateDomain:false});
 function fixture() {
   const calls = [];
   const clients = Object.fromEntries(targets.map(t => [t.id, { context: async()=>context(t.id), list:async()=>({items:[],nextCursor:null}) }]));

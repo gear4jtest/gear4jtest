@@ -29,223 +29,195 @@ final class ManagementRoutes {
     record Response(int status, Object value) {}
 
     Response handle(String method, String path, Map<String, String> query, JsonNode body) {
-        if (!path.startsWith("/api/v1/"))
-            throw new StudioProblem(StudioProblem.Code.NOT_FOUND);
+        var endpoint = ManagementEndpoint.match(method, path)
+                .orElseThrow(() -> new StudioProblem(StudioProblem.Code.NOT_FOUND));
         String[] parts = path.substring(8).split("/", -1);
+        UUID id = parts.length >= 2 ? UUID.fromString(parts[1]) : null;
         int size = query.containsKey("limit") ? Integer.parseInt(query.get("limit")) : 25;
         String after = query.get("after");
-        boolean runQuery = parts.length == 3 && parts[0].equals("resources")
-                && Set.of("runs", "metrics").contains(parts[2]);
+        boolean runQuery = endpoint == ManagementEndpoint.RESOURCES_RUNS_GET
+                || endpoint == ManagementEndpoint.RESOURCES_METRICS_GET;
         var queryFields = runQuery
                 ? Set.of("after", "limit", "from", "until", "status", "mode", "versionId", "runId",
                          "minimumDurationMillis")
                 : Set.of("parent", "after", "limit");
         if (query.keySet().stream().anyMatch(k -> !queryFields.contains(k)))
             throw new IllegalArgumentException("Unknown query field");
-        if (parts.length == 1) {
-            String kind = parts[0];
-            if (method.equals("GET") && kind.equals("context"))
-                return ok(Map.of("context", service.context(), "identity", service.identity(),
-                                 "canCreateDomain", service.canCreateDomain(), "permissions", Permission.values(),
-                                 "sample", DefinitionJson.write(sample)));
-            if (method.equals("GET") && kind.equals("catalog"))
-                return ok(service.catalog());
-            if (method.equals("GET") && Set.of("domains", "chains", "drafts").contains(kind)) {
-                ResourceKind resourceKind = switch (kind) {
-                    case "domains" -> ResourceKind.DOMAIN;
-                    case "chains" -> ResourceKind.CHAIN;
-                    default -> ResourceKind.DRAFT;
-                };
-                return ok(service.list(resourceKind,
-                                       query.containsKey("parent") ? UUID.fromString(query.get("parent")) : null, after,
-                                       size));
-            }
-            if (method.equals("POST") && kind.equals("domains")) {
+        return switch (endpoint) {
+            case CONTEXT -> ok(Map.of("context", service.context(), "identity", service.identity(),
+                                      "canCreateDomain", service.canCreateDomain(), "permissions", Permission.values(),
+                                      "sample", DefinitionJson.write(sample)));
+            case CATALOG -> ok(service.catalog());
+            case DOMAINS_LIST, CHAINS_LIST, DRAFTS_LIST -> ok(service.list(switch (endpoint) {
+                case DOMAINS_LIST -> ResourceKind.DOMAIN;
+                case CHAINS_LIST -> ResourceKind.CHAIN;
+                default -> ResourceKind.DRAFT;
+            }, query.containsKey("parent") ? UUID.fromString(query.get("parent")) : null, after, size));
+            case DOMAINS_CREATE -> {
                 fields(body, Set.of("key", "name", "description"));
-                return created(view(service.createDomain(text(body, "key"), text(body, "name"),
-                                                         text(body, "description"))));
+                yield created(view(service.createDomain(text(body, "key"), text(body, "name"),
+                                                        text(body, "description"))));
             }
-            if (method.equals("POST") && kind.equals("chains")) {
+            case CHAINS_CREATE -> {
                 fields(body, Set.of("domainId", "key", "name", "description", "runtimeAssemblyLineId"));
-                return created(view(service.createChain(id(body, "domainId"), text(body, "key"), text(body, "name"),
-                                                        text(body, "description"),
-                                                        text(body, "runtimeAssemblyLineId"))));
+                yield created(view(service.createChain(id(body, "domainId"), text(body, "key"), text(body, "name"),
+                                                       text(body, "description"),
+                                                       text(body, "runtimeAssemblyLineId"))));
             }
-            if (method.equals("POST") && kind.equals("drafts")) {
+            case DRAFTS_CREATE -> {
                 fields(body, Set.of("chainId", "name", "definition"));
-                return created(draft(service.createDraft(id(body, "chainId"), text(body, "name"),
-                                                         DefinitionJson.read(body.path("definition")))));
+                yield created(draft(service.createDraft(id(body, "chainId"), text(body, "name"),
+                                                        DefinitionJson.read(body.path("definition")))));
             }
-            if (method.equals("POST") && kind.equals("import")) {
+            case IMPORT -> {
                 fields(body, Set.of("chainId", "name", "source"));
-                return created(draft(service.importDraft(id(body, "chainId"), text(body, "name"),
-                                                         text(body, "source"))));
+                yield created(draft(service.importDraft(id(body, "chainId"), text(body, "name"),
+                                                        text(body, "source"))));
             }
-        }
-        if (parts.length >= 2) {
-            UUID id = UUID.fromString(parts[1]);
-            if (parts[0].equals("scenarios")) {
-                if (parts.length == 2 && method.equals("GET"))
-                    return ok(service.scenario(id));
-                if (parts.length == 2 && method.equals("PUT")) {
-                    fields(body, Set.of("expectedVersion", "name", "data"));
-                    return ok(service.saveScenario(id, number(body, "expectedVersion"), text(body, "name"),
-                                                   scenarioData(body.path("data"))));
-                }
-                if (parts.length == 3) {
-                    if (parts[2].equals("revisions") && method.equals("GET"))
-                        return ok(service.scenarioRevisions(id, after, size));
-                    if (parts[2].equals("archive") && method.equals("POST")) {
-                        fields(body, Set.of("expectedVersion"));
-                        return ok(service.archiveScenario(id, number(body, "expectedVersion")));
-                    }
-                    if (parts[2].equals("tests") && method.equals("POST")) {
-                        fields(body, Set.of("revision", "target", "requestId"));
-                        var target = body.path("target");
-                        fields(target, Set.of("draftId", "revision", "versionId"));
-                        var pinned = new ScenarioTarget(
-                                optional(target, "draftId") == null ? null : id(target, "draftId"),
-                                target.hasNonNull("revision") ? number(target, "revision") : null,
-                                optional(target, "versionId") == null ? null : id(target, "versionId"));
-                        return ok(service.testScenario(id, number(body, "revision"), pinned, id(body, "requestId")));
-                    }
-                }
+            case RESOURCES_GET -> ok(view(service.resource(id)));
+            case RESOURCES_PUT -> {
+                fields(body, Set.of("expectedVersion", "name", "description"));
+                yield ok(view(service.updateMetadata(id, number(body, "expectedVersion"), text(body, "name"),
+                                                     text(body, "description"))));
             }
-            if (parts[0].equals("runs") && parts.length == 2 && method.equals("GET"))
-                return ok(service.run(id));
-            if (runQuery && method.equals("GET")) {
-                var filter = new io.github.gear4jtest.studio.model.RunFilter(
-                        instant(query, "from"), instant(query, "until"),
+            case RESOURCES_ACCESS_GET -> ok(service.access(id));
+            case RESOURCES_ACCESS_PUT -> {
+                fields(body, Set.of("expectedVersion", "policy"));
+                yield ok(view(service.setAccess(id, number(body, "expectedVersion"), policy(body.path("policy")))));
+            }
+            case RESOURCES_AUDIT_GET -> ok(service.audit(id, after, size));
+            case RESOURCES_ARCHIVE_POST -> {
+                fields(body, Set.of("expectedVersion"));
+                yield ok(view(service.archive(id, number(body, "expectedVersion"))));
+            }
+            case RESOURCES_XML_PREVIEW_POST -> {
+                fields(body, Set.of("source"));
+                var definition = service.previewXml(id, text(body, "source"));
+                yield ok(Map.of("definition", DefinitionJson.write(definition), "source",
+                                service.export(id, definition)));
+            }
+            case RESOURCES_VALIDATE_POST, RESOURCES_EXPORT_POST, RESOURCES_DIAGNOSTICS_POST -> {
+                fields(body, Set.of("definition"));
+                var definition = DefinitionJson.read(body.path("definition"));
+                if (endpoint == ManagementEndpoint.RESOURCES_EXPORT_POST)
+                    yield ok(Map.of("source", service.export(id, definition), "mediaType", "application/xml"));
+                var report = endpoint == ManagementEndpoint.RESOURCES_DIAGNOSTICS_POST ? service.analyze(id, definition)
+                        : service.validate(id, definition);
+                yield ok(Map.of("valid", report.valid(), "diagnostics", report.diagnostics(), "catalogFingerprint",
+                                report.catalogFingerprint()));
+            }
+            case RESOURCES_RUNS_GET, RESOURCES_METRICS_GET -> {
+                var filter = new io.github.gear4jtest.studio.model.RunFilter(instant(query, "from"),
+                        instant(query, "until"),
                         query.get("status"), query.get("mode"),
                         query.containsKey("versionId") ? UUID.fromString(query.get("versionId")) : null,
                         query.containsKey("runId") ? UUID.fromString(query.get("runId")) : null,
                         query.containsKey("minimumDurationMillis") ? Long.valueOf(query.get("minimumDurationMillis"))
                                 : null);
-                return ok(parts[2].equals("runs") ? service.runs(id, filter, after, size)
+                yield ok(endpoint == ManagementEndpoint.RESOURCES_RUNS_GET ? service.runs(id, filter, after, size)
                         : service.metrics(id, filter));
             }
-            if (parts[0].equals("chains") && parts.length == 3 && parts[2].equals("versions") && method.equals("GET"))
-                return ok(service.versions(id, after, size));
-            if (parts[0].equals("versions")) {
-                if (parts.length == 2 && method.equals("GET"))
-                    return ok(service.version(id));
-                if (parts.length == 3 && method.equals("POST")) {
-                    if (parts[2].equals("compare")) {
-                        fields(body, Set.of("otherVersionId"));
-                        return ok(service.compareVersions(id, id(body, "otherVersionId")));
-                    }
-                    if (parts[2].equals("tests")) {
-                        fields(body, Set.of("requestId", "input"));
-                        return ok(service.testVersion(id, id(body, "requestId"), text(body, "input")));
-                    }
-                    fields(body, Set.of());
-                    return switch (parts[2]) {
-                        case "publish" -> ok(service.publishTest(id));
-                        case "promote" -> ok(service.promoteRun(id));
-                        case "refresh" -> ok(service.refreshVersion(id));
-                        default -> throw new StudioProblem(StudioProblem.Code.NOT_FOUND);
-                    };
-                }
+            case DRAFTS_GET -> ok(draft(service.draft(id)));
+            case DRAFTS_PUT -> {
+                fields(body, Set.of("expectedVersion", "definition"));
+                yield ok(draft(service.saveDraft(id, number(body, "expectedVersion"),
+                                                 DefinitionJson.read(body.path("definition")))));
             }
-            if (parts[0].equals("resources")) {
-                if (parts.length == 2 && method.equals("GET"))
-                    return ok(view(service.resource(id)));
-                if (parts.length == 2 && method.equals("PUT")) {
-                    fields(body, Set.of("expectedVersion", "name", "description"));
-                    return ok(view(service.updateMetadata(id, number(body, "expectedVersion"), text(body, "name"),
-                                                          text(body, "description"))));
-                }
-                if (parts.length == 3) {
-                    String action = parts[2];
-                    if (action.equals("scenarios")) {
-                        if (method.equals("GET"))
-                            return ok(service.scenarios(id, after, size));
-                        if (method.equals("POST")) {
-                            fields(body, Set.of("name", "data"));
-                            return created(service.createScenario(id, text(body, "name"),
-                                                                  scenarioData(body.path("data"))));
-                        }
-                    }
-                    if (method.equals("POST") && action.equals("xml-preview")) {
-                        fields(body, Set.of("source"));
-                        var definition = service.previewXml(id, text(body, "source"));
-                        return ok(Map.of("definition", DefinitionJson.write(definition),
-                                         "source", service.export(id, definition)));
-                    }
-                    if (method.equals("GET") && action.equals("access"))
-                        return ok(service.access(id));
-                    if (method.equals("PUT") && action.equals("access")) {
-                        fields(body, Set.of("expectedVersion", "policy"));
-                        return ok(view(service.setAccess(id, number(body, "expectedVersion"),
-                                                         policy(body.path("policy")))));
-                    }
-                    if (method.equals("GET") && action.equals("audit"))
-                        return ok(service.audit(id, after, size));
-                    if (method.equals("POST") && action.equals("archive")) {
-                        fields(body, Set.of("expectedVersion"));
-                        return ok(view(service.archive(id, number(body, "expectedVersion"))));
-                    }
-                    if (method.equals("POST") && Set.of("validate", "export", "diagnostics").contains(action)) {
-                        fields(body, Set.of("definition"));
-                        var definition = DefinitionJson.read(body.path("definition"));
-                        if (action.equals("export"))
-                            return ok(Map.of("source", service.export(id, definition), "mediaType", "application/xml"));
-                        var report = action.equals("diagnostics") ? service.analyze(id, definition)
-                                : service.validate(id, definition);
-                        return ok(Map.of("valid", report.valid(), "diagnostics", report.diagnostics(),
-                                         "catalogFingerprint", report.catalogFingerprint()));
-                    }
-                }
+            case DRAFTS_SOURCE_PUT -> {
+                fields(body, Set.of("expectedVersion", "mediaType", "source"));
+                yield ok(draft(service
+                        .saveSource(id, number(body, "expectedVersion"),
+                                    new DraftRevision.Source(text(body, "mediaType"), text(body, "source")))));
             }
-            if (parts[0].equals("drafts")) {
-                if (parts.length == 2 && method.equals("GET"))
-                    return ok(draft(service.draft(id)));
-                if (parts.length == 2 && method.equals("PUT")) {
-                    fields(body, Set.of("expectedVersion", "definition"));
-                    return ok(draft(service.saveDraft(id, number(body, "expectedVersion"),
-                                                      DefinitionJson.read(body.path("definition")))));
-                }
-                if (parts.length == 3) {
-                    if (method.equals("POST") && parts[2].equals("versions")) {
-                        fields(body, Set.of("revision", "label"));
-                        return created(service.createVersion(id, number(body, "revision"), text(body, "label")));
-                    }
-                    if (method.equals("PUT") && parts[2].equals("source")) {
-                        fields(body, Set.of("expectedVersion", "mediaType", "source"));
-                        return ok(draft(service.saveSource(id, number(body, "expectedVersion"),
-                                                           new DraftRevision.Source(text(body, "mediaType"),
-                                                                   text(body, "source")))));
-                    }
-                    if (method.equals("POST") && parts[2].equals("diff")) {
-                        fields(body, Set.of("revision", "definition"));
-                        return ok(service.compare(id, number(body, "revision"),
-                                                  DefinitionJson.read(body.path("definition"))));
-                    }
-                    if (method.equals("POST") && parts[2].equals("compare")) {
-                        fields(body, Set.of("fromRevision", "toRevision"));
-                        return ok(service.compareRevisions(id, number(body, "fromRevision"),
-                                                           number(body, "toRevision")));
-                    }
-                    if (method.equals("GET") && parts[2].equals("revisions")) {
-                        var page = service.revisions(id, after == null ? 0 : Long.parseLong(after), size);
-                        return ok(new StudioPage<>(page.items().stream().map(ManagementRoutes::revision).toList(),
-                                page.nextCursor()));
-                    }
-                    if (method.equals("POST") && parts[2].equals("fork")) {
-                        fields(body, Set.of("revision", "name"));
-                        return created(draft(service.forkDraft(id, number(body, "revision"), text(body, "name"))));
-                    }
-                    if (method.equals("POST") && parts[2].equals("tests")) {
-                        fields(body, Set.of("revision", "requestId", "input"));
-                        return ok(service.test(id, number(body, "revision"), id(body, "requestId"),
-                                               text(body, "input")));
-                    }
-                }
+            case DRAFTS_VERSIONS_POST -> {
+                fields(body, Set.of("revision", "label"));
+                yield created(service.createVersion(id, number(body, "revision"), text(body, "label")));
             }
-            if (parts.length == 2 && parts[0].equals("tests") && method.equals("GET"))
-                return ok(service.testRequest(id));
-        }
-        throw new StudioProblem(StudioProblem.Code.NOT_FOUND);
+            case DRAFTS_DIFF_POST -> {
+                fields(body, Set.of("revision", "definition"));
+                yield ok(service.compare(id, number(body, "revision"), DefinitionJson.read(body.path("definition"))));
+            }
+            case DRAFTS_COMPARE_POST -> {
+                fields(body, Set.of("fromRevision", "toRevision"));
+                yield ok(service.compareRevisions(id, number(body, "fromRevision"), number(body, "toRevision")));
+            }
+            case DRAFTS_REVISIONS_GET -> {
+                var page = service.revisions(id, after == null ? 0 : Long.parseLong(after), size);
+                yield ok(new StudioPage<>(page.items().stream().map(ManagementRoutes::revision).toList(),
+                        page.nextCursor()));
+            }
+            case DRAFTS_FORK_POST -> {
+                fields(body, Set.of("revision", "name"));
+                yield created(draft(service.forkDraft(id, number(body, "revision"), text(body, "name"))));
+            }
+            case DRAFTS_TESTS_POST -> {
+                fields(body, Set.of("revision", "requestId", "input"));
+                yield ok(service.test(id, number(body, "revision"), id(body, "requestId"), text(body, "input")));
+            }
+            case CHAINS_VERSIONS_GET -> ok(service.versions(id, after, size));
+            case VERSIONS_GET -> ok(service.version(id));
+            case VERSIONS_COMPARE_POST -> {
+                fields(body, Set.of("otherVersionId"));
+                yield ok(service.compareVersions(id, id(body, "otherVersionId")));
+            }
+            case VERSIONS_TESTS_POST -> {
+                fields(body, Set.of("requestId", "input"));
+                yield ok(service.testVersion(id, id(body, "requestId"), text(body, "input")));
+            }
+            case VERSIONS_PUBLISH_POST, VERSIONS_PROMOTE_POST, VERSIONS_REFRESH_POST -> {
+                fields(body, Set.of());
+                yield ok(switch (endpoint) {
+                    case VERSIONS_PUBLISH_POST -> service.publishTest(id);
+                    case VERSIONS_PROMOTE_POST -> service.promoteRun(id);
+                    default -> service.refreshVersion(id);
+                });
+            }
+            case RUNS_GET -> ok(service.run(id));
+            case TESTS_GET -> ok(service.testRequest(id));
+            case RESOURCES_SCENARIOS_GET -> ok(service.scenarios(id, after, size));
+            case RESOURCES_SCENARIOS_POST -> {
+                fields(body, Set.of("name", "data"));
+                yield created(service.createScenario(id, text(body, "name"), scenarioData(body.path("data"))));
+            }
+            case SCENARIOS_GET -> ok(service.scenario(id));
+            case SCENARIOS_PUT -> {
+                fields(body, Set.of("expectedVersion", "name", "data"));
+                yield ok(service.saveScenario(id, number(body, "expectedVersion"), text(body, "name"),
+                                              scenarioData(body.path("data"))));
+            }
+            case SCENARIOS_REVISIONS_GET -> ok(service.scenarioRevisions(id, after, size));
+            case SCENARIOS_ARCHIVE_POST -> {
+                fields(body, Set.of("expectedVersion"));
+                yield ok(service.archiveScenario(id, number(body, "expectedVersion")));
+            }
+            case SCENARIOS_TESTS_POST -> {
+                fields(body, Set.of("revision", "target", "requestId"));
+                yield ok(service.testScenario(id, number(body, "revision"), target(body.path("target")),
+                                              id(body, "requestId")));
+            }
+            case SCENARIOS_SIMULATION_PLAN_POST -> {
+                fields(body, Set.of("revision", "target"));
+                var plan = service.planSimulation(id, number(body, "revision"), target(body.path("target")));
+                yield ok(Map.of("valid", plan.valid(), "engineVersion", plan.engineVersion(), "catalogFingerprint",
+                                plan.catalogFingerprint(),
+                                "diagnostics", plan.diagnostics(), "substitutions", plan.substitutions()));
+            }
+            case SCENARIOS_SIMULATIONS_POST -> {
+                fields(body, Set.of("revision", "target", "requestId"));
+                yield ok(service.simulate(id, number(body, "revision"), target(body.path("target")),
+                                          id(body, "requestId")));
+            }
+            case SCENARIOS_SIMULATIONS_GET -> ok(service.simulations(id, after, size));
+            case SIMULATIONS_GET -> ok(service.simulation(id));
+            case RUN_EVENTS -> throw new IllegalStateException("Local SSE is handled before JSON dispatch");
+        };
+    }
+
+    private static ScenarioTarget target(JsonNode target) {
+        fields(target, Set.of("draftId", "revision", "versionId"));
+        return new ScenarioTarget(optional(target, "draftId") == null ? null : id(target, "draftId"),
+                target.hasNonNull("revision") ? number(target, "revision") : null,
+                optional(target, "versionId") == null ? null : id(target, "versionId"));
     }
 
     private static String optional(JsonNode value, String field) {
@@ -253,7 +225,7 @@ final class ManagementRoutes {
     }
 
     private static ScenarioData scenarioData(JsonNode value) {
-        fields(value, Set.of("input", "expected"));
+        fields(value, Set.of("input", "expected", "simulation"));
         var input = value.path("input");
         fields(input, Set.of("kind", "value", "fixtureVersion"));
         var fixture = new ScenarioInput(ScenarioInput.Kind.valueOf(text(input, "kind")), text(input, "value"),
@@ -264,7 +236,29 @@ final class ManagementRoutes {
             fields(e, Set.of("outcome", "output"));
             expected = new ScenarioExpectation(text(e, "outcome"), optional(e, "output"));
         }
-        return new ScenarioData(fixture, expected);
+        return new ScenarioData(fixture, expected, simulationProfile(value.path("simulation")));
+    }
+
+    private static io.github.gear4jtest.studio.model.SimulationProfile simulationProfile(JsonNode value) {
+        if (value.isMissingNode() || value.isNull())
+            return null;
+        fields(value, Set.of("schemaVersion", "mocks"));
+        var nodes = value.path("mocks");
+        if (!nodes.isObject() || nodes.size() > 32)
+            throw new IllegalArgumentException("Invalid mock profile");
+        var mocks = new java.util.TreeMap<String, io.github.gear4jtest.studio.model.SimulationProfile.Mock>();
+        nodes.fields().forEachRemaining(entry -> {
+            var mock = entry.getValue();
+            fields(mock, Set.of("capability", "behavior", "type", "value"));
+            mocks.put(entry.getKey(), new io.github.gear4jtest.studio.model.SimulationProfile.Mock(
+                    text(mock, "capability"),
+                    io.github.gear4jtest.studio.model.SimulationProfile.Behavior.valueOf(text(mock, "behavior")),
+                    optional(mock, "type") == null ? null
+                            : io.github.gear4jtest.studio.model.SimulationProfile.Scalar.valueOf(text(mock, "type")),
+                    optional(mock, "value")));
+        });
+        return new io.github.gear4jtest.studio.model.SimulationProfile(Math.toIntExact(number(value, "schemaVersion")),
+                mocks);
     }
 
     private static AccessPolicy policy(JsonNode value) {

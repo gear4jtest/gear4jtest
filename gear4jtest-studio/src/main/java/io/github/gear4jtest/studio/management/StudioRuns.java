@@ -58,7 +58,7 @@ final class StudioRuns {
         var provenance = new StudioRun.Provenance(context.id(), chain.runtimeAssemblyLineId(),
                 context.applicationBuild(), context.catalogFingerprint(),
                 version == null ? null : version.artifactHash(),
-                actor.subject(), "TEST", requestId, draft.id(), revision.revisionId(), revision.number(),
+                actor.principalId(), "TEST", requestId, draft.id(), revision.revisionId(), revision.number(),
                 version == null ? null : version.id(), version == null ? null : version.label());
         recorder.begin(tx, id, version == null ? draft.id() : chain.id(), StudioRun.Origin.CONTROLLED_TEST,
                        provenance.withScenario(scenario).withFixture(fixture));

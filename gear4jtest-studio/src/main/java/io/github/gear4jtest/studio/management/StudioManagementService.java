@@ -127,9 +127,34 @@ public final class StudioManagementService {
             capabilities.addAll(publisher.capabilities());
         if (scenarios.enabled())
             capabilities.add("SCENARIOS");
+        if (!scenarios.simulationEnabled())
+            capabilities.remove("SIMULATION");
         capabilities.add("RUN_HISTORY");
         capabilities.add("RUN_METRICS");
         return new RuntimeContext(context.id(), context.applicationBuild(), context.catalogFingerprint(), capabilities);
+    }
+
+    public io.github.gear4jtest.studio.model.SimulationPlan planSimulation(UUID scenarioId,
+                                                                           long revision,
+                                                                           io.github.gear4jtest.studio.model.ScenarioTarget target) {
+        return scenarios.plan(identity(), scenarioId, revision, target);
+    }
+
+    public io.github.gear4jtest.studio.model.StudioSimulation simulate(UUID scenarioId,
+                                                                       long revision,
+                                                                       io.github.gear4jtest.studio.model.ScenarioTarget target,
+                                                                       UUID requestId) {
+        return scenarios.simulate(identity(), scenarioId, revision, target, requestId);
+    }
+
+    public io.github.gear4jtest.studio.model.StudioSimulation simulation(UUID id) {
+        return scenarios.simulation(identity(), id);
+    }
+
+    public StudioPage<io.github.gear4jtest.studio.model.StudioSimulation> simulations(UUID scenarioId,
+                                                                                      String after,
+                                                                                      int limit) {
+        return scenarios.simulations(identity(), scenarioId, after, limit);
     }
 
     public io.github.gear4jtest.studio.model.ScenarioState createScenario(UUID scope,
@@ -251,7 +276,7 @@ public final class StudioManagementService {
         text(description, 2048, false);
         return store.write(tx -> {
             var time = now();
-            var value = new StudioDomain(UUID.randomUUID(), key, name, description, actor.subject(), 1, false, time,
+            var value = new StudioDomain(UUID.randomUUID(), key, name, description, actor.principalId(), 1, false, time,
                     time);
             tx.insert(value);
             audit(tx, actor, value, AuditEvent.Action.DOMAIN_CREATED, null, null, null, null);
@@ -280,7 +305,7 @@ public final class StudioManagementService {
             requireRead(tx, actor, parent, Permission.CREATE_CHAIN);
             var time = now();
             var value = new StudioChain(UUID.randomUUID(), domainId, key, runtimeAssemblyLineId, name, description,
-                    actor.subject(), 1, true,
+                    actor.principalId(), 1, true,
                     false, time, time);
             tx.insert(value);
             audit(tx, actor, value, AuditEvent.Action.CHAIN_CREATED, null, null, null, null);
@@ -324,9 +349,10 @@ public final class StudioManagementService {
                                    DraftRevision.Origin origin,
                                    UUID base) {
         var time = now();
-        var draft = new StudioDraft(UUID.randomUUID(), chain.id(), name, actor.subject(), 1, false, false, 1, origin,
+        var draft = new StudioDraft(UUID.randomUUID(), chain.id(), name, actor.principalId(), 1, false, false, 1,
+                origin,
                 base, time, time);
-        var revision = new DraftRevision(draft.id(), UUID.randomUUID(), 1, actor.subject(), time, origin,
+        var revision = new DraftRevision(draft.id(), UUID.randomUUID(), 1, actor.principalId(), time, origin,
                 source == null ? DraftRevision.Kind.STRUCTURED : DraftRevision.Kind.SOURCE, definition, source);
         tx.insert(draft);
         tx.appendRevision(revision);
@@ -381,7 +407,8 @@ public final class StudioManagementService {
             var draft = new StudioDraft(old.id(), old.chainId(), old.name(), old.owner(), old.version() + 1,
                     old.inheritAccess(), false, old.head() + 1, old.origin(), old.baseRevisionId(), old.createdAt(),
                     time);
-            var revision = new DraftRevision(id, UUID.randomUUID(), draft.head(), actor.subject(), time, old.origin(),
+            var revision = new DraftRevision(id, UUID.randomUUID(), draft.head(), actor.principalId(), time,
+                    old.origin(),
                     source == null ? DraftRevision.Kind.STRUCTURED : DraftRevision.Kind.SOURCE, definition, source);
             tx.update(draft, expectedVersion);
             tx.appendRevision(revision);
@@ -678,7 +705,7 @@ public final class StudioManagementService {
         return tests.execute(actor, revision.draftId(), revision.revisionId(), requestId, input,
                              () -> runs.execute(observationId,
                                                 observer -> runtime.executeObserved(revision, input, requestId,
-                                                                                    actor.subject(), observer)),
+                                                                                    actor.principalId(), observer)),
                              () -> store.write(tx -> {
                                  var draft = typed(locked(tx, id), StudioDraft.class);
                                  requireRead(tx, actor, draft, Permission.TEST);
@@ -702,12 +729,13 @@ public final class StudioManagementService {
         return tests.execute(actor, version.chainId(), version.id(), requestId, input,
                              () -> runs.execute(observationId,
                                                 observer -> runtime.executeVersionObserved(version, input, requestId,
-                                                                                           actor.subject(), observer)),
+                                                                                           actor.principalId(),
+                                                                                           observer)),
                              () -> store.write(tx -> {
                                  var chain = typed(locked(tx, version.chainId()), StudioChain.class);
                                  requireRead(tx, actor, chain, Permission.TEST);
                                  tx.appendAudit(new AuditEvent(0, UUID.randomUUID(), chain.domainId(), chain.id(), null,
-                                         ResourceKind.CHAIN, chain.id(), chain.version(), actor.subject(),
+                                         ResourceKind.CHAIN, chain.id(), chain.version(), actor.principalId(),
                                          AuditEvent.Action.TEST_REQUESTED,
                                          now(), version.revisionId(), requestId, null, null, version.id()));
                                  runs.begin(tx, observationId, actor,
@@ -718,15 +746,15 @@ public final class StudioManagementService {
 
     public TestSubmission testRequest(UUID requestId) {
         var actor = identity();
-        var id = tests.resourceId(actor.subject(), requestId);
-        var scenarioScope = tests.scenarioResourceId(actor.subject(), requestId);
+        var id = tests.resourceId(actor.principalId(), requestId);
+        var scenarioScope = tests.scenarioResourceId(actor.principalId(), requestId);
         store.read(tx -> {
             requireRead(tx, actor, ResourceAccess.resource(tx, id), Permission.READ);
             if (scenarioScope != null)
                 requireRead(tx, actor, ResourceAccess.resource(tx, scenarioScope), Permission.READ_SCENARIOS);
             return null;
         });
-        return tests.status(actor.subject(), requestId);
+        return tests.status(actor.principalId(), requestId);
     }
 
     public io.github.gear4jtest.studio.model.StudioRun run(UUID id) {
@@ -799,7 +827,7 @@ public final class StudioManagementService {
         UUID draftId = value instanceof StudioDraft d ? d.id() : null;
         tx.appendAudit(new AuditEvent(0, UUID.randomUUID(), domain.id(), chainId, draftId, value.kind(), value.id(),
                 value.version(),
-                actor.subject(), action, now(), revisionId, requestId, before, after));
+                actor.principalId(), action, now(), revisionId, requestId, before, after));
     }
 
     private static <T extends ManagedResource> T typed(ManagedResource resource, Class<T> type) {
