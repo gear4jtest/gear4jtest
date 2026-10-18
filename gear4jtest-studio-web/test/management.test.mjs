@@ -52,9 +52,11 @@ test('ACL screen sends the policy version and grants but never supplies the acti
  await element.configure({ client }); await element.choose({ id: 'draft', kind: 'DRAFT' });
  find(element.shadowRoot, 'button', 'Gérer les accès').click(); await settled(element);
  find(element.shadowRoot, 'button', 'Ajouter un bénéficiaire').click();
+ assert.equal(element.hasUnsavedChanges, true);
  const input = element.shadowRoot.querySelector('.grant input:not([type=checkbox])'); input.value = 'bob'; input.dispatchEvent(new dom.window.Event('input'));
  find(element.shadowRoot, 'button', 'Enregistrer les accès').click(); await settled(element);
  assert.deepEqual(observed, ['draft', 7, { inheritAccess: false, grants: [{ subjectType: 'USER', subject: 'bob', permissions: ['READ'] }] }]);
+ assert.equal(element.hasUnsavedChanges, false);
 });
 test('creation form retains entered values after a conflict and discovery does not permit opening', async () => {
  const { element, client } = fixture(); client.list = async () => ({ items: [{ id: 'hidden', name: '<script>private</script>', kind: 'DOMAIN', readable: false }], nextCursor: null });

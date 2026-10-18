@@ -10,6 +10,8 @@ function field(text, value = '', type = 'input') { const label = el('label', tex
 const labels = { domains: 'Domaines', chains: 'Chaînes', drafts: 'Drafts' };
 /** Public workspace component. Uses the public management client and the public authoring component. */
 export class Gear4jWorkspace extends HTMLElement {
+  get hasUnsavedChanges() { return !!(this.editor?.hasUnsavedChanges || this.scenariosElement?.hasUnsavedChanges || this.formValues.size || this.accessDirty); }
+  get hasPendingActions() { return !!(this.busy || this.editor?.busy || this.versions?.busy || this.scenariosElement?.busy); }
   constructor() { super(); this.attachShadow({ mode: 'open' }); this.kind = 'domains'; this.items = []; this.message = ''; this.editor = null; this.formValues = new Map(); }
   async configure({ client }) {
     this.client = client; this.context = await client.context(); this.selected = null; this.editor = null; this.kind = 'domains'; this.parent = null; this.cursor = null; this.formValues.clear(); this.versions = null; this.runsElement = null; this.scenariosElement = null;
@@ -156,9 +158,12 @@ export class Gear4jWorkspace extends HTMLElement {
     return box;
   }
   accessPanel() {
+    // Edits in the ACL panel must participate in the cross-target discard guard.
     const box = el('div', undefined, 'box'); const resource = this.selected.resource; const policy = this.accessState.policy; box.append(el('h3', 'Accès explicites'));
     const inherited = el('label', 'Hériter des permissions du parent'); const checkbox = el('input'); checkbox.type = 'checkbox'; checkbox.checked = policy.inheritAccess; checkbox.disabled = this.selected.kind === 'DOMAIN' || !this.accessState.fullAdministration || this.busy; checkbox.addEventListener('change', () => { policy.inheritAccess = checkbox.checked; }); inherited.append(checkbox); box.append(inherited);
     box.append(el('small', 'Les propriétaires et administrateurs gardent leurs droits. READ implique la découverte ; DISCOVER seul ne permet pas de consulter la définition.'));
+    box.addEventListener('change', () => { this.accessDirty = true; });
+    box.addEventListener('input', () => { this.accessDirty = true; });
     const list = el('div', undefined, 'grants');
     policy.grants.forEach((grant, index) => {
       const row = el('div', undefined, 'grant'); const type = el('select'); type.setAttribute('aria-label', 'Type de bénéficiaire');
@@ -168,11 +173,11 @@ export class Gear4jWorkspace extends HTMLElement {
       const protectedGrant = grant.permissions.some(p => !this.accessState.delegablePermissions.includes(p)); type.disabled = protectedGrant; subject.input.disabled ||= protectedGrant;
       row.append(type, subject.label); const checks = el('div', undefined, 'checks');
       for (const permission of this.context.permissions) { const label = el('label', permission); const input = el('input'); input.type = 'checkbox'; input.checked = grant.permissions.includes(permission); input.disabled = !this.accessState.delegablePermissions.includes(permission); input.addEventListener('change', () => { grant.permissions = input.checked ? [...grant.permissions, permission] : grant.permissions.filter(p => p !== permission); }); label.prepend(input); checks.append(label); }
-      row.append(checks, btn('Retirer ce bénéficiaire', () => { policy.grants.splice(index, 1); this.render(); }, this.busy || protectedGrant)); list.append(row);
+      row.append(checks, btn('Retirer ce bénéficiaire', () => { policy.grants.splice(index, 1); this.accessDirty = true; this.render(); }, this.busy || protectedGrant)); list.append(row);
     }); box.append(list);
-    box.append(btn('Ajouter un bénéficiaire', () => { policy.grants.push({ subjectType: 'USER', subject: '', permissions: ['READ'] }); this.render(); }, this.busy || policy.grants.length >= 64));
+    box.append(btn('Ajouter un bénéficiaire', () => { policy.grants.push({ subjectType: 'USER', subject: '', permissions: ['READ'] }); this.accessDirty = true; this.render(); }, this.busy || policy.grants.length >= 64));
     box.append(btn('Enregistrer les accès', () => this.perform(async () => {
-      const version = this.accessState.version; const updated = await this.client.setAccess(resource.id, version, structuredClone(policy)); this.selected = updated; this.accessState = null;
+      const version = this.accessState.version; const updated = await this.client.setAccess(resource.id, version, structuredClone(policy)); this.selected = updated; this.accessState = null; this.accessDirty = false;
       if (!updated.permissions.includes('READ')) { this.selected = null; this.editor = null; this.versions = null; this.runsElement = null; this.scenariosElement = null; this.message = 'Accès modifiés. Vous ne pouvez plus consulter cette ressource.'; }
       else { this.accessState = await this.client.access(resource.id).catch(() => null); this.message = 'Accès enregistrés. Les prochaines actions seront réévaluées par le serveur.'; }
       await this.reload(this.cursor);

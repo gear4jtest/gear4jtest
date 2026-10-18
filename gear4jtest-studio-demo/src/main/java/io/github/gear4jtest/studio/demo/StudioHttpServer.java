@@ -2,10 +2,8 @@ package io.github.gear4jtest.studio.demo;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -14,10 +12,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import io.github.gear4jtest.studio.http.RequestActorContext;
 import io.github.gear4jtest.studio.json.StudioJson;
 import io.github.gear4jtest.studio.management.StudioIdentity;
 import io.github.gear4jtest.studio.management.StudioManagementService;
@@ -31,11 +29,7 @@ public final class StudioHttpServer implements AutoCloseable {
     private final HttpServer server;
     private final ThreadPoolExecutor workers = new ThreadPoolExecutor(4, 4, 0, TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(32));
-    private final ManagementRoutes routes;
-    private final StudioManagementService service;
-    private final java.util.concurrent.Semaphore streams = new java.util.concurrent.Semaphore(1);
-    private final RequestActorContext actors;
-    private final Function<HttpExchange, StudioIdentity> authenticate;
+    private final io.github.gear4jtest.studio.http.StudioManagementHttpHandler api;
     private final ObjectMapper mapper = StudioJson.mapper();
 
     public StudioHttpServer(StudioManagementService service,
@@ -52,10 +46,8 @@ public final class StudioHttpServer implements AutoCloseable {
                             int port,
                             Function<HttpExchange, StudioIdentity> authenticate)
             throws IOException {
-        this.service = java.util.Objects.requireNonNull(service);
-        this.routes = new ManagementRoutes(service);
-        this.actors = java.util.Objects.requireNonNull(actors);
-        this.authenticate = java.util.Objects.requireNonNull(authenticate);
+        this.api = new io.github.gear4jtest.studio.http.StudioManagementHttpHandler(service, actors, authenticate,
+                DemoWiring.sample());
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 16);
         server.setExecutor(workers);
         server.createContext("/", this::handle);
@@ -111,23 +103,7 @@ public final class StudioHttpServer implements AutoCloseable {
                 if (exchange.getRequestURI().toString().length() > 4096)
                     throw new IllegalArgumentException("URI too long");
                 if (exchange.getRequestURI().getPath().startsWith("/api/")) {
-                    var identity = authenticate.apply(exchange);
-                    if (identity == null) {
-                        json(exchange, 401, Map.of("code", "UNAUTHENTICATED"));
-                        return;
-                    }
-                    String method = exchange.getRequestMethod();
-                    if (method.equals("GET")
-                            && exchange.getRequestURI().getPath().matches("/api/v1/runs/[a-fA-F0-9-]{36}/events")) {
-                        stream(exchange, identity);
-                        return;
-                    }
-                    try (var scope = actors.bind(identity)) {
-                        JsonNode body = Set.of("POST", "PUT").contains(method) ? body(exchange) : null;
-                        var response = routes.handle(method, exchange.getRequestURI().getPath(),
-                                                     query(exchange.getRequestURI().getRawQuery()), body);
-                        json(exchange, response.status(), response.value());
-                    }
+                    api.handle(exchange);
                 } else
                     asset(exchange);
             } catch (StudioProblem failure) {
@@ -149,87 +125,6 @@ public final class StudioHttpServer implements AutoCloseable {
             } catch (RuntimeException failure) {
                 json(exchange, 500, Map.of("code", "INTERNAL_ERROR"));
             }
-        }
-    }
-
-    private static Map<String, String> query(String raw) {
-        var result = new LinkedHashMap<String, String>();
-        if (raw == null || raw.isEmpty())
-            return result;
-        for (String pair : raw.split("&")) {
-            String[] parts = pair.split("=", 2);
-            if (parts.length != 2 || result.size() >= 12)
-                throw new IllegalArgumentException("Invalid query");
-            String key = URLDecoder.decode(parts[0], StandardCharsets.UTF_8);
-            if (result.putIfAbsent(key, URLDecoder.decode(parts[1], StandardCharsets.UTF_8)) != null)
-                throw new IllegalArgumentException("Duplicate query");
-        }
-        return result;
-    }
-
-    private JsonNode body(HttpExchange exchange) throws IOException {
-        if (!"application/json".equalsIgnoreCase(exchange.getRequestHeaders().getFirst("Content-Type")))
-            throw new IllegalArgumentException("JSON required");
-        byte[] data = exchange.getRequestBody().readNBytes(65537);
-        if (data.length > 65536)
-            throw new IllegalArgumentException("Body limit");
-        var value = mapper.readTree(data);
-        if (value == null)
-            throw new IllegalArgumentException("Body required");
-        return value;
-    }
-
-    /**
-     * Best-effort snapshots. No replay log; reconnect always starts with the
-     * durable snapshot.
-     */
-    private void stream(HttpExchange exchange, StudioIdentity initialActor) throws IOException {
-        if (exchange.getRequestURI().getRawQuery() != null)
-            throw new IllegalArgumentException("No stream query parameters");
-        var id = java.util.UUID.fromString(exchange.getRequestURI().getPath().split("/")[4]);
-        io.github.gear4jtest.studio.model.StudioRun current;
-        try (var scope = actors.bind(initialActor)) {
-            current = service.run(id);
-        }
-        if (!streams.tryAcquire())
-            throw new StudioProblem(StudioProblem.Code.CAPACITY_EXCEEDED);
-        try {
-            exchange.getResponseHeaders().set("Content-Type", "text/event-stream; charset=utf-8");
-            exchange.getResponseHeaders().set("X-Accel-Buffering", "no");
-            exchange.sendResponseHeaders(200, 0);
-            var output = exchange.getResponseBody();
-            output.write("retry: 2000\n\n".getBytes(StandardCharsets.UTF_8));
-            io.github.gear4jtest.studio.model.StudioRun previous = null;
-            for (int tick = 0; tick < 15; tick++) {
-                try {
-                    var actor = authenticate.apply(exchange);
-                    if (actor == null || !actor.subject().equals(initialActor.subject()))
-                        throw new StudioProblem(StudioProblem.Code.UNAUTHENTICATED);
-                    try (var scope = actors.bind(actor)) {
-                        current = service.run(id);
-                    }
-                    if (!current.equals(previous)) {
-                        output.write(("event: snapshot\ndata: " + mapper.writeValueAsString(current) + "\n\n")
-                                .getBytes(StandardCharsets.UTF_8));
-                        previous = current;
-                    } else
-                        output.write(": heartbeat\n\n".getBytes(StandardCharsets.UTF_8));
-                    output.flush();
-                    if (!Set.of("PREPARING", "RUNNING").contains(current.status()))
-                        break;
-                    TimeUnit.SECONDS.sleep(1);
-                } catch (RuntimeException revoked) {
-                    output.write("event: unavailable\ndata: {\"code\":\"ACCESS_OR_STORAGE_UNAVAILABLE\"}\n\n"
-                            .getBytes(StandardCharsets.UTF_8));
-                    output.flush();
-                    break;
-                } catch (InterruptedException stopped) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-        } finally {
-            streams.release();
         }
     }
 

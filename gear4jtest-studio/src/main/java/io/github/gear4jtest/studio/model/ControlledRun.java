@@ -29,7 +29,8 @@ public record ControlledRun(UUID requestId,
                             String versionLabel,
                             boolean stepsTruncated,
                             ScenarioRef scenario,
-                            ScenarioCheck scenarioCheck) {
+                            ScenarioCheck scenarioCheck,
+                            ResolvedFixture fixture) {
     public ControlledRun(UUID requestId,
                          UUID runId,
                          UUID draftId,
@@ -53,13 +54,20 @@ public record ControlledRun(UUID requestId,
                          boolean stepsTruncated) {
         this(requestId, runId, draftId, revisionId, revision, actor, runtimeContext, applicationBuild, mode,
                 catalogFingerprint, artifactHash, outcome, startedAt, endedAt, input, output, errorCode, steps,
-                versionId, versionLabel, stepsTruncated, null, null);
+                versionId, versionLabel, stepsTruncated, null, null, null);
     }
 
     public ControlledRun withScenario(ScenarioRef reference, ScenarioCheck check) {
         return new ControlledRun(requestId, runId, draftId, revisionId, revision, actor, runtimeContext,
                 applicationBuild, mode, catalogFingerprint, artifactHash, outcome, startedAt, endedAt,
-                input, output, errorCode, steps, versionId, versionLabel, stepsTruncated, reference, check);
+                input, output, errorCode, steps, versionId, versionLabel, stepsTruncated, reference, check, fixture);
+    }
+
+    public ControlledRun withFixture(ResolvedFixture resolved) {
+        return new ControlledRun(requestId, runId, draftId, revisionId, revision, actor, runtimeContext,
+                applicationBuild, mode, catalogFingerprint, artifactHash, outcome, startedAt, endedAt,
+                input, output, errorCode, steps, versionId, versionLabel, stepsTruncated, scenario, scenarioCheck,
+                resolved);
     }
 
     public ControlledRun(UUID requestId,
@@ -114,7 +122,7 @@ public record ControlledRun(UUID requestId,
         return new ControlledRun(requestId, runId, draftId, revisionId, revision, actor, runtimeContext,
                 applicationBuild, mode, catalogFingerprint, artifactHash, outcome, startedAt, endedAt,
                 input, output, errorCode, steps, version.id(), version.label(), stepsTruncated, scenario,
-                scenarioCheck);
+                scenarioCheck, fixture);
     }
 
     public ControlledRun {

@@ -2,4 +2,4 @@
 
 Hôte Java sans Spring, stockage H2 durable, HTTP local et composants web intégrables.
 
-Module expérimental. Voir le [guide P4](../docs/studio/p4.md) et le [bilan de vérification](../docs/studio/verification-p4.md). P4 ajoute le journal durable des runs, leur inspection sécurisée, les indicateurs et les snapshots temps réel au cycle de vie P3.
+Module expérimental. Voir le [guide P5](../docs/studio/p5.md) et le [bilan de vérification](../docs/studio/verification-p5.md). La démo Java reste embarquée et peut aussi être déclarée comme cible du Studio autonome. Les routes réutilisables et `RequestActorContext` se trouvent désormais dans `gear4jtest-studio-http`.

@@ -1,5 +1,6 @@
 package io.github.gear4jtest.studio.demo;
 
+import io.github.gear4jtest.studio.http.RequestActorContext;
 import org.slf4j.LoggerFactory;
 
 public final class PlainStudioApplication {
@@ -35,7 +36,7 @@ public final class PlainStudioApplication {
             }));
             server.start();
             started = true;
-            LoggerFactory.getLogger(PlainStudioApplication.class).info("Gear4J Studio P4: http://127.0.0.1:{}",
+            LoggerFactory.getLogger(PlainStudioApplication.class).info("Gear4J Studio: http://127.0.0.1:{}",
                                                                        server.port());
         } finally {
             if (!started) {

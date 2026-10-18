@@ -71,6 +71,75 @@ class StudioScenariosTest {
     }
 
     @Test
+    void syntheticTextIsReplayedExactlyWithoutCallingTheResolver() {
+        // Given: the resolver would substitute a different value if called.
+        var exact = "  hello\n";
+        var admitting = new ScenarioDataPolicy() {
+            public void assertSafeToStore(StudioIdentity actor, UUID scope, ScenarioData data) {
+            }
+
+            public ResolvedScenarioInput resolveFixture(StudioIdentity actor, UUID scope, ScenarioInput input) {
+                throw new AssertionError("A synthetic value must not be resolved");
+            }
+        };
+        var service = as("alice", admitting);
+        var scenario = service.createScenario(draft.draft().id(), "Exact", data(exact));
+        // When
+        var result = service.testScenario(scenario.scenario().id(), 1, target(), UUID.randomUUID());
+        // Then
+        assertThat(runtime.lastInput).isEqualTo(exact);
+        assertThat(result.run().fixture()).isNull();
+        assertThat(service.scenario(scenario.scenario().id()).revision().data().input().value()).isEqualTo(exact);
+    }
+
+    @Test
+    void resolvedFingerprintsAreDurableDistinguishDriftAndRequireScenarioReadPermission() {
+        // Given
+        var reference = new ScenarioInput(ScenarioInput.Kind.FIXTURE_REFERENCE, "greeting", "1");
+        var scenario = alice.createScenario(draft.draft().id(), "Reference", new ScenarioData(reference, null));
+        var request = UUID.randomUUID();
+        // When
+        var first = alice.testScenario(scenario.scenario().id(), 1, target(), request).run();
+        var same = alice.testScenario(scenario.scenario().id(), 1, target(), UUID.randomUUID()).run();
+        policy.value = "world";
+        var changed = alice.testScenario(scenario.scenario().id(), 1, target(), UUID.randomUUID()).run();
+        // Then: identity includes the resolved fingerprint as well as the actual input.
+        assertThat(first.fixture()).isEqualTo(same.fixture());
+        assertThat(changed.fixture().fingerprint()).isNotEqualTo(first.fixture().fingerprint());
+        assertThat(first.fixture().reference()).isEqualTo("greeting");
+        assertThat(first.fixture().version()).isEqualTo("1");
+        assertThatThrownBy(() -> alice.testScenario(scenario.scenario().id(), 1, target(), request))
+                .hasMessage("CONFLICT");
+        var saved = store.read(tx -> tx.runs(draft.draft().chainId(), draft.draft().id(),
+                                             new RunFilter(Instant.now().minusSeconds(60),
+                                                     Instant.now().plusSeconds(60), null, null, null, null, null),
+                                             null, 100))
+                .stream().filter(r -> r.provenance().requestId().equals(request)).findFirst().orElseThrow();
+        assertThat(as("alice", policy).run(saved.id()).provenance().fixture()).isEqualTo(first.fixture());
+        assertThat(saved.observation().input().state()).isEqualTo(CapturedValue.State.NOT_CAPTURED);
+        share(draft.draft().id(), 1, READ, READ_RUNS, READ_OBSERVABILITY);
+        assertThat(as("bob", policy).run(saved.id()).provenance().fixture()).isNull();
+        share(draft.draft().id(), 2, READ, READ_RUNS, READ_SCENARIOS);
+        assertThat(as("bob", policy).run(saved.id()).provenance().fixture()).isEqualTo(first.fixture());
+        policy.keyId = "rotated";
+        var rotated = alice.testScenario(scenario.scenario().id(), 1, target(), UUID.randomUUID()).run();
+        assertThat(rotated.fixture().fingerprint().keyId()).isNotEqualTo(changed.fixture().fingerprint().keyId());
+    }
+
+    @Test
+    void fingerprintRejectsInvalidTextAndNeverPrintsResolvedInput() {
+        // Given / When / Then
+        var key = new javax.crypto.spec.SecretKeySpec(new byte[32], "HmacSHA256");
+        var input = ResolvedScenarioInput.hmacSha256("sensitive", "key-1", key);
+        assertThat(input.toString()).doesNotContain("sensitive");
+        assertThat(input.fingerprint().value()).hasSize(64);
+        assertThatThrownBy(() -> ResolvedScenarioInput.hmacSha256("\uD800", "key-1", key))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> ResolvedScenarioInput.hmacSha256("x", "invalid/key", key))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void immutableRevisionsPaginationAndAuditSurviveReopeningWithoutEmbeddingFixturesInAudit() {
         // Given
         var first = create(draft.draft().id());
@@ -256,6 +325,8 @@ class StudioScenariosTest {
     }
 
     private static final class Policy implements ScenarioDataPolicy {
+        String value = "hello";
+        String keyId = "test-fixtures-v1";
         boolean revoked;
         Runnable onResolve = () -> {
         };
@@ -266,17 +337,20 @@ class StudioScenariosTest {
                 throw new IllegalArgumentException("secret");
         }
 
-        public String resolveInput(StudioIdentity actor, UUID scope, ScenarioInput input) {
+        public ResolvedScenarioInput resolveFixture(StudioIdentity actor, UUID scope, ScenarioInput input) {
             if (revoked)
                 throw new IllegalStateException("secret provider error");
             onResolve.run();
-            return input.kind() == ScenarioInput.Kind.FIXTURE_REFERENCE ? "hello" : input.value();
+            assertThat(input.kind()).isEqualTo(ScenarioInput.Kind.FIXTURE_REFERENCE);
+            return ResolvedScenarioInput.hmacSha256(value, keyId,
+                                                    new javax.crypto.spec.SecretKeySpec(new byte[32], "HmacSHA256"));
         }
     }
 
     private static final class Runtime implements StudioRuntime {
         final AtomicInteger calls = new AtomicInteger();
         boolean fail;
+        String lastInput;
 
         public RuntimeContext context() {
             return new RuntimeContext("test", "build", "catalog", Set.of("SCENARIO_TEST"));
@@ -305,6 +379,7 @@ class StudioScenariosTest {
         }
 
         public ControlledRun execute(DraftRevision r, String input, UUID requestId, String actor) {
+            lastInput = input;
             calls.incrementAndGet();
             if (fail)
                 throw new io.github.gear4jtest.studio.service.StudioProblem(

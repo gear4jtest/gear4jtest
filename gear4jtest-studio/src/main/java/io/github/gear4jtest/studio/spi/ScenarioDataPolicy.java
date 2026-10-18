@@ -17,8 +17,10 @@ public interface ScenarioDataPolicy {
     void assertSafeToStore(StudioIdentity actor, UUID scope, ScenarioData data);
 
     /**
-     * Resolve the exact authorized input; may perform I/O outside any management
-     * transaction.
+     * Resolve a FIXTURE_REFERENCE only, outside management transactions. Studio
+     * never calls this for SYNTHETIC_TEXT: admission may refuse that text, but the
+     * persisted value is replayed verbatim. The returned fingerprint is bound to
+     * the resolved content and recorded before execution.
      */
-    String resolveInput(StudioIdentity actor, UUID scope, ScenarioInput input);
+    ResolvedScenarioInput resolveFixture(StudioIdentity actor, UUID scope, ScenarioInput reference);
 }

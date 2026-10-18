@@ -53,7 +53,8 @@ public record StudioRun(UUID id,
                              long revision,
                              UUID versionId,
                              String versionLabel,
-                             ScenarioRef scenario) {
+                             ScenarioRef scenario,
+                             ResolvedFixture fixture) {
         public Provenance(String runtimeContextId,
                           String runtimeAssemblyLineId,
                           String applicationBuild,
@@ -68,24 +69,36 @@ public record StudioRun(UUID id,
                           UUID versionId,
                           String versionLabel) {
             this(runtimeContextId, runtimeAssemblyLineId, applicationBuild, catalogFingerprint, artifactHash,
-                    actor, mode, requestId, draftId, revisionId, revision, versionId, versionLabel, null);
+                    actor, mode, requestId, draftId, revisionId, revision, versionId, versionLabel, null, null);
         }
 
         public Provenance withArtifactHash(String hash) {
             return new Provenance(runtimeContextId, runtimeAssemblyLineId, applicationBuild, catalogFingerprint,
-                    hash, actor, mode, requestId, draftId, revisionId, revision, versionId, versionLabel, scenario);
+                    hash, actor, mode, requestId, draftId, revisionId, revision, versionId, versionLabel, scenario,
+                    fixture);
         }
 
         public Provenance withScenario(ScenarioRef reference) {
             return new Provenance(runtimeContextId, runtimeAssemblyLineId, applicationBuild, catalogFingerprint,
                     artifactHash, actor, mode, requestId, draftId, revisionId, revision, versionId, versionLabel,
-                    reference);
+                    reference, fixture);
+        }
+
+        public Provenance withFixture(ResolvedFixture resolved) {
+            return new Provenance(runtimeContextId, runtimeAssemblyLineId, applicationBuild, catalogFingerprint,
+                    artifactHash, actor, mode, requestId, draftId, revisionId, revision, versionId, versionLabel,
+                    scenario, resolved);
         }
     }
 
     public StudioRun summary() {
         return new StudioRun(id, resourceId, chainId, origin, provenance, status, createdAt, updatedAt,
                 startedAt, endedAt, sequence, null, staleAt);
+    }
+
+    public StudioRun withoutFixtureProvenance() {
+        return new StudioRun(id, resourceId, chainId, origin, provenance.withFixture(null), status, createdAt,
+                updatedAt, startedAt, endedAt, sequence, observation, staleAt);
     }
 
     public Long durationMillis() {

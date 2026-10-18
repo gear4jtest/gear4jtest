@@ -24,3 +24,5 @@ include 'gear4jtest-studio-spring-demo'
 
 include 'gear4jtest-studio-json'
 include 'gear4jtest-studio-jdbc'
+include 'gear4jtest-studio-http'
+include 'gear4jtest-studio-standalone'

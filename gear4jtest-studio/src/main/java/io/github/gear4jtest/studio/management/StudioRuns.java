@@ -41,7 +41,7 @@ final class StudioRuns {
                DraftRevision revision,
                StudioVersion version,
                UUID requestId) {
-        begin(tx, id, actor, revision, version, requestId, null);
+        begin(tx, id, actor, revision, version, requestId, null, null);
     }
 
     void begin(StudioStore.Session tx,
@@ -50,7 +50,8 @@ final class StudioRuns {
                DraftRevision revision,
                StudioVersion version,
                UUID requestId,
-               ScenarioRef scenario) {
+               ScenarioRef scenario,
+               ResolvedFixture fixture) {
         var draft = (StudioDraft) resource(tx, revision.draftId());
         var chain = chain(tx, draft);
         var context = runtime.context();
@@ -60,7 +61,7 @@ final class StudioRuns {
                 actor.subject(), "TEST", requestId, draft.id(), revision.revisionId(), revision.number(),
                 version == null ? null : version.id(), version == null ? null : version.label());
         recorder.begin(tx, id, version == null ? draft.id() : chain.id(), StudioRun.Origin.CONTROLLED_TEST,
-                       provenance.withScenario(scenario));
+                       provenance.withScenario(scenario).withFixture(fixture));
     }
 
     ControlledRun execute(UUID id, Function<Consumer<RunObservation>, ControlledRun> execution) {
@@ -99,6 +100,7 @@ final class StudioRuns {
             if (run == null)
                 throw new StudioProblem(NOT_FOUND);
             var rights = requireRead(tx, actor, resource(tx, run.resourceId()), Permission.READ_RUNS);
+            run = fixtureView(tx, actor, run);
             return rights.contains(Permission.READ_OBSERVABILITY) ? run : run.summary();
         });
     }
@@ -110,9 +112,22 @@ final class StudioRuns {
         String position = cursors.decode(after, actor, cursorScope);
         return store.read(tx -> {
             var page = scan(tx, actor, scope, filter, position, size, Permission.READ_RUNS);
-            return new StudioPage<>(page.items().stream().map(StudioRun::summary).toList(),
+            return new StudioPage<>(page.items().stream().map(r -> fixtureView(tx, actor, r).summary()).toList(),
                     page.nextCursor() == null ? null : cursors.encode(page.nextCursor(), actor, cursorScope));
         });
+    }
+
+    private StudioRun fixtureView(StudioStore.Session tx, StudioIdentity actor, StudioRun run) {
+        if (run.provenance().fixture() == null)
+            return run;
+        var reference = run.provenance().scenario();
+        var scenario = reference == null ? null : tx.scenario(reference.scenarioId());
+        if (scenario != null) {
+            var rights = permissions(tx, actor, resource(tx, scenario.resourceId()));
+            if (rights.contains(Permission.READ) && rights.contains(Permission.READ_SCENARIOS))
+                return run;
+        }
+        return run.withoutFixtureProvenance();
     }
 
     private StudioPage<StudioRun> scan(StudioStore.Session tx,

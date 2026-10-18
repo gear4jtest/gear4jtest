@@ -1,0 +1,9 @@
+ext.moduleName = 'io.github.gear4jtest.studio.http'
+description = 'Framework-neutral Gear4J Studio management HTTP adapter (experimental).'
+dependencies {
+    api project(':gear4jtest-studio-json')
+    testImplementation project(':gear4jtest-studio-demo')
+    testImplementation project(':gear4jtest-studio-jdbc')
+    testImplementation project(':gear4jtest-studio-runtime')
+    testImplementation libs.h2
+}

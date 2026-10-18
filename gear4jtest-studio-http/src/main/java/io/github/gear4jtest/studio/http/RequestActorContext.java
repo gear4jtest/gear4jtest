@@ -1,4 +1,4 @@
-package io.github.gear4jtest.studio.demo;
+package io.github.gear4jtest.studio.http;
 
 import java.util.Objects;
 

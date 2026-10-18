@@ -37,6 +37,10 @@ moving from a development snapshot should also read [Migrate to the Gear4J 1.0 s
 | `gear4jtest-spring`          | Lightweight Spring integration for resource lookup, engine creation and extension discovery.                                                                   |
 | `gear4jtest-micrometer`      | Optional bounded-cardinality metrics for lifecycle, generated loading, classloaders, artifacts, events and JDBC persistence.                                   |
 | `gear4jtest-spring-boot-starter` | Spring Boot auto-configuration with validated `gear4j.*` properties, optional JDBC persistence and Micrometer wiring.                                    |
+| `gear4jtest-studio` / `studio-runtime` / `studio-json` / `studio-jdbc` | Optional management contracts, Gear4J adapter, JSON transport and durable Studio storage. |
+| `gear4jtest-studio-http` | Optional public HTTP handler with host-supplied authentication; framework-neutral. |
+| `gear4jtest-studio-standalone` | Runnable Studio federation host, configured applications/targets and bounded remote management adapter. |
+| `gear4jtest-studio-web` | Public authoring, workspace, lifecycle, scenarios, observability and target-selection Web Components. |
 
 ## Core concepts
 
@@ -189,4 +193,4 @@ simple and move optional integrations to dedicated modules.
 
 See `docs/production-readiness.md` before using Gear4J operationally.
 
-Le module optionnel [Gear4J Studio P4.1](docs/studio/p41.md) ajoute les scénarios réutilisables, l’historique durable, l’inspection des runs et le monitoring au cycle de vie Draft → Revision → Version → TEST → RUN. Ses composants sont distribuables via [@gear4j/studio-web](gear4jtest-studio-web/README.md).
+Le module optionnel [Gear4J Studio P5](docs/studio/p5.md) propose maintenant un Studio autonome fédérant plusieurs applications Java/Spring. Chaque cible conserve son management, ses scénarios et son cycle Draft → Revision → Version → TEST → RUN. Le mode embarqué reste indépendant. Les composants sont distribuables via [@gear4j/studio-web 0.5.0](gear4jtest-studio-web/README.md).

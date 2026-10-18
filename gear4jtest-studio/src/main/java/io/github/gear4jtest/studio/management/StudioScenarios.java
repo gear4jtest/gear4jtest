@@ -226,8 +226,17 @@ final class StudioScenarios {
         var selected = store.read(tx -> selection(tx, actor, id, number, target));
         admit(actor, selected.scenario().resourceId(), selected.revision().data());
         String input;
+        ResolvedFixture fixture;
         try {
-            input = policy.resolveInput(actor, selected.scenario().resourceId(), selected.revision().data().input());
+            var declared = selected.revision().data().input();
+            if (declared.kind() == ScenarioInput.Kind.SYNTHETIC_TEXT) {
+                input = declared.value();
+                fixture = null;
+            } else {
+                var resolved = policy.resolveFixture(actor, selected.scenario().resourceId(), declared);
+                input = resolved.value();
+                fixture = new ResolvedFixture(declared.value(), declared.fixtureVersion(), resolved.fingerprint());
+            }
         } catch (RuntimeException denied) {
             throw new StudioProblem(SCENARIO_DATA_NOT_ADMITTED);
         }
@@ -235,7 +244,7 @@ final class StudioScenarios {
             throw new StudioProblem(SCENARIO_DATA_NOT_ADMITTED);
         UUID content = UUID.nameUUIDFromBytes(((selected.version() == null ? selected.draft().revisionId()
                 : selected.version().id())
-                + ":" + selected.revision().id()).getBytes(StandardCharsets.UTF_8));
+                + ":" + selected.revision().id() + ":" + fixture).getBytes(StandardCharsets.UTF_8));
         UUID runId = UUID.randomUUID();
         var reference = selected.revision().reference();
         return tests.execute(actor, selected.targetScope().id(), content, requestId, input,
@@ -249,14 +258,15 @@ final class StudioScenarios {
                                  var check = result.scenarioCheck() == null
                                          ? new ScenarioCheck(ScenarioCheck.Status.NOT_EVALUATED, java.util.List.of())
                                          : result.scenarioCheck();
-                                 return result.withScenario(reference, check);
+                                 return result.withScenario(reference, check).withFixture(fixture);
                              }), () -> store.write(tx -> {
                                  tx.lockDomain(domain(tx, resource(tx, selected.scenario().resourceId())).id());
                                  var current = selection(tx, actor, id, number, target);
                                  audit(tx, actor, current.targetScope(), AuditEvent.Action.TEST_REQUESTED, reference,
                                        current.draft().revisionId(), requestId,
                                        current.version() == null ? null : current.version().id());
-                                 runs.begin(tx, runId, actor, current.draft(), current.version(), requestId, reference);
+                                 runs.begin(tx, runId, actor, current.draft(), current.version(), requestId, reference,
+                                            fixture);
                                  return null;
                              }), selected.scenario().resourceId());
     }

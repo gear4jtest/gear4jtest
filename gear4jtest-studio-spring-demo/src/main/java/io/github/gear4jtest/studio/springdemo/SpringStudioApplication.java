@@ -5,8 +5,8 @@ import javax.sql.DataSource;
 
 import io.github.gear4jtest.studio.demo.DemoDatabase;
 import io.github.gear4jtest.studio.demo.DemoWiring;
-import io.github.gear4jtest.studio.demo.RequestActorContext;
 import io.github.gear4jtest.studio.demo.StudioHttpServer;
+import io.github.gear4jtest.studio.http.RequestActorContext;
 import io.github.gear4jtest.studio.management.StudioManagementService;
 import io.github.gear4jtest.studio.spi.DataCapturePolicy;
 import org.slf4j.LoggerFactory;
@@ -75,7 +75,7 @@ public final class SpringStudioApplication implements AutoCloseable {
                                 System.getenv("GEAR4J_STUDIO_TOKEN"), System.getenv("GEAR4J_STUDIO_VIEWER_TOKEN"),
                                 DemoWiring.capturePolicy(System.getenv("GEAR4J_STUDIO_CAPTURE")));
         Runtime.getRuntime().addShutdownHook(new Thread(application::close));
-        LoggerFactory.getLogger(SpringStudioApplication.class).info("Gear4J Studio P4 (Spring): http://127.0.0.1:{}",
+        LoggerFactory.getLogger(SpringStudioApplication.class).info("Gear4J Studio (Spring): http://127.0.0.1:{}",
                                                                     application.port());
     }
 }

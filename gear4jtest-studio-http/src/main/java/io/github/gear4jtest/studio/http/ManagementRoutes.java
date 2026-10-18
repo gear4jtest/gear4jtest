@@ -1,4 +1,4 @@
-package io.github.gear4jtest.studio.demo;
+package io.github.gear4jtest.studio.http;
 
 import java.util.Map;
 import java.util.Set;
@@ -16,12 +16,14 @@ import io.github.gear4jtest.studio.service.StudioProblem;
 
 import static io.github.gear4jtest.studio.json.DefinitionJson.*;
 
-/** Demo HTTP mapping: identity is absent from all request DTOs. */
+/** HTTP mapping shared by embedded hosts and remotely connected hosts. */
 final class ManagementRoutes {
     private final StudioManagementService service;
+    private final io.github.gear4jtest.studio.model.ChainDefinition sample;
 
-    ManagementRoutes(StudioManagementService service) {
+    ManagementRoutes(StudioManagementService service, io.github.gear4jtest.studio.model.ChainDefinition sample) {
         this.service = service;
+        this.sample = sample;
     }
 
     record Response(int status, Object value) {}
@@ -45,7 +47,7 @@ final class ManagementRoutes {
             if (method.equals("GET") && kind.equals("context"))
                 return ok(Map.of("context", service.context(), "identity", service.identity(),
                                  "canCreateDomain", service.canCreateDomain(), "permissions", Permission.values(),
-                                 "sample", DefinitionJson.write(DemoWiring.sample())));
+                                 "sample", DefinitionJson.write(sample)));
             if (method.equals("GET") && kind.equals("catalog"))
                 return ok(service.catalog());
             if (method.equals("GET") && Set.of("domains", "chains", "drafts").contains(kind)) {

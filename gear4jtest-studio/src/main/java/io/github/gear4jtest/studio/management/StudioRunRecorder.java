@@ -34,7 +34,7 @@ public final class StudioRunRecorder {
      */
     public UUID beginHostRun(UUID chainId, StudioRun.Provenance provenance) {
         if (provenance.draftId() != null || provenance.revisionId() != null || provenance.requestId() != null
-                || provenance.scenario() != null)
+                || provenance.scenario() != null || provenance.fixture() != null)
             throw new IllegalArgumentException("Host run is not a Studio test receipt");
         UUID id = UUID.randomUUID();
         store.write(tx -> {

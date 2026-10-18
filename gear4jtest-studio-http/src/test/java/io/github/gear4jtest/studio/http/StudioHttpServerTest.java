@@ -1,4 +1,4 @@
-package io.github.gear4jtest.studio.demo;
+package io.github.gear4jtest.studio.http;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -14,6 +14,10 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.gear4jtest.studio.demo.DemoDatabase;
+import io.github.gear4jtest.studio.demo.DemoPublicationHost;
+import io.github.gear4jtest.studio.demo.DemoWiring;
+import io.github.gear4jtest.studio.demo.StudioHttpServer;
 import io.github.gear4jtest.studio.jdbc.JdbcStudioStore;
 import io.github.gear4jtest.studio.json.DefinitionJson;
 import io.github.gear4jtest.studio.json.StudioJson;

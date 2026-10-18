@@ -1,0 +1,22 @@
+plugins { id 'application' }
+ext.moduleName = 'io.github.gear4jtest.studio.standalone'
+description = 'Standalone Gear4J Studio federation host (experimental).'
+dependencies {
+    api project(':gear4jtest-studio-http')
+    testImplementation project(':gear4jtest-studio-demo')
+    testImplementation project(':gear4jtest-studio-spring-demo')
+    testImplementation project(':gear4jtest-studio-runtime')
+    testImplementation project(':gear4jtest-studio-jdbc')
+    testImplementation libs.h2
+}
+application { mainClass = 'io.github.gear4jtest.studio.standalone.StandaloneStudioApplication' }
+tasks.named('processResources') {
+    from(rootProject.file('gear4jtest-studio-web/src')) { into 'studio' }
+}
+distributions {
+    main {
+        contents {
+            from('example.properties')
+        }
+    }
+}

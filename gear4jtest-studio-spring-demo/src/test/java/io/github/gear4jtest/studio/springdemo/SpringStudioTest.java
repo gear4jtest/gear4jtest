@@ -16,7 +16,7 @@ import javax.sql.DataSource;
 import io.github.gear4jtest.core.spi.factory.ResourceFactory;
 import io.github.gear4jtest.studio.demo.DemoWiring;
 import io.github.gear4jtest.studio.demo.PrefixOperation;
-import io.github.gear4jtest.studio.demo.RequestActorContext;
+import io.github.gear4jtest.studio.http.RequestActorContext;
 import io.github.gear4jtest.studio.management.StudioIdentity;
 import io.github.gear4jtest.studio.management.StudioManagementService;
 import io.github.gear4jtest.studio.model.TestSubmission;

@@ -1,4 +1,4 @@
-# @gear4j/studio-web — expérimental 0.4.1
+# @gear4j/studio-web — expérimental 0.5.0
 
 Composants publics ESM et Web Components, sans dépendance au module de démonstration.
 Le serveur Java et la démo Spring consomment ces mêmes sources via processResources.
@@ -10,7 +10,7 @@ npm run pack:check
 npm pack
 ```
 
-Installer le .tgz produit dans un portail (`npm install /chemin/gear4j-studio-web-0.4.1.tgz`).
+Installer le .tgz produit dans un portail (`npm install /chemin/gear4j-studio-web-0.5.0.tgz`).
 Importer `ManagementClient` depuis `@gear4j/studio-web/client`, `Gear4jStudio` depuis
 `@gear4j/studio-web/editor`, ou `Gear4jWorkspace` depuis `@gear4j/studio-web/workspace`.
 L’entrée principale enregistre les Web Components ; l’entrée client fonctionne sans DOM.
@@ -29,7 +29,7 @@ L’hôte fournit l’authentification. Aucun stockage du token, aucune relance 
 Pour l’éditeur seul : récupérer le draft avec ManagementClient, construire ScopedAuthoringClient,
 puis appeler configure({client: scoped, revision: scoped.flat(state)}).
 Les événements studio:revision / studio:run contiennent uniquement les identifiants et statuts.
-Consulter ../docs/studio/p41.md pour les contrats, limites et changements d’API.
+Consulter ../docs/studio/p5.md pour les contrats, limites et changements d’API.
 
 
 Le composant de cycle de vie est également consommable séparément :
@@ -99,3 +99,25 @@ Les données sont persistées après admission par ScenarioDataPolicy.
 Les indicateurs regroupent les stations par nodeId et dimensions de version,
 mode, artefact, catalogue et build, affichées dans chaque ligne. staleAt signale
 une observation ancienne sans changer le résultat métier.
+
+Le sélecteur fédéré emploie ces mêmes composants :
+
+```js
+import { FederationClient } from '@gear4j/studio-web/targets';
+await document.querySelector('gear4j-targets').configure({
+  client: new FederationClient({ baseUrl: '', tokenProvider: () => tokenDeSession })
+});
+```
+
+Le serveur publie l’inventaire autorisé et relaie les routes sous
+`/targets/{id}/api/v1`. Le navigateur ne choisit pas d’URL distante et ne fournit
+jamais l’identité de l’acteur. Un nouveau workspace est créé à chaque changement
+de cible. `hasUnsavedChanges` couvre drafts, scénarios, formulaires et ACL ; une
+action en cours bloque le changement de cible. Après confirmation d’abandon,
+aucune saisie locale n’est transférée à la cible suivante.
+
+`studio:target` expose `{ targetId, runtimeContextId }`. `studio:disconnect`
+signale à l’hôte qu’il doit vider sa session ; le composant vide son affichage.
+Le launcher P5 conserve son token en mémoire uniquement. Une réponse perdue
+après mutation reste `REMOTE_OUTCOME_UNKNOWN`, sans retry automatique. Le suivi
+des runs passe par le polling existant si la passerelle ne relaie pas SSE.

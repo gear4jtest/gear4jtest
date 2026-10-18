@@ -500,7 +500,8 @@ tasks.register('verifyDatabaseTestDependencyScope') {
                     // Java demo also owns a local H2 DataSource; no driver enters the neutral API.
                     def isStudioH2Dependency = dependency.group == 'com.h2database'
                             && dependency.name == 'h2'
-                            && ((candidate.name in ['gear4jtest-studio', 'gear4jtest-studio-spring-demo']
+                            && ((candidate.name in ['gear4jtest-studio', 'gear4jtest-studio-spring-demo',
+                                                    'gear4jtest-studio-http', 'gear4jtest-studio-standalone']
                                     && configuration.name == 'testImplementation')
                                 || (candidate.name == 'gear4jtest-studio-demo'
                                     && configuration.name == 'implementation'))

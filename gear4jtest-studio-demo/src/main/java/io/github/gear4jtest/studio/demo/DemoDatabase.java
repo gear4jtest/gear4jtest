@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import javax.sql.DataSource;
 
 import io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialect;
+import io.github.gear4jtest.studio.http.RequestActorContext;
 import io.github.gear4jtest.studio.jdbc.JdbcStudioStore;
 import io.github.gear4jtest.studio.jdbc.StudioJdbcSchema;
 import io.github.gear4jtest.studio.management.StudioManagementService;
