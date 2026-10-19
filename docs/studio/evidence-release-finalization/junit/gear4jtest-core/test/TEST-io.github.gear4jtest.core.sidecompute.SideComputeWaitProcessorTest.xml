@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:38.550Z" hostname="2c641953591a" time="0.269">
+  <properties/>
+  <testcase name="beforeExecution_shouldAcceptTimeoutLargerThanNanosecondRange()" classname="io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest" time="0.036"/>
+  <testcase name="beforeExecution_shouldWaitAndStoreResolvedValue()" classname="io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest" time="0.002"/>
+  <testcase name="beforeExecution_shouldRestoreInterruptFlagWhenInterruptedWhileWaiting()" classname="io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest" time="0.001"/>
+  <testcase name="beforeExecution_shouldThrowOnTimeoutWhenConfiguredToFail()" classname="io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest" time="0.053"/>
+  <testcase name="beforeExecution_shouldUseFallbackOnTimeoutWhenConfigured()" classname="io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest" time="0.053"/>
+  <testcase name="beforeExecution_shouldUseDefaultSafetyTimeoutWhenNoTimeoutIsConfigured()" classname="io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest" time="0.053"/>
+  <testcase name="beforeExecution_shouldRejectNullResolvedValue()" classname="io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest" time="0.003"/>
+  <testcase name="beforeExecution_shouldRejectNullFallbackValue()" classname="io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest" time="0.012"/>
+  <testcase name="beforeExecution_shouldIgnoreTimeoutWhenConfiguredToIgnore()" classname="io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest" time="0.052"/>
+  <testcase name="builder_shouldRejectInvalidTimeoutConfiguration()" classname="io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest" time="0.001"/>
+  <testcase name="beforeExecution_shouldPropagateFatalFutureFailure()" classname="io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

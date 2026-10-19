@@ -1,0 +1,86 @@
+[
+  {
+    "id": "@gear4j/studio-web@0.6.2",
+    "name": "@gear4j/studio-web",
+    "version": "0.6.2",
+    "size": 41220,
+    "unpackedSize": 152741,
+    "shasum": "dca933571e7a9d4c930a9d5783a58f4ccebc9141",
+    "integrity": "sha512-XOVpMq+H9Mq2u0Q8Tz+A+7w8KIB1n/ec3eTW+aiuLsgZ09S+UHOL5aEz+y26YlteVnSyCJOgbGmm5NSb4rN/iA==",
+    "filename": "gear4j-studio-web-0.6.2.tgz",
+    "files": [
+      {
+        "path": "LICENSE",
+        "size": 11358,
+        "mode": 420
+      },
+      {
+        "path": "NOTICE",
+        "size": 107,
+        "mode": 420
+      },
+      {
+        "path": "README.md",
+        "size": 7673,
+        "mode": 420
+      },
+      {
+        "path": "package.json",
+        "size": 1041,
+        "mode": 420
+      },
+      {
+        "path": "src/index.mjs",
+        "size": 566,
+        "mode": 420
+      },
+      {
+        "path": "src/management-client.mjs",
+        "size": 10358,
+        "mode": 420
+      },
+      {
+        "path": "src/studio-client.mjs",
+        "size": 2078,
+        "mode": 420
+      },
+      {
+        "path": "src/studio-element.mjs",
+        "size": 32857,
+        "mode": 420
+      },
+      {
+        "path": "src/studio-runs.mjs",
+        "size": 14930,
+        "mode": 420
+      },
+      {
+        "path": "src/studio-scenarios.mjs",
+        "size": 14150,
+        "mode": 420
+      },
+      {
+        "path": "src/studio-simulation.mjs",
+        "size": 11332,
+        "mode": 420
+      },
+      {
+        "path": "src/studio-targets.mjs",
+        "size": 9350,
+        "mode": 420
+      },
+      {
+        "path": "src/studio-versions.mjs",
+        "size": 10092,
+        "mode": 420
+      },
+      {
+        "path": "src/studio-workspace.mjs",
+        "size": 26849,
+        "mode": 420
+      }
+    ],
+    "entryCount": 14,
+    "bundled": []
+  }
+]

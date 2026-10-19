@@ -122,3 +122,7 @@ tag-free.
 Deprecations identify the replacement and earliest removal major. The supported migration target is the immediately
 preceding stable minor release. Release notes must separately list Java API, XML/XSD, DB, property and metric changes so
 operators can assess upgrades without inspecting implementation commits.
+
+## Entirely experimental artifacts
+
+Japicmp does not resolve an N-1 artifact when every production package is explicitly Internal or Experimental. Both fully qualified and imported package markers are recognized. Mixed artifacts retain comparison of their stable packages. Independent consumer checks validate current artifact consumption; they do not promote experimental APIs to stable status.

@@ -2,6 +2,9 @@
 
 Composants publics ESM et Web Components, sans dépendance au module de démonstration.
 Le serveur Java et la démo Spring consomment ces mêmes sources via processResources.
+Ce paquet est un SDK expérimental, pas un backoffice de production préconfiguré.
+L'hôte fournit son authentification et son profil de sécurité. Épingler la version ;
+le dist-tag prévu est `experimental`, aucune publication officielle n'a eu lieu.
 
 ```sh
 npm ci
@@ -29,7 +32,8 @@ L’hôte fournit l’authentification. Aucun stockage du token, aucune relance 
 Pour l’éditeur seul : récupérer le draft avec ManagementClient, construire ScopedAuthoringClient,
 puis appeler configure({client: scoped, revision: scoped.flat(state)}).
 Les événements studio:revision / studio:run contiennent uniquement les identifiants et statuts.
-Consulter ../docs/studio/p6.md pour les contrats, limites et changements d’API.
+Consulter `docs/studio/p6.md`, `docs/studio/release-maturity.md` et
+`docs/studio/deployment-security.md` dans l’archive source pour les contrats et limites.
 
 
 Le composant de cycle de vie est également consommable séparément :

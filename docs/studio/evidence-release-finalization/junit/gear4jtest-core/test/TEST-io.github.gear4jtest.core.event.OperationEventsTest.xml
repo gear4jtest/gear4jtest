@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.event.OperationEventsTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:37.995Z" hostname="2c641953591a" time="0.001">
+  <properties/>
+  <testcase name="parameterResolvedEvent_shouldExposeResolutionMetadata()" classname="io.github.gear4jtest.core.event.OperationEventsTest" time="0.001"/>
+  <testcase name="stationFinishedEvent_shouldExposeFinalStatusAndError()" classname="io.github.gear4jtest.core.event.OperationEventsTest" time="0.0"/>
+  <testcase name="stationStartedEvent_shouldExposeCorrelationFields()" classname="io.github.gear4jtest.core.event.OperationEventsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.service.InMemoryStudioServiceTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:13.914Z" hostname="2c641953591a" time="0.006">
+  <properties/>
+  <testcase name="limitsBoundRetainedDraftsAndRevisionSnapshotsStayImmutable()" classname="io.github.gear4jtest.studio.service.InMemoryStudioServiceTest" time="0.002"/>
+  <testcase name="concurrentDuplicateRequestHasOneExecutionAndReturnsTheRunningReceipt()" classname="io.github.gear4jtest.studio.service.InMemoryStudioServiceTest" time="0.002"/>
+  <testcase name="callerCannotReadAnotherOwnersDraftOrReceipt()" classname="io.github.gear4jtest.studio.service.InMemoryStudioServiceTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.micrometer.PersistenceMetricsBinderTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:52.540Z" hostname="2c641953591a" time="0.06">
+  <properties/>
+  <testcase name="bind_shouldExposeAllPersistenceRuntimeStats()" classname="io.github.gear4jtest.micrometer.PersistenceMetricsBinderTest" time="0.048"/>
+  <testcase name="bind_shouldRecordBoundedFlushDurationDistributionsAndRemoveSubscription()" classname="io.github.gear4jtest.micrometer.PersistenceMetricsBinderTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

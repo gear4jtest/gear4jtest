@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.event.EventDispatcherTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:37.531Z" hostname="2c641953591a" time="0.003">
+  <properties/>
+  <testcase name="dispatchLoop_shouldContinueAfterAnUnexpectedTaskFailure()" classname="io.github.gear4jtest.core.event.EventDispatcherTest" time="0.001"/>
+  <testcase name="submit_shouldRejectWithoutBlockingWhenSharedQueueCapacityIsReached()" classname="io.github.gear4jtest.core.event.EventDispatcherTest" time="0.002"/>
+  <system-out><![CDATA[18:09:37.532 [gear4j-event-dispatcher-5] ERROR io.github.gear4jtest.core.event.EventDispatcher -- Shared event dispatcher task failed unexpectedly.
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

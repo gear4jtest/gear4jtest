@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTargetedCoverageTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:36.862Z" hostname="2c641953591a" time="0.01">
+  <properties/>
+  <testcase name="run_shouldMarkFailedWhenSkipFallbackFails()" classname="io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTargetedCoverageTest" time="0.001"/>
+  <testcase name="run_shouldRecordReleaseFailuresWithoutReplacingSuccessfulResult()" classname="io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTargetedCoverageTest" time="0.001"/>
+  <testcase name="run_shouldContinueWhenProcessorFailureModeAllowsItAndRecordError()" classname="io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTargetedCoverageTest" time="0.001"/>
+  <testcase name="run_shouldKeepExplicitTerminalStatusAndSetOutputWhenStrategyStopsStation()" classname="io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTargetedCoverageTest" time="0.001"/>
+  <testcase name="run_shouldPassMainExceptionToReleaseWhenExecutionFailsBeforeRecordContainsIt()" classname="io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTargetedCoverageTest" time="0.003"/>
+  <testcase name="run_shouldWrapProcessorFailureWhenFailureModeFailsStation()" classname="io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTargetedCoverageTest" time="0.001"/>
+  <testcase name="run_shouldApplyFallbackWhenPreProcessorSkipperMatches()" classname="io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTargetedCoverageTest" time="0.0"/>
+  <testcase name="run_shouldMarkCancelledWithoutExecutingStationWhenCancellationWasRequested()" classname="io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTargetedCoverageTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

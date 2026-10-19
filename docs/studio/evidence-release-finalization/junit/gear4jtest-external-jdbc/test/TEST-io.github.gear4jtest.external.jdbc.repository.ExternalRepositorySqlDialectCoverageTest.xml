@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectCoverageTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:03.228Z" hostname="2c641953591a" time="0.015">
+  <properties/>
+  <testcase name="sqlFactories_shouldReturnDialectSpecificStatements()" classname="io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectCoverageTest" time="0.001"/>
+  <testcase name="bindPage_shouldBindLimitAndOffsetByDialect()" classname="io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectCoverageTest" time="0.002"/>
+  <testcase name="setBooleanAndJson_shouldBindValuesByDialect()" classname="io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectCoverageTest" time="0.001"/>
+  <testcase name="methods_shouldRejectNullDialect()" classname="io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectCoverageTest" time="0.002"/>
+  <testcase name="isUniqueViolation_shouldRecognizeStatesCodesAndDuplicateMessages()" classname="io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectCoverageTest" time="0.002"/>
+  <testcase name="pagedSql_shouldUseOracleSyntaxOnlyForOracle()" classname="io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectCoverageTest" time="0.0"/>
+  <testcase name="prepareGeneratedKeyInsert_shouldUseOracleColumnNameOnlyForOracle()" classname="io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectCoverageTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

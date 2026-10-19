@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:12.049Z" hostname="2c641953591a" time="0.641">
+  <properties/>
+  <testcase name="mockFailureAndExpressionFailureAreExplicitAndNeverLeakValuesIntoDiagnostics()" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorTest" time="0.005"/>
+  <testcase name="completeSubstitutionUsesConditionsAndScalarContractsWithoutAnyBusinessCallOrResourceResolution()" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorTest" time="0.624"/>
+  <testcase name="scalarParsingAndCaptureLimitsAreBoundedAndInvalidValuesNeverFallBackToRealOperators()" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorTest" time="0.005"/>
+  <testcase name="incompleteStaleOrIncompatibleProfilesFailClosedEvenOnUnselectedBranches()" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

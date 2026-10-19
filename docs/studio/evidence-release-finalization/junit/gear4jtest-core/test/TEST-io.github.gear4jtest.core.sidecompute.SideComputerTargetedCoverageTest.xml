@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.sidecompute.SideComputerTargetedCoverageTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:38.820Z" hostname="2c641953591a" time="0.005">
+  <properties/>
+  <testcase name="toSubscription_shouldFilterComputeHandleAndMapRegisteredEvents()" classname="io.github.gear4jtest.core.sidecompute.SideComputerTargetedCoverageTest" time="0.002"/>
+  <testcase name="toSubscription_shouldCompleteFutureExceptionallyWhenComputerFails()" classname="io.github.gear4jtest.core.sidecompute.SideComputerTargetedCoverageTest" time="0.0"/>
+  <testcase name="toSubscription_shouldIgnoreEventsWithoutRegisteredExecutionContext()" classname="io.github.gear4jtest.core.sidecompute.SideComputerTargetedCoverageTest" time="0.001"/>
+  <testcase name="build_shouldRejectMissingComputer()" classname="io.github.gear4jtest.core.sidecompute.SideComputerTargetedCoverageTest" time="0.0"/>
+  <testcase name="stationStatusFactories_shouldBuildPredicatesForFinishedEvents()" classname="io.github.gear4jtest.core.sidecompute.SideComputerTargetedCoverageTest" time="0.001"/>
+  <system-out><![CDATA[18:09:38.824 [Test worker] WARN io.github.gear4jtest.core.sidecompute.SideComputer -- Skipping side-compute 'missing' for event CustomEvent because execution context 427c952b-689c-4c3d-890c-a1055a693cdc is no longer registered
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

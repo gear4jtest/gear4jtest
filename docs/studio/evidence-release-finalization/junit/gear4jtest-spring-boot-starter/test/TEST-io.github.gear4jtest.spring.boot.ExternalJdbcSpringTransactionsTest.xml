@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.spring.boot.ExternalJdbcSpringTransactionsTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:58.706Z" hostname="2c641953591a" time="1.126">
+  <properties/>
+  <testcase name="explicitSpringBoundary_shouldCommitExternalWritesIndependentlyOfAmbientRollback()" classname="io.github.gear4jtest.spring.boot.ExternalJdbcSpringTransactionsTest" time="1.067"/>
+  <testcase name="defaultBoundary_shouldRejectTransactionAwareAmbientConnectionsBeforeExternalWrites()" classname="io.github.gear4jtest.spring.boot.ExternalJdbcSpringTransactionsTest" time="0.033"/>
+  <system-out><![CDATA[18:18:59.239 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:18:59.810 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

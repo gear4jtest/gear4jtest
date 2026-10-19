@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.xml2java.XmlAssemblyLineOperatorClasspathFunctionalTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:28.524Z" hostname="2c641953591a" time="5.445">
+  <properties/>
+  <testcase name="consumer_shouldCompileWithAnExternalOperatorAndInvalidateOnClasspathChanges()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineOperatorClasspathFunctionalTest" time="2.854"/>
+  <testcase name="consumer_shouldKeepPreviousGeneratedSourcesWhenAnOperatorDisappears()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineOperatorClasspathFunctionalTest" time="1.31"/>
+  <testcase name="consumer_shouldCompileAndPackageSameProjectOperatorsWithoutATaskCycle()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineOperatorClasspathFunctionalTest" time="1.28"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

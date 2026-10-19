@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:43.600Z" hostname="2c641953591a" time="0.416">
+  <properties/>
+  <testcase name="builder_shouldNotInitializeSchemaUnlessExplicitlyEnabled()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest" time="0.002"/>
+  <testcase name="bufferedRecord_shouldNotChangeWhenCallerMutatesNestedPayloadBeforeFlush()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest" time="0.008"/>
+  <testcase name="runFlushThreshold_shouldOverrideManagerBatchSizeForOnlyThatRun()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest" time="0.009"/>
+  <testcase name="append_shouldRejectRecordsWhenPerRunBufferIsFull()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest" time="0.007"/>
+  <testcase name="start_shouldAllowIndependentJdbcWritesToProgressConcurrently()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest" time="0.005"/>
+  <testcase name="start_shouldApplyTheGlobalRunLimitBeforeWritingAnotherRunRecord()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest" time="0.002"/>
+  <testcase name="builder_shouldInitializeSchemaWhenExplicitlyEnabled()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest" time="0.002"/>
+  <testcase name="defaultRedactionPolicy_shouldPersistMetadataWithoutSensitiveValues()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest" time="0.055"/>
+  <testcase name="customJsonCodec_shouldReceiveValuesAfterCustomRedaction()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest" time="0.25"/>
+  <testcase name="flushThreshold_shouldPreserveConfigurationRegardlessOfBuilderCallOrder()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest" time="0.05"/>
+  <testcase name="periodicFlush_shouldPersistRecordsBelowBatchThreshold()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest" time="0.013"/>
+  <testcase name="start_shouldRejectRunFlushThresholdAboveBoundedBufferBeforeRepositoryWrite()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest" time="0.002"/>
+  <system-out><![CDATA[18:18:43.606 [Test worker] WARN io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager -- [Gear4J] JDBC persistence is configured to allow unredacted sensitive data capture. Assembly line payloads, contexts, results and error messages will be persisted as-is.
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

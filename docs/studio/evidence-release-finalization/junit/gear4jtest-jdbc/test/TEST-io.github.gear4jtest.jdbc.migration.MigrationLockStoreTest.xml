@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.migration.MigrationLockStoreTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:44.715Z" hostname="2c641953591a" time="0.067">
+  <properties/>
+  <testcase name="failedInfrastructureCreationIsNotMistakenForAConcurrentSuccess()" classname="io.github.gear4jtest.jdbc.migration.MigrationLockStoreTest" time="0.06"/>
+  <testcase name="missingLockRowMustNotAllowMigrationToProceed()" classname="io.github.gear4jtest.jdbc.migration.MigrationLockStoreTest" time="0.003"/>
+  <testcase name="concurrentInfrastructureCreationStillInitializesTheLockRow()" classname="io.github.gear4jtest.jdbc.migration.MigrationLockStoreTest" time="0.004"/>
+  <system-out><![CDATA[18:18:44.780 [Test worker] DEBUG io.github.gear4jtest.jdbc.migration.MigrationLockStore -- [Gear4J] Schema infrastructure table gear4j_schema_lock was created concurrently
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

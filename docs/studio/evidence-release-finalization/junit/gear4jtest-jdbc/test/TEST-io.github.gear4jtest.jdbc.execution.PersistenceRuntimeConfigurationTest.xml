@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfigurationTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:44.284Z" hostname="2c641953591a" time="0.011">
+  <properties/>
+  <testcase name="build_shouldRejectBufferSmallerThanBatch()" classname="io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfigurationTest" time="0.0"/>
+  <testcase name="build_shouldRejectNonPositiveGlobalCapacities()" classname="io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfigurationTest" time="0.001"/>
+  <testcase name="toBuilder_shouldPreserveEveryConfigurationProperty()" classname="io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfigurationTest" time="0.0"/>
+  <testcase name="build_shouldRejectInvalidReadinessThresholds()" classname="io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfigurationTest" time="0.0"/>
+  <testcase name="build_shouldRejectNegativeJdbcStatementTimeout()" classname="io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfigurationTest" time="0.0"/>
+  <testcase name="build_shouldRejectNonPositiveFlushBacklogCapacity()" classname="io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfigurationTest" time="0.001"/>
+  <testcase name="defaults_shouldBoundMemoryAndSchedulePeriodicFlush()" classname="io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfigurationTest" time="0.001"/>
+  <testcase name="createFlushExecutor_shouldRejectWhenBoundedQueueIsFull()" classname="io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfigurationTest" time="0.001"/>
+  <testcase name="build_shouldAllowDisablingJdbcStatementTimeout()" classname="io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfigurationTest" time="0.0"/>
+  <testcase name="build_shouldRejectInvalidShutdownRetryBackoff()" classname="io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfigurationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

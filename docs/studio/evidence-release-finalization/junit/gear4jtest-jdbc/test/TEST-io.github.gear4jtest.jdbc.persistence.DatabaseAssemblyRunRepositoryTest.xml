@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" tests="22" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:44.789Z" hostname="2c641953591a" time="0.139">
+  <properties/>
+  <testcase name="save_shouldCommitAndRestorePreviousAutoCommit()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.061"/>
+  <testcase name="delete_shouldRejectConnectionAlreadyOwnedByAnAmbientTransaction()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.006"/>
+  <testcase name="findById_shouldWrapSqlFailureWithRepositoryContext()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.002"/>
+  <testcase name="findAllPage_shouldBindPostgresqlLimitThenOffset()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.003"/>
+  <testcase name="checkConnectivity_shouldExecuteBoundedDialectValidationQuery()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.01"/>
+  <testcase name="saveOperationRecordsBatch_shouldUseJdbcBatchForOpenUpdatesAndMissingInserts()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.006"/>
+  <testcase name="builder_shouldRequireDataSourceObjectMapperAndStatementOptions()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.002"/>
+  <testcase name="checkConnectivity_shouldExposeSqlFailureAsPersistenceFailure()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.001"/>
+  <testcase name="builder_shouldRequireAnExplicitDialect()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.0"/>
+  <testcase name="saveOperationRecordsBatch_shouldFallbackToSingleRecordAlgorithmOnDuplicateBatchInsert()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.005"/>
+  <testcase name="save_shouldAllowDisablingJdbcStatementTimeout()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.004"/>
+  <testcase name="saveOperationRecordsBatch_shouldIgnoreNullOrEmptyBatches()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.001"/>
+  <testcase name="saveOperationRecordsBatch_shouldUseNativeUpsertForSupportedDialects()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.005"/>
+  <testcase name="recordsRequiringInsert_shouldFallbackToEveryRecordWhenCountsAreMissingOrFailed()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.002"/>
+  <testcase name="save_shouldApplyDefaultJdbcStatementTimeout()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.005"/>
+  <testcase name="update_shouldRollbackWhenNoAssemblyRunIsUpdated()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.005"/>
+  <testcase name="recordsRequiringInsert_shouldTreatSuccessNoInfoAsSuccessfulUpdate()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.001"/>
+  <testcase name="update_shouldRollbackAndRestorePreviousAutoCommitOnSqlFailure()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.004"/>
+  <testcase name="findAllPage_shouldBindOracleOffsetThenFetchSize()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.001"/>
+  <testcase name="builder_shouldNotOpenAConnectionToDetectDialect()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.0"/>
+  <testcase name="save_shouldDelegateCompleteBoundaryToConfiguredTransactionOperations()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.004"/>
+  <testcase name="countChildLogsByRunId_shouldReturnZeroWhenQueryHasNoRows()" classname="io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

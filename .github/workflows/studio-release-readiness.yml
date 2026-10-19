@@ -4,6 +4,11 @@ on:
   push:
     branches: [main, master]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      project-version:
+        required: true
+        type: string
 permissions:
   contents: read
 jobs:
@@ -50,7 +55,9 @@ jobs:
           npm ci --ignore-scripts --no-audit --no-fund
           npx --no-install playwright install --with-deps chromium
       - name: Qualify without publication
-        run: ./gradlew --no-daemon --max-workers=2 studioReleaseReadiness --continue
+        env:
+          CANDIDATE_VERSION: ${{ inputs.project-version || '1.0.0-SNAPSHOT' }}
+        run: ./gradlew --no-daemon --max-workers=2 studioReleaseReadiness --continue -PprojectVersion="${CANDIDATE_VERSION}"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
@@ -61,4 +68,5 @@ jobs:
             build/reports/studio-release-browser/*.json
             build/reports/studio-release-browser/*.png
             build/reports/jacoco/**
+            build/reports/studio-release/**
           retention-days: 14

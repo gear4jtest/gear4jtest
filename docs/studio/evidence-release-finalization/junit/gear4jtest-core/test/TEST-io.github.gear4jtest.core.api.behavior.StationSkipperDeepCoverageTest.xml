@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.api.behavior.StationSkipperDeepCoverageTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:34.617Z" hostname="2c641953591a" time="0.003">
+  <properties/>
+  <testcase name="factories_shouldRejectNullPredicates()" classname="io.github.gear4jtest.core.api.behavior.StationSkipperDeepCoverageTest" time="0.002"/>
+  <testcase name="preAndPostFactories_shouldExposePhaseReasonAndDecision()" classname="io.github.gear4jtest.core.api.behavior.StationSkipperDeepCoverageTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

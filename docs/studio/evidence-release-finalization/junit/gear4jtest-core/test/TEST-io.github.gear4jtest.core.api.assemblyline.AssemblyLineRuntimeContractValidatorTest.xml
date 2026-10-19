@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContractValidatorTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:34.588Z" hostname="2c641953591a" time="0.01">
+  <properties/>
+  <testcase name="validateConfigurationCoherence_shouldRejectPersistenceWithInlineContract()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContractValidatorTest" time="0.002"/>
+  <testcase name="validateConfigurationCoherence_shouldRejectNestedRunExtensionsForInlineContracts()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContractValidatorTest" time="0.001"/>
+  <testcase name="validateConfigurationCoherence_shouldRejectConfiglessInlineContractWhenRuntimeConfigIsPresent()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContractValidatorTest" time="0.0"/>
+  <testcase name="defaultConfiguration_shouldProduceInlineConfiglessContract()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContractValidatorTest" time="0.0"/>
+  <testcase name="validateConfigurationCoherence_shouldRequireStationExtensionRequirementForInlineContracts()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContractValidatorTest" time="0.002"/>
+  <testcase name="validateConfigurationCoherence_shouldRequireEventHandlingRequirementForInlineEventHandling()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContractValidatorTest" time="0.0"/>
+  <testcase name="validateConfigurationCoherence_shouldHonorCustomExtensionInlineMetadata()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContractValidatorTest" time="0.001"/>
+  <testcase name="runtimeConfiguration_shouldDefaultToNestedRunOnlyContract()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContractValidatorTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

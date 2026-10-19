@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.micrometer.GeneratedLoadingMetricsBinderTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:52.348Z" hostname="2c641953591a" time="0.188">
+  <properties/>
+  <testcase name="bind_shouldExposeGeneratedRuntimeMetricsWithOnlyFiniteTags()" classname="io.github.gear4jtest.micrometer.GeneratedLoadingMetricsBinderTest" time="0.187"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:36.683Z" hostname="2c641953591a" time="0.01">
+  <properties/>
+  <testcase name="finalizeRunFromResult_shouldHandleFatalErrorsNullResultsAndNonExceptionThrowables()" classname="io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTest" time="0.001"/>
+  <testcase name="executeRootStation_shouldExposeNonTerminalRunningAsEngineBug()" classname="io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTest" time="0.002"/>
+  <testcase name="[1] stationStatus=SUCCEEDED, expectedOutcome=SUCCEEDED, expectedStatus=SUCCEEDED" classname="io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTest" time="0.001"/>
+  <testcase name="[2] stationStatus=SKIPPED, expectedOutcome=SKIPPED, expectedStatus=SKIPPED" classname="io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTest" time="0.001"/>
+  <testcase name="[3] stationStatus=STOPPED, expectedOutcome=STOPPED, expectedStatus=STOPPED" classname="io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTest" time="0.001"/>
+  <testcase name="[4] stationStatus=FAILED, expectedOutcome=FAILED, expectedStatus=FAILED" classname="io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTest" time="0.001"/>
+  <testcase name="finalizeRunFromResult_shouldNotCaptureResultWhenPersistenceDisablesIt()" classname="io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTest" time="0.0"/>
+  <testcase name="executeRootStation_shouldCreateCancellationErrorFromRootLogMessage()" classname="io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTest" time="0.0"/>
+  <system-out><![CDATA[18:09:36.686 [Test worker] ERROR io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapper -- Root station root returned non-terminal RUNNING status for pipeline pipe
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -14,7 +14,7 @@ The configured Maven group is:
 io.github.gear4jtest
 ```
 
-Before the first release, this namespace must be registered and verified in the Central Publisher Portal.
+These are working/test coordinates, not an approved official namespace. Before publication, choose and verify the namespace in Central. If the official namespace is `io.github.gear4j`, coordinate all affected coordinates/contracts and requalify the artifacts; do not publish the test namespace by accident.
 
 ## Required GitHub secrets
 
@@ -37,7 +37,7 @@ may additionally use either the `NVD_DATAFEED_USER` and `NVD_DATAFEED_PASSWORD` 
 
 ## Local validation and dry run
 
-Run the lightweight release-metadata gate first. It checks the required legal files, repository-local Markdown links and
+Run the lightweight release-metadata gate from a Git checkout first (JReleaser requires repository metadata; a raw source ZIP alone is not a release checkout). It checks the required legal files, repository-local Markdown links and
 parses the JReleaser configuration with the default snapshot version, so no release credentials are required:
 
 ```bash
@@ -59,7 +59,7 @@ or `1.0.0-rc1`. It now depends on `releaseMetadataCheck`, so the legal files,
 documentation links, ADR metadata and isolated JReleaser model are validated by
 the same local gate rather than relying on a separate operator command.
 
-The repository configures a 2 GiB Gradle daemon heap in the root `gradle.properties` because
+Provide a 2 GiB Gradle daemon heap in the release environment because
 `dependencyCheckAggregate` performs the OWASP Dependency-Check aggregate analysis in-process. Ad-hoc
 `dependencyCheckAggregate` runs may still use anonymous NVD access, but `releaseCheck` requires either `NVD_API_KEY`
 or `NVD_DATAFEED_URL`. `verifyReleaseVulnerabilityFeed` rejects incomplete or conflicting mirror credentials and emits
@@ -214,3 +214,9 @@ scripts/verify-reproducible-staging.sh 1.0.0-rc1
 The script hashes an existing staging repository, rebuilds it from a clean workspace and compares the hashes. Maven
 repository metadata containing publication timestamps is intentionally excluded; the published component artifacts are
 compared.
+
+## Mandatory Studio qualification
+
+Before any release deployment or deployment dry run, execute `studioReleaseReadiness` with a disposable PostgreSQL 17 service, matching native backup tools and Chromium, as described in [the PostgreSQL gate](studio/postgresql-qualification.md). H2 and skipped container tests cannot replace it. The release workflow calls the local reusable Studio workflow with the same commit/version; `publish` requires its success as well as preflight and the four-dialect JDBC matrix.
+
+The npm tarball is qualified locally; no automatic npm publication workflow or registry credentials are claimed. Its intended dist-tag is `experimental`. Decide the official version and namespace, qualify signing and registry access, and obtain a release decision separately. See [Studio maturity](studio/release-maturity.md).

@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-15",
+  "java": [
+    "openjdk version \"17.0.20.1\" 2026-08-18",
+    "OpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)",
+    "OpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)"
+  ],
+  "gradle": "9.6.1 (wrapper checksum verified)",
+  "node": "v24.19.0",
+  "npm": "11.9.0",
+  "postgresTools": {
+    "psql": false,
+    "pg_dump": false,
+    "pg_restore": false,
+    "postgres": false,
+    "docker": false
+  },
+  "configured": {
+    "GEAR4J_TEST_POSTGRES_URL": false,
+    "GEAR4J_TEST_POSTGRES_USER": false,
+    "GEAR4J_TEST_POSTGRES_PASSWORD": false,
+    "NVD_API_KEY": false,
+    "NVD_DATAFEED_URL": false
+  },
+  "metadataCheck": "Local temporary Git snapshot; no remote push or tag",
+  "publicationPerformed": false
+}

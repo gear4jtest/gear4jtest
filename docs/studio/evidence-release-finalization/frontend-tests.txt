@@ -1,0 +1,32 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> @gear4j/studio-web@0.6.2 test
+> node --test test/*.test.mjs
+
+✔ P1 client sends optimistic resource version on versioned routes with host authentication (2.224091ms)
+✔ scoped editor uses resource version for writes and immutable revision for a controlled test (107.338184ms)
+✔ workspace preserves an unsaved draft until explicit discard and survives failed navigation (218.725977ms)
+✔ ACL screen sends the policy version and grants but never supplies the acting identity (68.492845ms)
+✔ creation form retains entered values after a conflict and discovery does not permit opening (15.569791ms)
+✔ denied refresh removes the selected definition and related cached data after revocation (20.673735ms)
+✔ client filters reads and sends SSE credentials only as headers, parsing chunked snapshots (4.086677ms)
+✔ component escapes observations, keeps stable filters across pages, and removes data on revoked access (142.535949ms)
+✔ READ_RUNS alone never requests metrics and renders metadata-only results (20.102412ms)
+✔ late responses cannot restore an earlier scope or filter (30.447836ms)
+✔ stream closure reloads the durable snapshot; unavailable streams use polling without retrying execution (21.712034ms)
+✔ disconnection aborts SSE and permission revocation clears the current detail (17.205643ms)
+✔ scenario client pins revisions and targets without input duplication or caller identity (2.280948ms)
+✔ reusable component retains unsaved fixtures and rejects dirty authoring targets before POST (233.651754ms)
+✔ transport loss never replays a scenario test and receipt lookup is an explicit GET (33.733403ms)
+✔ read-only scopes expose history but no save controls, and forbidden responses clear data (10.733181ms)
+✔ public simulation client uses federable paths with pinned revisions and no value duplication (1.86534ms)
+✔ simulation requires saved profile, keeps exact mock text and rereads a report without executing (157.086009ms)
+✔ profile initialization explicitly substitutes both branches with FAIL and never rewrites an existing mock (17.743696ms)
+✔ scenario saves the reusable profile and preserves it when other fixture fields change (12.400892ms)
+✔ historical drift warnings remain visible on plan and persisted report read without a new simulation (21.318379ms)
+✔ host authentication and conditional revision travel in the correct request (2.266355ms)
+✔ a lost test response never causes an automatic POST retry (0.652976ms)
+✔ receipt recovery is a GET for the original identity (0.295366ms)
+✔ server exception details are not surfaced in client errors (0.476029ms)
+✔ reordering is immutable and preserves stable node identities (0.606657ms)
+✔ resource parameters are references rather than literal secret fields (0.341797ms)

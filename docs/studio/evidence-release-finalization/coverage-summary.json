@@ -1,0 +1,30 @@
+{
+  "report": "build/reports/jacoco/report.xml",
+  "counters": {
+    "INSTRUCTION": {
+      "missed": 11070,
+      "covered": 92034
+    },
+    "BRANCH": {
+      "missed": 2265,
+      "covered": 6437
+    },
+    "LINE": {
+      "missed": 2527,
+      "covered": 18564
+    },
+    "COMPLEXITY": {
+      "missed": 2540,
+      "covered": 6952
+    },
+    "METHOD": {
+      "missed": 488,
+      "covered": 4578
+    },
+    "CLASS": {
+      "missed": 37,
+      "covered": 846
+    }
+  },
+  "criticalAndModuleRatchets": "PASS; see local-gates.txt"
+}

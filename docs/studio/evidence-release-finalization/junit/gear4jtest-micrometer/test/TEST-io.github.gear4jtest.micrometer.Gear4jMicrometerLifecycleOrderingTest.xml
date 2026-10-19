@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.micrometer.Gear4jMicrometerLifecycleOrderingTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:52.273Z" hostname="2c641953591a" time="0.075">
+  <properties/>
+  <testcase name="stationMetrics_shouldObserveFailureFromEarlierCriticalCompletionObserver()" classname="io.github.gear4jtest.micrometer.Gear4jMicrometerLifecycleOrderingTest" time="0.07"/>
+  <testcase name="runMetrics_shouldObserveFailureFromEarlierCriticalCompletionObserver()" classname="io.github.gear4jtest.micrometer.Gear4jMicrometerLifecycleOrderingTest" time="0.003"/>
+  <system-out><![CDATA[18:18:52.322 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=micrometer-lifecycle-order, rootStation=echo, requestExtensions=[]
+18:18:52.325 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=micrometer-lifecycle-order, stationWrappers=0, stationLifecycles=2, runInterceptors=0, executorWrappers=0
+18:18:52.337 [Test worker] ERROR io.github.gear4jtest.core.engine.runner.StationLifecycleRunner -- StationLifecycleExtension failed during onStationCompleted. extension=io.github.gear4jtest.micrometer.Gear4jMicrometerLifecycleOrderingTest$CriticalEchoCompletionExtension, stationId=echo
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+18:18:52.346 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=micrometer-lifecycle-order, rootStation=echo, requestExtensions=[]
+18:18:52.347 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=micrometer-lifecycle-order, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:18:52.347 [Test worker] ERROR io.github.gear4jtest.core.engine.AssemblyLineRunLifecycleInvoker -- A critical RunLifecycleExtension failed during onRunCompleted. extension=io.github.gear4jtest.micrometer.Gear4jMicrometerLifecycleOrderingTest$CriticalRunCompletionExtension
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

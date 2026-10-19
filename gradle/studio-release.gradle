@@ -16,11 +16,17 @@ tasks.register('studioConsumerSmoke', Exec) {
     args '--no-daemon', '--max-workers=2', '-p', 'config/studio-consumer-smoke', 'clean', 'smoke',
         "-Pgear4jVersion=${project.version}", "-Pgear4jRepository=${layout.buildDirectory.dir('staging-deploy').get().asFile}"
 }
-tasks.register('studioReleaseReadiness') {
+tasks.register('studioDependencyAudit', Exec) {
+    group = 'verification'
+    dependsOn ':gear4jtest-studio-demo:studioFrontendInstall'
+    commandLine 'node', 'scripts/studio-release/audit.mjs'
+}
+tasks.register('studioReleaseReadiness', Exec) {
     group = 'verification'
     description = 'Studio pre-publication gate: real PostgreSQL, browsers, packaged consumers, contracts and check.'
     // A dependency on root :check alone does not select every subproject's check.
     dependsOn rootProject.allprojects.collect { it.path == ':' ? ':check' : it.path + ':check' }
     dependsOn 'studioReleaseBaseline', 'verifyStagedReleaseArtifacts', 'studioConsumerSmoke',
-        'studioBrowserTest', ':gear4jtest-studio-jdbc:studioPostgresQualification'
+        'studioBrowserTest', 'studioDependencyAudit', ':gear4jtest-studio-jdbc:studioPostgresQualification'
+    commandLine 'python3', 'scripts/verify_studio_qualification.py', '--project-version', project.version.toString()
 }

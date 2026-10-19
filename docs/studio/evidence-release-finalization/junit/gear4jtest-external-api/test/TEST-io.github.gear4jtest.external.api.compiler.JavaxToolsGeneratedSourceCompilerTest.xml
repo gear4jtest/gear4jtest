@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.compiler.JavaxToolsGeneratedSourceCompilerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:10:01.299Z" hostname="2c641953591a" time="0.304">
+  <properties/>
+  <testcase name="compile_shouldCompileGeneratedAssemblyLineWithJdkCompiler()" classname="io.github.gear4jtest.external.api.compiler.JavaxToolsGeneratedSourceCompilerTest" time="0.076"/>
+  <testcase name="compile_shouldRejectApisNewerThanJava17()" classname="io.github.gear4jtest.external.api.compiler.JavaxToolsGeneratedSourceCompilerTest" time="0.079"/>
+  <testcase name="compile_shouldResolveTypesVisibleOnlyFromParentUrlClassLoader()" classname="io.github.gear4jtest.external.api.compiler.JavaxToolsGeneratedSourceCompilerTest" time="0.149"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

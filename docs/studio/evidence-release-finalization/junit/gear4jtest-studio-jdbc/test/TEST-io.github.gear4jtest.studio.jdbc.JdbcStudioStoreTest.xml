@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.jdbc.JdbcStudioStoreTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:19:55.670Z" hostname="2c641953591a" time="0.398">
+  <properties/>
+  <testcase name="scenarioHistoryIsImmutableAndCorruptFixtureDataFailsClosed()" classname="io.github.gear4jtest.studio.jdbc.JdbcStudioStoreTest" time="0.118"/>
+  <testcase name="fatalFailuresRollBackAndSessionHandlesCannotEscapeTheirTransaction()" classname="io.github.gear4jtest.studio.jdbc.JdbcStudioStoreTest" time="0.048"/>
+  <testcase name="revisionsAclAuditAndMetadataSurviveReopeningTheDatabase()" classname="io.github.gear4jtest.studio.jdbc.JdbcStudioStoreTest" time="0.231"/>
+  <system-out><![CDATA[18:19:55.676 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:55.798 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:55.843 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

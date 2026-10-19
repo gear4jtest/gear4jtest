@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.management.StudioManagementTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:19:07.172Z" hostname="2c641953591a" time="1.899">
+  <properties/>
+  <testcase name="filteredPaginationDoesNotUseHiddenRowsAsVisiblePages()" classname="io.github.gear4jtest.studio.management.StudioManagementTest" time="0.435"/>
+  <testcase name="delegationCannotEscalateRewriteInheritanceOrRemoveProtectedRights()" classname="io.github.gear4jtest.studio.management.StudioManagementTest" time="0.236"/>
+  <testcase name="auditFailureRollsBackTheDefinitionAndRevisionHead()" classname="io.github.gear4jtest.studio.management.StudioManagementTest" time="0.04"/>
+  <testcase name="concurrentWritersCommitExactlyOneRevisionAndOneAudit()" classname="io.github.gear4jtest.studio.management.StudioManagementTest" time="0.025"/>
+  <testcase name="storeRejectsAnotherContextButAllowsCatalogueAndBuildEvolution()" classname="io.github.gear4jtest.studio.management.StudioManagementTest" time="0.014"/>
+  <testcase name="storageAdmissionAuthenticationAndGlobalDomainCreationFailClosed()" classname="io.github.gear4jtest.studio.management.StudioManagementTest" time="0.026"/>
+  <testcase name="sourceRevisionsUseTheSameAclOptimisticVersionAndAtomicAuditBoundary()" classname="io.github.gear4jtest.studio.management.StudioManagementTest" time="0.035"/>
+  <testcase name="inheritedRightsStopAtPrivateDraftsAndAuditPagesFilterInvisibleResources()" classname="io.github.gear4jtest.studio.management.StudioManagementTest" time="0.046"/>
+  <testcase name="draftRevisionLineageMetadataAndArchivePreserveHistory()" classname="io.github.gear4jtest.studio.management.StudioManagementTest" time="0.035"/>
+  <testcase name="sparseAclPagesStopAtBudgetAndOpaqueContinuationIsScopedToActorAndQuery()" classname="io.github.gear4jtest.studio.management.StudioManagementTest" time="0.136"/>
+  <testcase name="testAdmissionIsAuditedWithoutPayloadAndDuplicateRequestsKeepTheirProvenance()" classname="io.github.gear4jtest.studio.management.StudioManagementTest" time="0.085"/>
+  <testcase name="runtimeIdentityIsImmutableUniqueAndPreviewDoesNotWrite()" classname="io.github.gear4jtest.studio.management.StudioManagementTest" time="0.025"/>
+  <testcase name="privateDraftsDiscoveryAndExplicitSharingAreDistinct()" classname="io.github.gear4jtest.studio.management.StudioManagementTest" time="0.026"/>
+  <system-out><![CDATA[18:19:07.631 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:08.127 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:08.400 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:08.461 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:08.508 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:08.549 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:08.592 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:08.642 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:08.708 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:08.755 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:08.907 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:09.003 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:09.038 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

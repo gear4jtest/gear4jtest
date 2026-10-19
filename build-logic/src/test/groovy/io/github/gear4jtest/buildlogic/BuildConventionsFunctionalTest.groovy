@@ -278,10 +278,11 @@ version = findProperty('projectVersion') ?: '1.0.0'
 project(':sample-library') {
     group = rootProject.group
     version = rootProject.version
-    description = 'Published fixture library.'
+    description = 'Generic description before module evaluation.'
     ext.moduleName = 'io.github.gear4jtest.fixture.published'
 
     apply plugin: 'gear4j.publishing'
+    description = 'Published fixture library.'
 }
 
 apply plugin: 'gear4j.root-release'
@@ -435,6 +436,26 @@ tasks.register('verifyReleaseConventionModel') {
         assertThat(Files.readString(projectDirectory.resolve(
             'build/reports/release/vulnerability-feed.txt')))
             .isEqualTo('source=nvd-datafeed-mirror\nauthentication=network-or-none\n')
+
+        Files.writeString(projectDirectory.resolve('build.gradle'), """
+ tasks.register('verifyApiScope') {
+     doLast {
+         assert (tasks.findByName('japicmpSampleLibrary') == null) ==
+             (findProperty('expectExperimental') == 'true')
+     }
+ }
+""", java.nio.file.StandardOpenOption.APPEND)
+        [
+            ['@Experimental\npackage fixture;\nimport io.github.gear4jtest.core.api.annotation.Experimental;\n', true],
+            ['@io.github.gear4jtest.core.api.annotation.Experimental\npackage fixture;\n', true],
+            ['@PublicApi\npackage fixture;\nimport io.github.gear4jtest.core.api.annotation.PublicApi;\n', false]
+        ].each { fixture ->
+            write('sample-library/src/main/java/fixture/package-info.java', fixture[0])
+            GradleRunner.create().withProjectDir(projectDirectory.toFile())
+                .withArguments('verifyApiScope', '-Pgear4j.apiBaselineVersion=0.0.0',
+                    "-PexpectExperimental=${fixture[1]}")
+                .withPluginClasspath().build()
+        }
     }
 
     private static Map<String, String> dependencyFeedEnvironment(Map<String, String> overrides) {

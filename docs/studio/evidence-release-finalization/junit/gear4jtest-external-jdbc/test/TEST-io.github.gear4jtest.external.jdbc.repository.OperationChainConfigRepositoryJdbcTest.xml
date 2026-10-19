@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.jdbc.repository.OperationChainConfigRepositoryJdbcTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:03.562Z" hostname="2c641953591a" time="0.035">
+  <properties/>
+  <testcase name="findByAssemblyLineId_shouldParseJsonStorePropsWithCommaInValue()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainConfigRepositoryJdbcTest" time="0.03"/>
+  <testcase name="findByAssemblyLineId_shouldRepresentThirdPartyStoreType()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainConfigRepositoryJdbcTest" time="0.003"/>
+  <testcase name="dialect_shouldProvideProviderSpecificUpsertSyntax()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainConfigRepositoryJdbcTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

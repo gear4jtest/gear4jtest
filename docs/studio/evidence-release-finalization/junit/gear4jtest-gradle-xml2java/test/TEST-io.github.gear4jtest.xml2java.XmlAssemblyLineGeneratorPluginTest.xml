@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:24.511Z" hostname="2c641953591a" time="4.012">
+  <properties/>
+  <testcase name="should_reject_inline_java_by_default_until_xml_is_explicitly_trusted()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest" time="1.87"/>
+  <testcase name="should_keep_previous_generated_sources_when_translation_fails()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest" time="0.052"/>
+  <testcase name="should_wire_generation_task_before_java_compilation()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest" time="0.816"/>
+  <testcase name="should_reject_duplicate_generated_classes_before_replacing_outputs()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest" time="1.025"/>
+  <testcase name="should_share_xml_input_limit_between_extension_and_task()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest" time="0.035"/>
+  <testcase name="should_enforce_configured_generation_limits_before_replacing_outputs()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest" time="0.05"/>
+  <testcase name="should_generate_java_sources_from_configured_xml_files()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest" time="0.064"/>
+  <testcase name="should_register_generation_task_and_extension()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest" time="0.019"/>
+  <testcase name="should_generate_gel_only_xml_with_registered_operator_capability()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest" time="0.034"/>
+  <testcase name="should_restore_the_context_loader_when_operator_resolution_fails()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest" time="0.027"/>
+  <testcase name="should_read_only_one_byte_beyond_xml_input_limit()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest" time="0.013"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

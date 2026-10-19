@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.experimental.cache.assemblylinecache.InMemoryAssemblyLineCacheRepositoryTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:41.470Z" hostname="2c641953591a" time="0.268">
+  <properties/>
+  <testcase name="cleanUp_shouldRemoveExpiredEntriesAndUpdateWeight()" classname="io.github.gear4jtest.experimental.cache.assemblylinecache.InMemoryAssemblyLineCacheRepositoryTest" time="0.203"/>
+  <testcase name="save_shouldEvictLeastRecentlyUsedEntryWhenCapacityIsExceeded()" classname="io.github.gear4jtest.experimental.cache.assemblylinecache.InMemoryAssemblyLineCacheRepositoryTest" time="0.002"/>
+  <testcase name="recordLoadDuration_shouldExposeCumulativeAndMaximumLoadTime()" classname="io.github.gear4jtest.experimental.cache.assemblylinecache.InMemoryAssemblyLineCacheRepositoryTest" time="0.001"/>
+  <testcase name="save_shouldIsolateMutableValuesOnWriteAndEveryRead()" classname="io.github.gear4jtest.experimental.cache.assemblylinecache.InMemoryAssemblyLineCacheRepositoryTest" time="0.01"/>
+  <testcase name="concurrentWrites_shouldNeverExceedConfiguredBounds()" classname="io.github.gear4jtest.experimental.cache.assemblylinecache.InMemoryAssemblyLineCacheRepositoryTest" time="0.021"/>
+  <testcase name="save_shouldRejectValuesThatTheConfiguredClonerCannotIsolate()" classname="io.github.gear4jtest.experimental.cache.assemblylinecache.InMemoryAssemblyLineCacheRepositoryTest" time="0.011"/>
+  <system-out><![CDATA[18:09:41.731 [Test worker] DEBUG io.github.gear4jtest.experimental.cache.assemblylinecache.InMemoryAssemblyLineCacheRepository -- Skipping cache entry because its output could not be isolated or weighed. assemblyLineId=assembly, version=1
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.core.exception.PayloadCloneException; exception details withheld
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

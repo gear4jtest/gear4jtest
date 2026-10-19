@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.spi.DefaultArtifactStoreProviderConcurrencyTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:10:02.418Z" hostname="2c641953591a" time="0.032">
+  <properties/>
+  <testcase name="fatalConstructionFailure_shouldReachWaitersAndAllowRetry()" classname="io.github.gear4jtest.external.api.spi.DefaultArtifactStoreProviderConcurrencyTest" time="0.006"/>
+  <testcase name="closeDuringConstruction_shouldWakeWaitersAndDisposeLateResultOnce()" classname="io.github.gear4jtest.external.api.spi.DefaultArtifactStoreProviderConcurrencyTest" time="0.005"/>
+  <testcase name="interruptedWaiter_shouldNotCancelTheSharedConstruction()" classname="io.github.gear4jtest.external.api.spi.DefaultArtifactStoreProviderConcurrencyTest" time="0.003"/>
+  <testcase name="close_shouldAttemptEveryStoreAndPreserveFatalCleanup()" classname="io.github.gear4jtest.external.api.spi.DefaultArtifactStoreProviderConcurrencyTest" time="0.002"/>
+  <testcase name="slowConstruction_shouldShareOneCreationAndAllowIndependentHits()" classname="io.github.gear4jtest.external.api.spi.DefaultArtifactStoreProviderConcurrencyTest" time="0.004"/>
+  <testcase name="slowClose_shouldNotBlockOtherKeysAndShouldSerializeSameKeyRecreation()" classname="io.github.gear4jtest.external.api.spi.DefaultArtifactStoreProviderConcurrencyTest" time="0.004"/>
+  <testcase name="partialConstructionFailure_shouldPreserveEveryCleanupFailure()" classname="io.github.gear4jtest.external.api.spi.DefaultArtifactStoreProviderConcurrencyTest" time="0.002"/>
+  <testcase name="[1] shutdown=false" classname="io.github.gear4jtest.external.api.spi.DefaultArtifactStoreProviderConcurrencyTest" time="0.002"/>
+  <testcase name="[2] shutdown=true" classname="io.github.gear4jtest.external.api.spi.DefaultArtifactStoreProviderConcurrencyTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

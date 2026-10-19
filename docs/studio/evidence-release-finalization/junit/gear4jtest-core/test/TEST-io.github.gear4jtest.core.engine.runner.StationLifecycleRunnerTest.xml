@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:36.797Z" hostname="2c641953591a" time="0.013">
+  <properties/>
+  <testcase name="outputPayloadMappingFailure_shouldNotFailRun()" classname="io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest" time="0.003"/>
+  <testcase name="criticalStationStartedFailure_shouldFailThroughStationStatusWithoutExecutingDelegate()" classname="io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest" time="0.001"/>
+  <testcase name="criticalChildLifecycleFailure_shouldBeHandledByParentFlowPolicy()" classname="io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest" time="0.002"/>
+  <testcase name="bestEffortStationLifecycleFailure_shouldNotFailRun()" classname="io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest" time="0.001"/>
+  <testcase name="persistenceExtension_shouldPersistTheNormalizedFailedStatusAfterCriticalCompletionFailure()" classname="io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest" time="0.002"/>
+  <testcase name="inputPayloadMappingFailure_shouldNotFailRun()" classname="io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest" time="0.001"/>
+  <testcase name="criticalStationCompletedFailure_shouldTurnSuccessfulStationIntoFailedStatus()" classname="io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest" time="0.002"/>
+  <system-out><![CDATA[18:09:36.799 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=lifecycle-test, rootStation=echo, requestExtensions=[]
+18:09:36.799 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=lifecycle-test, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:36.800 [Test worker] WARN io.github.gear4jtest.core.engine.runner.BestEffortStationEventPublisher -- Dropping built-in station event after payload mapping or publication failure. eventType=StationFinishedEvent, operationId=echo, suppressedSincePreviousEmission=0
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+18:09:36.802 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=lifecycle-test, rootStation=echo, requestExtensions=[]
+18:09:36.802 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=lifecycle-test, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:09:36.802 [Test worker] ERROR io.github.gear4jtest.core.engine.runner.StationLifecycleRunner -- StationLifecycleExtension failed during onStationStarted. extension=io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest$FailingStationLifecycleExtension, stationId=echo
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+18:09:36.803 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=flow-policy, rootStation=sequence, requestExtensions=[]
+18:09:36.803 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=flow-policy, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:09:36.803 [Test worker] ERROR io.github.gear4jtest.core.engine.runner.StationLifecycleRunner -- StationLifecycleExtension failed during onStationStarted. extension=io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest$FailingStationLifecycleExtension, stationId=first
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+18:09:36.805 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=lifecycle-test, rootStation=echo, requestExtensions=[]
+18:09:36.805 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=lifecycle-test, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:09:36.805 [Test worker] ERROR io.github.gear4jtest.core.engine.runner.StationLifecycleRunner -- StationLifecycleExtension failed during onStationStarted. extension=io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest$FailingStationLifecycleExtension, stationId=echo
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+18:09:36.806 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=lifecycle-test, rootStation=echo, requestExtensions=[]
+18:09:36.806 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=lifecycle-test, stationWrappers=0, stationLifecycles=2, runInterceptors=0, executorWrappers=0
+18:09:36.807 [Test worker] ERROR io.github.gear4jtest.core.engine.runner.StationLifecycleRunner -- StationLifecycleExtension failed during onStationCompleted. extension=io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest$FailingStationLifecycleExtension, stationId=echo
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+18:09:36.808 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=lifecycle-test, rootStation=echo, requestExtensions=[]
+18:09:36.808 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=lifecycle-test, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:36.809 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=lifecycle-test, rootStation=echo, requestExtensions=[]
+18:09:36.809 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=lifecycle-test, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:09:36.810 [Test worker] ERROR io.github.gear4jtest.core.engine.runner.StationLifecycleRunner -- StationLifecycleExtension failed during onStationCompleted. extension=io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest$FailingStationLifecycleExtension, stationId=echo
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

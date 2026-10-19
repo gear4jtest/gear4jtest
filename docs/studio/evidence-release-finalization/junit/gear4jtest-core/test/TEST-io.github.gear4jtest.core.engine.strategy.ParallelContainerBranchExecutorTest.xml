@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:37.265Z" hostname="2c641953591a" time="0.069">
+  <properties/>
+  <testcase name="execute_shouldCancelUnvisitedBranchesWithoutEvaluatingTheirConditions()" classname="io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest" time="0.002"/>
+  <testcase name="execute_shouldObserveCancellationDuringWaitBeforeTheOverallTimeout()" classname="io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest" time="0.053"/>
+  <testcase name="execute_shouldAcceptAwaitTimeoutLargerThanNanosecondRange()" classname="io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest" time="0.001"/>
+  <testcase name="execute_shouldPropagateMdcToParallelBranches()" classname="io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest" time="0.001"/>
+  <testcase name="execute_shouldInterruptBranchesNotSubmittedAfterRejectedSubmission()" classname="io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest" time="0.001"/>
+  <testcase name="execute_shouldCancelRunningSiblingWhenLaterPredicateFails()" classname="io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest" time="0.001"/>
+  <testcase name="execute_shouldCancelEverySiblingEvenWhenOneCancellationFails()" classname="io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest" time="0.002"/>
+  <testcase name="execute_shouldCreateSkippedSyntheticLogsForBranchesWithFalseConditions()" classname="io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest" time="0.001"/>
+  <testcase name="execute_shouldRecordRejectedBranchSubmissionsAsFailures()" classname="io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest" time="0.001"/>
+  <testcase name="execute_shouldPreserveCompletedResultWhenCompletionWinsCancellationRace()" classname="io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest" time="0.0"/>
+  <testcase name="execute_shouldCancelRunningSiblingAndPreserveFatalBranchError()" classname="io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.api.util.BuilderFacadesTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:34.767Z" hostname="2c641953591a" time="0.007">
+  <properties/>
+  <testcase name="errorBuilders_shouldCreateTypedSignalErrorDefinitions()" classname="io.github.gear4jtest.core.api.util.BuilderFacadesTest" time="0.001"/>
+  <testcase name="configurationFactories_shouldCreateMutableBuildersAndValidateNullTypeTokens()" classname="io.github.gear4jtest.core.api.util.BuilderFacadesTest" time="0.002"/>
+  <testcase name="concurrencyFactories_shouldExposeNamedOperationalDefaults()" classname="io.github.gear4jtest.core.api.util.BuilderFacadesTest" time="0.0"/>
+  <testcase name="stationBuilders_shouldExposeCommonStationFactories()" classname="io.github.gear4jtest.core.api.util.BuilderFacadesTest" time="0.001"/>
+  <testcase name="signalAndAssemblyLineFactories_shouldBuildExpectedDefinitions()" classname="io.github.gear4jtest.core.api.util.BuilderFacadesTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.micrometer.Gear4jMicrometerExtensionTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:52.116Z" hostname="2c641953591a" time="0.156">
+  <properties/>
+  <testcase name="allowlist_policy_shouldCollapseUnknownIdentifiersIntoOneSeries()" classname="io.github.gear4jtest.micrometer.Gear4jMicrometerExtensionTest" time="0.007"/>
+  <testcase name="default_policy_shouldKeepRejectedBranchCardinalityBounded()" classname="io.github.gear4jtest.micrometer.Gear4jMicrometerExtensionTest" time="0.058"/>
+  <testcase name="should_record_synthetic_branch_outcomes_and_executor_rejections()" classname="io.github.gear4jtest.micrometer.Gear4jMicrometerExtensionTest" time="0.004"/>
+  <testcase name="should_use_custom_tag_policy()" classname="io.github.gear4jtest.micrometer.Gear4jMicrometerExtensionTest" time="0.002"/>
+  <testcase name="default_policy_shouldKeepMeterCardinalityBoundedForDynamicIdentifiers()" classname="io.github.gear4jtest.micrometer.Gear4jMicrometerExtensionTest" time="0.078"/>
+  <testcase name="should_not_record_duration_when_timestamps_are_incomplete()" classname="io.github.gear4jtest.micrometer.Gear4jMicrometerExtensionTest" time="0.001"/>
+  <testcase name="should_increment_run_counters_and_record_duration()" classname="io.github.gear4jtest.micrometer.Gear4jMicrometerExtensionTest" time="0.0"/>
+  <testcase name="should_increment_station_counters_and_record_duration()" classname="io.github.gear4jtest.micrometer.Gear4jMicrometerExtensionTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

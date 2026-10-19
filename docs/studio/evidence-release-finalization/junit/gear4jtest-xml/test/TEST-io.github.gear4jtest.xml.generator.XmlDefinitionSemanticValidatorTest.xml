@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.xml.generator.XmlDefinitionSemanticValidatorTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:39.068Z" hostname="2c641953591a" time="0.064">
+  <properties/>
+  <testcase name="generate_shouldKeepNonKeywordNormalizedDependencyName()" classname="io.github.gear4jtest.xml.generator.XmlDefinitionSemanticValidatorTest" time="0.054"/>
+  <testcase name="generate_shouldRejectDuplicateContainerBranchIds()" classname="io.github.gear4jtest.xml.generator.XmlDefinitionSemanticValidatorTest" time="0.004"/>
+  <testcase name="generate_shouldRejectTrailingTextInTypeWithXmlPath()" classname="io.github.gear4jtest.xml.generator.XmlDefinitionSemanticValidatorTest" time="0.001"/>
+  <testcase name="generate_shouldRejectDependencyFieldCollisionAfterNormalization()" classname="io.github.gear4jtest.xml.generator.XmlDefinitionSemanticValidatorTest" time="0.001"/>
+  <testcase name="generate_shouldRejectDependencyCollisionWithParallelExecutorField()" classname="io.github.gear4jtest.xml.generator.XmlDefinitionSemanticValidatorTest" time="0.001"/>
+  <testcase name="generate_shouldRejectDependencyNameThatNormalizesToJavaKeyword()" classname="io.github.gear4jtest.xml.generator.XmlDefinitionSemanticValidatorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

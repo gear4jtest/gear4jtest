@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.xml.expression.GearExpressionParserTest" tests="25" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:38.050Z" hostname="2c641953591a" time="0.039">
+  <properties/>
+  <testcase name="evaluate_shouldAllowOnlyExplicitlyAllowlistedBeanProperty()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.006"/>
+  <testcase name="evaluate_shouldRejectJavaClassMetadataAccessOnObjects()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.001"/>
+  <testcase name="evaluate_shouldKeepSupportedIntegerAndDecimalLiteralSemantics()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.001"/>
+  <testcase name="evaluate_shouldAllowAnApprovedRecordSnapshotThroughSecureMapAccess()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.003"/>
+  <testcase name="parse_shouldRejectExpressionThatExceedsMaxLength()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.0"/>
+  <testcase name="parse_shouldReportMalformedNumericLiteralPositionWithinExpression()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.0"/>
+  <testcase name="parse_shouldRejectPathThatExceedsMaxSegments()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.0"/>
+  <testcase name="evaluate_shouldReadTheContextSnapshotInsteadOfCallingTheSourceMap()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.001"/>
+  <testcase name="evaluate_shouldStillAllowMapKeysNamedClassAsData()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.0"/>
+  <testcase name="evaluate_shouldRejectEqualityOnApplicationObjectsWithoutCallingEquals()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.0"/>
+  <testcase name="evaluate_shouldRejectDirectObjectMethodsAsProperties()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.001"/>
+  <testcase name="parse_shouldRejectJavaLikeMethodInvocationSyntax()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.0"/>
+  <testcase name="parse_shouldRejectExpressionThatExceedsMaxTokenCount()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.0"/>
+  <testcase name="evaluate_shouldNotApplyAnAllowlistToUnknownSubclasses()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.0"/>
+  <testcase name="parse_shouldRejectIntegerLiteralOutsideSupportedRange()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.001"/>
+  <testcase name="parse_shouldRejectDecimalLiteralOutsideSupportedRange()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.001"/>
+  <testcase name="parse_shouldRejectExpressionThatExceedsMaxNestingDepth()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.001"/>
+  <testcase name="evaluateBoolean_shouldResolveInputAndVariablesWithoutExecutingJavaCode()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.0"/>
+  <testcase name="evaluate_shouldRejectJavaBeanGetterByDefaultWithoutInvokingIt()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.0"/>
+  <testcase name="evaluate_shouldRejectZeroArgumentMethodsThatAreNotRecordComponentsOrBeanGetters()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.001"/>
+  <testcase name="snapshot_shouldRejectCycles()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.0"/>
+  <testcase name="[1] literal=1.2.3" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.001"/>
+  <testcase name="[2] literal=1." classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.001"/>
+  <testcase name="[3] literal=.1" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.0"/>
+  <testcase name="evaluate_shouldProvideTemporaryLegacyBeanCompatibility()" classname="io.github.gear4jtest.xml.expression.GearExpressionParserTest" time="0.008"/>
+  <system-out><![CDATA[18:20:38.083 [Test worker] WARN io.github.gear4jtest.xml.expression.StandardPropertyAccessPolicy -- GEL legacy property access invoked io.github.gear4jtest.xml.expression.GearExpressionParserTest$BeanDocument#productType. Configure an explicit PropertyAccessPolicy allowlist; legacyBeanAccess() is temporary and unsafe for untrusted object graphs.
+18:20:38.088 [Test worker] WARN io.github.gear4jtest.xml.expression.StandardPropertyAccessPolicy -- GEL legacy property access invoked io.github.gear4jtest.xml.expression.GearExpressionParserTest$BeanDocument#active. Configure an explicit PropertyAccessPolicy allowlist; legacyBeanAccess() is temporary and unsafe for untrusted object graphs.
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

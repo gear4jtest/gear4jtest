@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.api.config.EventHandlingDefinitionTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:34.624Z" hostname="2c641953591a" time="0.007">
+  <properties/>
+  <testcase name="runtimeConfiguration_shouldUseBoundedEventQueueByDefault()" classname="io.github.gear4jtest.core.api.config.EventHandlingDefinitionTest" time="0.001"/>
+  <testcase name="runtimeConfiguration_shouldExposeExplicitShutdownDefaultFactories()" classname="io.github.gear4jtest.core.api.config.EventHandlingDefinitionTest" time="0.001"/>
+  <testcase name="runtimeConfiguration_shouldRejectInvalidEventQueueCapacity()" classname="io.github.gear4jtest.core.api.config.EventHandlingDefinitionTest" time="0.0"/>
+  <testcase name="runtimeConfiguration_shouldUseSharedExecutorByDefault()" classname="io.github.gear4jtest.core.api.config.EventHandlingDefinitionTest" time="0.001"/>
+  <testcase name="eventConfiguration_shouldRequireExplicitOptInForRawPayloads()" classname="io.github.gear4jtest.core.api.config.EventHandlingDefinitionTest" time="0.0"/>
+  <testcase name="hasAsyncReactions_shouldBeFalseWhenNothingIsConfigured()" classname="io.github.gear4jtest.core.api.config.EventHandlingDefinitionTest" time="0.0"/>
+  <testcase name="runtimeConfiguration_shouldRejectNonPositiveTimeouts()" classname="io.github.gear4jtest.core.api.config.EventHandlingDefinitionTest" time="0.001"/>
+  <testcase name="hasAsyncReactions_shouldBeTrueWhenSubscriptionsAreDeclared()" classname="io.github.gear4jtest.core.api.config.EventHandlingDefinitionTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

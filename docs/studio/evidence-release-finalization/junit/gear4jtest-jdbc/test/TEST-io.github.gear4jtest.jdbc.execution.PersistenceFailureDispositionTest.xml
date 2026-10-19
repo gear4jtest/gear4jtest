@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.execution.PersistenceFailureDispositionTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:44.074Z" hostname="2c641953591a" time="0.116">
+  <properties/>
+  <testcase name="failedFinalization_shouldBeRetriedByPeriodicMaintenanceWithoutAnotherEndCall()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFailureDispositionTest" time="0.1"/>
+  <testcase name="chainedRecordDataFailure_shouldBisectAndExposeTheDecisiveSqlException()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFailureDispositionTest" time="0.01"/>
+  <testcase name="unknownConstraintFailure_shouldRemainSystemicWithoutBisectionOrQuarantine()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFailureDispositionTest" time="0.002"/>
+  <testcase name="recordDataFailure_shouldBisectCommitHealthyRecordsAndQuarantineOnlyThePoisonRecord()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFailureDispositionTest" time="0.002"/>
+  <testcase name="rejectedRecordHandlerFailure_shouldRestoreTheRecordWithoutCountingItAsQuarantined()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFailureDispositionTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:59.248Z" hostname="2c641953591a" time="0.136">
+  <properties/>
+  <testcase name="compile_shouldEvictLeastRecentlyUsedEntry()" classname="io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest" time="0.001"/>
+  <testcase name="compile_shouldNotCacheFailures()" classname="io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest" time="0.01"/>
+  <testcase name="compile_shouldRejectSourceBeforeDispatchWhenHardLimitIsExceeded()" classname="io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest" time="0.002"/>
+  <testcase name="compile_shouldSaturateVeryLargeTimeoutInsteadOfOverflowing()" classname="io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest" time="0.001"/>
+  <testcase name="compile_shouldReuseCompletedCompilationAndDefensivelyCopyBytecode()" classname="io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest" time="0.002"/>
+  <testcase name="close_shouldCancelWaitersAndRejectNewCompilation()" classname="io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest" time="0.004"/>
+  <testcase name="compile_shouldNotCacheEntryLargerThanBytecodeBudget()" classname="io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest" time="0.001"/>
+  <testcase name="compile_shouldRejectOversizedOutputInsteadOfReturningItUncached()" classname="io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest" time="0.001"/>
+  <testcase name="compile_shouldTimeoutOwnerWakeWaitersDiscardLateResultAndAllowRetry()" classname="io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest" time="0.104"/>
+  <testcase name="compile_shouldSingleFlightConcurrentRequests()" classname="io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest" time="0.002"/>
+  <testcase name="compile_shouldRejectNewDistinctFlightWhenExecutorQueueIsFull()" classname="io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

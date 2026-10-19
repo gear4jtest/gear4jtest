@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.experimental.cache.history.fingerprint.WhitelistedContextFingerprintStrategyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:42.011Z" hostname="2c641953591a" time="0.878">
+  <properties/>
+  <testcase name="fingerprint_shouldUseConstructorSnapshotAfterCallerMutation()" classname="io.github.gear4jtest.experimental.cache.history.fingerprint.WhitelistedContextFingerprintStrategyTest" time="0.607"/>
+  <testcase name="constructor_shouldRejectNullDependenciesAndKeys()" classname="io.github.gear4jtest.experimental.cache.history.fingerprint.WhitelistedContextFingerprintStrategyTest" time="0.002"/>
+  <testcase name="fingerprint_shouldRemainStableWhileCallerMutatesOriginalWhitelist()" classname="io.github.gear4jtest.experimental.cache.history.fingerprint.WhitelistedContextFingerprintStrategyTest" time="0.265"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

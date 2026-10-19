@@ -11,7 +11,6 @@ def projectArtifactId = project.name
 def projectDisplayName = projectArtifactId
         .replace('gear4jtest-', 'Gear4J ')
         .replace('-', ' ')
-def projectDescription = project.description ?: 'Gear4J Java pipeline orchestration library.'
 def projectHomepage = 'https://github.com/gear4jtest/gear4jtest'
 def stagingRepositoryDir = rootProject.layout.buildDirectory.dir('staging-deploy')
 
@@ -52,7 +51,9 @@ publishing.publications.create('mavenJava', MavenPublication) { publication ->
 
     def pom = publication.pom
     pom.name.set(projectDisplayName)
-    pom.description.set(projectDescription)
+    pom.description.set(providers.provider {
+        project.description ?: 'Gear4J Java pipeline orchestration library.'
+    })
     pom.url.set(projectHomepage)
 
     pom.licenses { licenses ->

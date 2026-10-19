@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.jdbc.spi.DatabaseArtifactStorePluginTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:03.684Z" hostname="2c641953591a" time="0.023">
+  <properties/>
+  <testcase name="build_shouldRejectInvalidArtifactSizeLimit()" classname="io.github.gear4jtest.external.jdbc.spi.DatabaseArtifactStorePluginTest" time="0.003"/>
+  <testcase name="build_shouldRejectInvalidTransactionOperationsLookup()" classname="io.github.gear4jtest.external.jdbc.spi.DatabaseArtifactStorePluginTest" time="0.001"/>
+  <testcase name="build_shouldRejectUnknownPropertiesBeforeLookingUpResources()" classname="io.github.gear4jtest.external.jdbc.spi.DatabaseArtifactStorePluginTest" time="0.001"/>
+  <testcase name="build_shouldRejectInvalidSpoolDuration()" classname="io.github.gear4jtest.external.jdbc.spi.DatabaseArtifactStorePluginTest" time="0.001"/>
+  <testcase name="build_shouldApplyArtifactSizeLimit()" classname="io.github.gear4jtest.external.jdbc.spi.DatabaseArtifactStorePluginTest" time="0.001"/>
+  <testcase name="build_shouldAcceptASupportedExplicitDialect()" classname="io.github.gear4jtest.external.jdbc.spi.DatabaseArtifactStorePluginTest" time="0.001"/>
+  <testcase name="build_shouldRequireAnExplicitDialect()" classname="io.github.gear4jtest.external.jdbc.spi.DatabaseArtifactStorePluginTest" time="0.001"/>
+  <testcase name="build_shouldApplySpoolPolicy()" classname="io.github.gear4jtest.external.jdbc.spi.DatabaseArtifactStorePluginTest" time="0.002"/>
+  <testcase name="build_shouldResolveExplicitTransactionOperations()" classname="io.github.gear4jtest.external.jdbc.spi.DatabaseArtifactStorePluginTest" time="0.004"/>
+  <testcase name="build_shouldRejectInvalidPrivatePermissionRequirement()" classname="io.github.gear4jtest.external.jdbc.spi.DatabaseArtifactStorePluginTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

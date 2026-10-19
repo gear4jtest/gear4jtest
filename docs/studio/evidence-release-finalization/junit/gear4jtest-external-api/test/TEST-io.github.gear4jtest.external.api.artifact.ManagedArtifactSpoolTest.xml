@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.artifact.ManagedArtifactSpoolTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:10:01.095Z" hostname="2c641953591a" time="0.016">
+  <properties/>
+  <testcase name="restart_shouldAccountForCrashResidueThenDeleteItAfterRetention()" classname="io.github.gear4jtest.external.api.artifact.ManagedArtifactSpoolTest" time="0.005"/>
+  <testcase name="instancesSharingADirectory_shouldEnforceOneGlobalQuota()" classname="io.github.gear4jtest.external.api.artifact.ManagedArtifactSpoolTest" time="0.001"/>
+  <testcase name="close_shouldRejectNewFilesAndRemainIdempotent()" classname="io.github.gear4jtest.external.api.artifact.ManagedArtifactSpoolTest" time="0.002"/>
+  <testcase name="instancesSharingADirectory_shouldRejectIncompatiblePolicies()" classname="io.github.gear4jtest.external.api.artifact.ManagedArtifactSpoolTest" time="0.001"/>
+  <testcase name="initialize_shouldDeleteStaleFilesAndExposeCleanupStats()" classname="io.github.gear4jtest.external.api.artifact.ManagedArtifactSpoolTest" time="0.002"/>
+  <testcase name="output_shouldRejectQuotaBeforeWritingAndReleaseFileOnCleanup()" classname="io.github.gear4jtest.external.api.artifact.ManagedArtifactSpoolTest" time="0.001"/>
+  <testcase name="policy_shouldRequirePrivatePermissionsByDefaultAndPreserveExplicitOptOut()" classname="io.github.gear4jtest.external.api.artifact.ManagedArtifactSpoolTest" time="0.001"/>
+  <testcase name="initialize_shouldExposeRecentResidualOccupancy()" classname="io.github.gear4jtest.external.api.artifact.ManagedArtifactSpoolTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

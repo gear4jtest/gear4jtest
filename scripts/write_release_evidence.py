@@ -75,6 +75,7 @@ def write_release_evidence(
     run_url: str,
     run_attempt: str,
     database_matrix_result: str,
+    studio_qualification_result: str,
     dry_run: bool,
     api_baseline_version: str,
 ) -> tuple[Path, Path]:
@@ -90,6 +91,11 @@ def write_release_evidence(
     if database_matrix_result != "success":
         raise ReleaseEvidenceError(
             f"Database matrix is not successful: {database_matrix_result}"
+        )
+
+    if studio_qualification_result != "success":
+        raise ReleaseEvidenceError(
+            f"Studio qualification is not successful: {studio_qualification_result}"
         )
 
     files = [evidence_file(repository_root, path) for path in REQUIRED_EVIDENCE]
@@ -140,6 +146,14 @@ def write_release_evidence(
         },
         "gates": [
             {"name": "database-matrix", "result": database_matrix_result},
+            {
+                "name": "studio-qualification",
+                "result": studio_qualification_result,
+                "evidenceArtifact": "studio-readiness-evidence",
+                "workflowRunUrl": run_url,
+                "commitSha": commit_sha.lower(),
+                "version": version,
+            },
             {"name": "authenticated-vulnerability-feed", "result": "success"},
             {"name": "coverage-report", "result": "success"},
             {"name": "releaseCheck", "result": "success"},
@@ -233,6 +247,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--run-url", required=True)
     result.add_argument("--run-attempt", required=True)
     result.add_argument("--database-matrix-result", required=True)
+    result.add_argument("--studio-qualification-result", required=True)
     result.add_argument("--dry-run", required=True, type=parse_boolean)
     result.add_argument("--api-baseline-version", default="")
     return result
@@ -254,6 +269,7 @@ def main() -> int:
             run_url=arguments.run_url,
             run_attempt=arguments.run_attempt,
             database_matrix_result=arguments.database_matrix_result,
+            studio_qualification_result=arguments.studio_qualification_result,
             dry_run=arguments.dry_run,
             api_baseline_version=arguments.api_baseline_version,
         )

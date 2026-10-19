@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:37.664Z" hostname="2c641953591a" time="0.165">
+  <properties/>
+  <testcase name="resolve_shouldRejectUnknownCapabilitiesAndClassNameBypasses()" classname="io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicyTest" time="0.134"/>
+  <testcase name="trustedClassNames_shouldRemainExplicit()" classname="io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicyTest" time="0.007"/>
+  <testcase name="builder_shouldRejectConflictingMappingsForOneMode()" classname="io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicyTest" time="0.004"/>
+  <testcase name="resolve_shouldKeepTestAndRunMappingsIndependent()" classname="io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

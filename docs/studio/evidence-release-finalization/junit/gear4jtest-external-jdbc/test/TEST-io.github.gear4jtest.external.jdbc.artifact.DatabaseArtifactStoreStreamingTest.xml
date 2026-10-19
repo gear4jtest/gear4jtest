@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreStreamingTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:01.818Z" hostname="2c641953591a" time="1.358">
+  <properties/>
+  <testcase name="stream_shouldFailAndCloseResourcesWhenContentExceedsDeclaredSize()" classname="io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreStreamingTest" time="1.25"/>
+  <testcase name="put_shouldRejectConfiguredLimitAndDeletePrivateSpoolFile()" classname="io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreStreamingTest" time="0.028"/>
+  <testcase name="stream_shouldRejectSameSizeContentWhoseDigestDoesNotMatchItsKey()" classname="io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreStreamingTest" time="0.008"/>
+  <testcase name="stream_shouldReportEarlyCloseWithoutMaterializingRemainingContent()" classname="io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreStreamingTest" time="0.015"/>
+  <testcase name="stream_shouldAllowRepeatedEndOfStreamReadsAfterDigestVerification()" classname="io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreStreamingTest" time="0.007"/>
+  <testcase name="get_shouldOpenJdbcContentLazilyAndCloseEveryOwnedResource()" classname="io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreStreamingTest" time="0.004"/>
+  <testcase name="putByteArray_shouldRejectStoreLimitBeforeOpeningJdbcConnection()" classname="io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreStreamingTest" time="0.008"/>
+  <testcase name="get_shouldRejectOversizedMetadataBeforeOpeningBlobContent()" classname="io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreStreamingTest" time="0.003"/>
+  <testcase name="put_shouldRejectSpoolQuotaWithoutLeakingContentOrLeavingAFile()" classname="io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreStreamingTest" time="0.003"/>
+  <testcase name="put_shouldStreamFromSpoolAndRecordWriteMetrics()" classname="io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreStreamingTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,26 @@
+> Task :build-logic:extractPluginRequests UP-TO-DATE
+> Task :build-logic:generatePluginAdapters UP-TO-DATE
+> Task :build-logic:compileJava UP-TO-DATE
+> Task :build-logic:compileGroovy NO-SOURCE
+> Task :build-logic:compileGroovyPlugins UP-TO-DATE
+> Task :build-logic:pluginDescriptors UP-TO-DATE
+> Task :build-logic:processResources UP-TO-DATE
+> Task :build-logic:classes UP-TO-DATE
+> Task :build-logic:jar UP-TO-DATE
+> Task :verifyDecisionIdentifiers
+> Task :verifyDocumentationLinks
+> Task :verifyLivingDocumentationMetadata
+> Task :verifyReleaseAssets
+> Task :verifyRetiredAuditSources
+> Task :verifyWorkflowSecurity
+> Task :verifyReleaseWorkflowContract
+> Task :studioReleaseBaseline
+Studio candidate baseline and protocol verified
+> Task :release-tools:jreleaserConfig
+> Task :gear4jtest-studio-demo:studioFrontendInstall
+> Task :jreleaserConfig
+> Task :releaseMetadataCheck
+> Task :studioDependencyAudit
+npm audit: 0 findings (0 high, 0 critical)
+BUILD SUCCESSFUL in 18s
+18 actionable tasks: 11 executed, 7 up-to-date

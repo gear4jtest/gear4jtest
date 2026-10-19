@@ -45,6 +45,7 @@ class ReleaseEvidenceTest(unittest.TestCase):
             "run_url": "https://github.com/gear4jtest/gear4jtest/actions/runs/1",
             "run_attempt": "1",
             "database_matrix_result": "success",
+            "studio_qualification_result": "success",
             "dry_run": False,
             "api_baseline_version": "",
         }
@@ -92,6 +93,17 @@ class ReleaseEvidenceTest(unittest.TestCase):
         self.assertTrue(
             any(item["path"].endswith("gear4jtest-core.xml") for item in manifest["evidenceFiles"])
         )
+
+    def test_requires_successful_studio_qualification_bound_to_release(self) -> None:
+        for result in ("failure", "skipped", "cancelled", ""):
+            with self.subTest(result=result), self.assertRaises(ReleaseEvidenceError):
+                self.write(studio_qualification_result=result)
+        path, _ = self.write()
+        gate = next(g for g in json.loads(path.read_text())["gates"]
+                    if g["name"] == "studio-qualification")
+        self.assertEqual("studio-readiness-evidence", gate["evidenceArtifact"])
+        self.assertEqual("a" * 40, gate["commitSha"])
+        self.assertEqual("1.0.0", gate["version"])
 
     def test_rejects_snapshot_versions(self) -> None:
         with self.assertRaises(ReleaseEvidenceError):

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.spring.Gear4jSpringConfigurationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:54.797Z" hostname="2c641953591a" time="0.925">
+  <properties/>
+  <testcase name="should_wire_core_spring_beans()" classname="io.github.gear4jtest.spring.Gear4jSpringConfigurationTest" time="0.756"/>
+  <testcase name="spring_engine_shouldApplyOptionalDependenciesAndContextCustomizers()" classname="io.github.gear4jtest.spring.Gear4jSpringConfigurationTest" time="0.126"/>
+  <testcase name="spring_engine_should_execute_nested_pipeline_calls_with_default_runtime_strategies()" classname="io.github.gear4jtest.spring.Gear4jSpringConfigurationTest" time="0.023"/>
+  <system-out><![CDATA[18:18:55.187 [Test worker] DEBUG org.springframework.context.annotation.AnnotationConfigApplicationContext -- Refreshing org.springframework.context.annotation.AnnotationConfigApplicationContext@3abfe845
+18:18:55.220 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.annotation.internalConfigurationAnnotationProcessor'
+18:18:55.320 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.event.internalEventListenerProcessor'
+18:18:55.329 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.event.internalEventListenerFactory'
+18:18:55.331 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.annotation.internalAutowiredAnnotationProcessor'
+18:18:55.339 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jSpringConfigurationTest.SampleResource'
+18:18:55.342 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jSpringConfiguration'
+18:18:55.344 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jResourceFactory'
+18:18:55.356 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jResourceFactory' via factory method to bean named 'org.springframework.context.annotation.AnnotationConfigApplicationContext@3abfe845'
+18:18:55.359 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jExecutionContextRegistry'
+18:18:55.362 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jRuntimeExtensionResolver'
+18:18:55.369 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jAssemblyLineRegistry'
+18:18:55.370 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineRegistry' via factory method to bean named 'org.springframework.beans.factory.support.DefaultListableBeanFactory@29079032'
+18:18:55.371 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jAssemblyLineExecutor'
+18:18:55.374 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineExecutor' via factory method to bean named 'gear4jResourceFactory'
+18:18:55.374 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineExecutor' via factory method to bean named 'gear4jRuntimeExtensionResolver'
+18:18:55.374 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineExecutor' via factory method to bean named 'gear4jExecutionContextRegistry'
+18:18:55.553 [Test worker] DEBUG org.springframework.context.annotation.AnnotationConfigApplicationContext -- Closing org.springframework.context.annotation.AnnotationConfigApplicationContext@3abfe845, started on Thu Oct 15 18:18:55 TRT 2026
+18:18:55.577 [Test worker] DEBUG org.springframework.context.annotation.AnnotationConfigApplicationContext -- Refreshing org.springframework.context.annotation.AnnotationConfigApplicationContext@456aa471
+18:18:55.577 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.annotation.internalConfigurationAnnotationProcessor'
+18:18:55.582 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.event.internalEventListenerProcessor'
+18:18:55.583 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.event.internalEventListenerFactory'
+18:18:55.583 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.annotation.internalAutowiredAnnotationProcessor'
+18:18:55.584 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jSpringConfigurationTest.ParentContextGuardOperator'
+18:18:55.584 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jSpringConfigurationTest.ContextSnapshotOperator'
+18:18:55.585 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'idGenerator'
+18:18:55.585 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'taskFactory'
+18:18:55.585 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'payloadCloner'
+18:18:55.585 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jAssemblyLineExecutorCustomizer'
+18:18:55.586 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jSpringConfiguration'
+18:18:55.586 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jResourceFactory'
+18:18:55.587 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jResourceFactory' via factory method to bean named 'org.springframework.context.annotation.AnnotationConfigApplicationContext@456aa471'
+18:18:55.587 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jExecutionContextRegistry'
+18:18:55.587 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jRuntimeExtensionResolver'
+18:18:55.588 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jAssemblyLineRegistry'
+18:18:55.588 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineRegistry' via factory method to bean named 'org.springframework.beans.factory.support.DefaultListableBeanFactory@6e5f5478'
+18:18:55.588 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jAssemblyLineExecutor'
+18:18:55.589 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineExecutor' via factory method to bean named 'gear4jResourceFactory'
+18:18:55.589 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineExecutor' via factory method to bean named 'gear4jRuntimeExtensionResolver'
+18:18:55.589 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineExecutor' via factory method to bean named 'gear4jExecutionContextRegistry'
+18:18:55.632 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=parent-context, rootStation=parent-context:root, requestExtensions=[]
+18:18:55.634 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=parent-context, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:18:55.692 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=child-context, rootStation=snapshot, requestExtensions=[]
+18:18:55.693 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=child-context, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:18:55.697 [Test worker] DEBUG org.springframework.context.annotation.AnnotationConfigApplicationContext -- Closing org.springframework.context.annotation.AnnotationConfigApplicationContext@456aa471, started on Thu Oct 15 18:18:55 TRT 2026
+18:18:55.701 [Test worker] DEBUG org.springframework.context.annotation.AnnotationConfigApplicationContext -- Refreshing org.springframework.context.annotation.AnnotationConfigApplicationContext@47198524
+18:18:55.702 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.annotation.internalConfigurationAnnotationProcessor'
+18:18:55.706 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.event.internalEventListenerProcessor'
+18:18:55.707 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.event.internalEventListenerFactory'
+18:18:55.707 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.annotation.internalAutowiredAnnotationProcessor'
+18:18:55.708 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jSpringConfigurationTest.AppendBangOperator'
+18:18:55.708 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jSpringConfiguration'
+18:18:55.709 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jResourceFactory'
+18:18:55.709 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jResourceFactory' via factory method to bean named 'org.springframework.context.annotation.AnnotationConfigApplicationContext@47198524'
+18:18:55.709 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jExecutionContextRegistry'
+18:18:55.710 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jRuntimeExtensionResolver'
+18:18:55.710 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jAssemblyLineRegistry'
+18:18:55.711 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineRegistry' via factory method to bean named 'org.springframework.beans.factory.support.DefaultListableBeanFactory@166e5a6d'
+18:18:55.711 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jAssemblyLineExecutor'
+18:18:55.711 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineExecutor' via factory method to bean named 'gear4jResourceFactory'
+18:18:55.711 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineExecutor' via factory method to bean named 'gear4jRuntimeExtensionResolver'
+18:18:55.712 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineExecutor' via factory method to bean named 'gear4jExecutionContextRegistry'
+18:18:55.715 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=parent, rootStation=call-child, requestExtensions=[]
+18:18:55.715 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=parent, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:18:55.716 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=child, rootStation=append, requestExtensions=[]
+18:18:55.716 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=child, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:18:55.721 [Test worker] DEBUG org.springframework.context.annotation.AnnotationConfigApplicationContext -- Closing org.springframework.context.annotation.AnnotationConfigApplicationContext@47198524, started on Thu Oct 15 18:18:55 TRT 2026
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

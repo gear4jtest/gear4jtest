@@ -1,6 +1,6 @@
 plugins { id 'application' }
 ext.moduleName = 'io.github.gear4jtest.studio.standalone'
-description = 'Standalone Gear4J Studio federation host (experimental).'
+description = 'Gear4J Studio federation contracts and local demonstration launcher (experimental).'
 dependencies {
     api project(':gear4jtest-studio-http')
     testImplementation project(':gear4jtest-studio-demo')
@@ -17,6 +17,7 @@ distributions {
     main {
         contents {
             from('example.properties')
+            from('README.md')
         }
     }
 }

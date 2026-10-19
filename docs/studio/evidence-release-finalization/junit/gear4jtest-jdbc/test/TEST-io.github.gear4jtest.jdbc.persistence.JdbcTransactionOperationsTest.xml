@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperationsTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:45.327Z" hostname="2c641953591a" time="0.005">
+  <properties/>
+  <testcase name="autonomous_shouldRejectConnectionAlreadyBoundToAmbientTransaction()" classname="io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperationsTest" time="0.002"/>
+  <testcase name="autonomous_shouldOwnCommitAndConnectionLifecycle()" classname="io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperationsTest" time="0.001"/>
+  <testcase name="autonomous_shouldRollbackAndPreserveCleanupFailures()" classname="io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperationsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

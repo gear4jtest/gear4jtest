@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.api.ExecutionResultTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:34.428Z" hostname="2c641953591a" time="0.024">
+  <properties/>
+  <testcase name="failure_shouldRejectMissingError()" classname="io.github.gear4jtest.core.api.ExecutionResultTest" time="0.0"/>
+  <testcase name="failure_shouldExposeFailedOutcome()" classname="io.github.gear4jtest.core.api.ExecutionResultTest" time="0.001"/>
+  <testcase name="skipped_shouldNotBeReportedAsSuccess()" classname="io.github.gear4jtest.core.api.ExecutionResultTest" time="0.0"/>
+  <testcase name="stopped_shouldNotBeReportedAsSuccess()" classname="io.github.gear4jtest.core.api.ExecutionResultTest" time="0.001"/>
+  <testcase name="constructors_shouldRemainPrivateSoOnlyValidatedFactoriesCanCreateResults()" classname="io.github.gear4jtest.core.api.ExecutionResultTest" time="0.012"/>
+  <testcase name="publicNullableGetters_shouldExposeJSpecifyMetadata()" classname="io.github.gear4jtest.core.api.ExecutionResultTest" time="0.003"/>
+  <testcase name="cancelled_shouldNotBeReportedAsFailureOrSuccess()" classname="io.github.gear4jtest.core.api.ExecutionResultTest" time="0.001"/>
+  <testcase name="cancelled_shouldExposeAnEmptyOptionalWhenNoCauseIsAvailable()" classname="io.github.gear4jtest.core.api.ExecutionResultTest" time="0.0"/>
+  <testcase name="success_shouldExposeCompletedOutcome()" classname="io.github.gear4jtest.core.api.ExecutionResultTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.RuntimeExtensionOrderingTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:36.772Z" hostname="2c641953591a" time="0.006">
+  <properties/>
+  <testcase name="stationWrappers_shouldUseLowerOrderAsOutermostWrapper()" classname="io.github.gear4jtest.core.engine.RuntimeExtensionOrderingTest" time="0.002"/>
+  <testcase name="runInterceptors_shouldUseLowerOrderAsOutermostWrapper()" classname="io.github.gear4jtest.core.engine.RuntimeExtensionOrderingTest" time="0.001"/>
+  <testcase name="lifecycleObservers_shouldOpenHighToLowAndCompleteLowToHigh()" classname="io.github.gear4jtest.core.engine.RuntimeExtensionOrderingTest" time="0.001"/>
+  <testcase name="executorWrappers_shouldUseLowerOrderAsOutermostWrapper()" classname="io.github.gear4jtest.core.engine.RuntimeExtensionOrderingTest" time="0.0"/>
+  <system-out><![CDATA[18:09:36.774 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=extension-ordering, rootStation=echo, requestExtensions=[]
+18:09:36.774 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=extension-ordering, stationWrappers=2, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:36.775 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=extension-ordering, rootStation=echo, requestExtensions=[]
+18:09:36.776 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=extension-ordering, stationWrappers=0, stationLifecycles=0, runInterceptors=2, executorWrappers=0
+18:09:36.777 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=extension-ordering, rootStation=echo, requestExtensions=[]
+18:09:36.777 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=extension-ordering, stationWrappers=0, stationLifecycles=2, runInterceptors=0, executorWrappers=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

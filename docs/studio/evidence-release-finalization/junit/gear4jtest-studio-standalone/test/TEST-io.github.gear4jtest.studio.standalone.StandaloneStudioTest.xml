@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.standalone.StandaloneStudioTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:27.713Z" hostname="2c641953591a" time="6.717">
+  <properties/>
+  <testcase name="slowCredentialProviderIsContainedAndCallerHttpExecutorRemainsOwnedByCaller()" classname="io.github.gear4jtest.studio.standalone.StandaloneStudioTest" time="0.061"/>
+  <testcase name="mutationTimeoutIsUnknownNeverReplayedAndResponseBodyIsBounded()" classname="io.github.gear4jtest.studio.standalone.StandaloneStudioTest" time="0.283"/>
+  <testcase name="federatesJavaAndSpringWithIndependentDataAclPublicationAndDurableScenarioProvenance()" classname="io.github.gear4jtest.studio.standalone.StandaloneStudioTest" time="6.334"/>
+  <testcase name="droppedPutResponseCannotCauseASecondMutationBodyToBeSent()" classname="io.github.gear4jtest.studio.standalone.StandaloneStudioTest" time="0.007"/>
+  <testcase name="mismatchedContextSubjectProtocolAndRevokedTargetCannotDispatchMutations()" classname="io.github.gear4jtest.studio.standalone.StandaloneStudioTest" time="0.016"/>
+  <testcase name="redirectsNeverReceiveCredentialsAndArbitraryProxyPathsAreRejected()" classname="io.github.gear4jtest.studio.standalone.StandaloneStudioTest" time="0.011"/>
+  <system-out><![CDATA[18:20:28.102 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:20:28.140 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:20:28.322 [Test worker] DEBUG org.springframework.context.annotation.AnnotationConfigApplicationContext -- Refreshing org.springframework.context.annotation.AnnotationConfigApplicationContext@541d8a9e
+18:20:28.335 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.annotation.internalConfigurationAnnotationProcessor'
+18:20:28.408 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.event.internalEventListenerProcessor'
+18:20:28.414 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.event.internalEventListenerFactory'
+18:20:28.415 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'org.springframework.context.annotation.internalAutowiredAnnotationProcessor'
+18:20:28.422 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'dataCapturePolicy'
+18:20:28.424 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'dataSource'
+18:20:28.426 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'studioSpringConfiguration'
+18:20:28.427 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'io.github.gear4jtest.spring.Gear4jSpringConfiguration'
+18:20:28.428 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jResourceFactory'
+18:20:28.435 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jResourceFactory' via factory method to bean named 'org.springframework.context.annotation.AnnotationConfigApplicationContext@541d8a9e'
+18:20:28.436 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jExecutionContextRegistry'
+18:20:28.438 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jRuntimeExtensionResolver'
+18:20:28.443 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jAssemblyLineRegistry'
+18:20:28.443 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineRegistry' via factory method to bean named 'org.springframework.beans.factory.support.DefaultListableBeanFactory@5baabba'
+18:20:28.444 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'gear4jAssemblyLineExecutor'
+18:20:28.446 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineExecutor' via factory method to bean named 'gear4jResourceFactory'
+18:20:28.446 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineExecutor' via factory method to bean named 'gear4jRuntimeExtensionResolver'
+18:20:28.446 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'gear4jAssemblyLineExecutor' via factory method to bean named 'gear4jExecutionContextRegistry'
+18:20:28.450 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'studioRuntime'
+18:20:28.450 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'studioRuntime' via factory method to bean named 'gear4jAssemblyLineExecutor'
+18:20:28.451 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'studioRuntime' via factory method to bean named 'gear4jResourceFactory'
+18:20:28.451 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'studioRuntime' via factory method to bean named 'dataCapturePolicy'
+18:20:28.463 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'studioService'
+18:20:28.464 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'studioPublicationHost'
+18:20:28.464 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'studioPublicationHost' via factory method to bean named 'dataSource'
+18:20:28.474 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:20:28.485 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Creating shared instance of singleton bean 'studioActors'
+18:20:28.486 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'studioService' via factory method to bean named 'studioRuntime'
+18:20:28.486 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'studioService' via factory method to bean named 'dataSource'
+18:20:28.486 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'studioService' via factory method to bean named 'studioPublicationHost'
+18:20:28.486 [Test worker] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory -- Autowiring by type from bean name 'studioService' via factory method to bean named 'studioActors'
+18:20:28.489 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:20:31.545 [pool-7-thread-2] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=text_preparation:root, requestExtensions=[Gear4jRunObserver]
+18:20:31.546 [pool-7-thread-2] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:34.390 [Test worker] DEBUG org.springframework.context.annotation.AnnotationConfigApplicationContext -- Closing org.springframework.context.annotation.AnnotationConfigApplicationContext@541d8a9e, started on Thu Oct 15 18:20:28 TRT 2026
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

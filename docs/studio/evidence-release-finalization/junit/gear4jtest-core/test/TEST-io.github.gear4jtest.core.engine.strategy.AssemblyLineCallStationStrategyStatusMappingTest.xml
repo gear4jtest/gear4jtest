@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.strategy.AssemblyLineCallStationStrategyStatusMappingTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:36.879Z" hostname="2c641953591a" time="0.008">
+  <properties/>
+  <testcase name="doExecute_shouldThrowWhenInlineChildFails()" classname="io.github.gear4jtest.core.engine.strategy.AssemblyLineCallStationStrategyStatusMappingTest" time="0.004"/>
+  <testcase name="doExecute_shouldMapInlineStoppedAndCancelledChildrenToCallLogStatuses()" classname="io.github.gear4jtest.core.engine.strategy.AssemblyLineCallStationStrategyStatusMappingTest" time="0.001"/>
+  <testcase name="doExecute_shouldRejectUnresolvedTargetsBeforeExecution()" classname="io.github.gear4jtest.core.engine.strategy.AssemblyLineCallStationStrategyStatusMappingTest" time="0.0"/>
+  <testcase name="doExecute_shouldMapNestedSkippedStoppedAndCancelledChildrenToCallLogStatuses()" classname="io.github.gear4jtest.core.engine.strategy.AssemblyLineCallStationStrategyStatusMappingTest" time="0.0"/>
+  <testcase name="doExecute_shouldMapInlineSkippedChildToSkippedCallLogAndKeepOutput()" classname="io.github.gear4jtest.core.engine.strategy.AssemblyLineCallStationStrategyStatusMappingTest" time="0.001"/>
+  <testcase name="doExecute_shouldThrowWhenNestedChildFailsOrHasNoTerminalExecution()" classname="io.github.gear4jtest.core.engine.strategy.AssemblyLineCallStationStrategyStatusMappingTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

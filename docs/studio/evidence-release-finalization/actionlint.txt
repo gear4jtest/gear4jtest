@@ -1,0 +1,2 @@
+actionlint 1.7.12; shellcheck and pyflakes disabled
+exit=0

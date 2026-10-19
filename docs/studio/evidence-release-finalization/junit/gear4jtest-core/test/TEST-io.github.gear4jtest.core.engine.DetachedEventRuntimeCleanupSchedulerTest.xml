@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.DetachedEventRuntimeCleanupSchedulerTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:36.699Z" hostname="2c641953591a" time="0.01">
+  <properties/>
+  <testcase name="schedule_shouldRunCleanupOnlyOnceWhenCompletionRacesTimeout()" classname="io.github.gear4jtest.core.engine.DetachedEventRuntimeCleanupSchedulerTest" time="0.002"/>
+  <testcase name="schedule_shouldCancelPendingTimeoutAfterEarlyCompletion()" classname="io.github.gear4jtest.core.engine.DetachedEventRuntimeCleanupSchedulerTest" time="0.001"/>
+  <testcase name="schedule_shouldPreserveSubMillisecondTimeout()" classname="io.github.gear4jtest.core.engine.DetachedEventRuntimeCleanupSchedulerTest" time="0.001"/>
+  <testcase name="schedule_shouldCleanImmediatelyWhenTimeoutSchedulingIsRejected()" classname="io.github.gear4jtest.core.engine.DetachedEventRuntimeCleanupSchedulerTest" time="0.006"/>
+  <system-out><![CDATA[18:09:36.703 [gear4j-detached-cleanup-1] WARN io.github.gear4jtest.core.engine.DetachedEventRuntimeCleanupScheduler -- Forcing detached event runtime cleanup after timeout. timeout=PT0.000000001S
+18:09:36.706 [Test worker] WARN io.github.gear4jtest.core.engine.DetachedEventRuntimeCleanupScheduler -- Detached event cleanup timeout scheduling was rejected; cleaning up immediately. timeout=PT1S
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.util.concurrent.RejectedExecutionException; exception details withheld
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

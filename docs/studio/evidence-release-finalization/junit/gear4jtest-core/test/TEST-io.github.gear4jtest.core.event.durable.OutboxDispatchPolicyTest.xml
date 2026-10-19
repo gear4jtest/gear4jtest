@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.event.durable.OutboxDispatchPolicyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:37.996Z" hostname="2c641953591a" time="0.004">
+  <properties/>
+  <testcase name="retryDelay_shouldCapAtConfiguredMaxBackoff()" classname="io.github.gear4jtest.core.event.durable.OutboxDispatchPolicyTest" time="0.001"/>
+  <testcase name="builder_shouldRejectInvalidConfiguration()" classname="io.github.gear4jtest.core.event.durable.OutboxDispatchPolicyTest" time="0.001"/>
+  <testcase name="defaults_shouldRetryUntilDefaultMaxAttemptsWithExponentialBackoff()" classname="io.github.gear4jtest.core.event.durable.OutboxDispatchPolicyTest" time="0.001"/>
+  <testcase name="shouldRetry_shouldHonorCustomPredicateAndValidateFailure()" classname="io.github.gear4jtest.core.event.durable.OutboxDispatchPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

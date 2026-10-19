@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorRecoveryIT" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:47.427Z" hostname="2c641953591a" time="0.739">
+  <properties/>
+  <testcase name="migrationFailure_shouldBlockAutomaticRetryUntilOperatorPreparesIt()" classname="io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorRecoveryIT" time="0.699"/>
+  <testcase name="migrate_shouldUpgradeLegacyHistoryRowsToAppliedState()" classname="io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorRecoveryIT" time="0.023"/>
+  <system-out><![CDATA[18:18:48.092 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-recovery-test:1 (fault probe)
+18:18:48.126 [Test worker] WARN io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Prepared schema migration gear4j-recovery-test:1 for an operator-controlled retry
+18:18:48.130 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-recovery-test:1 (fault probe)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

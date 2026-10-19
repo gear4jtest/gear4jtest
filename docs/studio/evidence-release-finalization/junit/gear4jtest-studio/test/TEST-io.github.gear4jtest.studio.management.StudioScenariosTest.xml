@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.management.StudioScenariosTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:19:09.077Z" hostname="2c641953591a" time="0.44">
+  <properties/>
+  <testcase name="receiptIdentityPinsBothRevisionsAndPersistsChecksAndProvenanceExactlyOnce()" classname="io.github.gear4jtest.studio.management.StudioScenariosTest" time="0.062"/>
+  <testcase name="resolvedFingerprintsAreDurableDistinguishDriftAndRequireScenarioReadPermission()" classname="io.github.gear4jtest.studio.management.StudioScenariosTest" time="0.075"/>
+  <testcase name="invalidSourceAndUnknownTargetsAreNeverExecuted()" classname="io.github.gear4jtest.studio.management.StudioScenariosTest" time="0.018"/>
+  <testcase name="stationMetricsSeparateModesArtifactsCatalogsBuildsAndUnattestedRuns()" classname="io.github.gear4jtest.studio.management.StudioScenariosTest" time="0.032"/>
+  <testcase name="immutableRevisionsPaginationAndAuditSurviveReopeningWithoutEmbeddingFixturesInAudit()" classname="io.github.gear4jtest.studio.management.StudioScenariosTest" time="0.042"/>
+  <testcase name="fingerprintRejectsInvalidTextAndNeverPrintsResolvedInput()" classname="io.github.gear4jtest.studio.management.StudioScenariosTest" time="0.002"/>
+  <testcase name="admissionFailsClosedOnSecretsDisabledPolicyRevokedFixturesOrAclChangedDuringResolution()" classname="io.github.gear4jtest.studio.management.StudioScenariosTest" time="0.021"/>
+  <testcase name="scenarioPermissionsAndPrivateDraftScopeAreEnforcedSeparatelyFromTargetTestPermission()" classname="io.github.gear4jtest.studio.management.StudioScenariosTest" time="0.037"/>
+  <testcase name="syntheticTextIsReplayedExactlyWithoutCallingTheResolver()" classname="io.github.gear4jtest.studio.management.StudioScenariosTest" time="0.015"/>
+  <testcase name="preparationFailureKeepsScenarioProvenanceWithoutInventingAnAssertionResult()" classname="io.github.gear4jtest.studio.management.StudioScenariosTest" time="0.014"/>
+  <system-out><![CDATA[18:19:09.081 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:09.156 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:09.247 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:09.280 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:09.324 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:09.378 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:09.391 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:09.425 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:09.471 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:09.496 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

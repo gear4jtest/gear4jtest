@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.api.behavior.BaseErrorTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:34.604Z" hostname="2c641953591a" time="0.005">
+  <properties/>
+  <testcase name="builder_shouldCreateImmutableErrorConfiguration()" classname="io.github.gear4jtest.core.api.behavior.BaseErrorTest" time="0.004"/>
+  <testcase name="fields_shouldBePrivateAndFinal()" classname="io.github.gear4jtest.core.api.behavior.BaseErrorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

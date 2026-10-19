@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:36.953Z" hostname="2c641953591a" time="0.3">
+  <properties/>
+  <testcase name="should_collect_errors_and_fail_at_the_end_in_sequential_container()" classname="io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest" time="0.145"/>
+  <testcase name="should_interrupt_parallel_container_without_waiting_for_all_branches_when_fail_fast()" classname="io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest" time="0.004"/>
+  <testcase name="should_cancel_parent_when_parallel_branch_times_out_with_default_cancel_policy()" classname="io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest" time="0.052"/>
+  <testcase name="should_fail_fast_and_stop_next_branch_by_default_in_sequential_container()" classname="io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest" time="0.002"/>
+  <testcase name="should_mark_container_failed_when_executor_rejects_branch_submission()" classname="io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest" time="0.001"/>
+  <testcase name="should_apply_engine_default_timeout_when_parallel_station_has_no_override()" classname="io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest" time="0.031"/>
+  <testcase name="should_reject_branch_without_explicit_id()" classname="io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest" time="0.0"/>
+  <testcase name="should_ignore_parallel_timeout_and_keep_null_slot_when_cancel_policy_allows_it()" classname="io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest" time="0.052"/>
+  <testcase name="should_assemble_named_container_results_from_more_than_two_branches()" classname="io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest" time="0.003"/>
+  <testcase name="should_leave_caller_owned_parallel_executor_running_after_completion()" classname="io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest" time="0.002"/>
+  <testcase name="should_keep_branch_slot_as_null_when_condition_is_false()" classname="io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest" time="0.002"/>
+  <testcase name="should_ignore_failed_branch_and_continue_in_sequential_container()" classname="io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

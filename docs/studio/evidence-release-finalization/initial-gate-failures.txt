@@ -1,0 +1,49 @@
+Initial execution before local Git metadata was configured.
+FAILURE: Build completed with 3 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':release-tools:jreleaserConfig' (registered by plugin 'org.jreleaser').
+> org/eclipse/jgit/api/errors/GitAPIException
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':verifyReleaseVulnerabilityFeed' (registered by plugin 'gear4j.root-release').
+> Invalid release vulnerability-feed configuration:
+   - set NVD_API_KEY or NVD_DATAFEED_URL
+  Anonymous NVD access remains available for ad-hoc scans only.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+3: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':gear4jtest-studio-jdbc:studioPostgresQualification'.
+> There were failing tests. See the report at: file:///workspace/scratch/74cca285b474/release-final/gear4j/gear4jtest-studio-jdbc/build/reports/tests/studioPostgresQualification/index.html
+
+* Try:
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+==============================================================================
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.6.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 11m 23s
+427 actionable tasks: 427 executed

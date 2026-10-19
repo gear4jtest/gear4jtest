@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.runtime.LocalStudioTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:12.691Z" hostname="2c641953591a" time="0.991">
+  <properties/>
+  <testcase name="catalogDraftValidationAndRealRunKeepExactProvenance()" classname="io.github.gear4jtest.studio.runtime.LocalStudioTest" time="0.194"/>
+  <testcase name="capturesDefaultToNoneAndRedactorFailureFailsClosed()" classname="io.github.gear4jtest.studio.runtime.LocalStudioTest" time="0.246"/>
+  <testcase name="userPermissionAndRuntimeCapabilityAreIndependentAndEnforcedServerSide()" classname="io.github.gear4jtest.studio.runtime.LocalStudioTest" time="0.004"/>
+  <testcase name="gelChoicesAndStringParametersRoundTripSemanticallyAndRunBothBranches()" classname="io.github.gear4jtest.studio.runtime.LocalStudioTest" time="0.276"/>
+  <testcase name="rawSourceAdmissionChecksTheWholeTextAndResourceReferencesWithoutRepairingXml()" classname="io.github.gear4jtest.studio.runtime.LocalStudioTest" time="0.012"/>
+  <testcase name="invalidDraftCanBeSavedButNotExecutedAndRevisionWritesAreConditional()" classname="io.github.gear4jtest.studio.runtime.LocalStudioTest" time="0.004"/>
+  <testcase name="plainHostDoesNotRequireSpring()" classname="io.github.gear4jtest.studio.runtime.LocalStudioTest" time="0.001"/>
+  <testcase name="validationDoesNotInstantiateOperatorsOrExecuteThem()" classname="io.github.gear4jtest.studio.runtime.LocalStudioTest" time="0.166"/>
+  <testcase name="malformedGelAndMissingParametersProduceLocalizedDiagnostics()" classname="io.github.gear4jtest.studio.runtime.LocalStudioTest" time="0.003"/>
+  <testcase name="xmlImportRejectsUnknownFeaturesRawJavaAndDoctypeWithoutSilentLoss()" classname="io.github.gear4jtest.studio.runtime.LocalStudioTest" time="0.007"/>
+  <testcase name="resourceReferencesAreAuthorizedAndForbidRuntimeCaptureEvenWithAllowedPolicy()" classname="io.github.gear4jtest.studio.runtime.LocalStudioTest" time="0.072"/>
+  <system-out><![CDATA[18:20:12.882 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=text_preparation:root, requestExtensions=[Gear4jRunObserver]
+18:20:12.883 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:12.971 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=text_preparation:root, requestExtensions=[Gear4jRunObserver]
+18:20:12.971 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:13.067 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=text_preparation:root, requestExtensions=[Gear4jRunObserver]
+18:20:13.067 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:13.131 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=text_preparation:root, requestExtensions=[Gear4jRunObserver]
+18:20:13.131 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:13.320 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=sample, rootStation=choice, requestExtensions=[Gear4jRunObserver]
+18:20:13.321 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=sample, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:13.412 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=sample, rootStation=choice, requestExtensions=[Gear4jRunObserver]
+18:20:13.412 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=sample, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:13.595 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=text_preparation:root, requestExtensions=[Gear4jRunObserver]
+18:20:13.595 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:13.680 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=sample, rootStation=resource, requestExtensions=[Gear4jRunObserver]
+18:20:13.681 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=sample, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

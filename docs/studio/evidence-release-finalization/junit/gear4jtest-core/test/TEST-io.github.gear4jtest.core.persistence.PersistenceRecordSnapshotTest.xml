@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.persistence.PersistenceRecordSnapshotTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:38.138Z" hostname="2c641953591a" time="0.005">
+  <properties/>
+  <testcase name="factories_shouldCloneNestedValuesAfterRedaction()" classname="io.github.gear4jtest.core.persistence.PersistenceRecordSnapshotTest" time="0.001"/>
+  <testcase name="factory_shouldRejectNonStringContextKeysReturnedByRedactor()" classname="io.github.gear4jtest.core.persistence.PersistenceRecordSnapshotTest" time="0.001"/>
+  <testcase name="factory_shouldRejectUnknownMutableValuesWithoutExplicitCloner()" classname="io.github.gear4jtest.core.persistence.PersistenceRecordSnapshotTest" time="0.001"/>
+  <testcase name="constructors_shouldDefensivelyCopyPublicContextMaps()" classname="io.github.gear4jtest.core.persistence.PersistenceRecordSnapshotTest" time="0.001"/>
+  <testcase name="constructors_shouldRejectMissingRequiredState()" classname="io.github.gear4jtest.core.persistence.PersistenceRecordSnapshotTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

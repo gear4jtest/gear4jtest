@@ -1,0 +1,7 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> @gear4j/studio-web@0.6.2 pack:check
+> node scripts/check-package.mjs
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+Packed npm artifact installed and all public exports consumed successfully.

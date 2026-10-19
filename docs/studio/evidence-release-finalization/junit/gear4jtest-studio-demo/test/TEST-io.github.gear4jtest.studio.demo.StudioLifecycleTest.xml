@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.demo.StudioLifecycleTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:19:17.594Z" hostname="2c641953591a" time="4.511">
+  <properties/>
+  <testcase name="sourceAndInvalidDraftsCannotFreezeAndRightsForPublishPromoteAndTestStaySeparate()" classname="io.github.gear4jtest.studio.demo.StudioLifecycleTest" time="1.146"/>
+  <testcase name="aPreexistingDifferentArtifactCannotBeOverwrittenOrPromotedAsThisVersion()" classname="io.github.gear4jtest.studio.demo.StudioLifecycleTest" time="0.74"/>
+  <testcase name="interruptedPublicationIsReconciledWithoutRepeatingTheRuntimeWrite()" classname="io.github.gear4jtest.studio.demo.StudioLifecycleTest" time="0.66"/>
+  <testcase name="runPolicyIsExplicitAndCannotBeInferredFromTestPermission()" classname="io.github.gear4jtest.studio.demo.StudioLifecycleTest" time="0.407"/>
+  <testcase name="exactVersionsPublishToTestPromoteToRunAndSurviveAFullReopen()" classname="io.github.gear4jtest.studio.demo.StudioLifecycleTest" time="1.555"/>
+  <system-out><![CDATA[18:19:17.644 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:17.674 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:18.750 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:18.761 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:19.490 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:19.500 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:20.149 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:20.156 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:20.558 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:20.565 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:21.018 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=text_preparation:root, requestExtensions=[Gear4jRunObserver]
+18:19:21.018 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:19:21.727 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=text_preparation:root, requestExtensions=[Gear4jRunObserver]
+18:19:21.727 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:19:21.859 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=trim, requestExtensions=[Gear4jRunObserver]
+18:19:21.859 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

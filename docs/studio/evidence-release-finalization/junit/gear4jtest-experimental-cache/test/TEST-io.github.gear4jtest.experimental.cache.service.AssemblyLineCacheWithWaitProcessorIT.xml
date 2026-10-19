@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.experimental.cache.service.AssemblyLineCacheWithWaitProcessorIT" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:42.983Z" hostname="2c641953591a" time="0.069">
+  <properties/>
+  <testcase name="should_wait_side_compute_via_processor_and_cache_pipeline_result()" classname="io.github.gear4jtest.experimental.cache.service.AssemblyLineCacheWithWaitProcessorIT" time="0.068"/>
+  <system-out><![CDATA[18:09:43.027 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=customer-enrichment, rootStation=customer-enrichment:root, requestExtensions=[AssemblyLineCacheExtension]
+18:09:43.028 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=customer-enrichment, stationWrappers=0, stationLifecycles=0, runInterceptors=1, executorWrappers=1
+18:09:43.048 [Test worker] DEBUG io.github.gear4jtest.experimental.cache.assemblylinecache.AssemblyLineCacheExtension -- AssemblyLine cache saved. assemblyLineId=customer-enrichment, executionId=01a1401c-aaf2-7000-b012-b5ef3a00a965, expiresAt=2026-10-15T15:19:42.986148573Z
+18:09:43.051 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=customer-enrichment, rootStation=customer-enrichment:root, requestExtensions=[AssemblyLineCacheExtension]
+18:09:43.051 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=customer-enrichment, stationWrappers=0, stationLifecycles=0, runInterceptors=1, executorWrappers=1
+18:09:43.051 [Test worker] DEBUG io.github.gear4jtest.experimental.cache.assemblylinecache.AssemblyLineCacheExtension -- AssemblyLine cache hit. assemblyLineId=customer-enrichment, version=1.0.0, executionId=01a1401c-ab0a-7000-b02a-d61143e57bf5
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

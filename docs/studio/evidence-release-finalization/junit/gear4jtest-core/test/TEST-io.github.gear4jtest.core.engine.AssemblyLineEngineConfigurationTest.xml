@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.AssemblyLineEngineConfigurationTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:36.544Z" hostname="2c641953591a" time="0.066">
+  <properties/>
+  <testcase name="defaultWorkerConcurrencyManager_shouldUseGlobalOnlyForProcessWideLocking()" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineConfigurationTest" time="0.001"/>
+  <testcase name="defaults when nothing is configured" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineConfigurationTest" time="0.009"/>
+  <testcase name="custom manager without explicit config switches to engine-local locking" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineConfigurationTest" time="0.001"/>
+  <testcase name="explicit concurrency config wins over custom manager fallback" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineConfigurationTest" time="0.001"/>
+  <testcase name="explicit policy overrides configured base" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineConfigurationTest" time="0.001"/>
+  <testcase name="explicit lock-reused-only policy overrides configured base" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineConfigurationTest" time="0.0"/>
+  <testcase name="explicit lock acquisition timeout and registry override configured base" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineConfigurationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

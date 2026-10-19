@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.api.context.ContextPropagationPolicyTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:34.642Z" hostname="2c641953591a" time="0.041">
+  <properties/>
+  <testcase name="includeKeys_shouldPropagateOnlySelectedKeysInSelectionOrder()" classname="io.github.gear4jtest.core.api.context.ContextPropagationPolicyTest" time="0.001"/>
+  <testcase name="copyValues_shouldOmitKeysWhenCopierReturnsNull()" classname="io.github.gear4jtest.core.api.context.ContextPropagationPolicyTest" time="0.001"/>
+  <testcase name="copyValues_shouldCopyAndFilterValues()" classname="io.github.gear4jtest.core.api.context.ContextPropagationPolicyTest" time="0.035"/>
+  <testcase name="none_shouldPropagateNoValues()" classname="io.github.gear4jtest.core.api.context.ContextPropagationPolicyTest" time="0.001"/>
+  <testcase name="inheritAllShallow_shouldCopyMapButShareValues()" classname="io.github.gear4jtest.core.api.context.ContextPropagationPolicyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

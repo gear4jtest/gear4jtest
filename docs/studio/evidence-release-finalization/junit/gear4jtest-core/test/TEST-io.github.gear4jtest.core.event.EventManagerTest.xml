@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.event.EventManagerTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:37.632Z" hostname="2c641953591a" time="0.321">
+  <properties/>
+  <testcase name="shutdown_shouldDrainAlreadyQueuedEvents()" classname="io.github.gear4jtest.core.event.EventManagerTest" time="0.004"/>
+  <testcase name="shutdown_shouldUseOneDeadlineWhenOwnedReactionIgnoresInterruption()" classname="io.github.gear4jtest.core.event.EventManagerTest" time="0.204"/>
+  <testcase name="snapshotStats_shouldExposeDroppedAndFailedReactionsUnderSaturation()" classname="io.github.gear4jtest.core.event.EventManagerTest" time="0.002"/>
+  <testcase name="publish_shouldDoNothingWhenDefinitionHasNoSubscriptions()" classname="io.github.gear4jtest.core.event.EventManagerTest" time="0.0"/>
+  <testcase name="shutdown_shouldCompleteWhenCancelModeDropsQueuedReactionBeforeStart()" classname="io.github.gear4jtest.core.event.EventManagerTest" time="0.001"/>
+  <testcase name="publish_shouldDispatchOnlyMatchingSubscriptions()" classname="io.github.gear4jtest.core.event.EventManagerTest" time="0.002"/>
+  <testcase name="publish_shouldDropEventsWhenEventQueueIsFull()" classname="io.github.gear4jtest.core.event.EventManagerTest" time="0.002"/>
+  <testcase name="shutdown_shouldAcceptTimeoutLargerThanNanosecondRange()" classname="io.github.gear4jtest.core.event.EventManagerTest" time="0.0"/>
+  <testcase name="shutdown_shouldSupportDetachAndDrain()" classname="io.github.gear4jtest.core.event.EventManagerTest" time="0.003"/>
+  <testcase name="shutdown_shouldRespectTimeoutWhenRunningReactionDoesNotComplete()" classname="io.github.gear4jtest.core.event.EventManagerTest" time="0.102"/>
+  <system-out><![CDATA[18:09:37.838 [Test worker] WARN io.github.gear4jtest.core.event.EventRuntimeShutdown -- Timed out while waiting for the asynchronous event runtime to terminate. timeout=PT0.2S
+18:09:37.842 [pool-34-thread-1] ERROR io.github.gear4jtest.core.event.EventManager -- Asynchronous event reaction failed. eventType=FAIL, subscriptionType=io.github.gear4jtest.core.event.Event, suppressedSincePreviousEmission=0
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+18:09:37.848 [Test worker] WARN io.github.gear4jtest.core.event.EventManager -- Dropping event because the in-memory event queue is full. eventType=DROPPED, capacity=1, suppressedSincePreviousEmission=0
+18:09:37.953 [ForkJoinPool.commonPool-worker-1] WARN io.github.gear4jtest.core.event.EventRuntimeShutdown -- Timed out while waiting for the asynchronous event runtime to terminate. timeout=PT0.1S
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

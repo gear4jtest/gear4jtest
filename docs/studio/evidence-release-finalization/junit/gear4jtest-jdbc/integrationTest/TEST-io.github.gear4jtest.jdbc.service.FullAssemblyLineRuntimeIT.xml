@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.service.FullAssemblyLineRuntimeIT" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:48.182Z" hostname="2c641953591a" time="0.525">
+  <properties/>
+  <testcase name="fullAssemblyLineRun_withInMemoryPersistenceAndEvents_shouldExerciseStationTypesAndPersistHierarchy()" classname="io.github.gear4jtest.jdbc.service.FullAssemblyLineRuntimeIT" time="0.142"/>
+  <testcase name="fullAssemblyLineRun_withH2Persistence_shouldExerciseJdbcProviderWithoutDocker()" classname="io.github.gear4jtest.jdbc.service.FullAssemblyLineRuntimeIT" time="0.381"/>
+  <system-out><![CDATA[18:18:48.270 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=full-runtime, rootStation=full-runtime:root, requestExtensions=[]
+18:18:48.272 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=full-runtime, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:18:48.305 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=nested-child, rootStation=nested-suffix, requestExtensions=[]
+18:18:48.306 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=nested-child, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:18:48.530 [Test worker] WARN io.github.gear4jtest.jdbc.execution.DatabaseExecutionManager -- [Gear4J] JDBC persistence is configured to allow unredacted sensitive data capture. Assembly line payloads, contexts, results and error messages will be persisted as-is.
+18:18:48.531 [Test worker] INFO io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository -- [Gear4J] Applying core schema migrations for H2
+18:18:48.539 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-core:1 (create execution schema)
+18:18:48.559 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=full-runtime, rootStation=full-runtime:root, requestExtensions=[]
+18:18:48.606 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=full-runtime, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:18:48.612 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=nested-child, rootStation=nested-suffix, requestExtensions=[]
+18:18:48.614 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=nested-child, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

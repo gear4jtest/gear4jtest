@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.service.AssemblyLineDslRuntimeTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:38.150Z" hostname="2c641953591a" time="0.006">
+  <properties/>
+  <testcase name="pipelineWithSkipIteratorAndEventSubscription_shouldComplete()" classname="io.github.gear4jtest.core.service.AssemblyLineDslRuntimeTest" time="0.003"/>
+  <testcase name="pipelineWithEventSubscription_shouldPublishParameterEvents()" classname="io.github.gear4jtest.core.service.AssemblyLineDslRuntimeTest" time="0.003"/>
+  <system-out><![CDATA[18:09:38.152 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=test, rootStation=test:root, requestExtensions=[]
+18:09:38.152 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=test, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:38.155 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=test, rootStation=test:root, requestExtensions=[]
+18:09:38.155 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=test, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

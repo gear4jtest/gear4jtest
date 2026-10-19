@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.api.station.AbstractStationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:34.713Z" hostname="2c641953591a" time="0.003">
+  <properties/>
+  <testcase name="requireMetadata_shouldFailWhenValueIsMissing()" classname="io.github.gear4jtest.core.api.station.AbstractStationTest" time="0.001"/>
+  <testcase name="constructor_shouldExposeImmutableSkippers()" classname="io.github.gear4jtest.core.api.station.AbstractStationTest" time="0.001"/>
+  <testcase name="constructor_shouldExposeTypedMetadata()" classname="io.github.gear4jtest.core.api.station.AbstractStationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

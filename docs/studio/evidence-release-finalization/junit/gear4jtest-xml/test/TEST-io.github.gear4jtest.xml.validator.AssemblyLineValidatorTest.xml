@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:40.131Z" hostname="2c641953591a" time="0.057">
+  <properties/>
+  <testcase name="should_reject_oversize_byte_array_before_schema_validation()" classname="io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest" time="0.003"/>
+  <testcase name="[1] sample=/samples/bad-assembly-line.xml" classname="io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest" time="0.004"/>
+  <testcase name="[2] sample=/samples/bad-missing-subline-id.xml" classname="io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest" time="0.002"/>
+  <testcase name="[3] sample=/samples/bad-doctype.xml" classname="io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest" time="0.004"/>
+  <testcase name="[4] sample=/samples/bad-missing-else-operation.xml" classname="io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest" time="0.001"/>
+  <testcase name="[5] sample=/samples/bad-ignore-signal.xml" classname="io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest" time="0.002"/>
+  <testcase name="[1] sample=/samples/assembly-line-iterator.xml" classname="io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest" time="0.002"/>
+  <testcase name="[2] sample=/samples/assembly-line-parallel-container.xml" classname="io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest" time="0.001"/>
+  <testcase name="[3] sample=/samples/assembly-line-container-three-branches.xml" classname="io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest" time="0.001"/>
+  <testcase name="[4] sample=/samples/assembly-line-signal.xml" classname="io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest" time="0.001"/>
+  <testcase name="should_bound_input_stream_before_schema_validation()" classname="io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

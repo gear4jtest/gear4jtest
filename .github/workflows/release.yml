@@ -105,9 +105,16 @@ jobs:
             gear4jtest-external-jdbc/build/reports/tests/integrationTest/**
           if-no-files-found: ignore
 
+  studio-qualification:
+    name: Studio mandatory qualification
+    needs: preflight
+    uses: ./.github/workflows/studio-release-readiness.yml
+    with:
+      project-version: ${{ needs.preflight.outputs.version }}
+
   publish:
     name: Publish to Maven Central
-    needs: [preflight, database-matrix]
+    needs: [preflight, database-matrix, studio-qualification]
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -170,6 +177,7 @@ jobs:
           RELEASE_DRY_RUN: ${{ needs.preflight.outputs.dry_run }}
           API_BASELINE_VERSION: ${{ inputs['api-baseline-version'] || vars.GEAR4J_API_BASELINE_VERSION }}
           DATABASE_MATRIX_RESULT: ${{ needs.database-matrix.result }}
+          STUDIO_QUALIFICATION_RESULT: ${{ needs.studio-qualification.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           python3 scripts/write_release_evidence.py \
@@ -181,6 +189,7 @@ jobs:
             --run-url "${RUN_URL}" \
             --run-attempt "${GITHUB_RUN_ATTEMPT}" \
             --database-matrix-result "${DATABASE_MATRIX_RESULT}" \
+            --studio-qualification-result "${STUDIO_QUALIFICATION_RESULT}" \
             --dry-run "${RELEASE_DRY_RUN}" \
             --api-baseline-version "${API_BASELINE_VERSION}"
 

@@ -287,7 +287,17 @@ tasks.register('verifyWorkflowSecurity') {
                     def matcher = line =~ /^    timeout-minutes:\s*(\d+)\s*$/
                     matcher.matches() ? Integer.parseInt(matcher.group(1)) : null
                 }.findAll { it != null }
-                if (timeoutMatches.size() != 1) {
+                def reusable = jobLines.find {
+                    it ==~ /^    uses: \.\/\.github\/workflows\/[A-Za-z0-9_-]+\.ya?ml\s*$/
+                }
+                if (reusable != null) {
+                    def called = file(reusable.trim().substring('uses: ./'.length()).trim())
+                    if (!called.isFile() || !called.text.contains('  workflow_call:')
+                            || !timeoutMatches.isEmpty()) {
+                        failures << "${workflowFile.name}:${jobStart.name}: invalid local reusable workflow"
+                    }
+                    // Runner jobs in the called file are checked independently below.
+                } else if (timeoutMatches.size() != 1) {
                     failures << "${workflowFile.name}:${jobStart.name}: expected one numeric job timeout"
                 } else if (timeoutMatches[0] < 1 || timeoutMatches[0] > 360) {
                     failures << "${workflowFile.name}:${jobStart.name}: timeout must be between 1 and 360 minutes"
@@ -349,7 +359,10 @@ tasks.register('verifyReleaseWorkflowContract') {
             ],
             (releaseWorkflow): [
                 'preflight:',
-                'needs: [preflight, database-matrix]',
+                'needs: [preflight, database-matrix, studio-qualification]',
+                'uses: ./.github/workflows/studio-release-readiness.yml',
+                'project-version: ${{ needs.preflight.outputs.version }}',
+                '--studio-qualification-result "${STUDIO_QUALIFICATION_RESULT}"',
                 'RELEASE_VERSION: ${{ needs.preflight.outputs.version }}',
                 'NVD_API_KEY: ${{ secrets.NVD_API_KEY }}',
                 'NVD_DATAFEED_URL: ${{ vars.NVD_DATAFEED_URL }}',

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorFunctionalTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:14.011Z" hostname="2c641953591a" time="10.497">
+  <properties/>
+  <testcase name="generation_shouldInvalidateTaskWhenXmlInputChangesAndReplaceOldOutputs()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorFunctionalTest" time="7.767"/>
+  <testcase name="generation_shouldKeepRestrictedPolicyWhenReusingConfigurationCache()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorFunctionalTest" time="0.573"/>
+  <testcase name="generation_shouldRejectClassNamesThatCollideAfterNormalization()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorFunctionalTest" time="0.464"/>
+  <testcase name="generation_shouldReuseConfigurationCacheAndRestoreOutputsFromBuildCache()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorFunctionalTest" time="0.419"/>
+  <testcase name="generation_shouldRejectIdenticalGeneratedClassNamesWithoutWritingPartialOutputs()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorFunctionalTest" time="0.299"/>
+  <testcase name="generation_shouldRejectOversizedXmlBeforeReplacingOutputs()" classname="io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorFunctionalTest" time="0.561"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

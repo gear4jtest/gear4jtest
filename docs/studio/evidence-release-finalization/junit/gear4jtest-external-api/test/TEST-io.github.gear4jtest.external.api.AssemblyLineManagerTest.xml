@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.AssemblyLineManagerTest" tests="25" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:58.611Z" hostname="2c641953591a" time="0.268">
+  <properties/>
+  <testcase name="promoteTestToRun_shouldRejectExistingRunWithDifferentSize()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.016"/>
+  <testcase name="build_shouldRejectAtomicRepositoryWithoutStagedLifecycle()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.002"/>
+  <testcase name="registerAssemblyLine_shouldNotCreateStageWhenStoreResolutionFails()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.037"/>
+  <testcase name="registerAssemblyLine_shouldRejectNullAndBlankVersions()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.001"/>
+  <testcase name="registerAssemblyLine_shouldRejectTooManyTagsBeforeValidationOrStorage()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.005"/>
+  <testcase name="registerAssemblyLine_shouldAllowDirectRunAndInvalidateLatestAliasWhenConfigured()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.01"/>
+  <testcase name="build_shouldRejectRepositoriesWithoutAtomicPublicationCapability()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.001"/>
+  <testcase name="promoteTestToRun_shouldRejectExistingRunWithDifferentMimeType()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.003"/>
+  <testcase name="registerAssemblyLine_shouldDelegateAtomicMetadataPublicationWhenObjectRepositorySupportsIt()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.025"/>
+  <testcase name="registerAssemblyLine_shouldAbortStageWhenCommitDetectsConflict()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.006"/>
+  <testcase name="registerAssemblyLine_shouldValidateTestCandidateBeforePublishingMetadata()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.004"/>
+  <testcase name="promoteTestToRun_shouldValidateCompilePublishRunObjectAndInvalidateLatestAlias()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.006"/>
+  <testcase name="promoteTestToRun_shouldReturnWhenMatchingRunAlreadyExists()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.002"/>
+  <testcase name="registerAssemblyLine_shouldExposeConflictingRetryAsPolicyViolation()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.003"/>
+  <testcase name="getOperationChain_shouldReturnBoundCachedAssemblyLineWithoutRecompiling()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.002"/>
+  <testcase name="registerAssemblyLine_shouldRejectInvalidTagsBeforeValidationOrStorage()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.001"/>
+  <testcase name="promoteTestToRun_shouldRejectInvalidRunCandidateBeforePublishingRunObject()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.005"/>
+  <testcase name="registerAssemblyLine_shouldRejectDirectRunPublicationWhenConfigDoesNotAllowIt()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.002"/>
+  <testcase name="registerAssemblyLine_shouldKeepStageWhenStoreReturnsUnexpectedHash()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.043"/>
+  <testcase name="getOperationChainLatestRun_shouldClearStaleAliasAndBindCurrentRun()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.003"/>
+  <testcase name="promoteTestToRun_shouldRejectExistingRunWithDifferentContent()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.003"/>
+  <testcase name="registerAssemblyLine_shouldStoreArtifactAndPublishMetadataAtomically()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.005"/>
+  <testcase name="registerAssemblyLine_shouldKeepStageWhenArtifactStorageFails()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.004"/>
+  <testcase name="promoteTestToRun_shouldRejectSameSizeCorruptionBeforeTranslation()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.005"/>
+  <testcase name="registerAssemblyLine_shouldKeepStageWhenMetadataCommitFails()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

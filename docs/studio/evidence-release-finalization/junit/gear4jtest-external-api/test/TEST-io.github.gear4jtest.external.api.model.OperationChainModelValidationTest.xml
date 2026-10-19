@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.model.OperationChainModelValidationTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:10:02.386Z" hostname="2c641953591a" time="0.007">
+  <properties/>
+  <testcase name="objectContentIdentity_shouldExposeTheCanonicalPublicationIdentity()" classname="io.github.gear4jtest.external.api.model.OperationChainModelValidationTest" time="0.0"/>
+  <testcase name="object_shouldNormalizeHashAndRejectSchemaViolations()" classname="io.github.gear4jtest.external.api.model.OperationChainModelValidationTest" time="0.001"/>
+  <testcase name="contentIdentity_shouldNormalizeAndCompareAllPersistedComponents()" classname="io.github.gear4jtest.external.api.model.OperationChainModelValidationTest" time="0.0"/>
+  <testcase name="configToString_shouldRedactStorePropertyValues()" classname="io.github.gear4jtest.external.api.model.OperationChainModelValidationTest" time="0.003"/>
+  <testcase name="config_shouldRejectMissingDatabaseInvariants()" classname="io.github.gear4jtest.external.api.model.OperationChainModelValidationTest" time="0.0"/>
+  <testcase name="assemblyLineId_shouldUseTheShared255UnicodeCodePointLimit()" classname="io.github.gear4jtest.external.api.model.OperationChainModelValidationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.support.TaskFactoryTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:37.517Z" hostname="2c641953591a" time="0.003">
+  <properties/>
+  <testcase name="should_propagate_item_id_and_parent_operation_id_inside_async_task()" classname="io.github.gear4jtest.core.engine.support.TaskFactoryTest" time="0.002"/>
+  <testcase name="should_propagate_and_restore_mdc_inside_async_task()" classname="io.github.gear4jtest.core.engine.support.TaskFactoryTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.event.EventRuntimeShutdownTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:37.969Z" hostname="2c641953591a" time="0.022">
+  <properties/>
+  <testcase name="dispatchDrain_shouldNotStopCallerManagedExecutor()" classname="io.github.gear4jtest.core.event.EventRuntimeShutdownTest" time="0.001"/>
+  <testcase name="awaitCompletion_shouldCancelAndStopOwnedExecutorAtDeadline()" classname="io.github.gear4jtest.core.event.EventRuntimeShutdownTest" time="0.021"/>
+  <system-out><![CDATA[18:09:37.990 [Test worker] WARN io.github.gear4jtest.core.event.EventRuntimeShutdown -- Timed out while waiting for the asynchronous event runtime to terminate. timeout=PT0.02S
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

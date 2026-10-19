@@ -165,6 +165,10 @@ tasks.register('verifyStagedReleaseArtifacts') {
             if (pom.description.text().trim().isEmpty()) {
                 failures << "${pomFile.name} is missing project description"
             }
+            if (pom.artifactId.text().startsWith('gear4jtest-studio')
+                    && !pom.description.text().toLowerCase(Locale.ROOT).contains('experimental')) {
+                failures << "${pomFile.name} must identify Studio as experimental"
+            }
             if (pom.url.text().trim().isEmpty()) {
                 failures << "${pomFile.name} is missing project URL"
             }
@@ -396,9 +400,31 @@ def apiBaselineVersion = providers.gradleProperty('gear4j.apiBaselineVersion')
 def publishedLibraryProjects = subprojects.findAll { it.plugins.hasPlugin('maven-publish') }
 def apiCompatibilityTasks = []
 
+def nonStablePackage = { File packageInfo ->
+    def source = packageInfo.getText('UTF-8')
+    ['Internal', 'Experimental'].any { marker ->
+        def qualified = 'io.github.gear4jtest.core.api.annotation.' + marker
+        (source =~ /(?m)^@${java.util.regex.Pattern.quote(qualified)}\s*$/).find()
+            || (source.contains('import ' + qualified + ';')
+                && (source =~ /(?m)^@${marker}\s*$/).find())
+    }
+}
+
 if (apiBaselineVersion.isPresent()) {
     def baselineVersion = apiBaselineVersion.get()
     publishedLibraryProjects.each { candidate ->
+        def excludedPackages = fileTree(candidate.layout.projectDirectory.dir('src/main/java')) {
+            include '**/package-info.java'
+        }.files.findAll(nonStablePackage)
+        def excludedDirectories = excludedPackages.collect { it.parentFile }.toSet()
+        def javaSources = fileTree(candidate.layout.projectDirectory.dir('src/main/java')) {
+            include '**/*.java'
+            exclude '**/module-info.java'
+        }.files
+        // Entirely experimental artifacts have no stable N-1 API to resolve.
+        if (!javaSources.isEmpty() && javaSources.every { excludedDirectories.contains(it.parentFile) }) {
+            return
+        }
         def oldApi = configurations.detachedConfiguration(
             dependencies.create("${candidate.group}:${candidate.name}:${baselineVersion}"))
         oldApi.transitive = false
@@ -414,16 +440,10 @@ if (apiBaselineVersion.isPresent()) {
             doFirst {
                 def exclusions = ['@io.github.gear4jtest.core.api.annotation.Internal',
                                   '@io.github.gear4jtest.core.api.annotation.Experimental']
-                fileTree(candidate.layout.projectDirectory.dir('src/main/java')) {
-                    include '**/package-info.java'
-                }.files.each { packageInfo ->
-                    def source = packageInfo.getText('UTF-8')
-                    if (source.contains('@io.github.gear4jtest.core.api.annotation.Internal')
-                            || source.contains('@io.github.gear4jtest.core.api.annotation.Experimental')) {
-                        def matcher = source =~ /(?m)^package\s+([A-Za-z0-9_.]+);/
-                        if (matcher.find()) {
-                            exclusions << matcher.group(1) + '.*'
-                        }
+                excludedPackages.each { packageInfo ->
+                    def matcher = packageInfo.getText('UTF-8') =~ /(?m)^package\s+([A-Za-z0-9_.]+);/
+                    if (matcher.find()) {
+                        exclusions << matcher.group(1) + '.*'
                     }
                 }
                 def currentJar = candidate.tasks.named('jar').get().archiveFile.get().asFile

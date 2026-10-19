@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.GeneratedLoadingConfigurationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:10:00.885Z" hostname="2c641953591a" time="0.003">
+  <properties/>
+  <testcase name="constructor_shouldRejectInvalidValues()" classname="io.github.gear4jtest.external.api.GeneratedLoadingConfigurationTest" time="0.001"/>
+  <testcase name="defaults_shouldProvideFiniteBoundedPolicy()" classname="io.github.gear4jtest.external.api.GeneratedLoadingConfigurationTest" time="0.001"/>
+  <testcase name="withMethods_shouldPreserveOtherValues()" classname="io.github.gear4jtest.external.api.GeneratedLoadingConfigurationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

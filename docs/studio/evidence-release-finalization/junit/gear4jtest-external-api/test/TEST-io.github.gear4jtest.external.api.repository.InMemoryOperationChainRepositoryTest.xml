@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:10:02.394Z" hostname="2c641953591a" time="0.012">
+  <properties/>
+  <testcase name="stagedPublication_shouldRenewGracePeriodAndProtectActiveRetryFromStaleAbort()" classname="io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest" time="0.001"/>
+  <testcase name="findAll_shouldApplyRequiredBoundedPage()" classname="io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest" time="0.001"/>
+  <testcase name="stagedPublication_shouldRemainInvisibleUntilCommitAndBeRecoverable()" classname="io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest" time="0.001"/>
+  <testcase name="stagedPublication_shouldRejectRetryUsingDifferentStoreConfiguration()" classname="io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest" time="0.001"/>
+  <testcase name="publish_shouldLeaveExistingObjectAndTagsUnchangedOnConflict()" classname="io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest" time="0.0"/>
+  <testcase name="stagedPublication_shouldRejectMatchingHashWithDifferentSizeOrMimeType()" classname="io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest" time="0.001"/>
+  <testcase name="commit_shouldRejectMatchingHashWithDifferentCommittedMetadata()" classname="io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest" time="0.001"/>
+  <testcase name="stagedPublication_shouldRejectConflictingCandidateWithoutChangingStage()" classname="io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest" time="0.001"/>
+  <testcase name="findLatestRun_shouldUsePublicationTimeThenIdentifier()" classname="io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest" time="0.001"/>
+  <testcase name="stagedPublication_shouldMergeIdempotentTagsAndAbortWithoutVisibility()" classname="io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest" time="0.001"/>
+  <testcase name="directTagOperations_shouldApplyThePublicationTagSchema()" classname="io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest" time="0.001"/>
+  <testcase name="stagedPublication_shouldKeepLegacyDelimiterCollisionCandidatesSeparate()" classname="io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest" time="0.001"/>
+  <testcase name="publish_shouldAtomicallyPersistObjectAndDeduplicatedTags()" classname="io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

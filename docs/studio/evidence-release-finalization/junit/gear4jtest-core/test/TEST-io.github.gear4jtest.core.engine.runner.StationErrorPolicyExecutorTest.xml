@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.runner.StationErrorPolicyExecutorTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:36.779Z" hostname="2c641953591a" time="0.008">
+  <properties/>
+  <testcase name="apply_shouldKeepIgnorePolicyWhenActionFails()" classname="io.github.gear4jtest.core.engine.runner.StationErrorPolicyExecutorTest" time="0.003"/>
+  <testcase name="apply_shouldCarryInputForwardWhenUnaryStationIgnoresWithoutFallback()" classname="io.github.gear4jtest.core.engine.runner.StationErrorPolicyExecutorTest" time="0.001"/>
+  <testcase name="apply_shouldIgnoreNullPoliciesAndNonMatchingTypesOrConditions()" classname="io.github.gear4jtest.core.engine.runner.StationErrorPolicyExecutorTest" time="0.0"/>
+  <testcase name="apply_shouldRunMatchingActionAndFallbackForIgnorePolicy()" classname="io.github.gear4jtest.core.engine.runner.StationErrorPolicyExecutorTest" time="0.0"/>
+  <testcase name="apply_shouldNotChangeTerminalRecordStatus()" classname="io.github.gear4jtest.core.engine.runner.StationErrorPolicyExecutorTest" time="0.001"/>
+  <testcase name="apply_shouldMarkFailedWhenNoErrorPolicyMatches()" classname="io.github.gear4jtest.core.engine.runner.StationErrorPolicyExecutorTest" time="0.0"/>
+  <testcase name="apply_shouldMarkFailedWhenIgnoreFallbackFails()" classname="io.github.gear4jtest.core.engine.runner.StationErrorPolicyExecutorTest" time="0.001"/>
+  <testcase name="apply_shouldMapStopAndFatalPoliciesToTerminalStatuses()" classname="io.github.gear4jtest.core.engine.runner.StationErrorPolicyExecutorTest" time="0.0"/>
+  <testcase name="apply_shouldSkipNonUnaryStationWhenIgnoreHasNoFallback()" classname="io.github.gear4jtest.core.engine.runner.StationErrorPolicyExecutorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

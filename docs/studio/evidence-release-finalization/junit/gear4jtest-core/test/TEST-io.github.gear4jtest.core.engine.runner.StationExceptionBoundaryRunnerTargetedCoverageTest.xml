@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.runner.StationExceptionBoundaryRunnerTargetedCoverageTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:36.787Z" hostname="2c641953591a" time="0.004">
+  <properties/>
+  <testcase name="run_shouldDelegateNormalizedExceptionToPolicyExecutor()" classname="io.github.gear4jtest.core.engine.runner.StationExceptionBoundaryRunnerTargetedCoverageTest" time="0.0"/>
+  <testcase name="run_shouldPreserveExistingTerminalStatusWhenPolicyFails()" classname="io.github.gear4jtest.core.engine.runner.StationExceptionBoundaryRunnerTargetedCoverageTest" time="0.001"/>
+  <testcase name="run_shouldReturnDelegateTraceWhenDelegateSucceeds()" classname="io.github.gear4jtest.core.engine.runner.StationExceptionBoundaryRunnerTargetedCoverageTest" time="0.0"/>
+  <testcase name="run_shouldFallbackToFailedStatusWhenPolicyFailsOnRunningLog()" classname="io.github.gear4jtest.core.engine.runner.StationExceptionBoundaryRunnerTargetedCoverageTest" time="0.001"/>
+  <system-out><![CDATA[18:09:36.790 [Test worker] ERROR io.github.gear4jtest.core.engine.runner.StationExceptionBoundaryRunner -- Station error policy failed. Falling back to markFailed. stationId=station
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.RuntimeException; exception details withheld
+18:09:36.791 [Test worker] ERROR io.github.gear4jtest.core.engine.runner.StationExceptionBoundaryRunner -- Station error policy failed. Falling back to markFailed. stationId=station
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.RuntimeException; exception details withheld
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

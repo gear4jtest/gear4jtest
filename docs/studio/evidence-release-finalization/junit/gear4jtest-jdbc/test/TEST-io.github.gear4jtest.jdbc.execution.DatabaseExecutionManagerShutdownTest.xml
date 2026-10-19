@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:41.895Z" hostname="2c641953591a" time="1.702">
+  <properties/>
+  <testcase name="shutdownWithReport_shouldRetryTransientFailureAndDrainBeforeDeadline()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest" time="0.204"/>
+  <testcase name="shutdownWithReport_shouldWaitForInFlightFlushAndRecoverItsRestoredRecords()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest" time="0.01"/>
+  <testcase name="shutdown_shouldNotShutdownCallerManagedExecutors()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest" time="0.001"/>
+  <testcase name="shutdownWithReport_shouldCloseAdmissionBeforeWaitingForAnInFlightJdbcWrite()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest" time="0.012"/>
+  <testcase name="shutdownWithReport_shouldRejectAppendThatFinishesRedactionAfterShutdownStarts()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest" time="0.003"/>
+  <testcase name="failedAsyncFlush_shouldRestoreRecordsAndReadinessAfterSuccessfulRetry()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest" time="0.01"/>
+  <testcase name="shutdownWithReport_shouldRespectDeadlineWhileAnAsyncFlushHoldsTheBufferLock()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest" time="0.125"/>
+  <testcase name="end_shouldKeepRunBufferWhenFinalUpdateFailsSoExplicitFlushCanRetry()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest" time="0.004"/>
+  <testcase name="shutdownWithReport_shouldKeepFirstJdbcFailureWhenRetryReachesDeadline()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest" time="0.125"/>
+  <testcase name="shutdownWithReport_shouldExposeAnUnresolvedRunFinalizationFailure()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest" time="1.012"/>
+  <testcase name="shutdownWithReport_shouldReturnWhenShutdownJdbcIgnoresInterruption()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest" time="0.106"/>
+  <testcase name="shutdownWithReport_shouldRespectDeadlineWhileAnAdmittedJdbcWriteIsStillRunning()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest" time="0.079"/>
+  <system-out><![CDATA[18:18:42.066 [Test worker] WARN io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- JDBC persistence shutdown flush failed. runId=9f1ae6f7-6898-4579-a8ab-d807f7d164c4, attempt=1, retryable=true, remainingStationLogs=1
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.core.exception.ExecutionPersistenceException; exception details withheld
+18:18:42.111 [pool-3-thread-1] ERROR io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- Asynchronous station log flush failed. runId=049708c0-f06d-4092-8bc4-8f7088080f57
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.core.exception.ExecutionPersistenceException; exception details withheld
+18:18:42.137 [pool-15-thread-1] ERROR io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- Asynchronous station log flush failed. runId=40502847-2e86-477e-875c-8854c8cadeb8
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.core.exception.ExecutionPersistenceException; exception details withheld
+18:18:42.250 [Test worker] ERROR io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- Persistence shutdown left run data or finalization incomplete. runId=f7e2ea29-d1f8-4c93-ba5b-ab5955036578, attempts=0, remainingStationLogs=1
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.core.exception.ExecutionPersistenceException; exception details withheld
+18:18:42.277 [pool-23-thread-1] WARN io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- JDBC persistence shutdown flush failed. runId=0d8b10d1-6e05-4d72-be07-72b2037b14b7, attempt=1, retryable=true, remainingStationLogs=1
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.core.exception.ExecutionPersistenceException; exception details withheld
+18:18:42.377 [pool-23-thread-1] WARN io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- JDBC persistence shutdown flush failed. runId=0d8b10d1-6e05-4d72-be07-72b2037b14b7, attempt=2, retryable=false, remainingStationLogs=1
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.jdbc.execution.PersistenceShutdownWriter$ShutdownDeadlineException; exception details withheld
+18:18:42.378 [pool-23-thread-1] ERROR io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- Persistence shutdown left run data or finalization incomplete. runId=0d8b10d1-6e05-4d72-be07-72b2037b14b7, attempts=2, remainingStationLogs=1
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.core.exception.ExecutionPersistenceException; exception details withheld
+18:18:42.404 [Test worker] WARN io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- JDBC persistence shutdown flush failed. runId=3b2fd532-1a76-4943-ac5e-c6782a68000f, attempt=1, retryable=true, remainingStationLogs=0
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.core.exception.ExecutionPersistenceException; exception details withheld
+18:18:42.506 [Test worker] WARN io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- JDBC persistence shutdown flush failed. runId=3b2fd532-1a76-4943-ac5e-c6782a68000f, attempt=2, retryable=true, remainingStationLogs=0
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.core.exception.ExecutionPersistenceException; exception details withheld
+18:18:42.708 [Test worker] WARN io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- JDBC persistence shutdown flush failed. runId=3b2fd532-1a76-4943-ac5e-c6782a68000f, attempt=3, retryable=true, remainingStationLogs=0
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.core.exception.ExecutionPersistenceException; exception details withheld
+18:18:43.110 [Test worker] WARN io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- JDBC persistence shutdown flush failed. runId=3b2fd532-1a76-4943-ac5e-c6782a68000f, attempt=4, retryable=true, remainingStationLogs=0
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.core.exception.ExecutionPersistenceException; exception details withheld
+18:18:43.404 [Test worker] ERROR io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- Persistence shutdown left run data or finalization incomplete. runId=3b2fd532-1a76-4943-ac5e-c6782a68000f, attempts=4, remainingStationLogs=0
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.core.exception.ExecutionPersistenceException; exception details withheld
+18:18:43.515 [pool-28-thread-1] WARN io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- JDBC persistence shutdown flush failed. runId=220fdfe6-4b85-4525-8de6-5c2bfa0b7590, attempt=1, retryable=false, remainingStationLogs=1
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.jdbc.execution.PersistenceShutdownWriter$ShutdownDeadlineException; exception details withheld
+18:18:43.516 [pool-28-thread-1] ERROR io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- Persistence shutdown left run data or finalization incomplete. runId=220fdfe6-4b85-4525-8de6-5c2bfa0b7590, attempts=1, remainingStationLogs=1
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.jdbc.execution.PersistenceShutdownWriter$ShutdownDeadlineException; exception details withheld
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

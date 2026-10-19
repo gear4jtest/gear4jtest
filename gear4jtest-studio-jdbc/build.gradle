@@ -19,4 +19,5 @@ tasks.register('studioPostgresQualification', Test) {
     classpath = sourceSets.integrationTest.runtimeClasspath
     useJUnitPlatform { includeTags 'studio-release-postgres' }
     outputs.upToDateWhen { false }
+    outputs.doNotCacheIf('Qualification requires a fresh PostgreSQL execution') { true }
 }

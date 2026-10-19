@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:59.385Z" hostname="2c641953591a" time="1.491">
+  <properties/>
+  <testcase name="loadOrCompile_shouldRejectSameSizeCorruptionBeforeTranslation()" classname="io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTest" time="0.003"/>
+  <testcase name="loadOrCompile_shouldKeepLegacyDelimiterCollisionCandidatesInSeparateCacheEntries()" classname="io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTest" time="0.114"/>
+  <testcase name="loadOrCompile_shouldNotRegisterInstanceConstructedAfterDeadline()" classname="io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTest" time="0.228"/>
+  <testcase name="loadOrCompile_shouldRejectDistinctLoadWhenBoundedQueueIsFull()" classname="io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTest" time="0.073"/>
+  <testcase name="loadOrCompile_shouldAllowRetryAfterFailedSingleFlight()" classname="io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTest" time="0.066"/>
+  <testcase name="loadOrCompile_shouldNotRegisterInstanceReturnedAfterDependencyInjectionTimeout()" classname="io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTest" time="0.233"/>
+  <testcase name="loadOrCompile_shouldCompileOnlyOnceForConcurrentArtifactLookups()" classname="io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTest" time="0.081"/>
+  <testcase name="loadOrCompile_shouldBoundBlockingTranslationForOwnerAndJoinerAndRejectLateResult()" classname="io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTest" time="0.315"/>
+  <testcase name="loadOrCompile_shouldBoundBlockingRegistryAndDiscardLateRegistration()" classname="io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTest" time="0.207"/>
+  <testcase name="loadOrCompile_shouldWakeAllWaitersAndAllowRetryAfterCompilationTimeout()" classname="io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTest" time="0.167"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

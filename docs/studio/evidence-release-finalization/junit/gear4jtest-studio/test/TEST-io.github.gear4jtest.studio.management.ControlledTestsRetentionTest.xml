@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.management.ControlledTestsRetentionTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:19:06.934Z" hostname="2c641953591a" time="0.223">
+  <properties/>
+  <testcase name="runningReceiptSurvivesTtlAndSaturationAndKeepsIdempotence()" classname="io.github.gear4jtest.studio.management.ControlledTestsRetentionTest" time="0.174"/>
+  <testcase name="storageFailureAfterExecutionIsUncertainAndDoesNotReexecuteWhileReceiptRemains()" classname="io.github.gear4jtest.studio.management.ControlledTestsRetentionTest" time="0.004"/>
+  <testcase name="terminalReceiptsExpireAndLeastRecentlyUsedResultsMakeRoom()" classname="io.github.gear4jtest.studio.management.ControlledTestsRetentionTest" time="0.026"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

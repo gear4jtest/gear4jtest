@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.event.transport.ExternalTransportReactionTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:38.099Z" hostname="2c641953591a" time="0.003">
+  <properties/>
+  <testcase name="handle_shouldFailWhenTransportRejectsEnvelope()" classname="io.github.gear4jtest.core.event.transport.ExternalTransportReactionTest" time="0.002"/>
+  <testcase name="handle_shouldWrapTransportFailure()" classname="io.github.gear4jtest.core.event.transport.ExternalTransportReactionTest" time="0.0"/>
+  <testcase name="handle_shouldPublishMappedEnvelope()" classname="io.github.gear4jtest.core.event.transport.ExternalTransportReactionTest" time="0.0"/>
+  <testcase name="handle_shouldWrapMapperFailure()" classname="io.github.gear4jtest.core.event.transport.ExternalTransportReactionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

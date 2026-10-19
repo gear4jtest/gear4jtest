@@ -45,3 +45,7 @@ La restauration H2 utilise le backup natif, puis une autre base fichier. La qual
 Ce gate complète les contrôles généraux du dépôt (dépendances, licence, métadonnées, signature et publication) ; il ne les remplace pas. Le choix du numéro public, du registre, des signatures et de la provenance CI appartient à la décision de release. `1.0.0-SNAPSHOT` reste le défaut Maven ; le composant expérimental passe à `0.6.2` pour les corrections navigateur.
 
 P6 livre la simulation déclarative sans code métier réel. Le dry-run exécuté dans le moteur Gear4J, l’isolation avancée des effets et la convergence de déploiement restent différés. Aucun nouvel axe produit n’est lancé par cette phase.
+
+## Gate de publication et preuves
+
+La [qualification PostgreSQL](postgresql-qualification.md) est appelée comme workflow réutilisable obligatoire par `release.yml`, sur le même commit et avec la version candidate. Le check doit aussi être rendu obligatoire dans la protection des branches. `studioDependencyAudit` vérifie les dépendances npm (outils inclus), refuse un audit incomplet ou des résultats high/critical, et conserve le JSON. `studioReleaseReadiness` produit un manifeste PASS seulement après réussite réelle de PostgreSQL, des cinq parcours navigateur et de l'audit. Voir la [maturité](release-maturity.md) et le [bilan actualisé](verification-release-finalization.md).

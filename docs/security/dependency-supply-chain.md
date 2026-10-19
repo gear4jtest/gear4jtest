@@ -55,3 +55,7 @@ NVD_DATAFEED_URL='https://nvd.example.test/nvdcve-{0}.json.gz' \
 Mirror authentication is optional at the build level because a mirror may be network-restricted. When needed, configure
 either `NVD_DATAFEED_USER` plus `NVD_DATAFEED_PASSWORD`, or `NVD_DATAFEED_BEARER_TOKEN`; the release preflight rejects
 partial or conflicting credentials and never writes their values to its evidence report.
+
+## Studio frontend qualification
+
+`studioDependencyAudit` runs the actual npm registry audit with development tools included, records its JSON and rejects unavailable/incomplete results or high/critical findings. This is separate from the mandatory authenticated NVD/datafeed gate for Java dependencies. On 15 October 2026, the locked transitive test dependency source-map-js 1.2.1 was flagged by [GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q) and updated to patched 1.2.2. The before/after evidence is retained in `docs/studio/evidence-release-finalization`. An npm clean report does not qualify the JVM dependency graph.

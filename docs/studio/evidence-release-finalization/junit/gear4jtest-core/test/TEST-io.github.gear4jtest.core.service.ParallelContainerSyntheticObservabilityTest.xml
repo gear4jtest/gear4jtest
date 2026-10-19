@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.service.ParallelContainerSyntheticObservabilityTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:38.171Z" hostname="2c641953591a" time="0.061">
+  <properties/>
+  <testcase name="cancellationDuringSubmission_shouldCancelUnsubmittedBranchesWithoutFailureSignals()" classname="io.github.gear4jtest.core.service.ParallelContainerSyntheticObservabilityTest" time="0.004"/>
+  <testcase name="pendingParallelBranchInterruptedBySiblingFailure_shouldBePersistedAndEmitInterruptedEvent()" classname="io.github.gear4jtest.core.service.ParallelContainerSyntheticObservabilityTest" time="0.004"/>
+  <testcase name="timedOutParallelBranches_shouldBePersistedAndEmitCancelledEvents()" classname="io.github.gear4jtest.core.service.ParallelContainerSyntheticObservabilityTest" time="0.053"/>
+  <system-out><![CDATA[18:09:38.173 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=parallel-submission-cancellation-observability, rootStation=cancellation-container, requestExtensions=[PersistenceExtension]
+18:09:38.173 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=parallel-submission-cancellation-observability, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:09:38.177 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=parallel-sibling-interruption-observability, rootStation=interruption-container, requestExtensions=[PersistenceExtension]
+18:09:38.177 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=parallel-sibling-interruption-observability, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:09:38.180 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=parallel-timeout-observability, rootStation=timeout-container, requestExtensions=[PersistenceExtension]
+18:09:38.181 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=parallel-timeout-observability, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

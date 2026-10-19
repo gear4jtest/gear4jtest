@@ -1,0 +1,3139 @@
+{
+  "date": "2026-10-15",
+  "ordinaryModules": {
+    "tests": 1542,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 5
+  },
+  "studioSubset": {
+    "tests": 128,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "buildLogic": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "postgresRequired": {
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "suites": [
+    {
+      "path": "build-logic/build/test-results/test/TEST-io.github.gear4jtest.buildlogic.BuildConventionsFunctionalTest.xml",
+      "suite": "io.github.gear4jtest.buildlogic.BuildConventionsFunctionalTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b6daad6bdc1821913ba209122d0877f1d060bdadc58ca81a57fcbe418bb8fa0b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/build-logic/test/TEST-io.github.gear4jtest.buildlogic.BuildConventionsFunctionalTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.AssemblyLineExecutorsTest.xml",
+      "suite": "io.github.gear4jtest.core.api.AssemblyLineExecutorsTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d99436d41eca82a0db777bbd7296bc9042212fa8ae4794ed236677a9edc30fc0",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.AssemblyLineExecutorsTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.ExecutionOutcomeTest.xml",
+      "suite": "io.github.gear4jtest.core.api.ExecutionOutcomeTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a2c11d982f30e37af4d0e21247bdbd9c85bfe28da748d2943ce3efb22eb9225c",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.ExecutionOutcomeTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.ExecutionResultTest.xml",
+      "suite": "io.github.gear4jtest.core.api.ExecutionResultTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a77ed1cc6ed409911f28f6fd18ea57ff8696def4e76376a1fccedb17f0aeafc8",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.ExecutionResultTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.ImmutableRequestAndAssemblyLineTest.xml",
+      "suite": "io.github.gear4jtest.core.api.ImmutableRequestAndAssemblyLineTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b3e22baef17b6cf5306df84307ca1b4603183c57256ed097a6c425c2997d9b3e",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.ImmutableRequestAndAssemblyLineTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.RunRequestBuilderTest.xml",
+      "suite": "io.github.gear4jtest.core.api.RunRequestBuilderTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fd9a6eb1d64dc87dcb259911c1529eede548829d14311b17be6b88ec298dcfd2",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.RunRequestBuilderTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.RunRequestDeepCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.api.RunRequestDeepCoverageTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a727eb7d77823c5b8975436406b689b576a6542fb0170cc0d8303e5dab7faab9",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.RunRequestDeepCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStackTest.xml",
+      "suite": "io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStackTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "eaf585a86e3129c037903a974c0341df187d6d0bf34a817248370544790098f8",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStackTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContractValidatorTest.xml",
+      "suite": "io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContractValidatorTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1bede4b42f0b30557219b71fecf8900137c931b73439aa314651541106d3e04b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.assemblyline.AssemblyLineRuntimeContractValidatorTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.assemblyline.AssemblyLineTargetTest.xml",
+      "suite": "io.github.gear4jtest.core.api.assemblyline.AssemblyLineTargetTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "14a10e17fe56f1fb5c1d6078166536de2cde25e879df0f3465f46391ca3b2ce3",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.assemblyline.AssemblyLineTargetTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.assemblyline.RuntimeRequirementTest.xml",
+      "suite": "io.github.gear4jtest.core.api.assemblyline.RuntimeRequirementTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "83b35dc10d25a1deb1a147ba293af50ca86f80548a78a2f9d930213afd4b613c",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.assemblyline.RuntimeRequirementTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.behavior.BaseErrorTest.xml",
+      "suite": "io.github.gear4jtest.core.api.behavior.BaseErrorTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "efc5176271b5c3968290994e21bc8e52d74d30cd4b5ce24400b3eea559202080",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.behavior.BaseErrorTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.behavior.SiblingBranchOutcomesContractsTest.xml",
+      "suite": "io.github.gear4jtest.core.api.behavior.SiblingBranchOutcomesContractsTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6fee455c6700a33ced673ce87372dc2c09ebbad30744a02eba372d1cf0812c53",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.behavior.SiblingBranchOutcomesContractsTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.behavior.SiblingBranchOutcomesDeepCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.api.behavior.SiblingBranchOutcomesDeepCoverageTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "230a6cb5b51193fb9a59562d782c32d9016868c8d79e84d04759c3a8ebd739af",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.behavior.SiblingBranchOutcomesDeepCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.behavior.SiblingBranchOutcomesTest.xml",
+      "suite": "io.github.gear4jtest.core.api.behavior.SiblingBranchOutcomesTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1781fe08d3814f39bffe69a840e74eadb10c4258ac038ca5b820f84e0886bf39",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.behavior.SiblingBranchOutcomesTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.behavior.StationSkipperDeepCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.api.behavior.StationSkipperDeepCoverageTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "19d8db18cc68ee9f199285d0622b20be244bc7d8ec366d2d8938477705f9a68b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.behavior.StationSkipperDeepCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.behavior.StationSkipperTest.xml",
+      "suite": "io.github.gear4jtest.core.api.behavior.StationSkipperTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1c8c77dd688320afcbb238bbb10f6a6fb737fbd8235060a1b34c403b98b82288",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.behavior.StationSkipperTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.config.EventHandlingDefinitionTest.xml",
+      "suite": "io.github.gear4jtest.core.api.config.EventHandlingDefinitionTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "de0d0399ecbe0e3c8cb5ecda3d0e4761ad29af51560213457033d397dadd1a0a",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.config.EventHandlingDefinitionTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.config.FlowConfigTest.xml",
+      "suite": "io.github.gear4jtest.core.api.config.FlowConfigTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "be83358205c2bd4b0b3699e10445a3d43e8150faa3921fd3008c710dfb09905a",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.config.FlowConfigTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.config.PersistenceConfigurationTest.xml",
+      "suite": "io.github.gear4jtest.core.api.config.PersistenceConfigurationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4b1b67f9e98bc53bfc8e7708fb25545fd6651c750b069ca178112dcf228c1d13",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.config.PersistenceConfigurationTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.context.CancellationTokenTest.xml",
+      "suite": "io.github.gear4jtest.core.api.context.CancellationTokenTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ad30363ff8798529c8a5eb1ed8ada2242bf9cc42308b808f7ea8c139cfc79150",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.context.CancellationTokenTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.context.ContextPropagationPolicyTest.xml",
+      "suite": "io.github.gear4jtest.core.api.context.ContextPropagationPolicyTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "327d356dc5cfd31e2f79d7b8d6e743998548766a9d7f28e43dd3841010e5de98",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.context.ContextPropagationPolicyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.context.DefaultStationExecutionContextTest.xml",
+      "suite": "io.github.gear4jtest.core.api.context.DefaultStationExecutionContextTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a7ef9f3c0cf252d5414d03a5102077700a3c87c70a4d8be5eb441bb306b3c7cb",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.context.DefaultStationExecutionContextTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.context.ExecutionContextTest.xml",
+      "suite": "io.github.gear4jtest.core.api.context.ExecutionContextTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "da4d4c720c255f2c9acbad9ebf8846affd5f189248ddf7ffd55f45bac7f0767c",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.context.ExecutionContextTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.context.ExecutionServicesTest.xml",
+      "suite": "io.github.gear4jtest.core.api.context.ExecutionServicesTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "51229aa813e3af2e3e9bcc906f7c9e7e6b276151aa4778ddc0c65205b56e37ca",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.context.ExecutionServicesTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.context.ResolvedParametersConcurrencyTest.xml",
+      "suite": "io.github.gear4jtest.core.api.context.ResolvedParametersConcurrencyTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "bb7eea55a57a31d5107ae85ca47ccbc036108c3c12fe41f4f06b507bf8e17be4",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.context.ResolvedParametersConcurrencyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.context.StationContextUtilsTest.xml",
+      "suite": "io.github.gear4jtest.core.api.context.StationContextUtilsTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8dae506f8b3f4ffd0d457576a4649e413c3a33ff77d8affe41d07fab41629202",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.context.StationContextUtilsTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.context.StationScopedResourceRegistryTest.xml",
+      "suite": "io.github.gear4jtest.core.api.context.StationScopedResourceRegistryTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "63b7661bbc992c25e778ba1405635da266dbec494cc0037983daf76a93a5d7ac",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.context.StationScopedResourceRegistryTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.station.AbstractStationTest.xml",
+      "suite": "io.github.gear4jtest.core.api.station.AbstractStationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5e568948483b680271720fdc17eeddbc54a459924c36a30351b2f03ef106ce54",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.station.AbstractStationTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.station.IteratorStationAccumulatorTest.xml",
+      "suite": "io.github.gear4jtest.core.api.station.IteratorStationAccumulatorTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "92154e0417aefd40b57f56566b784811f044aa30616ac2beee1e7340ebb96361",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.station.IteratorStationAccumulatorTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.station.StationBuilderContractsTest.xml",
+      "suite": "io.github.gear4jtest.core.api.station.StationBuilderContractsTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "24fa4fcfa9e4211cd1ecb96232a3eb25e1dca84744593dade62ea44f4e8c6ee7",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.station.StationBuilderContractsTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.station.StationBuilderTest.xml",
+      "suite": "io.github.gear4jtest.core.api.station.StationBuilderTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b6ea1fd807b0ab5b00497d4b79f98215e193e685935ecc1a934469bf3612fd3a",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.station.StationBuilderTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.station.StationBuildersDeepCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.api.station.StationBuildersDeepCoverageTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8a3a7642322d88988421abe71a6ac8eb2e1e0216d5cc475af5fe5f17498491bf",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.station.StationBuildersDeepCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.station.TypedBuilderIsolationTest.xml",
+      "suite": "io.github.gear4jtest.core.api.station.TypedBuilderIsolationTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d222e26e7cba1abbd4b8e194b7cd75bc85f6497421204cf131d11494bbfe1cc8",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.station.TypedBuilderIsolationTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.station.WorkStationTest.xml",
+      "suite": "io.github.gear4jtest.core.api.station.WorkStationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "75f472548539002603df10550a6699fd86a1e80ca5f43fba32419ac3e3743b79",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.station.WorkStationTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.trace.PublicTraceContractsTest.xml",
+      "suite": "io.github.gear4jtest.core.api.trace.PublicTraceContractsTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "46221c65c649983c7a8b02df5b89bfce61388b2f57633733dedc17b0aa4862be",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.trace.PublicTraceContractsTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.util.BuilderFacadesTest.xml",
+      "suite": "io.github.gear4jtest.core.api.util.BuilderFacadesTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7c3c5ed42f9ddf709e438e479211582c3a4733710600f250fadb52190b2acccd",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.util.BuilderFacadesTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.api.util.ThematicBuilderFacadesTest.xml",
+      "suite": "io.github.gear4jtest.core.api.util.ThematicBuilderFacadesTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "da290a49416b42daef68cdca1eb8853d03a6dfe358e8686fc52280df01f8464d",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.api.util.ThematicBuilderFacadesTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.architecture.ApiBoundarySourceTest.xml",
+      "suite": "io.github.gear4jtest.core.architecture.ApiBoundarySourceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "56fb9017f57c71f603463ecb1cbd111eead480dff4fd2b30f55e1215a4ba91d7",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.architecture.ApiBoundarySourceTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.architecture.PublishedApiBoundaryAnalyzerTest.xml",
+      "suite": "io.github.gear4jtest.core.architecture.PublishedApiBoundaryAnalyzerTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "9ce65c548ca7512cb647a494a9e8f70676cb88ac961ebfdcf342f3e1274e261f",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.architecture.PublishedApiBoundaryAnalyzerTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.builtin.extension.PersistenceExtensionTest.xml",
+      "suite": "io.github.gear4jtest.core.builtin.extension.PersistenceExtensionTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3bf8ccfb4269dea646c70be985e2aba393dc64880c0300a92e4438e6c70d059b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.builtin.extension.PersistenceExtensionTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineEngineConfigurationTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.AssemblyLineEngineConfigurationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "bebbb08ff2617a4ae0d10329a838ae571a097d36d9be9fd5692e7130600ba8c1",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineEngineConfigurationTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineEngineFatalErrorTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.AssemblyLineEngineFatalErrorTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "05e8c6e6e7d89b9b62d22e5b5cf36b67974ee64d16b504c31380990f3449f0d7",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineEngineFatalErrorTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineEngineInitializationCleanupTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.AssemblyLineEngineInitializationCleanupTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "cca229d8172c2ebf25d48e771b993b9c0fe195061c9030e8de17e7e79cfb5a25",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineEngineInitializationCleanupTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineEngineNestedContextPropagationTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.AssemblyLineEngineNestedContextPropagationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1628a0dc9c13d944055ab0c34247ad5fda0b6831a5e60757aaaf445fa7a95b90",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineEngineNestedContextPropagationTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineEngineOutcomeTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.AssemblyLineEngineOutcomeTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5f982f2c8b3b350c8c7212c7820f0bffa3ad7535ba75e5c7bf061e3913710552",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineEngineOutcomeTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineEngineWorkerConcurrencyDefaultTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.AssemblyLineEngineWorkerConcurrencyDefaultTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b93aa001eca4e257ae3175ca01977686af26091b73dd95aa5c67bb3dbbeebced",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineEngineWorkerConcurrencyDefaultTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineEngineWorkerConcurrencyPolicyTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.AssemblyLineEngineWorkerConcurrencyPolicyTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2e147381dd4334980a798ad84884163b4095cc030427c44a6d9314f7e11e919b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineEngineWorkerConcurrencyPolicyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTargetedCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTargetedCoverageTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a5fb40f564ace98bf82cdbe5a1d49c1be2ec87094cda0a1dff82270a985fdcb4",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTargetedCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c6e90d9eeaab96f19cfcbe4dfc9e5a0b111eed3ad318db1855e3306bf36886fc",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineExecutionResultMapperTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineInitialContextIsolationTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.AssemblyLineInitialContextIsolationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "77cea8abe100137e78cb636d25557d9c6dde39bb263bcff9670b3f839facc3ae",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineInitialContextIsolationTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineRunCleanupTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.AssemblyLineRunCleanupTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6a79e0e9c44682eeffc8745d595242a749ae19169170840ba0407f49299bd103",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.AssemblyLineRunCleanupTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.DetachedEventRuntimeCleanupSchedulerTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.DetachedEventRuntimeCleanupSchedulerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1ff2899ea0f96e53f1306c5805b662fd7de14d9c369b54dc499f334f0d814c9e",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.DetachedEventRuntimeCleanupSchedulerTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.ExceptionLoggingPolicyTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.ExceptionLoggingPolicyTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2d55539852e7280a1cb15dcfbb39140b0a4b2c501fdc81759d22c13496343875",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.ExceptionLoggingPolicyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.PersistenceConfigurationPropagationTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.PersistenceConfigurationPropagationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e39865a9befd77a1a84560d6f40b29f1be59ae8a839162c625a2440240e3ce76",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.PersistenceConfigurationPropagationTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.RunLifecycleExtensionTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.RunLifecycleExtensionTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0d7a3d4e406e62e81fb7ca65f3942affe6ca48c10be469ae51ddfcb9ce7e41d4",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.RunLifecycleExtensionTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.RuntimeExtensionOrderingTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.RuntimeExtensionOrderingTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "eaddf66c967cf1ee1b8765fa08572a211ea4af010411e5e34a44f07f56c1fef1",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.RuntimeExtensionOrderingTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.runner.StationErrorPolicyExecutorTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.runner.StationErrorPolicyExecutorTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f63d1b1d345e7a5755b9ca9b3ace1df1386d60d828866cd96a648434cecf17a9",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.runner.StationErrorPolicyExecutorTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.runner.StationExceptionBoundaryRunnerTargetedCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.runner.StationExceptionBoundaryRunnerTargetedCoverageTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3b9c9e910c71383efd74674c0f8908009425f3448a2a17ad3aad27d872cb94c9",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.runner.StationExceptionBoundaryRunnerTargetedCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.runner.StationExceptionBoundaryRunnerTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.runner.StationExceptionBoundaryRunnerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5e56e94d073f4a332567c9c256c3f29a62a28b7e9a8ed0e4937f9fa3c1361a2f",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.runner.StationExceptionBoundaryRunnerTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fd35f464444aa7c541b2d4989e6a4a91c9702faaf273fd1e2c08d2dcb582354f",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.runner.StationLifecycleRunnerTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.runner.SyntheticStationLifecycleRecorderTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.runner.SyntheticStationLifecycleRecorderTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8cfe8002d149f5c83f47becea1e3b7417e7c4ec24086f24204841dab15594ff2",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.runner.SyntheticStationLifecycleRecorderTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTargetedCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTargetedCoverageTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d41e9d08491f38049c06a36a5d3608e77565d751c52c9c0c4e6bf77aca9d8327",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTargetedCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a8ad23eaa21870a2eeb58c5b1ee351208c7fcb8640f97ee26ef6332a3d8f11b1",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.AbstractStationStrategyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.AssemblyLineCallStationStrategyStatusMappingTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.AssemblyLineCallStationStrategyStatusMappingTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c292fd9b2eca4439beda219023d91521352dc2b47ef0655214a138ecc69e6472",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.AssemblyLineCallStationStrategyStatusMappingTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.AssemblyLineCallStationStrategyTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.AssemblyLineCallStationStrategyTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0495423f7815343935ffb2938ce07abdbf23ee8334e259632d9c24b3de184701",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.AssemblyLineCallStationStrategyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.ContainerExecutionAggregationTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.ContainerExecutionAggregationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "26c6543685f535f860133af2c703365ecc1dd65b5e94843738eb80105c12ed6a",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.ContainerExecutionAggregationTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b5a93b73c22ddd1c7c85a4ce74e6860593f10f8b917e042802ef34e23024ab8f",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.ContainerStationStrategyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.IfElseContainerStationStrategyTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.IfElseContainerStationStrategyTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ca31a02946873ac89717c18198e664485007f87e00899e2e7e873a2d066a8e95",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.IfElseContainerStationStrategyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.IteratorStationStrategyTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.IteratorStationStrategyTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8cfe0c17136315616cfb213a42851dffab899585891b407d5c06c317e5ca2473",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.IteratorStationStrategyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.ParallelBranchOutcomeTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.ParallelBranchOutcomeTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "54c91d10cf91bbe97611daf630ca222eb6fb63661bd8908940f8a4dec9fc024e",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.ParallelBranchOutcomeTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3a7c41e1369b05aa8164fc85e9e7759c14494ec2cce63e4a67720c7fca056abb",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.ParallelContainerBranchExecutorTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.SequenceStationStrategyTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.SequenceStationStrategyTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b1233e8bb7465d79162e5bca17ab068df7eaa8c0f30392007cd78cc0b9f0d75d",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.SequenceStationStrategyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.SignalStationStrategyTargetedCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.SignalStationStrategyTargetedCoverageTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "024ddfcca245a1d5a3f6c06e220c6df77d9ce8a9346c342773ea985ff8e08b66",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.SignalStationStrategyTargetedCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.SignalStationStrategyTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.SignalStationStrategyTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a9b83ca8cfd9349bf994b1490cb909250ed58dfc15d0a53c4000953296b67a13",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.SignalStationStrategyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.StrategyRegistryDeepCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.StrategyRegistryDeepCoverageTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "80e8b6f288eda4a0aaa4987a28d668f77c67e98f1ebee4b8ca65342c9a0951d4",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.StrategyRegistryDeepCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.StrategyRegistryTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.StrategyRegistryTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d14536f5e84a153e7f5e2c06cc062aafa2291980bea57141caf8a7cc093b0e73",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.StrategyRegistryTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.WorkStationStrategyGuardTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.WorkStationStrategyGuardTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8bfb6bc9da942c546c47b55acd2491d9e9bc90860f42cac9978bec124748c813",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.WorkStationStrategyGuardTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.strategy.WorkStationStrategyParameterCleanupTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.strategy.WorkStationStrategyParameterCleanupTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d6bf769b30dc07edb25ba0b3d0b827f34c49cbc1848f4785e22be3fb849ed23a",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.strategy.WorkStationStrategyParameterCleanupTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.support.OperatorConcurrencyGuardTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.support.OperatorConcurrencyGuardTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d832b204d164db148981abfac876c791b16bf182d0c83968918e43a0450caa40",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.support.OperatorConcurrencyGuardTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.support.OperatorConcurrencyManagerTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.support.OperatorConcurrencyManagerTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1f53478da2d2ba15a14700d9faf2d6f62d556c07e849de6bb60281291fd86d2a",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.support.OperatorConcurrencyManagerTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.support.OperatorIntrospectorTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.support.OperatorIntrospectorTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7caeb2eea343ef1fb72fb7e28c569babcc5d67d6e61329d73f68144953bcaf94",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.support.OperatorIntrospectorTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.support.TaskFactoryTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.support.TaskFactoryTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ba765f075542a95d6c930f2c8e5f3724ba3ddacfd264297dc92f83e2ad6b9522",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.support.TaskFactoryTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfigurationDeepCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfigurationDeepCoverageTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "cda1ef83102dbff9c527986d1a2b248e1815f3067af0dbe6b54e76ad6c240e86",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfigurationDeepCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfigurationTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfigurationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c91cb2dddbd8e0504dc0de74344fc8b97f72121dcdc573c3b8f01a9555f8ae98",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.support.WorkerConcurrencyConfigurationTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.support.WorkerParamsInjectorEventTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.support.WorkerParamsInjectorEventTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3bb72592c270334fac2d4952241b92638982931e062278bbb8978afc6574da11",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.support.WorkerParamsInjectorEventTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.engine.support.WorkerParamsInjectorParameterTest.xml",
+      "suite": "io.github.gear4jtest.core.engine.support.WorkerParamsInjectorParameterTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "780560b20a9091463149d2c7ce9910fb7c0c6b68026a6c05ace51ebb23dcb59a",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.engine.support.WorkerParamsInjectorParameterTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.EventDispatcherTest.xml",
+      "suite": "io.github.gear4jtest.core.event.EventDispatcherTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e6837ce36930c5567a402ffc0b07579f39ec7cd817a82f03b78047bf2bf0b43e",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.EventDispatcherTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.EventManagerConcurrencyStressTest.xml",
+      "suite": "io.github.gear4jtest.core.event.EventManagerConcurrencyStressTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "63241e710b1185b4554c600ae71c06d95ef929f153f95033b30862d75f656d5b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.EventManagerConcurrencyStressTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.EventManagerFailureTest.xml",
+      "suite": "io.github.gear4jtest.core.event.EventManagerFailureTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1b42e1477ad8673eb5899eba64df5d5814f4e484d2bd99beaf288f4ca7073395",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.EventManagerFailureTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.EventManagerMultiRunLoadTest.xml",
+      "suite": "io.github.gear4jtest.core.event.EventManagerMultiRunLoadTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e1bc2a8d3f841f0223cb00f3f7aedc64fb8042aa6606600732f7d1b1a115c48d",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.EventManagerMultiRunLoadTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.EventManagerTargetedCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.event.EventManagerTargetedCoverageTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6afb1ae2c0a9ead07397a5b162d66a0cb4b512acd0275567fee4f598f96ebc12",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.EventManagerTargetedCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.EventManagerTest.xml",
+      "suite": "io.github.gear4jtest.core.event.EventManagerTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "40d686ce9cec2d1ab7dc0170199c6f2998022308c2c742196b1eb7a55f3651bf",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.EventManagerTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.EventManagerThreadingTest.xml",
+      "suite": "io.github.gear4jtest.core.event.EventManagerThreadingTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7e3e10397ab071452d82f3ee8650ce748a07e06911bb563d79a53c5b03df4a05",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.EventManagerThreadingTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.EventPayloadPolicyCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.event.EventPayloadPolicyCoverageTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f64f570f2a2bbbc9044081d47395efe7a500e8ccf4c3922793f7b7687cc64fca",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.EventPayloadPolicyCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.EventPayloadPolicyTest.xml",
+      "suite": "io.github.gear4jtest.core.event.EventPayloadPolicyTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "02a5908fcbb49cbcc51b07dce5e35e026e76bc3d68ad4b1652ff07dce7bc2f46",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.EventPayloadPolicyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.EventPayloadRedactionPolicyTest.xml",
+      "suite": "io.github.gear4jtest.core.event.EventPayloadRedactionPolicyTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "45ff639479e7f913a20029a43756f9b03a7436a2e933bd77a62aeb1d16d42529",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.EventPayloadRedactionPolicyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.EventRuntimeMetricsTest.xml",
+      "suite": "io.github.gear4jtest.core.event.EventRuntimeMetricsTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f68b901a32dce2921bc2555222bda831d44e4f159aaa511cbed2e54a21df9256",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.EventRuntimeMetricsTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.EventRuntimeShutdownTest.xml",
+      "suite": "io.github.gear4jtest.core.event.EventRuntimeShutdownTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a8f396568baf0fb9ef4d527066850a8d414b4419723a93af76c3ee51e1a02c7a",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.EventRuntimeShutdownTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.EventSubscriptionTest.xml",
+      "suite": "io.github.gear4jtest.core.event.EventSubscriptionTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "da6d296880cb0dc5258c86b8f4a1375b3fc979f44d223e85850963d114742e82",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.EventSubscriptionTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.EventTest.xml",
+      "suite": "io.github.gear4jtest.core.event.EventTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "80b32b5d2007a09b4e1c38e1378d26427fb926f0427f96762da09e71abad1373",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.EventTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.OperationEventsTest.xml",
+      "suite": "io.github.gear4jtest.core.event.OperationEventsTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5caf88e99de4fc6cb05ae0543fec66d2887ad2811761db846fbfdbc969443ca3",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.OperationEventsTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.durable.OutboxDispatchPolicyTest.xml",
+      "suite": "io.github.gear4jtest.core.event.durable.OutboxDispatchPolicyTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8061a0ef8161d5155297850c2304627bde1441ecac53526a6bec3bacb97d0f49",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.durable.OutboxDispatchPolicyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.durable.OutboxDispatcherTest.xml",
+      "suite": "io.github.gear4jtest.core.event.durable.OutboxDispatcherTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "660114f2353b917729b212ffca2445c9437edff1b891bd12d11611c25ac6856a",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.durable.OutboxDispatcherTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.transport.EventEnvelopeTest.xml",
+      "suite": "io.github.gear4jtest.core.event.transport.EventEnvelopeTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b73b31fe97e12c841d748d924e3e6b0e2070f33cae9bdf2122294551565482b7",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.transport.EventEnvelopeTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.event.transport.ExternalTransportReactionTest.xml",
+      "suite": "io.github.gear4jtest.core.event.transport.ExternalTransportReactionTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "de5837d5ffd3afb45add1bee7d0f1fbb81aed5096904a1b964e211cf2c26238e",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.event.transport.ExternalTransportReactionTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.execution.FlushPolicyTest.xml",
+      "suite": "io.github.gear4jtest.core.execution.FlushPolicyTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "cba3bab6eddad1c8c22032df7b6d266005a08d8898b9d19a0994bb5ae4ee1295",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.execution.FlushPolicyTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.execution.InMemoryExecutionManagerTargetedCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.execution.InMemoryExecutionManagerTargetedCoverageTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "81d2a55bdf5a0087b2424d47cf8c152de1bed3eaaf08518fb6a1c5a69b750be7",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.execution.InMemoryExecutionManagerTargetedCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.execution.InMemoryExecutionManagerTest.xml",
+      "suite": "io.github.gear4jtest.core.execution.InMemoryExecutionManagerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f2fc309a8f75ad428635c9cf7cfb82aa2048396495a4d3a461972f33c436b697",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.execution.InMemoryExecutionManagerTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.execution.trace.AssemblyRunTraceDeepCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.execution.trace.AssemblyRunTraceDeepCoverageTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fb828735acb2dd3c659ea3d60ec6a2e50c6c810a2b1190f43685d5a45a6ad4f0",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.execution.trace.AssemblyRunTraceDeepCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.execution.trace.AssemblyRunTraceTest.xml",
+      "suite": "io.github.gear4jtest.core.execution.trace.AssemblyRunTraceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "68c2e76a2e676ee72d73c18f8c95c65c0968966c820fd876d9ffbbdb370a19b5",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.execution.trace.AssemblyRunTraceTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.execution.trace.StationLogTraceTest.xml",
+      "suite": "io.github.gear4jtest.core.execution.trace.StationLogTraceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "bf1cc36441737bf8948bc9d6958a7d05b34099d9038bbc71148ff996bc466ff2",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.execution.trace.StationLogTraceTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.model.StationLogStatusTest.xml",
+      "suite": "io.github.gear4jtest.core.model.StationLogStatusTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "076837cfac150bc368afcc4371ec43a14141bc8748406e8e54a169aaa1af2179",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.model.StationLogStatusTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.persistence.AssemblyRunStateTest.xml",
+      "suite": "io.github.gear4jtest.core.persistence.AssemblyRunStateTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3ebf26e21252ba359ebc7cda53d7011d3ed129bca970cc3c5edb33fce335d4ec",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.persistence.AssemblyRunStateTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.persistence.ExecutionStatusTest.xml",
+      "suite": "io.github.gear4jtest.core.persistence.ExecutionStatusTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "bb41b54ddb48e44f649ca70af2b42d5c7f9a4605dc5836f44f3416c5391bdd88",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.persistence.ExecutionStatusTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepositoryBehaviorTest.xml",
+      "suite": "io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepositoryBehaviorTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "02c8f2e2cda407c13aefce0204318ee40161385d1a90e6967b7d873d2d7f1b46",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepositoryBehaviorTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepositoryTest.xml",
+      "suite": "io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepositoryTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "14c334b446127079e0c0669b0f2d87fa454234adb939afd90e0395049906d040",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.persistence.InMemoryAssemblyRunRepositoryTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.persistence.PageRequestTest.xml",
+      "suite": "io.github.gear4jtest.core.persistence.PageRequestTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0ba9d192517e24e5240b5237589e95e9110e48d59ff4205794c927c91adf705b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.persistence.PageRequestTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.persistence.PersistenceFlushObservationTest.xml",
+      "suite": "io.github.gear4jtest.core.persistence.PersistenceFlushObservationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "49e6c3f80176f9f44b10905496923849e8d2c29e748e1158b2e661fa479f44e8",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.persistence.PersistenceFlushObservationTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.persistence.PersistenceRecordSnapshotTest.xml",
+      "suite": "io.github.gear4jtest.core.persistence.PersistenceRecordSnapshotTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1afe33a45f5d4a1f4e1d33c46cf48dfffde8963779f841069f094ff44d791199",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.persistence.PersistenceRecordSnapshotTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.persistence.PersistenceRedactionTest.xml",
+      "suite": "io.github.gear4jtest.core.persistence.PersistenceRedactionTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "59420c790971bf34bcada7a6c3d150c3123b6ec67710082a3b5e156118eef41b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.persistence.PersistenceRedactionTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.service.AssemblyLineDetachAndDrainIT.xml",
+      "suite": "io.github.gear4jtest.core.service.AssemblyLineDetachAndDrainIT",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2d4d995542a8eb327caabb2b15e36db22da7318a39723a4cb6fcf35064b04bb7",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.service.AssemblyLineDetachAndDrainIT.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.service.AssemblyLineDslRuntimeTest.xml",
+      "suite": "io.github.gear4jtest.core.service.AssemblyLineDslRuntimeTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "682aff10cc905a1d077a7b23c7c976a2acbde0b51f95d96388428313a1dfbc9b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.service.AssemblyLineDslRuntimeTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.service.ContainerDslRuntimeTest.xml",
+      "suite": "io.github.gear4jtest.core.service.ContainerDslRuntimeTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "bcd72dd956833341a6b8899cfb9f2edda453e42244d1700f66224634bc7eaf9c",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.service.ContainerDslRuntimeTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.service.ParallelContainerSyntheticObservabilityTest.xml",
+      "suite": "io.github.gear4jtest.core.service.ParallelContainerSyntheticObservabilityTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5fbf7311ac53f18cb699ebbe1b56b80d13631e4346ae789dbfa82758b2f1f169",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.service.ParallelContainerSyntheticObservabilityTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.service.ResourceFactoryDiagnosticsTest.xml",
+      "suite": "io.github.gear4jtest.core.service.ResourceFactoryDiagnosticsTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "9472d5e94e1d1fb7a581df0a453442641958e571bdb3c3a9c437a8ca7d7c7eec",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.service.ResourceFactoryDiagnosticsTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.service.SignalStationFlowIT.xml",
+      "suite": "io.github.gear4jtest.core.service.SignalStationFlowIT",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fe1f3aa0e0fe1dfc1f43462e2127a55a9fdc551143a5ed6060de4326b98e3c2c",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.service.SignalStationFlowIT.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.service.StationEventPayloadPolicyIT.xml",
+      "suite": "io.github.gear4jtest.core.service.StationEventPayloadPolicyIT",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "026b0039c148e79fd1573cc913c6ca9aa1c868ad8bb7876fce8349bef03e1b7b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.service.StationEventPayloadPolicyIT.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.sidecompute.ExecutionContextRegistryTest.xml",
+      "suite": "io.github.gear4jtest.core.sidecompute.ExecutionContextRegistryTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e5eb182ee4ff368e4af497f8bf9042aa9036e54e57d77db1b02b1b52a16e89a4",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.sidecompute.ExecutionContextRegistryTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputeAccessorTest.xml",
+      "suite": "io.github.gear4jtest.core.sidecompute.SideComputeAccessorTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ca67f194344cdc2bc2943eddbdbfa88657e44fd1b634d90edc09f2af2d850c37",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputeAccessorTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputeContextContractsTest.xml",
+      "suite": "io.github.gear4jtest.core.sidecompute.SideComputeContextContractsTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5507e76b2689d413eab6c6f1283374b6d74feca2cb7d7ccaa5729069c4e70fdd",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputeContextContractsTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputeContextDeepCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.sidecompute.SideComputeContextDeepCoverageTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ce33d79e8d36a4f8ede181364fd592a4537048e40678bfe62389ba437b9b16bd",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputeContextDeepCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputeContextTest.xml",
+      "suite": "io.github.gear4jtest.core.sidecompute.SideComputeContextTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7c941d665b152b41f0162df084223d7b0e17fcdf5f5cb497c84ed73f7eddf64c",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputeContextTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputeFlowIntegrationTest.xml",
+      "suite": "io.github.gear4jtest.core.sidecompute.SideComputeFlowIntegrationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e7893a5a0b878b18e3465444403367ee280b5bea0ab25fd5600964656265307a",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputeFlowIntegrationTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputeListenerTest.xml",
+      "suite": "io.github.gear4jtest.core.sidecompute.SideComputeListenerTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "9e4bd84fd883a36bc8e127f9c47db535b65f5ebc043d46cf667b7b90fbbc2d4b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputeListenerTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest.xml",
+      "suite": "io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4202099a7fcf2c1fe7d25020cd570cdfabb7e1ef217675d1dbc21101f65c3531",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputeWaitProcessorTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputerTargetedCoverageTest.xml",
+      "suite": "io.github.gear4jtest.core.sidecompute.SideComputerTargetedCoverageTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "30d0a9903e13900b2753e6eb571a96470ba06c774fea6b544f684a87b0502f0d",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputerTargetedCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputerTest.xml",
+      "suite": "io.github.gear4jtest.core.sidecompute.SideComputerTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "153d9e918ebdf2ac53726452ae7702035c7271e3bc59b7da1d2f42a038dca3a3",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.sidecompute.SideComputerTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.spi.extension.AbstractRunHooksExtensionTest.xml",
+      "suite": "io.github.gear4jtest.core.spi.extension.AbstractRunHooksExtensionTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "32b156c5d7e2a7cebbf91baf45a8e5dcdf78b8023c2bd13a7e620fc9dba8d2fa",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.spi.extension.AbstractRunHooksExtensionTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.spi.extension.AbstractStationHooksExtensionTest.xml",
+      "suite": "io.github.gear4jtest.core.spi.extension.AbstractStationHooksExtensionTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "99034799df0eebeeec0fb20fed7479a004d9456432493b34b6cb338a67ea0750",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.spi.extension.AbstractStationHooksExtensionTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.util.DefaultUuidGeneratorTest.xml",
+      "suite": "io.github.gear4jtest.core.util.DefaultUuidGeneratorTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8aa2fa78e3c90a993f0d52d14b88d33408451952b3076ba141e0a5290ed6a70e",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.util.DefaultUuidGeneratorTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.util.MonotonicDeadlineTest.xml",
+      "suite": "io.github.gear4jtest.core.util.MonotonicDeadlineTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8705586d4b79412727049a0a7d8a1e13d95b2085833a9e8c84493a33653d7acb",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.util.MonotonicDeadlineTest.xml"
+    },
+    {
+      "path": "gear4jtest-core/build/test-results/test/TEST-io.github.gear4jtest.core.util.PeriodicLogLimiterTest.xml",
+      "suite": "io.github.gear4jtest.core.util.PeriodicLogLimiterTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3f782781f50fecb2d2cf4e8b46c023ba747be87879816e97baddb2283415924a",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-core/test/TEST-io.github.gear4jtest.core.util.PeriodicLogLimiterTest.xml"
+    },
+    {
+      "path": "gear4jtest-experimental-cache/build/test-results/test/TEST-io.gi-3FP0HRPSM9C02.gear4jtest.experimental.cache.history.fingerprint.WhitelistedContextFingerprintStrategyTest.xml",
+      "suite": "io.github.gear4jtest.experimental.cache.history.fingerprint.WhitelistedContextFingerprintStrategyTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "98a68441407a8fde112f911782ce4fd9816511edf516550023e36ddf5ae0f172",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-experimental-cache/test/TEST-io.gi-3FP0HRPSM9C02.gear4jtest.experimental.cache.history.fingerprint.WhitelistedContextFingerprintStrategyTest.xml"
+    },
+    {
+      "path": "gear4jtest-experimental-cache/build/test-results/test/TEST-io.github.gear4jtest.experimental.cache.assemblylinecache.InMemoryAssemblyLineCacheRepositoryTest.xml",
+      "suite": "io.github.gear4jtest.experimental.cache.assemblylinecache.InMemoryAssemblyLineCacheRepositoryTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7445b4a25afa0e757d2dfc957187743038e2c572dde01e4a2fa4f9d037f85bdb",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-experimental-cache/test/TEST-io.github.gear4jtest.experimental.cache.assemblylinecache.InMemoryAssemblyLineCacheRepositoryTest.xml"
+    },
+    {
+      "path": "gear4jtest-experimental-cache/build/test-results/test/TEST-io.github.gear4jtest.experimental.cache.history.fingerprint.JsonSha256FingerprintStrategyTest.xml",
+      "suite": "io.github.gear4jtest.experimental.cache.history.fingerprint.JsonSha256FingerprintStrategyTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b154719034a5532e1c7dc3537459cadc2c58602edf061d181cba6eaf151df7b0",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-experimental-cache/test/TEST-io.github.gear4jtest.experimental.cache.history.fingerprint.JsonSha256FingerprintStrategyTest.xml"
+    },
+    {
+      "path": "gear4jtest-experimental-cache/build/test-results/test/TEST-io.github.gear4jtest.experimental.cache.service.AssemblyLineCacheWithSideComputeIntegrationTest.xml",
+      "suite": "io.github.gear4jtest.experimental.cache.service.AssemblyLineCacheWithSideComputeIntegrationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f8373021ed584710b7dd16b393a943998569ee7ec20f257479816d4896ab0b66",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-experimental-cache/test/TEST-io.github.gear4jtest.experimental.cache.service.AssemblyLineCacheWithSideComputeIntegrationTest.xml"
+    },
+    {
+      "path": "gear4jtest-experimental-cache/build/test-results/test/TEST-io.github.gear4jtest.experimental.cache.service.AssemblyLineCacheWithWaitProcessorIT.xml",
+      "suite": "io.github.gear4jtest.experimental.cache.service.AssemblyLineCacheWithWaitProcessorIT",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3f8a5696cdafb22b7f0d29103f4a422cf6da30aa196aa32904534da7586ee081",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-experimental-cache/test/TEST-io.github.gear4jtest.experimental.cache.service.AssemblyLineCacheWithWaitProcessorIT.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.AssemblyLineAliasServiceTest.xml",
+      "suite": "io.github.gear4jtest.external.api.AssemblyLineAliasServiceTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b4e29282b9586ef68ab8fcfc07f59c1bc9fbbb3ecc10516b9267eba60753aa08",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.AssemblyLineAliasServiceTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.AssemblyLineManagerArtifactLimitTest.xml",
+      "suite": "io.github.gear4jtest.external.api.AssemblyLineManagerArtifactLimitTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1e67f06cc121d6c3b43ef9d76657d04f38c2d1bf1b08ec715856bee6eecdb115",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.AssemblyLineManagerArtifactLimitTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.AssemblyLineManagerCompilationCacheTest.xml",
+      "suite": "io.github.gear4jtest.external.api.AssemblyLineManagerCompilationCacheTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e276c94329e5fe315d9a2c6d52582ffa4cbaab3762d5be7600a11ac9b1107d2f",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.AssemblyLineManagerCompilationCacheTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.AssemblyLineManagerTest.xml",
+      "suite": "io.github.gear4jtest.external.api.AssemblyLineManagerTest",
+      "tests": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5239138880250e9e89f6b4d04d330e751cc6cfb02fafa246ad4adfee1d564424",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.AssemblyLineManagerTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.AssemblyLineStoreLeaseConsumerTest.xml",
+      "suite": "io.github.gear4jtest.external.api.AssemblyLineStoreLeaseConsumerTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7c0682c5efcc16037b323ecadd8f2ec9f09355b153cffd30005c542cbf0b52aa",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.AssemblyLineStoreLeaseConsumerTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.AssemblyLineStoreLeaseTest.xml",
+      "suite": "io.github.gear4jtest.external.api.AssemblyLineStoreLeaseTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6ec7e7b1c6ffd808280845fb0731be72f63028a796454d2c31f6ed434fa76b81",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.AssemblyLineStoreLeaseTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.AssemblyLineStoreResolverConcurrencyTest.xml",
+      "suite": "io.github.gear4jtest.external.api.AssemblyLineStoreResolverConcurrencyTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "53399591ddebc1dd4e48193d2f70323e8dfaac1c7bcba92c424f4005a7e64d94",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.AssemblyLineStoreResolverConcurrencyTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.AssemblyLineStoreResolverTest.xml",
+      "suite": "io.github.gear4jtest.external.api.AssemblyLineStoreResolverTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5c4a72070390e165c5f0a03e97407eb14e87196e7bc8597929056ddb41a930f6",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.AssemblyLineStoreResolverTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest.xml",
+      "suite": "io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "259fa3de472aebf9bff3a8064b97baa4290eeac4c29ba5d3e4240dc0425ffbce",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.BoundedGeneratedSourceCompilerTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTest.xml",
+      "suite": "io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e426a4f5d93ba94cc5f87a7971fadb2bb34f2f3c052dd6d7928aff9ac4f9ac79",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.GeneratedAssemblyLineLoaderTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.GeneratedCompilationConfigurationTest.xml",
+      "suite": "io.github.gear4jtest.external.api.GeneratedCompilationConfigurationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a5768ef9ccec79fe997789605edf88e9271684b1d33ac871cdd50d6ec232b144",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.GeneratedCompilationConfigurationTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.GeneratedLoadingConfigurationTest.xml",
+      "suite": "io.github.gear4jtest.external.api.GeneratedLoadingConfigurationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8edff33e0ae4e97febf8466ca7335a1ecc2eb460c411758508bf90c353373d02",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.GeneratedLoadingConfigurationTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.GeneratedLoadingRuntimeTest.xml",
+      "suite": "io.github.gear4jtest.external.api.GeneratedLoadingRuntimeTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "00dc2f4d23cf58a4b0fee3a994c7cb245e97ae36fbd0fe857693aa5470fa3cc7",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.GeneratedLoadingRuntimeTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.StoreTypeTest.xml",
+      "suite": "io.github.gear4jtest.external.api.StoreTypeTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0c038d48b4c7b8a0d4e9f799ba6799c780915ec4494f64cd64bf207fc66d9a1c",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.StoreTypeTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.artifact.ArtifactHashesTest.xml",
+      "suite": "io.github.gear4jtest.external.api.artifact.ArtifactHashesTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8b73eb287065eaa21d70f736e880e7d279fa8b86535206d2de33c59b659d7fcc",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.artifact.ArtifactHashesTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.artifact.ArtifactSpoolFilesTest.xml",
+      "suite": "io.github.gear4jtest.external.api.artifact.ArtifactSpoolFilesTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d338671509ad21743f81e133358be58c1be493b4cb887105c33645f997c61df6",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.artifact.ArtifactSpoolFilesTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.artifact.ArtifactStoreExecutorsTest.xml",
+      "suite": "io.github.gear4jtest.external.api.artifact.ArtifactStoreExecutorsTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a52a266242e0160c7ab467e95c84dc111ddd2395cc65092f99e3ced63a10678f",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.artifact.ArtifactStoreExecutorsTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.artifact.ArtifactStoreTest.xml",
+      "suite": "io.github.gear4jtest.external.api.artifact.ArtifactStoreTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4f75bc0ea2d943984dfce2a5063430c32d81a2c4ca5af0f53a63c061759770c3",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.artifact.ArtifactStoreTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreAdditionalTest.xml",
+      "suite": "io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreAdditionalTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8caea213e257d9a688d12fb41934628f966ac4176525f6806c6355d5f00eacd1",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreAdditionalTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreTest.xml",
+      "suite": "io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "58cd2e7ac26d2c945978c01d15d92681d9d2ca74371c5b70d3d0de5660c64e32",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest.xml",
+      "suite": "io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3581836e58b0efe176c749487cf2cd0a70e413674f54d135a23c10468e542103",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.artifact.InMemoryArtifactStoreTest.xml",
+      "suite": "io.github.gear4jtest.external.api.artifact.InMemoryArtifactStoreTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "84538c1f8bf086b35ebc9facbd53daf03a595309445b5f4346dbdd5dc135a93c",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.artifact.InMemoryArtifactStoreTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.artifact.ManagedArtifactSpoolTest.xml",
+      "suite": "io.github.gear4jtest.external.api.artifact.ManagedArtifactSpoolTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c20e835045a3d808cf5510a58cc5e275333321bf9efbae434afab7acb5492e89",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.artifact.ManagedArtifactSpoolTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.compiler.GeneratedSourceCompilersTest.xml",
+      "suite": "io.github.gear4jtest.external.api.compiler.GeneratedSourceCompilersTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "afba5b67efbed3d9111be5fe330851ab83e0f5c374d3e1898df58ae285a44c20",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.compiler.GeneratedSourceCompilersTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.compiler.JavaxToolsGeneratedSourceCompilerTest.xml",
+      "suite": "io.github.gear4jtest.external.api.compiler.JavaxToolsGeneratedSourceCompilerTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "da4278bae1cc90c79e72e3d7bc7f42e5c50b1161dcf0ec8f4a790e74c6c84758",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.compiler.JavaxToolsGeneratedSourceCompilerTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.compiler.JdtCompilerCompatibilityTest.xml",
+      "suite": "io.github.gear4jtest.external.api.compiler.JdtCompilerCompatibilityTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fc49d493226093ecf08f0332b7578935bd069be96b05db371f77f5cf5618477a",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.compiler.JdtCompilerCompatibilityTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.consistency.ArtifactConsistencyCheckerTest.xml",
+      "suite": "io.github.gear4jtest.external.api.consistency.ArtifactConsistencyCheckerTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f7fc7612d0064ed97e5aa9cf62d2c2b375e0252be137c74e9e90eec73de3aacd",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.consistency.ArtifactConsistencyCheckerTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.consistency.ArtifactPublicationReconcilerTest.xml",
+      "suite": "io.github.gear4jtest.external.api.consistency.ArtifactPublicationReconcilerTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ebc3569ad76fc12a72dd84ffe119cfe864121d8ad75a24345a6e190030959076",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.consistency.ArtifactPublicationReconcilerTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.exception.CompilationExceptionTest.xml",
+      "suite": "io.github.gear4jtest.external.api.exception.CompilationExceptionTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "55f55486d40780bff5e024f756898dea49775e5db745935744e52daab8bafb1b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.exception.CompilationExceptionTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.exception.ExternalErrorTaxonomyTest.xml",
+      "suite": "io.github.gear4jtest.external.api.exception.ExternalErrorTaxonomyTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e3b006f56258018ada3f64593f88289c0318928c031e9276d3db0c7aeb5d4d0b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.exception.ExternalErrorTaxonomyTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.identity.OperationChainIdentityCodecTest.xml",
+      "suite": "io.github.gear4jtest.external.api.identity.OperationChainIdentityCodecTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6978149438a67517741eeeb6fcd74a6bb48dc589d344621cf2790844fa9f6aa0",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.identity.OperationChainIdentityCodecTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.loader.GeneratedAssemblyLineTypeTest.xml",
+      "suite": "io.github.gear4jtest.external.api.loader.GeneratedAssemblyLineTypeTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "62da40e5995e33d46de173cadfc695ae5b805daeea59c81e04abcb740c41f9db",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.loader.GeneratedAssemblyLineTypeTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.loader.InMemoryClassLoaderRegistryTest.xml",
+      "suite": "io.github.gear4jtest.external.api.loader.InMemoryClassLoaderRegistryTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "61dfdc33e58440157799260ce3f759e1f15381015d94f54fddd8348628e08a89",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.loader.InMemoryClassLoaderRegistryTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.loader.InMemoryClassLoaderTest.xml",
+      "suite": "io.github.gear4jtest.external.api.loader.InMemoryClassLoaderTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0ac29ee2b0c4fa9dd8eef4137c19cd388a289960c95f69796984d6c1acfd93f1",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.loader.InMemoryClassLoaderTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.loader.SimpleDependencyInjectorTest.xml",
+      "suite": "io.github.gear4jtest.external.api.loader.SimpleDependencyInjectorTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d87d97d03c11af937deba0046ff2354b1584dd30ff2d202b2131b1e9a02d179d",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.loader.SimpleDependencyInjectorTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.model.OperationChainModelValidationTest.xml",
+      "suite": "io.github.gear4jtest.external.api.model.OperationChainModelValidationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8371c962a0be55cd84ddda8a856c5d3e64ea6cdc0b2a3c7ef410d0187588b5da",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.model.OperationChainModelValidationTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest.xml",
+      "suite": "io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "47ae4b1c059c735512e716f7f8292b1b8189687e268fc0d58a43c26b3ac97192",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.repository.InMemoryOperationChainRepositoryTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.repository.OperationChainObjectRepositoryContractTest.xml",
+      "suite": "io.github.gear4jtest.external.api.repository.OperationChainObjectRepositoryContractTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b34868e61b01454e4d598c8dce69595828fdce5a7e02659e8bc4f1462e410723",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.repository.OperationChainObjectRepositoryContractTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.repository.OperationChainPublicationTagsTest.xml",
+      "suite": "io.github.gear4jtest.external.api.repository.OperationChainPublicationTagsTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3edd0652ee81d7426f86c1aa454d882b00dbfe7c22c0d17a36d16ecae0e81f7f",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.repository.OperationChainPublicationTagsTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.repository.RepositoryDefaultPaginationTest.xml",
+      "suite": "io.github.gear4jtest.external.api.repository.RepositoryDefaultPaginationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e0c6e22bf4e9170e10c55e390f63905509f259a135dcc525f24fc5d4a9bd4da5",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.repository.RepositoryDefaultPaginationTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.spi.ArtifactStoreResolverTest.xml",
+      "suite": "io.github.gear4jtest.external.api.spi.ArtifactStoreResolverTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1c32a6ce65ebd89a5bc0cfb56fafcaa71126d4d3a28db99fa353a4cd7c399def",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.spi.ArtifactStoreResolverTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.spi.DefaultArtifactStoreProviderConcurrencyTest.xml",
+      "suite": "io.github.gear4jtest.external.api.spi.DefaultArtifactStoreProviderConcurrencyTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f3dd395fdfee9bca99bfd07e08086b4d2f26361a229f5fdbd928ed133e6fc006",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.spi.DefaultArtifactStoreProviderConcurrencyTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.spi.FilesystemArtifactStorePluginTest.xml",
+      "suite": "io.github.gear4jtest.external.api.spi.FilesystemArtifactStorePluginTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "158495af4adf5068b5b2e69cd405802804ec2a3bce8533c300c86c537a2552df",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.spi.FilesystemArtifactStorePluginTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFingerprintTest.xml",
+      "suite": "io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFingerprintTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "56d014b4e2fa6a48ae00430860dfbc183ce45b9066f7f80d91e74da2d5cc55e9",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.storage.ArtifactStoreConfigurationFingerprintTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.storage.DefaultArtifactStoreProviderTest.xml",
+      "suite": "io.github.gear4jtest.external.api.storage.DefaultArtifactStoreProviderTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "89abb7a970c15373db41a1a6db38f28b899ff46fb3ad44675fd6cdd37a9112f5",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.storage.DefaultArtifactStoreProviderTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-api/build/test-results/test/TEST-io.github.gear4jtest.external.api.translator.OperationChainTranslatorResolverTest.xml",
+      "suite": "io.github.gear4jtest.external.api.translator.OperationChainTranslatorResolverTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "58de47e518dbbd324b4be09d33dde67fede40b6429ff756907d27f39479b9e4d",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-api/test/TEST-io.github.gear4jtest.external.api.translator.OperationChainTranslatorResolverTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/integrationTest/TEST-io.github.gear4jtest.external.api.storage.DefaultArtifactStoreProviderIT.xml",
+      "suite": "io.github.gear4jtest.external.api.storage.DefaultArtifactStoreProviderIT",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "015e27a8295064d0e228c6022a1188451ba74848c0836804975b4c2596ad4b2b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/integrationTest/TEST-io.github.gear4jtest.external.api.storage.DefaultArtifactStoreProviderIT.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/integrationTest/TEST-io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreIntegrityIT.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreIntegrityIT",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6433926ba830c10e2dbf174742258a7f2c4448fc178abbd7fdab6102428cc3c7",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/integrationTest/TEST-io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreIntegrityIT.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/integrationTest/TEST-io.github.gear4jtest.external.jdbc.repository.ExternalJdbcMultiDialectIT.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.repository.ExternalJdbcMultiDialectIT",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "sha256": "97922e99c1612fbcc4d18044f6731c261e793b36a1e4b9701e0b1ea3c9d9ed8c",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/integrationTest/TEST-io.github.gear4jtest.external.jdbc.repository.ExternalJdbcMultiDialectIT.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/integrationTest/TEST-io.github.gear4jtest.external.jdbc.repository.ExternalJdbcSchemaMigratorIT.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.repository.ExternalJdbcSchemaMigratorIT",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f53bbd308c7069309c62776fdfea5fb25f43a87311fcddb623bd803fc8626b49",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/integrationTest/TEST-io.github.gear4jtest.external.jdbc.repository.ExternalJdbcSchemaMigratorIT.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/integrationTest/TEST-io.github.gear4jtest.external.jdbc.repository.ExternalJdbcTransactionBoundariesIT.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.repository.ExternalJdbcTransactionBoundariesIT",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "438c1c213bc98ec1fb26aaef36a945a5322dff618d2b92a2b6a0892631b4330f",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/integrationTest/TEST-io.github.gear4jtest.external.jdbc.repository.ExternalJdbcTransactionBoundariesIT.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/integrationTest/TEST-io.github.gear4jtest.external.jdbc.repository.OperationChainPublicationRepositoryJdbcIT.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.repository.OperationChainPublicationRepositoryJdbcIT",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "61617178c64f725aa3f88c327f0a295ac1a3e29a959d24cefa8c0c28a6c0b21c",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/integrationTest/TEST-io.github.gear4jtest.external.jdbc.repository.OperationChainPublicationRepositoryJdbcIT.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/test/TEST-io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreStreamingTest.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreStreamingTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "71f8a589a6691591195acc013fcbd51bb99c7f9cd21360e843908ee424965612",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/test/TEST-io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreStreamingTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/test/TEST-io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreTest.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "babbdc471bb16759dc02af787dcabac8d3f481b83c289da3fc75f6b4477caf1b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/test/TEST-io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/test/TEST-io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectContractTest.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectContractTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "00556f997ccd7b9e56d1f8cb55d04172ee364389dbea1fc04768c05d84c07c52",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/test/TEST-io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectContractTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/test/TEST-io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectCoverageTest.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectCoverageTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "be2ef01d1f0ada8fda02a8dc754685ae0300c0770cd8611a564c444becb800f5",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/test/TEST-io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/test/TEST-io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectTest.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f29e860646a086e67adfb2148670bdf3da6da21923d07826d2547f78ed85cc2d",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/test/TEST-io.github.gear4jtest.external.jdbc.repository.ExternalRepositorySqlDialectTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/test/TEST-io.github.gear4jtest.external.jdbc.repository.JdbcDialectCoverageTest.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.repository.JdbcDialectCoverageTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c087311c98d4ea2347cf9a7944d55c44d0aee4468c77b4e8510e5d66fc0b382c",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/test/TEST-io.github.gear4jtest.external.jdbc.repository.JdbcDialectCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/test/TEST-io.github.gear4jtest.external.jdbc.repository.OperationChainConfigRepositoryJdbcBehaviorTest.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.repository.OperationChainConfigRepositoryJdbcBehaviorTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "277ee52b0bdb488923da7e6e6788c94c1861fe8a369e92d3802434262f99c9a7",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/test/TEST-io.github.gear4jtest.external.jdbc.repository.OperationChainConfigRepositoryJdbcBehaviorTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/test/TEST-io.github.gear4jtest.external.jdbc.repository.OperationChainConfigRepositoryJdbcTest.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.repository.OperationChainConfigRepositoryJdbcTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7f758adbb9dc69932966612064e3ea0d725d8d04bbbb44acc052eafce6cb88b4",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/test/TEST-io.github.gear4jtest.external.jdbc.repository.OperationChainConfigRepositoryJdbcTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/test/TEST-io.github.gear4jtest.external.jdbc.repository.OperationChainObjectRepositoryJdbcBehaviorTest.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.repository.OperationChainObjectRepositoryJdbcBehaviorTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c826fc4e5746fa63b6d27c2274a724d74b3ead30c8a27ac90477347143eba0f5",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/test/TEST-io.github.gear4jtest.external.jdbc.repository.OperationChainObjectRepositoryJdbcBehaviorTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/test/TEST-io.github.gear4jtest.external.jdbc.repository.OperationChainObjectRepositoryJdbcTest.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.repository.OperationChainObjectRepositoryJdbcTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "239fe06aac6cd4e7c7e5bb3e1de40e2bea85abf617babe8ed45bfe4435fe389d",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/test/TEST-io.github.gear4jtest.external.jdbc.repository.OperationChainObjectRepositoryJdbcTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/test/TEST-io.github.gear4jtest.external.jdbc.repository.OperationChainTagRepositoryJdbcBehaviorTest.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.repository.OperationChainTagRepositoryJdbcBehaviorTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "be996595080536495b371ff7b804900735fca3bd292a5c420dff2214304d08e6",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/test/TEST-io.github.gear4jtest.external.jdbc.repository.OperationChainTagRepositoryJdbcBehaviorTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/test/TEST-io.github.gear4jtest.external.jdbc.repository.OperationChainTagRepositoryJdbcTest.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.repository.OperationChainTagRepositoryJdbcTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "541f761c1df51e4a7bdf085fc03ab12af5c20b8c6e5c329d721a6763ec7fba5e",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/test/TEST-io.github.gear4jtest.external.jdbc.repository.OperationChainTagRepositoryJdbcTest.xml"
+    },
+    {
+      "path": "gear4jtest-external-jdbc/build/test-results/test/TEST-io.github.gear4jtest.external.jdbc.spi.DatabaseArtifactStorePluginTest.xml",
+      "suite": "io.github.gear4jtest.external.jdbc.spi.DatabaseArtifactStorePluginTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8772580943693901236823f3d02249367ffc9be5dddf0ad22880a0ce67ccc70d",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-external-jdbc/test/TEST-io.github.gear4jtest.external.jdbc.spi.DatabaseArtifactStorePluginTest.xml"
+    },
+    {
+      "path": "gear4jtest-gradle-xml2java/build/test-results/gradlePluginCompatibilityTest/TEST-io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorDslCompatibilityTest.xml",
+      "suite": "io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorDslCompatibilityTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "98c08e29d16607274b71c92ebf4238db1949c0c44362488ac60076ec557dbe39",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-gradle-xml2java/gradlePluginCompatibilityTest/TEST-io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorDslCompatibilityTest.xml"
+    },
+    {
+      "path": "gear4jtest-gradle-xml2java/build/test-results/test/TEST-io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorFunctionalTest.xml",
+      "suite": "io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorFunctionalTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "acc17932396f9521aa8dc765bfde04a74c009ef423ab6abe6c47419ecfff9f61",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-gradle-xml2java/test/TEST-io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorFunctionalTest.xml"
+    },
+    {
+      "path": "gear4jtest-gradle-xml2java/build/test-results/test/TEST-io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest.xml",
+      "suite": "io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c2eb6c65ce18b0faa84c023d94b2596fb3931a2fe3c843f371282ced24859e5b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-gradle-xml2java/test/TEST-io.github.gear4jtest.xml2java.XmlAssemblyLineGeneratorPluginTest.xml"
+    },
+    {
+      "path": "gear4jtest-gradle-xml2java/build/test-results/test/TEST-io.github.gear4jtest.xml2java.XmlAssemblyLineOperatorClasspathFunctionalTest.xml",
+      "suite": "io.github.gear4jtest.xml2java.XmlAssemblyLineOperatorClasspathFunctionalTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fd05d087f5af70018dbf0893b20165beff8a4b7cbee6bfdf72334fdfe126588d",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-gradle-xml2java/test/TEST-io.github.gear4jtest.xml2java.XmlAssemblyLineOperatorClasspathFunctionalTest.xml"
+    },
+    {
+      "path": "gear4jtest-jackson/build/test-results/test/TEST-io.github.gear4jtest.jackson.JacksonPayloadClonerIntegrationTest.xml",
+      "suite": "io.github.gear4jtest.jackson.JacksonPayloadClonerIntegrationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3b61971bfc466413b9a087d97e19d6c3e7fc8ec3929cdd5fee14f5339cc1e743",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jackson/test/TEST-io.github.gear4jtest.jackson.JacksonPayloadClonerIntegrationTest.xml"
+    },
+    {
+      "path": "gear4jtest-jackson/build/test-results/test/TEST-io.github.gear4jtest.jackson.JacksonPayloadClonerTest.xml",
+      "suite": "io.github.gear4jtest.jackson.JacksonPayloadClonerTest",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c049e288e1f59f18120232a3b1284d55215d28022e002cfbdff2e3a544b1b644",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jackson/test/TEST-io.github.gear4jtest.jackson.JacksonPayloadClonerTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/integrationTest/TEST-io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorFatalRollbackIT.xml",
+      "suite": "io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorFatalRollbackIT",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "sha256": "e05c550386a0a1261c881160e7c5c58595e92b4aa2b4cb167dd61e344bd9b011",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/integrationTest/TEST-io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorFatalRollbackIT.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/integrationTest/TEST-io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorRecoveryIT.xml",
+      "suite": "io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorRecoveryIT",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f842f1ce24c49e8acedb2c85f567f369c36899b88a3f5cd30caa26d997aedb66",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/integrationTest/TEST-io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorRecoveryIT.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/integrationTest/TEST-io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryMultiDialectIT.xml",
+      "suite": "io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryMultiDialectIT",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "sha256": "dc9264ef35e5c367ec109b93d5778b5dc9980ee5ce48151a07e2721babd90181",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/integrationTest/TEST-io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryMultiDialectIT.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/integrationTest/TEST-io.github.gear4jtest.jdbc.persistence.SqlPlanObservationTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.persistence.SqlPlanObservationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "548190a296ace776725641a2a62c06662876833616e88c3d2bb3270360e85eb9",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/integrationTest/TEST-io.github.gear4jtest.jdbc.persistence.SqlPlanObservationTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/integrationTest/TEST-io.github.gear4jtest.jdbc.service.FullAssemblyLineRuntimeIT.xml",
+      "suite": "io.github.gear4jtest.jdbc.service.FullAssemblyLineRuntimeIT",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "87a5090d0e0038026fb6e903329177cbc603dcd8a77e1ae226d638b78f015422",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/integrationTest/TEST-io.github.gear4jtest.jdbc.service.FullAssemblyLineRuntimeIT.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/integrationTest/TEST-io.github.gear4jtest.jdbc.service.SimpleChainBuilderDataSourceIT.xml",
+      "suite": "io.github.gear4jtest.jdbc.service.SimpleChainBuilderDataSourceIT",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "sha256": "f3ef2b32a405c4e78d54c819a1a3f0da30469c56c0cf56a43402b87eac3c5ac7",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/integrationTest/TEST-io.github.gear4jtest.jdbc.service.SimpleChainBuilderDataSourceIT.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerConnectivityLoadTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerConnectivityLoadTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b7c9c951908809f4d412747a2c1d29bd1f30b8badef4b850b3d75692884da15b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerConnectivityLoadTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2acb622cc04e22162020a17a3223fbc2458e84b24061664f40e4a05083190940",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerShutdownTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "78773b533a6c98a835db24194a553afd37df46c16a788434400bb3192e2c0d59",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.execution.JdbcPersistenceFailureClassifierTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.execution.JdbcPersistenceFailureClassifierTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "894e24ace407f0fd5a26f8c01c59debf43cf12125e76511334bb6d050791efb9",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.execution.JdbcPersistenceFailureClassifierTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.execution.OperationRecordBufferTargetedCoverageTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.execution.OperationRecordBufferTargetedCoverageTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "9cfa49b460bdb46b21813cb8662a27b9ee40363de6649d1ec47969139038d5b8",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.execution.OperationRecordBufferTargetedCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.execution.PersistenceCapacityGuardTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.execution.PersistenceCapacityGuardTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "936162c890c4ebe2f9e9fcae1927c253c4dcf416cf3b43ccfdae280ff8bcab0e",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.execution.PersistenceCapacityGuardTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.execution.PersistenceFailureDispositionTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.execution.PersistenceFailureDispositionTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3c0aba5a58da87db5366bd15bddc68995582fe485a60c733f8e84268ef9a1fa1",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.execution.PersistenceFailureDispositionTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "74ed38968e4b34882ae23832903eac165e103994bd3b189257fde3e0a290ecc3",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfigurationTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfigurationTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c5df63f5676bcb29ff10eeec744723a0d950abcf9e3475b0b26c638722ab2ed1",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.execution.PersistenceRuntimeConfigurationTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.execution.PersistenceShutdownRunStateTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.execution.PersistenceShutdownRunStateTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "de13d78c171271d5d94df3649f210c710e5cf9c6cd372eef6d99527ef349d0bb",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.execution.PersistenceShutdownRunStateTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorFailureCleanupTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorFailureCleanupTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1f8f9976e6577f57dedc387477c3dff0cb0c6668dc4629301872df97ed8020da",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorFailureCleanupTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f9c8d76dae2b1123ea2070321d7835ff5a91450e4128d9863878edd0229ce18b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.migration.MigrationLockStoreTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.migration.MigrationLockStoreTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "db24aab9364c01b46e2b22f44fa0b1365ab2889fcb8963d2ca8cfeb74734ecd4",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.migration.MigrationLockStoreTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.migration.MigrationResourceLoaderTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.migration.MigrationResourceLoaderTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8504a9bf795f89c2ed0d7bb180e24c0171b5a40776927c239f07392f569923a0",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.migration.MigrationResourceLoaderTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "53eb42f0c288699575600569f4f7ead6cf3a87e82083daf80443804a11a06151",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepositoryTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunSqlTargetedCoverageTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunSqlTargetedCoverageTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2398697fcdec1e52e50f6c5051d67e708ba24da58a03100fe9488d87afb42600",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunSqlTargetedCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunSqlTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunSqlTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1ed0e10a0bb8420b58604390f548cee026493895710c2f0235cb8fa126a64f3d",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunSqlTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.persistence.DatabasePersistenceJsonCodecTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.persistence.DatabasePersistenceJsonCodecTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0d945f24a0fb0811c45619e38751e24baff7e0a32fe256ed79c70a83953d3580",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.persistence.DatabasePersistenceJsonCodecTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialectTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialectTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "edeacfed191e0e711308726657a7315768317cbd38e1c78da401a55939422dce",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.persistence.Gear4jDatabaseDialectTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.persistence.JdbcPersistenceRecordValidatorTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.persistence.JdbcPersistenceRecordValidatorTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0f05a6c216b237e48a8926d7041e44cb414dcc3d76b5f60558454d0bedeaed41",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.persistence.JdbcPersistenceRecordValidatorTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.persistence.JdbcStatementOptionsTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.persistence.JdbcStatementOptionsTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e7b95d5cde933a3ae63b9768d3492d9ba37f2ebfb5c416ea1966b6d1d1bda4c3",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.persistence.JdbcStatementOptionsTest.xml"
+    },
+    {
+      "path": "gear4jtest-jdbc/build/test-results/test/TEST-io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperationsTest.xml",
+      "suite": "io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperationsTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "77a7e51137b888fd6bf26aa7b7f39a678a811256e5adb1ed78d9af2e45ba429d",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-jdbc/test/TEST-io.github.gear4jtest.jdbc.persistence.JdbcTransactionOperationsTest.xml"
+    },
+    {
+      "path": "gear4jtest-micrometer/build/test-results/test/TEST-io.github.gear4jtest.micrometer.ArtifactMetricsBinderTest.xml",
+      "suite": "io.github.gear4jtest.micrometer.ArtifactMetricsBinderTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6c186fba85b644ce6b592f8534fd76114be83abefcef1bcab535a6aba2240616",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-micrometer/test/TEST-io.github.gear4jtest.micrometer.ArtifactMetricsBinderTest.xml"
+    },
+    {
+      "path": "gear4jtest-micrometer/build/test-results/test/TEST-io.github.gear4jtest.micrometer.ClassLoaderMetricsBinderTest.xml",
+      "suite": "io.github.gear4jtest.micrometer.ClassLoaderMetricsBinderTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7a29ca0167a06a3c925bb5db2a5ed0766818a8a3177e67fb5c160834f498055e",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-micrometer/test/TEST-io.github.gear4jtest.micrometer.ClassLoaderMetricsBinderTest.xml"
+    },
+    {
+      "path": "gear4jtest-micrometer/build/test-results/test/TEST-io.github.gear4jtest.micrometer.EventMetricsBinderTest.xml",
+      "suite": "io.github.gear4jtest.micrometer.EventMetricsBinderTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "47d67fc6f84e83d683aeae70e6071595727432b5ca738f0817e31229addff138",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-micrometer/test/TEST-io.github.gear4jtest.micrometer.EventMetricsBinderTest.xml"
+    },
+    {
+      "path": "gear4jtest-micrometer/build/test-results/test/TEST-io.github.gear4jtest.micrometer.Gear4jMicrometerExtensionTest.xml",
+      "suite": "io.github.gear4jtest.micrometer.Gear4jMicrometerExtensionTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b7096895a28c69d3d97346a8011247040355894530f10d73f7b9efc710229213",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-micrometer/test/TEST-io.github.gear4jtest.micrometer.Gear4jMicrometerExtensionTest.xml"
+    },
+    {
+      "path": "gear4jtest-micrometer/build/test-results/test/TEST-io.github.gear4jtest.micrometer.Gear4jMicrometerLifecycleOrderingTest.xml",
+      "suite": "io.github.gear4jtest.micrometer.Gear4jMicrometerLifecycleOrderingTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2fee1ae2c9055677188756538ff78603f86530bd44012aacab7a95bf823d7fa9",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-micrometer/test/TEST-io.github.gear4jtest.micrometer.Gear4jMicrometerLifecycleOrderingTest.xml"
+    },
+    {
+      "path": "gear4jtest-micrometer/build/test-results/test/TEST-io.github.gear4jtest.micrometer.GeneratedLoadingMetricsBinderTest.xml",
+      "suite": "io.github.gear4jtest.micrometer.GeneratedLoadingMetricsBinderTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "151fb543b12d8af0cf6b97db84b48652524b4475cc7c1d6139aec824a0c99d0d",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-micrometer/test/TEST-io.github.gear4jtest.micrometer.GeneratedLoadingMetricsBinderTest.xml"
+    },
+    {
+      "path": "gear4jtest-micrometer/build/test-results/test/TEST-io.github.gear4jtest.micrometer.PersistenceMetricsBinderTest.xml",
+      "suite": "io.github.gear4jtest.micrometer.PersistenceMetricsBinderTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d6f8566241bf1baedf70bb1d1569aa606b82a93bc8e7d426fc1fc3a279090eb4",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-micrometer/test/TEST-io.github.gear4jtest.micrometer.PersistenceMetricsBinderTest.xml"
+    },
+    {
+      "path": "gear4jtest-spring/build/test-results/test/TEST-io.github.gear4jtest.spring.Gear4jSpringConfigurationTest.xml",
+      "suite": "io.github.gear4jtest.spring.Gear4jSpringConfigurationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "36bba6a3f0ebd2014afb23d7ee407f33e0cf9db2de657ce78635f6e158e48406",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-spring/test/TEST-io.github.gear4jtest.spring.Gear4jSpringConfigurationTest.xml"
+    },
+    {
+      "path": "gear4jtest-spring-boot-starter/build/test-results/test/TEST-io.github.gear4jtest.spring.boot.ExternalJdbcSpringTransactionsTest.xml",
+      "suite": "io.github.gear4jtest.spring.boot.ExternalJdbcSpringTransactionsTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6392e1866367a22a25d8afe0d6948a7aafa630d44284061ecca6dfc274acc8c7",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-spring-boot-starter/test/TEST-io.github.gear4jtest.spring.boot.ExternalJdbcSpringTransactionsTest.xml"
+    },
+    {
+      "path": "gear4jtest-spring-boot-starter/build/test-results/test/TEST-io.github.gear4jtest.spring.boot.Gear4jAutoConfigurationTest.xml",
+      "suite": "io.github.gear4jtest.spring.boot.Gear4jAutoConfigurationTest",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e3799e8186d4f0156a1824b0588928016a404be33530214ddd8d286adf1bcd54",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-spring-boot-starter/test/TEST-io.github.gear4jtest.spring.boot.Gear4jAutoConfigurationTest.xml"
+    },
+    {
+      "path": "gear4jtest-spring-boot-starter/build/test-results/test/TEST-io.github.gear4jtest.spring.boot.Gear4jBootConsumerTest.xml",
+      "suite": "io.github.gear4jtest.spring.boot.Gear4jBootConsumerTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "95dcf66691502d2a8dad66e3ce6c36d45fc53869bea29f437ef37dcfd645f812",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-spring-boot-starter/test/TEST-io.github.gear4jtest.spring.boot.Gear4jBootConsumerTest.xml"
+    },
+    {
+      "path": "gear4jtest-spring-boot-starter/build/test-results/test/TEST-io.github.gear4jtest.spring.boot.Gear4jPropertiesTest.xml",
+      "suite": "io.github.gear4jtest.spring.boot.Gear4jPropertiesTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "88a0e467ec48d7136bf96fa46d5d1dee68f606bcb4d6a7b2f13bdf7475239c7c",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-spring-boot-starter/test/TEST-io.github.gear4jtest.spring.boot.Gear4jPropertiesTest.xml"
+    },
+    {
+      "path": "gear4jtest-spring-boot-starter/build/test-results/test/TEST-io.github.gear4jtest.spring.boot.SpringJdbcTransactionOperationsTest.xml",
+      "suite": "io.github.gear4jtest.spring.boot.SpringJdbcTransactionOperationsTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "016b9292c786477478fbf39b153fcc96ed511a2a3dd19a3e3df83637e4159730",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-spring-boot-starter/test/TEST-io.github.gear4jtest.spring.boot.SpringJdbcTransactionOperationsTest.xml"
+    },
+    {
+      "path": "gear4jtest-spring-boot-starter/build/test-results/test/TEST-io.github.gear4jtest.spring.boot.actuate.Gear4jPersistenceHealthIndicatorTest.xml",
+      "suite": "io.github.gear4jtest.spring.boot.actuate.Gear4jPersistenceHealthIndicatorTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "198f2c6ec737157d9c130c00d07df68954672ba033a3e49c7d2bb9923a5d980b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-spring-boot-starter/test/TEST-io.github.gear4jtest.spring.boot.actuate.Gear4jPersistenceHealthIndicatorTest.xml"
+    },
+    {
+      "path": "gear4jtest-spring-boot-starter/build/test-results/test/TEST-io.github.gear4jtest.spring.boot.actuate.Gear4jPersistenceLivenessIndicatorTest.xml",
+      "suite": "io.github.gear4jtest.spring.boot.actuate.Gear4jPersistenceLivenessIndicatorTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d570c62c272d90f28444a0ae7c1cfd5b4a7417651a2834f8f90bbd8185e7e02e",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-spring-boot-starter/test/TEST-io.github.gear4jtest.spring.boot.actuate.Gear4jPersistenceLivenessIndicatorTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio/build/test-results/test/TEST-io.github.gear4jtest.studio.management.ControlledTestsRetentionTest.xml",
+      "suite": "io.github.gear4jtest.studio.management.ControlledTestsRetentionTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "511a07fde390b034bb1c55522dce595b296319234882ee3ad49627ae56910a6d",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio/test/TEST-io.github.gear4jtest.studio.management.ControlledTestsRetentionTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio/build/test-results/test/TEST-io.github.gear4jtest.studio.management.StudioIdentityTest.xml",
+      "suite": "io.github.gear4jtest.studio.management.StudioIdentityTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d4333199d9f4251a1a7b19f8d475c4c2aa100a55665fac7f4a16b84db7f0c22f",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio/test/TEST-io.github.gear4jtest.studio.management.StudioIdentityTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio/build/test-results/test/TEST-io.github.gear4jtest.studio.management.StudioManagementTest.xml",
+      "suite": "io.github.gear4jtest.studio.management.StudioManagementTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6a4c7c42b0ea4aaea1fff0344a1702fa758d084db7099fc4309a1b491fda4551",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio/test/TEST-io.github.gear4jtest.studio.management.StudioManagementTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio/build/test-results/test/TEST-io.github.gear4jtest.studio.management.StudioScenariosTest.xml",
+      "suite": "io.github.gear4jtest.studio.management.StudioScenariosTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6e2d6bb89adee10431f369558a3b47c886511bc4a7e234551058f3cd75a46bdf",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio/test/TEST-io.github.gear4jtest.studio.management.StudioScenariosTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio/build/test-results/test/TEST-io.github.gear4jtest.studio.model.DefinitionDiffTest.xml",
+      "suite": "io.github.gear4jtest.studio.model.DefinitionDiffTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c9e315baa770167bb0a5deae30512baedf0346a3d940b7d0a7ebaf74aa0e7448",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio/test/TEST-io.github.gear4jtest.studio.model.DefinitionDiffTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-demo/build/test-results/test/TEST-io.github.gear4jtest.studio.demo.DemoHostTest.xml",
+      "suite": "io.github.gear4jtest.studio.demo.DemoHostTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8711df489631c89b3189d630bd5c24c6e8bd6ec186689100f7311ccf9f890ba4",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-demo/test/TEST-io.github.gear4jtest.studio.demo.DemoHostTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-demo/build/test-results/test/TEST-io.github.gear4jtest.studio.demo.ModeAwareCatalogTest.xml",
+      "suite": "io.github.gear4jtest.studio.demo.ModeAwareCatalogTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "de3e4ad9e5c26a611734527bdbb7dd70fe96234708b0e96a9cf92a84174ac603",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-demo/test/TEST-io.github.gear4jtest.studio.demo.ModeAwareCatalogTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-demo/build/test-results/test/TEST-io.github.gear4jtest.studio.demo.PublicationAttemptTest.xml",
+      "suite": "io.github.gear4jtest.studio.demo.PublicationAttemptTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "69265c2935e4efeb89a9aa0bdd3f6c9493cb5e31103c7186a75ebe3cd742e638",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-demo/test/TEST-io.github.gear4jtest.studio.demo.PublicationAttemptTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-demo/build/test-results/test/TEST-io.github.gear4jtest.studio.demo.StudioLifecycleTest.xml",
+      "suite": "io.github.gear4jtest.studio.demo.StudioLifecycleTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b681f0cad014eb4c9674581bd13da4a16a790211f8c85d895b4bb81feb250b66",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-demo/test/TEST-io.github.gear4jtest.studio.demo.StudioLifecycleTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-demo/build/test-results/test/TEST-io.github.gear4jtest.studio.demo.StudioObservabilityTest.xml",
+      "suite": "io.github.gear4jtest.studio.demo.StudioObservabilityTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a0b7da4291a920e0af1cdff73804097b900a55c10b19087dc1a82167b2a3c158",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-demo/test/TEST-io.github.gear4jtest.studio.demo.StudioObservabilityTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-demo/build/test-results/test/TEST-io.github.gear4jtest.studio.demo.StudioRunQueriesTest.xml",
+      "suite": "io.github.gear4jtest.studio.demo.StudioRunQueriesTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "49d0b4d88aa34732f2c7465193cd438f7272023d5deeb7321ffc3b2f8d1b4d05",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-demo/test/TEST-io.github.gear4jtest.studio.demo.StudioRunQueriesTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-http/build/test-results/test/TEST-io.github.gear4jtest.studio.http.ManagementEndpointTest.xml",
+      "suite": "io.github.gear4jtest.studio.http.ManagementEndpointTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7bd92bb362ac4535ed34771ef7397f48612331a824daf3afd4e355a77e27b819",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-http/test/TEST-io.github.gear4jtest.studio.http.ManagementEndpointTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-http/build/test-results/test/TEST-io.github.gear4jtest.studio.http.StudioBackupRestoreTest.xml",
+      "suite": "io.github.gear4jtest.studio.http.StudioBackupRestoreTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6f7e083db069b041f99a1d0d11ba0bbc85193e5106eb5727317e40de3ca3c8d3",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-http/test/TEST-io.github.gear4jtest.studio.http.StudioBackupRestoreTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-http/build/test-results/test/TEST-io.github.gear4jtest.studio.http.StudioHttpServerTest.xml",
+      "suite": "io.github.gear4jtest.studio.http.StudioHttpServerTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1e99a2da1c7466d8953bc4f1dcd3a6bb7f156dcc6a85ad4fdc86955994ce7e76",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-http/test/TEST-io.github.gear4jtest.studio.http.StudioHttpServerTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-http/build/test-results/test/TEST-io.github.gear4jtest.studio.http.StudioSimulationTest.xml",
+      "suite": "io.github.gear4jtest.studio.http.StudioSimulationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2a32db6a25f0a71270c111826f7e179fb308d46abd5d45248327847acf49cb80",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-http/test/TEST-io.github.gear4jtest.studio.http.StudioSimulationTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-jdbc/build/test-results/integrationTest/TEST-io.github.gear4jtest.studio.jdbc.PostgreSqlStudioStoreIT.xml",
+      "suite": "io.github.gear4jtest.studio.jdbc.PostgreSqlStudioStoreIT",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "sha256": "dde23b95ff55287f8ef9d639620b96f0fbcb845dc8f2b14fec1112e3640cb2e6",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-jdbc/integrationTest/TEST-io.github.gear4jtest.studio.jdbc.PostgreSqlStudioStoreIT.xml"
+    },
+    {
+      "path": "gear4jtest-studio-jdbc/build/test-results/studioPostgresQualification/TEST-io.github.gear4jtest.studio.jdbc.RequiredPostgreSqlStudioIT.xml",
+      "suite": "io.github.gear4jtest.studio.jdbc.RequiredPostgreSqlStudioIT",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1ecfd6efd88e65e9e53fd31573ce922f8a76b74223b7946c79d1e963a08938b1",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-jdbc/studioPostgresQualification/TEST-io.github.gear4jtest.studio.jdbc.RequiredPostgreSqlStudioIT.xml"
+    },
+    {
+      "path": "gear4jtest-studio-jdbc/build/test-results/test/TEST-io.github.gear4jtest.studio.jdbc.JdbcStudioRunsTest.xml",
+      "suite": "io.github.gear4jtest.studio.jdbc.JdbcStudioRunsTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5e853baa6d6efa11e9868a28ec38920544929394d7f2b1958aa25f4f460070e5",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-jdbc/test/TEST-io.github.gear4jtest.studio.jdbc.JdbcStudioRunsTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-jdbc/build/test-results/test/TEST-io.github.gear4jtest.studio.jdbc.JdbcStudioStoreTest.xml",
+      "suite": "io.github.gear4jtest.studio.jdbc.JdbcStudioStoreTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "af8a2be56de48e435cb1c53c49f73a3f1a25201d5459181d26103ddbd443c6d1",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-jdbc/test/TEST-io.github.gear4jtest.studio.jdbc.JdbcStudioStoreTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-json/build/test-results/test/TEST-io.github.gear4jtest.studio.json.StudioJsonTest.xml",
+      "suite": "io.github.gear4jtest.studio.json.StudioJsonTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4cff13a65b73223a9197a0087b64a0df8c5ef5a079a6fac727cef6bdf9aa7fba",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-json/test/TEST-io.github.gear4jtest.studio.json.StudioJsonTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-runtime/build/test-results/test/TEST-io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest.xml",
+      "suite": "io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c2ccc6b2944bb649114eadd24a563aceeb548fc0eb6b158e0ee3737e64c69807",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-runtime/test/TEST-io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-runtime/build/test-results/test/TEST-io.github.gear4jtest.studio.runtime.DeclarativeSimulatorTest.xml",
+      "suite": "io.github.gear4jtest.studio.runtime.DeclarativeSimulatorTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "948d62e5827fa9fc765ffc2c01af84a550185cd774f4c65b13fc1b3ec981dd9b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-runtime/test/TEST-io.github.gear4jtest.studio.runtime.DeclarativeSimulatorTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-runtime/build/test-results/test/TEST-io.github.gear4jtest.studio.runtime.LocalStudioTest.xml",
+      "suite": "io.github.gear4jtest.studio.runtime.LocalStudioTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6d3d0c70dbe5e49d27b14d8b9a0d5b612545e78687c8f0f8d2778ba9e1047809",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-runtime/test/TEST-io.github.gear4jtest.studio.runtime.LocalStudioTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-runtime/build/test-results/test/TEST-io.github.gear4jtest.studio.runtime.OperatorContractsTest.xml",
+      "suite": "io.github.gear4jtest.studio.runtime.OperatorContractsTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "012b0ce72c331f642050c4d66622b11acec0cf7fa1201c6adaf8866148d3498e",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-runtime/test/TEST-io.github.gear4jtest.studio.runtime.OperatorContractsTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-runtime/build/test-results/test/TEST-io.github.gear4jtest.studio.runtime.RunObservationDispatcherTest.xml",
+      "suite": "io.github.gear4jtest.studio.runtime.RunObservationDispatcherTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "13752109b61912387fea9e27132f0397d069a284d0c3069844d938c30908233b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-runtime/test/TEST-io.github.gear4jtest.studio.runtime.RunObservationDispatcherTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-runtime/build/test-results/test/TEST-io.github.gear4jtest.studio.service.InMemoryStudioServiceTest.xml",
+      "suite": "io.github.gear4jtest.studio.service.InMemoryStudioServiceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d0b3c660478c16860b7f20627028993248c67f2d8745c039d3bd6a51e9cdb23b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-runtime/test/TEST-io.github.gear4jtest.studio.service.InMemoryStudioServiceTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-spring-demo/build/test-results/test/TEST-io.github.gear4jtest.studio.springdemo.SpringStudioTest.xml",
+      "suite": "io.github.gear4jtest.studio.springdemo.SpringStudioTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "81556cb077e54ef83e9d70712d18b6fa20b52d0c658c995b4414c737281e12bf",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-spring-demo/test/TEST-io.github.gear4jtest.studio.springdemo.SpringStudioTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-standalone/build/test-results/test/TEST-io.github.gear4jtest.studio.standalone.DeploymentSecurityTest.xml",
+      "suite": "io.github.gear4jtest.studio.standalone.DeploymentSecurityTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f363015180e8d5de928edc515c9e2f08e64c84c46bb8788fbcdca865f2f58244",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-standalone/test/TEST-io.github.gear4jtest.studio.standalone.DeploymentSecurityTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-standalone/build/test-results/test/TEST-io.github.gear4jtest.studio.standalone.StandaloneConfigurationTest.xml",
+      "suite": "io.github.gear4jtest.studio.standalone.StandaloneConfigurationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1b9d6a35c33199b0ff578a74b84f083d9095acb0987f22de4a97fa4dad8da7dd",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-standalone/test/TEST-io.github.gear4jtest.studio.standalone.StandaloneConfigurationTest.xml"
+    },
+    {
+      "path": "gear4jtest-studio-standalone/build/test-results/test/TEST-io.github.gear4jtest.studio.standalone.StandaloneStudioTest.xml",
+      "suite": "io.github.gear4jtest.studio.standalone.StandaloneStudioTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2090a86760e1fbb7630ffcc14bdbabbd58d8b588202f4f59d37e506a7f4765c3",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-studio-standalone/test/TEST-io.github.gear4jtest.studio.standalone.StandaloneStudioTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicyTest.xml",
+      "suite": "io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicyTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8ff15e7d68c071993695d8755eeb7a3539d6a1387d43039a3b82d49e229cbefa",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.capability.XmlOperatorCapabilityPolicyTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest.xml",
+      "suite": "io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest",
+      "tests": 84,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "90ac4e1a451acca61df2d4e43cb88ed82e60e9e6f9eebf539cfee3b2b69b0efd",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.expression.GearExpressionParserTest.xml",
+      "suite": "io.github.gear4jtest.xml.expression.GearExpressionParserTest",
+      "tests": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "33967cb96d40df32a758488beddedadf6885569c43ded3a4f40cf8c63954e43b",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.expression.GearExpressionParserTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.expression.PropertyAccessorsTest.xml",
+      "suite": "io.github.gear4jtest.xml.expression.PropertyAccessorsTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ae9fb79019d7331919aadbc2d8ec146a33c42571830772c85cfa03327c8c3c1e",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.expression.PropertyAccessorsTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.generator.JavaImportManagerTargetedCoverageTest.xml",
+      "suite": "io.github.gear4jtest.xml.generator.JavaImportManagerTargetedCoverageTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f6f698b1ba6e3b29cc34afa32333748788964ca170dd023f1639da1d2e204053",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.generator.JavaImportManagerTargetedCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.generator.JavaTypeNameAdditionalTest.xml",
+      "suite": "io.github.gear4jtest.xml.generator.JavaTypeNameAdditionalTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c3656363a0e8f667a813baf3a97a0a56ab40a9502bdbf213d276fa3a5945afa7",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.generator.JavaTypeNameAdditionalTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.generator.JavaTypeNameDeepCoverageTest.xml",
+      "suite": "io.github.gear4jtest.xml.generator.JavaTypeNameDeepCoverageTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c6428ea1cf27c8d097afeb2653e9d67724a51ff25a1c9b14674e392f0b8450f2",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.generator.JavaTypeNameDeepCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.generator.JdtFormatterTest.xml",
+      "suite": "io.github.gear4jtest.xml.generator.JdtFormatterTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6e69e13cb3301f645099643eb882651810824cab2a72be78b8d55da8d6b8e3c0",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.generator.JdtFormatterTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.generator.OperationTypeResolverAdditionalTest.xml",
+      "suite": "io.github.gear4jtest.xml.generator.OperationTypeResolverAdditionalTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ffb63c3b2cca049fbce5285046f9282dda6a0b45ea1cdfe8736268c0264446a1",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.generator.OperationTypeResolverAdditionalTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.generator.OperationTypeResolverDeepCoverageTest.xml",
+      "suite": "io.github.gear4jtest.xml.generator.OperationTypeResolverDeepCoverageTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ef218d7b739460de30de4a07e31909512206ccaef3fc787dd0a693ba2a36cb74",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.generator.OperationTypeResolverDeepCoverageTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.generator.OperationTypeResolverTest.xml",
+      "suite": "io.github.gear4jtest.xml.generator.OperationTypeResolverTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c97df8a70dbdb603b4d5973f6412796229e0d3ae10fa6d5dda9e197a9d6d4f9c",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.generator.OperationTypeResolverTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.generator.XmlDefinitionSemanticValidatorTest.xml",
+      "suite": "io.github.gear4jtest.xml.generator.XmlDefinitionSemanticValidatorTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c1b15c67c60506b391fbf466d78a4f867b8ff14c89972a069077574ce4cf27ba",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.generator.XmlDefinitionSemanticValidatorTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.generator.XmlExpressionRendererTest.xml",
+      "suite": "io.github.gear4jtest.xml.generator.XmlExpressionRendererTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7da99384917cfa904666a084c1bac4360de3282f5b0fdad4ef590b0f27d84cbd",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.generator.XmlExpressionRendererTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.generator.XmlGeneratedNamesTest.xml",
+      "suite": "io.github.gear4jtest.xml.generator.XmlGeneratedNamesTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "41bbe8a98684ad1450c2fb263aea95f235d5efae7df25f4495f5b02f199b564c",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.generator.XmlGeneratedNamesTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.generator.XmlToJavaGeneratorTest.xml",
+      "suite": "io.github.gear4jtest.xml.generator.XmlToJavaGeneratorTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f39b6604e856b965084b13ede3bc0da27f4480b46c6e47790eed4e1dbd69abcc",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.generator.XmlToJavaGeneratorTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.parser.XmlAssemblyLineParserTest.xml",
+      "suite": "io.github.gear4jtest.xml.parser.XmlAssemblyLineParserTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7382d43977b6b26d813646e74924fcbc895016a1da366192c3da6ec2a87d035f",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.parser.XmlAssemblyLineParserTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest.xml",
+      "suite": "io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5e7d9f938d76e83b1d170561c5bfa61193d91f70c9ac27d63f89952e29033dea",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.translator.XmlTranslationLimitsTest.xml",
+      "suite": "io.github.gear4jtest.xml.translator.XmlTranslationLimitsTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "96127a63260e6afda944e92a43578bafdc32a153f2c85ea8d6f04922d2ef15d0",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.translator.XmlTranslationLimitsTest.xml"
+    },
+    {
+      "path": "gear4jtest-xml/build/test-results/test/TEST-io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest.xml",
+      "suite": "io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2a4985bdc673f6612fcc186a45d859bacf49395ef5fcea3de4d6004a0fd6d09f",
+      "savedEvidence": "docs/studio/evidence-release-finalization/junit/gear4jtest-xml/test/TEST-io.github.gear4jtest.xml.validator.AssemblyLineValidatorTest.xml"
+    }
+  ]
+}

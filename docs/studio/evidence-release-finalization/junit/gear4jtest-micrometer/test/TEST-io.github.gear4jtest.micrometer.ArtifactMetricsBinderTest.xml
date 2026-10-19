@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.micrometer.ArtifactMetricsBinderTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:51.058Z" hostname="2c641953591a" time="1.019">
+  <properties/>
+  <testcase name="bind_shouldExposeStoreLatencySizeFailuresAndSpoolOccupancyWithBoundedTags()" classname="io.github.gear4jtest.micrometer.ArtifactMetricsBinderTest" time="1.001"/>
+  <system-out><![CDATA[18:18:51.179 [Test worker] DEBUG io.micrometer.common.util.internal.logging.InternalLoggerFactory -- Using SLF4J as the default logging framework
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

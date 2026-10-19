@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:39.220Z" hostname="2c641953591a" time="0.907">
+  <properties/>
+  <testcase name="should_translate_compile_instantiate_inject_and_execute_generated_pipeline()" classname="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" time="0.378"/>
+  <testcase name="translate_shouldRejectTotalOperationCountAboveConfiguredLimit()" classname="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" time="0.011"/>
+  <testcase name="should_translate_xml_to_external_api_generated_assembly_line()" classname="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" time="0.026"/>
+  <testcase name="translate_shouldRejectSchemaValidUnsupportedOperationDefaultConfiguration()" classname="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" time="0.01"/>
+  <testcase name="should_generate_signal_condition_with_uniform_input_and_ctx_expression_variables()" classname="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" time="0.012"/>
+  <testcase name="should_compile_representative_generated_sources_against_current_core_api()" classname="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" time="0.318"/>
+  <testcase name="restrictedTranslator_shouldResolveCapabilitiesByExecutionMode()" classname="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" time="0.018"/>
+  <testcase name="defaultTranslator_shouldRejectInlineJavaExpressions()" classname="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" time="0.007"/>
+  <testcase name="translate_shouldRejectGeneratedSourceAboveConfiguredUtf8Limit()" classname="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" time="0.007"/>
+  <testcase name="translate_shouldApplyConfiguredXmlInputLimitToValidationAndParsing()" classname="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" time="0.004"/>
+  <testcase name="translate_shouldRejectDependencyCountAboveConfiguredLimit()" classname="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" time="0.006"/>
+  <testcase name="translate_shouldRejectSchemaValidTypeWithTrailingText()" classname="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" time="0.002"/>
+  <testcase name="translate_shouldRejectSchemaValidButSemanticallyCollidingDependencies()" classname="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" time="0.003"/>
+  <testcase name="defaultTranslator_shouldRejectArbitraryOperatorClassNames()" classname="io.github.gear4jtest.xml.translator.XmlOperationChainTranslatorTest" time="0.005"/>
+  <system-out><![CDATA[18:20:39.611 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=test_iterator, rootStation=test_iterator:root, requestExtensions=[]
+18:20:39.612 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=test_iterator, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

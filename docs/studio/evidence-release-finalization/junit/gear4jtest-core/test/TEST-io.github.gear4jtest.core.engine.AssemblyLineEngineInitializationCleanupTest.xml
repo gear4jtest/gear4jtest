@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.AssemblyLineEngineInitializationCleanupTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:36.616Z" hostname="2c641953591a" time="0.013">
+  <properties/>
+  <testcase name="contextPolicyFailure_shouldReleaseTheAcquiredEventRuntime()" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineInitializationCleanupTest" time="0.007"/>
+  <testcase name="idGeneratorError_shouldEscapeAndReleaseTheEventRuntime()" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineInitializationCleanupTest" time="0.006"/>
+  <system-out><![CDATA[18:09:36.625 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=initialization-failure, rootStation=initialization-failure:root, requestExtensions=[]
+18:09:36.625 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=initialization-failure, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

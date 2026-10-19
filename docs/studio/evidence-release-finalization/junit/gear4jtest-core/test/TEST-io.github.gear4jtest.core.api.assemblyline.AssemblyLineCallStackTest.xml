@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStackTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:34.489Z" hostname="2c641953591a" time="0.097">
+  <properties/>
+  <testcase name="restoreSnapshot_shouldConfineStackToCurrentThreadScope()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStackTest" time="0.011"/>
+  <testcase name="withMaxDepth_shouldRejectNonPositiveDepth()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStackTest" time="0.001"/>
+  <testcase name="enter_shouldTrackNestedReferencesAndLeaveWhenScopeCloses()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStackTest" time="0.001"/>
+  <testcase name="restoreSnapshot_shouldPreserveExplicitEmptyStateAcrossNestedScopes()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStackTest" time="0.001"/>
+  <testcase name="scopeClose_shouldBeIdempotentAndRejectOutOfOrderClose()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStackTest" time="0.004"/>
+  <testcase name="copy_shouldKeepIndependentSnapshotOfCurrentStack()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStackTest" time="0.001"/>
+  <testcase name="restoreSnapshot_shouldNotRetainThreadLocalStateOnReusedWorker()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStackTest" time="0.075"/>
+  <testcase name="enter_shouldRejectDepthAboveConfiguredLimit()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStackTest" time="0.001"/>
+  <testcase name="enter_shouldRejectRecursiveAssemblyLineCallsWithReadableCycle()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineCallStackTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.api.context.StationScopedResourceRegistryTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:34.703Z" hostname="2c641953591a" time="0.01">
+  <properties/>
+  <testcase name="getOrCreate_shouldCachePerStationAndType()" classname="io.github.gear4jtest.core.api.context.StationScopedResourceRegistryTest" time="0.003"/>
+  <testcase name="clearAll_shouldRemoveAllResourcesAndClearShouldIgnoreNulls()" classname="io.github.gear4jtest.core.api.context.StationScopedResourceRegistryTest" time="0.001"/>
+  <testcase name="identityScopedResources_shouldNotCollideForDistinctStationsSharingAnId()" classname="io.github.gear4jtest.core.api.context.StationScopedResourceRegistryTest" time="0.001"/>
+  <testcase name="getOrCreate_shouldRejectNullMandatoryArguments()" classname="io.github.gear4jtest.core.api.context.StationScopedResourceRegistryTest" time="0.001"/>
+  <testcase name="clear_shouldRemoveOnlyOneStationScopedResource()" classname="io.github.gear4jtest.core.api.context.StationScopedResourceRegistryTest" time="0.001"/>
+  <testcase name="clear_shouldRemoveEveryIdentityScopedResourceMatchingThePublicStationKey()" classname="io.github.gear4jtest.core.api.context.StationScopedResourceRegistryTest" time="0.001"/>
+  <testcase name="getOrCreate_shouldKeepStationIdsContainingSeparatorsIndependent()" classname="io.github.gear4jtest.core.api.context.StationScopedResourceRegistryTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

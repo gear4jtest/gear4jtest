@@ -1,0 +1,25 @@
+> Task :plain:clean UP-TO-DATE
+> Task :spring:clean UP-TO-DATE
+> Task :plain:compileJava
+> Task :plain:processResources NO-SOURCE
+> Task :plain:classes
+
+> Task :plain:smoke
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts
+Picked up _JAVA_OPTIONS: 
+SLF4J(W): No SLF4J providers were found.
+Independent consumer passed: consumer.context
+SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+
+> Task :spring:compileJava
+> Task :spring:processResources NO-SOURCE
+> Task :spring:classes
+
+> Task :spring:smoke
+Independent consumer passed: consumer.context
+
+> Task :smoke
+
+BUILD SUCCESSFUL in 7s
+6 actionable tasks: 4 executed, 2 up-to-date

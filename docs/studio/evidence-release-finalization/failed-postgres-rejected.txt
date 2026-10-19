@@ -1,0 +1,2 @@
+exit=1
+Studio qualification rejected: PostgreSQL qualification must execute and pass exactly the required test, with no skips

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.identity.OperationChainIdentityCodecTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:10:02.251Z" hostname="2c641953591a" time="0.008">
+  <properties/>
+  <testcase name="canonicalIds_shouldDistinguishLegacyDelimiterCollisionCandidates()" classname="io.github.gear4jtest.external.api.identity.OperationChainIdentityCodecTest" time="0.003"/>
+  <testcase name="canonicalIds_shouldRemainInjectiveAcrossSeparatorsUnicodeModesAndLimits()" classname="io.github.gear4jtest.external.api.identity.OperationChainIdentityCodecTest" time="0.004"/>
+  <testcase name="loaderId_shouldIncludeContentHashWhileStageIdUsesOnlyPublicationIdentity()" classname="io.github.gear4jtest.external.api.identity.OperationChainIdentityCodecTest" time="0.0"/>
+  <testcase name="canonicalIds_shouldBeDeterministicAndRejectNullObjects()" classname="io.github.gear4jtest.external.api.identity.OperationChainIdentityCodecTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

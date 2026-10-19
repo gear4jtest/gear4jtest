@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.spring.boot.Gear4jBootConsumerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:19:02.907Z" hostname="2c641953591a" time="0.271">
+  <properties/>
+  <testcase name="coreConsumer_shouldStartWithoutActuatorClasses()" classname="io.github.gear4jtest.spring.boot.Gear4jBootConsumerTest" time="0.057"/>
+  <testcase name="bootConsumer_shouldInstallPersistenceTransactionsMetricsAndHealth()" classname="io.github.gear4jtest.spring.boot.Gear4jBootConsumerTest" time="0.167"/>
+  <testcase name="bootConsumer_shouldRespectDisabledPersistenceAndMetricsWithBootInfrastructurePresent()" classname="io.github.gear4jtest.spring.boot.Gear4jBootConsumerTest" time="0.034"/>
+  <system-out><![CDATA[18:19:03.094 [Test worker] INFO org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseFactory -- Starting embedded database: url='jdbc:h2:mem:ea6974de-3897-44b3-b143-d23dae9aa9f6;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false', username='sa'
+18:19:03.113 [Test worker] INFO io.github.gear4jtest.jdbc.persistence.DatabaseAssemblyRunRepository -- [Gear4J] Applying core schema migrations for H2
+18:19:03.120 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-core:1 (create execution schema)
+18:19:03.140 [Test worker] INFO org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseFactory -- Shutting down embedded database: url='jdbc:h2:mem:ea6974de-3897-44b3-b143-d23dae9aa9f6;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false'
+18:19:03.165 [Test worker] INFO org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseFactory -- Starting embedded database: url='jdbc:h2:mem:cf490c8f-b010-48dd-a8c9-c53a714367d0;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false', username='sa'
+18:19:03.177 [Test worker] INFO org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseFactory -- Shutting down embedded database: url='jdbc:h2:mem:cf490c8f-b010-48dd-a8c9-c53a714367d0;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false'
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

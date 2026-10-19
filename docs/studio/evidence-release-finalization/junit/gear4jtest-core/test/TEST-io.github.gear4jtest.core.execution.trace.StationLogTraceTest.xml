@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.execution.trace.StationLogTraceTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:38.122Z" hostname="2c641953591a" time="0.001">
+  <properties/>
+  <testcase name="start_finishSuccess_shouldProduceValidRecord()" classname="io.github.gear4jtest.core.execution.trace.StationLogTraceTest" time="0.0"/>
+  <testcase name="withThrowable_shouldAccumulateErrors()" classname="io.github.gear4jtest.core.execution.trace.StationLogTraceTest" time="0.001"/>
+  <testcase name="finishError_shouldStoreThrowable()" classname="io.github.gear4jtest.core.execution.trace.StationLogTraceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

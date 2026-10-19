@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.AssemblyLineEngineNestedContextPropagationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:36.630Z" hostname="2c641953591a" time="0.011">
+  <properties/>
+  <testcase name="nestedRun_shouldAllowDroppingParentContext()" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineNestedContextPropagationTest" time="0.005"/>
+  <testcase name="nestedRun_shouldAllowDefensiveCopiesOfMutableValues()" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineNestedContextPropagationTest" time="0.002"/>
+  <testcase name="nestedRun_shouldInheritAllContextValuesShallowlyByDefault()" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineNestedContextPropagationTest" time="0.001"/>
+  <system-out><![CDATA[18:09:36.633 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=parent, rootStation=call-child, requestExtensions=[]
+18:09:36.633 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=parent, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:36.635 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=child, rootStation=read-context, requestExtensions=[]
+18:09:36.636 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=child, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:36.638 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=parent, rootStation=call-child, requestExtensions=[]
+18:09:36.638 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=parent, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:36.639 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=child, rootStation=mutate-context, requestExtensions=[]
+18:09:36.639 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=child, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:36.641 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=parent, rootStation=call-child, requestExtensions=[]
+18:09:36.641 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=parent, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:36.641 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=child, rootStation=read-context, requestExtensions=[]
+18:09:36.641 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=child, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

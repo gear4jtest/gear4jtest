@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.http.StudioHttpServerTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:19:30.620Z" hostname="2c641953591a" time="9.455">
+  <properties/>
+  <testcase name="anXmlDocumentLargerThanOneParameterStillRoundTripsThroughHttp()" classname="io.github.gear4jtest.studio.http.StudioHttpServerTest" time="0.424"/>
+  <testcase name="runRoutesFilterDurableSnapshotsAndNeverExposePayloadsWithoutObservabilityPermission()" classname="io.github.gear4jtest.studio.http.StudioHttpServerTest" time="1.057"/>
+  <testcase name="invalidXmlIsAnExactDurableSourceAndRequiresExplicitStructuredRecovery()" classname="io.github.gear4jtest.studio.http.StudioHttpServerTest" time="0.912"/>
+  <testcase name="hostileOriginsUnknownFieldsAndXmlEntitiesAreRejected()" classname="io.github.gear4jtest.studio.http.StudioHttpServerTest" time="0.368"/>
+  <testcase name="typedAuthoringXmlPreviewDiffAndScopedDiagnosticsWorkTogether()" classname="io.github.gear4jtest.studio.http.StudioHttpServerTest" time="1.279"/>
+  <testcase name="metadataForkArchiveAndScopedListsUseResourceVersions()" classname="io.github.gear4jtest.studio.http.StudioHttpServerTest" time="0.569"/>
+  <testcase name="durableHttpAuthoringRunsThePinnedRevisionAndRetrievesItsAudit()" classname="io.github.gear4jtest.studio.http.StudioHttpServerTest" time="0.968"/>
+  <testcase name="scenarioRoutesPreserveRevisionsAndTestTheExactFrozenArtifact()" classname="io.github.gear4jtest.studio.http.StudioHttpServerTest" time="0.845"/>
+  <testcase name="ongoingSnapshotStreamRechecksAclAndClosesWhenAccessIsRevoked()" classname="io.github.gear4jtest.studio.http.StudioHttpServerTest" time="1.18"/>
+  <testcase name="versionHttpRoutesPublishPromoteCompareAndRejectForgedActors()" classname="io.github.gear4jtest.studio.http.StudioHttpServerTest" time="1.053"/>
+  <testcase name="accessChangesAreVersionedAndAnActorCannotBeForgedByTheBrowser()" classname="io.github.gear4jtest.studio.http.StudioHttpServerTest" time="0.687"/>
+  <system-out><![CDATA[18:19:30.732 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:30.739 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:31.158 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:31.175 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:31.466 [pool-2-thread-4] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=text_preparation:root, requestExtensions=[Gear4jRunObserver]
+18:19:31.466 [pool-2-thread-4] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:19:32.210 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:32.215 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:33.059 [pool-3-thread-3] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=text_preparation:root, requestExtensions=[Gear4jRunObserver]
+18:19:33.060 [pool-3-thread-3] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:19:33.128 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:33.134 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:33.493 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:33.499 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:34.369 [pool-5-thread-1] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=text_preparation:root, requestExtensions=[Gear4jRunObserver]
+18:19:34.369 [pool-5-thread-1] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:19:34.773 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:34.779 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:35.343 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:35.349 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:35.820 [pool-7-thread-3] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=text_preparation:root, requestExtensions=[Gear4jRunObserver]
+18:19:35.820 [pool-7-thread-3] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:19:36.312 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:36.316 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:36.769 [pool-8-thread-3] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=text_preparation:root, requestExtensions=[Gear4jRunObserver]
+18:19:36.770 [pool-8-thread-3] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:19:37.157 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:37.160 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:38.341 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:38.344 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:38.978 [pool-10-thread-1] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=text_preparation, rootStation=text_preparation:root, requestExtensions=[Gear4jRunObserver]
+18:19:38.978 [pool-10-thread-1] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=text_preparation, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:19:39.395 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:39.399 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

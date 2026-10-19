@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.api.assemblyline.AssemblyLineTargetTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:34.598Z" hostname="2c641953591a" time="0.004">
+  <properties/>
+  <testcase name="resolvedTarget_shouldExposeDeclaredResolvedReferenceAndAssemblyLine()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineTargetTest" time="0.002"/>
+  <testcase name="targets_shouldRejectNullMandatoryArguments()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineTargetTest" time="0.002"/>
+  <testcase name="referencedTarget_shouldExposeOnlyDeclaredReference()" classname="io.github.gear4jtest.core.api.assemblyline.AssemblyLineTargetTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

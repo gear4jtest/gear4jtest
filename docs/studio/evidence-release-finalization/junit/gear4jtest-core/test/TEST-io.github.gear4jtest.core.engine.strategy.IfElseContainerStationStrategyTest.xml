@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.strategy.IfElseContainerStationStrategyTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:37.253Z" hostname="2c641953591a" time="0.005">
+  <properties/>
+  <testcase name="should_ignore_selected_branch_failure_when_failure_policy_allows_it()" classname="io.github.gear4jtest.core.engine.strategy.IfElseContainerStationStrategyTest" time="0.002"/>
+  <testcase name="should_run_else_branch_when_no_condition_matches()" classname="io.github.gear4jtest.core.engine.strategy.IfElseContainerStationStrategyTest" time="0.001"/>
+  <testcase name="should_collect_selected_branch_failure_and_mark_parent_failed_at_end()" classname="io.github.gear4jtest.core.engine.strategy.IfElseContainerStationStrategyTest" time="0.001"/>
+  <testcase name="should_run_selected_branch_in_branch_scope_and_normalize_child_trace()" classname="io.github.gear4jtest.core.engine.strategy.IfElseContainerStationStrategyTest" time="0.0"/>
+  <testcase name="should_fail_fast_by_default_when_selected_branch_fails()" classname="io.github.gear4jtest.core.engine.strategy.IfElseContainerStationStrategyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

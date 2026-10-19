@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.event.EventManagerTargetedCoverageTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:37.624Z" hostname="2c641953591a" time="0.007">
+  <properties/>
+  <testcase name="publish_shouldIgnoreEventsAfterShutdown()" classname="io.github.gear4jtest.core.event.EventManagerTargetedCoverageTest" time="0.003"/>
+  <testcase name="publish_shouldRejectNullEvents()" classname="io.github.gear4jtest.core.event.EventManagerTargetedCoverageTest" time="0.001"/>
+  <testcase name="constructor_shouldAcceptNullDefinitionAsEmptyRuntime()" classname="io.github.gear4jtest.core.event.EventManagerTargetedCoverageTest" time="0.0"/>
+  <testcase name="dispatch_shouldCountUnexpectedSubmissionFailuresAsDropped()" classname="io.github.gear4jtest.core.event.EventManagerTargetedCoverageTest" time="0.002"/>
+  <testcase name="dispatch_shouldCountRejectedReactionSubmissionsAsDropped()" classname="io.github.gear4jtest.core.event.EventManagerTargetedCoverageTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

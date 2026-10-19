@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.persistence.PersistenceRedactionTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:38.144Z" hostname="2c641953591a" time="0.002">
+  <properties/>
+  <testcase name="defaultConversion_shouldDiscardSensitiveValues()" classname="io.github.gear4jtest.core.persistence.PersistenceRedactionTest" time="0.001"/>
+  <testcase name="assemblyRunRecord_shouldRedactPersistedValues()" classname="io.github.gear4jtest.core.persistence.PersistenceRedactionTest" time="0.001"/>
+  <testcase name="stationLogRecord_shouldRedactPersistedDiagnostics()" classname="io.github.gear4jtest.core.persistence.PersistenceRedactionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

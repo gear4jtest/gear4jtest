@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" tests="21" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:10:01.025Z" hostname="2c641953591a" time="0.062">
+  <properties/>
+  <testcase name="put_shouldRejectSymbolicArtifactParent()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.005"/>
+  <testcase name="put_shouldEnforceStoreLimitEvenWhenCallerRequestsUnlimitedSize()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.002"/>
+  <testcase name="constructor_shouldRejectRootSymbolicLink()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.002"/>
+  <testcase name="put_shouldRejectStreamAboveConfiguredLimitBeforePublishingTargetFile()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.001"/>
+  <testcase name="cleanupFailure_shouldBeCountedWithoutMaskingWriteFailure()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.002"/>
+  <testcase name="put_shouldApplyDefaultStoreLimitToByteArrays()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.008"/>
+  <testcase name="get_shouldRejectContentThatDoesNotMatchAddressHash()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.004"/>
+  <testcase name="put_shouldUseOwnerOnlyPosixPermissions()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.004"/>
+  <testcase name="put_shouldStreamInputDirectlyToFilesystemStore()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.003"/>
+  <testcase name="put_shouldStoreDefensiveCopyOfContent()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.002"/>
+  <testcase name="get_shouldRejectSymbolicArtifactLeafWithoutReadingTarget()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.002"/>
+  <testcase name="should_round_trip_content()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.002"/>
+  <testcase name="operation_shouldRejectRootReplacedBySymbolicLinkAfterConstruction()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.001"/>
+  <testcase name="put_shouldTreatMatchingExistingArtifactAsIdempotent()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.002"/>
+  <testcase name="put_shouldSafelyConvergeConcurrentIdenticalPublications()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.005"/>
+  <testcase name="put_shouldNotReplaceExistingArtifactWithMismatchedContent()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.002"/>
+  <testcase name="getAndExists_shouldRejectArtifactAboveConfiguredReadLimitBeforeMaterializingIt()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.002"/>
+  <testcase name="get_shouldReturnVerifiedSnapshotUnaffectedByLaterFilesystemChanges()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.002"/>
+  <testcase name="constructor_shouldRejectUnboundedOrUnmaterializableReadLimit()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.001"/>
+  <testcase name="should_reject_path_traversal_hashes()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.001"/>
+  <testcase name="constructor_shouldRejectSymbolicLinkInRootParentChain()" classname="io.github.gear4jtest.external.api.artifact.FilesystemArtifactStoreTest" time="0.001"/>
+  <system-out><![CDATA[18:10:01.039 [Test worker] WARN io.github.gear4jtest.external.api.artifact.FilesystemArtifactStore -- Unable to delete a filesystem artifact temp file. cleanupFailures=1
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.io.IOException; exception details withheld
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,2 @@
+exit=1
+Studio qualification rejected: [Errno 2] No such file or directory: '/workspace/scratch/74cca285b474/release-final/gear4j/gear4jtest-studio-jdbc/build/test-results/studioPostgresQualification/TEST-io.github.gear4jtest.studio.jdbc.RequiredPostgreSqlStudioIT.xml'

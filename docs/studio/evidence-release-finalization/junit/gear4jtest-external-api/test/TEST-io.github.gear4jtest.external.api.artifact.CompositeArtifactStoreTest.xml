@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:10:01.006Z" hostname="2c641953591a" time="0.018">
+  <properties/>
+  <testcase name="close_shouldWaitForAlreadyAcceptedAsyncWritesBeforeClosingDelegates()" classname="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreTest" time="0.004"/>
+  <testcase name="get_shouldUseConfiguredVerificationLimitInsteadOfDefaultOnly()" classname="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreTest" time="0.002"/>
+  <testcase name="putInputStream_shouldWritePrimaryAndSynchronousFallbacksWithoutUsingByteArrayPut()" classname="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreTest" time="0.002"/>
+  <testcase name="putByteArray_shouldScheduleOneBoundedSpoolCopyForAllFallbacks()" classname="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreTest" time="0.003"/>
+  <testcase name="putInputStream_shouldKeepPrimarySuccessAndCleanSpoolWhenAsyncFallbackSchedulingIsRejected()" classname="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreTest" time="0.003"/>
+  <testcase name="putByteArray_shouldKeepPrimarySuccessWhenAsyncFallbackSchedulingIsRejected()" classname="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreTest" time="0.002"/>
+  <testcase name="get_shouldRejectArtifactsAboveConfiguredVerificationLimit()" classname="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreTest" time="0.001"/>
+  <system-out><![CDATA[18:10:01.019 [Test worker] WARN io.github.gear4jtest.external.api.artifact.CompositeArtifactStore -- Asynchronous fallback artifact write was rejected after primary success.
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.util.concurrent.RejectedExecutionException; exception details withheld
+18:10:01.022 [Test worker] WARN io.github.gear4jtest.external.api.artifact.CompositeArtifactStore -- Asynchronous fallback artifact write was rejected after primary success.
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.util.concurrent.RejectedExecutionException; exception details withheld
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

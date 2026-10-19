@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.artifact.InMemoryArtifactStoreTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:10:01.088Z" hostname="2c641953591a" time="0.007">
+  <properties/>
+  <testcase name="close_shouldReleaseContentAndRejectFurtherUse()" classname="io.github.gear4jtest.external.api.artifact.InMemoryArtifactStoreTest" time="0.001"/>
+  <testcase name="streamingPut_shouldNotBypassTheConfiguredArtifactLimit()" classname="io.github.gear4jtest.external.api.artifact.InMemoryArtifactStoreTest" time="0.001"/>
+  <testcase name="put_shouldEnforcePerArtifactTotalAndEntryLimitsWithoutRejectingDuplicates()" classname="io.github.gear4jtest.external.api.artifact.InMemoryArtifactStoreTest" time="0.003"/>
+  <testcase name="should_defensively_copy_content_on_put_and_get()" classname="io.github.gear4jtest.external.api.artifact.InMemoryArtifactStoreTest" time="0.001"/>
+  <testcase name="should_reject_invalid_hashes()" classname="io.github.gear4jtest.external.api.artifact.InMemoryArtifactStoreTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

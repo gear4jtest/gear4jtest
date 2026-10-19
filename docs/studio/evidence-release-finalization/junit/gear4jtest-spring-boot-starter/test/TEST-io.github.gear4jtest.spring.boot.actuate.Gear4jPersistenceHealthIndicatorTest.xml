@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.spring.boot.actuate.Gear4jPersistenceHealthIndicatorTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:19:03.214Z" hostname="2c641953591a" time="0.059">
+  <properties/>
+  <testcase name="health_shouldReturnUpAfterTransientFailureHasRecovered()" classname="io.github.gear4jtest.spring.boot.actuate.Gear4jPersistenceHealthIndicatorTest" time="0.052"/>
+  <testcase name="health_shouldBeDownWhileCurrentConnectivityIsUnavailable()" classname="io.github.gear4jtest.spring.boot.actuate.Gear4jPersistenceHealthIndicatorTest" time="0.001"/>
+  <testcase name="health_shouldBeDownWhenProbeCannotBeRun()" classname="io.github.gear4jtest.spring.boot.actuate.Gear4jPersistenceHealthIndicatorTest" time="0.003"/>
+  <testcase name="health_shouldExposeCurrentReadinessAndRuntimeStats()" classname="io.github.gear4jtest.spring.boot.actuate.Gear4jPersistenceHealthIndicatorTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

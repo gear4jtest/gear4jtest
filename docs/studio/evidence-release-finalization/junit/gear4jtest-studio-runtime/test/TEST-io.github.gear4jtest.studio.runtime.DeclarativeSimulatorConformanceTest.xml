@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" tests="19" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:07.520Z" hostname="2c641953591a" time="4.527">
+  <properties/>
+  <testcase name="exact identity: " classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="2.121"/>
+  <testcase name="exact identity:   hello  " classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.174"/>
+  <testcase name="exact identity: é&#10;&#9;&lt;&amp;&gt;" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.14"/>
+  <testcase name="sequence propagates replacement" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.169"/>
+  <testcase name="typed intermediate value" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.159"/>
+  <testcase name="true branch: true" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.242"/>
+  <testcase name="true branch: input == 'initial'" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.125"/>
+  <testcase name="true branch: input != null &amp;&amp; input == 'initial'" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.14"/>
+  <testcase name="true branch: true || input" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.148"/>
+  <testcase name="true branch: !(false)" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.115"/>
+  <testcase name="false branch: false" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.113"/>
+  <testcase name="false branch: input == 'other'" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.089"/>
+  <testcase name="false branch: false &amp;&amp; input" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.093"/>
+  <testcase name="conditions consume preceding outputs" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.094"/>
+  <testcase name="failure stops first station" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.097"/>
+  <testcase name="failure stops remaining choices" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.108"/>
+  <testcase name="selected branch fails: true" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.111"/>
+  <testcase name="selected branch fails: false" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.107"/>
+  <testcase name="condition evaluation fails before either branch" classname="io.github.gear4jtest.studio.runtime.DeclarativeSimulatorConformanceTest" time="0.104"/>
+  <system-out><![CDATA[18:20:09.566 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:09.572 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:09.871 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:09.871 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:10.012 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:10.012 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:10.185 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:10.185 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:10.345 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:10.345 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:10.586 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:10.587 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:10.714 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:10.714 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:10.854 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:10.854 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:11.003 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:11.003 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:11.119 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:11.119 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:11.233 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:11.234 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:11.323 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:11.324 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:11.418 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:11.418 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:11.511 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:11.512 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:11.608 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:11.608 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:11.719 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:11.720 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:11.833 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:11.833 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:11.941 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:11.941 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:20:12.045 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=conformance, rootStation=conformance:root, requestExtensions=[Gear4jRunObserver, ]
+18:20:12.045 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=conformance, stationWrappers=1, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.sidecompute.SideComputeFlowIntegrationTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:38.327Z" hostname="2c641953591a" time="0.218">
+  <properties/>
+  <testcase name="failing_required_processor_should_abort_station_before_operator_execution()" classname="io.github.gear4jtest.core.sidecompute.SideComputeFlowIntegrationTest" time="0.054"/>
+  <testcase name="[1] timeoutMode=FAIL_ASSEMBLY_LINE" classname="io.github.gear4jtest.core.sidecompute.SideComputeFlowIntegrationTest" time="0.054"/>
+  <testcase name="[2] timeoutMode=USE_FALLBACK" classname="io.github.gear4jtest.core.sidecompute.SideComputeFlowIntegrationTest" time="0.053"/>
+  <testcase name="[3] timeoutMode=IGNORE" classname="io.github.gear4jtest.core.sidecompute.SideComputeFlowIntegrationTest" time="0.053"/>
+  <system-out><![CDATA[18:09:38.330 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=required-processor, rootStation=step-1, requestExtensions=[]
+18:09:38.330 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=required-processor, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:38.386 [pool-49-thread-1] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=cancel-side-compute, rootStation=wait, requestExtensions=[]
+18:09:38.386 [pool-49-thread-1] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=cancel-side-compute, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:38.440 [pool-50-thread-1] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=cancel-side-compute, rootStation=wait, requestExtensions=[]
+18:09:38.440 [pool-50-thread-1] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=cancel-side-compute, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:38.494 [pool-51-thread-1] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=cancel-side-compute, rootStation=wait, requestExtensions=[]
+18:09:38.494 [pool-51-thread-1] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=cancel-side-compute, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

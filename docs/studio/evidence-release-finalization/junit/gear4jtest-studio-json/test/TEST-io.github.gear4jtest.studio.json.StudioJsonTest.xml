@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.json.StudioJsonTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:04.460Z" hostname="2c641953591a" time="0.62">
+  <properties/>
+  <testcase name="explicitNodeKindsRoundTripWithoutJavaClassNames()" classname="io.github.gear4jtest.studio.json.StudioJsonTest" time="0.595"/>
+  <testcase name="unknownFieldsDuplicateKeysAndArbitraryNodeKindsAreRejected()" classname="io.github.gear4jtest.studio.json.StudioJsonTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

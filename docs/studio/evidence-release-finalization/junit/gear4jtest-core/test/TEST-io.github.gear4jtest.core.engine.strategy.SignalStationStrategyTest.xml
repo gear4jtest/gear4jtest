@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.strategy.SignalStationStrategyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:37.340Z" hostname="2c641953591a" time="0.002">
+  <properties/>
+  <testcase name="doExecute_shouldMarkStoppedWhenStopSignalIsEligible()" classname="io.github.gear4jtest.core.engine.strategy.SignalStationStrategyTest" time="0.001"/>
+  <testcase name="doExecute_shouldMarkFailedWhenFatalSignalIsEligible()" classname="io.github.gear4jtest.core.engine.strategy.SignalStationStrategyTest" time="0.0"/>
+  <testcase name="doExecute_shouldLeaveStatusRunningWhenSignalIsNotEligible()" classname="io.github.gear4jtest.core.engine.strategy.SignalStationStrategyTest" time="0.001"/>
+  <testcase name="supports_shouldMatchSignalStationsOnly()" classname="io.github.gear4jtest.core.engine.strategy.SignalStationStrategyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

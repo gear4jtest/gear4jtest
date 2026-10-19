@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.jdbc.repository.OperationChainTagRepositoryJdbcTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:03.679Z" hostname="2c641953591a" time="0.004">
+  <properties/>
+  <testcase name="insertTagSql_shouldUseH2MergeSyntax()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainTagRepositoryJdbcTest" time="0.001"/>
+  <testcase name="pagedSql_shouldUseOracleOffsetFetchSyntaxAndBindOffsetThenLimit()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainTagRepositoryJdbcTest" time="0.001"/>
+  <testcase name="insertTagSql_shouldUsePostgresConflictSyntax()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainTagRepositoryJdbcTest" time="0.001"/>
+  <testcase name="insertTagSql_shouldUseOracleMergeSyntax()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainTagRepositoryJdbcTest" time="0.0"/>
+  <testcase name="insertTagSql_shouldUseMySqlCompatibleConflictSyntax()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainTagRepositoryJdbcTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

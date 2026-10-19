@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.api.context.ExecutionContextTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:34.686Z" hostname="2c641953591a" time="0.007">
+  <properties/>
+  <testcase name="currentItemId_shouldBeThreadLocalAndClearable()" classname="io.github.gear4jtest.core.api.context.ExecutionContextTest" time="0.001"/>
+  <testcase name="snapshotContext_shouldReturnImmutablePointInTimeCopy()" classname="io.github.gear4jtest.core.api.context.ExecutionContextTest" time="0.001"/>
+  <testcase name="builder_shouldCreateContextWithoutTelescopingConstructor()" classname="io.github.gear4jtest.core.api.context.ExecutionContextTest" time="0.0"/>
+  <testcase name="putAndGet_shouldStoreTypedValuesInRunContext()" classname="io.github.gear4jtest.core.api.context.ExecutionContextTest" time="0.0"/>
+  <testcase name="find_shouldReturnOptionalTypedValueWithoutConflatingAbsenceAndWrongType()" classname="io.github.gear4jtest.core.api.context.ExecutionContextTest" time="0.001"/>
+  <testcase name="parentOperationStack_shouldExposeCurrentParentId()" classname="io.github.gear4jtest.core.api.context.ExecutionContextTest" time="0.0"/>
+  <testcase name="eventRuntimeOptions_shouldDiscardPayloadsWhenEventHandlingIsDisabled()" classname="io.github.gear4jtest.core.api.context.ExecutionContextTest" time="0.001"/>
+  <testcase name="enterItem_shouldRestorePreviousItemId()" classname="io.github.gear4jtest.core.api.context.ExecutionContextTest" time="0.0"/>
+  <testcase name="enterBranch_shouldRestorePreviousBranchId()" classname="io.github.gear4jtest.core.api.context.ExecutionContextTest" time="0.0"/>
+  <testcase name="executionContext_shouldNotExposePublicConstructors()" classname="io.github.gear4jtest.core.api.context.ExecutionContextTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

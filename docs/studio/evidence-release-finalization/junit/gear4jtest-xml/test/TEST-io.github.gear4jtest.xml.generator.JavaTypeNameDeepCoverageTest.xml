@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.xml.generator.JavaTypeNameDeepCoverageTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:38.105Z" hostname="2c641953591a" time="0.005">
+  <properties/>
+  <testcase name="from_shouldFallbackToObjectForUnknownTypesOrParameterizedTypesWithoutClassRawType()" classname="io.github.gear4jtest.xml.generator.JavaTypeNameDeepCoverageTest" time="0.001"/>
+  <testcase name="parse_shouldRejectUnexpectedTrailingGenericSeparator()" classname="io.github.gear4jtest.xml.generator.JavaTypeNameDeepCoverageTest" time="0.001"/>
+  <testcase name="parse_shouldHandleWhitespaceNestedTypesDollarNamesAndErase()" classname="io.github.gear4jtest.xml.generator.JavaTypeNameDeepCoverageTest" time="0.001"/>
+  <testcase name="render_shouldRenderParameterizedArraysAndClassLiteralsWithImports()" classname="io.github.gear4jtest.xml.generator.JavaTypeNameDeepCoverageTest" time="0.0"/>
+  <testcase name="from_shouldRenderParameterizedTypesWithMultipleArguments()" classname="io.github.gear4jtest.xml.generator.JavaTypeNameDeepCoverageTest" time="0.001"/>
+  <testcase name="parse_shouldRejectTrailingTextAndMalformedQualifiedNames()" classname="io.github.gear4jtest.xml.generator.JavaTypeNameDeepCoverageTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

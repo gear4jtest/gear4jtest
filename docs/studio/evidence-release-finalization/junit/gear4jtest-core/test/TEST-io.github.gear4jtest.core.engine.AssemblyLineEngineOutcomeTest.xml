@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.AssemblyLineEngineOutcomeTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:36.642Z" hostname="2c641953591a" time="0.014">
+  <properties/>
+  <testcase name="skippedIntermediateOperationWithFallback_shouldRemainSkippedButFeedNextStation()" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineOutcomeTest" time="0.005"/>
+  <testcase name="skippedUnaryOperation_shouldExposeSkippedOutcomeAndPassInputThrough()" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineOutcomeTest" time="0.002"/>
+  <testcase name="successfulNull_shouldBePassedToTheNextOperator()" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineOutcomeTest" time="0.002"/>
+  <testcase name="voidOperator_shouldSucceedWithNoValue()" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineOutcomeTest" time="0.002"/>
+  <testcase name="skippedProcessingOperationWithFallback_shouldExposeSkippedOutcomeAndFallbackOutput()" classname="io.github.gear4jtest.core.engine.AssemblyLineEngineOutcomeTest" time="0.001"/>
+  <system-out><![CDATA[18:09:36.645 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=skip-then-continue, rootStation=skip-then-continue:root, requestExtensions=[]
+18:09:36.645 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=skip-then-continue, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:09:36.650 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=skip-root-unary, rootStation=skipped, requestExtensions=[]
+18:09:36.651 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=skip-root-unary, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:36.652 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=null-chain, rootStation=null-chain:root, requestExtensions=[]
+18:09:36.653 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=null-chain, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:36.654 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=void-result, rootStation=void, requestExtensions=[]
+18:09:36.654 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=void-result, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:36.656 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=skip-root, rootStation=skipped, requestExtensions=[]
+18:09:36.656 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=skip-root, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

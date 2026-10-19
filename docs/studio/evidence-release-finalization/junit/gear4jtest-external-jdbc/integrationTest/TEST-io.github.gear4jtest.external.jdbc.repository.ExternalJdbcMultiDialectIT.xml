@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.jdbc.repository.ExternalJdbcMultiDialectIT" tests="1" skipped="1" failures="0" errors="0" timestamp="2026-10-15T15:18:07.010Z" hostname="2c641953591a" time="0.002">
+  <properties/>
+  <testcase name="externalJdbc_shouldSupportMigrationsPublicationPaginationAndBlobStreaming(DatabaseScenario, TestReporter)" classname="io.github.gear4jtest.external.jdbc.repository.ExternalJdbcMultiDialectIT" time="0.0">
+    <skipped/>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

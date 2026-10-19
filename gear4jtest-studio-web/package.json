@@ -18,7 +18,8 @@
   "files": [
     "src",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE"
   ],
   "exports": {
     ".": "./src/index.mjs",
@@ -30,5 +31,10 @@
     "./scenarios": "./src/studio-scenarios.mjs",
     "./targets": "./src/studio-targets.mjs",
     "./simulation": "./src/studio-simulation.mjs"
+  },
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "tag": "experimental"
   }
 }

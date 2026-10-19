@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.sidecompute.SideComputeAccessorTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:38.319Z" hostname="2c641953591a" time="0.004">
+  <properties/>
+  <testcase name="get_shouldThrowIfNoResolvedValue()" classname="io.github.gear4jtest.core.sidecompute.SideComputeAccessorTest" time="0.002"/>
+  <testcase name="get_shouldReturnResolvedValueFromContext()" classname="io.github.gear4jtest.core.sidecompute.SideComputeAccessorTest" time="0.001"/>
+  <testcase name="isPresent_shouldReturnTrueWhenValueExists()" classname="io.github.gear4jtest.core.sidecompute.SideComputeAccessorTest" time="0.001"/>
+  <testcase name="valueKey_shouldRejectReservedOrBlankUserKeys()" classname="io.github.gear4jtest.core.sidecompute.SideComputeAccessorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

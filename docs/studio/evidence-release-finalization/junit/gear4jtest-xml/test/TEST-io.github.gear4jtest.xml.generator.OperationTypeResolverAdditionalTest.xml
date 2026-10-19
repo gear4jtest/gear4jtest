@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.xml.generator.OperationTypeResolverAdditionalTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:39.017Z" hostname="2c641953591a" time="0.039">
+  <properties/>
+  <testcase name="containerIfElseAndSignal_shouldPropagateEffectiveInputTypes()" classname="io.github.gear4jtest.xml.generator.OperationTypeResolverAdditionalTest" time="0.018"/>
+  <testcase name="processing_shouldResolveInheritedParameterizedOperatorTypes()" classname="io.github.gear4jtest.xml.generator.OperationTypeResolverAdditionalTest" time="0.002"/>
+  <testcase name="iterator_shouldResolveCollectorAccumulatorAndExplicitOutputVariants()" classname="io.github.gear4jtest.xml.generator.OperationTypeResolverAdditionalTest" time="0.002"/>
+  <testcase name="processing_shouldUseCurrentInputForObjectOperatorAndFallbackOutputType()" classname="io.github.gear4jtest.xml.generator.OperationTypeResolverAdditionalTest" time="0.0"/>
+  <testcase name="resolve_shouldRejectUnsupportedOperationAndUnresolvableOperatorClasses()" classname="io.github.gear4jtest.xml.generator.OperationTypeResolverAdditionalTest" time="0.001"/>
+  <testcase name="resolvedParameterizedType_shouldBeDefensivelyImmutableAndUseArrayContent()" classname="io.github.gear4jtest.xml.generator.OperationTypeResolverAdditionalTest" time="0.013"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" tests="84" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:37.831Z" hostname="2c641953591a" time="0.218">
+  <properties/>
+  <testcase name="infinity comparison: Infinity, Infinity -&gt; true" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.089"/>
+  <testcase name="infinity comparison: -Infinity, -Infinity -&gt; true" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="infinity comparison: Infinity, -Infinity -&gt; false" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="infinity comparison: -Infinity, Infinity -&gt; false" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="infinity comparison: Infinity, 1.7976931348623157E308 -&gt; false" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="infinity comparison: 1E+10000, Infinity -&gt; false" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="evaluate_shouldCompareNumericLiteralsAcrossIntegerAndDecimalForms()" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1.000" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1.000" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1.000" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1.000" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1 equals 1.000" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1.0 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.0 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.0 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.0 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.0 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.0 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.0 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.0 equals 1.000" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.0 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.0 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.0 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.0 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.0 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.0 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.0 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1.0 equals 1.000" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1.000 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="1.000 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.000 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.000 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.000 equals 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.000 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.000 equals 1.0" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="1.000 equals 1.000" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="evaluate_shouldIgnoreDecimalScaleAndFloatingWrapperType()" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.001"/>
+  <testcase name="evaluate_shouldTreatPositiveAndNegativeZeroAsEqual()" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.003"/>
+  <testcase name="1 differs from 2" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="-1 differs from 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="9223372036854775807 differs from 9223372036854775806.999" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="0.1 differs from 0.2" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="evaluate_shouldRejectNumberSubclassWithoutInvokingApplicationMethods()" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.002"/>
+  <testcase name="evaluate_shouldKeepNonNumericScalarEqualityUnchanged()" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="NaN operand NaN does not equal NaN" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="NaN operand NaN does not equal NaN" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="NaN operand NaN does not equal NaN" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="NaN operand NaN does not equal 1" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <testcase name="NaN operand 1 does not equal NaN" classname="io.github.gear4jtest.xml.expression.GearExpressionNumericEqualityTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

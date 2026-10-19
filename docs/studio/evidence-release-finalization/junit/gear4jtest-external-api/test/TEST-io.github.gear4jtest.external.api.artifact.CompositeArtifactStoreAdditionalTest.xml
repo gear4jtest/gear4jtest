@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreAdditionalTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:10:00.987Z" hostname="2c641953591a" time="0.018">
+  <properties/>
+  <testcase name="get_shouldRejectCorruptSinglePrimaryWhenVerificationIsEnabled()" classname="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreAdditionalTest" time="0.007"/>
+  <testcase name="constructor_shouldUseDefaultsForNullModesAndExecutor()" classname="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreAdditionalTest" time="0.001"/>
+  <testcase name="constructor_shouldRejectInvalidVerificationLimit()" classname="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreAdditionalTest" time="0.002"/>
+  <testcase name="get_shouldRejectCorruptFallbackBeforeHealingPrimary()" classname="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreAdditionalTest" time="0.003"/>
+  <testcase name="asyncFallbacks_shouldWriteByteArrayContentUsingConfiguredExecutor()" classname="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreAdditionalTest" time="0.001"/>
+  <testcase name="get_shouldReadFromFallbackAndSelfHealPrimaryWhenEnabled()" classname="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreAdditionalTest" time="0.002"/>
+  <testcase name="exists_shouldCheckFallbacksWhenPrimaryMisses()" classname="io.github.gear4jtest.external.api.artifact.CompositeArtifactStoreAdditionalTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

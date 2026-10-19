@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.persistence.DatabasePersistenceJsonCodecTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:44.933Z" hostname="2c641953591a" time="0.367">
+  <properties/>
+  <testcase name="jacksonFactory_shouldHonorApplicationModulesForBusinessTypes()" classname="io.github.gear4jtest.jdbc.persistence.DatabasePersistenceJsonCodecTest" time="0.092"/>
+  <testcase name="jsonCodec_shouldWrapSerializationAndDeserializationFailures()" classname="io.github.gear4jtest.jdbc.persistence.DatabasePersistenceJsonCodecTest" time="0.253"/>
+  <testcase name="jsonCodec_shouldRoundTripObjectsAndHandleNullValues()" classname="io.github.gear4jtest.jdbc.persistence.DatabasePersistenceJsonCodecTest" time="0.02"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

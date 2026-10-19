@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.execution.OperationRecordBufferTargetedCoverageTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:44.021Z" hostname="2c641953591a" time="0.008">
+  <properties/>
+  <testcase name="append_shouldRejectClosedBuffers()" classname="io.github.gear4jtest.jdbc.execution.OperationRecordBufferTargetedCoverageTest" time="0.001"/>
+  <testcase name="drainBatch_shouldReducePendingCountAndRestoreShouldRequeueRecords()" classname="io.github.gear4jtest.jdbc.execution.OperationRecordBufferTargetedCoverageTest" time="0.001"/>
+  <testcase name="constructor_shouldRejectInvalidFlushThresholds()" classname="io.github.gear4jtest.jdbc.execution.OperationRecordBufferTargetedCoverageTest" time="0.001"/>
+  <testcase name="appendAll_shouldRejectWholeBatchWhenCapacityIsInsufficient()" classname="io.github.gear4jtest.jdbc.execution.OperationRecordBufferTargetedCoverageTest" time="0.001"/>
+  <testcase name="restoreDrainedBatch_shouldIgnoreNullOrEmptyBatches()" classname="io.github.gear4jtest.jdbc.execution.OperationRecordBufferTargetedCoverageTest" time="0.0"/>
+  <testcase name="flushScheduling_shouldBeExclusiveUntilCleared()" classname="io.github.gear4jtest.jdbc.execution.OperationRecordBufferTargetedCoverageTest" time="0.001"/>
+  <testcase name="restoreDrainedBatch_shouldRecordFailureWhenRequeueCannotRestoreEveryRecord()" classname="io.github.gear4jtest.jdbc.execution.OperationRecordBufferTargetedCoverageTest" time="0.001"/>
+  <testcase name="append_shouldRejectWhenCapacityIsFullAndCountRejectedAppend()" classname="io.github.gear4jtest.jdbc.execution.OperationRecordBufferTargetedCoverageTest" time="0.001"/>
+  <testcase name="appendAll_shouldAppendBatchUnderOneCapacityCheck()" classname="io.github.gear4jtest.jdbc.execution.OperationRecordBufferTargetedCoverageTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

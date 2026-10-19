@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.jdbc.RequiredPostgreSqlStudioIT" tests="1" skipped="0" failures="1" errors="0" timestamp="2026-10-15T15:14:32.763Z" hostname="2c641953591a" time="0.184">
+  <properties/>
+  <testcase name="populatedBaselineRestoreChecksumsContextAndConcurrentRestart()" classname="io.github.gear4jtest.studio.jdbc.RequiredPostgreSqlStudioIT" time="0.163">
+    <failure message="org.opentest4j.AssertionFailedError: &#10;expected: &quot;true&quot;&#10; but was: null" type="org.opentest4j.AssertionFailedError">org.opentest4j.AssertionFailedError: 
+expected: &quot;true&quot;
+ but was: null
+	at io.github.gear4jtest.studio.jdbc.RequiredPostgreSqlStudioIT.populatedBaselineRestoreChecksumsContextAndConcurrentRestart(RequiredPostgreSqlStudioIT.java:34)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

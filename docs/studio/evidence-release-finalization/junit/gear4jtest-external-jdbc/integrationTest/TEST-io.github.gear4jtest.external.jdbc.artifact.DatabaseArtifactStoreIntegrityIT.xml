@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreIntegrityIT" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:06.598Z" hostname="2c641953591a" time="0.072">
+  <properties/>
+  <testcase name="duplicateWrite_shouldRejectSameSizeCorruptExistingContent()" classname="io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreIntegrityIT" time="0.043"/>
+  <testcase name="fullRead_shouldRejectSameSizeDatabaseCorruption()" classname="io.github.gear4jtest.external.jdbc.artifact.DatabaseArtifactStoreIntegrityIT" time="0.027"/>
+  <system-out><![CDATA[18:18:06.612 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:18:06.652 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

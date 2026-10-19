@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.AssemblyLineManagerCompilationCacheTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:57.610Z" hostname="2c641953591a" time="0.999">
+  <properties/>
+  <testcase name="publicationValidationAndFirstRuntimeLoad_shouldShareCompiledBytecode()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerCompilationCacheTest" time="0.997"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

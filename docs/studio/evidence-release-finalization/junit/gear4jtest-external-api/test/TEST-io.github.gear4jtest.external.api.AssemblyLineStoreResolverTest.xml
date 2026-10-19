@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.AssemblyLineStoreResolverTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:59.234Z" hostname="2c641953591a" time="0.013">
+  <properties/>
+  <testcase name="resolve_shouldReplaceTheCachedStoreOnlyWhenItsConfigurationChanges()" classname="io.github.gear4jtest.external.api.AssemblyLineStoreResolverTest" time="0.001"/>
+  <testcase name="resolver_shouldBoundTheCacheAndReleaseEveryProviderAcquisition()" classname="io.github.gear4jtest.external.api.AssemblyLineStoreResolverTest" time="0.003"/>
+  <testcase name="resolve_shouldCreateOneStoreForConcurrentInitialLookups()" classname="io.github.gear4jtest.external.api.AssemblyLineStoreResolverTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.support.OperatorConcurrencyManagerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:37.511Z" hostname="2c641953591a" time="0.003">
+  <properties/>
+  <testcase name="guardFor_shouldRejectNullWorker()" classname="io.github.gear4jtest.core.engine.support.OperatorConcurrencyManagerTest" time="0.001"/>
+  <testcase name="guardFor_shouldFailFastWhenTrackedWorkerGuardrailIsExceeded()" classname="io.github.gear4jtest.core.engine.support.OperatorConcurrencyManagerTest" time="0.001"/>
+  <testcase name="guardFor_shouldReturnSameGuardForSameWorkerInstance()" classname="io.github.gear4jtest.core.engine.support.OperatorConcurrencyManagerTest" time="0.0"/>
+  <testcase name="guardFor_shouldRecreateGuardAfterClear()" classname="io.github.gear4jtest.core.engine.support.OperatorConcurrencyManagerTest" time="0.0"/>
+  <testcase name="guardFor_shouldReturnDifferentGuardForDifferentWorkerInstancesEvenWhenEqualsMatches()" classname="io.github.gear4jtest.core.engine.support.OperatorConcurrencyManagerTest" time="0.001"/>
+  <system-out><![CDATA[18:09:37.512 [Test worker] WARN io.github.gear4jtest.core.engine.support.WorkerConcurrencyManager -- WorkerConcurrencyManager is tracking 1 live worker instances. This may indicate high-volume prototype workers while per-instance locking is enabled.
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

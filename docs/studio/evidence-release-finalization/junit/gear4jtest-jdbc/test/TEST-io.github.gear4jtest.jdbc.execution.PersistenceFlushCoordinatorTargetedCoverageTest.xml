@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:44.191Z" hostname="2c641953591a" time="0.092">
+  <properties/>
+  <testcase name="scheduleAsyncFlush_shouldIgnoreDuplicateScheduling()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.003"/>
+  <testcase name="periodicFlush_shouldScheduleOpenAndFinalizationPendingBuffers()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.042"/>
+  <testcase name="scheduleAsyncFlush_shouldFailBufferWhenExecutorRejectsFlush()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.004"/>
+  <testcase name="scheduleAsyncFlush_shouldRecordFailureWhenCompleteDrainFails()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.004"/>
+  <testcase name="ensureOpen_shouldFailAfterShutdown()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.002"/>
+  <testcase name="shutdown_shouldReportDroppedTasksAndOwnedExecutorTermination()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.002"/>
+  <testcase name="flushBufferBlocking_shouldObserveAttemptAndIsolateObserverFailures()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.003"/>
+  <testcase name="periodicFlush_shouldSurviveSchedulingRejectionAndProcessLaterBuffers()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.004"/>
+  <testcase name="flushBufferBlocking_shouldNotObserveNoOpFlush()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.001"/>
+  <testcase name="closedCoordinator_shouldClearSchedulingAndNotRescheduleRemainingBatch()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.002"/>
+  <testcase name="scheduleAsyncFlush_shouldKeepOpenBufferRetryableAfterTransientFailure()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.004"/>
+  <testcase name="scheduleAsyncFlush_shouldFailClosedBufferAfterTransientFailure()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.003"/>
+  <testcase name="shutdown_shouldRejectNegativeTimeout()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.001"/>
+  <testcase name="flushBufferBlocking_shouldRescheduleWhenAnotherBatchRemains()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.003"/>
+  <testcase name="shutdown_shouldObserveSuccessfulDrain()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.003"/>
+  <testcase name="flushSubscription_shouldBeRemovable()" classname="io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest" time="0.002"/>
+  <system-out><![CDATA[18:18:44.246 [Test worker] ERROR io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- Asynchronous station log flush failed. runId=916eb07e-1825-4a56-a403-2591e3497da4
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+18:18:44.254 [Test worker] WARN io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- Persistence flush observer failed. observer=io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinatorTargetedCoverageTest$$Lambda$687/0x00000001004ce000, trigger=EXPLICIT, outcome=SUCCEEDED
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+18:18:44.258 [Test worker] ERROR io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- Periodic station log flush scheduling failed. Future maintenance passes remain active. runId=86b147b1-c68b-45a3-87cb-817205cd70a1
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=io.github.gear4jtest.core.exception.ExecutionPersistenceException; exception details withheld
+18:18:44.267 [Test worker] ERROR io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- Asynchronous station log flush failed. runId=e63a145f-5354-4d1d-b6eb-8f74863b589f
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+18:18:44.271 [Test worker] ERROR io.github.gear4jtest.jdbc.execution.PersistenceFlushCoordinator -- Asynchronous station log flush failed. runId=bed3e9f7-5d5b-45b2-96e8-ec4b7cb03387
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

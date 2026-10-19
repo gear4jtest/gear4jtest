@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.support.WorkerParamsInjectorParameterTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:37.528Z" hostname="2c641953591a" time="0.002">
+  <properties/>
+  <testcase name="of_shouldCreatePersistentParameterWithNullDefaultValue()" classname="io.github.gear4jtest.core.engine.support.WorkerParamsInjectorParameterTest" time="0.001"/>
+  <testcase name="builder_perExecution_shouldResetToDefaultAfterExecution()" classname="io.github.gear4jtest.core.engine.support.WorkerParamsInjectorParameterTest" time="0.0"/>
+  <testcase name="ofDefault_shouldInitializeWithDefaultValueAndPersistentLifecycle()" classname="io.github.gear4jtest.core.engine.support.WorkerParamsInjectorParameterTest" time="0.0"/>
+  <testcase name="parametersBuilder_shouldExposeImmutableSnapshot()" classname="io.github.gear4jtest.core.engine.support.WorkerParamsInjectorParameterTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

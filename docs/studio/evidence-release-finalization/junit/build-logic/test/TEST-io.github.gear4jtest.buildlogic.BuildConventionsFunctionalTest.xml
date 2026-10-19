@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.buildlogic.BuildConventionsFunctionalTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:08:25.871Z" hostname="2c641953591a" time="12.493">
+  <properties/>
+  <testcase name="publishingAndReleaseConventionsPreserveStagingMetadataAndPublicTasks()" classname="io.github.gear4jtest.buildlogic.BuildConventionsFunctionalTest" time="10.954"/>
+  <testcase name="rootConventionsPreserveCoverageRatchetAndPerformanceBudgetTasks()" classname="io.github.gear4jtest.buildlogic.BuildConventionsFunctionalTest" time="0.794"/>
+  <testcase name="conventionsPreserveTheJavaQualityTestCoverageAndBenchmarkContractWithoutTargetVersionCatalog()" classname="io.github.gear4jtest.buildlogic.BuildConventionsFunctionalTest" time="0.59"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

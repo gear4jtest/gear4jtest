@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.http.StudioSimulationTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:19:40.076Z" hostname="2c641953591a" time="0.762">
+  <properties/>
+  <testcase name="[1] buildDrift=false, catalogDrift=false" classname="io.github.gear4jtest.studio.http.StudioSimulationTest" time="0.148"/>
+  <testcase name="[2] buildDrift=true, catalogDrift=false" classname="io.github.gear4jtest.studio.http.StudioSimulationTest" time="0.116"/>
+  <testcase name="[3] buildDrift=false, catalogDrift=true" classname="io.github.gear4jtest.studio.http.StudioSimulationTest" time="0.111"/>
+  <testcase name="[4] buildDrift=true, catalogDrift=true" classname="io.github.gear4jtest.studio.http.StudioSimulationTest" time="0.107"/>
+  <testcase name="immutableReportsSurviveReopenRemainOutsideRunsAndRespectIndependentPermissionsAndRetriedRequests()" classname="io.github.gear4jtest.studio.http.StudioSimulationTest" time="0.166"/>
+  <testcase name="httpRouteContractPersistsMockDataExactlyAndRejectsUnsafeOrUnstructuredSimulationInputs()" classname="io.github.gear4jtest.studio.http.StudioSimulationTest" time="0.06"/>
+  <system-out><![CDATA[18:19:40.148 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:40.153 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:40.279 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:40.282 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:40.397 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:40.401 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:40.510 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:40.513 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:40.616 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:19:40.619 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:40.783 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

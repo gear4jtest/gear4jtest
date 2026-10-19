@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.jdbc.repository.ExternalJdbcSchemaMigratorIT" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:07.013Z" hostname="2c641953591a" time="0.062">
+  <properties/>
+  <testcase name="migrate_withConnection_shouldCreateExternalSchema()" classname="io.github.gear4jtest.external.jdbc.repository.ExternalJdbcSchemaMigratorIT" time="0.021"/>
+  <testcase name="migrate_withDataSource_shouldCreateExternalSchemaAndHistory()" classname="io.github.gear4jtest.external.jdbc.repository.ExternalJdbcSchemaMigratorIT" time="0.039"/>
+  <system-out><![CDATA[18:18:07.024 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:18:07.045 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

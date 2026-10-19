@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.engine.strategy.IteratorStationStrategyTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:37.258Z" hostname="2c641953591a" time="0.004">
+  <properties/>
+  <testcase name="cancellation_shouldNotBeOverwrittenByAnEarlierCollectedFailure()" classname="io.github.gear4jtest.core.engine.strategy.IteratorStationStrategyTest" time="0.001"/>
+  <testcase name="should_propagate_and_restore_current_item_id_for_child_chain()" classname="io.github.gear4jtest.core.engine.strategy.IteratorStationStrategyTest" time="0.001"/>
+  <testcase name="should_reject_a_null_iterable_source_with_station_context()" classname="io.github.gear4jtest.core.engine.strategy.IteratorStationStrategyTest" time="0.001"/>
+  <testcase name="should_reject_an_iterable_that_exceeds_the_configured_item_limit()" classname="io.github.gear4jtest.core.engine.strategy.IteratorStationStrategyTest" time="0.001"/>
+  <testcase name="should_stop_between_items_when_run_cancellation_is_requested()" classname="io.github.gear4jtest.core.engine.strategy.IteratorStationStrategyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

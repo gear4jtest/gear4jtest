@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.jdbc.repository.OperationChainPublicationRepositoryJdbcIT" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:07.438Z" hostname="2c641953591a" time="1.393">
+  <properties/>
+  <testcase name="stage_shouldRemainInvisibleUntilCommitAndAbortCleanly()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainPublicationRepositoryJdbcIT" time="0.06"/>
+  <testcase name="stage_shouldKeepLegacyDelimiterCollisionCandidatesSeparate()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainPublicationRepositoryJdbcIT" time="0.024"/>
+  <testcase name="publish_shouldCommitObjectAndTagsAndMakeIdenticalRetriesIdempotent()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainPublicationRepositoryJdbcIT" time="0.032"/>
+  <testcase name="concurrentStageRetries_shouldSerializeThePersistedTagLimit()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainPublicationRepositoryJdbcIT" time="0.091"/>
+  <testcase name="commit_shouldRollbackObjectWhenTagPersistenceFails()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainPublicationRepositoryJdbcIT" time="0.023"/>
+  <testcase name="conditionalAbort_shouldNotRemoveRenewedStage()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainPublicationRepositoryJdbcIT" time="0.022"/>
+  <testcase name="reconcileAfterRestart_shouldResolveBothStageToStoreCrashWindows()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainPublicationRepositoryJdbcIT" time="0.038"/>
+  <testcase name="publication_shouldSerializeCommitRenewalAndAbort()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainPublicationRepositoryJdbcIT" time="1.079"/>
+  <testcase name="publish_shouldRejectAConflictingRetryWithoutChangingCommittedMetadata()" classname="io.github.gear4jtest.external.jdbc.repository.OperationChainPublicationRepositoryJdbcIT" time="0.016"/>
+  <system-out><![CDATA[18:18:07.448 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:18:07.506 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:18:07.533 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:18:07.565 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:18:07.658 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:18:07.680 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:18:07.704 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:18:07.744 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:18:08.820 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

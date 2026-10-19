@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.api.ImmutableRequestAndAssemblyLineTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:34.453Z" hostname="2c641953591a" time="0.023">
+  <properties/>
+  <testcase name="assemblyLineBuilderCopy_shouldNotShareMutableContextWithSourceBuilder()" classname="io.github.gear4jtest.core.api.ImmutableRequestAndAssemblyLineTest" time="0.006"/>
+  <testcase name="assemblyLine_shouldDefensivelyCopyAndExposeReadOnlyDefaultContext()" classname="io.github.gear4jtest.core.api.ImmutableRequestAndAssemblyLineTest" time="0.002"/>
+  <testcase name="runRequest_shouldDefensivelyCopyAndExposeReadOnlyContext()" classname="io.github.gear4jtest.core.api.ImmutableRequestAndAssemblyLineTest" time="0.001"/>
+  <testcase name="runRequestToBuilder_shouldCopyAllRuntimeOverrides()" classname="io.github.gear4jtest.core.api.ImmutableRequestAndAssemblyLineTest" time="0.007"/>
+  <testcase name="runRequestBuilder_shouldRejectNullExtension()" classname="io.github.gear4jtest.core.api.ImmutableRequestAndAssemblyLineTest" time="0.001"/>
+  <testcase name="assemblyLineBuilder_shouldRejectBlankIdentityAndVersion()" classname="io.github.gear4jtest.core.api.ImmutableRequestAndAssemblyLineTest" time="0.001"/>
+  <testcase name="assemblyLineTypedTransition_shouldNotMutateSourceBuilder()" classname="io.github.gear4jtest.core.api.ImmutableRequestAndAssemblyLineTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerConnectivityLoadTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:40.555Z" hostname="2c641953591a" time="1.333">
+  <properties/>
+  <testcase name="probeHealth_shouldBoundSlowPoolAcquisitionWithoutAccumulatingProbeWorkers()" classname="io.github.gear4jtest.jdbc.execution.DatabaseExecutionManagerConnectivityLoadTest" time="1.314"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

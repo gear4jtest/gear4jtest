@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.builtin.extension.PersistenceExtensionTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:35.883Z" hostname="2c641953591a" time="0.658">
+  <properties/>
+  <testcase name="lifecycleSnapshots_shouldBeEmittedOnceAndFlushedBeforeRunEnd()" classname="io.github.gear4jtest.core.builtin.extension.PersistenceExtensionTest" time="0.639"/>
+  <testcase name="constructor_shouldRejectNullManager()" classname="io.github.gear4jtest.core.builtin.extension.PersistenceExtensionTest" time="0.002"/>
+  <testcase name="runCompletion_shouldAlwaysAttemptEndAndPreserveBothFailures()" classname="io.github.gear4jtest.core.builtin.extension.PersistenceExtensionTest" time="0.011"/>
+  <testcase name="everyTerminalCallback_shouldDelegateOneSnapshotWithoutExtensionBuffering()" classname="io.github.gear4jtest.core.builtin.extension.PersistenceExtensionTest" time="0.001"/>
+  <testcase name="missingContext_shouldRemainCompatibleWithManagersImplementingLegacyStartOnly()" classname="io.github.gear4jtest.core.builtin.extension.PersistenceExtensionTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.studio.demo.StudioRunQueriesTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:19:23.046Z" hostname="2c641953591a" time="0.575">
+  <properties/>
+  <testcase name="metricsIncludeSlowAndFailingStepsAndDeclareTruncatedSamples()" classname="io.github.gear4jtest.studio.demo.StudioRunQueriesTest" time="0.029"/>
+  <testcase name="aclScanBudgetUsesOpaqueBoundCursorsAndSurvivesRemovalOfCursorRows()" classname="io.github.gear4jtest.studio.demo.StudioRunQueriesTest" time="0.545"/>
+  <system-out><![CDATA[18:19:23.052 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+18:19:23.080 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-studio:1 (create studio schema)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

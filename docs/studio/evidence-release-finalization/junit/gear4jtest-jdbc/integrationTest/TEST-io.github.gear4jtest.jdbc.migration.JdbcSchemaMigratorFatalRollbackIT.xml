@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorFatalRollbackIT" tests="1" skipped="1" failures="0" errors="0" timestamp="2026-10-15T15:18:47.424Z" hostname="2c641953591a" time="0.001">
+  <properties/>
+  <testcase name="fatalFailureAfterDdl_shouldRollbackTheOwnedPostgresqlTransaction()" classname="io.github.gear4jtest.jdbc.migration.JdbcSchemaMigratorFatalRollbackIT" time="0.0">
+    <skipped/>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

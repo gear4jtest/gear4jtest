@@ -47,7 +47,7 @@ class RequiredPostgreSqlStudioIT {
         try {
             // When: same checks as the Docker integration test, then real backup/restore.
             PostgreSqlStudioStoreIT.qualify(source);
-            new JdbcStudioStore(source).bindContext("rr.context");
+            new JdbcStudioStore(source).bindContext("context");
             recoveryAfterFailedDdl(source);
             var before = snapshot(source, schema);
             Path dump = directory.resolve("studio.dump");

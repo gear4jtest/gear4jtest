@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jdbc.persistence.JdbcStatementOptionsTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:45.318Z" hostname="2c641953591a" time="0.008">
+  <properties/>
+  <testcase name="configureNewStatement_shouldCloseOnFatalConfigurationFailure()" classname="io.github.gear4jtest.jdbc.persistence.JdbcStatementOptionsTest" time="0.001"/>
+  <testcase name="of_shouldRejectAFractionAboveTheLargestJdbcTimeout()" classname="io.github.gear4jtest.jdbc.persistence.JdbcStatementOptionsTest" time="0.0"/>
+  <testcase name="prepare_shouldLeaveSuccessfulStatementOpenForTheCaller()" classname="io.github.gear4jtest.jdbc.persistence.JdbcStatementOptionsTest" time="0.001"/>
+  <testcase name="of_shouldRejectNegativeTimeout()" classname="io.github.gear4jtest.jdbc.persistence.JdbcStatementOptionsTest" time="0.001"/>
+  <testcase name="of_shouldRoundSubSecondTimeoutUpToOneSecond()" classname="io.github.gear4jtest.jdbc.persistence.JdbcStatementOptionsTest" time="0.0"/>
+  <testcase name="of_shouldAcceptTheLargestJdbcTimeout()" classname="io.github.gear4jtest.jdbc.persistence.JdbcStatementOptionsTest" time="0.0"/>
+  <testcase name="prepare_shouldCloseOnConfigurationFailureAndPreserveCleanupFailure()" classname="io.github.gear4jtest.jdbc.persistence.JdbcStatementOptionsTest" time="0.002"/>
+  <testcase name="defaults_shouldApplyThirtySecondQueryTimeout()" classname="io.github.gear4jtest.jdbc.persistence.JdbcStatementOptionsTest" time="0.0"/>
+  <testcase name="of_shouldRejectHugeDurationsWithoutLeakingArithmeticException()" classname="io.github.gear4jtest.jdbc.persistence.JdbcStatementOptionsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

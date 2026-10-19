@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.service.ContainerDslRuntimeTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:38.157Z" hostname="2c641953591a" time="0.013">
+  <properties/>
+  <testcase name="nonEligibleContainerBranch_shouldBePersistedAndEmitSkippedEvent()" classname="io.github.gear4jtest.core.service.ContainerDslRuntimeTest" time="0.004"/>
+  <testcase name="ifElseContainer_shouldExecuteFirstMatchingBranchOnly()" classname="io.github.gear4jtest.core.service.ContainerDslRuntimeTest" time="0.003"/>
+  <testcase name="sequentialContainerWithTwoBranches_shouldAggregateBranchResults()" classname="io.github.gear4jtest.core.service.ContainerDslRuntimeTest" time="0.001"/>
+  <testcase name="containerBranchCondition_shouldRunFallbackOnlyWhenPrimaryFailed()" classname="io.github.gear4jtest.core.service.ContainerDslRuntimeTest" time="0.002"/>
+  <testcase name="parallelContainerWithTwoBranches_shouldAggregateBranchResults()" classname="io.github.gear4jtest.core.service.ContainerDslRuntimeTest" time="0.002"/>
+  <system-out><![CDATA[18:09:38.159 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=container-skipped-branch-observability, rootStation=observed-container, requestExtensions=[PersistenceExtension]
+18:09:38.159 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=container-skipped-branch-observability, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:09:38.163 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=test, rootStation=test:root, requestExtensions=[]
+18:09:38.163 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=test, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:38.165 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=test, rootStation=test:root, requestExtensions=[]
+18:09:38.165 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=test, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:09:38.167 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=container-branch-condition, rootStation=root-sequence, requestExtensions=[PersistenceExtension]
+18:09:38.167 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=container-branch-condition, stationWrappers=0, stationLifecycles=1, runInterceptors=0, executorWrappers=0
+18:09:38.169 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=test, rootStation=test:root, requestExtensions=[]
+18:09:38.169 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=test, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" tests="21" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:37.030Z" hostname="2c641953591a" time="0.095">
+  <properties/>
+  <testcase name="should_create_cloner_with_provided_object_mapper()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.002"/>
+  <testcase name="should_not_share_references_between_original_and_clone_at_multiple_levels()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.02"/>
+  <testcase name="should_deep_clone_non_list_non_set_collection()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.005"/>
+  <testcase name="should_reject_unsupported_concrete_collection_type_with_domain_exception()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.004"/>
+  <testcase name="should_preserve_supported_concrete_collection_types()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.003"/>
+  <testcase name="should_deep_clone_top_level_list_with_runtime_element_types()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.002"/>
+  <testcase name="should_return_null_when_payload_is_null()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.001"/>
+  <testcase name="should_throw_payload_clone_exception_when_jackson_cannot_clone_pojo()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.003"/>
+  <testcase name="should_deep_clone_array_of_mutable_values()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.01"/>
+  <testcase name="should_return_same_reference_for_optional_int()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.003"/>
+  <testcase name="should_deep_clone_nested_collections_inside_map()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.002"/>
+  <testcase name="should_return_same_reference_for_optional_long()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.002"/>
+  <testcase name="should_deep_clone_nested_pojo_graph()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.004"/>
+  <testcase name="should_clone_empty_optional()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.001"/>
+  <testcase name="should_return_same_reference_for_optional_double()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.002"/>
+  <testcase name="should_return_same_reference_for_zone_id_subclass()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.002"/>
+  <testcase name="should_deep_clone_top_level_map_with_runtime_value_types()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.004"/>
+  <testcase name="should_deep_clone_map_with_mutable_keys_and_values()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.003"/>
+  <testcase name="should_deep_clone_top_level_set_with_runtime_element_types()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.002"/>
+  <testcase name="should_return_same_reference_for_known_immutable_payloads()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.0"/>
+  <testcase name="should_clone_optional_of_mutable_value()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.architecture.ApiBoundarySourceTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:34.776Z" hostname="2c641953591a" time="1.039">
+  <properties/>
+  <testcase name="productionPackages_shouldDeclareExactlyOneStabilityMarker()" classname="io.github.gear4jtest.core.architecture.ApiBoundarySourceTest" time="0.025"/>
+  <testcase name="externalApi_shouldConfineEclipseCompilerInternalsToTheInternalJdtAdapter()" classname="io.github.gear4jtest.core.architecture.ApiBoundarySourceTest" time="0.007"/>
+  <testcase name="publishedPublicApiAndSpiSignatures_shouldNotDependOnInternalTypes()" classname="io.github.gear4jtest.core.architecture.ApiBoundarySourceTest" time="1.002"/>
+  <testcase name="providerNeutralExternalApi_shouldNotImportJdbcPackages()" classname="io.github.gear4jtest.core.architecture.ApiBoundarySourceTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

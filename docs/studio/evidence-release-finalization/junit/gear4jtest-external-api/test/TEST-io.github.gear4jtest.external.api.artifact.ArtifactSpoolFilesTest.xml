@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.artifact.ArtifactSpoolFilesTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:10:00.946Z" hostname="2c641953591a" time="0.027">
+  <properties/>
+  <testcase name="hasOwnerOnlyAcl_shouldRejectAnAllowEntryForAnotherPrincipal()" classname="io.github.gear4jtest.external.api.artifact.ArtifactSpoolFilesTest" time="0.012"/>
+  <testcase name="createTempFile_shouldRejectSymbolicLinkDirectory()" classname="io.github.gear4jtest.external.api.artifact.ArtifactSpoolFilesTest" time="0.001"/>
+  <testcase name="createTempFile_shouldUseConfiguredPrivateDirectory()" classname="io.github.gear4jtest.external.api.artifact.ArtifactSpoolFilesTest" time="0.007"/>
+  <testcase name="createTempFile_shouldFailClosedWhenPrivatePermissionsCannotBeVerified()" classname="io.github.gear4jtest.external.api.artifact.ArtifactSpoolFilesTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

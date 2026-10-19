@@ -1,0 +1,29 @@
+{
+  "checkedAt": "2026-10-15",
+  "repository": "gear4jtest/gear4jtest",
+  "branches": [
+    {
+      "name": "feature",
+      "sha": "62587c7b99357e8a4bd80c4845c9131d83c17385",
+      "protected": false,
+      "studioWorkflowHttpStatus": 404
+    },
+    {
+      "name": "feature-parameters",
+      "sha": "a6543bbbd4295c2df0d8ebd9c7468167a3f6f3e5",
+      "protected": false,
+      "studioWorkflowHttpStatus": 404
+    },
+    {
+      "name": "master",
+      "sha": "d3c9175646096988685fde21830a24168028b36b",
+      "protected": false,
+      "studioWorkflowHttpStatus": 404
+    }
+  ],
+  "workflowPath": ".github/workflows/studio-release-readiness.yml",
+  "dispatchPerformed": false,
+  "remoteWrites": false,
+  "postgresConfigured": false,
+  "nvdConfigured": false
+}

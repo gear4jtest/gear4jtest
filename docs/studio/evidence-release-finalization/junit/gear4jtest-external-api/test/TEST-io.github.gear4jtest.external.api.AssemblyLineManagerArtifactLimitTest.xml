@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.AssemblyLineManagerArtifactLimitTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:57.041Z" hostname="2c641953591a" time="0.566">
+  <properties/>
+  <testcase name="registerAssemblyLine_shouldRejectArtifactsAboveDefaultLimitBeforeStoreResolution()" classname="io.github.gear4jtest.external.api.AssemblyLineManagerArtifactLimitTest" time="0.565"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

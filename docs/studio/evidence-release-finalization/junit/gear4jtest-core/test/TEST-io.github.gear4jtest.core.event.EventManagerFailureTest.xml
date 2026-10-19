@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.event.EventManagerFailureTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:37.545Z" hostname="2c641953591a" time="0.073">
+  <properties/>
+  <testcase name="publish_shouldIgnoreEventsAfterShutdown()" classname="io.github.gear4jtest.core.event.EventManagerFailureTest" time="0.055"/>
+  <testcase name="publish_shouldRejectNullEvents()" classname="io.github.gear4jtest.core.event.EventManagerFailureTest" time="0.001"/>
+  <testcase name="constructor_shouldAcceptNullDefinitionAsEmptyRuntime()" classname="io.github.gear4jtest.core.event.EventManagerFailureTest" time="0.002"/>
+  <testcase name="dispatch_shouldEvaluateUserPredicateOnReactionExecutor()" classname="io.github.gear4jtest.core.event.EventManagerFailureTest" time="0.001"/>
+  <testcase name="dispatch_shouldCountUnexpectedSubmissionFailuresAsDropped()" classname="io.github.gear4jtest.core.event.EventManagerFailureTest" time="0.006"/>
+  <testcase name="dispatch_shouldCountEveryRejectedReactionWhenRepeatedLogsAreSuppressed()" classname="io.github.gear4jtest.core.event.EventManagerFailureTest" time="0.003"/>
+  <testcase name="dispatch_shouldCountRejectedReactionSubmissionsAsDropped()" classname="io.github.gear4jtest.core.event.EventManagerFailureTest" time="0.001"/>
+  <testcase name="dispatch_shouldIsolateFailingPredicateAndContinueOtherSubscriptions()" classname="io.github.gear4jtest.core.event.EventManagerFailureTest" time="0.002"/>
+  <system-out><![CDATA[18:09:37.611 [gear4j-event-dispatcher-2] ERROR io.github.gear4jtest.core.event.EventManager -- Dropping event reaction because submitting it to the reaction executor failed unexpectedly. eventType=BROKEN_EXECUTOR, subscriptionType=io.github.gear4jtest.core.event.Event, suppressedSincePreviousEmission=0
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+18:09:37.614 [gear4j-event-dispatcher-1] WARN io.github.gear4jtest.core.event.EventManager -- Dropping event reaction because the reaction executor rejected the submission. eventType=REJECTED_0, subscriptionType=io.github.gear4jtest.core.event.Event, suppressedSincePreviousEmission=0
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.util.concurrent.RejectedExecutionException; exception details withheld
+18:09:37.618 [pool-30-thread-1] ERROR io.github.gear4jtest.core.event.EventManager -- Asynchronous event predicate failed. eventType=FAILING_PREDICATE, subscriptionType=io.github.gear4jtest.core.event.Event, suppressedSincePreviousEmission=0
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

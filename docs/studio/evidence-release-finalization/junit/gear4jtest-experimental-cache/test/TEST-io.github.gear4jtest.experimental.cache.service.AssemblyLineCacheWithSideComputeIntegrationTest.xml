@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.experimental.cache.service.AssemblyLineCacheWithSideComputeIntegrationTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:42.894Z" hostname="2c641953591a" time="0.088">
+  <properties/>
+  <testcase name="should_not_cache_pipeline_when_side_compute_dependency_has_no_expiry()" classname="io.github.gear4jtest.experimental.cache.service.AssemblyLineCacheWithSideComputeIntegrationTest" time="0.076"/>
+  <testcase name="should_cache_pipeline_output_after_first_run_and_short_circuit_second_run()" classname="io.github.gear4jtest.experimental.cache.service.AssemblyLineCacheWithSideComputeIntegrationTest" time="0.01"/>
+  <system-out><![CDATA[18:09:42.952 [Test worker] DEBUG io.github.gear4jtest.experimental.cache.assemblylinecache.AssemblyLineCacheExtension -- AssemblyLine cache skipped because some dependencies had no expiry. assemblyLineId=customer-enrichment, missingKeys=[sidecompute:customer-profile]
+18:09:42.970 [Test worker] DEBUG io.github.gear4jtest.experimental.cache.assemblylinecache.AssemblyLineCacheExtension -- AssemblyLine cache skipped because some dependencies had no expiry. assemblyLineId=customer-enrichment, missingKeys=[sidecompute:customer-profile]
+18:09:42.979 [Test worker] DEBUG io.github.gear4jtest.experimental.cache.assemblylinecache.AssemblyLineCacheExtension -- AssemblyLine cache saved. assemblyLineId=customer-enrichment, executionId=72a5d4ba-f76b-4d5a-886e-edd24a96ee98, expiresAt=2026-10-15T15:19:42.974039934Z
+18:09:42.981 [Test worker] DEBUG io.github.gear4jtest.experimental.cache.assemblylinecache.AssemblyLineCacheExtension -- AssemblyLine cache hit. assemblyLineId=customer-enrichment, version=1.0.0, executionId=ff961fcd-dac9-4874-a37c-ea709d9ac5b6
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

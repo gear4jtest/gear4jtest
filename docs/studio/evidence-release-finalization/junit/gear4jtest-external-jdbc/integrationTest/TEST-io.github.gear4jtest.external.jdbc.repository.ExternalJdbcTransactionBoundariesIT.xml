@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.jdbc.repository.ExternalJdbcTransactionBoundariesIT" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:07.076Z" hostname="2c641953591a" time="0.36">
+  <properties/>
+  <testcase name="defaultBoundaries_shouldCommitEveryExternalMutation()" classname="io.github.gear4jtest.external.jdbc.repository.ExternalJdbcTransactionBoundariesIT" time="0.292"/>
+  <testcase name="defaultBoundaries_shouldRejectAutoCommitFalseBeforeEveryMutation()" classname="io.github.gear4jtest.external.jdbc.repository.ExternalJdbcTransactionBoundariesIT" time="0.032"/>
+  <testcase name="explicitManagedBoundary_shouldDelegateCommitAndRollbackToItsOwner()" classname="io.github.gear4jtest.external.jdbc.repository.ExternalJdbcTransactionBoundariesIT" time="0.033"/>
+  <system-out><![CDATA[18:18:07.089 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:18:07.378 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+18:18:07.411 [Test worker] INFO io.github.gear4jtest.jdbc.migration.JdbcSchemaMigrator -- [Gear4J] Applying schema migration gear4j-external-api:1 (create external schema)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

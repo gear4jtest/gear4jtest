@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.core.util.DefaultUuidGeneratorTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:09:38.834Z" hostname="2c641953591a" time="0.035">
+  <properties/>
+  <testcase name="next_shouldRejectLogicalTimestampOverflow()" classname="io.github.gear4jtest.core.util.DefaultUuidGeneratorTest" time="0.003"/>
+  <testcase name="next_shouldResumeWallClockWhenItMovesPastLogicalTime()" classname="io.github.gear4jtest.core.util.DefaultUuidGeneratorTest" time="0.001"/>
+  <testcase name="next_shouldRemainBoundedAfterMultiSecondClockRollback()" classname="io.github.gear4jtest.core.util.DefaultUuidGeneratorTest" time="0.002"/>
+  <testcase name="generate_shouldProduceUniqueUuidV7ValuesUnderConcurrentLoad()" classname="io.github.gear4jtest.core.util.DefaultUuidGeneratorTest" time="0.024"/>
+  <testcase name="next_shouldRejectTimestampOutsideUuidV7Range()" classname="io.github.gear4jtest.core.util.DefaultUuidGeneratorTest" time="0.002"/>
+  <testcase name="next_shouldAdvanceLogicalTimestampWithoutPollingFrozenClock()" classname="io.github.gear4jtest.core.util.DefaultUuidGeneratorTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

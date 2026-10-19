@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.jackson.JacksonPayloadClonerIntegrationTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:18:36.343Z" hostname="2c641953591a" time="0.682">
+  <properties/>
+  <testcase name="should_isolate_each_parallel_branch_when_jackson_payload_cloner_is_configured()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerIntegrationTest" time="0.648"/>
+  <testcase name="should_fail_parallel_container_with_default_strict_cloner_on_mutable_payload()" classname="io.github.gear4jtest.jackson.JacksonPayloadClonerIntegrationTest" time="0.014"/>
+  <system-out><![CDATA[18:18:36.801 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=parallel-container, rootStation=mutable-payload-parallel-container, requestExtensions=[]
+18:18:36.809 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=parallel-container, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+18:18:37.014 [Test worker] DEBUG io.github.gear4jtest.core.engine.AssemblyLineEngine -- Starting pipeline execution. assemblyLineId=parallel-container, rootStation=mutable-payload-parallel-container, requestExtensions=[]
+18:18:37.015 [Test worker] DEBUG io.github.gear4jtest.core.engine.runner.RunnerChainFactory -- Creating station runner chain. assemblyLineId=parallel-container, stationWrappers=0, stationLifecycles=0, runInterceptors=0, executorWrappers=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

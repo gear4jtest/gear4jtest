@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.xml.generator.JdtFormatterTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:20:38.111Z" hostname="2c641953591a" time="0.905">
+  <properties/>
+  <testcase name="fromEclipseProfile_shouldRejectAnUnknownProfile()" classname="io.github.gear4jtest.xml.generator.JdtFormatterTest" time="0.135"/>
+  <testcase name="fromEclipseProfile_shouldUseTheFirstProfileWhenNoNameIsProvided()" classname="io.github.gear4jtest.xml.generator.JdtFormatterTest" time="0.75"/>
+  <testcase name="fromEclipseProfile_shouldLoadTheSelectedProfile()" classname="io.github.gear4jtest.xml.generator.JdtFormatterTest" time="0.011"/>
+  <testcase name="fromEclipseProfile_shouldRejectDoctypeDeclarations()" classname="io.github.gear4jtest.xml.generator.JdtFormatterTest" time="0.005"/>
+  <testcase name="fromEclipseProfile_shouldReportAnUnreadableProfile()" classname="io.github.gear4jtest.xml.generator.JdtFormatterTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[[Fatal Error] formatter.xml:2:10: DOCTYPE is disallowed when the feature "http://apache.org/xml/features/disallow-doctype-decl" set to true.
+]]></system-err>
+</testsuite>

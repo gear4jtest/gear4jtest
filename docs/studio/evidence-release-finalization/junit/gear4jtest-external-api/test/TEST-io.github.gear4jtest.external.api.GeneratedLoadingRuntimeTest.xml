@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.gear4jtest.external.api.GeneratedLoadingRuntimeTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:10:00.888Z" hostname="2c641953591a" time="0.052">
+  <properties/>
+  <testcase name="load_shouldReleaseFailedFlightWhenRegistrationCleanupAlsoFails()" classname="io.github.gear4jtest.external.api.GeneratedLoadingRuntimeTest" time="0.042"/>
+  <testcase name="load_shouldRemoveFailedFlightBeforeRetry()" classname="io.github.gear4jtest.external.api.GeneratedLoadingRuntimeTest" time="0.001"/>
+  <testcase name="load_shouldRegisterOnceThenUseCachedInstance()" classname="io.github.gear4jtest.external.api.GeneratedLoadingRuntimeTest" time="0.001"/>
+  <testcase name="load_shouldUseCachePopulatedBetweenCallerCheckAndWorkerStart()" classname="io.github.gear4jtest.external.api.GeneratedLoadingRuntimeTest" time="0.001"/>
+  <testcase name="load_shouldPropagateRegistrationFailureAndAllowRetry()" classname="io.github.gear4jtest.external.api.GeneratedLoadingRuntimeTest" time="0.001"/>
+  <testcase name="close_shouldWakeInFlightCallerAndRejectLaterLoads()" classname="io.github.gear4jtest.external.api.GeneratedLoadingRuntimeTest" time="0.002"/>
+  <system-out><![CDATA[18:10:00.897 [gear4j-loading-30] WARN io.github.gear4jtest.external.api.GeneratedLoadingRuntime -- Generated classloader registration cleanup failed; the single-flight slot was released. internalLoaderId=loader
+io.github.gear4jtest.core.util.ExceptionDiagnostics$WithheldException: exceptionType=java.lang.IllegalStateException; exception details withheld
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
