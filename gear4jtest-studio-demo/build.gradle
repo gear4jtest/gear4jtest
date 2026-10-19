@@ -1,5 +1,6 @@
+plugins { id 'application' }
 ext.moduleName = 'io.github.gear4jtest.studio.demo'
-description = 'Gear4J Studio P4 studio-demo (experimental).'
+description = 'Gear4J Studio studio-demo (experimental).'
 dependencies {
     api project(':gear4jtest-studio-http')
     implementation project(':gear4jtest-studio-runtime')
@@ -56,3 +57,6 @@ tasks.register('studioPackageCheck', Exec) {
     commandLine 'npm', 'run', 'pack:check'
 }
 tasks.named('check') { dependsOn 'studioPackageCheck' }
+
+application { mainClass = 'io.github.gear4jtest.studio.demo.PlainStudioApplication' }
+distributions { main { contents { from('README.md') } } }

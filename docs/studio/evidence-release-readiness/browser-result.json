@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "browser": "151.0.7922.34",
+  "checks": [
+    "Packaged HTTP authentication, authorization, origin, expected-context, target isolation and inventory redaction",
+    "ACL revocation clears previously displayed resource",
+    "java: authoring, SOURCE reload, controlled test, TEST/RUN, scenario/simulation, mobile, memory-only credentials",
+    "spring: authoring, SOURCE reload, controlled test, TEST/RUN, scenario/simulation, mobile, memory-only credentials",
+    "java_embedded: authoring, SOURCE reload, controlled test, TEST/RUN, scenario/simulation, mobile, memory-only credentials",
+    "spring_embedded: authoring, SOURCE reload, controlled test, TEST/RUN, scenario/simulation, mobile, memory-only credentials",
+    "standalone: authoring, SOURCE reload, controlled test, TEST/RUN, scenario/simulation, mobile, memory-only credentials",
+    "Launcher logs checked for credential leakage; all child processes stopped"
+  ]
+}

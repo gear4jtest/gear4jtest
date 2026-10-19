@@ -1,0 +1,4 @@
+> Task :verifyDocumentationLinks
+> Task :studioReleaseBaseline
+Studio candidate baseline and protocol verified
+BUILD SUCCESSFUL in 11s

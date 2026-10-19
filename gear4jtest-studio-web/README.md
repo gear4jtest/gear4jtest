@@ -1,4 +1,4 @@
-# @gear4j/studio-web — expérimental 0.6.1
+# @gear4j/studio-web — expérimental 0.6.2
 
 Composants publics ESM et Web Components, sans dépendance au module de démonstration.
 Le serveur Java et la démo Spring consomment ces mêmes sources via processResources.
@@ -10,7 +10,7 @@ npm run pack:check
 npm pack
 ```
 
-Installer le .tgz produit dans un portail (`npm install /chemin/gear4j-studio-web-0.6.1.tgz`).
+Installer le .tgz produit dans un portail (`npm install /chemin/gear4j-studio-web-0.6.2.tgz`).
 Importer `ManagementClient` depuis `@gear4j/studio-web/client`, `Gear4jStudio` depuis
 `@gear4j/studio-web/editor`, ou `Gear4jWorkspace` depuis `@gear4j/studio-web/workspace`.
 L’entrée principale enregistre les Web Components ; l’entrée client fonctionne sans DOM.

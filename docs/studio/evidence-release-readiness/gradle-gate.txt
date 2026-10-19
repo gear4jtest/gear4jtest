@@ -1,0 +1,706 @@
+> Task :build-logic:extractPluginRequests UP-TO-DATE
+> Task :build-logic:generatePluginAdapters UP-TO-DATE
+> Task :build-logic:compileJava UP-TO-DATE
+> Task :build-logic:compileGroovy NO-SOURCE
+> Task :build-logic:compileGroovyPlugins UP-TO-DATE
+> Task :build-logic:pluginDescriptors UP-TO-DATE
+> Task :build-logic:processResources UP-TO-DATE
+> Task :build-logic:classes UP-TO-DATE
+> Task :build-logic:jar UP-TO-DATE
+> Task :build-logic:compileTestJava NO-SOURCE
+> Task :build-logic:compileTestGroovy UP-TO-DATE
+> Task :build-logic:pluginUnderTestMetadata UP-TO-DATE
+> Task :build-logic:processTestResources NO-SOURCE
+> Task :build-logic:testClasses UP-TO-DATE
+> Task :build-logic:test UP-TO-DATE
+> Task :spotlessRootMisc
+> Task :spotlessRootMiscApply
+> Task :spotlessApply
+> Task :gear4jtest-core:spotlessJava UP-TO-DATE
+> Task :gear4jtest-core:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-core:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-core:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-core:spotlessApply UP-TO-DATE
+> Task :gear4jtest-experimental-cache:spotlessJava UP-TO-DATE
+> Task :gear4jtest-experimental-cache:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-experimental-cache:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-experimental-cache:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-experimental-cache:spotlessApply UP-TO-DATE
+> Task :gear4jtest-external-api:spotlessJava UP-TO-DATE
+> Task :gear4jtest-external-api:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-external-api:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-external-api:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-external-api:spotlessApply UP-TO-DATE
+> Task :gear4jtest-external-jdbc:spotlessJava UP-TO-DATE
+> Task :gear4jtest-external-jdbc:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-external-jdbc:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-external-jdbc:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-external-jdbc:spotlessApply UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:spotlessJava UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:spotlessApply UP-TO-DATE
+> Task :gear4jtest-jackson:spotlessJava UP-TO-DATE
+> Task :gear4jtest-jackson:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-jackson:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-jackson:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-jackson:spotlessApply UP-TO-DATE
+> Task :gear4jtest-jdbc:spotlessJava UP-TO-DATE
+> Task :gear4jtest-jdbc:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-jdbc:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-jdbc:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-jdbc:spotlessApply UP-TO-DATE
+> Task :gear4jtest-micrometer:spotlessJava UP-TO-DATE
+> Task :gear4jtest-micrometer:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-micrometer:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-micrometer:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-micrometer:spotlessApply UP-TO-DATE
+> Task :gear4jtest-spring:spotlessJava UP-TO-DATE
+> Task :gear4jtest-spring:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-spring:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-spring:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-spring:spotlessApply UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:spotlessJava UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:spotlessApply UP-TO-DATE
+> Task :gear4jtest-studio:spotlessJava UP-TO-DATE
+> Task :gear4jtest-studio:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-studio:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-studio:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-studio:spotlessApply UP-TO-DATE
+> Task :gear4jtest-studio-demo:spotlessJava UP-TO-DATE
+> Task :gear4jtest-studio-demo:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-studio-demo:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-studio-demo:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-studio-demo:spotlessApply UP-TO-DATE
+> Task :gear4jtest-studio-http:spotlessJava UP-TO-DATE
+> Task :gear4jtest-studio-http:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-studio-http:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-studio-http:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-studio-http:spotlessApply UP-TO-DATE
+> Task :gear4jtest-studio-jdbc:spotlessJava
+> Task :gear4jtest-studio-jdbc:spotlessJavaApply
+> Task :gear4jtest-studio-jdbc:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-studio-jdbc:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-studio-jdbc:spotlessApply
+> Task :gear4jtest-studio-json:spotlessJava UP-TO-DATE
+> Task :gear4jtest-studio-json:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-studio-json:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-studio-json:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-studio-json:spotlessApply UP-TO-DATE
+> Task :gear4jtest-studio-runtime:spotlessJava UP-TO-DATE
+> Task :gear4jtest-studio-runtime:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-studio-runtime:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-studio-runtime:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-studio-runtime:spotlessApply UP-TO-DATE
+> Task :gear4jtest-studio-spring-demo:spotlessJava UP-TO-DATE
+> Task :gear4jtest-studio-spring-demo:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-studio-spring-demo:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-studio-spring-demo:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-studio-spring-demo:spotlessApply UP-TO-DATE
+> Task :gear4jtest-studio-standalone:spotlessJava UP-TO-DATE
+> Task :gear4jtest-studio-standalone:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-studio-standalone:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-studio-standalone:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-studio-standalone:spotlessApply UP-TO-DATE
+> Task :gear4jtest-xml:spotlessJava UP-TO-DATE
+> Task :gear4jtest-xml:spotlessJavaApply UP-TO-DATE
+> Task :gear4jtest-xml:spotlessModuleMisc UP-TO-DATE
+> Task :gear4jtest-xml:spotlessModuleMiscApply UP-TO-DATE
+> Task :gear4jtest-xml:spotlessApply UP-TO-DATE
+> Task :buildLogicCheck UP-TO-DATE
+> Task :gear4jtest-core:compileJava UP-TO-DATE
+> Task :gear4jtest-core:processResources NO-SOURCE
+> Task :gear4jtest-core:classes UP-TO-DATE
+> Task :gear4jtest-core:jar UP-TO-DATE
+> Task :gear4jtest-core:javadoc UP-TO-DATE
+> Task :gear4jtest-core:javadocJar UP-TO-DATE
+> Task :gear4jtest-core:sourcesJar UP-TO-DATE
+> Task :gear4jtest-core:compileTestJava UP-TO-DATE
+> Task :gear4jtest-core:processTestResources UP-TO-DATE
+> Task :gear4jtest-core:testClasses UP-TO-DATE
+> Task :gear4jtest-core:test UP-TO-DATE
+> Task :gear4jtest-core:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-core:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-core:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-core:integrationTest NO-SOURCE
+> Task :gear4jtest-experimental-cache:compileJava UP-TO-DATE
+> Task :gear4jtest-experimental-cache:processResources NO-SOURCE
+> Task :gear4jtest-experimental-cache:classes UP-TO-DATE
+> Task :gear4jtest-experimental-cache:jar UP-TO-DATE
+> Task :gear4jtest-experimental-cache:javadoc UP-TO-DATE
+> Task :gear4jtest-experimental-cache:javadocJar UP-TO-DATE
+> Task :gear4jtest-experimental-cache:sourcesJar UP-TO-DATE
+> Task :gear4jtest-experimental-cache:compileTestJava UP-TO-DATE
+> Task :gear4jtest-experimental-cache:processTestResources NO-SOURCE
+> Task :gear4jtest-experimental-cache:testClasses UP-TO-DATE
+> Task :gear4jtest-experimental-cache:test UP-TO-DATE
+> Task :gear4jtest-experimental-cache:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-experimental-cache:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-experimental-cache:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-experimental-cache:integrationTest NO-SOURCE
+> Task :gear4jtest-external-api:compileJava UP-TO-DATE
+> Task :gear4jtest-external-api:processResources UP-TO-DATE
+> Task :gear4jtest-external-api:classes UP-TO-DATE
+> Task :gear4jtest-external-api:jar UP-TO-DATE
+> Task :gear4jtest-external-api:javadoc UP-TO-DATE
+> Task :gear4jtest-external-api:javadocJar UP-TO-DATE
+> Task :gear4jtest-external-api:sourcesJar UP-TO-DATE
+> Task :gear4jtest-external-api:compileTestJava UP-TO-DATE
+> Task :gear4jtest-external-api:processTestResources NO-SOURCE
+> Task :gear4jtest-external-api:testClasses UP-TO-DATE
+> Task :gear4jtest-external-api:test UP-TO-DATE
+> Task :gear4jtest-external-api:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-external-api:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-external-api:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-external-api:integrationTest NO-SOURCE
+> Task :gear4jtest-jdbc:compileJava UP-TO-DATE
+> Task :gear4jtest-external-jdbc:compileJava UP-TO-DATE
+> Task :gear4jtest-external-jdbc:processResources UP-TO-DATE
+> Task :gear4jtest-external-jdbc:classes UP-TO-DATE
+> Task :gear4jtest-external-jdbc:jar UP-TO-DATE
+> Task :gear4jtest-external-jdbc:javadoc UP-TO-DATE
+> Task :gear4jtest-external-jdbc:javadocJar UP-TO-DATE
+> Task :gear4jtest-external-jdbc:sourcesJar UP-TO-DATE
+> Task :gear4jtest-external-jdbc:compileTestJava UP-TO-DATE
+> Task :gear4jtest-external-jdbc:processTestResources NO-SOURCE
+> Task :gear4jtest-external-jdbc:testClasses UP-TO-DATE
+> Task :gear4jtest-jdbc:processResources UP-TO-DATE
+> Task :gear4jtest-jdbc:classes UP-TO-DATE
+> Task :gear4jtest-jdbc:jar UP-TO-DATE
+> Task :gear4jtest-external-jdbc:test UP-TO-DATE
+> Task :verifyDatabaseDialectSelection
+> Task :gear4jtest-external-jdbc:compileIntegrationTestJava UP-TO-DATE
+> Task :gear4jtest-external-jdbc:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-external-jdbc:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-external-jdbc:integrationTest UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:extractPluginRequests NO-SOURCE
+> Task :gear4jtest-gradle-xml2java:generatePluginAdapters NO-SOURCE
+> Task :gear4jtest-xml:compileJava UP-TO-DATE
+> Task :gear4jtest-xml:processResources UP-TO-DATE
+> Task :gear4jtest-xml:classes UP-TO-DATE
+> Task :gear4jtest-xml:jar UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:compileJava UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:compileGroovy UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:compileGroovyPlugins NO-SOURCE
+> Task :gear4jtest-gradle-xml2java:pluginDescriptors UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:processResources UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:classes UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:jar UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:groovydoc UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:javadocJar UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:sourcesJar UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:compileTestJava NO-SOURCE
+> Task :gear4jtest-gradle-xml2java:compileTestGroovy UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:pluginUnderTestMetadata UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:processTestResources NO-SOURCE
+> Task :gear4jtest-gradle-xml2java:testClasses UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:test UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-gradle-xml2java:compileIntegrationTestGroovy NO-SOURCE
+> Task :gear4jtest-gradle-xml2java:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-gradle-xml2java:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:integrationTest NO-SOURCE
+> Task :gear4jtest-jackson:compileJava UP-TO-DATE
+> Task :gear4jtest-jackson:processResources NO-SOURCE
+> Task :gear4jtest-jackson:classes UP-TO-DATE
+> Task :gear4jtest-jackson:jar UP-TO-DATE
+> Task :gear4jtest-jackson:javadoc UP-TO-DATE
+> Task :gear4jtest-jackson:javadocJar UP-TO-DATE
+> Task :gear4jtest-jackson:sourcesJar UP-TO-DATE
+> Task :gear4jtest-jackson:compileTestJava UP-TO-DATE
+> Task :gear4jtest-jackson:processTestResources NO-SOURCE
+> Task :gear4jtest-jackson:testClasses UP-TO-DATE
+> Task :gear4jtest-jackson:test UP-TO-DATE
+> Task :gear4jtest-jackson:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-jackson:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-jackson:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-jackson:integrationTest NO-SOURCE
+> Task :gear4jtest-jdbc:javadoc UP-TO-DATE
+> Task :gear4jtest-jdbc:javadocJar UP-TO-DATE
+> Task :gear4jtest-jdbc:sourcesJar UP-TO-DATE
+> Task :gear4jtest-jdbc:compileTestJava UP-TO-DATE
+> Task :gear4jtest-jdbc:processTestResources NO-SOURCE
+> Task :gear4jtest-jdbc:testClasses UP-TO-DATE
+> Task :gear4jtest-jdbc:test UP-TO-DATE
+> Task :gear4jtest-jdbc:compileIntegrationTestJava UP-TO-DATE
+> Task :gear4jtest-jdbc:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-jdbc:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-jdbc:integrationTest UP-TO-DATE
+> Task :gear4jtest-micrometer:compileJava UP-TO-DATE
+> Task :gear4jtest-micrometer:processResources NO-SOURCE
+> Task :gear4jtest-micrometer:classes UP-TO-DATE
+> Task :gear4jtest-micrometer:jar UP-TO-DATE
+> Task :gear4jtest-micrometer:javadoc UP-TO-DATE
+> Task :gear4jtest-micrometer:javadocJar UP-TO-DATE
+> Task :gear4jtest-micrometer:sourcesJar UP-TO-DATE
+> Task :gear4jtest-micrometer:compileTestJava UP-TO-DATE
+> Task :gear4jtest-micrometer:processTestResources NO-SOURCE
+> Task :gear4jtest-micrometer:testClasses UP-TO-DATE
+> Task :gear4jtest-micrometer:test UP-TO-DATE
+> Task :gear4jtest-micrometer:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-micrometer:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-micrometer:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-micrometer:integrationTest NO-SOURCE
+> Task :gear4jtest-spring:compileJava UP-TO-DATE
+> Task :gear4jtest-spring:processResources NO-SOURCE
+> Task :gear4jtest-spring:classes UP-TO-DATE
+> Task :gear4jtest-spring:jar UP-TO-DATE
+> Task :gear4jtest-spring:javadoc UP-TO-DATE
+> Task :gear4jtest-spring:javadocJar UP-TO-DATE
+> Task :gear4jtest-spring:sourcesJar UP-TO-DATE
+> Task :gear4jtest-spring:compileTestJava UP-TO-DATE
+> Task :gear4jtest-spring:processTestResources NO-SOURCE
+> Task :gear4jtest-spring:testClasses UP-TO-DATE
+> Task :gear4jtest-spring:test UP-TO-DATE
+> Task :gear4jtest-spring:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-spring:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-spring:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-spring:integrationTest NO-SOURCE
+> Task :gear4jtest-spring-boot-starter:compileJava UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:processResources UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:classes UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:jar UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:javadoc UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:javadocJar UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:sourcesJar UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:compileTestJava UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:processTestResources NO-SOURCE
+> Task :gear4jtest-spring-boot-starter:testClasses UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:test UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-spring-boot-starter:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-spring-boot-starter:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:integrationTest NO-SOURCE
+> Task :gear4jtest-studio:compileJava UP-TO-DATE
+> Task :gear4jtest-studio:processResources NO-SOURCE
+> Task :gear4jtest-studio:classes UP-TO-DATE
+> Task :gear4jtest-studio:jar UP-TO-DATE
+> Task :gear4jtest-studio:javadoc UP-TO-DATE
+> Task :gear4jtest-studio:javadocJar UP-TO-DATE
+> Task :gear4jtest-studio:sourcesJar UP-TO-DATE
+> Task :gear4jtest-studio-json:compileJava UP-TO-DATE
+> Task :gear4jtest-studio-jdbc:compileJava UP-TO-DATE
+> Task :gear4jtest-studio:compileTestJava
+> Task :gear4jtest-studio:processTestResources NO-SOURCE
+> Task :gear4jtest-studio:testClasses
+> Task :gear4jtest-studio-jdbc:processResources
+> Task :gear4jtest-studio-jdbc:classes
+> Task :gear4jtest-studio-jdbc:jar
+> Task :gear4jtest-studio-json:processResources NO-SOURCE
+> Task :gear4jtest-studio-json:classes UP-TO-DATE
+> Task :gear4jtest-studio-json:jar
+> Task :gear4jtest-studio:test
+> Task :gear4jtest-studio:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-studio:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-studio:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-studio:integrationTest NO-SOURCE
+> Task :gear4jtest-studio-http:compileJava
+> Task :gear4jtest-studio-runtime:compileJava
+> Task :gear4jtest-studio-demo:compileJava
+> Task :gear4jtest-studio-demo:processResources
+> Task :gear4jtest-studio-demo:classes
+> Task :gear4jtest-studio-demo:jar
+> Task :gear4jtest-studio-demo:javadoc
+> Task :gear4jtest-studio-demo:javadocJar
+> Task :gear4jtest-studio-demo:sourcesJar
+> Task :gear4jtest-studio-demo:compileTestJava
+> Task :gear4jtest-studio-demo:processTestResources NO-SOURCE
+> Task :gear4jtest-studio-demo:testClasses
+> Task :gear4jtest-studio-http:processResources NO-SOURCE
+> Task :gear4jtest-studio-http:classes
+> Task :gear4jtest-studio-http:jar
+> Task :gear4jtest-studio-runtime:processResources NO-SOURCE
+> Task :gear4jtest-studio-runtime:classes
+> Task :gear4jtest-studio-runtime:jar
+> Task :gear4jtest-studio-demo:test
+> Task :gear4jtest-studio-demo:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-studio-demo:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-studio-demo:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-studio-demo:integrationTest NO-SOURCE
+> Task :gear4jtest-studio-http:javadoc
+> Task :gear4jtest-studio-http:javadocJar
+> Task :gear4jtest-studio-http:sourcesJar
+> Task :gear4jtest-studio-http:compileTestJava
+> Task :gear4jtest-studio-http:processTestResources NO-SOURCE
+> Task :gear4jtest-studio-http:testClasses
+> Task :gear4jtest-studio-http:test
+> Task :gear4jtest-studio-http:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-studio-http:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-studio-http:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-studio-http:integrationTest NO-SOURCE
+> Task :gear4jtest-studio-jdbc:javadoc
+> Task :gear4jtest-studio-jdbc:javadocJar
+> Task :gear4jtest-studio-jdbc:sourcesJar
+> Task :gear4jtest-studio-jdbc:compileTestJava
+> Task :gear4jtest-studio-jdbc:processTestResources NO-SOURCE
+> Task :gear4jtest-studio-jdbc:testClasses
+> Task :gear4jtest-studio-jdbc:test
+> Task :gear4jtest-studio-jdbc:compileIntegrationTestJava
+> Task :gear4jtest-studio-jdbc:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-studio-jdbc:integrationTestClasses
+> Task :gear4jtest-studio-jdbc:integrationTest
+> Task :gear4jtest-studio-json:javadoc
+> Task :gear4jtest-studio-json:javadocJar
+> Task :gear4jtest-studio-json:sourcesJar
+> Task :gear4jtest-studio-json:compileTestJava
+> Task :gear4jtest-studio-json:processTestResources NO-SOURCE
+> Task :gear4jtest-studio-json:testClasses
+> Task :gear4jtest-studio-json:test
+> Task :gear4jtest-studio-json:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-studio-json:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-studio-json:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-studio-json:integrationTest NO-SOURCE
+> Task :gear4jtest-studio-runtime:javadoc
+> Task :gear4jtest-studio-runtime:javadocJar
+> Task :gear4jtest-studio-runtime:sourcesJar
+> Task :gear4jtest-studio-runtime:compileTestJava
+> Task :gear4jtest-studio-runtime:processTestResources NO-SOURCE
+> Task :gear4jtest-studio-runtime:testClasses
+> Task :gear4jtest-studio-runtime:test
+> Task :gear4jtest-studio-runtime:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-studio-runtime:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-studio-runtime:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-studio-runtime:integrationTest NO-SOURCE
+> Task :gear4jtest-studio-spring-demo:compileJava
+> Task :gear4jtest-studio-spring-demo:processResources NO-SOURCE
+> Task :gear4jtest-studio-spring-demo:classes
+> Task :gear4jtest-studio-spring-demo:jar
+> Task :gear4jtest-studio-spring-demo:javadoc
+> Task :gear4jtest-studio-spring-demo:javadocJar
+> Task :gear4jtest-studio-spring-demo:sourcesJar
+> Task :gear4jtest-studio-spring-demo:compileTestJava
+> Task :gear4jtest-studio-spring-demo:processTestResources NO-SOURCE
+> Task :gear4jtest-studio-spring-demo:testClasses
+> Task :gear4jtest-studio-spring-demo:test
+> Task :gear4jtest-studio-spring-demo:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-studio-spring-demo:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-studio-spring-demo:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-studio-spring-demo:integrationTest NO-SOURCE
+> Task :gear4jtest-studio-standalone:compileJava
+> Task :gear4jtest-studio-standalone:processResources
+> Task :gear4jtest-studio-standalone:classes
+> Task :gear4jtest-studio-standalone:jar
+> Task :gear4jtest-studio-standalone:javadoc
+> Task :gear4jtest-studio-standalone:javadocJar
+> Task :gear4jtest-studio-standalone:sourcesJar
+> Task :gear4jtest-studio-standalone:compileTestJava
+> Task :gear4jtest-studio-standalone:processTestResources NO-SOURCE
+> Task :gear4jtest-studio-standalone:testClasses
+> Task :gear4jtest-studio-standalone:test
+> Task :gear4jtest-studio-standalone:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-studio-standalone:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-studio-standalone:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-studio-standalone:integrationTest NO-SOURCE
+> Task :gear4jtest-xml:javadoc
+> Task :gear4jtest-xml:javadocJar
+> Task :gear4jtest-xml:sourcesJar
+> Task :gear4jtest-xml:compileTestJava
+> Task :gear4jtest-xml:processTestResources
+> Task :gear4jtest-xml:testClasses
+> Task :gear4jtest-xml:test
+> Task :gear4jtest-xml:compileIntegrationTestJava NO-SOURCE
+> Task :gear4jtest-xml:processIntegrationTestResources NO-SOURCE
+> Task :gear4jtest-xml:integrationTestClasses UP-TO-DATE
+> Task :gear4jtest-xml:integrationTest NO-SOURCE
+> Task :jacocoModuleCoverageGear4jtestCore
+> Task :jacocoModuleCoverageGear4jtestExperimentalCache
+> Task :jacocoCriticalCoverageVerification
+> Task :jacocoModuleCoverageGear4jtestExternalApi
+> Task :jacocoModuleCoverageGear4jtestExternalJdbc
+> Task :jacocoModuleCoverageGear4jtestJackson
+> Task :jacocoModuleCoverageGear4jtestGradleXml2java
+> Task :jacocoModuleCoverageGear4jtestMicrometer
+> Task :jacocoModuleCoverageGear4jtestJdbc
+> Task :jacocoModuleCoverageGear4jtestSpring
+> Task :jacocoModuleCoverageGear4jtestSpringBootStarter
+> Task :jacocoModuleCoverageGear4jtestStudioDemo
+> Task :jacocoModuleCoverageGear4jtestStudio
+> Task :jacocoModuleCoverageGear4jtestStudioHttp
+> Task :jacocoModuleCoverageGear4jtestStudioJdbc
+> Task :jacocoModuleCoverageGear4jtestStudioJson
+> Task :jacocoModuleCoverageGear4jtestStudioSpringDemo
+> Task :jacocoModuleCoverageGear4jtestStudioRuntime
+> Task :jacocoModuleCoverageGear4jtestStudioStandalone
+> Task :verifyCoveragePolicy
+> Task :integrationCheck
+> Task :spotlessRootMiscCheck
+> Task :spotlessCheck
+> Task :jacocoModuleCoverageGear4jtestXml
+> Task :verifyCoreArtifactApiSurface
+> Task :coverageVerification
+> Task :verifyDatabaseTestDependencyScope
+> Task :verifyDecisionIdentifiers
+> Task :verifyDocumentationLinks
+> Task :verifyJava17AndArchiveConfiguration
+> Task :verifyLivingDocumentationMetadata
+> Task :verifyReleaseWorkflowContract
+> Task :verifyRetiredAuditSources
+> Task :verifySuppressWarningsBudget
+> Task :verifyWorkflowSecurity
+> Task :gear4jtest-gradle-xml2java:compileCompatibilityTestJava NO-SOURCE
+> Task :gear4jtest-gradle-xml2java:compileCompatibilityTestGroovy
+> Task :gear4jtest-gradle-xml2java:processCompatibilityTestResources
+> Task :gear4jtest-gradle-xml2java:compatibilityTestClasses
+> Task :gear4jtest-gradle-xml2java:gradlePluginCompatibilityTest
+> Task :check
+> Task :gear4jtest-studio-demo:startScripts
+> Task :gear4jtest-studio-demo:installDist
+> Task :gear4jtest-studio-demo:studioFrontendInstall
+> Task :gear4jtest-studio-spring-demo:startScripts
+> Task :gear4jtest-studio-spring-demo:installDist
+> Task :gear4jtest-studio-standalone:startScripts
+> Task :gear4jtest-studio-standalone:installDist
+> Task :studioBrowserTest
+Browser: java
+Browser: spring
+Browser: java_embedded
+Browser: spring_embedded
+Browser: standalone
+> Task :gear4jtest-core:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-core:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-core:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-core:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-experimental-cache:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-experimental-cache:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-experimental-cache:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-experimental-cache:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-external-api:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-external-api:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-external-api:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-external-api:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-external-jdbc:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-external-jdbc:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-external-jdbc:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-external-jdbc:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-gradle-xml2java:generatePomFileForGear4jXmlAssemblyLineGeneratorLegacyPluginMarkerMavenPublication
+> Task :gear4jtest-gradle-xml2java:publishGear4jXmlAssemblyLineGeneratorLegacyPluginMarkerMavenPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-gradle-xml2java:generatePomFileForGear4jXmlAssemblyLineGeneratorPluginMarkerMavenPublication
+> Task :gear4jtest-gradle-xml2java:publishGear4jXmlAssemblyLineGeneratorPluginMarkerMavenPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-gradle-xml2java:generateMetadataFileForPluginMavenPublication
+> Task :gear4jtest-gradle-xml2java:generatePomFileForPluginMavenPublication
+> Task :gear4jtest-gradle-xml2java:publishPluginMavenPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-gradle-xml2java:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-jackson:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-jackson:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-jackson:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-jackson:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-jdbc:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-jdbc:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-jdbc:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-jdbc:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-micrometer:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-micrometer:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-micrometer:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-micrometer:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-spring:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-spring:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-spring:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-spring:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-spring-boot-starter:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-spring-boot-starter:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-spring-boot-starter:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-spring-boot-starter:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-studio:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-studio:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-studio:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-studio:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-studio-demo:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-studio-demo:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-studio-demo:publishMavenJavaPublicationToMavenCentralStagingRepository SKIPPED
+> Task :gear4jtest-studio-demo:publishAllPublicationsToMavenCentralStagingRepository UP-TO-DATE
+> Task :gear4jtest-studio-http:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-studio-http:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-studio-http:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-studio-http:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-studio-jdbc:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-studio-jdbc:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-studio-jdbc:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-studio-jdbc:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-studio-json:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-studio-json:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-studio-json:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-studio-json:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-studio-runtime:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-studio-runtime:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-studio-runtime:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-studio-runtime:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-studio-spring-demo:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-studio-spring-demo:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-studio-spring-demo:publishMavenJavaPublicationToMavenCentralStagingRepository SKIPPED
+> Task :gear4jtest-studio-spring-demo:publishAllPublicationsToMavenCentralStagingRepository UP-TO-DATE
+> Task :gear4jtest-studio-standalone:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-studio-standalone:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-studio-standalone:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-studio-standalone:publishAllPublicationsToMavenCentralStagingRepository
+> Task :gear4jtest-xml:generateMetadataFileForMavenJavaPublication
+> Task :gear4jtest-xml:generatePomFileForMavenJavaPublication
+> Task :gear4jtest-xml:publishMavenJavaPublicationToMavenCentralStagingRepository
+> Task :gear4jtest-xml:publishAllPublicationsToMavenCentralStagingRepository
+> Task :stageMavenCentral
+> Task :studioConsumerSmoke
+> Task :plain:clean
+> Task :spring:clean
+> Task :plain:compileJava
+> Task :plain:processResources NO-SOURCE
+> Task :plain:classes
+> Task :plain:smoke
+Independent consumer passed: consumer.context
+> Task :spring:compileJava
+> Task :spring:processResources NO-SOURCE
+> Task :spring:classes
+> Task :spring:smoke
+Independent consumer passed: consumer.context
+> Task :smoke
+BUILD SUCCESSFUL in 6s
+> Task :studioReleaseBaseline
+Studio candidate baseline and protocol verified
+> Task :verifyStagedReleaseArtifacts
+> Task :gear4jtest-core:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-core:compileJmhJava
+> Task :gear4jtest-core:processJmhResources NO-SOURCE
+> Task :gear4jtest-core:jmhClasses
+> Task :gear4jtest-core:checkstyleJmh
+> Task :gear4jtest-core:checkstyleMain
+> Task :gear4jtest-core:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-core:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-core:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-experimental-cache:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-core:checkstyleTest
+> Task :gear4jtest-core:check
+> Task :gear4jtest-experimental-cache:checkstyleMain
+> Task :gear4jtest-experimental-cache:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-experimental-cache:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-experimental-cache:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-external-api:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-experimental-cache:checkstyleTest
+> Task :gear4jtest-experimental-cache:check
+> Task :gear4jtest-external-api:checkstyleMain
+> Task :gear4jtest-external-api:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-external-api:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-external-api:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-external-api:checkstyleTest
+> Task :gear4jtest-external-api:check
+> Task :gear4jtest-external-jdbc:checkstyleMain
+> Task :gear4jtest-external-jdbc:checkstyleIntegrationTest
+> Task :gear4jtest-external-jdbc:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-external-jdbc:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-external-jdbc:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:checkstyleCompatibilityTest NO-SOURCE
+> Task :gear4jtest-gradle-xml2java:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-external-jdbc:checkstyleTest
+> Task :gear4jtest-external-jdbc:check
+> Task :gear4jtest-gradle-xml2java:checkstyleTest NO-SOURCE
+> Task :gear4jtest-gradle-xml2java:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-gradle-xml2java:checkstyleMain
+> Task :gear4jtest-gradle-xml2java:validatePlugins
+> Task :gear4jtest-gradle-xml2java:check
+> Task :gear4jtest-jackson:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-jackson:checkstyleMain
+> Task :gear4jtest-jackson:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-jackson:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-jackson:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-jackson:checkstyleTest
+> Task :gear4jtest-jackson:check
+> Task :gear4jtest-jdbc:checkstyleIntegrationTest
+> Task :gear4jtest-jdbc:checkstyleMain
+> Task :gear4jtest-jdbc:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-jdbc:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-jdbc:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-micrometer:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-micrometer:checkstyleMain
+> Task :gear4jtest-micrometer:checkstyleTest
+> Task :gear4jtest-micrometer:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-micrometer:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-micrometer:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-micrometer:check
+> Task :gear4jtest-spring:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-jdbc:checkstyleTest
+> Task :gear4jtest-jdbc:check
+> Task :gear4jtest-spring:checkstyleMain
+> Task :gear4jtest-spring:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-spring:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-spring:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-spring:checkstyleTest
+> Task :gear4jtest-spring:check
+> Task :gear4jtest-spring-boot-starter:checkstyleTest
+> Task :gear4jtest-spring-boot-starter:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-spring-boot-starter:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-studio:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-spring-boot-starter:checkstyleMain
+> Task :gear4jtest-spring-boot-starter:check
+> Task :gear4jtest-studio:checkstyleTest
+> Task :gear4jtest-studio:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-studio:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-studio:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-studio-demo:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-studio-demo:checkstyleMain
+> Task :gear4jtest-studio:checkstyleMain
+> Task :gear4jtest-studio:check
+> Task :gear4jtest-studio-demo:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-studio-demo:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-studio-demo:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-studio-demo:checkstyleTest
+> Task :gear4jtest-studio-demo:studioComponentTest
+> Task :gear4jtest-studio-demo:studioPackageCheck
+Packed npm artifact installed and all public exports consumed successfully.
+> Task :gear4jtest-studio-demo:check
+> Task :gear4jtest-studio-http:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-studio-http:checkstyleTest
+> Task :gear4jtest-studio-http:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-studio-http:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-studio-http:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-studio-http:checkstyleMain
+> Task :gear4jtest-studio-http:check
+> Task :gear4jtest-studio-jdbc:checkstyleIntegrationTest
+> Task :gear4jtest-studio-jdbc:checkstyleMain
+> Task :gear4jtest-studio-jdbc:spotlessJavaCheck
+> Task :gear4jtest-studio-jdbc:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-studio-jdbc:spotlessCheck
+> Task :gear4jtest-studio-jdbc:checkstyleTest
+> Task :gear4jtest-studio-jdbc:studioPostgresQualification FAILED
+> Task :gear4jtest-studio-jdbc:check
+> Task :gear4jtest-studio-json:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-studio-json:checkstyleMain
+> Task :gear4jtest-studio-json:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-studio-json:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-studio-json:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-studio-runtime:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-studio-json:checkstyleTest
+> Task :gear4jtest-studio-json:check
+> Task :gear4jtest-studio-runtime:checkstyleMain
+> Task :gear4jtest-studio-runtime:checkstyleTest
+> Task :gear4jtest-studio-runtime:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-studio-runtime:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-studio-runtime:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-studio-runtime:check
+> Task :gear4jtest-studio-spring-demo:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-studio-spring-demo:checkstyleMain
+> Task :gear4jtest-studio-spring-demo:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-studio-spring-demo:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-studio-spring-demo:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-studio-standalone:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-studio-spring-demo:checkstyleTest
+> Task :gear4jtest-studio-spring-demo:check
+> Task :gear4jtest-studio-standalone:checkstyleMain
+> Task :gear4jtest-studio-standalone:checkstyleTest
+> Task :gear4jtest-studio-standalone:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-studio-standalone:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-studio-standalone:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-studio-standalone:check
+> Task :gear4jtest-xml:checkstyleIntegrationTest NO-SOURCE
+> Task :gear4jtest-xml:checkstyleTest
+> Task :gear4jtest-xml:spotlessJavaCheck UP-TO-DATE
+> Task :gear4jtest-xml:spotlessModuleMiscCheck UP-TO-DATE
+> Task :gear4jtest-xml:spotlessCheck UP-TO-DATE
+> Task :gear4jtest-xml:checkstyleMain
+> Task :gear4jtest-xml:check
+Execution failed for task ':gear4jtest-studio-jdbc:studioPostgresQualification'.
+BUILD FAILED in 3m 27s

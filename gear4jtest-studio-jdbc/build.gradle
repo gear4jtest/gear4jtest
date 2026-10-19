@@ -9,3 +9,14 @@ dependencies {
     integrationTestImplementation libs.testcontainers.postgresql
     integrationTestImplementation libs.postgresql
 }
+
+// An explicit release gate must fail rather than silently skip without a service.
+tasks.named('integrationTest') { useJUnitPlatform { excludeTags 'studio-release-postgres' } }
+tasks.register('studioPostgresQualification', Test) {
+    group = 'verification'
+    description = 'Qualifies Studio on a dedicated real PostgreSQL service; no Docker/H2 fallback.'
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    useJUnitPlatform { includeTags 'studio-release-postgres' }
+    outputs.upToDateWhen { false }
+}

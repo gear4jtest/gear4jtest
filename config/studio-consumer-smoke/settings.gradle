@@ -1,0 +1,2 @@
+rootProject.name = 'studio-public-consumers'
+include 'plain', 'spring'

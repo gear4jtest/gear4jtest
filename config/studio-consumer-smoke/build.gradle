@@ -1,0 +1,27 @@
+// Independent consumer: resolves published coordinates, never sibling project outputs.
+subprojects {
+    apply plugin: 'java'
+    java { toolchain { languageVersion = JavaLanguageVersion.of(17) } }
+    repositories {
+        exclusiveContent {
+            forRepository { maven { url = uri(providers.gradleProperty('gear4jRepository').get()) } }
+            filter { includeGroupByRegex 'io\\.github\\.gear4jtest.*' }
+        }
+        mavenCentral { content { excludeGroupByRegex 'io\\.github\\.gear4jtest.*' } }
+    }
+    sourceSets.main.java.srcDir rootProject.file('src/main/java')
+    dependencies {
+        implementation "io.github.gear4jtest:gear4jtest-studio-runtime:${providers.gradleProperty('gear4jVersion').get()}"
+        implementation "io.github.gear4jtest:gear4jtest-studio-jdbc:${providers.gradleProperty('gear4jVersion').get()}"
+        implementation "io.github.gear4jtest:gear4jtest-studio-http:${providers.gradleProperty('gear4jVersion').get()}"
+        implementation 'com.h2database:h2:2.4.240'
+    }
+    tasks.register('smoke', JavaExec) {
+        dependsOn classes
+        classpath = sourceSets.main.runtimeClasspath
+        mainClass = project.name == 'plain' ? 'consumer.PlainConsumer' : 'consumer.SpringConsumer'
+    }
+}
+project(':plain') { sourceSets.main.java.exclude '**/SpringConsumer.java' }
+project(':spring') { dependencies { implementation "io.github.gear4jtest:gear4jtest-spring:${providers.gradleProperty('gear4jVersion').get()}" } }
+tasks.register('smoke') { dependsOn ':plain:smoke', ':spring:smoke' }

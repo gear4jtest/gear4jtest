@@ -1,0 +1,12 @@
+{
+  "qualifiedAt": "2026-10-13",
+  "java": "17.0.20.1+1",
+  "gradle": "9.6.1",
+  "node": "24.19.0",
+  "chromium": "151.0.7922.34",
+  "browserHarness": "Playwright 1.62.1",
+  "postgresqlExecuted": false,
+  "postgresqlReason": "No configured disposable PostgreSQL service; no Docker/server tools available; required gate fails instead of skipping",
+  "finalGate": "FAIL: :gear4jtest-studio-jdbc:studioPostgresQualification",
+  "officialPublication": false
+}

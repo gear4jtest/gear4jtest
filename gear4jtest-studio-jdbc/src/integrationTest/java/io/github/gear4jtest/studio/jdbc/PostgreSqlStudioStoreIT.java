@@ -41,6 +41,10 @@ class PostgreSqlStudioStoreIT {
         source.setURL(DATABASE.getJdbcUrl());
         source.setUser(DATABASE.getUsername());
         source.setPassword(DATABASE.getPassword());
+        qualify(source);
+    }
+
+    static void qualify(javax.sql.DataSource source) throws Exception {
         StudioJdbcSchema.migrate(source, Gear4jDatabaseDialect.POSTGRESQL);
         StudioJdbcSchema.migrate(source, Gear4jDatabaseDialect.POSTGRESQL);
         var store = new JdbcStudioStore(source);
@@ -150,6 +154,30 @@ class PostgreSqlStudioStoreIT {
         var retention = new io.github.gear4jtest.studio.management.StudioRunRecorder(store, "context",
                 java.time.Clock.fixed(laterTime.plusSeconds(2), java.time.ZoneOffset.UTC));
         assertThat(retention.purgeStaleBefore(laterTime.plusSeconds(1), 100)).isEqualTo(1);
+        // Leave a populated run and simulation in the baseline for native
+        // backup/restore.
+        var retained = recorder.beginHostRun(chain.id(), new io.github.gear4jtest.studio.model.StudioRun.Provenance(
+                "context", chain.runtimeAssemblyLineId(), "build", "catalog", hash, "alice", "TEST", null, null, null,
+                0, version.id(), version.label()));
+        recorder.record(retained, observation);
+        var simulated = new io.github.gear4jtest.studio.model.StudioSimulation(UUID.randomUUID(), chain.id(),
+                chain.id(), "alice", time, "context", "build", fixture.reference(),
+                new io.github.gear4jtest.studio.model.ScenarioTarget(null, null, version.id()), revision.revisionId(),
+                1, hash,
+                new io.github.gear4jtest.studio.model.SimulationResult("storage-fixture", "catalog", "SUCCEEDED",
+                        null, io.github.gear4jtest.studio.model.CapturedValue.none(),
+                        io.github.gear4jtest.studio.model.CapturedValue.none(), List.of(), null),
+                List.of());
+        store.write(tx -> {
+            tx.lockDomain(domain.id());
+            tx.insertSimulation(simulated);
+            return null;
+        });
+        new JdbcStudioStore(source).read(tx -> {
+            assertThat(tx.simulation(simulated.id())).isEqualTo(simulated);
+            assertThat(tx.run(retained).observation()).isEqualTo(observation);
+            return null;
+        });
         var changed = new StudioDomain(domain.id(), domain.key(), "Changed", "", "alice", 2, false, time, time);
         store.write(tx -> {
             tx.lockDomain(domain.id());

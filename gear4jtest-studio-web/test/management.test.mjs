@@ -68,3 +68,15 @@ test('creation form retains entered values after a conflict and discovery does n
  assert.equal(element.shadowRoot.querySelector('.list button').disabled, true); assert.equal(element.shadowRoot.querySelector('script'), null);
  assert.match(element.shadowRoot.textContent, /Conflit/);
 });
+
+test('denied refresh removes the selected definition and related cached data after revocation', async () => {
+ const { element, client } = fixture(); await element.configure({ client }); await element.choose({ id: 'draft', kind: 'DRAFT' });
+ element.history = { items: [state.revision] }; element.comparison = { previous: definition };
+ element.formValues.set('metadata:draft', { name: 'private' });
+ client.draft = async () => { throw Object.assign(new Error(), { code: 'NOT_FOUND' }); };
+ await element.perform(() => element.choose({ id: 'draft', kind: 'DRAFT' }));
+ assert.equal(element.selected, null); assert.equal(element.editor, null);
+ assert.equal(element.history, null); assert.equal(element.comparison, null);
+ assert.equal(element.formValues.size, 0); assert.equal(element.shadowRoot.querySelector('gear4j-studio'), null);
+ assert.match(element.message, /inaccessible/);
+});

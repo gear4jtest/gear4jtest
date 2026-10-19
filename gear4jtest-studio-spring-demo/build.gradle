@@ -1,5 +1,6 @@
+plugins { id 'application' }
 ext.moduleName = 'io.github.gear4jtest.studio.spring.demo'
-description = 'Gear4J Studio P4 studio-spring-demo (experimental).'
+description = 'Gear4J Studio studio-spring-demo (experimental).'
 dependencies {
     implementation project(':gear4jtest-studio-demo')
     implementation project(':gear4jtest-studio-runtime')
@@ -18,3 +19,6 @@ tasks.register('runStudio', JavaExec) {
 tasks.withType(org.gradle.api.publish.maven.tasks.AbstractPublishToMaven).configureEach {
     enabled = false
 }
+
+application { mainClass = 'io.github.gear4jtest.studio.springdemo.SpringStudioApplication' }
+distributions { main { contents { from('README.md') } } }

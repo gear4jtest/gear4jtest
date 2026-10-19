@@ -77,7 +77,7 @@ construisent directement doivent être adaptées.
 ## Fin de phase
 
 P6 est close sur ce périmètre. La qualification de release est une étape distincte :
-[proposition de stabilisation](release-readiness.md). Le dry-run du moteur reste
+[stabilisation et qualification](release-readiness.md). Le dry-run du moteur reste
 [différé](../roadmap/dry-run-and-mock-configuration.md). Les résultats exécutés et
 limites de vérification de ce correctif figurent dans
 [verification-p6-closure.md](verification-p6-closure.md).

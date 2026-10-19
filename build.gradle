@@ -690,3 +690,5 @@ apply plugin: 'gear4j.root-release'
 tasks.named('releaseMetadataCheck') {
     dependsOn tasks.named('verifyRetiredAuditSources')
 }
+
+apply from: "gradle/studio-release.gradle"

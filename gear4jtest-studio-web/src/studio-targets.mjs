@@ -4,7 +4,7 @@ import { StudioError } from './studio-client.mjs';
 
 /** Public federation client. Target ids come from the server inventory; never accept endpoint URLs. */
 export class FederationClient {
-  constructor({ baseUrl = '', tokenProvider = () => '', fetchImpl = globalThis.fetch } = {}) {
+  constructor({ baseUrl = '', tokenProvider = () => '', fetchImpl = globalThis.fetch.bind(globalThis) } = {}) {
     this.baseUrl = baseUrl.replace(/\/$/, ''); this.tokenProvider = tokenProvider; this.fetch = fetchImpl;
   }
   async targets() {

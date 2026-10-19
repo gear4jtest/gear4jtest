@@ -1,27 +1,47 @@
-# Gear4J Studio — proposition de stabilisation avant release
+# Gear4J Studio — Release Readiness
 
-Statut : **proposé, non démarré**. P6 est close ; aucun nouvel axe fonctionnel
-n’est lancé automatiquement. Objectif : un candidat de release exploitable,
-installable et vérifié, avec des limites publiées. Durée cible : une itération
-courte, à ajuster après choix de la matrice de déploiement supportée.
+La stabilisation P6 est implémentée. **L’implémentation du gate ne vaut pas qualification réussie.** Le bilan exécuté, ses preuves et les réserves figurent dans [verification-release-readiness.md](verification-release-readiness.md). Aucune publication officielle n’est déclenchée.
 
-| Lot | Travail borné | Critère de sortie |
+| Chantier | Livrable | Vérification |
 | --- | --- | --- |
-| 1. Contrats et baseline | Inventorier Java API/SPI, HTTP protocole 2, JSON persisté, ACL, événements et exports du composant. Fixer versions, stabilité et règles de compatibilité, notamment principalId, READ_SIMULATIONS et diagnostics. Définir les bases réellement concernées par un upgrade. | Diff d’API revu, formats versionnés et matrice de compatibilité documentée ; décision explicite sur les données de prototypes P1–P6. |
-| 2. Migrations réelles | Geler la baseline SQL de release ; écrire des migrations incrémentales pour les versions dont l’upgrade est déclaré supporté. Tester sauvegarde/restauration, checksums, reprise après échec et concurrence au démarrage, avec scénarios, ACL, sources invalides, versions, runs et simulations déjà présents. | Upgrade de bases peuplées et restauration exécutés sans perte ni ré-ancrage silencieux du RuntimeContext ; chaque chemin non supporté est refusé/documenté. |
-| 3. PostgreSQL exécuté | Exécuter réellement la suite PostgreSQL Studio et les chemins JDBC dont elle dépend, sur la version retenue, via Testcontainers/CI ou un service dédié. Couvrir transactions, contention, idempotence, pages filtrées, rétention et snapshots. | Job obligatoire non ignoré, preuves d’exécution conservées, aucun remplacement par H2. Résoudre aussi l’échec historique de couverture MigrationLockStore sans baisser son seuil. |
-| 4. Navigateur | Parcours Playwright réels sur Java, Spring et standalone : reprise SOURCE invalide, authoring, scénario, test contrôlé, TEST/RUN, simulation, avertissement historique, reconnexion, refus/révocation ACL et changement de target. Revue visuelle ciblée clavier/focus/petits écrans. | Parcours critiques verts dans la matrice de navigateurs déclarée ; aucune perte de saisie ni fuite de données lors d’un changement d’accès/cible. jsdom reste complémentaire. |
-| 5. Distribution et adoption | Produire JAR/POM/sources/Javadoc, distributions de lancement et paquet npm. Installer les artefacts dans deux consommateurs propres, Spring et Java simple, et intégrer les composants depuis le paquet distribué. Vérifier configuration, arrêt propre, licences, provenance et procédures de publication. | Installation depuis artefacts seuls, démarrage/reprise et intégration publique réussis ; répétition de publication en staging/dry-run, puis décision distincte de publication. |
-| 6. Documentation et revue finale | Mettre à jour guides installation, authentification/ACL, données sensibles, migrations, supervision/rétention, intégration et dépannage. Expliquer validation/test contrôlé/simulation/dry-run différé. Exécuter le build global et archiver les preuves. | Candidat traçable, build et gates verts, limitations connues explicites, checklist de release revue. |
+| Contrats | [Contrats publics et baseline](release-contracts.md), manifeste SQL et protocole | `studioReleaseBaseline`, consommateurs indépendants |
+| Données | Restauration H2 peuplée ; qualification PostgreSQL dédiée, DDL échoué/reprise, checksums, concurrence au redémarrage | `StudioBackupRestoreTest`, `studioPostgresQualification` |
+| PostgreSQL réel | Service PostgreSQL 17 et outils natifs de sauvegarde dans un job CI sans skip | `:gear4jtest-studio-jdbc:studioPostgresQualification` |
+| Navigateur | Cinq parcours sur distributions Java, Spring, composants embarqués et standalone | `studioBrowserTest` |
+| Distribution | JAR/POM/sources/Javadoc, lanceurs installables, consommateurs Java/Spring indépendants, paquet npm | `verifyStagedReleaseArtifacts`, `studioConsumerSmoke`, `studioPackageCheck` |
+| Sécurité | HTTPS/mTLS réel, identités scoppées, credentials, refus ACL/targets et révocation navigateur | [Conditions de déploiement](deployment-security.md) |
 
-Ordre conseillé : fixer les contrats et chemins d’upgrade avant les migrations ;
-qualifier PostgreSQL pendant ce travail ; exercer le navigateur sur le candidat
-assemblé ; valider la consommation des artefacts avant le go/no-go final.
-Aucune publication publique ni migration de base utilisateur n’est réalisée par
-la clôture P6. Les futurs déploiements/convergence, objets simulés riches et
-l’isolation de code métier restent des choix produit séparés.
+Prérequis : Java 17, Python 3, Node conforme à `gear4jtest-studio-web/package.json`, PostgreSQL 17 jetable et `pg_dump`/`pg_restore` 17 disponibles dans PATH. Installer les dépendances verrouillées puis Chromium :
 
-Le choix d’avoir modifié V1 pendant les phases expérimentales n’oblige pas à
-inventer un upgrade universel depuis chaque prototype. Il oblige à identifier
-les bases à préserver, retenir une baseline et annoncer exactement les chemins
-qualifiés avant de promettre une migration réelle.
+```sh
+cd gear4jtest-studio-web
+npm ci --ignore-scripts --no-audit --no-fund
+npx --no-install playwright install --with-deps chromium
+cd ..
+./gradlew spotlessApply
+./gradlew studioReleaseReadiness --continue
+```
+
+Le service PostgreSQL doit être exclusivement destiné à la qualification. Fournir `GEAR4J_TEST_DATABASE_DISPOSABLE=true`, `GEAR4J_TEST_POSTGRES_URL`, `GEAR4J_TEST_POSTGRES_USER` et `GEAR4J_TEST_POSTGRES_PASSWORD` via le mécanisme de secrets de l’hôte. Le test crée et supprime son propre schéma aléatoire ; il n’utilise jamais une base métier. Il échoue si la configuration est absente. Aucun fallback H2, aucune assumption JUnit ne peut le rendre vert sans PostgreSQL. `check` conserve les tests Testcontainers existants et peut les ignorer sans Docker : il ne remplace donc pas ce gate.
+
+Le workflow `.github/workflows/studio-release-readiness.yml` installe explicitement les outils PostgreSQL 17 depuis le dépôt officiel PGDG, en plus du service. Le déclarer obligatoire dans la protection des branches reste une action du mainteneur ; ajouter un workflow au dépôt ne configure pas cette protection. Le job n’a pas été exécuté sur GitHub dans cette livraison.
+
+Le navigateur peut être fourni par `STUDIO_BROWSER_EXECUTABLE` pour un environnement contraint. La version réellement utilisée est conservée dans le rapport. La matrice qualifiée ici est Chromium ; Firefox/WebKit et les configurations de proxy/IdP de l’organisation doivent faire l’objet d’une qualification distincte.
+
+## Baseline et migrations
+
+`config/studio-release-baseline.json` gèle les V1 H2/PostgreSQL du candidat P6, sans changer leur contenu. La base peuplée de **cette baseline exacte** est le point de départ supporté pour la stabilisation. Les anciennes V1 de prototypes P1–P5 ne constituent pas un chemin d’upgrade automatique : un checksum différent est refusé. Ne pas modifier la table d’historique pour contourner ce refus. Une migration de données de prototype exige inventaire, sauvegarde et procédure spécifique avant adoption ; elle n’est pas livrée implicitement par une V2 vide.
+
+Après publication d’une baseline, toute évolution persistée devra ajouter une migration incrémentale et un test sur une base de la release précédente. Le manifeste et les formats persistés doivent être revus ensemble. Ne jamais « réparer » le checksum d’une migration déjà appliquée.
+
+Exécuter un **seul job de migration initiale**, avant ouverture du trafic et démarrage des réplicas. La concurrence qualifiée porte sur le redémarrage d’une baseline déjà initialisée. Elle ne promet pas que plusieurs créations concurrentes des tables d’infrastructure sur une base vierge sont sûres. Après un DDL échoué, inspecter la cause et l’état réel, rétablir les prérequis puis utiliser la procédure explicite `prepareRetry` avec le même SQL/checksum ; ne pas relancer aveuglément.
+
+La restauration H2 utilise le backup natif, puis une autre base fichier. La qualification PostgreSQL utilise `pg_dump` et `pg_restore`, compare les lignes de toutes les tables du schéma et vérifie l’ancrage de contexte. Sauvegardes, permissions, historique et captures sont des données sensibles : les preuves CI excluent les bases, dumps et logs de session.
+
+## Publication séparée
+
+`stageMavenCentral` écrit un dépôt **local** sous `build/staging-deploy`. Les consommateurs propres résolvent ces coordonnées Maven sans dépendre des projets sources. `npm pack` construit un paquet local. Aucun upload Maven/npm, tag ni release officielle n’est effectué par `studioReleaseReadiness`.
+
+Ce gate complète les contrôles généraux du dépôt (dépendances, licence, métadonnées, signature et publication) ; il ne les remplace pas. Le choix du numéro public, du registre, des signatures et de la provenance CI appartient à la décision de release. `1.0.0-SNAPSHOT` reste le défaut Maven ; le composant expérimental passe à `0.6.2` pour les corrections navigateur.
+
+P6 livre la simulation déclarative sans code métier réel. Le dry-run exécuté dans le moteur Gear4J, l’isolation avancée des effets et la convergence de déploiement restent différés. Aucun nouvel axe produit n’est lancé par cette phase.

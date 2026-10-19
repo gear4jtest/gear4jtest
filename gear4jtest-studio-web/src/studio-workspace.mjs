@@ -32,6 +32,7 @@ export class Gear4jWorkspace extends HTMLElement {
   async choose(item, discard = false) {
     if (this.scenariosElement?.simulationElement?.busy) { this.message = 'Attendez le résultat de la simulation avant de changer de ressource.'; this.render(); return; }
     if ((this.editor?.hasUnsavedChanges || this.scenariosElement?.hasUnsavedChanges) && !discard) { this.pending = item; this.message = 'Le draft ou le scénario contient des modifications locales. Enregistrez-les ou confirmez leur abandon pour changer de sélection.'; this.render(); return; }
+    try {
     let selected, editor = null, versions = null;
     if (item.kind === 'DRAFT') {
       const state = await this.client.draft(item.id); selected = { resource: state.draft, kind: 'DRAFT', permissions: state.permissions };
@@ -80,6 +81,17 @@ export class Gear4jWorkspace extends HTMLElement {
     }
     this.pending = null; this.accessState = null; this.auditPage = null; this.history = null; this.comparison = null;
     this.selected = selected; this.editor = editor; this.message = ''; this.render();
+    } catch (error) {
+      // A failed navigation elsewhere must preserve local work. A denied refresh of
+      // the currently displayed resource must discard its previously authorized data.
+      if (item.id === this.selected?.resource.id && ['NOT_FOUND', 'FORBIDDEN', 'UNAUTHENTICATED'].includes(error.code)) {
+        this.selected = null; this.editor = null; this.versions = null; this.runsElement = null; this.scenariosElement = null;
+        this.pending = null; this.accessState = null; this.accessDirty = false; this.auditPage = null; this.history = null; this.comparison = null;
+        this.items = []; this.parent = null; this.cursor = null; this.next = null; this.formValues.clear();
+        this.render();
+      }
+      throw error;
+    }
   }
   render() {
     if (!this.context) return;
@@ -115,7 +127,7 @@ export class Gear4jWorkspace extends HTMLElement {
   }
   creation(type) {
     const details = el('details'); const title = type === 'domain' ? 'Créer un domaine' : type === 'chain' ? 'Créer une chaîne' : 'Créer un draft'; details.append(el('summary', title));
-    const form = el('form', undefined, 'forms'); const name = field('Nom'); name.input.required = true; name.input.maxLength = 160; const key = field('Clé (minuscules et tirets)'); key.input.required = true; key.input.pattern = '[a-z][a-z0-9-]{0,63}'; const description = field('Description', '', 'textarea'); description.input.maxLength = 2048; description.label.className = 'wide';
+    const form = el('form', undefined, 'forms'); const name = field('Nom'); name.input.required = true; name.input.maxLength = 160; const key = field('Clé (minuscules et tirets)'); key.input.required = true; key.input.pattern = '[a-z][a-z0-9\\-]{0,63}'; const description = field('Description', '', 'textarea'); description.input.maxLength = 2048; description.label.className = 'wide';
     const formKey = `create:${type}:${type === 'domain' ? '' : this.selected?.resource.id}`; const runtimeId = field('Identifiant Gear4J (immuable)', `chain_${crypto.randomUUID().replaceAll('-', '')}`); runtimeId.input.pattern = '[a-zA-Z_][a-zA-Z0-9_]{0,63}'; this.remember(formKey, { name, key, description, runtimeId });
     if (type === 'chain') form.append(runtimeId.label); if (type !== 'draft') form.append(key.label); form.append(name.label); if (type !== 'draft') form.append(description.label);
     const submit = el('button', title); submit.type = 'submit'; submit.disabled = this.busy; form.append(submit);

@@ -1,0 +1,11 @@
+{
+  "baseline": "studio-p6-release-candidate-1",
+  "httpProtocol": "2",
+  "definitionSchemaVersion": 1,
+  "simulationProfileVersion": 1,
+  "npmVersion": "0.6.2",
+  "sql": {
+    "gear4jtest-studio-jdbc/src/main/resources/io/github/gear4j/studio/db/h2/migrations/V1__create_studio_schema.sql": "47315678a2c317beb4011a56faaae10c457f91866373d4cac3ec49f84a6daa17",
+    "gear4jtest-studio-jdbc/src/main/resources/io/github/gear4j/studio/db/postgresql/migrations/V1__create_studio_schema.sql": "c549e862162cd350b2b420a59257985d9a9c522a63fd638415c6570d887cf5ec"
+  }
+}

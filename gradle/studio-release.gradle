@@ -1,0 +1,26 @@
+// Local qualification only. No publishing task is invoked by this gate.
+tasks.register('studioReleaseBaseline', Exec) {
+    group = 'verification'
+    commandLine 'python3', 'scripts/studio-release/verify-baseline.py'
+}
+tasks.register('studioBrowserTest', Exec) {
+    group = 'verification'
+    dependsOn ':gear4jtest-studio-demo:installDist', ':gear4jtest-studio-spring-demo:installDist',
+        ':gear4jtest-studio-standalone:installDist', ':gear4jtest-studio-demo:studioFrontendInstall'
+    commandLine 'node', 'scripts/studio-release/browser.mjs'
+}
+tasks.register('studioConsumerSmoke', Exec) {
+    group = 'verification'
+    dependsOn 'stageMavenCentral'
+    executable new File(gradle.gradleHomeDir, 'bin/gradle' + (System.getProperty('os.name').startsWith('Windows') ? '.bat' : ''))
+    args '--no-daemon', '--max-workers=2', '-p', 'config/studio-consumer-smoke', 'clean', 'smoke',
+        "-Pgear4jVersion=${project.version}", "-Pgear4jRepository=${layout.buildDirectory.dir('staging-deploy').get().asFile}"
+}
+tasks.register('studioReleaseReadiness') {
+    group = 'verification'
+    description = 'Studio pre-publication gate: real PostgreSQL, browsers, packaged consumers, contracts and check.'
+    // A dependency on root :check alone does not select every subproject's check.
+    dependsOn rootProject.allprojects.collect { it.path == ':' ? ':check' : it.path + ':check' }
+    dependsOn 'studioReleaseBaseline', 'verifyStagedReleaseArtifacts', 'studioConsumerSmoke',
+        'studioBrowserTest', ':gear4jtest-studio-jdbc:studioPostgresQualification'
+}

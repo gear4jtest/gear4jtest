@@ -13,7 +13,7 @@
     "jsdom": "30.1.1",
     "playwright": "1.62.1"
   },
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Public experimental Gear4J Studio authoring and management components",
   "files": [
     "src",

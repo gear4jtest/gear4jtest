@@ -3,7 +3,7 @@ export class StudioError extends Error {
   constructor(code, status) { super(code); this.code = code; this.status = status; }
 }
 export class StudioTransport {
-  constructor({ baseUrl = '', tokenProvider = () => '', fetchImpl = globalThis.fetch } = {}) {
+  constructor({ baseUrl = '', tokenProvider = () => '', fetchImpl = globalThis.fetch.bind(globalThis) } = {}) {
     this.baseUrl = baseUrl.replace(/\/$/, ''); this.tokenProvider = tokenProvider; this.fetch = fetchImpl;
   }
   async request(path, method = 'GET', body) {
