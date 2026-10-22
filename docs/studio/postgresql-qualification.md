@@ -1,6 +1,6 @@
 # PostgreSQL — gate obligatoire de Gear4J Studio
 
-**Statut au 15 octobre 2026 : non qualifié.** La couverture ci-dessous décrit le test et ses assertions ; elle ne constitue pas une preuve d'exécution réussie. Aucun serveur PostgreSQL n'est configuré dans l'environnement de préparation, qui ne dispose ni de Docker ni des outils PostgreSQL. Le test obligatoire échoue sans configuration et n'utilise ni H2 ni un skip de substitution.
+**État de qualification : voir le [bilan de clôture](verification-release-closure.md).** Le mainteneur a exécuté le gate avec succès sur PostgreSQL 17 après correction du contexte de la fixture et utilisation des clients natifs 17. Cette exécution locale déclarée reste distincte des preuves CI du commit candidat. Le test obligatoire échoue sans configuration et n'utilise ni H2 ni un skip de substitution.
 
 ## Couverture réelle du test
 
@@ -17,7 +17,7 @@
 
 ## Prérequis et exécution
 
-Utiliser un runner Linux Java 17, la version Gradle du wrapper, Node 24.19.0, Chromium Playwright et une base PostgreSQL 17 **jetable**, accessible en TCP. Installer `pg_dump` et `pg_restore` 17 dans PATH. L'utilisateur SQL doit pouvoir créer et supprimer son schéma. Ne jamais utiliser une base métier. Les outils natifs reprennent hôte/port/base/utilisateur/mot de passe, pas des options TLS/proxy JDBC arbitraires.
+Utiliser un runner Linux Java 17, la version Gradle du wrapper, Node 24.19.0, Chromium Playwright et une base PostgreSQL 17 **jetable**, accessible en TCP. Installer `pg_dump` et `pg_restore` 17 dans PATH. Le test contrôle leurs versions avant de créer son schéma. Le workflow consigne aussi les versions des deux clients dans ses logs. Il partage une identité de contexte unique avec la fixture, vérifie le ré-ancrage identique après restauration et refuse une identité différente. L'utilisateur SQL doit pouvoir créer et supprimer son schéma. Ne jamais utiliser une base métier. Les outils natifs reprennent hôte/port/base/utilisateur/mot de passe, pas des options TLS/proxy JDBC arbitraires.
 
 Définir `GEAR4J_TEST_DATABASE_DISPOSABLE=true`, `GEAR4J_TEST_POSTGRES_URL`, `GEAR4J_TEST_POSTGRES_USER` et `GEAR4J_TEST_POSTGRES_PASSWORD`, sans les committer. Puis :
 
@@ -34,11 +34,11 @@ Le test est exclu des suites ordinaires et sélectionné explicitement par le ga
 
 Les preuves sont archivées dans `studio-readiness-evidence` : JUnit, résultats navigateur, audit npm et `build/reports/studio-release/qualification.json` (version, SHA de commit et hashes des rapports). Le manifeste global de release lie également ce gate à la version/au commit et au même workflow run. Une branche protégée exige en plus de configurer le check dans les règles GitHub ; le YAML seul ne configure pas ces règles.
 
-## Ce qui reste précisément à exécuter
+## Qualification sans publication
 
-1. Intégrer ces sources sur la branche candidate/PR du dépôt voulu, sans tag de release. Au contrôle du 15 octobre, le workflow est absent des trois branches accessibles de `gear4jtest/gear4jtest` (`master`, `feature`, `feature-parameters`). Aucun dispatch ni écriture distante n'a été effectué.
-2. Laisser tourner le workflow de PR, ou, après présence du workflow sur la branche par défaut, utiliser `gh workflow run studio-release-readiness.yml --ref <branche-candidate>`. Ne pas déclencher `release.yml` pour cette seule qualification.
-3. Conserver l'URL du run, son SHA exact et l'artefact du même run. Exiger un JUnit avec **1 test, 0 échec, 0 erreur, 0 skip**, et le manifeste PASS. Examiner les résultats de restauration, reprise et isolation couverts par ce test.
-4. Corriger tout échec observé, relancer sur le nouveau commit et rendre le check obligatoire dans la protection des branches. Aucun PASS de H2, ancien build ou test synthétique de validateur ne remplace cette exécution.
+1. Ouvrir la PR candidate pour lancer les workflows, ou déclencher `studio-release-readiness.yml` sur cette branche. Ne pas déclencher `release.yml` pour une qualification seule.
+2. Conserver l'URL du run, son SHA et ses artefacts. Exiger **1 test PostgreSQL, 0 échec, 0 erreur, 0 skip** et le manifeste Studio PASS.
+3. Exiger également le workflow `Security scan` du même candidat : `verifyReleaseVulnerabilityFeed`, puis `dependencyCheckAggregate`. Configurer `NVD_API_KEY` ou `NVD_DATAFEED_URL` et les credentials du miroir si nécessaire. Sans source autorisée, la qualification échoue ; une PR de fork sans secrets doit être requalifiée sur une branche approuvée, sans utiliser `pull_request_target`.
+4. Corriger tout échec et relancer sur le nouveau commit. La publication CI dépend du gate Studio et exige déjà le scan JVM via `releaseCheck` avant JReleaser. Configurer séparément les checks requis dans les règles de branches ; le YAML ne modifie pas ces règles.
 
-L'accès disponible ici permet la lecture du dépôt et de ses branches ; il ne fournit pas de mécanisme de dispatch utilisable pour ce workflow absent. La qualification demeure bloquante jusqu'à l'exécution réelle réussie.
+Le manifeste Studio et l'audit npm ne remplacent pas le rapport JVM. Le [bilan courant](verification-release-closure.md) distingue les preuves exécutées des qualifications et décisions restantes. Les rapports du 15 octobre restent historiques.

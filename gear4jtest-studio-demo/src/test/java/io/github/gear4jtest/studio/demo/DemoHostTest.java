@@ -12,7 +12,9 @@ import io.github.gear4jtest.studio.http.StudioManagementHttpHandler;
 import io.github.gear4jtest.studio.json.StudioJson;
 import io.github.gear4jtest.studio.management.StudioIdentity;
 import io.github.gear4jtest.studio.model.ScenarioData;
+import io.github.gear4jtest.studio.model.ScenarioExpectation;
 import io.github.gear4jtest.studio.model.ScenarioInput;
+import io.github.gear4jtest.studio.spi.DataCapturePolicy;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 
@@ -74,6 +76,66 @@ class DemoHostTest {
     }
 
     @Test
+    void optionalViewerTokenIsReallyDisabledAndAssetsAreServedWithoutAnActor() throws Exception {
+        // Given: this host accepts one local editor token and no viewer token.
+        var source = new JdbcDataSource();
+        source.setURL("jdbc:h2:mem:" + UUID.randomUUID());
+        var resources = DemoWiring.plainResources();
+        try (var lifetime = source.getConnection();
+                var runtime = DemoWiring.runtime("single-token", DemoWiring.plainExecutor(resources), resources,
+                                                 DataCapturePolicy.none())) {
+            var actors = new RequestActorContext();
+            var service = DemoDatabase.service(source, runtime, actors);
+            assertThatThrownBy(() -> new StudioHttpServer(service, actors, 0, null, null))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new StudioHttpServer(service, actors, 0, "x".repeat(513), null))
+                    .isInstanceOf(IllegalArgumentException.class);
+            try (var host = new StudioHttpServer(service, actors, 0, EDITOR, null)) {
+                host.start();
+                var client = HttpClient.newHttpClient();
+                String base = "http://127.0.0.1:" + host.port();
+
+                // When / Then: editor auth works, but the old viewer token is not accepted.
+                assertThat(get(client, base + "/api/v1/context", EDITOR).statusCode()).isEqualTo(200);
+                assertThat(get(client, base + "/api/v1/context", VIEWER).statusCode()).isEqualTo(401);
+                var header = HttpRequest.newBuilder(URI.create(base + "/api/v1/context"))
+                        .header("Authorization", "Token " + EDITOR).build();
+                assertThat(client.send(header, HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(401);
+                var origin = HttpRequest.newBuilder(URI.create(base + "/api/v1/context"))
+                        .header("Authorization", "Bearer " + EDITOR).header("Origin", base).build();
+                assertThat(client.send(origin, HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(200);
+                var script = get(client, base + "/studio-element.mjs", null);
+                assertThat(script.statusCode()).isEqualTo(200);
+                assertThat(script.headers().firstValue("Content-Type")).contains("text/javascript; charset=utf-8");
+                assertThat(script.body()).isNotBlank();
+            }
+        }
+    }
+
+    @Test
+    void hostAcceptsAnExplicitAuthenticationProviderInsteadOfTokens() throws Exception {
+        // Given: a host-specific identity provider can replace demo bearer tokens.
+        var source = new JdbcDataSource();
+        source.setURL("jdbc:h2:mem:" + UUID.randomUUID());
+        var resources = DemoWiring.plainResources();
+        try (var lifetime = source.getConnection();
+                var runtime = DemoWiring.runtime("custom-auth", DemoWiring.plainExecutor(resources), resources,
+                                                 DataCapturePolicy.none())) {
+            var actors = new RequestActorContext();
+            var service = DemoDatabase.service(source, runtime, actors);
+            try (var host = new StudioHttpServer(service, actors, 0,
+                    exchange -> new StudioIdentity("host-actor", Set.of("domain-creators"), false))) {
+                host.start();
+                var response = get(HttpClient.newHttpClient(),
+                                   "http://127.0.0.1:" + host.port() + "/api/v1/context", null);
+                assertThat(response.statusCode()).isEqualTo(200);
+                assertThat(StudioJson.mapper().readTree(response.body()).path("identity").path("principalId").asText())
+                        .isEqualTo("host-actor");
+            }
+        }
+    }
+
+    @Test
     void demoFixturesAreAdmittedExplicitlyAndFingerprintKeysAreLocalToOneHost() {
         // Given
         var actor = new StudioIdentity("demo-editor", Set.of(), false);
@@ -89,6 +151,13 @@ class DemoHostTest {
         assertThat(policy.resolveFixture(actor, scope, reference).fingerprint()).isEqualTo(resolved.fingerprint());
         assertThat(new DemoScenarioPolicy().resolveFixture(actor, scope, reference).fingerprint().keyId())
                 .isNotEqualTo(resolved.fingerprint().keyId());
+        policy.assertSafeToStore(actor, scope, new ScenarioData(synthetic,
+                new ScenarioExpectation("SUCCEEDED", "HELLO")));
+        assertThatThrownBy(() -> policy.assertSafeToStore(actor, scope,
+                                                          new ScenarioData(synthetic,
+                                                                  new ScenarioExpectation("SUCCEEDED",
+                                                                          "private output"))))
+                .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> policy.resolveFixture(actor, scope, synthetic))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> policy.assertSafeToStore(actor, scope,

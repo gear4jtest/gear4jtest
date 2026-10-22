@@ -123,11 +123,16 @@ class GeneratedLoadingRuntimeTest {
     void load_shouldPropagateRegistrationFailureAndAllowRetry() throws Exception {
         // Given
         AtomicInteger registrations = new AtomicInteger();
+        CountDownLatch cleanupEntered = new CountDownLatch(1);
+        CountDownLatch releaseCleanup = new CountDownLatch(1);
         GeneratedLoadingRuntime.LoadingOperation operation = attempt -> new GeneratedLoadingRuntime.LoadResult(
                 GENERATED, () -> {
                     if (registrations.incrementAndGet() == 1) {
                         throw new IllegalStateException("registry unavailable");
                     }
+                }, () -> {
+                    cleanupEntered.countDown();
+                    awaitIgnoringInterruption(releaseCleanup);
                 });
 
         try (var runtime = new GeneratedLoadingRuntime(GeneratedLoadingConfiguration.defaults())) {
@@ -135,9 +140,18 @@ class GeneratedLoadingRuntimeTest {
             assertThatThrownBy(() -> runtime.load("loader", operation))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("registry unavailable");
+            assertThat(cleanupEntered.await(2, TimeUnit.SECONDS)).isTrue();
+            // A failed flight stays reserved until registration cleanup finishes.
+            assertThatThrownBy(() -> runtime.load("loader", operation))
+                    .isInstanceOf(IllegalStateException.class).hasMessage("registry unavailable");
+            assertThat(registrations).hasValue(1);
+            releaseCleanup.countDown();
+            awaitFlightRelease(runtime);
             assertThat(runtime.load("loader", operation)).isSameAs(GENERATED);
             assertThat(registrations).hasValue(2);
             assertThat(runtime.snapshotStats().failedLoads()).isEqualTo(1L);
+        } finally {
+            releaseCleanup.countDown();
         }
     }
 

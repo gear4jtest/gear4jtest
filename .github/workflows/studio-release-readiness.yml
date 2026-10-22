@@ -24,7 +24,7 @@ jobs:
           POSTGRES_PASSWORD: synthetic-ci-database-only
         ports: ['5432:5432']
         options: >-
-          --health-cmd 'pg_isready -U studio_qualification -d studio_qualification'
+          --health-cmd "pg_isready -U studio_qualification -d studio_qualification"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       GEAR4J_TEST_DATABASE_DISPOSABLE: 'true'
@@ -48,6 +48,8 @@ jobs:
           echo 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main' | sudo tee /etc/apt/sources.list.d/pgdg.list
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
+          /usr/lib/postgresql/17/bin/pg_dump --version
+          /usr/lib/postgresql/17/bin/pg_restore --version
           echo '/usr/lib/postgresql/17/bin' >> "$GITHUB_PATH"
       - name: Install browser from locked frontend dependencies
         working-directory: gear4jtest-studio-web

@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Tag("docker")
 @Testcontainers(disabledWithoutDocker = true)
 class PostgreSqlStudioStoreIT {
+    static final String RUNTIME_CONTEXT_ID = "context";
     @Container
     private static final PostgreSQLContainer<?> DATABASE = new PostgreSQLContainer<>("postgres:17-alpine");
 
@@ -48,6 +49,7 @@ class PostgreSqlStudioStoreIT {
         StudioJdbcSchema.migrate(source, Gear4jDatabaseDialect.POSTGRESQL);
         StudioJdbcSchema.migrate(source, Gear4jDatabaseDialect.POSTGRESQL);
         var store = new JdbcStudioStore(source);
+        store.bindContext(RUNTIME_CONTEXT_ID);
         var time = Instant.ofEpochMilli(1234);
         var domain = new StudioDomain(UUID.randomUUID(), "catalog", "Catalogue", "", "alice", 1, false, time, time);
         var chain = new StudioChain(UUID.randomUUID(), domain.id(), "vehicles", "runtime_vehicles", "Véhicules", "",
@@ -64,7 +66,8 @@ class PostgreSqlStudioStoreIT {
         String hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
                 .digest(xml.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         var version = new StudioVersion(UUID.randomUUID(), chain.id(), draft.id(), revision.revisionId(), 1,
-                chain.runtimeAssemblyLineId(), "1", "alice", time, "context", "build", "catalog", "application/xml",
+                chain.runtimeAssemblyLineId(), "1", "alice", time, RUNTIME_CONTEXT_ID, "build", "catalog",
+                "application/xml",
                 hash, xml);
         var publication = new StudioPublication(version.id(), StudioPublication.Mode.TEST,
                 StudioPublication.State.REQUESTED,
@@ -121,10 +124,11 @@ class PostgreSqlStudioStoreIT {
                     .anySatisfy(e -> assertThat(e.scenario()).isEqualTo(fixture.reference()));
             return null;
         });
-        var recorder = new io.github.gear4jtest.studio.management.StudioRunRecorder(store, "context",
+        var recorder = new io.github.gear4jtest.studio.management.StudioRunRecorder(store, RUNTIME_CONTEXT_ID,
                 java.time.Clock.systemUTC());
         var runId = recorder.beginHostRun(chain.id(), new io.github.gear4jtest.studio.model.StudioRun.Provenance(
-                "context", chain.runtimeAssemblyLineId(), "build", "catalog", hash, "alice", "TEST", null, null, null,
+                RUNTIME_CONTEXT_ID, chain.runtimeAssemblyLineId(), "build", "catalog", hash, "alice", "TEST", null,
+                null, null,
                 0, version.id(), version.label()));
         var observation = new io.github.gear4jtest.studio.model.RunObservation(UUID.randomUUID(), null, null,
                 "SUCCEEDED", time, time.plusMillis(10), io.github.gear4jtest.studio.model.CapturedValue.none(),
@@ -140,10 +144,11 @@ class PostgreSqlStudioStoreIT {
         });
         assertThat(recorder.purgeTerminalBefore(time.plusMillis(11), 100)).isEqualTo(1);
         var orphan = recorder.beginHostRun(chain.id(), new io.github.gear4jtest.studio.model.StudioRun.Provenance(
-                "context", chain.runtimeAssemblyLineId(), "build", "catalog", null, "host", "RUN", null, null, null, 0,
+                RUNTIME_CONTEXT_ID, chain.runtimeAssemblyLineId(), "build", "catalog", null, "host", "RUN", null, null,
+                null, 0,
                 null, null));
         var laterTime = Instant.now().plusSeconds(10);
-        var maintenance = new io.github.gear4jtest.studio.management.StudioRunRecorder(store, "context",
+        var maintenance = new io.github.gear4jtest.studio.management.StudioRunRecorder(store, RUNTIME_CONTEXT_ID,
                 java.time.Clock.fixed(laterTime, java.time.ZoneOffset.UTC));
         assertThat(maintenance.markStaleBefore(laterTime.minusSeconds(1), 100)).isEqualTo(1);
         store.read(tx -> {
@@ -151,17 +156,18 @@ class PostgreSqlStudioStoreIT {
             assertThat(tx.run(orphan).staleAt()).isEqualTo(Instant.ofEpochMilli(laterTime.toEpochMilli()));
             return null;
         });
-        var retention = new io.github.gear4jtest.studio.management.StudioRunRecorder(store, "context",
+        var retention = new io.github.gear4jtest.studio.management.StudioRunRecorder(store, RUNTIME_CONTEXT_ID,
                 java.time.Clock.fixed(laterTime.plusSeconds(2), java.time.ZoneOffset.UTC));
         assertThat(retention.purgeStaleBefore(laterTime.plusSeconds(1), 100)).isEqualTo(1);
         // Leave a populated run and simulation in the baseline for native
         // backup/restore.
         var retained = recorder.beginHostRun(chain.id(), new io.github.gear4jtest.studio.model.StudioRun.Provenance(
-                "context", chain.runtimeAssemblyLineId(), "build", "catalog", hash, "alice", "TEST", null, null, null,
+                RUNTIME_CONTEXT_ID, chain.runtimeAssemblyLineId(), "build", "catalog", hash, "alice", "TEST", null,
+                null, null,
                 0, version.id(), version.label()));
         recorder.record(retained, observation);
         var simulated = new io.github.gear4jtest.studio.model.StudioSimulation(UUID.randomUUID(), chain.id(),
-                chain.id(), "alice", time, "context", "build", fixture.reference(),
+                chain.id(), "alice", time, RUNTIME_CONTEXT_ID, "build", fixture.reference(),
                 new io.github.gear4jtest.studio.model.ScenarioTarget(null, null, version.id()), revision.revisionId(),
                 1, hash,
                 new io.github.gear4jtest.studio.model.SimulationResult("storage-fixture", "catalog", "SUCCEEDED",

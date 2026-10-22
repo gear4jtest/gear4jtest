@@ -20,7 +20,8 @@ public final class ResourceSuffixOperation implements Operator<String, String> {
 
     @Override
     public String transform(String input, StationExecutionContext context) {
-        String value = resources.get(resource.getValue());
+        String reference = resource.getValue();
+        String value = reference == null ? null : resources.get(reference);
         if (value == null)
             throw new IllegalStateException("Resource unavailable");
         return input + value;

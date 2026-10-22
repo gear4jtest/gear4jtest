@@ -1,5 +1,7 @@
 # Gear4J Studio — bilan final de préparation à la release
 
+> Historical report (15 October 2026). See [the current release closure](verification-release-closure.md) for current evidence and remaining gates.
+
 **15 octobre 2026. NO-GO pour une publication officielle du SDK expérimental ; NO-GO pour un Studio clé en main en production.** Les corrections et les preuves locales sont livrées. Le blocage prioritaire PostgreSQL demeure une qualification non réalisée, pas un défaut SQL constaté. Aucune publication Maven/npm, aucun tag, aucun push et aucun déploiement officiel n'ont été effectués.
 
 ## Corrections livrées

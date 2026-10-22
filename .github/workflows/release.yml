@@ -156,7 +156,7 @@ jobs:
       - name: Verify reproducible staged artifacts
         env:
           PROJECT_VERSION: ${{ needs.preflight.outputs.version }}
-        run: scripts/verify-reproducible-staging.sh "${PROJECT_VERSION}"
+        run: bash scripts/verify-reproducible-staging.sh "${PROJECT_VERSION}"
 
       - name: Publish release through JReleaser
         env:

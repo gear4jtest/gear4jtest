@@ -349,13 +349,20 @@ tasks.register('verifyReleaseWorkflowContract') {
 
     def ciWorkflow = layout.projectDirectory.file('.github/workflows/ci.yml')
     def releaseWorkflow = layout.projectDirectory.file('.github/workflows/release.yml')
-    inputs.files(ciWorkflow, releaseWorkflow)
+    def securityWorkflow = layout.projectDirectory.file('.github/workflows/security.yml')
+    inputs.files(ciWorkflow, releaseWorkflow, securityWorkflow)
 
     doLast {
         def requiredFragments = [
             (ciWorkflow): [
                 "python3 -m unittest discover -s scripts -p 'test_*.py'",
                 'clean build coverageReport releaseMetadataCheck'
+            ],
+            (securityWorkflow): [
+                '  pull_request:',
+                './gradlew --no-daemon verifyReleaseVulnerabilityFeed',
+                './gradlew --no-daemon dependencyCheckAggregate',
+                'NVD_DATAFEED_URL: ${{ vars.NVD_DATAFEED_URL }}'
             ],
             (releaseWorkflow): [
                 'preflight:',
@@ -415,6 +422,11 @@ configure(project.coreProjects) {
         testImplementation(rootLibs.junit)
         testRuntimeOnly(rootLibs.junit.platform.launcher)
         testImplementation(rootLibs.assertj)
+        constraints {
+            integrationTestImplementation(rootLibs.commons.compress) {
+                because 'Testcontainers archive handling: fix CVE-2024-25710 and CVE-2024-26308 without adding a runtime dependency'
+            }
+        }
     }
 }
 

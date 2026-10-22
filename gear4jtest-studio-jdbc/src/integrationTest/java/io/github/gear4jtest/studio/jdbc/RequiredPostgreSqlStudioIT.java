@@ -1,5 +1,6 @@
 package io.github.gear4jtest.studio.jdbc;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.postgresql.ds.PGSimpleDataSource;
 
+import static io.github.gear4jtest.studio.jdbc.PostgreSqlStudioStoreIT.RUNTIME_CONTEXT_ID;
 import static org.assertj.core.api.Assertions.*;
 
 /**
@@ -32,6 +34,8 @@ class RequiredPostgreSqlStudioIT {
     void populatedBaselineRestoreChecksumsContextAndConcurrentRestart() throws Exception {
         // Given: no assumptions/skips; the release gate requires a real service.
         assertThat(System.getenv("GEAR4J_TEST_DATABASE_DISPOSABLE")).isEqualTo("true");
+        requirePostgreSql17Client("pg_dump");
+        requirePostgreSql17Client("pg_restore");
         var source = new PGSimpleDataSource();
         source.setURL(required("GEAR4J_TEST_POSTGRES_URL"));
         source.setUser(required("GEAR4J_TEST_POSTGRES_USER"));
@@ -47,7 +51,7 @@ class RequiredPostgreSqlStudioIT {
         try {
             // When: same checks as the Docker integration test, then real backup/restore.
             PostgreSqlStudioStoreIT.qualify(source);
-            new JdbcStudioStore(source).bindContext("context");
+            new JdbcStudioStore(source).bindContext(RUNTIME_CONTEXT_ID);
             recoveryAfterFailedDdl(source);
             var before = snapshot(source, schema);
             Path dump = directory.resolve("studio.dump");
@@ -59,6 +63,7 @@ class RequiredPostgreSqlStudioIT {
             pg(source, "pg_restore", "--exit-on-error", "--no-owner", "--no-privileges", dump.toString());
             // Then: every stored row, history, ACL and source survives exactly.
             assertThat(snapshot(source, schema)).isEqualTo(before);
+            new JdbcStudioStore(source).bindContext(RUNTIME_CONTEXT_ID);
             var workers = Executors.newFixedThreadPool(2);
             try {
                 var first = workers.submit(() -> StudioJdbcSchema.migrate(source, Gear4jDatabaseDialect.POSTGRESQL));
@@ -80,6 +85,21 @@ class RequiredPostgreSqlStudioIT {
             try (var connection = source.getConnection(); var statement = connection.createStatement()) {
                 statement.execute("DROP SCHEMA IF EXISTS " + schema + " CASCADE");
             }
+        }
+    }
+
+    private void requirePostgreSql17Client(String executable) throws Exception {
+        Path log = directory.resolve(executable + "-version.log");
+        var process = new ProcessBuilder(executable, "--version").redirectErrorStream(true)
+                .redirectOutput(log.toFile()).start();
+        try {
+            assertThat(process.waitFor(5, TimeUnit.SECONDS)).as(executable + " version deadline").isTrue();
+            assertThat(process.exitValue()).as(executable + " version exit").isZero();
+            String version = Files.readString(log).strip();
+            assertThat(version).as("PostgreSQL 17 client required: " + executable)
+                    .matches(java.util.regex.Pattern.quote(executable) + " \\(PostgreSQL\\) 17(?:\\.\\d+)?(?: .*)?");
+        } finally {
+            process.destroyForcibly();
         }
     }
 

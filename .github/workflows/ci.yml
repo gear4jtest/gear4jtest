@@ -48,7 +48,7 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           COVERAGE_BASE_REF: ${{ github.base_ref }}
-        run: scripts/verify-coverage-ratchet.py "origin/${COVERAGE_BASE_REF}"
+        run: python3 scripts/verify-coverage-ratchet.py "origin/${COVERAGE_BASE_REF}"
 
       - name: Test release policy and evidence helpers
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
@@ -203,7 +203,7 @@ jobs:
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
 
       - name: Verify staged artifact reproducibility
-        run: scripts/verify-reproducible-staging.sh 1.0.0-reproducibility
+        run: bash scripts/verify-reproducible-staging.sh 1.0.0-reproducibility
 
       - name: Upload reproducibility reports
         if: always()

@@ -202,4 +202,4 @@ Le dry-run du moteur Gear4J avec isolation avancée reste différé.
 
 ## Gear4J Studio : candidat expérimental
 
-Voir la [maturité et l'installation](docs/studio/release-maturity.md), le [gate PostgreSQL obligatoire](docs/studio/postgresql-qualification.md) et le [bilan de finalisation](docs/studio/verification-release-finalization.md). Les lanceurs de démonstration ne sont pas des backoffices de production préconfigurés.
+Voir la [maturité et l'installation](docs/studio/release-maturity.md), le [gate PostgreSQL obligatoire](docs/studio/postgresql-qualification.md) et le [bilan de finalisation](docs/studio/verification-release-closure.md). Les lanceurs de démonstration ne sont pas des backoffices de production préconfigurés.

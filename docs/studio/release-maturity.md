@@ -55,4 +55,4 @@ Il n'existe pas de baseline publiée N-1 de Studio à comparer. Les contrats d'i
 
 Limites acceptables pour une première release expérimentale : évolution documentée des APIs, migration limitée à la baseline P6 exacte, Chromium uniquement dans la qualification navigateur, SSE best-effort avec relecture du snapshot, simulation déclarative sans exécution métier. Le véritable dry-run du runtime et l'isolation avancée restent différés.
 
-Une absence de preuve PostgreSQL ou d'analyse des vulnérabilités n'est pas une limite acceptée de release. Les signatures, namespace et droits de registre doivent également être qualifiés. Voir le [bilan final](verification-release-finalization.md), le [gate PostgreSQL](postgresql-qualification.md) et la [matrice de sécurité](deployment-security.md).
+Une absence de preuve PostgreSQL ou d'analyse des vulnérabilités n'est pas une limite acceptée de release. Les signatures, namespace et droits de registre doivent également être qualifiés. Voir le [bilan final](verification-release-closure.md), le [gate PostgreSQL](postgresql-qualification.md) et la [matrice de sécurité](deployment-security.md).
